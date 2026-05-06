@@ -12,7 +12,7 @@
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "lg/exaone-3.5-2.4b",
-  "family_id": "lg/exaone-3-5",
+  "family_id": "lg/exaone-3.5",
   "links": [
     {
       "platform": "paper",

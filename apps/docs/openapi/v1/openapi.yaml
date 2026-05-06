@@ -21,7 +21,10 @@ paths:
         - Gateway
       operationId: listModels
       summary: List gateway models
-      description: Returns shared non-hidden models currently servable through the gateway.
+      description: >-
+        Returns shared non-hidden gateway models. Defaults to currently publicly
+        routable models; use availability=all to include non-routable
+        availability records.
       parameters:
         - name: endpoints
           in: query
@@ -39,6 +42,62 @@ paths:
               - type: array
                 items:
                   $ref: '#/components/schemas/OrganisationId'
+        - name: provider
+          in: query
+          description: Filter by provider id
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_status
+          in: query
+          description: Filter by provider rollout status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_routing_status
+          in: query
+          description: Filter by provider routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: model_routing_status
+          in: query
+          description: Filter by model routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: capability_status
+          in: query
+          description: Filter by provider capability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_status
+          in: query
+          description: Filter by provider availability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_reason
+          in: query
+          description: Filter by provider availability reason
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: array
+            items:
+              type: string
         - name: input_types
           in: query
           description: Filter by input types
@@ -60,6 +119,17 @@ paths:
             type: array
             items:
               type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
         - name: limit
           in: query
           description: Limit the number of results
@@ -135,7 +205,10 @@ paths:
         - Gateway
       operationId: listTeamModels
       summary: List team-scoped gateway models
-      description: Returns team-scoped gateway model listings.
+      description: >-
+        Returns team-scoped gateway model listings. Defaults to currently
+        publicly routable models; use availability=all to include non-routable
+        availability records.
       parameters:
         - name: endpoints
           in: query
@@ -153,6 +226,62 @@ paths:
               - type: array
                 items:
                   $ref: '#/components/schemas/OrganisationId'
+        - name: provider
+          in: query
+          description: Filter by provider id
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_status
+          in: query
+          description: Filter by provider rollout status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_routing_status
+          in: query
+          description: Filter by provider routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: model_routing_status
+          in: query
+          description: Filter by model routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: capability_status
+          in: query
+          description: Filter by provider capability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_status
+          in: query
+          description: Filter by provider availability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_reason
+          in: query
+          description: Filter by provider availability reason
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: array
+            items:
+              type: string
         - name: input_types
           in: query
           description: Filter by input types
@@ -174,6 +303,17 @@ paths:
             type: array
             items:
               type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
         - name: limit
           in: query
           description: Limit the number of results
@@ -476,6 +616,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponsesWebSocketUpgradeRequiredResponse'
+        '501':
+          description: WebSocket mode is temporarily disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
   /messages:
     post:
       tags:
@@ -914,7 +1060,9 @@ paths:
         - Gateway
       operationId: uploadFile
       summary: Upload file
-      description: Placeholder endpoint. File upload is not implemented yet.
+      description: >-
+        Uploads a file for batch processing and returns the upstream file
+        metadata.
       requestBody:
         required: true
         content:
@@ -922,38 +1070,46 @@ paths:
             schema:
               $ref: '#/components/schemas/FileUploadRequest'
       responses:
+        '200':
+          description: Uploaded file metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Files endpoint is not implemented yet
+        '502':
+          description: Upstream provider error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
     get:
       x-beta: true
       tags:
         - Gateway
       operationId: listFiles
       summary: List files
-      description: Placeholder endpoint. File listing is not implemented yet.
+      description: >-
+        Currently returns `not_supported` on the shared gateway key. Persist
+        uploaded file ids and retrieve them directly instead.
       responses:
+        '400':
+          description: File listing is not supported in the current gateway mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Files endpoint is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
   /files/{file_id}:
     get:
       x-beta: true
@@ -961,7 +1117,9 @@ paths:
         - Gateway
       operationId: retrieveFile
       summary: Retrieve file
-      description: Placeholder endpoint. File retrieval is not implemented yet.
+      description: >-
+        Retrieves metadata for a file that belongs to the authenticated
+        workspace.
       parameters:
         - name: file_id
           in: path
@@ -970,18 +1128,24 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Files endpoint is not implemented yet
+        '404':
+          description: File not found or not owned by the workspace
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
+                $ref: '#/components/schemas/ErrorResponse'
   /files/{file_id}/content:
     get:
       x-beta: true
@@ -989,7 +1153,9 @@ paths:
         - Gateway
       operationId: retrieveFileContent
       summary: Retrieve file content
-      description: Retrieves binary content for a previously uploaded file.
+      description: >-
+        Retrieves binary content for a previously uploaded file that belongs to
+        the authenticated workspace.
       parameters:
         - name: file_id
           in: path
@@ -1024,7 +1190,10 @@ paths:
         - Gateway
       operationId: createBatch
       summary: Create batch
-      description: Placeholder endpoint. Batch creation is not implemented yet.
+      description: >-
+        Creates an async batch job and returns the upstream batch object. The
+        gateway also accepts `session_id` and `webhook` for observability and
+        async notifications.
       requestBody:
         required: true
         content:
@@ -1032,18 +1201,18 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchRequest'
       responses:
+        '200':
+          description: Batch status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Batch endpoint is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
   /batches/{batch_id}:
     get:
       x-beta: true
@@ -1051,7 +1220,7 @@ paths:
         - Gateway
       operationId: retrieveBatch
       summary: Retrieve batch
-      description: Placeholder endpoint. Batch retrieval is not implemented yet.
+      description: Retrieves a previously created batch job.
       parameters:
         - name: batch_id
           in: path
@@ -1060,6 +1229,12 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: Batch status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -1072,12 +1247,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Batch endpoint is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
   /batches/{batch_id}/cancel:
     post:
       x-beta: true
@@ -2198,7 +2367,7 @@ paths:
         - Gateway
       operationId: createBatchAlias
       summary: Create batch (alias)
-      description: Alias of /batches. Currently not implemented.
+      description: Alias of /batches.
       requestBody:
         required: true
         content:
@@ -2206,18 +2375,18 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchRequest'
       responses:
+        '200':
+          description: Batch status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Batch endpoint is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
   /batch/{id}:
     get:
       x-beta: true
@@ -2225,7 +2394,7 @@ paths:
         - Gateway
       operationId: retrieveBatchAlias
       summary: Retrieve batch (alias)
-      description: Alias of /batches/{batch_id}. Currently not implemented.
+      description: Alias of /batches/{batch_id}.
       parameters:
         - name: id
           in: path
@@ -2233,6 +2402,12 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: Batch status response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -2245,12 +2420,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '501':
-          description: Batch endpoint is not implemented yet
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/NotImplementedResponse'
   /batch/{id}/cancel:
     post:
       x-beta: true
@@ -2584,6 +2753,8 @@ components:
         status:
           type: string
           nullable: true
+        availability:
+          $ref: '#/components/schemas/ModelAvailability'
         lifecycle:
           $ref: '#/components/schemas/ModelLifecycle'
         organisation_id:
@@ -2614,16 +2785,7 @@ components:
         providers:
           type: array
           items:
-            type: object
-            properties:
-              api_provider_id:
-                type: string
-              is_active_gateway:
-                type: boolean
-              params:
-                type: array
-                items:
-                  type: string
+            $ref: '#/components/schemas/ModelProviderAvailability'
         supported_params:
           type: array
           items:
@@ -2723,6 +2885,128 @@ components:
         message:
           type: string
           nullable: true
+    ModelAvailability:
+      type: object
+      required:
+        - status
+        - provider_count
+        - active_provider_count
+        - inactive_provider_count
+      properties:
+        status:
+          type: string
+          enum:
+            - active
+            - coming_soon
+            - inactive
+            - not_listed
+        provider_count:
+          type: integer
+          minimum: 0
+        active_provider_count:
+          type: integer
+          minimum: 0
+        inactive_provider_count:
+          type: integer
+          minimum: 0
+    ModelProviderAvailability:
+      type: object
+      required:
+        - api_provider_id
+        - is_active_gateway
+        - availability_status
+        - availability_reason
+        - provider_status
+        - provider_routing_status
+        - model_routing_status
+        - capability_status
+        - endpoints
+        - params
+      properties:
+        api_provider_id:
+          type: string
+        api_provider_name:
+          type: string
+          nullable: true
+        is_active_gateway:
+          type: boolean
+        availability_status:
+          type: string
+          enum:
+            - active
+            - coming_soon
+            - inactive
+        availability_reason:
+          type: string
+          enum:
+            - active
+            - preview_only
+            - gated
+            - access_limited
+            - region_limited
+            - project_limited
+            - paused
+            - soft_blocked
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - internal_testing
+            - scheduled
+            - coming_soon
+            - provider_disabled
+            - model_disabled
+            - capability_disabled
+            - provider_not_ready
+            - provider_inactive
+            - inactive
+            - retired
+        provider_status:
+          type: string
+          enum:
+            - active
+            - beta
+            - alpha
+            - not_ready
+        provider_routing_status:
+          type: string
+          enum:
+            - active
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - disabled
+        model_routing_status:
+          type: string
+          enum:
+            - active
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - disabled
+        capability_status:
+          type: string
+          enum:
+            - active
+            - coming_soon
+            - deranked_lvl1
+            - deranked_lvl2
+            - deranked_lvl3
+            - disabled
+            - internal_testing
+        effective_from:
+          type: string
+          nullable: true
+        effective_to:
+          type: string
+          nullable: true
+        endpoints:
+          type: array
+          items:
+            type: string
+        params:
+          type: array
+          items:
+            type: string
     DataModelOrganisation:
       type: object
       nullable: true
@@ -2807,6 +3091,12 @@ components:
           type: object
           additionalProperties:
             type: string
+        session_id:
+          type: string
+          maxLength: 256
+          description: >-
+            Unique identifier for grouping related requests (for example, a
+            conversation or agent workflow) for observability.
         presence_penalty:
           type: number
           minimum: -2
@@ -3248,11 +3538,16 @@ components:
       properties:
         id:
           type: string
+        nativeResponseId:
+          type: string
+          nullable: true
         object:
           type: string
         created:
           type: integer
         model:
+          type: string
+        provider:
           type: string
         choices:
           type: array
@@ -3351,6 +3646,12 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        session_id:
+          type: string
+          maxLength: 256
+          description: >-
+            Unique identifier for grouping related requests (for example, a
+            conversation or agent workflow) for observability.
         reasoning:
           $ref: '#/components/schemas/ReasoningConfig'
         stop_sequences:
@@ -3492,6 +3793,12 @@ components:
           type: object
           additionalProperties:
             type: string
+        session_id:
+          type: string
+          maxLength: 256
+          description: >-
+            Unique identifier for grouping related requests (for example, a
+            conversation or agent workflow) for observability.
         parallel_tool_calls:
           type: boolean
         previous_response_id:
@@ -4409,14 +4716,19 @@ components:
           type: string
         model:
           type: string
+        request_id:
+          type: string
+        session_id:
+          type: string
         status:
           type: string
           enum:
-            - pending
-            - in_progress
+            - queued
+            - processing
             - completed
             - failed
             - cancelled
+            - expired
         output_access:
           type: string
           enum:
@@ -4693,6 +5005,25 @@ components:
           type: string
         metadata:
           type: object
+          additionalProperties: true
+        session_id:
+          type: string
+          maxLength: 256
+          description: >-
+            Unique identifier for grouping related requests (for example, a
+            conversation or agent workflow) for observability.
+        webhook:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+            secret:
+              type: string
+            events:
+              type: array
+              items:
+                type: string
         debug:
           $ref: '#/components/schemas/DebugOptions'
         provider:
@@ -4740,6 +5071,31 @@ components:
           $ref: '#/components/schemas/BatchRequestCounts'
         metadata:
           type: object
+        request_id:
+          type: string
+        provider:
+          type: string
+        session_id:
+          type: string
+        webhook:
+          type: object
+          properties:
+            url:
+              type: string
+              format: uri
+            secret:
+              type: string
+            events:
+              type: array
+              items:
+                type: string
+        pricing_lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        billing:
+          $ref: '#/components/schemas/BatchBillingSummary'
     BatchRequestCounts:
       type: object
       properties:
@@ -4749,6 +5105,24 @@ components:
           type: integer
         failed:
           type: integer
+    BatchBillingSummary:
+      type: object
+      properties:
+        billed:
+          type: boolean
+        charged:
+          type: boolean
+        reason:
+          type: string
+        cost_nanos:
+          type: integer
+        cost_usd:
+          type: number
+        finalized_at:
+          type: string
+        pricing_breakdown:
+          type: object
+          additionalProperties: true
     FileUploadRequest:
       type: object
       required:
@@ -4849,6 +5223,9 @@ components:
     GenerationResponse:
       type: object
       properties:
+        created_at:
+          type: string
+          format: date-time
         request_id:
           type: string
         team_id:
@@ -4906,6 +5283,18 @@ components:
         throughput:
           type: number
           nullable: true
+        replay_supported:
+          type: boolean
+          description: >-
+            Whether a replay-ready request payload is available for this
+            generation.
+        replay_request:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: >-
+            Replay-ready request payload captured for this generation when
+            available.
     BenchmarkId:
       type: string
       description: Benchmark identifier.
@@ -5542,6 +5931,222 @@ components:
         description:
           type: string
           example: Additional error details.
+        generation_id:
+          type: string
+          example: G-abc123
+        status_code:
+          type: integer
+          example: 502
+        error_type:
+          type: string
+          enum:
+            - user
+            - system
+          example: system
+        error_origin:
+          type: string
+          enum:
+            - user
+            - gateway
+            - upstream
+          example: upstream
+        reason:
+          type: string
+          example: all_candidates_failed
+        attempt_count:
+          type: integer
+          example: 2
+        failed_providers:
+          type: array
+          items:
+            type: string
+          example:
+            - google-ai-studio
+            - openai
+        failed_statuses:
+          type: array
+          items:
+            type: integer
+          example:
+            - 403
+            - 429
+        upstream_error:
+          $ref: '#/components/schemas/ErrorUpstreamError'
+        failure_sample:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorFailureSampleItem'
+        provider_failure_diagnostics:
+          $ref: '#/components/schemas/ErrorProviderFailureDiagnostics'
+        routing_diagnostics:
+          $ref: '#/components/schemas/ErrorRoutingDiagnostics'
+        provider_candidate_diagnostics:
+          $ref: '#/components/schemas/ErrorProviderCandidateDiagnostics'
+        provider_enablement:
+          $ref: '#/components/schemas/ErrorProviderEnablementDiagnostics'
+        missing_pricing_providers:
+          type: array
+          items:
+            type: string
+        provider_payment_required_provider:
+          type: string
+          example: openai
+        provider_payment_required_support_notice:
+          type: string
+          example: >-
+            Our upstream provider billing appears to be unavailable. If this
+            persists, contact support.
+        details:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      additionalProperties: true
+    ErrorUpstreamError:
+      type: object
+      properties:
+        code:
+          type: string
+          nullable: true
+          example: PERMISSION_DENIED
+        message:
+          type: string
+          nullable: true
+          example: The caller does not have permission.
+        description:
+          type: string
+          nullable: true
+        param:
+          type: string
+          nullable: true
+    ErrorFailureSampleItem:
+      type: object
+      properties:
+        provider:
+          type: string
+          nullable: true
+        type:
+          type: string
+          nullable: true
+        status:
+          type: integer
+          nullable: true
+        upstream_error_code:
+          type: string
+          nullable: true
+        upstream_error_message:
+          type: string
+          nullable: true
+        upstream_error_description:
+          type: string
+          nullable: true
+        upstream_error_param:
+          type: string
+          nullable: true
+        upstream_payload_preview:
+          type: string
+          nullable: true
+        retryable:
+          type: boolean
+          nullable: true
+      additionalProperties: true
+    ErrorProviderFailureDiagnostics:
+      type: object
+      properties:
+        category:
+          type: string
+          enum:
+            - credentials_not_configured
+            - credentials_invalid_or_forbidden
+            - provider_access_missing
+            - region_or_project_restriction
+            - model_unavailable_for_endpoint
+            - rate_limited
+            - server_error
+        hint:
+          type: string
+        provider:
+          type: string
+          nullable: true
+    ErrorRoutingDiagnostics:
+      type: object
+      properties:
+        filterStages:
+          type: array
+          items:
+            type: object
+            properties:
+              stage:
+                type: string
+              beforeCount:
+                type: integer
+              afterCount:
+                type: integer
+              droppedProviders:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    providerId:
+                      type: string
+                      nullable: true
+                    reason:
+                      type: string
+                      nullable: true
+                  additionalProperties: true
+            additionalProperties: true
+      additionalProperties: true
+    ErrorProviderCandidateDiagnostics:
+      type: object
+      properties:
+        totalProviders:
+          type: integer
+        supportsEndpointCount:
+          type: integer
+        candidateCount:
+          type: integer
+        droppedUnsupportedEndpoint:
+          type: array
+          items:
+            type: string
+        droppedMissingAdapter:
+          type: array
+          items:
+            type: object
+            properties:
+              providerId:
+                type: string
+                nullable: true
+              endpoint:
+                type: string
+                nullable: true
+            additionalProperties: true
+      additionalProperties: true
+    ErrorProviderEnablementDiagnostics:
+      type: object
+      properties:
+        capability:
+          type: string
+        providersBefore:
+          type: array
+          items:
+            type: string
+        providersAfter:
+          type: array
+          items:
+            type: string
+        dropped:
+          type: array
+          items:
+            type: object
+            properties:
+              providerId:
+                type: string
+                nullable: true
+              reason:
+                type: string
+                nullable: true
+            additionalProperties: true
       additionalProperties: true
     ApiKeyScopeValue:
       oneOf:
@@ -5978,6 +6583,7 @@ components:
       required:
         - ok
         - privacy_scope
+        - availability_mode
         - limit
         - offset
         - total
@@ -5992,6 +6598,12 @@ components:
             - shared
             - team
           example: shared
+        availability_mode:
+          type: string
+          enum:
+            - active
+            - all
+          example: active
         limit:
           type: integer
           minimum: 1
@@ -6110,14 +6722,18 @@ components:
           type: object
           required:
             - type
+            - code
             - message
           properties:
             type:
               type: string
-              example: not_implemented
+              example: invalid_request_error
+            code:
+              type: string
+              example: responses_websocket_disabled
             message:
               type: string
-              example: realtime is not implemented yet
+              example: WebSocket mode is temporarily disabled on /v1/responses/ws.
           additionalProperties: false
       additionalProperties: false
     NotImplementedResponse:

@@ -1196,7 +1196,13 @@
     "max_output_tokens": 65536,
     "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-4-31b",
@@ -1211,7 +1217,13 @@
     "max_output_tokens": 12288,
     "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-4-26b-a4b",
@@ -1226,7 +1238,13 @@
     "max_output_tokens": 12288,
     "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "qwen/qwen3.6-plus",
@@ -1241,6 +1259,12 @@
     "max_output_tokens": 65536,
     "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

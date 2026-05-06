@@ -146,6 +146,65 @@ export function checkPricingEntrySafety(p: any): string[] {
     return errs;
 }
 
+export function checkApiProviderModelEntrySafety(
+    row: Record<string, unknown>,
+    options?: {
+        providerId?: string;
+        fallbackInputModalities?: unknown;
+        fallbackOutputModalities?: unknown;
+    }
+): { errors: string[]; warnings: string[] } {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    const providerId = options?.providerId ?? '?';
+    const providerApiModelId = normalizeReference(row?.provider_api_model_id);
+    const apiModelId = normalizeReference(row?.api_model_id);
+    const rowLabel = `${providerId}${providerApiModelId ? ` (${providerApiModelId})` : apiModelId ? ` (${apiModelId})` : ''}`;
+
+    if (!normalizeReference(row?.provider_model_slug)) {
+        errors.push(`API provider model ${rowLabel} missing provider_model_slug`);
+    }
+
+    const configuredCapabilities = Array.isArray(row?.capabilities)
+        ? row.capabilities.filter(
+              (capability) =>
+                  capability &&
+                  typeof capability === 'object' &&
+                  typeof capability.status === 'string' &&
+                  capability.status !== 'disabled' &&
+                  typeof capability.capability_id === 'string' &&
+                  capability.capability_id.trim()
+          )
+        : [];
+
+    if (row?.is_active_gateway === true && configuredCapabilities.length === 0) {
+        warnings.push(`API provider model ${rowLabel} is active on gateway but has no configured non-disabled capabilities`);
+    }
+
+    const hasValue = (value: unknown): boolean => {
+        return toStringArray(value).length > 0;
+    };
+
+    const missingFields: string[] = [];
+    if (!hasValue(row?.input_modalities) && !hasValue(options?.fallbackInputModalities)) {
+        missingFields.push('input_modalities');
+    }
+    if (!hasValue(row?.output_modalities) && !hasValue(options?.fallbackOutputModalities)) {
+        missingFields.push('output_modalities');
+    }
+
+    if (row?.is_active_gateway === true && configuredCapabilities.length > 0 && missingFields.length > 0) {
+        warnings.push(
+            `API provider model ${rowLabel} is active on gateway with active capabilities but missing ${missingFields.join(
+                ' and '
+            )}`
+        );
+    }
+
+    return { errors, warnings };
+}
+
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];
 const DETAIL_DATE_HINTS = ['date', 'cutoff'];
 
@@ -243,6 +302,20 @@ function normalizeReference(value: unknown): string | null {
     const normalized = value.trim();
     if (!normalized || normalized === '-') return null;
     return normalized;
+}
+
+function toStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => (typeof item === 'string' ? item.trim() : ''))
+            .filter((item) => item.length > 0 && item !== '-');
+    }
+    const normalized = normalizeReference(value);
+    if (!normalized) return [];
+    return normalized
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0 && item !== '-');
 }
 
 function isValidDateString(value: unknown): boolean {
@@ -399,6 +472,43 @@ function checkApiProviderModels(
     const warnings: string[] = [];
     let entryCount = 0;
     const providersDir = path.join(DATA_ROOT, 'api_providers');
+    const providerModalityKnowledge = new Map<
+        string,
+        { input: Set<string>; output: Set<string> }
+    >();
+    const modelEntriesById = new Map(
+        state.models
+            .map((entry) => {
+                const modelId = normalizeReference(entry.data.model_id);
+                return modelId ? ([modelId, entry] as const) : null;
+            })
+            .filter((entry): entry is readonly [string, ModelEntry] => entry !== null)
+    );
+
+    for (const provider of listDirs(providersDir)) {
+        const filePath = path.join(providersDir, provider, 'models.json');
+        if (!fs.existsSync(filePath)) continue;
+        const raw = safeReadJson(filePath, errors, 'API provider models');
+        if (!raw || !Array.isArray(raw)) continue;
+        for (const row of raw) {
+            const data = row as Record<string, unknown>;
+            const keys = [
+                normalizeReference(data.internal_model_id),
+                normalizeReference(data.api_model_id),
+            ].filter((key): key is string => Boolean(key));
+            if (keys.length === 0) continue;
+            const input = toStringArray(data.input_modalities);
+            const output = toStringArray(data.output_modalities);
+            if (input.length === 0 && output.length === 0) continue;
+            for (const key of keys) {
+                const existing =
+                    providerModalityKnowledge.get(key) ?? { input: new Set<string>(), output: new Set<string>() };
+                input.forEach((value) => existing.input.add(value));
+                output.forEach((value) => existing.output.add(value));
+                providerModalityKnowledge.set(key, existing);
+            }
+        }
+    }
 
     for (const provider of listDirs(providersDir)) {
         const filePath = path.join(providersDir, provider, 'models.json');
@@ -416,6 +526,24 @@ function checkApiProviderModels(
             const internalModelId = normalizeReference((row as Record<string, unknown>)?.internal_model_id);
             const providerApiModelId = normalizeReference((row as Record<string, unknown>)?.provider_api_model_id);
             const rowLabel = `${provider}${providerApiModelId ? ` (${providerApiModelId})` : ''}`;
+            const fallbackModelEntry =
+                (internalModelId ? modelEntriesById.get(internalModelId) : undefined) ??
+                (apiModelId ? modelEntriesById.get(apiModelId) : undefined);
+            const fallbackModalities =
+                (internalModelId ? providerModalityKnowledge.get(internalModelId) : undefined) ??
+                (apiModelId ? providerModalityKnowledge.get(apiModelId) : undefined);
+
+            const entryChecks = checkApiProviderModelEntrySafety(row as Record<string, unknown>, {
+                providerId: provider,
+                fallbackInputModalities:
+                    fallbackModelEntry?.data.input_types ??
+                    (fallbackModalities ? [...fallbackModalities.input] : undefined),
+                fallbackOutputModalities:
+                    fallbackModelEntry?.data.output_types ??
+                    (fallbackModalities ? [...fallbackModalities.output] : undefined),
+            });
+            errors.push(...entryChecks.errors);
+            warnings.push(...entryChecks.warnings);
 
             if (!apiModelId) {
                 errors.push(`API provider model ${rowLabel} missing api_model_id`);
@@ -744,7 +872,8 @@ function parseSectionListArg(value: string): ValidationSectionKey[] | undefined 
 
 function resolveGatingSectionsFromArgs(args: string[]): ValidationSectionKey[] | undefined {
     let gatingSections: ValidationSectionKey[] | undefined;
-    for (const arg of args) {
+    for (let index = 0; index < args.length; index += 1) {
+        const arg = args[index];
         if (arg.startsWith('--preset=')) {
             const presetName = arg.slice('--preset='.length).trim().toLowerCase();
             const preset = SECTION_PRESETS[presetName];
@@ -754,8 +883,30 @@ function resolveGatingSectionsFromArgs(args: string[]): ValidationSectionKey[] |
                 console.warn(`Unknown validation preset '${presetName}'. Falling back to all sections.`);
                 gatingSections = undefined;
             }
+        } else if (arg === '--preset') {
+            const presetName = args[index + 1]?.trim().toLowerCase();
+            if (!presetName) {
+                console.warn('Missing value for --preset. Falling back to all sections.');
+                continue;
+            }
+            index += 1;
+            const preset = SECTION_PRESETS[presetName];
+            if (preset && preset.length > 0) {
+                gatingSections = [...preset];
+            } else {
+                console.warn(`Unknown validation preset '${presetName}'. Falling back to all sections.`);
+                gatingSections = undefined;
+            }
         } else if (arg.startsWith('--sections=')) {
             const sectionList = arg.slice('--sections='.length);
+            gatingSections = parseSectionListArg(sectionList);
+        } else if (arg === '--sections') {
+            const sectionList = args[index + 1];
+            if (!sectionList) {
+                console.warn('Missing value for --sections. Falling back to all sections.');
+                continue;
+            }
+            index += 1;
             gatingSections = parseSectionListArg(sectionList);
         }
     }
@@ -801,7 +952,11 @@ function logValidationResults(outcome: ReturnType<typeof runWebDataValidation>, 
     }
 }
 
-if ('main' in import.meta && (import.meta as ImportMeta & { main?: unknown }).main) {
+const VALIDATE_SCRIPT_PATH = path.resolve(fileURLToPath(import.meta.url));
+const CLI_ENTRY_PATH = process.argv[1] ? path.resolve(process.argv[1]) : null;
+const IS_DIRECT_CLI_RUN = CLI_ENTRY_PATH === VALIDATE_SCRIPT_PATH;
+
+if (IS_DIRECT_CLI_RUN) {
     const gatingSections = resolveGatingSectionsFromArgs(process.argv.slice(2));
     const outcome = runWebDataValidation({ gatingSections });
     logValidationResults(outcome, gatingSections);

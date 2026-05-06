@@ -11,12 +11,31 @@ type SearchParams = {
 	q?: string;
 	provider?: string;
 	gaps?: string;
+	state?: string;
 };
 
 function normalizeBool(value: string | undefined): boolean {
 	if (!value) return false;
 	const normalized = value.toLowerCase();
 	return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
+function normalizeStateFilter(value: string | undefined): "" | "active" | "preview" | "not_routable" {
+	if (!value) return "";
+	if (value === "active" || value === "preview" || value === "not_routable") return value;
+	return "";
+}
+
+function badgeClassNameForAvailability(
+	availability: "active" | "coming_soon" | "inactive"
+): string {
+	if (availability === "active") {
+		return "border-green-200 bg-green-50 text-green-700";
+	}
+	if (availability === "coming_soon") {
+		return "border-blue-200 bg-blue-50 text-blue-700";
+	}
+	return "border-zinc-200 bg-zinc-50 text-zinc-700";
 }
 
 export default async function InternalProviderAuditPage({
@@ -51,6 +70,7 @@ export default async function InternalProviderAuditPage({
 	const query = (params.q ?? "").trim().toLowerCase();
 	const selectedProvider = (params.provider ?? "").trim();
 	const onlyGaps = normalizeBool(params.gaps);
+	const selectedState = normalizeStateFilter(params.state);
 
 	const providerOptions = audit.providers.map((provider) => ({
 		providerId: provider.providerId,
@@ -75,11 +95,22 @@ export default async function InternalProviderAuditPage({
 						row.providerModelSlug ?? "",
 						row.capabilities.join(" "),
 						row.gapReason ?? "",
+						row.routability.label,
+						row.routability.detail,
+						row.routability.key,
 					]
 						.join(" ")
 						.toLowerCase();
 					return haystack.includes(query);
 				});
+			}
+
+			if (selectedState === "active") {
+				rows = rows.filter((row) => row.isGatewayActiveNow);
+			} else if (selectedState === "preview") {
+				rows = rows.filter((row) => row.routability.availability === "coming_soon");
+			} else if (selectedState === "not_routable") {
+				rows = rows.filter((row) => !row.isGatewayActiveNow);
 			}
 
 			if (onlyGaps) {
@@ -89,6 +120,12 @@ export default async function InternalProviderAuditPage({
 			if (rows.length === 0) return null;
 
 			const activeGatewayModels = rows.filter((row) => row.isGatewayActiveNow).length;
+			const previewGatewayModels = rows.filter(
+				(row) => row.routability.availability === "coming_soon"
+			).length;
+			const inactiveGatewayModels = rows.filter(
+				(row) => row.routability.availability === "inactive"
+			).length;
 			const modelsWithPricing = rows.filter((row) => row.hasPricing).length;
 			const activeWithoutPricing = rows.filter((row) => row.isGatewayActiveNow && !row.hasPricing).length;
 
@@ -97,6 +134,8 @@ export default async function InternalProviderAuditPage({
 				rows,
 				totalModels: rows.length,
 				activeGatewayModels,
+				previewGatewayModels,
+				inactiveGatewayModels,
 				modelsWithPricing,
 				activeWithoutPricing,
 			};
@@ -107,6 +146,8 @@ export default async function InternalProviderAuditPage({
 		totalProviders: filteredProviders.length,
 		totalModels: filteredProviders.reduce((sum, provider) => sum + provider.totalModels, 0),
 		activeGatewayModels: filteredProviders.reduce((sum, provider) => sum + provider.activeGatewayModels, 0),
+		previewGatewayModels: filteredProviders.reduce((sum, provider) => sum + provider.previewGatewayModels, 0),
+		inactiveGatewayModels: filteredProviders.reduce((sum, provider) => sum + provider.inactiveGatewayModels, 0),
 		activeWithoutPricing: filteredProviders.reduce((sum, provider) => sum + provider.activeWithoutPricing, 0),
 	};
 
@@ -161,11 +202,21 @@ export default async function InternalProviderAuditPage({
 						className="w-full rounded-md border px-3 py-2 text-sm"
 					>
 						<option value="">All providers</option>
-						{providerOptions.map((option) => (
-							<option key={option.providerId} value={option.providerId}>
-								{option.providerName}
-							</option>
-						))}
+							{providerOptions.map((option) => (
+								<option key={option.providerId} value={option.providerId}>
+									{option.providerName}
+								</option>
+							))}
+						</select>
+					<select
+						name="state"
+						defaultValue={selectedState}
+						className="w-full rounded-md border px-3 py-2 text-sm"
+					>
+						<option value="">All routability states</option>
+						<option value="active">Routable now</option>
+						<option value="preview">Preview / scheduled</option>
+						<option value="not_routable">Not routable</option>
 					</select>
 					<label className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
 						<input type="checkbox" name="gaps" value="1" defaultChecked={onlyGaps} />
@@ -194,6 +245,14 @@ export default async function InternalProviderAuditPage({
 				<div className="rounded-md border px-4 py-3">
 					<div className="text-xs text-muted-foreground">Gateway Active (Now)</div>
 					<div className="text-2xl font-semibold">{filteredSummary.activeGatewayModels}</div>
+				</div>
+				<div className="rounded-md border border-blue-200 px-4 py-3">
+					<div className="text-xs text-muted-foreground">Preview / Scheduled</div>
+					<div className="text-2xl font-semibold text-blue-700">{filteredSummary.previewGatewayModels}</div>
+				</div>
+				<div className="rounded-md border px-4 py-3">
+					<div className="text-xs text-muted-foreground">Not Routable</div>
+					<div className="text-2xl font-semibold">{filteredSummary.inactiveGatewayModels}</div>
 				</div>
 				<div className="rounded-md border border-red-200 px-4 py-3">
 					<div className="text-xs text-muted-foreground">Active Without Pricing</div>
@@ -242,6 +301,12 @@ export default async function InternalProviderAuditPage({
 							<div className="flex flex-wrap gap-2 text-xs">
 								<span className="rounded border px-2 py-1">Models: {provider.totalModels}</span>
 								<span className="rounded border px-2 py-1">Active Now: {provider.activeGatewayModels}</span>
+								<span className="rounded border border-blue-200 px-2 py-1 text-blue-700">
+									Preview: {provider.previewGatewayModels}
+								</span>
+								<span className="rounded border px-2 py-1">
+									Not Routable: {provider.inactiveGatewayModels}
+								</span>
 								<span className="rounded border px-2 py-1">With Pricing: {provider.modelsWithPricing}</span>
 								<span className="rounded border border-red-200 px-2 py-1 text-red-700">
 									Active Gaps: {provider.activeWithoutPricing}
@@ -255,7 +320,7 @@ export default async function InternalProviderAuditPage({
 										<th className="px-3 py-2">API Model ID</th>
 										<th className="px-3 py-2">Internal Model ID</th>
 										<th className="px-3 py-2">Provider Slug</th>
-										<th className="px-3 py-2">Gateway</th>
+										<th className="px-3 py-2">Routability</th>
 										<th className="px-3 py-2">Pricing Rules (Active/Total)</th>
 										<th className="px-3 py-2">Capabilities</th>
 										<th className="px-3 py-2">Actions</th>
@@ -274,19 +339,23 @@ export default async function InternalProviderAuditPage({
 													{row.providerModelSlug ?? "-"}
 												</td>
 												<td className="border-t px-3 py-2">
-													{row.isGatewayActiveNow ? (
-														<span className="rounded border border-green-200 bg-green-50 px-2 py-1 text-xs text-green-700">
-															Active Now
+													<div className="space-y-1">
+														<span
+															className={`inline-flex rounded border px-2 py-1 text-xs ${badgeClassNameForAvailability(
+																row.routability.availability
+															)}`}
+														>
+															{row.routability.label}
 														</span>
-													) : row.isGatewayEnabled ? (
-														<span className="rounded border px-2 py-1 text-xs text-muted-foreground">
-															Enabled (Not Current)
-														</span>
-													) : (
-														<span className="rounded border px-2 py-1 text-xs text-muted-foreground">
-															Inactive
-														</span>
-													)}
+														<div className="text-xs text-muted-foreground">
+															{row.routability.detail}
+														</div>
+														{row.routabilitySummary ? (
+															<div className="text-[11px] text-muted-foreground">
+																{row.routabilitySummary}
+															</div>
+														) : null}
+													</div>
 												</td>
 												<td className="border-t px-3 py-2">
 													<div className="flex items-center gap-2">
@@ -304,7 +373,7 @@ export default async function InternalProviderAuditPage({
 													) : null}
 												</td>
 												<td className="border-t px-3 py-2">
-													<div className="max-w-[340px] truncate text-xs text-muted-foreground">
+													<div className="max-w-[340px] text-xs text-muted-foreground">
 														{row.capabilities.length > 0 ? row.capabilities.join(", ") : "-"}
 													</div>
 												</td>

@@ -13,7 +13,13 @@
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {
@@ -30,7 +36,13 @@
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {
@@ -3433,8 +3445,8 @@
         "internal_model_id":  "",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
-        "input_modalities":  null,
-        "output_modalities":  null,
+        "input_modalities":  "text",
+        "output_modalities":  "text",
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2026-03-25T00:00:00",
@@ -9082,7 +9094,13 @@
         "effective_from":  "2026-03-25T00:00:00",
         "effective_to":  null,
         "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
 
+                                            ]
+                             }
                          ]
     },
     {

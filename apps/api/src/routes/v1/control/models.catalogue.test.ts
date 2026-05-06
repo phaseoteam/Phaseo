@@ -83,7 +83,57 @@ describe("fetchCatalogue", () => {
                     error: null,
                 },
             ],
-            data_api_provider_models: [{ data: [], error: null }],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_1",
+                            provider_id: "openai",
+                            api_model_id: "test/model-1",
+                            model_id: "test/model-1",
+                            provider_model_slug: "test-model-1",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_1",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
             data_api_pricing_rules: [{ data: [], error: null }],
         };
 
@@ -131,7 +181,78 @@ describe("fetchCatalogue", () => {
                     error: null,
                 },
             ],
-            data_api_provider_models: [{ data: [], error: null }],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_active",
+                            provider_id: "openai",
+                            api_model_id: "test/model-active",
+                            model_id: "test/model-active",
+                            provider_model_slug: "active-model",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_retired",
+                            provider_id: "openai",
+                            api_model_id: "test/model-retired",
+                            model_id: "test/model-retired",
+                            provider_model_slug: "retired-model",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_active",
+                            capability_id: "responses",
+                            status: "active",
+                            params: {},
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_retired",
+                            capability_id: "responses",
+                            status: "active",
+                            params: {},
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
             data_api_pricing_rules: [{ data: [], error: null }],
         };
 
@@ -142,5 +263,1500 @@ describe("fetchCatalogue", () => {
 
         expect(models).toHaveLength(1);
         expect(models[0]?.model_id).toBe("test/model-active");
+    });
+
+    it("filters provider entries by requested providers and recomputes derived model fields", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-multi-provider",
+                            name: "Multi Provider Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                        {
+                            model_id: "test/model-openai-only",
+                            name: "OpenAI Only Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            model_id: "test/model-capability-soon",
+                            name: "Capability Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            model_id: "test/model-capability-soon",
+                            name: "Capability Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            model_id: "test/model-capability-soon",
+                            name: "Capability Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_multi",
+                            provider_id: "openai",
+                            api_model_id: "test/model-multi-provider",
+                            model_id: "test/model-multi-provider",
+                            provider_model_slug: "gpt-multi",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_multi",
+                            provider_id: "anthropic",
+                            api_model_id: "test/model-multi-provider",
+                            model_id: "test/model-multi-provider",
+                            provider_model_slug: "claude-multi",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_openai_only",
+                            provider_id: "openai",
+                            api_model_id: "test/model-openai-only",
+                            model_id: "test/model-openai-only",
+                            provider_model_slug: "gpt-openai-only",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-capability-soon",
+                            model_id: "test/model-capability-soon",
+                            provider_model_slug: "gpt-capability-soon",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-capability-soon",
+                            model_id: "test/model-capability-soon",
+                            provider_model_slug: "gpt-capability-soon",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-capability-soon",
+                            model_id: "test/model-capability-soon",
+                            provider_model_slug: "gpt-capability-soon",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_multi",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_multi",
+                            capability_id: "messages",
+                            status: "active",
+                            params: { top_k: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_openai_only",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            capability_id: "responses",
+                            status: "coming_soon",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }, { data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                        {
+                            api_provider_id: "anthropic",
+                            api_provider_name: "Anthropic",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }, { data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({ providerIds: ["anthropic"] });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-multi-provider",
+            endpoints: ["messages"],
+            supported_params: ["top_k"],
+            availability: {
+                status: "active",
+                provider_count: 1,
+                active_provider_count: 1,
+                inactive_provider_count: 0,
+            },
+            providers: [
+                {
+                    api_provider_id: "anthropic",
+                    endpoints: ["messages"],
+                    params: ["top_k"],
+                },
+            ],
+        });
+    });
+
+    it("filters provider entries by availability status and reason and recomputes model availability", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-rollout",
+                            name: "Rollout Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_active",
+                            provider_id: "openai",
+                            api_model_id: "test/model-rollout",
+                            model_id: "test/model-rollout",
+                            provider_model_slug: "gpt-rollout",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_scheduled",
+                            provider_id: "anthropic",
+                            api_model_id: "test/model-rollout",
+                            model_id: "test/model-rollout",
+                            provider_model_slug: "claude-rollout",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: "2999-01-01T00:00:00Z",
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_active",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_scheduled",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { top_k: true },
+                            effective_from: "2999-01-01T00:00:00Z",
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            capability_id: "responses",
+                            status: "coming_soon",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }, { data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                        {
+                            api_provider_id: "anthropic",
+                            api_provider_name: "Anthropic",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }, { data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({
+            availability: "all",
+            providerAvailabilityStatuses: ["coming_soon"],
+            providerAvailabilityReasons: ["scheduled"],
+        });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-rollout",
+            endpoints: ["responses"],
+            supported_params: ["top_k"],
+            availability: {
+                status: "coming_soon",
+                provider_count: 1,
+                active_provider_count: 0,
+                inactive_provider_count: 0,
+            },
+            providers: [
+                {
+                    api_provider_id: "anthropic",
+                    availability_status: "coming_soon",
+                    availability_reason: "scheduled",
+                    endpoints: ["responses"],
+                    params: ["top_k"],
+                },
+            ],
+        });
+    });
+
+    it("filters provider entries by provider and capability status", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-status-gates",
+                            name: "Status Gates Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_beta",
+                            provider_id: "openai",
+                            api_model_id: "test/model-status-gates",
+                            model_id: "test/model-status-gates",
+                            provider_model_slug: "gpt-status-gates",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_active",
+                            provider_id: "anthropic",
+                            api_model_id: "test/model-status-gates",
+                            model_id: "test/model-status-gates",
+                            provider_model_slug: "claude-status-gates",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_beta",
+                            capability_id: "responses",
+                            status: "internal_testing",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_active",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { top_k: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            capability_id: "responses",
+                            status: "coming_soon",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }, { data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "beta",
+                            routing_status: "active",
+                        },
+                        {
+                            api_provider_id: "anthropic",
+                            api_provider_name: "Anthropic",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }, { data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({
+            availability: "all",
+            providerStatuses: ["beta"],
+            capabilityStatuses: ["internal_testing"],
+        });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-status-gates",
+            endpoints: ["responses"],
+            supported_params: ["temperature"],
+            availability: {
+                status: "coming_soon",
+                provider_count: 1,
+                active_provider_count: 0,
+                inactive_provider_count: 0,
+            },
+            providers: [
+                {
+                    api_provider_id: "openai",
+                    provider_status: "beta",
+                    capability_status: "internal_testing",
+                    availability_status: "coming_soon",
+                    availability_reason: "preview_only",
+                    endpoints: ["responses"],
+                    params: ["temperature"],
+                },
+            ],
+        });
+    });
+
+    it("surfaces provider_status=not_ready as provider_not_ready instead of generic inactivity", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-provider-not-ready",
+                            name: "Provider Not Ready Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_not_ready",
+                            provider_id: "openai",
+                            api_model_id: "test/model-provider-not-ready",
+                            model_id: "test/model-provider-not-ready",
+                            provider_model_slug: "gpt-provider-not-ready",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_not_ready",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "not_ready",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({
+            availability: "all",
+            providerAvailabilityReasons: ["provider_not_ready"],
+        });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-provider-not-ready",
+            availability: {
+                status: "inactive",
+                provider_count: 1,
+                active_provider_count: 0,
+                inactive_provider_count: 1,
+            },
+            providers: [
+                {
+                    api_provider_id: "openai",
+                    provider_status: "not_ready",
+                    capability_status: "active",
+                    availability_status: "inactive",
+                    availability_reason: "provider_not_ready",
+                },
+            ],
+        });
+    });
+
+    it.each([
+        ["gated", "gated"],
+        ["access_limited", "access_limited"],
+        ["region_limited", "region_limited"],
+        ["project_limited", "project_limited"],
+        ["paused", "paused"],
+        ["soft_blocked", "soft_blocked"],
+    ] as const)(
+        "surfaces provider_status=%s as %s instead of generic inactivity",
+        async (providerStatus, availabilityReason) => {
+            const state: QueryState = { emptyCapabilityInCalled: false };
+            const modelId = `test/model-${providerStatus}`;
+            const providerApiModelId = `pam_openai_${providerStatus}`;
+            const responses: Record<string, QueryResult[]> = {
+                data_models: [
+                    {
+                        data: [
+                            {
+                                model_id: modelId,
+                                name: `Model ${providerStatus}`,
+                                release_date: null,
+                                deprecation_date: null,
+                                retirement_date: null,
+                                status: "active",
+                                organisation_id: "openai",
+                                input_types: ["text"],
+                                output_types: ["text"],
+                                organisation: null,
+                            },
+                        ],
+                        error: null,
+                    },
+                ],
+                data_api_provider_models: [
+                    {
+                        data: [
+                            {
+                                provider_api_model_id: providerApiModelId,
+                                provider_id: "openai",
+                                api_model_id: modelId,
+                                model_id: modelId,
+                                provider_model_slug: `slug-${providerStatus}`,
+                                is_active_gateway: true,
+                                routing_status: "active",
+                                input_modalities: ["text"],
+                                output_modalities: ["text"],
+                                effective_from: null,
+                                effective_to: null,
+                            },
+                        ],
+                        error: null,
+                    },
+                ],
+                data_api_provider_model_capabilities: [
+                    {
+                        data: [
+                            {
+                                provider_api_model_id: providerApiModelId,
+                                capability_id: "responses",
+                                status: "active",
+                                params: { temperature: true },
+                                effective_from: null,
+                                effective_to: null,
+                            },
+                        ],
+                        error: null,
+                    },
+                ],
+                data_api_model_aliases: [{ data: [], error: null }],
+                data_api_providers: [
+                    {
+                        data: [
+                            {
+                                api_provider_id: "openai",
+                                api_provider_name: "OpenAI",
+                                link: null,
+                                country_code: null,
+                                status: providerStatus,
+                                routing_status: "active",
+                            },
+                        ],
+                        error: null,
+                    },
+                ],
+                data_api_pricing_rules: [{ data: [], error: null }],
+            };
+
+            getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+            const { fetchCatalogue } = await import("./models.catalogue");
+
+            const models = await fetchCatalogue({
+                availability: "all",
+                providerAvailabilityReasons: [availabilityReason],
+            });
+
+            expect(models).toHaveLength(1);
+            expect(models[0]).toMatchObject({
+                model_id: modelId,
+                availability: {
+                    status: "inactive",
+                    provider_count: 1,
+                    active_provider_count: 0,
+                    inactive_provider_count: 1,
+                },
+                providers: [
+                    {
+                        api_provider_id: "openai",
+                        provider_status: providerStatus,
+                        capability_status: "active",
+                        availability_status: "inactive",
+                        availability_reason: availabilityReason,
+                    },
+                ],
+            });
+        }
+    );
+
+    it("keeps capability_status=coming_soon distinct from active routing", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-capability-soon",
+                            name: "Capability Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            model_id: "test/model-capability-soon",
+                            name: "Capability Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-capability-soon",
+                            model_id: "test/model-capability-soon",
+                            provider_model_slug: "gpt-capability-soon",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-capability-soon",
+                            model_id: "test/model-capability-soon",
+                            provider_model_slug: "gpt-capability-soon",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            capability_id: "responses",
+                            status: "coming_soon",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_capability_soon",
+                            capability_id: "responses",
+                            status: "coming_soon",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }, { data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }, { data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const activeOnlyModels = await fetchCatalogue({});
+        expect(activeOnlyModels).toHaveLength(0);
+
+        const models = await fetchCatalogue({
+            availability: "all",
+            capabilityStatuses: ["coming_soon"],
+        });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-capability-soon",
+            availability: {
+                status: "coming_soon",
+                provider_count: 1,
+                active_provider_count: 0,
+                inactive_provider_count: 0,
+            },
+            providers: [
+                {
+                    api_provider_id: "openai",
+                    capability_status: "coming_soon",
+                    availability_status: "coming_soon",
+                    availability_reason: "coming_soon",
+                    endpoints: ["responses"],
+                    params: ["temperature"],
+                },
+            ],
+        });
+    });
+
+    it("filters provider entries by provider and model routing status", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-routing-gates",
+                            name: "Routing Gates Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_deranked",
+                            provider_id: "openai",
+                            api_model_id: "test/model-routing-gates",
+                            model_id: "test/model-routing-gates",
+                            provider_model_slug: "gpt-routing-gates",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_disabled",
+                            provider_id: "anthropic",
+                            api_model_id: "test/model-routing-gates",
+                            model_id: "test/model-routing-gates",
+                            provider_model_slug: "claude-routing-gates",
+                            is_active_gateway: true,
+                            routing_status: "deranked_lvl2",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_openai_deranked",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_anthropic_disabled",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { top_k: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "deranked_lvl1",
+                        },
+                        {
+                            api_provider_id: "anthropic",
+                            api_provider_name: "Anthropic",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "disabled",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({
+            availability: "all",
+            providerRoutingStatuses: ["deranked_lvl1"],
+            modelRoutingStatuses: ["active"],
+        });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]).toMatchObject({
+            model_id: "test/model-routing-gates",
+            endpoints: ["responses"],
+            supported_params: ["temperature"],
+            availability: {
+                status: "active",
+                provider_count: 1,
+                active_provider_count: 1,
+                inactive_provider_count: 0,
+            },
+            providers: [
+                {
+                    api_provider_id: "openai",
+                    provider_routing_status: "deranked_lvl1",
+                    model_routing_status: "active",
+                    availability_status: "active",
+                    availability_reason: "deranked_lvl1",
+                    endpoints: ["responses"],
+                    params: ["temperature"],
+                },
+            ],
+        });
+    });
+
+    it("keeps default availability mode limited to publicly routable providers", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-active",
+                            name: "Active Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                        {
+                            model_id: "test/model-soon",
+                            name: "Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_active",
+                            provider_id: "openai",
+                            api_model_id: "test/model-active",
+                            model_id: "test/model-active",
+                            provider_model_slug: "gpt-active",
+                            is_active_gateway: true,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-soon",
+                            model_id: "test/model-soon",
+                            provider_model_slug: "gpt-soon",
+                            is_active_gateway: false,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: "2999-01-01T00:00:00Z",
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_active",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                        {
+                            provider_api_model_id: "pam_soon",
+                            capability_id: "responses",
+                            status: "internal_testing",
+                            params: { temperature: true },
+                            effective_from: "2999-01-01T00:00:00Z",
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "active",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.model_id).toBe("test/model-active");
+        expect(models[0]?.availability.status).toBe("active");
+        expect(models[0]?.providers[0]).toMatchObject({
+            api_provider_id: "openai",
+            availability_status: "active",
+            availability_reason: "active",
+        });
+    });
+
+    it("includes coming-soon providers when availability=all", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: [
+                        {
+                            model_id: "test/model-soon",
+                            name: "Soon Model",
+                            release_date: null,
+                            deprecation_date: null,
+                            retirement_date: null,
+                            status: "active",
+                            organisation_id: "openai",
+                            input_types: ["text"],
+                            output_types: ["text"],
+                            organisation: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_soon",
+                            provider_id: "openai",
+                            api_model_id: "test/model-soon",
+                            model_id: "test/model-soon",
+                            provider_model_slug: "gpt-soon",
+                            is_active_gateway: false,
+                            routing_status: "active",
+                            input_modalities: ["text"],
+                            output_modalities: ["text"],
+                            effective_from: "2999-01-01T00:00:00Z",
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: [
+                        {
+                            provider_api_model_id: "pam_soon",
+                            capability_id: "responses",
+                            status: "internal_testing",
+                            params: { temperature: true },
+                            effective_from: "2999-01-01T00:00:00Z",
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: [
+                        {
+                            api_provider_id: "openai",
+                            api_provider_name: "OpenAI",
+                            link: null,
+                            country_code: null,
+                            status: "beta",
+                            routing_status: "active",
+                        },
+                    ],
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({ availability: "all" });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.availability.status).toBe("coming_soon");
+        expect(models[0]?.providers[0]).toMatchObject({
+            api_provider_id: "openai",
+            availability_status: "coming_soon",
+            availability_reason: "scheduled",
+            provider_status: "beta",
+            capability_status: "internal_testing",
+        });
+    });
+
+    it("keeps future-dated mappings staged as coming_soon until activation", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const futureEffectiveFrom = "2999-06-01T00:00:00Z";
+        const modelRows = [
+            {
+                model_id: "test/model-scheduled",
+                name: "Scheduled Model",
+                release_date: null,
+                deprecation_date: null,
+                retirement_date: null,
+                status: "active",
+                organisation_id: "openai",
+                input_types: ["text"],
+                output_types: ["text"],
+                organisation: null,
+            },
+        ];
+        const providerModelRows = [
+            {
+                provider_api_model_id: "pam_scheduled",
+                provider_id: "openai",
+                api_model_id: "test/model-scheduled",
+                model_id: "test/model-scheduled",
+                provider_model_slug: "gpt-scheduled",
+                is_active_gateway: false,
+                routing_status: "active",
+                input_modalities: ["text"],
+                output_modalities: ["text"],
+                effective_from: futureEffectiveFrom,
+                effective_to: null,
+            },
+        ];
+        const capabilityRows = [
+            {
+                provider_api_model_id: "pam_scheduled",
+                capability_id: "responses",
+                status: "internal_testing",
+                params: { temperature: true, top_p: true },
+                effective_from: futureEffectiveFrom,
+                effective_to: null,
+            },
+        ];
+        const providerRows = [
+            {
+                api_provider_id: "openai",
+                api_provider_name: "OpenAI",
+                link: null,
+                country_code: null,
+                status: "active",
+                routing_status: "active",
+            },
+        ];
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [
+                {
+                    data: modelRows,
+                    error: null,
+                },
+                {
+                    data: modelRows,
+                    error: null,
+                },
+            ],
+            data_api_provider_models: [
+                {
+                    data: providerModelRows,
+                    error: null,
+                },
+                {
+                    data: providerModelRows,
+                    error: null,
+                },
+            ],
+            data_api_provider_model_capabilities: [
+                {
+                    data: capabilityRows,
+                    error: null,
+                },
+                {
+                    data: capabilityRows,
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }, { data: [], error: null }],
+            data_api_providers: [
+                {
+                    data: providerRows,
+                    error: null,
+                },
+                {
+                    data: providerRows,
+                    error: null,
+                },
+            ],
+            data_api_pricing_rules: [{ data: [], error: null }, { data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const activeOnlyModels = await fetchCatalogue({});
+        expect(activeOnlyModels).toHaveLength(0);
+
+        const allModels = await fetchCatalogue({ availability: "all" });
+
+        expect(allModels).toHaveLength(1);
+        expect(allModels[0]).toMatchObject({
+            model_id: "test/model-scheduled",
+            availability: {
+                status: "coming_soon",
+                provider_count: 1,
+                active_provider_count: 0,
+                inactive_provider_count: 0,
+            },
+            supported_params: ["temperature", "top_p"],
+        });
+        expect(allModels[0]?.providers[0]).toMatchObject({
+            api_provider_id: "openai",
+            availability_status: "coming_soon",
+            availability_reason: "scheduled",
+            capability_status: "internal_testing",
+            effective_from: futureEffectiveFrom,
+        });
     });
 });

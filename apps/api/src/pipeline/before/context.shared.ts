@@ -290,13 +290,22 @@ export function trackContextInflight(args: {
 }
 
 export function normalizeProviderStatus(value: unknown): ProviderRolloutStatus {
-	const status = String(value ?? "").trim().toLowerCase();
+	const status = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
 	if (status === "active") return "active";
 	if (status === "beta") return "beta";
 	if (status === "alpha") return "alpha";
-	if (status === "notready" || status === "not_ready" || status === "not ready") {
+	if (status === "notready" || status === "not_ready") {
 		return "not_ready";
 	}
+	if (status === "gated") return "gated";
+	if (status === "access_limited") return "access_limited";
+	if (status === "region_limited") return "region_limited";
+	if (status === "project_limited") return "project_limited";
+	if (status === "paused") return "paused";
+	if (status === "soft_blocked") return "soft_blocked";
 	return "active";
 }
 
@@ -323,6 +332,9 @@ export function normalizeCapabilityStatus(value: unknown): CapabilityRoutingStat
 		status === "internaltesting"
 	) {
 		return "internal_testing";
+	}
+	if (status === "coming_soon" || status === "coming-soon" || status === "comingsoon") {
+		return "coming_soon";
 	}
 	return normalizeRoutingStatus(status);
 }

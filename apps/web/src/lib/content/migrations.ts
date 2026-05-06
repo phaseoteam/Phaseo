@@ -290,15 +290,15 @@ const client = new OpenAI({
 						label: "Vercel AI SDK style provider switch",
 						lang: "ts",
 						code: `import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { createAIStats } from "@ai-stats/ai-sdk-provider";
 
-const openai = createOpenAI({
+const aiStats = createAIStats({
   apiKey: process.env.AI_STATS_API_KEY,
   baseURL: "${AI_STATS_BASE_URL}",
 });
 
 const { text } = await generateText({
-  model: openai("openai/gpt-4.1-mini"),
+  model: aiStats("openai/gpt-4.1-mini"),
   prompt: "Generate a migration checklist.",
 });`,
 					},

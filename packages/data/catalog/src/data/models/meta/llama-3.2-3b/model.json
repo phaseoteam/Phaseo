@@ -12,7 +12,7 @@
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "meta/llama-3.2-3b",
-  "family_id": "meta/llama-3-0",
+  "family_id": "meta/llama-3.0",
   "links": [],
   "details": [],
   "benchmarks": [

@@ -115,6 +115,7 @@ const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
   input_text_tokens: { unit: "token", unit_size: 1_000_000 },
   output_tokens: { unit: "token", unit_size: 1_000_000 },
   output_text_tokens: { unit: "token", unit_size: 1_000_000 },
+  output_reasoning_tokens: { unit: "token", unit_size: 1_000_000 },
   image_pixels: { unit: "pixel", unit_size: 1_000_000 },
   video_pixels: { unit: "pixel", unit_size: 1_000_000 },
   cached_read_text_tokens: { unit: "token", unit_size: 1_000_000 },
@@ -127,8 +128,10 @@ const METER_DEFAULTS: Record<string, { unit: string; unit_size: number }> = {
   cached_read_audio_tokens: { unit: "token", unit_size: 1_000_000 },
   output_image: { unit: "image", unit_size: 1 },
   input_image: { unit: "image", unit_size: 1 },
+  output_video: { unit: "video", unit_size: 1 },
   output_video_seconds: { unit: "second", unit_size: 1 },
   input_video_seconds: { unit: "second", unit_size: 1 },
+  bfl_credits: { unit: "credit", unit_size: 1 },
   requests: { unit: "request", unit_size: 1 },
 }
 

@@ -12,7 +12,7 @@
   "input_types": null,
   "output_types": null,
   "api_model_id": "meta/llama-3.2-90b-vision",
-  "family_id": "meta/llama-3-0",
+  "family_id": "meta/llama-3.0",
   "links": [],
   "details": [],
   "benchmarks": [

@@ -441,6 +441,9 @@ export const logoManifest = {
 	instagram: {
 		color: "/social/instagram.svg",
 	},
+	linkedin: {
+		color: "/social/linkedin.svg",
+	},
 	reddit: {
 		color: "/social/reddit.svg",
 	},

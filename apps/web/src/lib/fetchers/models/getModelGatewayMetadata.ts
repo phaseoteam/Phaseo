@@ -18,6 +18,33 @@ export interface GatewayProviderModel {
 	model_id: string;
 	endpoint: string;
 	is_active_gateway: boolean;
+	availability_status: "active" | "coming_soon" | "inactive";
+	availability_reason?:
+		| "active"
+		| "preview_only"
+		| "gated"
+		| "access_limited"
+		| "region_limited"
+		| "project_limited"
+		| "paused"
+		| "soft_blocked"
+		| "deranked_lvl1"
+		| "deranked_lvl2"
+		| "deranked_lvl3"
+		| "internal_testing"
+		| "scheduled"
+		| "coming_soon"
+		| "provider_disabled"
+		| "model_disabled"
+		| "capability_disabled"
+		| "provider_not_ready"
+		| "provider_inactive"
+		| "inactive"
+		| "retired";
+	provider_status?: string | null;
+	provider_routing_status?: string | null;
+	model_routing_status?: string | null;
+	capability_status?: string | null;
 	input_modalities: string;
 	output_modalities: string;
 	max_input_tokens?: number | null;
@@ -39,6 +66,7 @@ export interface ModelGatewayMetadata {
     acceptedModelIdentifiersByEndpoint: Record<string, string[]>;
     providers: GatewayProviderModel[];
     activeProviders: GatewayProviderModel[];
+    comingSoonProviders: GatewayProviderModel[];
     inactiveProviders: GatewayProviderModel[];
 }
 
@@ -69,23 +97,133 @@ const sortApiModelIdsByRank = (
         return a.localeCompare(b);
     });
 
-function isWithinEffectiveWindow(
-    effectiveFrom?: string | null,
-    effectiveTo?: string | null,
-    now: Date = new Date()
+function isFutureEffectiveWindow(
+	effectiveFrom?: string | null,
+	now: Date = new Date()
 ): boolean {
-    const from = effectiveFrom ? new Date(effectiveFrom) : null;
-    const to = effectiveTo ? new Date(effectiveTo) : null;
+	if (!effectiveFrom) return false;
+	const from = new Date(effectiveFrom);
+	return Number.isFinite(from.getTime()) && now < from;
+}
 
-    if (from && Number.isFinite(from.getTime()) && now < from) {
-        return false;
-    }
+function isExpiredEffectiveWindow(
+	effectiveTo?: string | null,
+	now: Date = new Date()
+): boolean {
+	if (!effectiveTo) return false;
+	const to = new Date(effectiveTo);
+	return Number.isFinite(to.getTime()) && now >= to;
+}
 
-    if (to && Number.isFinite(to.getTime()) && now >= to) {
-        return false;
-    }
+function normalizeStatusValue(value: unknown): string | null {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[\s-]+/g, "_");
+	return normalized || null;
+}
 
-    return true;
+function isPublicRoutingStatus(status: string | null): boolean {
+	return (
+		status === null ||
+		status === "active" ||
+		status === "deranked_lvl1" ||
+		status === "deranked_lvl2" ||
+		status === "deranked_lvl3"
+	);
+}
+
+function resolveAvailabilityStatus(args: {
+	isActiveGateway: boolean;
+	providerStatus: string | null;
+	providerRoutingStatus: string | null;
+	modelRoutingStatus: string | null;
+	capabilityStatus: string | null;
+	effectiveFrom?: string | null;
+	effectiveTo?: string | null;
+	now?: Date;
+}): "active" | "coming_soon" | "inactive" {
+	const now = args.now ?? new Date();
+
+	if (isExpiredEffectiveWindow(args.effectiveTo, now)) return "inactive";
+	if (isFutureEffectiveWindow(args.effectiveFrom, now)) return "coming_soon";
+	if (!args.isActiveGateway) return "inactive";
+	if (args.providerStatus && args.providerStatus !== "active") return "inactive";
+	if (!isPublicRoutingStatus(args.providerRoutingStatus)) return "inactive";
+	if (!isPublicRoutingStatus(args.modelRoutingStatus)) return "inactive";
+	if (args.capabilityStatus === "internal_testing") return "coming_soon";
+	if (args.capabilityStatus === "coming_soon") return "coming_soon";
+	if (args.capabilityStatus && args.capabilityStatus !== "active") return "inactive";
+	return "active";
+}
+
+function resolveAvailabilityReason(args: {
+	isActiveGateway: boolean;
+	providerStatus: string | null;
+	providerRoutingStatus: string | null;
+	modelRoutingStatus: string | null;
+	capabilityStatus: string | null;
+	effectiveFrom?: string | null;
+	effectiveTo?: string | null;
+	now?: Date;
+}):
+	| "active"
+	| "preview_only"
+	| "gated"
+	| "access_limited"
+	| "region_limited"
+	| "project_limited"
+	| "paused"
+	| "soft_blocked"
+	| "deranked_lvl1"
+	| "deranked_lvl2"
+	| "deranked_lvl3"
+	| "internal_testing"
+	| "scheduled"
+	| "coming_soon"
+	| "provider_disabled"
+	| "model_disabled"
+	| "capability_disabled"
+	| "provider_not_ready"
+	| "provider_inactive"
+	| "inactive"
+	| "retired" {
+	const now = args.now ?? new Date();
+
+	if (isExpiredEffectiveWindow(args.effectiveTo, now)) return "retired";
+	if (isFutureEffectiveWindow(args.effectiveFrom, now)) return "scheduled";
+	if (args.providerStatus === "beta" || args.providerStatus === "alpha")
+		return "preview_only";
+	if (args.providerStatus === "not_ready") return "provider_not_ready";
+	if (args.providerStatus === "gated") return "gated";
+	if (args.providerStatus === "access_limited") return "access_limited";
+	if (args.providerStatus === "region_limited") return "region_limited";
+	if (args.providerStatus === "project_limited") return "project_limited";
+	if (args.providerStatus === "paused") return "paused";
+	if (args.providerStatus === "soft_blocked") return "soft_blocked";
+	if (args.providerStatus && args.providerStatus !== "active") return "provider_inactive";
+	if (args.providerRoutingStatus === "disabled") return "provider_disabled";
+	if (args.modelRoutingStatus === "disabled") return "model_disabled";
+	if (args.capabilityStatus === "disabled") return "capability_disabled";
+	if (
+		args.providerRoutingStatus === "deranked_lvl1" ||
+		args.providerRoutingStatus === "deranked_lvl2" ||
+		args.providerRoutingStatus === "deranked_lvl3"
+	) {
+		return args.providerRoutingStatus;
+	}
+	if (
+		args.modelRoutingStatus === "deranked_lvl1" ||
+		args.modelRoutingStatus === "deranked_lvl2" ||
+		args.modelRoutingStatus === "deranked_lvl3"
+	) {
+		return args.modelRoutingStatus;
+	}
+	if (args.capabilityStatus === "internal_testing") return "internal_testing";
+	if (!args.isActiveGateway) return "inactive";
+	if (args.capabilityStatus === "coming_soon") return "coming_soon";
+	if (args.capabilityStatus && args.capabilityStatus !== "active") return "inactive";
+	return "active";
 }
 
 export default async function getModelGatewayMetadata(
@@ -114,13 +252,13 @@ export default async function getModelGatewayMetadata(
 			supabase
 				.from("data_api_provider_models")
 				.select(
-					"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+					"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, routing_status, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
 				)
 				.eq("model_id", modelId),
 			supabase
 				.from("data_api_provider_models")
 				.select(
-					"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
+					"provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, routing_status, input_modalities, output_modalities, quantization_scheme, context_length, effective_from, effective_to, created_at, updated_at"
 				)
 				.eq("api_model_id", modelId),
 		]);
@@ -162,7 +300,8 @@ export default async function getModelGatewayMetadata(
         current.totalCount += 1;
         if (
             row.is_active_gateway &&
-            isWithinEffectiveWindow(row.effective_from, row.effective_to)
+			!isFutureEffectiveWindow(row.effective_from) &&
+			!isExpiredEffectiveWindow(row.effective_to)
         ) {
             current.activeCount += 1;
         }
@@ -196,10 +335,13 @@ export default async function getModelGatewayMetadata(
     );
     const { data: providersData } = await supabase
         .from("data_api_providers")
-        .select("api_provider_id, api_provider_name, link, country_code")
+        .select("api_provider_id, api_provider_name, link, country_code, status, routing_status")
         .in("api_provider_id", providerIds);
 
-    const providerMap = new Map<string, GatewayProviderDetails>();
+    const providerMap = new Map<string, GatewayProviderDetails & {
+		status?: string | null;
+		routing_status?: string | null;
+	}>();
     for (const provider of providersData ?? []) {
         if (!provider.api_provider_id) continue;
         providerMap.set(provider.api_provider_id, {
@@ -207,6 +349,8 @@ export default async function getModelGatewayMetadata(
             api_provider_name: provider.api_provider_name ?? provider.api_provider_id,
             link: provider.link ?? null,
             country_code: provider.country_code ?? null,
+			status: provider.status ?? null,
+			routing_status: provider.routing_status ?? null,
         });
     }
 
@@ -217,10 +361,17 @@ export default async function getModelGatewayMetadata(
 	}
 
 	const providers: GatewayProviderModel[] = [];
+	const now = new Date();
 	for (const cap of caps ?? []) {
-		if (cap.status === "disabled") continue;
 		const pm = providerModelMap.get(cap.provider_api_model_id);
 		if (!pm || !cap.capability_id) continue;
+		const providerDetails = providerMap.get(pm.provider_id) ?? null;
+		const providerStatus = normalizeStatusValue(providerDetails?.status ?? null);
+		const providerRoutingStatus = normalizeStatusValue(
+			providerDetails?.routing_status ?? null
+		);
+		const modelRoutingStatus = normalizeStatusValue(pm.routing_status ?? null);
+		const capabilityStatus = normalizeStatusValue(cap.status ?? null);
 		providers.push({
 			id: pm.provider_api_model_id,
 			api_provider_id: pm.provider_id,
@@ -232,6 +383,30 @@ export default async function getModelGatewayMetadata(
 			model_id: pm.api_model_id,
 			endpoint: cap.capability_id,
 			is_active_gateway: pm.is_active_gateway,
+			availability_status: resolveAvailabilityStatus({
+				isActiveGateway: Boolean(pm.is_active_gateway),
+				providerStatus,
+				providerRoutingStatus,
+				modelRoutingStatus,
+				capabilityStatus,
+				effectiveFrom: pm.effective_from,
+				effectiveTo: pm.effective_to,
+				now,
+			}),
+			availability_reason: resolveAvailabilityReason({
+				isActiveGateway: Boolean(pm.is_active_gateway),
+				providerStatus,
+				providerRoutingStatus,
+				modelRoutingStatus,
+				capabilityStatus,
+				effectiveFrom: pm.effective_from,
+				effectiveTo: pm.effective_to,
+				now,
+			}),
+			provider_status: providerStatus,
+			provider_routing_status: providerRoutingStatus,
+			model_routing_status: modelRoutingStatus,
+			capability_status: capabilityStatus,
 			input_modalities: Array.isArray(pm.input_modalities)
 				? pm.input_modalities.join(",")
 				: pm.input_modalities ?? "",
@@ -244,7 +419,7 @@ export default async function getModelGatewayMetadata(
 			effective_to: pm.effective_to,
 			created_at: pm.created_at,
 			updated_at: pm.updated_at,
-            provider: providerMap.get(pm.provider_id) ?? null,
+            provider: providerDetails,
         });
     }
 
@@ -269,26 +444,16 @@ export default async function getModelGatewayMetadata(
         api_model_id: string;
         alias_slug: string;
     }[];
-    const now = new Date();
-
     const activeProviders = providers.filter(
-        (provider) =>
-            provider.is_active_gateway &&
-            isWithinEffectiveWindow(
-                provider.effective_from,
-                provider.effective_to,
-                now
-            )
+        (provider) => provider.availability_status === "active"
     );
 
+    const comingSoonProviders = providers.filter(
+		(provider) => provider.availability_status === "coming_soon"
+	);
+
     const inactiveProviders = providers.filter(
-        (provider) =>
-            !provider.is_active_gateway ||
-            !isWithinEffectiveWindow(
-                provider.effective_from,
-                provider.effective_to,
-                now
-            )
+        (provider) => provider.availability_status === "inactive"
     );
 
     const aliasRowsByApiModelId = new Map<string, string[]>();
@@ -376,6 +541,7 @@ export default async function getModelGatewayMetadata(
         acceptedModelIdentifiersByEndpoint,
         providers,
         activeProviders,
+        comingSoonProviders,
         inactiveProviders,
     };
 }

@@ -12,7 +12,7 @@
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "ai21/jamba-mini-1.7",
-  "family_id": "ai21/jamba-1-7",
+  "family_id": "ai21/jamba-1.7",
   "links": [
     {
       "platform": "api_reference",
