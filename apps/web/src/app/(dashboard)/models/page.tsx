@@ -173,7 +173,7 @@ function pickLowestMergedPricingValue(values: string[]): string | null {
 		.map((value) => {
 			const match = String(value ?? "")
 				.trim()
-				.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s+\/\s+(.+)$/);
+				.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
 			if (!match) return null;
 			const min = Number(match[1]?.replace(/,/g, ""));
 			const unit = match[3]?.trim();
@@ -193,7 +193,7 @@ function summarizeMergedPricingValues(values: string[]): string | null {
 		.map((value) => {
 			const match = String(value ?? "")
 				.trim()
-				.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s+\/\s+(.+)$/);
+				.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
 			if (!match) return null;
 			const min = Number(match[1]?.replace(/,/g, ""));
 			const max = Number((match[2] ?? match[1])?.replace(/,/g, ""));

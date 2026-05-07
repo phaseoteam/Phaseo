@@ -262,9 +262,12 @@ function formatDetailValueRange(prices: number[], unit: string): string {
 }
 
 function normalizeComparableUnit(value: string | null | undefined): string | null {
-	const normalized = String(value ?? "").trim();
+	const normalized = String(value ?? "").trim().toLowerCase();
 	if (!normalized) return null;
-	return normalizeDisplayUnit(normalized) ?? normalized.toLowerCase();
+	if (["minute", "minutes", "min", "mins", "m"].includes(normalized)) {
+		return normalized;
+	}
+	return normalizeDisplayUnit(normalized) ?? normalized;
 }
 
 function shouldPreferSupplementStandardPrice(

@@ -30,6 +30,8 @@ export const capabilityToEndpoints: Record<string, string[]> = {
 export const endpointToCapability: Record<string, string> = {};
 for (const [cap, endpoints] of Object.entries(capabilityToEndpoints)) {
     for (const ep of endpoints) {
-        endpointToCapability[ep] = cap;
+        if (!endpointToCapability[ep]) {
+            endpointToCapability[ep] = cap;
+        }
     }
 }
