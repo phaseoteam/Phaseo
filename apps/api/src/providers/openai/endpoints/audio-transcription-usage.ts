@@ -69,6 +69,26 @@ function roundDurationSeconds(value: number | undefined): number | undefined {
     return Math.round((value as number) * 1000) / 1000;
 }
 
+function estimateCompressedAudioDurationSeconds(file: File | Blob, mimeType: string): number | undefined {
+    const size = Number((file as any)?.size);
+    if (!Number.isFinite(size) || size <= 0) return undefined;
+
+    const normalized = String(mimeType ?? "").toLowerCase();
+    const bytesPerSecond = (() => {
+        if (normalized.includes("mpeg") || normalized.includes("mp3")) return 16_000;
+        if (normalized.includes("mp4") || normalized.includes("m4a") || normalized.includes("aac")) return 20_000;
+        if (normalized.includes("ogg") || normalized.includes("opus") || normalized.includes("webm")) return 12_000;
+        if (normalized.includes("flac")) return 24_000;
+        return undefined;
+    })();
+
+    if (!bytesPerSecond || !Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) {
+        return undefined;
+    }
+
+    return size / bytesPerSecond;
+}
+
 async function readAudioDurationSeconds(file: File | Blob): Promise<number | undefined> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const mimeType = String((file as any)?.type ?? "").toLowerCase();
@@ -85,6 +105,14 @@ async function readAudioDurationSeconds(file: File | Blob): Promise<number | und
     )) {
         return roundDurationSeconds(parseWavDurationSeconds(bytes));
     }
+    const estimated = roundDurationSeconds(estimateCompressedAudioDurationSeconds(file, mimeType));
+    if (estimated != null) {
+        return estimated;
+    }
+    console.warn("[openai-audio] could not infer audio duration for speech-to-text usage fallback", {
+        mimeType: mimeType || null,
+        size: Number((file as any)?.size ?? 0) || 0,
+    });
     return undefined;
 }
 
