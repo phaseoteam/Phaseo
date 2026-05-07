@@ -16,7 +16,7 @@ import (
 	gen "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go/src/gen"
 )
 
-const goSDKVersion = "2.0.3"
+const goSDKVersion = "2.0.4"
 
 type DevtoolsConfig struct {
 	Enabled        bool

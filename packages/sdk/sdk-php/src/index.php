@@ -90,7 +90,7 @@ class AIStats
         $this->warningsAsErrors = $warningsAsErrors;
         $this->logger = $logger;
         $this->lifecycleResolver = $lifecycleResolver;
-        $this->telemetryRecorder = new TelemetryRecorder($devtools, "2.0.3");
+        $this->telemetryRecorder = new TelemetryRecorder($devtools, "2.0.4");
         $this->asyncJobs = new AsyncJobsResource($this);
     }
 
