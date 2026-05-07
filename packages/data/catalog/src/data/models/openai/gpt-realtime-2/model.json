@@ -1,0 +1,44 @@
+{
+  "model_id": "openai/gpt-realtime-2",
+  "organisation_id": "openai",
+  "name": "GPT Realtime 2",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-realtime-1.5",
+  "announced_date": "2026-05-07T00:00:00",
+  "release_date": "2026-05-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio",
+  "output_types": "text,audio",
+  "api_model_id": "openai/gpt-realtime-2",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-realtime-2"
+    }
+  ],
+  "details": [
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-09-30T00:00:00"
+    },
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 32000
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "configurable"
+    },
+    {
+      "name": "release_note",
+      "value": "AI Stats inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
+    }
+  ],
+  "benchmarks": []
+}

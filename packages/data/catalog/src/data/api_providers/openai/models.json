@@ -4111,6 +4111,27 @@
     ]
   },
   {
+    "api_model_id": "openai/gpt-realtime-2",
+    "provider_api_model_id": "openai:openai/gpt-realtime-2",
+    "provider_model_slug": "gpt-realtime-2",
+    "internal_model_id": "openai/gpt-realtime-2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,audio",
+    "output_modalities": "text,audio",
+    "context_length": 128000,
+    "max_output_tokens": 32000,
+    "effective_from": "2026-05-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.realtime",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/gpt-realtime-mini-2025-10-06",
     "provider_api_model_id": "openai:openai/gpt-realtime-mini-2025-10-06",
     "provider_model_slug": "gpt-realtime-mini-2025-10-06",
@@ -4124,6 +4145,48 @@
     "effective_from": "2025-10-06T00:00:00",
     "effective_to": "2026-07-23T00:00:00",
     "capabilities": []
+  },
+  {
+    "api_model_id": "openai/gpt-realtime-translate",
+    "provider_api_model_id": "openai:openai/gpt-realtime-translate",
+    "provider_model_slug": "gpt-realtime-translate",
+    "internal_model_id": "openai/gpt-realtime-translate",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "audio",
+    "output_modalities": "text,audio",
+    "context_length": 16000,
+    "max_output_tokens": 2000,
+    "effective_from": "2026-05-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.translations",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "openai/gpt-realtime-whisper",
+    "provider_api_model_id": "openai:openai/gpt-realtime-whisper",
+    "provider_model_slug": "gpt-realtime-whisper",
+    "internal_model_id": "openai/gpt-realtime-whisper",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,audio",
+    "output_modalities": "text",
+    "context_length": 16000,
+    "max_output_tokens": 2000,
+    "effective_from": "2026-05-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-rosalind",

@@ -270,7 +270,7 @@ function formatPrice(
 		return options.allowZero ? "$0" : null;
 	}
 	if (value < 0.001) return `$${value.toFixed(4)}`;
-	if (value < 0.01) return `$${value.toFixed(3)}`;
+	if (value < 0.1) return `$${value.toFixed(3)}`;
 	if (value < 1) return `$${value.toFixed(2)}`;
 	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -355,6 +355,21 @@ function summarizePricingValues(values: string[]): string | null {
 	const maxText = formatPrice(max, { allowZero: true });
 	if (!minText || !maxText) return null;
 	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
+}
+
+function summarizeDuplicatePricingItems(
+	items: Array<{ value: string }>,
+): string | null {
+	const uniqueValues = Array.from(
+		new Set(
+			items
+				.map((item) => String(item.value ?? "").trim())
+				.filter(Boolean),
+		),
+	);
+	if (uniqueValues.length === 0) return null;
+	if (uniqueValues.length === 1) return uniqueValues[0] ?? null;
+	return summarizePricingValues(uniqueValues);
 }
 
 function getModalityIcon(value: string): LucideIcon {
@@ -614,6 +629,9 @@ function ModelCardImpl({
 			Boolean(String(row?.label ?? "").trim()) &&
 			Boolean(String(row?.value ?? "").trim()),
 	);
+	const explicitPricingHasVariants = explicitPricingDetailRows.some((row) =>
+		String(row.label ?? "").includes("("),
+	);
 	const standardPricingRows = [
 		{
 			id: "input",
@@ -658,7 +676,8 @@ function ModelCardImpl({
 	for (const row of fallbackPricingRows) pricingRowById.set(row.id, row);
 	for (const row of standardPricingRows) pricingRowById.set(row.id, row);
 	let pricingDetailRows =
-		explicitPricingDetailRows.length > 0
+		explicitPricingDetailRows.length > 0 &&
+		(explicitPricingHasVariants || standardPricingRows.length === 0)
 			? explicitPricingDetailRows.map((row, index) => ({
 					id: `explicit-${index}`,
 					label: row.label,
@@ -980,6 +999,22 @@ function ModelCardImpl({
 												const shouldGroupVariants =
 													group.items.length > 1 &&
 													group.items.every((item) => Boolean(item.variant));
+												const duplicateSummary =
+													!shouldGroupVariants && group.items.length > 1
+														? summarizeDuplicatePricingItems(group.items)
+														: null;
+												if (duplicateSummary) {
+													return (
+														<div key={group.id} className="space-y-0.5 text-xs">
+															<div className="font-semibold text-foreground">
+																{group.baseLabel}
+															</div>
+															<div className="text-muted-foreground">
+																{duplicateSummary}
+															</div>
+														</div>
+													);
+												}
 												if (!shouldGroupVariants) {
 													return group.items.map((item) => (
 														<div key={item.id} className="space-y-0.5 text-xs">

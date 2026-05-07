@@ -1,0 +1,48 @@
+{
+  "model_id": "openai/gpt-realtime-whisper",
+  "organisation_id": "openai",
+  "name": "GPT Realtime Whisper",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-05-07T00:00:00",
+  "release_date": "2026-05-07T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "text",
+  "api_model_id": "openai/gpt-realtime-whisper",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-realtime-whisper"
+    },
+    {
+      "platform": "guide",
+      "url": "https://developers.openai.com/api/docs/guides/realtime-transcription"
+    }
+  ],
+  "details": [
+    {
+      "name": "knowledge_cutoff",
+      "value": "2024-09-30T00:00:00"
+    },
+    {
+      "name": "input_context_length",
+      "value": 16000
+    },
+    {
+      "name": "output_context_length",
+      "value": 2000
+    },
+    {
+      "name": "billing_metric",
+      "value": "audio_duration"
+    },
+    {
+      "name": "release_note",
+      "value": "AI Stats inferred the date from first public docs availability on 2026-05-07 because the OpenAI model page does not expose an explicit launch date."
+    }
+  ],
+  "benchmarks": []
+}
