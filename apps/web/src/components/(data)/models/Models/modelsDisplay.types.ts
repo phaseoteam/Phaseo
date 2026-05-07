@@ -53,6 +53,7 @@ export type ModelsPageModel = Omit<
 	| "lowest_standard_output_price_unit"
 	| "lowest_from_price"
 	| "lowest_from_price_unit"
+	| "pricing_detail_rows"
 	| "popularity_tokens_week"
 	| "throughput_week"
 	| "latency_week"

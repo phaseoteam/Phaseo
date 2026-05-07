@@ -73,6 +73,34 @@ type MonitorModelRpcRow = {
 };
 
 const MONITOR_RPC_PAGE_SIZE = 1000;
+const PRICING_RULE_PAGE_SIZE = 1000;
+
+type PricingRuleSupplementRow = {
+	model_key: string | null;
+	pricing_plan: string | null;
+	meter: string | null;
+	unit: string | null;
+	unit_size: number | null;
+	price_per_unit: number | null;
+	effective_from: string | null;
+	effective_to: string | null;
+	match: unknown;
+};
+
+type PricingSupplement = {
+	standardInputPrice: number | null;
+	standardOutputPrice: number | null;
+	standardInputPriceLabel: string | null;
+	standardInputPriceUnit: string | null;
+	standardOutputPriceLabel: string | null;
+	standardOutputPriceUnit: string | null;
+	fromPrice: number | null;
+	fromPriceUnit: string | null;
+	pricingDetailRows: Array<{
+		label: string;
+		value: string;
+	}>;
+};
 
 async function fetchAllMonitorModelRows(
 	includeHidden: boolean,
@@ -103,7 +131,466 @@ async function fetchAllMonitorModelRows(
 	return rows;
 }
 
-export async function getMonitorModels(
+function isRuleActive(
+	effectiveFrom: string | null | undefined,
+	effectiveTo: string | null | undefined,
+	nowMs: number,
+): boolean {
+	const fromMs = effectiveFrom ? new Date(effectiveFrom).getTime() : null;
+	const toMs = effectiveTo ? new Date(effectiveTo).getTime() : null;
+	if (fromMs !== null && Number.isFinite(fromMs) && fromMs > nowMs) return false;
+	if (toMs !== null && Number.isFinite(toMs) && nowMs >= toMs) return false;
+	return true;
+}
+
+function normalizeDisplayUnit(unit: string | null | undefined): string | null {
+	const normalized = String(unit ?? "")
+		.trim()
+		.toLowerCase();
+	if (!normalized) return null;
+	if (["token", "tokens"].includes(normalized)) return "1M tokens";
+	if (["minute", "minutes", "min", "mins", "m"].includes(normalized)) return "second";
+	if (["hour", "hours", "hr", "hrs", "h"].includes(normalized)) return "second";
+	if (["second", "seconds", "sec", "secs", "s"].includes(normalized)) return "second";
+	if (["image", "images"].includes(normalized)) return "image";
+	if (["video", "videos"].includes(normalized)) return "video";
+	if (["character", "characters", "char", "chars"].includes(normalized)) {
+		return "character";
+	}
+	return normalized;
+}
+
+function getStandardSideAndLabel(
+	meter: string | null | undefined,
+): { side: "input" | "output" | null; label: string | null } {
+	const normalized = String(meter ?? "")
+		.trim()
+		.toLowerCase();
+	if (["input_text_tokens", "input_tokens"].includes(normalized)) {
+		return { side: "input", label: "Text Input" };
+	}
+	if (["output_text_tokens", "output_tokens"].includes(normalized)) {
+		return { side: "output", label: "Text Output" };
+	}
+	if (["input_audio_tokens", "input_audio"].includes(normalized)) {
+		return { side: "input", label: "Audio Input" };
+	}
+	if (["output_audio_tokens", "output_audio", "output_audio_seconds"].includes(normalized)) {
+		return { side: "output", label: "Audio Output" };
+	}
+	if (["input_image_tokens", "input_image"].includes(normalized)) {
+		return { side: "input", label: "Image Input" };
+	}
+	if (["output_image_tokens", "output_image"].includes(normalized)) {
+		return { side: "output", label: "Image Output" };
+	}
+	if (["input_video_tokens", "input_video"].includes(normalized)) {
+		return { side: "input", label: "Video Input" };
+	}
+	if (["output_video_tokens", "output_video", "output_video_seconds"].includes(normalized)) {
+		return { side: "output", label: "Video Output" };
+	}
+	return { side: null, label: null };
+}
+
+function computeDisplayPrice(rule: PricingRuleSupplementRow): number | null {
+	const unitSize = Number(rule.unit_size ?? 0);
+	const pricePerUnit = Number(rule.price_per_unit ?? Number.NaN);
+	if (!Number.isFinite(pricePerUnit) || !Number.isFinite(unitSize) || unitSize <= 0) {
+		return null;
+	}
+	const meter = String(rule.meter ?? "")
+		.trim()
+		.toLowerCase();
+	const unit = String(rule.unit ?? "")
+		.trim()
+		.toLowerCase();
+	if (meter.includes("token") || ["token", "tokens"].includes(unit)) {
+		return pricePerUnit * (1_000_000 / unitSize);
+	}
+	if (["minute", "minutes", "min", "mins", "m"].includes(unit)) {
+		return pricePerUnit / unitSize / 60;
+	}
+	if (["hour", "hours", "hr", "hrs", "h"].includes(unit)) {
+		return pricePerUnit / unitSize / 3600;
+	}
+	return pricePerUnit / unitSize;
+}
+
+function formatPriceAmount(value: number): string {
+	if (!Number.isFinite(value) || value < 0) return "$0";
+	if (value === 0) return "$0";
+	if (value < 0.001) return `$${value.toFixed(4)}`;
+	if (value < 0.01) return `$${value.toFixed(3)}`;
+	if (value < 1) return `$${value.toFixed(2)}`;
+	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function formatDetailValue(price: number, unit: string): string {
+	const amount = formatPriceAmount(price);
+	if (unit === "1M tokens") return `${amount} /M tokens`;
+	return `${amount} / ${unit}`;
+}
+
+function formatDetailValueRange(prices: number[], unit: string): string {
+	const sorted = [...prices]
+		.filter((value) => Number.isFinite(value))
+		.sort((a, b) => a - b);
+	if (sorted.length === 0) return formatDetailValue(0, unit);
+	const min = sorted[0]!;
+	const max = sorted[sorted.length - 1]!;
+	if (min === max) return formatDetailValue(min, unit);
+	const minText = formatPriceAmount(min);
+	const maxText = formatPriceAmount(max);
+	if (unit === "1M tokens") return `${minText}-${maxText} /M tokens`;
+	return `${minText}-${maxText} / ${unit}`;
+}
+
+function toTitleCase(value: string): string {
+	return value.replace(/\b([a-z])([a-z]*)/gi, (_, first: string, rest: string) => {
+		return `${first.toUpperCase()}${rest.toLowerCase()}`;
+	});
+}
+
+function formatMatchValue(value: unknown): string | null {
+	if (Array.isArray(value)) {
+		const parts = value
+			.map((entry) => formatMatchValue(entry))
+			.filter((entry): entry is string => Boolean(entry));
+		return parts.length > 0 ? parts.join("/") : null;
+	}
+	if (typeof value === "boolean") return value ? "with audio" : "no audio";
+	if (typeof value === "number") return Number.isFinite(value) ? `${value}s` : null;
+	if (typeof value === "string") {
+		const normalized = value.trim();
+		return normalized.length > 0 ? normalized : null;
+	}
+	return null;
+}
+
+function formatThresholdTokenCount(value: unknown): string | null {
+	const numeric = Number(value);
+	if (!Number.isFinite(numeric) || numeric <= 0) return null;
+	if (numeric >= 1_000_000) {
+		const scaled = numeric / 1_000_000;
+		return `${scaled % 1 === 0 ? scaled.toFixed(0) : scaled.toFixed(1)}M`;
+	}
+	if (numeric >= 1_000) {
+		const scaled = numeric / 1_000;
+		return `${scaled % 1 === 0 ? scaled.toFixed(0) : scaled.toFixed(1)}K`;
+	}
+	return `${numeric}`;
+}
+
+function getInputTokenTierLabel(match: unknown): string | null {
+	if (!Array.isArray(match)) return null;
+	const inputTokenRule = match.find(
+		(entry) =>
+			entry &&
+			typeof entry === "object" &&
+			"path" in entry &&
+			(entry as { path?: unknown }).path === "input_tokens" &&
+			"op" in entry &&
+			"value" in entry,
+	) as { op?: unknown; value?: unknown } | undefined;
+	if (!inputTokenRule) return null;
+	const threshold = formatThresholdTokenCount(inputTokenRule.value);
+	if (!threshold) return null;
+	const op = String(inputTokenRule.op ?? "").trim().toLowerCase();
+	if (op === "lte" || op === "lt") return `Up to ${threshold} context`;
+	if (op === "gte" || op === "gt") return `Over ${threshold} context`;
+	if (op === "eq") return `${threshold} context`;
+	return null;
+}
+
+function findMatchValue(match: unknown, path: string): string | null {
+	if (!Array.isArray(match)) return null;
+	const entry = match.find(
+		(candidate) =>
+			candidate &&
+			typeof candidate === "object" &&
+			"path" in candidate &&
+			(candidate as { path?: unknown }).path === path &&
+			"value" in candidate,
+	) as { value?: unknown } | undefined;
+	return formatMatchValue(entry?.value);
+}
+
+function getMatchMeta(match: unknown): {
+	quality: string | null;
+	resolution: string | null;
+	videoSeconds: string | null;
+	videoAudio: string | null;
+	inputTokenTier: string | null;
+} {
+	return {
+		quality: findMatchValue(match, "image_params.quality"),
+		resolution:
+			findMatchValue(match, "image_params.resolution") ??
+			findMatchValue(match, "video_params.resolution"),
+		videoSeconds: findMatchValue(match, "video_params.seconds"),
+		videoAudio: findMatchValue(match, "video_params.audio"),
+		inputTokenTier: getInputTokenTierLabel(match),
+	};
+}
+
+function getVariantLabel(matchMeta: {
+	quality: string | null;
+	resolution: string | null;
+	videoSeconds: string | null;
+	videoAudio: string | null;
+	inputTokenTier: string | null;
+}): string | null {
+	const hasVideoMeta = Boolean(matchMeta.videoSeconds || matchMeta.videoAudio);
+	if (hasVideoMeta) {
+		const videoParts = [
+			matchMeta.resolution,
+			matchMeta.videoSeconds,
+			matchMeta.videoAudio,
+		].filter((value): value is string => Boolean(value));
+		if (videoParts.length > 0) return videoParts.join(", ");
+	}
+
+	const imageParts = [matchMeta.quality, matchMeta.resolution].filter(
+		(value): value is string => Boolean(value),
+	);
+	if (imageParts.length > 0) return imageParts.map((part) => toTitleCase(part)).join(", ");
+
+	if (matchMeta.inputTokenTier) return matchMeta.inputTokenTier;
+
+	return null;
+}
+
+async function fetchPricingSupplements(
+	rpcRows: MonitorModelRpcRow[],
+): Promise<Map<string, PricingSupplement>> {
+	const supabase = createAdminClient();
+	const modelKeys = Array.from(
+		new Set(
+			rpcRows
+				.map((row) =>
+					row.provider_id && row.api_model_id && row.capability_id
+						? `${row.provider_id}:${row.api_model_id}:${row.capability_id}`
+						: "",
+				)
+				.filter(Boolean),
+		),
+	);
+	if (modelKeys.length === 0) return new Map();
+
+	const pricingRows: PricingRuleSupplementRow[] = [];
+	for (let index = 0; index < modelKeys.length; index += 200) {
+		const chunk = modelKeys.slice(index, index + 200);
+		for (let from = 0; ; from += PRICING_RULE_PAGE_SIZE) {
+			const to = from + PRICING_RULE_PAGE_SIZE - 1;
+			const { data, error } = await supabase
+				.from("data_api_pricing_rules")
+				.select(
+					"model_key, pricing_plan, meter, unit, unit_size, price_per_unit, effective_from, effective_to, match",
+				)
+				.in("model_key", chunk)
+				.range(from, to);
+			if (error) throw error;
+			const page = (data ?? []) as PricingRuleSupplementRow[];
+			pricingRows.push(...page);
+			if (page.length < PRICING_RULE_PAGE_SIZE) {
+				break;
+			}
+		}
+	}
+
+	const nowMs = Date.now();
+	const rowsByKey = new Map<string, PricingRuleSupplementRow[]>();
+	for (const row of pricingRows) {
+		const modelKey = String(row.model_key ?? "").trim();
+		if (!modelKey) continue;
+		if (!isRuleActive(row.effective_from, row.effective_to, nowMs)) continue;
+		if (String(row.pricing_plan ?? "").trim().toLowerCase() !== "standard") continue;
+		const existing = rowsByKey.get(modelKey) ?? [];
+		existing.push(row);
+		rowsByKey.set(modelKey, existing);
+	}
+
+	const result = new Map<string, PricingSupplement>();
+	for (const [modelKey, rows] of rowsByKey) {
+		const supplement: PricingSupplement = {
+			standardInputPrice: null,
+			standardOutputPrice: null,
+			standardInputPriceLabel: null,
+			standardInputPriceUnit: null,
+			standardOutputPriceLabel: null,
+			standardOutputPriceUnit: null,
+			fromPrice: null,
+			fromPriceUnit: null,
+			pricingDetailRows: [],
+		};
+		const displayRows: Array<{ price: number; unit: string }> = [];
+		const displayUnits = new Set<string>();
+		const rawDetailRows: Array<{
+			side: "input" | "output";
+			baseLabel: string;
+			price: number;
+			unit: string;
+			quality: string | null;
+			resolution: string | null;
+			videoSeconds: string | null;
+			videoAudio: string | null;
+			inputTokenTier: string | null;
+			variantLabel: string | null;
+		}> = [];
+
+		for (const row of rows) {
+			const displayPrice = computeDisplayPrice(row);
+			const displayUnit = normalizeDisplayUnit(row.unit);
+			if (displayPrice !== null && displayUnit) {
+				displayRows.push({ price: displayPrice, unit: displayUnit });
+				displayUnits.add(displayUnit);
+			}
+			const { side, label } = getStandardSideAndLabel(row.meter);
+			if (!side || !label || displayPrice === null || !displayUnit) continue;
+			const matchMeta = getMatchMeta(row.match);
+			rawDetailRows.push({
+				side,
+				baseLabel: label,
+				price: displayPrice,
+				unit: displayUnit,
+				quality: matchMeta.quality,
+				resolution: matchMeta.resolution,
+				videoSeconds: matchMeta.videoSeconds,
+				videoAudio: matchMeta.videoAudio,
+				inputTokenTier: matchMeta.inputTokenTier,
+				variantLabel: getVariantLabel(matchMeta),
+			});
+			if (side === "input") {
+				if (
+					supplement.standardInputPrice === null ||
+					displayPrice < supplement.standardInputPrice
+				) {
+					supplement.standardInputPrice = displayPrice;
+					supplement.standardInputPriceLabel = label;
+					supplement.standardInputPriceUnit = displayUnit;
+				}
+			} else if (
+				supplement.standardOutputPrice === null ||
+				displayPrice < supplement.standardOutputPrice
+			) {
+				supplement.standardOutputPrice = displayPrice;
+				supplement.standardOutputPriceLabel = label;
+				supplement.standardOutputPriceUnit = displayUnit;
+			}
+		}
+
+		if (displayUnits.size === 1 && displayRows.length > 0) {
+			displayRows.sort((a, b) => a.price - b.price);
+			supplement.fromPrice = displayRows[0]?.price ?? null;
+			supplement.fromPriceUnit = displayRows[0]?.unit ?? null;
+		}
+		const hasMatchedOutputVariants = rawDetailRows.some(
+			(row) => row.side === "output" && Boolean(row.variantLabel),
+		);
+		const outputBaseLabelsWithVariants = new Set(
+			rawDetailRows
+				.filter((row) => row.side === "output" && Boolean(row.variantLabel))
+				.map((row) => row.baseLabel),
+		);
+		const dedupRows = Array.from(
+			new Map(
+				rawDetailRows.map((row) => {
+					const label = row.variantLabel
+						? `${row.baseLabel} (${row.variantLabel})`
+						: row.baseLabel;
+					const value = formatDetailValue(row.price, row.unit);
+					return [`${label}::${value}`, { label, value }] as const;
+				}),
+			).values(),
+		);
+		if (dedupRows.length > 6) {
+			const groupedRows: Array<{ label: string; value: string }> = [];
+			const inputGroups = new Map<string, { unit: string; prices: number[] }>();
+			const outputQualityGroups = new Map<string, { unit: string; prices: number[] }>();
+			const otherOutputGroups = new Map<string, { unit: string; prices: number[] }>();
+
+			for (const row of rawDetailRows) {
+				if (
+					hasMatchedOutputVariants &&
+					row.side === "output" &&
+					!row.variantLabel &&
+					outputBaseLabelsWithVariants.has(row.baseLabel)
+				) {
+					continue;
+				}
+				if (row.side === "input") {
+					const label = row.variantLabel
+						? `${row.baseLabel} (${row.variantLabel})`
+						: row.baseLabel;
+					const group = inputGroups.get(label) ?? {
+						unit: row.unit,
+						prices: [],
+					};
+					group.prices.push(row.price);
+					inputGroups.set(label, group);
+					continue;
+				}
+				if (row.quality) {
+					const label = `${row.baseLabel} (${toTitleCase(row.quality)})`;
+					const group = outputQualityGroups.get(label) ?? {
+						unit: row.unit,
+						prices: [],
+					};
+					group.prices.push(row.price);
+					outputQualityGroups.set(label, group);
+					continue;
+				}
+				const label = row.variantLabel
+					? `${row.baseLabel} (${row.variantLabel})`
+					: row.baseLabel;
+				const group = otherOutputGroups.get(label) ?? {
+					unit: row.unit,
+					prices: [],
+				};
+				group.prices.push(row.price);
+				otherOutputGroups.set(label, group);
+			}
+
+			for (const [label, group] of inputGroups) {
+				groupedRows.push({
+					label,
+					value: formatDetailValueRange(group.prices, group.unit),
+				});
+			}
+			const qualityOrder = new Map([
+				["low", 0],
+				["medium", 1],
+				["high", 2],
+			]);
+			for (const [label, group] of Array.from(outputQualityGroups.entries()).sort(
+				(a, b) =>
+					(qualityOrder.get(a[0].match(/\(([^)]+)\)/)?.[1]?.toLowerCase() ?? "") ?? 99) -
+					(qualityOrder.get(b[0].match(/\(([^)]+)\)/)?.[1]?.toLowerCase() ?? "") ?? 99),
+			)) {
+				groupedRows.push({
+					label,
+					value: formatDetailValueRange(group.prices, group.unit),
+				});
+			}
+			for (const [label, group] of otherOutputGroups) {
+				groupedRows.push({
+					label,
+					value: formatDetailValueRange(group.prices, group.unit),
+				});
+			}
+			supplement.pricingDetailRows = groupedRows.slice(0, 6);
+		} else {
+			supplement.pricingDetailRows = dedupRows;
+		}
+
+		result.set(modelKey, supplement);
+	}
+
+	return result;
+}
+
+async function getMonitorModelsCached(
 	filters: MonitorModelFilters = {},
 	includeHidden: boolean
 ): Promise<{
@@ -127,6 +614,7 @@ export async function getMonitorModels(
 	cacheTag("data:api_providers");
 
 	const rpcRows = await fetchAllMonitorModelRows(includeHidden);
+	const pricingSupplements = await fetchPricingSupplements(rpcRows);
 
 	const featureOrderIndexForRow = new Map(
 		featureOrder.map((feature, index) => [feature, index]),
@@ -205,6 +693,11 @@ export async function getMonitorModels(
 			row.quantization_scheme.trim()
 				? row.quantization_scheme
 				: undefined;
+		const modelKey =
+			row.provider_id && row.api_model_id && row.capability_id
+				? `${row.provider_id}:${row.api_model_id}:${row.capability_id}`
+				: "";
+		const pricingSupplement = pricingSupplements.get(modelKey);
 
 		const monitorModel: MonitorModelData = {
 			id: `${modelId}-${gatewayModel.api_provider_id}-${gatewayModel.key}`,
@@ -218,20 +711,43 @@ export async function getMonitorModels(
 				id: gatewayModel.api_provider_id,
 				inputPrice: Number(row.input_price ?? 0) || 0,
 				outputPrice: Number(row.output_price ?? 0) || 0,
-				standardInputPrice: Number.isFinite(Number(row.standard_input_price))
+				standardInputPrice:
+					row.standard_input_price !== null &&
+					row.standard_input_price !== undefined &&
+					Number.isFinite(Number(row.standard_input_price))
 					? Number(row.standard_input_price)
-					: null,
-				standardOutputPrice: Number.isFinite(Number(row.standard_output_price))
+					: pricingSupplement?.standardInputPrice ?? null,
+				standardOutputPrice:
+					row.standard_output_price !== null &&
+					row.standard_output_price !== undefined &&
+					Number.isFinite(Number(row.standard_output_price))
 					? Number(row.standard_output_price)
-					: null,
-				standardInputPriceLabel: row.standard_input_price_label ?? null,
-				standardInputPriceUnit: row.standard_input_price_unit ?? null,
-				standardOutputPriceLabel: row.standard_output_price_label ?? null,
-				standardOutputPriceUnit: row.standard_output_price_unit ?? null,
-				fromPrice: Number.isFinite(Number(row.from_price))
+					: pricingSupplement?.standardOutputPrice ?? null,
+				standardInputPriceLabel:
+					row.standard_input_price_label ??
+					pricingSupplement?.standardInputPriceLabel ??
+					null,
+				standardInputPriceUnit:
+					row.standard_input_price_unit ??
+					pricingSupplement?.standardInputPriceUnit ??
+					null,
+				standardOutputPriceLabel:
+					row.standard_output_price_label ??
+					pricingSupplement?.standardOutputPriceLabel ??
+					null,
+				standardOutputPriceUnit:
+					row.standard_output_price_unit ??
+					pricingSupplement?.standardOutputPriceUnit ??
+					null,
+				fromPrice:
+					row.from_price !== null &&
+					row.from_price !== undefined &&
+					Number.isFinite(Number(row.from_price))
 					? Number(row.from_price)
-					: null,
-				fromPriceUnit: row.from_price_unit ?? null,
+					: pricingSupplement?.fromPrice ?? null,
+				fromPriceUnit:
+					row.from_price_unit ?? pricingSupplement?.fromPriceUnit ?? null,
+				pricingDetailRows: pricingSupplement?.pricingDetailRows ?? [],
 				features: sortedFeatures,
 			},
 			endpoint: normalizeEndpoint(String(row.capability_id ?? "")),
@@ -483,5 +999,19 @@ export async function getMonitorModels(
 		allFeatures,
 		allStatuses,
 	};
+}
+
+export async function getMonitorModels(
+	filters: MonitorModelFilters = {},
+	includeHidden: boolean,
+): Promise<{
+	models: MonitorModelData[];
+	allTiers: string[];
+	allEndpoints: string[];
+	allModalities: string[];
+	allFeatures: string[];
+	allStatuses: string[];
+}> {
+	return getMonitorModelsCached(filters, includeHidden);
 }
 

@@ -20,6 +20,10 @@ export interface MonitorModelData {
         standardOutputPriceUnit?: string | null;
         fromPrice?: number | null;
         fromPriceUnit?: string | null;
+        pricingDetailRows?: Array<{
+            label: string;
+            value: string;
+        }>;
         features: string[];
     };
     endpoint: string; // The specific endpoint/key
