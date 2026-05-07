@@ -427,10 +427,13 @@ export default function ModelsTableDisplay({
 	const [hasInteractedWithStatuses, setHasInteractedWithStatuses] = useState(
 		selectedStatuses.length > 0,
 	);
-	const effectiveSelectedStatuses = !hasInteractedWithStatuses &&
-		selectedStatuses.length === 0
-		? ["active"]
-		: selectedStatuses;
+	const effectiveSelectedStatuses = useMemo(
+		() =>
+			!hasInteractedWithStatuses && selectedStatuses.length === 0
+				? ["active"]
+				: selectedStatuses,
+		[hasInteractedWithStatuses, selectedStatuses],
+	);
 	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -676,7 +679,7 @@ export default function ModelsTableDisplay({
 	]);
 
 	const activeFilterCount =
-		effectiveSelectedStatuses.length +
+		(hasInteractedWithStatuses ? selectedStatuses.length : 0) +
 		selectedEndpoints.length +
 		selectedInputModalities.length +
 		selectedOutputModalities.length +

@@ -577,10 +577,13 @@ export default function ModelsDisplay({
 	const [hasInteractedWithStatuses, setHasInteractedWithStatuses] = useState(
 		selectedStatuses.length > 0,
 	);
-	const effectiveSelectedStatuses: GatewayStatusFilter[] =
-		!hasInteractedWithStatuses && selectedStatuses.length === 0
-			? ["active"]
-			: (selectedStatuses as GatewayStatusFilter[]);
+	const effectiveSelectedStatuses = useMemo<GatewayStatusFilter[]>(
+		() =>
+			!hasInteractedWithStatuses && selectedStatuses.length === 0
+				? ["active"]
+				: (selectedStatuses as GatewayStatusFilter[]),
+		[hasInteractedWithStatuses, selectedStatuses],
+	);
 	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -749,7 +752,7 @@ export default function ModelsDisplay({
 	} = facets;
 
 	const activeFilterCount =
-		effectiveSelectedStatuses.length +
+		(hasInteractedWithStatuses ? selectedStatuses.length : 0) +
 		selectedEndpoints.length +
 		selectedInputModalities.length +
 		selectedOutputModalities.length +
