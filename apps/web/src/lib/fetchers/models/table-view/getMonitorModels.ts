@@ -79,6 +79,7 @@ type PricingRuleSupplementRow = {
 	model_key: string | null;
 	pricing_plan: string | null;
 	meter: string | null;
+	note: string | null;
 	unit: string | null;
 	unit_size: number | null;
 	price_per_unit: number | null;
@@ -160,6 +161,18 @@ function normalizeDisplayUnit(unit: string | null | undefined): string | null {
 	return normalized;
 }
 
+function parseMinutePricingNote(
+	note: string | null | undefined,
+): { price: number; unit: "minute" } | null {
+	const normalized = String(note ?? "").trim();
+	if (!normalized) return null;
+	const match = normalized.match(/\$([\d.]+)\s*\/\s*minute/i);
+	if (!match) return null;
+	const price = Number(match[1]);
+	if (!Number.isFinite(price) || price < 0) return null;
+	return { price, unit: "minute" };
+}
+
 function getStandardSideAndLabel(
 	meter: string | null | undefined,
 ): { side: "input" | "output" | null; label: string | null } {
@@ -194,6 +207,8 @@ function getStandardSideAndLabel(
 }
 
 function computeDisplayPrice(rule: PricingRuleSupplementRow): number | null {
+	const minutePricing = parseMinutePricingNote(rule.note);
+	if (minutePricing) return minutePricing.price;
 	const unitSize = Number(rule.unit_size ?? 0);
 	const pricePerUnit = Number(rule.price_per_unit ?? Number.NaN);
 	if (!Number.isFinite(pricePerUnit) || !Number.isFinite(unitSize) || unitSize <= 0) {
@@ -221,7 +236,7 @@ function formatPriceAmount(value: number): string {
 	if (!Number.isFinite(value) || value < 0) return "$0";
 	if (value === 0) return "$0";
 	if (value < 0.001) return `$${value.toFixed(4)}`;
-	if (value < 0.01) return `$${value.toFixed(3)}`;
+	if (value < 0.1) return `$${value.toFixed(3)}`;
 	if (value < 1) return `$${value.toFixed(2)}`;
 	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -244,6 +259,26 @@ function formatDetailValueRange(prices: number[], unit: string): string {
 	const maxText = formatPriceAmount(max);
 	if (unit === "1M tokens") return `${minText}-${maxText} /M tokens`;
 	return `${minText}-${maxText} / ${unit}`;
+}
+
+function normalizeComparableUnit(value: string | null | undefined): string | null {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (!normalized) return null;
+	if (["minute", "minutes", "min", "mins", "m"].includes(normalized)) {
+		return normalized;
+	}
+	return normalizeDisplayUnit(normalized) ?? normalized;
+}
+
+function shouldPreferSupplementStandardPrice(
+	rowUnit: string | null | undefined,
+	supplementUnit: string | null | undefined,
+): boolean {
+	const normalizedRowUnit = normalizeComparableUnit(rowUnit);
+	const normalizedSupplementUnit = normalizeComparableUnit(supplementUnit);
+	if (!normalizedSupplementUnit) return false;
+	if (!normalizedRowUnit) return true;
+	return normalizedRowUnit !== normalizedSupplementUnit;
 }
 
 function toTitleCase(value: string): string {
@@ -386,7 +421,7 @@ async function fetchPricingSupplements(
 			const { data, error } = await supabase
 				.from("data_api_pricing_rules")
 				.select(
-					"model_key, pricing_plan, meter, unit, unit_size, price_per_unit, effective_from, effective_to, match",
+					"model_key, pricing_plan, meter, note, unit, unit_size, price_per_unit, effective_from, effective_to, match",
 				)
 				.in("model_key", chunk)
 				.range(from, to);
@@ -441,7 +476,10 @@ async function fetchPricingSupplements(
 
 		for (const row of rows) {
 			const displayPrice = computeDisplayPrice(row);
-			const displayUnit = normalizeDisplayUnit(row.unit);
+			const minutePricing = parseMinutePricingNote(row.note);
+			const displayUnit = minutePricing
+				? minutePricing.unit
+				: normalizeDisplayUnit(row.unit);
 			if (displayPrice !== null && displayUnit) {
 				displayRows.push({ price: displayPrice, unit: displayUnit });
 				displayUnits.add(displayUnit);
@@ -699,6 +737,19 @@ async function getMonitorModelsCached(
 				: "";
 		const pricingSupplement = pricingSupplements.get(modelKey);
 
+		const useSupplementInputStandard = shouldPreferSupplementStandardPrice(
+			row.standard_input_price_unit,
+			pricingSupplement?.standardInputPriceUnit,
+		);
+		const useSupplementOutputStandard = shouldPreferSupplementStandardPrice(
+			row.standard_output_price_unit,
+			pricingSupplement?.standardOutputPriceUnit,
+		);
+		const useSupplementFromPrice = shouldPreferSupplementStandardPrice(
+			row.from_price_unit,
+			pricingSupplement?.fromPriceUnit,
+		);
+
 		const monitorModel: MonitorModelData = {
 			id: `${modelId}-${gatewayModel.api_provider_id}-${gatewayModel.key}`,
 			model: String(row.model_name ?? modelId).trim() || modelId,
@@ -712,41 +763,46 @@ async function getMonitorModelsCached(
 				inputPrice: Number(row.input_price ?? 0) || 0,
 				outputPrice: Number(row.output_price ?? 0) || 0,
 				standardInputPrice:
+					!useSupplementInputStandard &&
 					row.standard_input_price !== null &&
 					row.standard_input_price !== undefined &&
 					Number.isFinite(Number(row.standard_input_price))
 					? Number(row.standard_input_price)
 					: pricingSupplement?.standardInputPrice ?? null,
 				standardOutputPrice:
+					!useSupplementOutputStandard &&
 					row.standard_output_price !== null &&
 					row.standard_output_price !== undefined &&
 					Number.isFinite(Number(row.standard_output_price))
 					? Number(row.standard_output_price)
 					: pricingSupplement?.standardOutputPrice ?? null,
 				standardInputPriceLabel:
-					row.standard_input_price_label ??
+					(!useSupplementInputStandard ? row.standard_input_price_label : null) ??
 					pricingSupplement?.standardInputPriceLabel ??
 					null,
 				standardInputPriceUnit:
-					row.standard_input_price_unit ??
+					(!useSupplementInputStandard ? row.standard_input_price_unit : null) ??
 					pricingSupplement?.standardInputPriceUnit ??
 					null,
 				standardOutputPriceLabel:
-					row.standard_output_price_label ??
+					(!useSupplementOutputStandard ? row.standard_output_price_label : null) ??
 					pricingSupplement?.standardOutputPriceLabel ??
 					null,
 				standardOutputPriceUnit:
-					row.standard_output_price_unit ??
+					(!useSupplementOutputStandard ? row.standard_output_price_unit : null) ??
 					pricingSupplement?.standardOutputPriceUnit ??
 					null,
 				fromPrice:
+					!useSupplementFromPrice &&
 					row.from_price !== null &&
 					row.from_price !== undefined &&
 					Number.isFinite(Number(row.from_price))
 					? Number(row.from_price)
 					: pricingSupplement?.fromPrice ?? null,
 				fromPriceUnit:
-					row.from_price_unit ?? pricingSupplement?.fromPriceUnit ?? null,
+					(!useSupplementFromPrice ? row.from_price_unit : null) ??
+					pricingSupplement?.fromPriceUnit ??
+					null,
 				pricingDetailRows: pricingSupplement?.pricingDetailRows ?? [],
 				features: sortedFeatures,
 			},

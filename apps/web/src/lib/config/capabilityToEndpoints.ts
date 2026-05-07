@@ -8,9 +8,13 @@ export const capabilityToEndpoints: Record<string, string[]> = {
     "images.edits": ["/images/edits"],
     "image.vary": ["/images/variations"],
     "audio.transcribe": ["/audio/transcriptions"],
+    "audio.transcription": ["/audio/transcriptions"],
     "audio.translate": ["/audio/translations"],
+    "audio.translation": ["/audio/translations"],
+    "audio.translations": ["/audio/translations"],
     "audio.speech": ["/audio/speech"],
     "audio.realtime": ["/audio/realtime"],
+    "realtime": ["/audio/realtime"],
     "moderation": ["/moderations"],
     "moderations.create": ["/moderations"],
     "text.moderate": ["/moderations"],
@@ -26,6 +30,8 @@ export const capabilityToEndpoints: Record<string, string[]> = {
 export const endpointToCapability: Record<string, string> = {};
 for (const [cap, endpoints] of Object.entries(capabilityToEndpoints)) {
     for (const ep of endpoints) {
-        endpointToCapability[ep] = cap;
+        if (!endpointToCapability[ep]) {
+            endpointToCapability[ep] = cap;
+        }
     }
 }

@@ -270,7 +270,7 @@ function formatPrice(
 		return options.allowZero ? "$0" : null;
 	}
 	if (value < 0.001) return `$${value.toFixed(4)}`;
-	if (value < 0.01) return `$${value.toFixed(3)}`;
+	if (value < 0.1) return `$${value.toFixed(3)}`;
 	if (value < 1) return `$${value.toFixed(2)}`;
 	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -337,7 +337,7 @@ function inferPriceUnitFromModality(modalityKey: string): string | null {
 function summarizePricingValues(values: string[]): string | null {
 	const parsed = values
 		.map((value) => {
-			const match = value.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s+\/\s+(.+)$/);
+			const match = value.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
 			if (!match) return null;
 			const min = Number(match[1]?.replace(/,/g, ""));
 			const max = Number((match[2] ?? match[1])?.replace(/,/g, ""));
@@ -355,6 +355,21 @@ function summarizePricingValues(values: string[]): string | null {
 	const maxText = formatPrice(max, { allowZero: true });
 	if (!minText || !maxText) return null;
 	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
+}
+
+function summarizeDuplicatePricingItems(
+	items: Array<{ value: string }>,
+): string | null {
+	const uniqueValues = Array.from(
+		new Set(
+			items
+				.map((item) => String(item.value ?? "").trim())
+				.filter(Boolean),
+		),
+	);
+	if (uniqueValues.length === 0) return null;
+	if (uniqueValues.length === 1) return uniqueValues[0] ?? null;
+	return summarizePricingValues(uniqueValues);
 }
 
 function getModalityIcon(value: string): LucideIcon {
@@ -614,6 +629,9 @@ function ModelCardImpl({
 			Boolean(String(row?.label ?? "").trim()) &&
 			Boolean(String(row?.value ?? "").trim()),
 	);
+	const explicitPricingHasVariants = explicitPricingDetailRows.some((row) =>
+		String(row.label ?? "").includes("("),
+	);
 	const standardPricingRows = [
 		{
 			id: "input",
@@ -657,18 +675,53 @@ function ModelCardImpl({
 	>();
 	for (const row of fallbackPricingRows) pricingRowById.set(row.id, row);
 	for (const row of standardPricingRows) pricingRowById.set(row.id, row);
+	const basePricingDetailRows = ["input", "output"]
+		.map((id) => pricingRowById.get(id))
+		.filter((row): row is { id: string; label: string; value: string } =>
+			Boolean(row?.value),
+		);
 	let pricingDetailRows =
-		explicitPricingDetailRows.length > 0
+		explicitPricingDetailRows.length > 0 &&
+		(explicitPricingHasVariants || standardPricingRows.length === 0)
 			? explicitPricingDetailRows.map((row, index) => ({
 					id: `explicit-${index}`,
 					label: row.label,
 					value: row.value,
 				}))
-			: ["input", "output"]
-					.map((id) => pricingRowById.get(id))
-					.filter((row): row is { id: string; label: string; value: string } =>
-						Boolean(row?.value),
-					);
+			: basePricingDetailRows;
+	if (
+		explicitPricingDetailRows.length > 0 &&
+		!explicitPricingHasVariants &&
+		basePricingDetailRows.length > 0
+	) {
+		const existingKeys = new Set(
+			basePricingDetailRows.map(
+				(row) =>
+					`${String(row.label ?? "").trim().toLowerCase()}::${String(row.value ?? "")
+						.trim()
+						.toLowerCase()}`,
+			),
+		);
+		const additionalExplicitRows = explicitPricingDetailRows
+			.map((row, index) => ({
+				id: `explicit-${index}`,
+				label: row.label,
+				value: row.value,
+			}))
+			.filter((row) => {
+				const key = `${String(row.label ?? "").trim().toLowerCase()}::${String(
+					row.value ?? "",
+				)
+					.trim()
+					.toLowerCase()}`;
+				if (existingKeys.has(key)) return false;
+				existingKeys.add(key);
+				return true;
+			});
+		if (additionalExplicitRows.length > 0) {
+			pricingDetailRows = [...basePricingDetailRows, ...additionalExplicitRows];
+		}
+	}
 	if (pricingDetailRows.length === 0 && priceSummary) {
 		pricingDetailRows = [
 			{
@@ -980,6 +1033,22 @@ function ModelCardImpl({
 												const shouldGroupVariants =
 													group.items.length > 1 &&
 													group.items.every((item) => Boolean(item.variant));
+												const duplicateSummary =
+													!shouldGroupVariants && group.items.length > 1
+														? summarizeDuplicatePricingItems(group.items)
+														: null;
+												if (duplicateSummary) {
+													return (
+														<div key={group.id} className="space-y-0.5 text-xs">
+															<div className="font-semibold text-foreground">
+																{group.baseLabel}
+															</div>
+															<div className="text-muted-foreground">
+																{duplicateSummary}
+															</div>
+														</div>
+													);
+												}
 												if (!shouldGroupVariants) {
 													return group.items.map((item) => (
 														<div key={item.id} className="space-y-0.5 text-xs">

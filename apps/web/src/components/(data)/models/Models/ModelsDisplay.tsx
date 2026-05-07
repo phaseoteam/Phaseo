@@ -1570,7 +1570,7 @@ export default function ModelsDisplay({
 					</div>
 
 					<div className="hidden sm:block">
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(260px,460px)_auto] sm:items-center sm:gap-3">
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(260px,460px)_auto] lg:grid-cols-[minmax(0,1fr)_minmax(260px,460px)_auto] sm:items-center sm:gap-3">
 							<div className="min-w-0 sm:flex sm:h-8 sm:items-center">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
@@ -1593,11 +1593,20 @@ export default function ModelsDisplay({
 							</div>
 
 							<div className="flex items-center justify-end gap-2 sm:justify-self-end">
+								<div className="hidden lg:flex items-center gap-2">
+									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+										<ArrowUpDown className="h-3.5 w-3.5" />
+										Sort
+									</span>
+									{sortSelect(
+										"h-8 w-[170px] rounded-md bg-background text-sm xl:w-[200px]",
+									)}
+								</div>
 								{showPrimaryHeader ? viewSwitcher : null}
 							</div>
 						</div>
 
-						<div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
+						<div className="mt-1 flex flex-wrap items-center justify-between gap-2">
 							<div className="flex items-center gap-2">
 								<div className="text-sm text-muted-foreground">
 									{shownCountWithSearchLabel}
@@ -1617,7 +1626,7 @@ export default function ModelsDisplay({
 									) : null}
 								</Button>
 							</div>
-							<div className="flex items-center gap-2">
+							<div className="flex items-center gap-2 lg:hidden">
 								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
 									<ArrowUpDown className="h-3.5 w-3.5" />
 									Sort

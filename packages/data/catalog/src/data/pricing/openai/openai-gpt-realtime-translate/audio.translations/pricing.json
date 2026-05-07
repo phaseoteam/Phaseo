@@ -1,0 +1,21 @@
+{
+  "key": "openai:openai/gpt-realtime-translate:audio.translations",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-realtime-translate",
+  "capability_id": "audio.translations",
+  "rules": [
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 14.1666666667,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Aligned to OpenAI GPT Realtime Translate pricing at $0.034/minute using 40 audio tokens/sec.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-07T00:00:00"
+    }
+  ]
+}

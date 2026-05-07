@@ -14,6 +14,7 @@ const ENDPOINT_PATHS: Record<string, string> = {
     "video.generation": "/video/generations",
     "audio.speech": "/audio/speech",
     "audio.realtime": "/audio/realtime",
+    realtime: "/audio/realtime",
     "audio.transcription": "/audio/transcriptions",
     "audio.transcriptions": "/audio/transcriptions",
     "audio.translation": "/audio/translations",

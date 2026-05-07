@@ -1,0 +1,21 @@
+{
+  "key": "openai:openai/gpt-realtime-whisper:audio.transcription",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-realtime-whisper",
+  "capability_id": "audio.transcription",
+  "rules": [
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.0833333333,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Aligned to OpenAI GPT Realtime Whisper pricing at $0.017/minute using 40 audio tokens/sec.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-07T00:00:00"
+    }
+  ]
+}

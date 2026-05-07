@@ -159,6 +159,103 @@ function normalizeProviderGatewayStatus(value: unknown): string {
 	return normalized;
 }
 
+function formatMergedPricingAmount(value: number): string {
+	if (!Number.isFinite(value) || value < 0) return "$0";
+	if (value === 0) return "$0";
+	if (value < 0.001) return `$${value.toFixed(4)}`;
+	if (value < 0.1) return `$${value.toFixed(3)}`;
+	if (value < 1) return `$${value.toFixed(2)}`;
+	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function pickLowestMergedPricingValue(values: string[]): string | null {
+	const parsed = values
+		.map((value) => {
+			const match = String(value ?? "")
+				.trim()
+				.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
+			if (!match) return null;
+			const min = Number(match[1]?.replace(/,/g, ""));
+			const unit = match[3]?.trim();
+			if (!Number.isFinite(min) || !unit) return null;
+			return { min, unit };
+		})
+		.filter((entry): entry is { min: number; unit: string } => Boolean(entry));
+	if (parsed.length === 0) return null;
+	const unit = parsed[0]?.unit ?? null;
+	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
+	const min = Math.min(...parsed.map((entry) => entry.min));
+	return `${formatMergedPricingAmount(min)} / ${unit}`;
+}
+
+function summarizeMergedPricingValues(values: string[]): string | null {
+	const parsed = values
+		.map((value) => {
+			const match = String(value ?? "")
+				.trim()
+				.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
+			if (!match) return null;
+			const min = Number(match[1]?.replace(/,/g, ""));
+			const max = Number((match[2] ?? match[1])?.replace(/,/g, ""));
+			const unit = match[3]?.trim();
+			if (!Number.isFinite(min) || !Number.isFinite(max) || !unit) return null;
+			return { min, max, unit };
+		})
+		.filter((entry): entry is { min: number; max: number; unit: string } => Boolean(entry));
+	if (parsed.length === 0) return null;
+	const unit = parsed[0]?.unit ?? null;
+	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
+	const min = Math.min(...parsed.map((entry) => entry.min));
+	const max = Math.max(...parsed.map((entry) => entry.max));
+	const minText = formatMergedPricingAmount(min);
+	const maxText = formatMergedPricingAmount(max);
+	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
+}
+
+function mergePricingDetailRows(
+	rows: Array<{ label: string; value: string }>,
+): Array<{ label: string; value: string }> {
+	const grouped = new Map<
+		string,
+		{ baseLabel: string; variant: string | null; values: string[] }
+	>();
+
+	for (const row of rows) {
+		const label = String(row.label ?? "").trim();
+		const value = String(row.value ?? "").trim();
+		if (!label || !value) continue;
+		const match = label.match(/^(.*?)(?: \((.+)\))?$/);
+		const baseLabel = match?.[1]?.trim() || label;
+		const variant = match?.[2]?.trim() || null;
+		const key = `${baseLabel}::${variant ?? ""}`;
+		const existing = grouped.get(key);
+		if (existing) {
+			existing.values.push(value);
+			continue;
+		}
+		grouped.set(key, { baseLabel, variant, values: [value] });
+	}
+
+	return Array.from(grouped.values())
+		.map((group) => {
+			const uniqueValues = Array.from(new Set(group.values));
+			const summarizedValue = group.variant
+				? uniqueValues.length === 1
+					? uniqueValues[0] ?? null
+					: summarizeMergedPricingValues(uniqueValues)
+				: uniqueValues.length === 1
+					? uniqueValues[0] ?? null
+					: pickLowestMergedPricingValue(uniqueValues);
+			const value = summarizedValue ?? uniqueValues[0] ?? null;
+			if (!value) return null;
+			return {
+				label: group.variant ? `${group.baseLabel} (${group.variant})` : group.baseLabel,
+				value,
+			};
+		})
+		.filter((row): row is { label: string; value: string } => Boolean(row));
+}
+
 function statusPriority(status: string): number {
 	return providerStatusPriority.get(status) ?? providerStatusPriority.size + 1;
 }
@@ -470,22 +567,27 @@ function aggregateGatewaySignals(
 			const value = String(parameter ?? "").trim();
 			if (value) existing.supportedParameters.add(value);
 		}
+		const shouldIncludeProviderPricing = isActiveProviderStatus(rowGatewayStatus);
 		const inputPrice = Number(row.provider.inputPrice);
-		if (Number.isFinite(inputPrice) && inputPrice > 0) {
+		if (shouldIncludeProviderPricing && Number.isFinite(inputPrice) && inputPrice > 0) {
 			existing.lowestInputPrice =
 				existing.lowestInputPrice === null
 					? inputPrice
 					: Math.min(existing.lowestInputPrice, inputPrice);
 		}
 		const outputPrice = Number(row.provider.outputPrice);
-		if (Number.isFinite(outputPrice) && outputPrice > 0) {
+		if (shouldIncludeProviderPricing && Number.isFinite(outputPrice) && outputPrice > 0) {
 			existing.lowestOutputPrice =
 				existing.lowestOutputPrice === null
 					? outputPrice
 					: Math.min(existing.lowestOutputPrice, outputPrice);
 		}
 		const standardInputPrice = Number(row.provider.standardInputPrice);
-		if (Number.isFinite(standardInputPrice) && standardInputPrice > 0) {
+		if (
+			shouldIncludeProviderPricing &&
+			Number.isFinite(standardInputPrice) &&
+			standardInputPrice > 0
+		) {
 			if (
 				existing.lowestStandardInputPrice === null ||
 				standardInputPrice < existing.lowestStandardInputPrice
@@ -498,7 +600,11 @@ function aggregateGatewaySignals(
 			}
 		}
 		const standardOutputPrice = Number(row.provider.standardOutputPrice);
-		if (Number.isFinite(standardOutputPrice) && standardOutputPrice > 0) {
+		if (
+			shouldIncludeProviderPricing &&
+			Number.isFinite(standardOutputPrice) &&
+			standardOutputPrice > 0
+		) {
 			if (
 				existing.lowestStandardOutputPrice === null ||
 				standardOutputPrice < existing.lowestStandardOutputPrice
@@ -512,7 +618,12 @@ function aggregateGatewaySignals(
 		}
 		const fromPrice = Number(row.provider.fromPrice);
 		const fromPriceUnit = String(row.provider.fromPriceUnit ?? "").trim() || null;
-		if (Number.isFinite(fromPrice) && fromPrice >= 0 && fromPriceUnit) {
+		if (
+			shouldIncludeProviderPricing &&
+			Number.isFinite(fromPrice) &&
+			fromPrice >= 0 &&
+			fromPriceUnit
+		) {
 			const current = existing.fromPriceByUnit.get(fromPriceUnit);
 			if (current === undefined || fromPrice < current) {
 				existing.fromPriceByUnit.set(fromPriceUnit, fromPrice);
@@ -527,17 +638,20 @@ function aggregateGatewaySignals(
 				existing.lowestFromPriceUnit = null;
 			}
 		}
-		for (const detailRow of row.provider.pricingDetailRows ?? []) {
-			if (!detailRow?.label || !detailRow?.value) continue;
-			const exists = existing.pricingDetailRows.some(
-				(candidate) =>
-					candidate.label === detailRow.label && candidate.value === detailRow.value,
-			);
-			if (!exists) {
-				existing.pricingDetailRows.push({
-					label: detailRow.label,
-					value: detailRow.value,
-				});
+		if (shouldIncludeProviderPricing) {
+			for (const detailRow of row.provider.pricingDetailRows ?? []) {
+				if (!detailRow?.label || !detailRow?.value) continue;
+				const exists = existing.pricingDetailRows.some(
+					(candidate) =>
+						candidate.label === detailRow.label &&
+						candidate.value === detailRow.value,
+				);
+				if (!exists) {
+					existing.pricingDetailRows.push({
+						label: detailRow.label,
+						value: detailRow.value,
+					});
+				}
 			}
 		}
 		const apiDateCandidate = String(row.effectiveFrom ?? "").trim();
@@ -822,7 +936,9 @@ function withGatewayMetadata(
 				signals?.lowestStandardOutputPriceUnit ?? null,
 			lowest_from_price: signals?.lowestFromPrice ?? null,
 			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
-			pricing_detail_rows: (signals?.pricingDetailRows ?? []).slice(0, 6),
+			pricing_detail_rows: mergePricingDetailRows(
+				(signals?.pricingDetailRows ?? []).slice(0, 12),
+			).slice(0, 6),
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
 			throughput_week: weeklyMetrics.throughputWeek,
 			latency_week: weeklyMetrics.latencyWeek,
