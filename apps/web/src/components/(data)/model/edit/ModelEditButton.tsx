@@ -61,9 +61,14 @@ export default async function ModelEditButton({
 		: `/internal/data/models/edit/${modelId}`;
 
 	return (
-		<Button variant="outline" size="icon-sm" asChild>
+		<Button
+			variant="ghost"
+			size="icon-sm"
+			className="mt-1 h-6 w-6 shrink-0 rounded-sm p-0 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+			asChild
+		>
 			<Link href={href} aria-label="Edit model">
-				<Pencil className="h-4 w-4" />
+				<Pencil className="h-2.5 w-2.5" />
 			</Link>
 		</Button>
 	);

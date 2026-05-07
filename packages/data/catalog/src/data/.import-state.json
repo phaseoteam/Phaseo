@@ -23051,12 +23051,6 @@
         "alias_slug": "openai/gpt-image-latest"
       }
     },
-    "../../packages/data/catalog/src/data/aliases/x-ai-grok-imagine-image-quality-latest/alias.json": {
-      "hash": "fcb32f9b6a7adff6ee9ba212ab5dcd4c",
-      "meta": {
-        "alias_slug": "x-ai/grok-imagine-image-quality-latest"
-      }
-    },
     "../../packages/data/catalog/src/data/aliases/x-ai-grok-latest/alias.json": {
       "hash": "5c2c6de3cb643fddc6aaa012d0938ef7",
       "meta": {

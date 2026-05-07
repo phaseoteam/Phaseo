@@ -62,7 +62,7 @@ async function fetchAliasesForApiModel(
 				.filter((alias): alias is string => Boolean(alias))
 				.filter((alias) => alias !== normalizedApiModelId),
 		),
-	);
+	).sort((left, right) => left.localeCompare(right));
 }
 
 export async function fetchModelOverviewHeader(

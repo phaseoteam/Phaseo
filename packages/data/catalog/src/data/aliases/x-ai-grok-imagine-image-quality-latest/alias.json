@@ -1,7 +1,0 @@
-{
-  "alias_slug": "x-ai/grok-imagine-image-quality-latest",
-  "resolved_api_model_id": "x-ai/grok-imagine-image-quality",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

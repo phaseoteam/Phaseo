@@ -1,15 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check, ChevronDown, Copy } from "lucide-react";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface ModelIdentifierControlProps {
@@ -17,27 +15,22 @@ interface ModelIdentifierControlProps {
 	aliases?: string[];
 }
 
-type IdentifierOption = {
-	value: string;
-	label: string;
-};
-
 export default function ModelIdentifierControl({
 	defaultIdentifier,
 	aliases = [],
 }: ModelIdentifierControlProps) {
 	const copyResetTimerRef = useRef<number | null>(null);
-	const options = useMemo<IdentifierOption[]>(
+	const options = useMemo<string[]>(
 		() => [
-			{ value: defaultIdentifier, label: defaultIdentifier },
+			defaultIdentifier,
 			...Array.from(new Set(aliases))
 				.filter((alias) => alias && alias !== defaultIdentifier)
-				.map((alias) => ({ value: alias, label: alias })),
+				.map((alias) => alias),
 		],
 		[aliases, defaultIdentifier],
 	);
+	const hasAliases = options.length > 1;
 
-	const [selectedIdentifier, setSelectedIdentifier] = useState(defaultIdentifier);
 	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
@@ -63,40 +56,34 @@ export default function ModelIdentifierControl({
 		return succeeded;
 	};
 
-	const handleCopy = async () => {
+	const markCopied = (description: string) => {
+		setCopied(true);
+		if (copyResetTimerRef.current !== null) {
+			window.clearTimeout(copyResetTimerRef.current);
+		}
+		copyResetTimerRef.current = window.setTimeout(() => {
+			setCopied(false);
+			copyResetTimerRef.current = null;
+		}, 1500);
+		toast.success("Model ID copied", {
+			description,
+		});
+	};
+
+	const copyIdentifier = async (value: string) => {
 		try {
 			if (navigator.clipboard?.writeText) {
-				await navigator.clipboard.writeText(selectedIdentifier);
-			} else if (!fallbackCopyText(selectedIdentifier)) {
+				await navigator.clipboard.writeText(value);
+			} else if (!fallbackCopyText(value)) {
 				throw new Error("clipboard unavailable");
 			}
-			setCopied(true);
-			if (copyResetTimerRef.current !== null) {
-				window.clearTimeout(copyResetTimerRef.current);
-			}
-			copyResetTimerRef.current = window.setTimeout(() => {
-				setCopied(false);
-				copyResetTimerRef.current = null;
-			}, 1500);
-			toast.success("Model ID copied", {
-				description: selectedIdentifier,
-			});
+			markCopied(value);
 		} catch {
 			try {
-				if (!fallbackCopyText(selectedIdentifier)) {
+				if (!fallbackCopyText(value)) {
 					throw new Error("fallback copy failed");
 				}
-				setCopied(true);
-				if (copyResetTimerRef.current !== null) {
-					window.clearTimeout(copyResetTimerRef.current);
-				}
-				copyResetTimerRef.current = window.setTimeout(() => {
-					setCopied(false);
-					copyResetTimerRef.current = null;
-				}, 1500);
-				toast.success("Model ID copied", {
-					description: selectedIdentifier,
-				});
+				markCopied(value);
 			} catch {
 				setCopied(false);
 				toast.error("Copy failed", {
@@ -108,45 +95,60 @@ export default function ModelIdentifierControl({
 
 	if (!defaultIdentifier) return null;
 
-	return (
-		<div className="flex items-center gap-2">
-			<Select value={selectedIdentifier} onValueChange={setSelectedIdentifier}>
-				<SelectTrigger
-					aria-label="Model identifier"
-					className="h-8 w-auto min-w-[136px] select-none rounded-md px-3 text-xs font-medium"
-				>
-					<SelectValue />
-				</SelectTrigger>
-				<SelectContent>
-					{options.map((option) => (
-						<SelectItem key={option.value} value={option.value}>
-							{option.label}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
-			<Button
+	const triggerIcon = copied
+		? <Check className="h-3 w-3" />
+		: hasAliases
+			? <ChevronDown className="h-3 w-3" />
+			: <Copy className="h-3 w-3" />;
+
+	if (!hasAliases) {
+		return (
+			<button
 				type="button"
-				variant="outline"
-				size="icon-sm"
-				className="h-8 w-8 rounded-md"
-				aria-label={`Copy model identifier ${selectedIdentifier}`}
+				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0"
+				aria-label={`Copy model identifier ${defaultIdentifier}`}
 				title={copied ? "Copied" : "Copy model identifier"}
-				onClick={handleCopy}
+				onClick={() => void copyIdentifier(defaultIdentifier)}
 			>
-				<span className="relative grid h-3.5 w-3.5 place-items-center">
-					<Copy
-						className={`absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 transition-all duration-150 ${
-							copied ? "scale-75 opacity-0" : "scale-100 opacity-100"
-						}`}
-					/>
-					<Check
-						className={`absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 transition-all duration-150 ${
-							copied ? "scale-100 opacity-100" : "scale-75 opacity-0"
-						}`}
-					/>
+				<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
+				<span className="ml-0.5 shrink-0 opacity-0 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+					{triggerIcon}
 				</span>
-			</Button>
-		</div>
+			</button>
+		);
+	}
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<button
+					type="button"
+				className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0"
+					aria-label="Model identifiers"
+				>
+					<span className="min-w-0 select-none truncate font-mono">{defaultIdentifier}</span>
+					<span className="ml-0.5 shrink-0 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+						{triggerIcon}
+					</span>
+				</button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="start" className="w-auto min-w-0 max-w-[calc(100vw-2rem)]">
+				{options.map((option, index) => (
+					<DropdownMenuItem
+						key={option}
+						onSelect={(event) => {
+							event.preventDefault();
+							void copyIdentifier(option);
+						}}
+						className="flex items-center justify-between gap-3"
+					>
+						<span className="min-w-0 truncate">{option}</span>
+						<span className="shrink-0 text-[11px] text-zinc-500">
+							{index === 0 ? "Default" : "Alias"}
+						</span>
+					</DropdownMenuItem>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }

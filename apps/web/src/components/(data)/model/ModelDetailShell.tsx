@@ -72,9 +72,9 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
-				<div className="mb-8 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
-					<div className="flex flex-col items-center gap-4 md:flex-row">
-						<div className="flex items-center justify-center">
+				<div className="mb-8 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
+					<div className="flex w-full items-start gap-4">
+						<div className="flex shrink-0 items-center justify-center">
 							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
 								<div className="relative h-8 w-8 md:h-12 md:w-12">
 									<Logo
@@ -86,38 +86,41 @@ export default async function ModelDetailShell({
 								</div>
 							</div>
 						</div>
-						<div className="flex flex-col items-center justify-center md:items-start">
-							<div className="flex items-center gap-3">
-								<h1 className="mb-1 text-center text-3xl font-bold md:text-left">
-									{header.name}
+						<div className="flex min-w-0 flex-1 flex-col justify-center">
+							<div className="flex flex-col items-start gap-3 md:flex-row md:flex-wrap md:items-start md:gap-5">
+								<h1 className="text-3xl font-bold leading-tight text-left">
+									<Link
+										href={`/organisations/${header.organisation_id}`}
+										className="underline-offset-4 hover:underline"
+									>
+										{header.organisation.name}:
+									</Link>{" "}
+									<span>{header.name}</span>
 								</h1>
+								<Suspense fallback={null}>
+									<ModelEditButton modelId={modelId} tab={tab} />
+								</Suspense>
+								{includeHidden && header.hidden ? (
+									<Badge variant="secondary">Hidden</Badge>
+								) : null}
+							</div>
+							<div className="mt-2 flex w-full flex-col items-start gap-2">
 								<ModelIdentifierControl
 									defaultIdentifier={header.model_id}
 									aliases={header.aliases}
 								/>
-								{includeHidden && header.hidden ? (
-									<Badge variant="secondary">Hidden</Badge>
-								) : null}
-								<Suspense fallback={null}>
-									<ModelEditButton modelId={modelId} tab={tab} />
-								</Suspense>
 							</div>
-							<Link href={`/organisations/${header.organisation_id}`}>
-								<h2 className="mb-1 text-center text-md font-semibold md:text-left md:text-xl">
-									{header.organisation.name}
-								</h2>
-							</Link>
 						</div>
 					</div>
 
-					<div className="mt-2 flex w-full flex-col gap-2 md:mt-0 md:ml-6 md:w-auto">
-						<Button asChild variant="outline" size="sm" className="justify-center">
+					<div className="flex w-full flex-row gap-2 md:mt-0 md:ml-6 md:w-auto md:flex-col">
+						<Button asChild variant="outline" size="sm" className="flex-1 justify-center md:flex-none">
 							<Link href={`/chat?model=${modelId}`}>
 								<MessageSquare className="h-4 w-4" />
 								Chat
 							</Link>
 						</Button>
-						<Button asChild variant="outline" size="sm" className="justify-center">
+						<Button asChild variant="outline" size="sm" className="flex-1 justify-center md:flex-none">
 							<Link href={`/compare?models=${modelId}`}>
 								<Scale className="h-4 w-4" />
 								Compare
