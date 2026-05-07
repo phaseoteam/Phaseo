@@ -73,6 +73,7 @@ type MonitorModelRpcRow = {
 };
 
 const MONITOR_RPC_PAGE_SIZE = 1000;
+const PRICING_RULE_PAGE_SIZE = 1000;
 
 type PricingRuleSupplementRow = {
 	model_key: string | null;
@@ -220,7 +221,7 @@ function formatPriceAmount(value: number): string {
 	if (!Number.isFinite(value) || value < 0) return "$0";
 	if (value === 0) return "$0";
 	if (value < 0.001) return `$${value.toFixed(4)}`;
-	if (value < 0.1) return `$${value.toFixed(3)}`;
+	if (value < 0.01) return `$${value.toFixed(3)}`;
 	if (value < 1) return `$${value.toFixed(2)}`;
 	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -380,14 +381,22 @@ async function fetchPricingSupplements(
 	const pricingRows: PricingRuleSupplementRow[] = [];
 	for (let index = 0; index < modelKeys.length; index += 200) {
 		const chunk = modelKeys.slice(index, index + 200);
-		const { data, error } = await supabase
-			.from("data_api_pricing_rules")
-			.select(
-				"model_key, pricing_plan, meter, unit, unit_size, price_per_unit, effective_from, effective_to, match",
-			)
-			.in("model_key", chunk);
-		if (error) throw error;
-		pricingRows.push(...((data ?? []) as PricingRuleSupplementRow[]));
+		for (let from = 0; ; from += PRICING_RULE_PAGE_SIZE) {
+			const to = from + PRICING_RULE_PAGE_SIZE - 1;
+			const { data, error } = await supabase
+				.from("data_api_pricing_rules")
+				.select(
+					"model_key, pricing_plan, meter, unit, unit_size, price_per_unit, effective_from, effective_to, match",
+				)
+				.in("model_key", chunk)
+				.range(from, to);
+			if (error) throw error;
+			const page = (data ?? []) as PricingRuleSupplementRow[];
+			pricingRows.push(...page);
+			if (page.length < PRICING_RULE_PAGE_SIZE) {
+				break;
+			}
+		}
 	}
 
 	const nowMs = Date.now();
@@ -592,6 +601,18 @@ export async function getMonitorModels(
 	allFeatures: string[];
 	allStatuses: string[];
 }> {
+	"use cache";
+
+	cacheLife("minutes");
+	cacheTag("models:monitor");
+	cacheTag("monitor-models");
+	cacheTag("data:data_api_model_aliases");
+	cacheTag("data:data_api_provider_model_capabilities");
+	cacheTag("data:data_api_provider_models");
+	cacheTag("data:data_api_pricing_rules");
+	cacheTag("data:models");
+	cacheTag("data:api_providers");
+
 	const rpcRows = await fetchAllMonitorModelRows(includeHidden);
 	const pricingSupplements = await fetchPricingSupplements(rpcRows);
 

@@ -637,10 +637,9 @@ function ModelCardImpl({
 		{
 			id: "input",
 			label: fallbackInputLabel,
-			value: formatFromPrice(
+			value: formatPriceWithUnit(
 				model.lowest_input_price,
 				fallbackInputUnit,
-				{ allowZero: true },
 			),
 		},
 		{
