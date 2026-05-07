@@ -1,8 +1,8 @@
 {
-  "key": "google-vertex:google/gemini-3.1-flash-lite-preview:text.generate",
-  "api_provider_id": "google-vertex",
-  "provider_slug": "google-vertex",
-  "api_model_id": "google/gemini-3.1-flash-lite-preview",
+  "key": "google-ai-studio:google/gemini-3.1-flash-lite:text.generate",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-3.1-flash-lite",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -15,7 +15,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_image_tokens",
@@ -27,7 +27,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_audio_tokens",
@@ -39,7 +39,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_video_tokens",
@@ -51,7 +51,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -63,7 +63,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -75,7 +75,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_image_tokens",
@@ -87,7 +87,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_video_tokens",
@@ -99,7 +99,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_audio_tokens",
@@ -111,7 +111,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -123,7 +123,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -135,7 +135,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_image_tokens",
@@ -147,7 +147,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_video_tokens",
@@ -159,7 +159,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_audio_tokens",
@@ -171,7 +171,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -183,7 +183,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -195,7 +195,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_image_tokens",
@@ -207,7 +207,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_video_tokens",
@@ -219,7 +219,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "input_audio_tokens",
@@ -231,7 +231,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -243,7 +243,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-03T00:00:00"
+      "effective_from": "2026-05-07T00:00:00"
     }
   ]
 }
