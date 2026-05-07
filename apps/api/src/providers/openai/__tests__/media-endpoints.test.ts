@@ -419,6 +419,52 @@ describe("OpenAI media endpoints", () => {
 		expect(payload?.error?.type).toBe("upstream_usage_missing");
 	});
 
+	it("allows non-SSE binary speech responses for non-OpenAI compat providers", async () => {
+		const wavBytes = makeWavBytes(1);
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/speech"),
+				response: new Response(wavBytes, {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/wav",
+						"x-request-id": "req_compat_tts_binary_test",
+					},
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "tts-1",
+			body: {
+				model: "tts-1",
+				input: "Hello compat world",
+				voice: "alloy",
+				response_format: "wav",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "deepseek",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(result.upstream.headers.get("content-type")).toContain("audio/wav");
+		expect(capturedBody.stream_format).toBeUndefined();
+		expect(result.bill.upstream_id).toBe("req_compat_tts_binary_test");
+		expect(result.bill.usage).toBeUndefined();
+	});
+
 	it("prefers authoritative SSE usage for successful OpenAI speech responses", async () => {
 		let capturedBody: any = null;
 		const audioChunk = Buffer.from([0, 1, 2, 3]).toString("base64");

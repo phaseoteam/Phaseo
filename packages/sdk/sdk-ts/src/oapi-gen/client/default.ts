@@ -2412,6 +2412,80 @@ export async function createVideoAlias(
   });
 }
 
+export type CreateVideoDownloadUrlParams = {
+  path?: {
+    video_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    disposition?: "attachment" | "inline";
+    index?: number;
+    ttl_seconds?: number;
+  };
+};
+
+/**
+ * Returns a signed first-party download URL for a rendered video.
+ */
+export async function createVideoDownloadUrl(
+  client: Client,
+  args: CreateVideoDownloadUrlParams = {},
+): Promise<{
+  download_url?: string;
+  expires_at?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}/download_url`;
+  return client.request<{
+    download_url?: string;
+    expires_at?: number;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type CreateVideoDownloadUrlAliasParams = {
+  path?: {
+    video_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    disposition?: "attachment" | "inline";
+    index?: number;
+    ttl_seconds?: number;
+  };
+};
+
+/**
+ * Alias of /videos/{video_id}/download_url.
+ */
+export async function createVideoDownloadUrlAlias(
+  client: Client,
+  args: CreateVideoDownloadUrlAliasParams = {},
+): Promise<{
+  download_url?: string;
+  expires_at?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}/download_url`;
+  return client.request<{
+    download_url?: string;
+    expires_at?: number;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateWorkspaceParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -3112,6 +3186,35 @@ export async function getGeneration(
       prompt_tokens?: number;
       total_tokens?: number;
     } | null;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetHealthParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns a minimal gateway health snapshot.
+ */
+export async function getHealth(
+  client: Client,
+  args: GetHealthParams = {},
+): Promise<{
+  status?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/health";
+  return client.request<{
+    status?: string;
   }>({
     method: "GET",
     path: resolvedPath,

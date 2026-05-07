@@ -115,6 +115,16 @@ pub fn createVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn createVideoDownloadUrl<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/videos/{}/download_url", path.get("video_id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
+pub fn createVideoDownloadUrlAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/video/generations/{}/download_url", path.get("video_id").cloned().unwrap_or_default());
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createWorkspace<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/workspaces");
 	client.request("POST", &resolved_path, body)
@@ -177,6 +187,11 @@ pub fn getCurrentApiKey<T: Transport>(client: &Client<T>, path: &HashMap<String,
 
 pub fn getGeneration<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/generations");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getHealth<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/health");
 	client.request("GET", &resolved_path, body)
 }
 

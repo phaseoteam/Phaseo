@@ -157,6 +157,20 @@ function createVideoAlias(Client $client, ?array $path = null, ?array $query = n
 	return $client->request("POST", $resolvedPath, $query, $headers, $body);
 }
 
+function createVideoDownloadUrl(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/videos/{$path["video_id"]}/download_url";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
+function createVideoDownloadUrlAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/video/generations/{$path["video_id"]}/download_url";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function createWorkspace(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -245,6 +259,13 @@ function getGeneration(Client $client, ?array $path = null, ?array $query = null
 {
 	$path = $path ?? [];
 	$resolvedPath = "/generations";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function getHealth(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/health";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

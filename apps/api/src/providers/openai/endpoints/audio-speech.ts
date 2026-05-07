@@ -48,6 +48,10 @@ function supportsSpeechSse(model: string): boolean {
     return normalized !== "tts-1" && normalized !== "tts-1-hd" && !normalized.endsWith("/tts-1") && !normalized.endsWith("/tts-1-hd");
 }
 
+function requiresAuthoritativeSpeechUsage(providerId: string, model: string): boolean {
+    return providerId === "openai" && supportsSpeechSse(model);
+}
+
 function mimeTypeForResponseFormat(format?: string | null): string {
     const normalized = String(format ?? "").trim().toLowerCase();
     switch (normalized) {
@@ -208,12 +212,14 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         resolvedVoice = validation.resolved;
     }
 
+    const requireAuthoritativeUsage = requiresAuthoritativeSpeechUsage(args.providerId, body.model);
+
     const requestBody = {
         model: body.model,
         input: body.input,
         voice: resolvedVoice,
         response_format: body.response_format,
-        ...(supportsSpeechSse(body.model) ? { stream_format: "sse" as const } : {}),
+        ...(requireAuthoritativeUsage ? { stream_format: "sse" as const } : {}),
         speed: body.speed,
         instructions: body.instructions,
     };
@@ -230,7 +236,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         const contentType = String(res.headers.get("content-type") ?? "").toLowerCase();
         if (contentType.includes("text/event-stream")) {
             const parsed = await parseSpeechSseResponse(res);
-            if (!parsed.usage) {
+            if (!parsed.usage && requireAuthoritativeUsage) {
                 return {
                     kind: "completed",
                     upstream: new Response(
@@ -264,7 +270,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
                 statusText: res.statusText,
                 headers,
             });
-        } else {
+        } else if (requireAuthoritativeUsage) {
             return {
                 kind: "completed",
                 upstream: new Response(

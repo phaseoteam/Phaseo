@@ -116,6 +116,16 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object createVideoDownloadUrl(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/videos/" + (path != null && path.containsKey("video_id") ? path.get("video_id") : "") + "/download_url";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
+	public static Object createVideoDownloadUrlAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/video/generations/" + (path != null && path.containsKey("video_id") ? path.get("video_id") : "") + "/download_url";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createWorkspace(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -178,6 +188,11 @@ public final class Operations {
 
 	public static Object getGeneration(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/generations";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getHealth(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/health";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
