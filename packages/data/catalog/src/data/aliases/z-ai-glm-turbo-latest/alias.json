@@ -1,0 +1,7 @@
+{
+  "alias_slug": "z-ai/glm-turbo-latest",
+  "resolved_api_model_id": "z-ai/glm-5-turbo",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

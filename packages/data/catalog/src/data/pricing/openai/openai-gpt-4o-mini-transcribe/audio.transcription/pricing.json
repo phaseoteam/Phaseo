@@ -1,0 +1,33 @@
+{
+  "key": "openai:openai/gpt-4o-mini-transcribe:audio.transcription",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/gpt-4o-mini-transcribe",
+  "capability_id": "audio.transcription",
+  "rules": [
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-25T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-25T00:00:00"
+    }
+  ]
+}

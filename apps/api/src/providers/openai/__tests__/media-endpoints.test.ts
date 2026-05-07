@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
+import { sseResponse } from "../../../../tests/helpers/sse";
 import { exec as execImages } from "../endpoints/images";
 import { exec as execImageEdits } from "../endpoints/images-edits";
 import { exec as execSpeech } from "../endpoints/audio-speech";
@@ -77,6 +78,35 @@ afterAll(() => {
 
 function makeAudioFile(filename = "audio.wav"): File {
 	return new File([new Uint8Array([1, 2, 3])], filename, { type: "audio/wav" });
+}
+
+function makeWavBytes(durationSeconds: number, sampleRate = 24000, channels = 1, bitsPerSample = 16): Uint8Array {
+	const bytesPerSample = bitsPerSample / 8;
+	const dataSize = Math.round(durationSeconds * sampleRate * channels * bytesPerSample);
+	const buffer = new ArrayBuffer(44 + dataSize);
+	const view = new DataView(buffer);
+	const bytes = new Uint8Array(buffer);
+	const writeAscii = (offset: number, value: string) => {
+		for (let i = 0; i < value.length; i += 1) {
+			bytes[offset + i] = value.charCodeAt(i);
+		}
+	};
+
+	writeAscii(0, "RIFF");
+	view.setUint32(4, 36 + dataSize, true);
+	writeAscii(8, "WAVE");
+	writeAscii(12, "fmt ");
+	view.setUint32(16, 16, true);
+	view.setUint16(20, 1, true);
+	view.setUint16(22, channels, true);
+	view.setUint32(24, sampleRate, true);
+	view.setUint32(28, sampleRate * channels * bytesPerSample, true);
+	view.setUint16(32, channels * bytesPerSample, true);
+	view.setUint16(34, bitsPerSample, true);
+	writeAscii(36, "data");
+	view.setUint32(40, dataSize, true);
+
+	return bytes;
 }
 
 describe("OpenAI media endpoints", () => {
@@ -166,6 +196,67 @@ describe("OpenAI media endpoints", () => {
 		expect(result.bill.usage?.pricing?.total_nanos).toBe(36_000_000);
 	});
 
+	it("prefers resolved native quality and size when request uses auto defaults", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/images/generations"),
+				response: jsonResponse({
+					created: 1700000000,
+					data: [{ b64_json: "abc" }],
+					output_format: "png",
+					quality: "high",
+					size: "1024x1536",
+					usage: {
+						input_tokens: 12,
+						output_tokens: 6240,
+						total_tokens: 6252,
+					},
+				}),
+			},
+		]);
+
+		const result = await execImages({
+			endpoint: "images.generations",
+			model: "openai/gpt-image-1-mini",
+			body: {
+				model: "openai/gpt-image-1-mini",
+				prompt: "A posterized night sky",
+				size: "auto",
+				quality: "auto",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: {
+				...IMAGE_DIMENSION_PRICING_CARD,
+				rules: [
+					{
+						...IMAGE_DIMENSION_PRICING_CARD.rules[0],
+						match: [
+							{ path: "image_params.quality", op: "eq", value: "high", or_group: 1, and_index: 1 },
+							{ path: "image_params.resolution", op: "eq", value: "1024x1536", or_group: 1, and_index: 2 },
+						],
+						price_per_unit: 0.052,
+					},
+				],
+			},
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(result.normalized?.quality).toBe("high");
+		expect(result.normalized?.size).toBe("1024x1536");
+		expect(result.normalized?.output_format).toBe("png");
+		expect(result.bill.usage?.quality).toBe("high");
+		expect(result.bill.usage?.size).toBe("1024x1536");
+		expect(result.bill.usage?.pricing?.lines?.some((line: any) => line.dimension === "output_image")).toBe(true);
+		expect(result.bill.usage?.pricing?.total_nanos).toBe(52_000_000);
+	});
+
 	it("forwards GPT image edit parameters", async () => {
 		let outputFormat: string | null = null;
 		let outputCompression: string | null = null;
@@ -228,10 +319,11 @@ describe("OpenAI media endpoints", () => {
 		const mock = installFetchMock([
 			{
 				match: (url) => url.includes("/audio/speech"),
-				response: new Response("AUDIO", {
-					status: 200,
-					headers: { "Content-Type": "audio/wav" },
-				}),
+				response: sseResponse([
+					{ type: "speech.audio.delta", audio: Buffer.from([0, 1, 2, 3]).toString("base64") },
+					{ type: "speech.audio.done", usage: { input_tokens: 10, output_tokens: 91, total_tokens: 101 } },
+					"[DONE]",
+				]),
 				onRequest: (call) => {
 					capturedBody = call.bodyJson;
 				},
@@ -246,7 +338,6 @@ describe("OpenAI media endpoints", () => {
 					input: "Hello world",
 					voice: "alloy",
 					response_format: "wav",
-					stream_format: "audio",
 				},
 			meta: REQUEST_META,
 			workspaceId: "team_test",
@@ -261,8 +352,176 @@ describe("OpenAI media endpoints", () => {
 
 		expect(result.upstream.status).toBe(200);
 		expect(capturedBody.response_format).toBe("wav");
-		expect(capturedBody.stream_format).toBe("audio");
+		expect(capturedBody.stream_format).toBe("sse");
 		expect(capturedBody.format).toBeUndefined();
+	});
+
+	it("rejects stream_format for speech", async () => {
+		await expect(execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Hello world",
+				voice: "alloy",
+				response_format: "wav",
+				stream_format: "sse",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any)).rejects.toThrow(/stream_format/i);
+	});
+
+	it("fails when OpenAI speech response does not include authoritative usage", async () => {
+		const wavBytes = makeWavBytes(1);
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/speech"),
+				response: new Response(wavBytes, {
+					status: 200,
+					headers: {
+						"Content-Type": "audio/wav",
+						"x-request-id": "req_openai_tts_usage_test",
+					},
+				}),
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Hello world",
+				voice: "alloy",
+				response_format: "wav",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream.status).toBe(502);
+		expect(result.bill.upstream_id).toBe("req_openai_tts_usage_test");
+		expect(result.bill.usage).toBeUndefined();
+		const payload = await result.upstream.clone().json();
+		expect(payload?.error?.type).toBe("upstream_usage_missing");
+	});
+
+	it("prefers authoritative SSE usage for successful OpenAI speech responses", async () => {
+		let capturedBody: any = null;
+		const audioChunk = Buffer.from([0, 1, 2, 3]).toString("base64");
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/speech"),
+				response: sseResponse([
+					{ type: "speech.audio.delta", audio: audioChunk },
+					{
+						type: "speech.audio.done",
+						usage: {
+							input_tokens: 10,
+							output_tokens: 91,
+							total_tokens: 101,
+						},
+					},
+					"[DONE]",
+				]),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Hello world",
+				voice: "alloy",
+				response_format: "wav",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(capturedBody.stream_format).toBe("sse");
+		expect(result.upstream.status).toBe(200);
+		expect(result.upstream.headers.get("content-type")).toContain("audio/wav");
+		expect(result.bill.usage?.input_text_tokens).toBe(10);
+		expect(result.bill.usage?.output_audio_tokens).toBe(91);
+		expect(result.bill.usage?.total_tokens).toBe(101);
+	});
+
+	it("parses CRLF-delimited OpenAI speech SSE usage frames", async () => {
+		let capturedBody: any = null;
+		const audioChunk = Buffer.from([0, 1, 2, 3]).toString("base64");
+		const encoder = new TextEncoder();
+		const crlfFrames = [
+			`data: ${JSON.stringify({ type: "speech.audio.delta", audio: audioChunk })}\r\n\r\n`,
+			`data: ${JSON.stringify({ type: "speech.audio.done", usage: { input_tokens: 10, output_tokens: 91, total_tokens: 101 } })}\r\n\r\n`,
+			"data: [DONE]\r\n\r\n",
+		].join("");
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/speech"),
+				response: new Response(encoder.encode(crlfFrames), {
+					status: 200,
+					headers: {
+						"Content-Type": "text/event-stream",
+						"x-request-id": "req_openai_tts_crlf_test",
+					},
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await execSpeech({
+			endpoint: "audio.speech",
+			model: "openai/gpt-4o-mini-tts",
+			body: {
+				model: "openai/gpt-4o-mini-tts",
+				input: "Hello world",
+				voice: "alloy",
+				response_format: "wav",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.speech" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(capturedBody.stream_format).toBe("sse");
+		expect(result.upstream.status).toBe(200);
+		expect(result.bill.upstream_id).toBe("req_openai_tts_crlf_test");
+		expect(result.bill.usage?.input_text_tokens).toBe(10);
+		expect(result.bill.usage?.output_audio_tokens).toBe(91);
+		expect(result.bill.usage?.total_tokens).toBe(101);
 	});
 
 	it("forwards custom voice objects for speech when provided", async () => {
@@ -270,10 +529,11 @@ describe("OpenAI media endpoints", () => {
 		const mock = installFetchMock([
 			{
 				match: (url) => url.includes("/audio/speech"),
-				response: new Response("AUDIO", {
-					status: 200,
-					headers: { "Content-Type": "audio/wav" },
-				}),
+				response: sseResponse([
+					{ type: "speech.audio.delta", audio: Buffer.from([0, 1, 2, 3]).toString("base64") },
+					{ type: "speech.audio.done", usage: { input_tokens: 10, output_tokens: 91, total_tokens: 101 } },
+					"[DONE]",
+				]),
 				onRequest: (call) => {
 					capturedBody = call.bodyJson;
 				},
@@ -309,10 +569,11 @@ describe("OpenAI media endpoints", () => {
 		const mock = installFetchMock([
 			{
 				match: (url) => url.includes("/audio/speech"),
-				response: new Response("AUDIO", {
-					status: 200,
-					headers: { "Content-Type": "audio/mpeg" },
-				}),
+				response: sseResponse([
+					{ type: "speech.audio.delta", audio: Buffer.from([0, 1, 2, 3]).toString("base64") },
+					{ type: "speech.audio.done", usage: { input_tokens: 10, output_tokens: 91, total_tokens: 101 } },
+					"[DONE]",
+				]),
 				onRequest: (call) => {
 					capturedBody = call.bodyJson;
 				},
@@ -562,5 +823,62 @@ describe("OpenAI media endpoints", () => {
 		expect(translation.upstream.status).toBe(200);
 		expect(translation.normalized?.text).toBe("translated text");
 		expect(translationFormat).toBe("text");
+	});
+
+	it("estimates usage for transcription and translation when upstream omits it", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/audio/transcriptions"),
+				response: jsonResponse({ text: "hello world from transcription" }),
+			},
+			{
+				match: (url) => url.includes("/audio/translations"),
+				response: jsonResponse({ text: "hello world from translation" }),
+			},
+		]);
+
+		const audioFile = new File([makeWavBytes(1)], "audio.wav", { type: "audio/wav" });
+		const transcription = await execTranscription({
+			endpoint: "audio.transcription",
+			model: "openai/gpt-4o-mini-transcribe",
+			body: {
+				model: "openai/gpt-4o-mini-transcribe",
+				file: audioFile,
+				prompt: "meeting notes",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.transcription" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		const translation = await execTranslation({
+			endpoint: "audio.translations",
+			model: "openai/gpt-4o-mini-transcribe",
+			body: {
+				model: "openai/gpt-4o-mini-transcribe",
+				file: audioFile,
+				prompt: "translate to english",
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "openai",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.translations" },
+			providerModelSlug: null,
+			stream: false,
+		} as any);
+
+		mock.restore();
+
+		expect(transcription.bill.usage?.input_audio_tokens).toBeGreaterThan(0);
+		expect(transcription.bill.usage?.output_text_tokens).toBeGreaterThan(0);
+		expect(transcription.normalized?.usage?.input_audio_tokens).toBeGreaterThan(0);
+		expect(translation.bill.usage?.input_audio_tokens).toBeGreaterThan(0);
+		expect(translation.bill.usage?.output_text_tokens).toBeGreaterThan(0);
+		expect(translation.normalized?.usage?.input_audio_tokens).toBeGreaterThan(0);
 	});
 });

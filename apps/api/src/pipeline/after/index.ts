@@ -32,7 +32,7 @@ function decodeBase64ToBytes(value: string): Uint8Array {
 	return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
-function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
+export function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
 	if (ctx.endpoint !== "audio.speech") return false;
 	const streamFormat = String((ctx.body as any)?.stream_format ?? "")
 		.trim()
@@ -42,8 +42,10 @@ function shouldReturnBinaryAudio(ctx: PipelineContext): boolean {
 	const accept = String(ctx.meta?.accept ?? "")
 		.trim()
 		.toLowerCase();
-	if (!accept) return false;
-	return accept.includes("audio/") || accept.includes("application/octet-stream");
+	if (accept.includes("application/json") && !accept.includes("audio/") && !accept.includes("application/octet-stream")) {
+		return false;
+	}
+	return true;
 }
 
 function normalizeWavChunkSizesIfNeeded(bytes: Uint8Array): Uint8Array {
@@ -288,14 +290,19 @@ async function handleNonStreamResponse(
     const card = await ctx.timer.span("after_load_pricing", () => loadProviderPricing(ctx, result));
 
     // Calculate pricing (with tier-based markup)
+    const rawUsageForPricing = {
+        ...(usageNormalized && typeof usageNormalized === "object" ? usageNormalized : {}),
+        _provider_id: result.provider,
+    };
+    const shapedUsageForPricing = shapeUsageForClient(
+        rawUsageForPricing,
+        { endpoint: ctx.endpoint, body: ctx.body, includeInternalHints: true }
+    );
     const shapedUsage = attachToolUsageMetrics(
-        shapeUsageForClient(
-            {
-                ...(usageNormalized && typeof usageNormalized === "object" ? usageNormalized : {}),
-                _provider_id: result.provider,
-            },
-            { endpoint: ctx.endpoint, body: ctx.body, includeInternalHints: true }
-        ),
+        {
+            ...rawUsageForPricing,
+            ...(shapedUsageForPricing && typeof shapedUsageForPricing === "object" ? shapedUsageForPricing : {}),
+        },
         toolUsage
     );
     const tier = ctx.teamEnrichment?.tier ?? 'basic';

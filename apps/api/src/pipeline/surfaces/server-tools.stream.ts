@@ -51,6 +51,20 @@ function buildUnifiedEventsFromChatCompletionsPayload(payload: any): UnifiedStre
 				choiceIndex,
 			});
 		}
+		for (const part of parseChatMediaParts(message?.images)) {
+			events.push({
+				type: "delta_content_part",
+				part,
+				choiceIndex,
+			});
+		}
+		for (const part of parseChatMediaParts(message?.audios)) {
+			events.push({
+				type: "delta_content_part",
+				part,
+				choiceIndex,
+			});
+		}
 		const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
 		for (let toolIndex = 0; toolIndex < toolCalls.length; toolIndex += 1) {
 			const toolCall = toolCalls[toolIndex] ?? {};
@@ -107,6 +121,13 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 						choiceIndex: outputIndex,
 					});
 				}
+			}
+			for (const part of parseResponsesMediaParts(contentParts)) {
+				events.push({
+					type: "delta_content_part",
+					part,
+					choiceIndex: outputIndex,
+				});
 			}
 		}
 		if (itemType === "reasoning") {
@@ -237,11 +258,18 @@ export function buildSyntheticServerToolStream(args: {
 }
 
 type StreamChoiceAccumulator = {
-	textParts: string[];
+	outputParts: IRContentPart[];
 	reasoningParts: string[];
 	toolCallsByKey: Map<string, IRToolCall>;
 	toolCallOrder: string[];
 	finishReason?: IRChatResponse["choices"][number]["finishReason"];
+};
+
+type AccumulationState = {
+	sawOutputTextDelta: boolean;
+	sawReasoningTextDelta: boolean;
+	sawToolDelta: boolean;
+	sawContentPartDelta: boolean;
 };
 
 function parseSseFrame(raw: string): { eventName: string | null; data: string } {
@@ -377,13 +405,204 @@ function getChoiceAccumulator(
 	const existing = choices.get(index);
 	if (existing) return existing;
 	const created: StreamChoiceAccumulator = {
-		textParts: [],
+		outputParts: [],
 		reasoningParts: [],
 		toolCallsByKey: new Map(),
 		toolCallOrder: [],
 	};
 	choices.set(index, created);
 	return created;
+}
+
+function applyUnifiedEventToAccumulators(args: {
+	event: UnifiedStreamEvent;
+	choices: Map<number, StreamChoiceAccumulator>;
+	state: AccumulationState;
+	setGlobalFinishReason: (reason: IRChatResponse["choices"][number]["finishReason"]) => void;
+	requestId: string;
+}): void {
+	const { event, choices, state, setGlobalFinishReason, requestId } = args;
+	if (event.type === "delta_text") {
+		const index = Number.isFinite(event.choiceIndex as number)
+			? Number(event.choiceIndex)
+			: 0;
+		const accumulator = getChoiceAccumulator(choices, index);
+		if (event.channel === "reasoning_text") {
+			accumulator.reasoningParts.push(event.text);
+			state.sawReasoningTextDelta = true;
+		} else {
+			accumulator.outputParts.push({
+				type: "text",
+				text: event.text,
+			});
+			state.sawOutputTextDelta = true;
+		}
+		return;
+	}
+
+	if (event.type === "delta_content_part") {
+		const index = Number.isFinite(event.choiceIndex as number)
+			? Number(event.choiceIndex)
+			: 0;
+		const accumulator = getChoiceAccumulator(choices, index);
+		accumulator.outputParts.push(event.part);
+		state.sawContentPartDelta = true;
+		return;
+	}
+
+	if (event.type === "delta_tool") {
+		const index = Number.isFinite(event.choiceIndex as number)
+			? Number(event.choiceIndex)
+			: 0;
+		const accumulator = getChoiceAccumulator(choices, index);
+		const key =
+			Number.isFinite(event.toolIndex as number)
+				? `tool_${index}_${Number(event.toolIndex)}`
+				: (event.toolCallId ?? `tool_${index}_${accumulator.toolCallOrder.length}`);
+		let toolCall = accumulator.toolCallsByKey.get(key);
+		if (!toolCall) {
+			toolCall = {
+				id: event.toolCallId ?? `${requestId}_${key}`,
+				name: event.toolName ?? "tool_call",
+				arguments: "",
+			};
+			accumulator.toolCallsByKey.set(key, toolCall);
+			accumulator.toolCallOrder.push(key);
+		}
+		if (typeof event.toolName === "string" && event.toolName.length > 0) {
+			toolCall.name = event.toolName;
+		}
+		if (typeof event.toolCallId === "string" && event.toolCallId.length > 0) {
+			toolCall.id = event.toolCallId;
+		}
+		if (typeof event.argumentsDelta === "string") {
+			toolCall.arguments += event.argumentsDelta;
+		}
+		if (typeof event.arguments === "string") {
+			toolCall.arguments = event.arguments;
+		}
+		state.sawToolDelta = true;
+		return;
+	}
+
+	if (event.type === "stop") {
+		setGlobalFinishReason(mapStopReasonToIr(event.finishReason));
+	}
+}
+
+function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
+	if (!Array.isArray(value)) return [];
+	const parts: Array<Extract<IRContentPart, { type: "image" | "audio" }>> = [];
+	for (const item of value) {
+		if (!item || typeof item !== "object") continue;
+		const type = String(item.type ?? "").toLowerCase();
+		if (type === "image_url") {
+			const rawUrl =
+				typeof item.image_url === "string"
+					? item.image_url
+					: (typeof item.image_url?.url === "string" ? item.image_url.url : null);
+			if (!rawUrl) continue;
+			if (rawUrl.startsWith("data:")) {
+				const match = rawUrl.match(/^data:([^;,]+)?;base64,(.+)$/i);
+				if (!match) continue;
+				parts.push({
+					type: "image",
+					source: "data",
+					data: match[2],
+					mimeType:
+						(typeof item.mime_type === "string" ? item.mime_type : match[1]) || "image/png",
+				});
+				continue;
+			}
+			parts.push({
+				type: "image",
+				source: "url",
+				data: rawUrl,
+				...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+			});
+			continue;
+		}
+		if (type === "audio_url") {
+			const rawUrl =
+				typeof item.audio_url === "string"
+					? item.audio_url
+					: (typeof item.audio_url?.url === "string" ? item.audio_url.url : null);
+			if (!rawUrl) continue;
+			if (rawUrl.startsWith("data:")) {
+				const match = rawUrl.match(/^data:([^;,]+)?;base64,(.+)$/i);
+				if (!match) continue;
+				parts.push({
+					type: "audio",
+					source: "data",
+					data: match[2],
+					format: item.format,
+				});
+				continue;
+			}
+			parts.push({
+				type: "audio",
+				source: "url",
+				data: rawUrl,
+				format: item.format,
+			});
+		}
+	}
+	return parts;
+}
+
+function parseResponsesMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
+	if (!Array.isArray(value)) return [];
+	const parts: Array<Extract<IRContentPart, { type: "image" | "audio" }>> = [];
+	for (const item of value) {
+		if (!item || typeof item !== "object") continue;
+		const type = String(item.type ?? "").toLowerCase();
+		if (type === "output_image" || type === "image" || type === "image_url") {
+			if (typeof item.b64_json === "string" && item.b64_json.length > 0) {
+				parts.push({
+					type: "image",
+					source: "data",
+					data: item.b64_json,
+					...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+				});
+				continue;
+			}
+			const rawUrl =
+				typeof item.image_url === "string"
+					? item.image_url
+					: (typeof item.image_url?.url === "string" ? item.image_url.url : null);
+			if (!rawUrl) continue;
+			parts.push({
+				type: "image",
+				source: "url",
+				data: rawUrl,
+				...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+			});
+			continue;
+		}
+		if (type === "output_audio" || type === "audio" || type === "audio_url") {
+			if (typeof item.b64_json === "string" && item.b64_json.length > 0) {
+				parts.push({
+					type: "audio",
+					source: "data",
+					data: item.b64_json,
+					format: item.format,
+				});
+				continue;
+			}
+			const rawUrl =
+				typeof item.audio_url === "string"
+					? item.audio_url
+					: (typeof item.audio_url?.url === "string" ? item.audio_url.url : null);
+			if (!rawUrl) continue;
+			parts.push({
+				type: "audio",
+				source: "url",
+				data: rawUrl,
+				format: item.format,
+			});
+		}
+	}
+	return parts;
 }
 
 function buildIRFromAccumulatedEvents(args: {
@@ -401,7 +620,7 @@ function buildIRFromAccumulatedEvents(args: {
 
 	const outputChoices: IRChatResponse["choices"] = sortedIndices.map((choiceIndex) => {
 		const accumulator = args.choices.get(choiceIndex) ?? {
-			textParts: [],
+			outputParts: [],
 			reasoningParts: [],
 			toolCallsByKey: new Map<string, IRToolCall>(),
 			toolCallOrder: [],
@@ -415,12 +634,13 @@ function buildIRFromAccumulatedEvents(args: {
 				text: reasoningText,
 			});
 		}
-		const outputText = accumulator.textParts.join("");
-		if (outputText.length > 0) {
-			content.push({
-				type: "text",
-				text: outputText,
-			});
+		for (const part of accumulator.outputParts) {
+			const previous = content[content.length - 1];
+			if (part.type === "text" && previous?.type === "text") {
+				(previous as Extract<IRContentPart, { type: "text" }>).text += part.text;
+				continue;
+			}
+			content.push(part);
 		}
 
 		const toolCalls = accumulator.toolCallOrder
@@ -484,6 +704,12 @@ export async function consumeTextProtocolStreamToIR(args: {
 	let modelFromStream: string | undefined;
 	let globalFinishReason: IRChatResponse["choices"][number]["finishReason"] | null = null;
 	const choiceAccumulators = new Map<number, StreamChoiceAccumulator>();
+	const accumulationState: AccumulationState = {
+		sawOutputTextDelta: false,
+		sawReasoningTextDelta: false,
+		sawToolDelta: false,
+		sawContentPartDelta: false,
+	};
 
 	while (true) {
 		const { done, value } = await reader.read();
@@ -534,54 +760,15 @@ export async function consumeTextProtocolStreamToIR(args: {
 					usageRaw = event.usage;
 					continue;
 				}
-
-				if (event.type === "delta_text") {
-					const index = Number.isFinite(event.choiceIndex as number)
-						? Number(event.choiceIndex)
-						: 0;
-					const accumulator = getChoiceAccumulator(choiceAccumulators, index);
-					if (event.channel === "reasoning_text") {
-						accumulator.reasoningParts.push(event.text);
-					} else {
-						accumulator.textParts.push(event.text);
-					}
-					continue;
-				}
-
-				if (event.type === "delta_tool") {
-					const index = Number.isFinite(event.choiceIndex as number)
-						? Number(event.choiceIndex)
-						: 0;
-					const accumulator = getChoiceAccumulator(choiceAccumulators, index);
-					const key =
-						event.toolCallId ??
-						`tool_${index}_${event.toolIndex ?? accumulator.toolCallOrder.length}`;
-					let toolCall = accumulator.toolCallsByKey.get(key);
-					if (!toolCall) {
-						toolCall = {
-							id: event.toolCallId ?? `${args.requestId}_${key}`,
-							name: event.toolName ?? "tool_call",
-							arguments: "",
-						};
-						accumulator.toolCallsByKey.set(key, toolCall);
-						accumulator.toolCallOrder.push(key);
-					}
-					if (typeof event.toolName === "string" && event.toolName.length > 0) {
-						toolCall.name = event.toolName;
-					}
-					if (typeof event.argumentsDelta === "string") {
-						toolCall.arguments += event.argumentsDelta;
-					}
-					if (typeof event.arguments === "string") {
-						toolCall.arguments = event.arguments;
-					}
-					continue;
-				}
-
-				if (event.type === "stop") {
-					const mapped = mapStopReasonToIr(event.finishReason);
-					globalFinishReason = mapped;
-				}
+				applyUnifiedEventToAccumulators({
+					event,
+					choices: choiceAccumulators,
+					state: accumulationState,
+					setGlobalFinishReason: (reason) => {
+						globalFinishReason = reason;
+					},
+					requestId: args.requestId,
+				});
 			}
 		}
 	}
@@ -610,10 +797,21 @@ export async function consumeTextProtocolStreamToIR(args: {
 						finalSnapshot = event.payload;
 						nativeId = nativeId ?? resolveNativeId(event.payload);
 						modelFromStream = modelFromStream ?? resolveModelFromPayload(event.payload);
+						continue;
 					}
 					if (event.type === "usage") {
 						usageRaw = event.usage;
+						continue;
 					}
+					applyUnifiedEventToAccumulators({
+						event,
+						choices: choiceAccumulators,
+						state: accumulationState,
+						setGlobalFinishReason: (reason) => {
+							globalFinishReason = reason;
+						},
+						requestId: args.requestId,
+					});
 				}
 			} catch {
 				// ignore trailing invalid data frame
@@ -628,6 +826,44 @@ export async function consumeTextProtocolStreamToIR(args: {
 		lastPayload?.usage ??
 		lastPayload?.response?.usage ??
 		null;
+
+	if (rawResponse && typeof rawResponse === "object") {
+		const streamProtocol = toStreamProtocol(args.protocol);
+		if (streamProtocol) {
+			const fallbackEvents = buildUnifiedEventsFromPayload(streamProtocol, rawResponse);
+			for (const event of fallbackEvents) {
+				if (
+					event.type === "delta_text" &&
+					((event.channel === "output_text" && accumulationState.sawOutputTextDelta) ||
+						(event.channel === "reasoning_text" && accumulationState.sawReasoningTextDelta))
+				) {
+					continue;
+				}
+				if (event.type === "delta_content_part" && accumulationState.sawContentPartDelta) {
+					continue;
+				}
+				if (event.type === "delta_tool" && accumulationState.sawToolDelta) {
+					continue;
+				}
+				if (event.type === "usage" && usageRaw) {
+					continue;
+				}
+				if (event.type === "usage") {
+					usageRaw = event.usage;
+					continue;
+				}
+				applyUnifiedEventToAccumulators({
+					event,
+					choices: choiceAccumulators,
+					state: accumulationState,
+					setGlobalFinishReason: (reason) => {
+						globalFinishReason = reason;
+					},
+					requestId: args.requestId,
+				});
+			}
+		}
+	}
 
 	const ir = buildIRFromAccumulatedEvents({
 		requestId: args.requestId,

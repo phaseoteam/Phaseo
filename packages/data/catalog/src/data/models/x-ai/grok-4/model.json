@@ -2,12 +2,12 @@
   "model_id": "x-ai/grok-4",
   "organisation_id": "x-ai",
   "name": "Grok 4",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": "x-ai/grok-3-2025-04-18",
   "announced_date": "2025-07-10T00:00:00",
   "release_date": "2025-07-10T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-05-06T00:00:00",
+  "retirement_date": "2026-05-15T19:00:00",
   "license": "Proprietary",
   "input_types": "text",
   "output_types": "text",
@@ -20,6 +20,10 @@
     {
       "platform": "announcement",
       "url": "https://x.ai/news/grok-4"
+    },
+    {
+      "platform": "deprecation",
+      "url": "https://docs.x.ai/developers/migration/may-15-retirement"
     }
   ],
   "details": [

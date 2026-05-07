@@ -147,6 +147,83 @@ describe("fetchCatalogue", () => {
         expect(models[0]?.model_id).toBe("test/model-1");
     });
 
+    it("falls back when capability effective window columns are missing from the schema", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "test/model-1",
+                    name: "Test Model 1",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "available",
+                    organisation_id: null,
+                    input_types: ["text"],
+                    output_types: ["text"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [{
+                    provider_api_model_id: "pam_1",
+                    provider_id: "google-ai-studio",
+                    api_model_id: "test/model-1",
+                    model_id: "test/model-1",
+                    provider_model_slug: "test-model-1",
+                    is_active_gateway: true,
+                    routing_status: "active",
+                    input_modalities: ["text"],
+                    output_modalities: ["image"],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [
+                {
+                    data: null,
+                    error: {
+                        code: "PGRST204",
+                        message: "Could not find the 'effective_from' column of 'data_api_provider_model_capabilities' in the schema cache",
+                    },
+                },
+                {
+                    data: [{
+                        provider_api_model_id: "pam_1",
+                        capability_id: "responses",
+                        status: "active",
+                        params: { modalities: true },
+                    }],
+                    error: null,
+                },
+            ],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [{
+                    api_provider_id: "google-ai-studio",
+                    api_provider_name: "Google AI Studio",
+                    link: null,
+                    country_code: null,
+                    status: "active",
+                    routing_status: "active",
+                }],
+                error: null,
+            }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({});
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.providers[0]?.api_provider_id).toBe("google-ai-studio");
+        expect(models[0]?.endpoints).toContain("responses");
+    });
+
     it("filters models by requested statuses", async () => {
         const state: QueryState = { emptyCapabilityInCalled: false };
         const responses: Record<string, QueryResult[]> = {
@@ -1908,5 +1985,82 @@ describe("fetchCatalogue", () => {
             capability_status: "internal_testing",
             effective_from: futureEffectiveFrom,
         });
+    });
+
+    it("forces batch capability mappings into coming_soon", async () => {
+        const state: QueryState = { emptyCapabilityInCalled: false };
+        const responses: Record<string, QueryResult[]> = {
+            data_models: [{
+                data: [{
+                    model_id: "test/model-batch",
+                    name: "Batch Model",
+                    release_date: null,
+                    deprecation_date: null,
+                    retirement_date: null,
+                    status: "active",
+                    organisation_id: null,
+                    input_types: ["text"],
+                    output_types: ["text"],
+                    organisation: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_models: [{
+                data: [{
+                    provider_api_model_id: "pam_batch",
+                    provider_id: "openai",
+                    api_model_id: "test/model-batch",
+                    model_id: "test/model-batch",
+                    provider_model_slug: "batch-model",
+                    is_active_gateway: true,
+                    routing_status: "active",
+                    input_modalities: ["text"],
+                    output_modalities: ["text"],
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_provider_model_capabilities: [{
+                data: [{
+                    provider_api_model_id: "pam_batch",
+                    capability_id: "batch",
+                    status: "active",
+                    params: {},
+                    effective_from: null,
+                    effective_to: null,
+                }],
+                error: null,
+            }],
+            data_api_model_aliases: [{ data: [], error: null }],
+            data_api_providers: [{
+                data: [{
+                    api_provider_id: "openai",
+                    api_provider_name: "OpenAI",
+                    link: null,
+                    country_code: null,
+                    status: "active",
+                    routing_status: "active",
+                }],
+                error: null,
+            }],
+            data_api_pricing_rules: [{ data: [], error: null }],
+        };
+
+        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
+        const { fetchCatalogue } = await import("./models.catalogue");
+
+        const models = await fetchCatalogue({
+            availability: "all",
+            capabilityStatuses: ["coming_soon"],
+        });
+
+        expect(models).toHaveLength(1);
+        expect(models[0]?.providers[0]).toMatchObject({
+            capability_status: "coming_soon",
+            availability_status: "coming_soon",
+            availability_reason: "coming_soon",
+        });
+        expect(models[0]?.availability.status).toBe("coming_soon");
     });
 });

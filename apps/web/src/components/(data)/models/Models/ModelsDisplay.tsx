@@ -86,6 +86,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
@@ -118,6 +119,18 @@ type PreparedModel = {
 	throughputWeek: number | null;
 	latencyWeek: number | null;
 };
+
+type FilterDimension =
+	| "statuses"
+	| "endpoints"
+	| "inputModalities"
+	| "outputModalities"
+	| "features"
+	| "contextMin"
+	| "supportedParameters"
+	| "providers"
+	| "creators"
+	| "years";
 
 const SORT_OPTION_LABELS: Record<ModelsSortOption, string> = {
 	newest: "Newest",
@@ -499,6 +512,45 @@ function FilterCheckboxList({
 	);
 }
 
+function countPreparedValues(
+	models: PreparedModel[],
+	selector: (model: PreparedModel) => Iterable<string>,
+): Map<string, number> {
+	const counts = new Map<string, number>();
+	for (const model of models) {
+		for (const value of selector(model)) {
+			const normalized = String(value ?? "").trim();
+			if (!normalized) continue;
+			counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+		}
+	}
+	return counts;
+}
+
+function mergeOptionCounts(
+	baseOptions: OptionCount[],
+	counts: Map<string, number>,
+	selected: string[],
+): OptionCount[] {
+	const orderedValues = new Set<string>();
+	for (const option of baseOptions) {
+		const value = String(option.value ?? "").trim();
+		if (value) orderedValues.add(value);
+	}
+	for (const value of counts.keys()) {
+		const normalized = String(value ?? "").trim();
+		if (normalized) orderedValues.add(normalized);
+	}
+	for (const value of selected) {
+		const normalized = String(value ?? "").trim();
+		if (normalized) orderedValues.add(normalized);
+	}
+	return Array.from(orderedValues, (value) => ({
+		value,
+		count: counts.get(value) ?? 0,
+	}));
+}
+
 export default function ModelsDisplay({
 	models,
 	facets,
@@ -679,15 +731,14 @@ export default function ModelsDisplay({
 	const isTable = pathname?.includes("/models/table");
 	const isCollections = pathname?.includes("/models/collections");
 	const {
-		statusCounts,
-		endpointOptions,
-		inputModalityOptions,
-		outputModalityOptions,
-		featureOptions,
-		supportedParameterOptions,
-		providerOptions,
-		creatorOptions,
-		yearOptions,
+		endpointOptions: baseEndpointOptions,
+		inputModalityOptions: baseInputModalityOptions,
+		outputModalityOptions: baseOutputModalityOptions,
+		featureOptions: baseFeatureOptions,
+		supportedParameterOptions: baseSupportedParameterOptions,
+		providerOptions: baseProviderOptions,
+		creatorOptions: baseCreatorOptions,
+		yearOptions: baseYearOptions,
 	} = facets;
 
 	const activeFilterCount =
@@ -704,73 +755,185 @@ export default function ModelsDisplay({
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
-	const filteredModels = useMemo(() => {
-		const searchValue = deferredSearch.trim().toLowerCase();
-		const prepared = models.map((model) => {
-			const endpoints = Array.from(normalizedSet(model.gateway_endpoints));
-			const inputModalities = Array.from(
-				normalizedModalitySet(model.gateway_input_modalities),
-			);
-			const outputModalities = Array.from(
-				normalizedModalitySet(model.gateway_output_modalities),
-			);
-			const features = Array.from(normalizedSet(model.gateway_features));
-			const providerNames = Array.from(
-				normalizedSet(model.gateway_provider_names),
-			);
-			const apiModelIds = Array.from(
-				normalizedSet(model.gateway_api_model_ids),
-			);
-			const supportedParameters = Array.from(
-				normalizedSet(model.supported_parameters),
-			);
-			const maxContextLength = Math.max(
-				...((model.context_lengths ?? [])
-					.map((value) => Number(value))
-					.filter((value) => Number.isFinite(value) && value > 0)),
-			);
+	const preparedModels = useMemo(
+		() =>
+			models.map((model) => {
+				const endpoints = Array.from(normalizedSet(model.gateway_endpoints));
+				const inputModalities = Array.from(
+					normalizedModalitySet(model.gateway_input_modalities),
+				);
+				const outputModalities = Array.from(
+					normalizedModalitySet(model.gateway_output_modalities),
+				);
+				const features = Array.from(normalizedSet(model.gateway_features));
+				const providerNames = Array.from(
+					normalizedSet(model.gateway_provider_names),
+				);
+				const apiModelIds = Array.from(
+					normalizedSet(model.gateway_api_model_ids),
+				);
+				const supportedParameters = Array.from(
+					normalizedSet(model.supported_parameters),
+				);
+				const maxContextLength = Math.max(
+					...((model.context_lengths ?? [])
+						.map((value) => Number(value))
+						.filter((value) => Number.isFinite(value) && value > 0)),
+				);
 
-			return {
-				model,
-				status: getGatewayStatusBucket(model.gateway_status),
-				endpointsSet: new Set(endpoints),
-				inputModalitiesSet: new Set(inputModalities),
-				outputModalitiesSet: new Set(outputModalities),
-				featuresSet: new Set(features),
-				providerNamesSet: new Set(providerNames),
-				supportedParametersSet: new Set(supportedParameters),
-				maxContextLength:
-					Number.isFinite(maxContextLength) && maxContextLength > 0
-						? maxContextLength
-						: null,
-				creator: String(model.organisation_name ?? "").trim(),
-				modelYear: getModelYear(model),
-				searchIndex: [
-					String(model.name ?? "").trim(),
-					String(model.model_id ?? "").trim(),
-					...apiModelIds,
-				]
-					.join(" ")
-					.toLowerCase(),
-				sortPrice: getSortPrice(model),
-				sortContext: getSortContext(model),
-				popularityWeek:
-					Number.isFinite(Number(model.popularity_tokens_week)) &&
-					Number(model.popularity_tokens_week) > 0
-						? Number(model.popularity_tokens_week)
-						: null,
-				throughputWeek:
-					Number.isFinite(Number(model.throughput_week)) &&
-					Number(model.throughput_week) > 0
-						? Number(model.throughput_week)
-						: null,
-				latencyWeek:
-					Number.isFinite(Number(model.latency_week)) &&
-					Number(model.latency_week) > 0
-						? Number(model.latency_week)
-						: null,
-			};
-		});
+				return {
+					model,
+					status: getGatewayStatusBucket(model.gateway_status),
+					endpointsSet: new Set(endpoints),
+					inputModalitiesSet: new Set(inputModalities),
+					outputModalitiesSet: new Set(outputModalities),
+					featuresSet: new Set(features),
+					providerNamesSet: new Set(providerNames),
+					supportedParametersSet: new Set(supportedParameters),
+					maxContextLength:
+						Number.isFinite(maxContextLength) && maxContextLength > 0
+							? maxContextLength
+							: null,
+					creator: String(
+						normalizeOrganisationDisplayName(
+							model.organisation_name,
+							model.organisation_id,
+						) ?? "",
+					).trim(),
+					modelYear: getModelYear(model),
+					searchIndex: [
+						String(model.name ?? "").trim(),
+						String(model.model_id ?? "").trim(),
+						...apiModelIds,
+					]
+						.join(" ")
+						.toLowerCase(),
+					sortPrice: getSortPrice(model),
+					sortContext: getSortContext(model),
+					popularityWeek:
+						Number.isFinite(Number(model.popularity_tokens_week)) &&
+						Number(model.popularity_tokens_week) > 0
+							? Number(model.popularity_tokens_week)
+							: null,
+					throughputWeek:
+						Number.isFinite(Number(model.throughput_week)) &&
+						Number(model.throughput_week) > 0
+							? Number(model.throughput_week)
+							: null,
+					latencyWeek:
+						Number.isFinite(Number(model.latency_week)) &&
+						Number(model.latency_week) > 0
+							? Number(model.latency_week)
+							: null,
+				};
+			}),
+		[models],
+	);
+
+	const matchesPreparedModel = useCallback(
+		(
+			prepared: PreparedModel,
+			options?: { exclude?: FilterDimension | null },
+		): boolean => {
+			const exclude = options?.exclude ?? null;
+			const searchValue = deferredSearch.trim().toLowerCase();
+
+			if (
+				exclude !== "statuses" &&
+				selectedStatuses.length > 0 &&
+				!selectedStatuses.includes(prepared.status)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "endpoints" &&
+				selectedEndpoints.length > 0 &&
+				!selectedEndpoints.every((value) => prepared.endpointsSet.has(value))
+			) {
+				return false;
+			}
+			if (
+				exclude !== "inputModalities" &&
+				selectedInputModalities.length > 0 &&
+				!selectedInputModalities.every((value) =>
+					prepared.inputModalitiesSet.has(value),
+				)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "outputModalities" &&
+				selectedOutputModalities.length > 0 &&
+				!selectedOutputModalities.every((value) =>
+					prepared.outputModalitiesSet.has(value),
+				)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "features" &&
+				selectedFeatures.length > 0 &&
+				!selectedFeatures.every((value) => prepared.featuresSet.has(value))
+			) {
+				return false;
+			}
+			if (
+				exclude !== "contextMin" &&
+				selectedContextMin > 0 &&
+				(!prepared.maxContextLength ||
+					prepared.maxContextLength < selectedContextMin)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "supportedParameters" &&
+				selectedSupportedParameters.length > 0 &&
+				!selectedSupportedParameters.every((value) =>
+					prepared.supportedParametersSet.has(value),
+				)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "providers" &&
+				selectedProviders.length > 0 &&
+				!selectedProviders.every((value) => prepared.providerNamesSet.has(value))
+			) {
+				return false;
+			}
+			if (
+				exclude !== "creators" &&
+				selectedCreators.length > 0 &&
+				!selectedCreators.includes(prepared.creator)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "years" &&
+				selectedYears.length > 0 &&
+				!selectedYears.includes(prepared.modelYear)
+			) {
+				return false;
+			}
+			if (!searchValue) return true;
+			return prepared.searchIndex.includes(searchValue);
+		},
+		[
+			deferredSearch,
+			selectedContextMin,
+			selectedCreators,
+			selectedEndpoints,
+			selectedFeatures,
+			selectedInputModalities,
+			selectedOutputModalities,
+			selectedProviders,
+			selectedStatuses,
+			selectedSupportedParameters,
+			selectedYears,
+		],
+	);
+
+	const filteredPreparedModels = useMemo(() => {
 		const compareByNewest = (a: PreparedModel, b: PreparedModel) => {
 			const tsA = a.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
 			const tsB = b.model.primary_timestamp ?? Number.NEGATIVE_INFINITY;
@@ -778,78 +941,9 @@ export default function ModelsDisplay({
 			return (a.model.name ?? "").localeCompare(b.model.name ?? "");
 		};
 
-		const filtered = prepared
-			.filter((prepared) => {
-				if (
-					selectedStatuses.length > 0 &&
-					!selectedStatuses.includes(prepared.status)
-				) {
-					return false;
-				}
-				if (
-					selectedEndpoints.length > 0 &&
-					!selectedEndpoints.every((value) => prepared.endpointsSet.has(value))
-				) {
-					return false;
-				}
-				if (
-					selectedInputModalities.length > 0 &&
-					!selectedInputModalities.every((value) =>
-						prepared.inputModalitiesSet.has(value),
-					)
-				) {
-					return false;
-				}
-				if (
-					selectedOutputModalities.length > 0 &&
-					!selectedOutputModalities.every((value) =>
-						prepared.outputModalitiesSet.has(value),
-					)
-				) {
-					return false;
-				}
-				if (
-					selectedFeatures.length > 0 &&
-					!selectedFeatures.every((value) => prepared.featuresSet.has(value))
-				) {
-					return false;
-				}
-				if (
-					selectedContextMin > 0 &&
-					(!prepared.maxContextLength ||
-						prepared.maxContextLength < selectedContextMin)
-				) {
-					return false;
-				}
-				if (
-					selectedSupportedParameters.length > 0 &&
-					!selectedSupportedParameters.every((value) =>
-						prepared.supportedParametersSet.has(value),
-					)
-				) {
-					return false;
-				}
-				if (
-					selectedProviders.length > 0 &&
-					!selectedProviders.every((value) =>
-						prepared.providerNamesSet.has(value),
-					)
-				) {
-					return false;
-				}
-				if (
-					selectedCreators.length > 0 &&
-					!selectedCreators.includes(prepared.creator)
-				) {
-					return false;
-				}
-				if (selectedYears.length > 0 && !selectedYears.includes(prepared.modelYear)) {
-					return false;
-				}
-
-				if (!searchValue) return true;
-				return prepared.searchIndex.includes(searchValue);
-			});
+		const filtered = preparedModels.filter((prepared) =>
+			matchesPreparedModel(prepared),
+		);
 
 		const compareBySelectedSort = (a: PreparedModel, b: PreparedModel) => {
 			switch (selectedSort) {
@@ -877,19 +971,106 @@ export default function ModelsDisplay({
 			return compareByNewest(a, b);
 		});
 
-		return filtered.map((prepared) => prepared.model);
+		return filtered;
+	}, [matchesPreparedModel, preparedModels, selectedSort]);
+
+	const filteredModels = useMemo(
+		() => filteredPreparedModels.map((prepared) => prepared.model),
+		[filteredPreparedModels],
+	);
+
+	const dynamicSidebarCounts = useMemo(() => {
+		const withAllExcept = (dimension: FilterDimension) =>
+			preparedModels.filter((prepared) =>
+				matchesPreparedModel(prepared, { exclude: dimension }),
+			);
+
+		const statusSource = withAllExcept("statuses");
+		const statusCounts: Record<GatewayStatusFilter, number> = {
+			active: 0,
+			coming_soon: 0,
+			not_active: 0,
+		};
+		for (const prepared of statusSource) {
+			statusCounts[prepared.status] += 1;
+		}
+
+		return {
+			statusCounts,
+			endpointOptions: mergeOptionCounts(
+				baseEndpointOptions,
+				countPreparedValues(withAllExcept("endpoints"), (prepared) =>
+					prepared.endpointsSet.values(),
+				),
+				selectedEndpoints,
+			),
+			inputModalityOptions: mergeOptionCounts(
+				baseInputModalityOptions,
+				countPreparedValues(withAllExcept("inputModalities"), (prepared) =>
+					prepared.inputModalitiesSet.values(),
+				),
+				selectedInputModalities,
+			),
+			outputModalityOptions: mergeOptionCounts(
+				baseOutputModalityOptions,
+				countPreparedValues(withAllExcept("outputModalities"), (prepared) =>
+					prepared.outputModalitiesSet.values(),
+				),
+				selectedOutputModalities,
+			),
+			featureOptions: mergeOptionCounts(
+				baseFeatureOptions,
+				countPreparedValues(withAllExcept("features"), (prepared) =>
+					prepared.featuresSet.values(),
+				),
+				selectedFeatures,
+			),
+			supportedParameterOptions: mergeOptionCounts(
+				baseSupportedParameterOptions,
+				countPreparedValues(withAllExcept("supportedParameters"), (prepared) =>
+					prepared.supportedParametersSet.values(),
+				),
+				selectedSupportedParameters,
+			),
+			providerOptions: mergeOptionCounts(
+				baseProviderOptions,
+				countPreparedValues(withAllExcept("providers"), (prepared) =>
+					prepared.providerNamesSet.values(),
+				),
+				selectedProviders,
+			),
+			creatorOptions: mergeOptionCounts(
+				baseCreatorOptions,
+				countPreparedValues(withAllExcept("creators"), (prepared) =>
+					prepared.creator ? [prepared.creator] : [],
+				),
+				selectedCreators,
+			),
+			yearOptions: mergeOptionCounts(
+				baseYearOptions,
+				countPreparedValues(withAllExcept("years"), (prepared) =>
+					prepared.modelYear ? [prepared.modelYear] : [],
+				),
+				selectedYears,
+			),
+		};
 	}, [
-		deferredSearch,
-		models,
-		selectedSort,
-		selectedContextMin,
+		baseCreatorOptions,
+		baseEndpointOptions,
+		baseFeatureOptions,
+		baseInputModalityOptions,
+		baseOutputModalityOptions,
+		baseProviderOptions,
+		baseSupportedParameterOptions,
+		baseYearOptions,
+		matchesPreparedModel,
+		preparedModels,
 		selectedCreators,
 		selectedEndpoints,
 		selectedFeatures,
 		selectedInputModalities,
 		selectedOutputModalities,
 		selectedProviders,
-		selectedStatuses,
 		selectedSupportedParameters,
 		selectedYears,
 	]);
@@ -936,10 +1117,25 @@ export default function ModelsDisplay({
 	};
 
 	const gatewayStatusOptions: OptionCount[] = [
-		{ value: "active", count: statusCounts.active },
-		{ value: "coming_soon", count: statusCounts.coming_soon },
-		{ value: "not_active", count: statusCounts.not_active },
+		{ value: "active", count: dynamicSidebarCounts.statusCounts.active },
+		{
+			value: "coming_soon",
+			count: dynamicSidebarCounts.statusCounts.coming_soon,
+		},
+		{
+			value: "not_active",
+			count: dynamicSidebarCounts.statusCounts.not_active,
+		},
 	];
+	const endpointOptions = dynamicSidebarCounts.endpointOptions;
+	const inputModalityOptions = dynamicSidebarCounts.inputModalityOptions;
+	const outputModalityOptions = dynamicSidebarCounts.outputModalityOptions;
+	const featureOptions = dynamicSidebarCounts.featureOptions;
+	const supportedParameterOptions =
+		dynamicSidebarCounts.supportedParameterOptions;
+	const providerOptions = dynamicSidebarCounts.providerOptions;
+	const creatorOptions = dynamicSidebarCounts.creatorOptions;
+	const yearOptions = dynamicSidebarCounts.yearOptions;
 
 	const handleFilterSectionChange = (sections: string[]) => {
 		setOpenFilterSections(sections);

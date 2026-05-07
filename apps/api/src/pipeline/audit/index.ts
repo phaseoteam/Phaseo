@@ -14,6 +14,7 @@ function supaAdmin() {
 
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
+let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -36,19 +37,65 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, label: string, attempts
     throw finalErr;
 }
 
+function isMissingColumnError(
+    error: unknown,
+    column: string,
+    table?: string,
+): boolean {
+    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
+    const cause = candidate?.cause && typeof candidate.cause === "object"
+        ? candidate.cause as Record<string, unknown>
+        : null;
+    const code = String(cause?.code ?? candidate?.code ?? "");
+    const message = String(cause?.message ?? candidate?.message ?? "");
+    if (code !== "PGRST204" && code !== "42703") return false;
+    if (!message.toLowerCase().includes(column.toLowerCase())) return false;
+    if (!table) return true;
+    return message.toLowerCase().includes(table.toLowerCase());
+}
+
 async function insertGatewayRequest(row: any) {
     const client = supaAdmin();
-    const { data, error } = await client
-        .from("gateway_requests")
-        .insert(row)
-        .select("id, created_at, workspace_id")
-        .single();
-    if (error) {
-        const err = new Error(`[audit] insert gateway_requests error: ${error?.message ?? "unknown"}`);
-        (err as any).cause = error;
-        throw err;
+    const attemptInsert = async (payload: any) => {
+        const { data, error } = await client
+            .from("gateway_requests")
+            .insert(payload)
+            .select("id, created_at, workspace_id")
+            .single();
+        if (error) {
+            const err = new Error(`[audit] insert gateway_requests error: ${error?.message ?? "unknown"}`);
+            (err as any).cause = error;
+            throw err;
+        }
+        return data as { id: string; created_at: string; workspace_id: string };
+    };
+
+    const initialRow =
+        gatewayRequestsSupportsErrorPayloadColumn === false
+            ? (() => {
+                const { error_payload: _omit, ...legacyRow } = row ?? {};
+                return legacyRow;
+            })()
+            : row;
+
+    try {
+        const inserted = await attemptInsert(initialRow);
+        if (gatewayRequestsSupportsErrorPayloadColumn === null && "error_payload" in row) {
+            gatewayRequestsSupportsErrorPayloadColumn = true;
+        }
+        return inserted;
+    } catch (error) {
+        if (
+            "error_payload" in row &&
+            gatewayRequestsSupportsErrorPayloadColumn !== false &&
+            isMissingColumnError(error, "error_payload", "gateway_requests")
+        ) {
+            gatewayRequestsSupportsErrorPayloadColumn = false;
+            const { error_payload: _omit, ...legacyRow } = row;
+            return attemptInsert(legacyRow);
+        }
+        throw error;
     }
-    return data as { id: string; created_at: string; workspace_id: string };
 }
 
 function normalizeJsonValue(value: unknown): unknown {

@@ -93,6 +93,14 @@ function normalizeAssistantOutputs(content: ChatCompletionsRequest["messages"][n
     return outputs.length ? outputs : [toOutputText("")];
 }
 
+function hasMeaningfulAssistantOutput(outputs: any[]): boolean {
+    return outputs.some((item) => {
+        if (!item || typeof item !== "object") return false;
+        if (typeof item.text === "string" && item.text.length > 0) return true;
+        return Array.isArray(item.annotations) && item.annotations.length > 0;
+    });
+}
+
 function normalizeFunctionOutput(content: ChatCompletionsRequest["messages"][number]["content"] | string): any {
     if (typeof content === "string") return content;
     if (!Array.isArray(content)) return coerceString(content);
@@ -163,7 +171,7 @@ function mapMessageToInputItems(
     if (message.role === "assistant") {
         const items: any[] = [];
         const outputContent = normalizeAssistantOutputs(message.content);
-        if (outputContent.length) {
+        if (hasMeaningfulAssistantOutput(outputContent)) {
             items.push({
                 type: "message",
                 role: "assistant",
@@ -244,6 +252,10 @@ function mapGatewayToOpenAIResponses(body: ChatCompletionsRequest) {
 
     return payload;
 }
+
+export const __testing = {
+    mapGatewayToOpenAIResponses,
+};
 
 function mapFinishReason(raw: unknown): "stop" | "length" | "tool_calls" | "content_filter" | "error" | null {
     const value = typeof raw === "string" ? raw.toLowerCase() : null;

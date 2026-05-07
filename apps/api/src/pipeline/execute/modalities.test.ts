@@ -67,6 +67,24 @@ describe("filterCandidatesByModalities", () => {
 		expect(filtered[0].providerId).toBe("google-ai-studio");
 	});
 
+	it("keeps google image-preview candidates when stale metadata only advertises text output", () => {
+		const ir = buildTextImageRequest("google/gemini-2.5-flash-image");
+		const filtered = filterCandidatesByModalities(
+			[
+				candidate({
+					providerId: "google-ai-studio",
+					providerModelSlug: "gemini-2.5-flash-image",
+					inputModalities: ["text"],
+					outputModalities: ["text"],
+				}),
+			],
+			ir,
+		);
+
+		expect(filtered).toHaveLength(1);
+		expect(filtered[0].providerId).toBe("google-ai-studio");
+	});
+
 	it("still filters unknown-modality non-google providers for image output requests", () => {
 		const ir = buildTextImageRequest("openai/gpt-4o-mini");
 		const filtered = filterCandidatesByModalities(

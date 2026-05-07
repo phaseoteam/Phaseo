@@ -989,6 +989,51 @@ paths:
               schema:
                 type: string
                 format: binary
+  /videos/{video_id}/download_url:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideoDownloadUrl
+      summary: Create a signed video download URL
+      description: Returns a signed first-party download URL for a rendered video.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          description: The ID of the video generation request.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  minimum: 0
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                disposition:
+                  type: string
+                  enum:
+                    - attachment
+                    - inline
+      responses:
+        '200':
+          description: Signed download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: integer
   /ocr:
     post:
       x-beta: true
@@ -2175,6 +2220,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /health:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getHealth
+      summary: Health check
+      description: Returns a minimal gateway health snapshot.
+      responses:
+        '200':
+          description: Gateway health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
   /video/generations:
     get:
       x-beta: true
@@ -2318,6 +2382,50 @@ paths:
               schema:
                 type: string
                 format: binary
+  /video/generations/{video_id}/download_url:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: createVideoDownloadUrlAlias
+      summary: Create a signed video download URL (alias)
+      description: Alias of /videos/{video_id}/download_url.
+      parameters:
+        - name: video_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                index:
+                  type: integer
+                  minimum: 0
+                ttl_seconds:
+                  type: integer
+                  minimum: 1
+                disposition:
+                  type: string
+                  enum:
+                    - attachment
+                    - inline
+      responses:
+        '200':
+          description: Signed download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  download_url:
+                    type: string
+                  expires_at:
+                    type: integer
   /music/generations:
     post:
       x-beta: true

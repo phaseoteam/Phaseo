@@ -7,6 +7,7 @@ import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
 
 function normalizeModelName(model?: string | null): string {
     if (!model) return "";
@@ -33,6 +34,11 @@ async function parseAudioTextPayload(response: Response): Promise<Record<string,
     return { text };
 }
 
+function normalizeAudioTextUsage(payload: Record<string, any> | undefined): Record<string, any> | undefined {
+    const usage = payload?.usage;
+    if (!usage || typeof usage !== "object") return undefined;
+    return usage as Record<string, any>;
+}
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const keyInfo = await resolveOpenAICompatKey(args);
@@ -76,15 +82,27 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         body: form,
     });
 
+    const normalized = await parseAudioTextPayload(res);
+    let usage = normalizeAudioTextUsage(normalized);
+    if (res.ok) {
+        const estimated = await estimateOpenAiSpeechToTextUsage({
+            file: body.file,
+            prompt: body.prompt,
+            text: typeof normalized?.text === "string" ? normalized.text : undefined,
+        });
+        usage = mergeSpeechToTextUsage(usage, estimated);
+        if (normalized && typeof normalized === "object") {
+            normalized.usage = usage;
+        }
+    }
+
     const bill = {
         cost_cents: 0,
         currency: "USD" as const,
-        usage: undefined as any,
+        usage: usage as any,
         upstream_id: res.headers.get("x-request-id"),
         finish_reason: null,
     };
-
-    const normalized = await parseAudioTextPayload(res);
 
     return {
         kind: "completed",

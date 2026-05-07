@@ -28,7 +28,7 @@ function derivePricingPlan(_body: any, usage: any): string {
 function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: string): Record<string, unknown> {
     const options: Record<string, unknown> = {
         ...deriveCachePricingContext(body),
-        ...buildImagePricingRequestOptions(body ?? {}),
+        ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
     };
 

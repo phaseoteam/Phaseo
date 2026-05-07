@@ -228,7 +228,7 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]
@@ -249,7 +249,7 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]

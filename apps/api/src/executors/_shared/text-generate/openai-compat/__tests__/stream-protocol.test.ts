@@ -466,6 +466,54 @@ describe("resolveStreamForProtocol", () => {
 		expect(typeof imageBlock?.image_url?.url === "string" || typeof imageBlock?.b64_json === "string").toBe(true);
 	});
 
+	it("preserves delta-only image output when chat stream never emits a final snapshot", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_img_delta_1",
+					object: "chat.completion.chunk",
+					created: 1710000008,
+					model: "gemini-2.5-flash-image",
+					choices: [{
+						index: 0,
+						delta: {
+							content: "Done.",
+							images: [{
+								type: "image_url",
+								image_url: { url: "data:image/png;base64,ZmFrZS1pbWFnZQ==" },
+							}],
+						},
+						finish_reason: "stop",
+					}],
+					usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				providerId: "google-ai-studio",
+				endpoint: "responses",
+				protocol: "openai.responses",
+			}),
+			"chat",
+		);
+
+		const output = await readStreamText(stream);
+		const frames = parseSseJsonFrames(output);
+		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const outputItems = completed?.response?.output ?? [];
+		const messageItem = outputItems.find((item: any) => item?.type === "message");
+		const imageBlock = Array.isArray(messageItem?.content)
+			? messageItem.content.find((part: any) => part?.type === "output_image")
+			: null;
+
+		expect(imageBlock).toBeDefined();
+		expect(typeof imageBlock?.image_url?.url === "string" || typeof imageBlock?.b64_json === "string").toBe(true);
+	});
+
 	it("preserves audio output when converting chat stream to responses stream", async () => {
 		const upstream = makeSseResponse([
 			{

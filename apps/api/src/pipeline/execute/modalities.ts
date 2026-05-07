@@ -226,7 +226,12 @@ export function filterCandidatesByModalities(
 		// metadata can be temporarily missing/stale in provider rows.
 		if (isGoogleImagePreviewModel(candidate, ir.model)) {
 			if (input.size === 0) input = new Set<Modality>(["text", "image"]);
+			else input.add("text");
 			if (output.size === 0) output = new Set<Modality>(["text", "image"]);
+			else {
+				output.add("text");
+				output.add("image");
+			}
 		}
 
 		const inputOk = supportsRequiredModalities(

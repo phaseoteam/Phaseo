@@ -4,7 +4,6 @@ import { isProviderCapabilityEnabled, resolveProviderExecutor } from "../index";
 const KEY_EMBEDDINGS_PROVIDERS = [
 	"openai",
 	"google-ai-studio",
-	"google",
 	"google-vertex",
 	"alibaba-cloud",
 	"alibaba",

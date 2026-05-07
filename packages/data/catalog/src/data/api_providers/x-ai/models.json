@@ -117,7 +117,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-04-18T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-15T19:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -343,7 +343,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-07-10T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-15T19:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -449,7 +449,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-11-17T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-15T19:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -555,7 +555,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-11-17T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-15T19:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -951,7 +951,7 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-08-28T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-15T19:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -1090,10 +1090,36 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-01-29T00:00:00",
+    "effective_to": "2026-05-15T19:00:00",
+    "capabilities": [
+      {
+        "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "x-ai/grok-imagine-image-quality",
+    "provider_api_model_id": "x-ai:x-ai/grok-imagine-image-quality",
+    "provider_model_slug": "grok-imagine-image-quality",
+    "internal_model_id": "x-ai/grok-imagine-image-quality",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-06T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
         "capability_id": "image.generate",
+        "status": "active",
+        "params": []
+      },
+      {
+        "capability_id": "image.edit",
         "status": "active",
         "params": []
       }
@@ -1115,12 +1141,12 @@
     "capabilities": [
       {
         "capability_id": "video.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       },
       {
         "capability_id": "video.edit",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]

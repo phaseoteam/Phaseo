@@ -22,6 +22,8 @@ type WorkspaceLowBalanceSettingsRow = {
     low_balance_email_last_sent_balance_nanos: number | string | null;
 };
 
+let workspaceSettingsSupportsLowBalanceEmailColumns: boolean | null = null;
+
 function getStripe(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
@@ -75,27 +77,57 @@ function toFiniteNumber(value: unknown, fallback: number): number {
     return Number.isFinite(n) ? n : fallback;
 }
 
-async function maybeEnqueueLowBalanceAlert(workspaceId: string): Promise<void> {
-    const supabase = getSupabaseAdmin();
+function isMissingColumnError(error: unknown, column: string, table?: string): boolean {
+    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
+    const code = String(candidate?.code ?? "");
+    const message = String(candidate?.message ?? "");
+    if (code !== "PGRST204" && code !== "42703") return false;
+    if (!message.toLowerCase().includes(column.toLowerCase())) return false;
+    if (!table) return true;
+    return message.toLowerCase().includes(table.toLowerCase());
+}
 
-    const { data: settingsRow, error: settingsError } = await supabase
-        .from("workspace_settings")
-        .select(
-            "low_balance_email_enabled,low_balance_email_threshold_nanos,low_balance_email_last_sent_at,low_balance_email_last_sent_balance_nanos",
-        )
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
+async function loadWorkspaceLowBalanceSettings(
+    supabase: ReturnType<typeof getSupabaseAdmin>,
+    workspaceId: string,
+): Promise<WorkspaceLowBalanceSettingsRow | null> {
+    const selectLegacyCompatible = async () => {
+        const { data, error } = await supabase
+            .from("workspace_settings")
+            .select(
+                "low_balance_email_enabled,low_balance_email_threshold_nanos,low_balance_email_last_sent_at,low_balance_email_last_sent_balance_nanos",
+            )
+            .eq("workspace_id", workspaceId)
+            .maybeSingle();
+        return { data, error };
+    };
 
-    if (settingsError) {
-        console.error("[low-balance] failed to load workspace settings", {
-            workspaceId,
-            code: settingsError.code ?? null,
-            message: settingsError.message ?? String(settingsError),
-        });
-        return;
+    if (workspaceSettingsSupportsLowBalanceEmailColumns === false) {
+        return null;
     }
 
-    const typedSettings = (settingsRow ?? null) as WorkspaceLowBalanceSettingsRow | null;
+    const { data, error } = await selectLegacyCompatible();
+    if (!error) {
+        workspaceSettingsSupportsLowBalanceEmailColumns = true;
+        return (data ?? null) as WorkspaceLowBalanceSettingsRow | null;
+    }
+
+    if (isMissingColumnError(error, "low_balance_email_enabled", "workspace_settings")) {
+        workspaceSettingsSupportsLowBalanceEmailColumns = false;
+        return null;
+    }
+
+    console.error("[low-balance] failed to load workspace settings", {
+        workspaceId,
+        code: error.code ?? null,
+        message: error.message ?? String(error),
+    });
+    return null;
+}
+
+async function maybeEnqueueLowBalanceAlert(workspaceId: string): Promise<void> {
+    const supabase = getSupabaseAdmin();
+    const typedSettings = await loadWorkspaceLowBalanceSettings(supabase, workspaceId);
     if (!typedSettings?.low_balance_email_enabled) return;
 
     const thresholdNanos = toFiniteNumber(typedSettings.low_balance_email_threshold_nanos, 0);

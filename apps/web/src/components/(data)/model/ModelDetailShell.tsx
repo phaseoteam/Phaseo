@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Scale } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import ModelIdentifierControl from "./ModelIdentifierControl";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -90,6 +91,10 @@ export default async function ModelDetailShell({
 								<h1 className="mb-1 text-center text-3xl font-bold md:text-left">
 									{header.name}
 								</h1>
+								<ModelIdentifierControl
+									defaultIdentifier={header.model_id}
+									aliases={header.aliases}
+								/>
 								{includeHidden && header.hidden ? (
 									<Badge variant="secondary">Hidden</Badge>
 								) : null}

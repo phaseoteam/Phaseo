@@ -83,6 +83,16 @@ describe("google-ai-studio irToGemini", () => {
 		});
 	});
 
+	it("defaults Gemini image models to TEXT+IMAGE modalities when caller omits them", async () => {
+		const request = await irToGemini({
+			model: "google/gemini-2.5-flash-image",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "draw a blue square" }] }],
+		} as any);
+
+		expect(request.generationConfig?.responseModalities).toEqual(["TEXT", "IMAGE"]);
+	});
+
 	it("maps audio modality for Gemini responseModalities", async () => {
 		const request = await irToGemini({
 			model: "lyria-3-pro",

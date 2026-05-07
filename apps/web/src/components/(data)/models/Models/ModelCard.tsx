@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
@@ -389,7 +390,10 @@ function ModelCardImpl({
 	const displayModelId = apiModelId ?? "No API Model ID";
 	const isDisplayedApiModelFree = apiModelId?.toLowerCase().endsWith(":free") ?? false;
 	const organisationLabel = String(
-		model.organisation_name ?? model.organisation_id ?? "",
+		normalizeOrganisationDisplayName(
+			model.organisation_name,
+			model.organisation_id,
+		) ?? "",
 	).trim();
 	const modelDisplayName =
 		showOrganisationPrefix && organisationLabel

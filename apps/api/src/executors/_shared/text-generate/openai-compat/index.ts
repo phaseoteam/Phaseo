@@ -703,6 +703,20 @@ export async function bufferStreamToIR(
 	const decoder = new TextDecoder();
 	let buf = "";
 	let finalResponse: any = null;
+	const applyStreamPayload = (payload: any) => {
+		// Responses API sends response in payload.response
+		if (route === "responses" && payload?.response) {
+			finalResponse = payload.response;
+		}
+		// Some providers return chat completions even on /responses
+		else if (route === "responses" && Array.isArray(payload?.choices)) {
+			finalResponse = accumulateChatCompletion(finalResponse, payload);
+		}
+		// Chat Completions streaming: accumulate chunks into final response
+		else if (route === "chat") {
+			finalResponse = accumulateChatCompletion(finalResponse, payload);
+		}
+	};
 
 	let firstByteMs: number | null = null;
 	while (true) {
@@ -735,26 +749,35 @@ export async function bufferStreamToIR(
 			} catch {
 				continue;
 			}
-
-			// Responses API sends response in payload.response
-			if (route === "responses" && payload?.response) {
-				finalResponse = payload.response;
-			}
-			// Some providers return chat completions even on /responses
-			else if (route === "responses" && Array.isArray(payload?.choices)) {
-				finalResponse = accumulateChatCompletion(finalResponse, payload);
-			}
-			// Chat Completions streaming: accumulate chunks into final response
-			else if (route === "chat") {
-				finalResponse = accumulateChatCompletion(finalResponse, payload);
-			}
+			applyStreamPayload(payload);
 		}
 	}
 	buf += decoder.decode();
+	const trailing = buf.trim();
+	if (trailing.length > 0) {
+		const lines = trailing.split("\n");
+		let data = "";
+
+		for (const line of lines) {
+			const trimmed = line.replace(/\r$/, "");
+			if (trimmed.startsWith("data:")) {
+				data += trimmed.slice(5).trimStart();
+			}
+		}
+
+		if (data && data !== "[DONE]") {
+			try {
+				const payload = JSON.parse(data);
+				applyStreamPayload(payload);
+			} catch {
+				// Fall through to raw JSON parse below when applicable.
+			}
+		}
+	}
 
 	if (!finalResponse) {
 		// Some providers ignore stream=true and return a regular JSON response body.
-		const fallbackText = buf.trim();
+		const fallbackText = trailing;
 		if (fallbackText) {
 			try {
 				const parsed = JSON.parse(fallbackText);

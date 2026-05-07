@@ -32,7 +32,7 @@ export async function readSseFrames(res: Response): Promise<string[]> {
         const { value, done } = await reader.read();
         if (done) break;
         buf += decoder.decode(value, { stream: true });
-        const parts = buf.split(/\n\n/);
+        const parts = buf.split(/\r?\n\r?\n/);
         buf = parts.pop() ?? "";
         for (const raw of parts) {
             frames.push(raw);
@@ -47,7 +47,7 @@ export function parseSseJson(frames: string[]): any[] {
     const out: any[] = [];
     for (const raw of frames) {
         let data = "";
-        for (const line of raw.split("\n")) {
+        for (const line of raw.split(/\r?\n/)) {
             const trimmed = line.replace(/\r$/, "");
             if (trimmed.startsWith("data:")) {
                 data += trimmed.slice(5).trimStart();
@@ -78,7 +78,7 @@ export function parseSseFrames(frames: string[]): ParsedSseFrame[] {
 	for (const raw of frames) {
 		let eventName: string | null = null;
 		let data = "";
-		for (const line of raw.split("\n")) {
+		for (const line of raw.split(/\r?\n/)) {
 			const trimmed = line.replace(/\r$/, "");
 			if (trimmed.startsWith("event:")) {
 				eventName = trimmed.slice(6).trim() || null;

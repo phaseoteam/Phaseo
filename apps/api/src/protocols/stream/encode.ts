@@ -116,6 +116,65 @@ function encodeOpenAIChat(
 			},
 		};
 	}
+	if (event.type === "delta_content_part") {
+		if (event.part.type === "image") {
+			const url =
+				event.part.source === "data"
+					? `data:${event.part.mimeType || "image/png"};base64,${event.part.data}`
+					: event.part.data;
+			return {
+				frame: {
+					object: "chat.completion.chunk",
+					choices: [
+						{
+							index: event.choiceIndex ?? 0,
+							delta: {
+								images: [{
+									type: "image_url",
+									image_url: { url },
+									...(event.part.mimeType ? { mime_type: event.part.mimeType } : {}),
+								}],
+							},
+							finish_reason: null,
+						},
+					],
+				},
+			};
+		}
+		const mimeType = (() => {
+			if (event.part.format === "wav") return "audio/wav";
+			if (event.part.format === "mp3") return "audio/mpeg";
+			if (event.part.format === "flac") return "audio/flac";
+			if (event.part.format === "m4a") return "audio/m4a";
+			if (event.part.format === "ogg") return "audio/ogg";
+			if (event.part.format === "pcm16") return "audio/l16";
+			if (event.part.format === "pcm24") return "audio/l24";
+			return "audio/wav";
+		})();
+		const url =
+			event.part.source === "data"
+				? `data:${mimeType};base64,${event.part.data}`
+				: event.part.data;
+		return {
+			frame: {
+				object: "chat.completion.chunk",
+				choices: [
+					{
+						index: event.choiceIndex ?? 0,
+						delta: {
+							audios: [{
+								type: "audio_url",
+								audio_url: { url },
+								mime_type: mimeType,
+								...(event.part.format ? { format: event.part.format } : {}),
+							}],
+						},
+						finish_reason: null,
+					},
+				],
+			},
+		};
+	}
 	if (event.type === "stop") {
 		return {
 			frame: {
@@ -184,6 +243,70 @@ function encodeOpenAIResponses(
 				...(hasDelta
 					? { delta: event.argumentsDelta }
 					: { arguments: event.arguments ?? "" }),
+			},
+		};
+	}
+	if (event.type === "delta_content_part") {
+		if (event.part.type === "image") {
+			return {
+				eventName: "response.output_item.added",
+				frame: {
+					output_index: event.choiceIndex ?? 0,
+					item: {
+						type: "message",
+						role: "assistant",
+						status: "in_progress",
+						content: [
+							event.part.source === "data"
+								? {
+									type: "output_image",
+									b64_json: event.part.data,
+									mime_type: event.part.mimeType,
+								}
+								: {
+									type: "output_image",
+									image_url: { url: event.part.data },
+									mime_type: event.part.mimeType,
+								},
+						],
+					},
+				},
+			};
+		}
+		const mimeType = (() => {
+			if (event.part.format === "wav") return "audio/wav";
+			if (event.part.format === "mp3") return "audio/mpeg";
+			if (event.part.format === "flac") return "audio/flac";
+			if (event.part.format === "m4a") return "audio/m4a";
+			if (event.part.format === "ogg") return "audio/ogg";
+			if (event.part.format === "pcm16") return "audio/l16";
+			if (event.part.format === "pcm24") return "audio/l24";
+			return "audio/wav";
+		})();
+		return {
+			eventName: "response.output_item.added",
+			frame: {
+				output_index: event.choiceIndex ?? 0,
+				item: {
+					type: "message",
+					role: "assistant",
+					status: "in_progress",
+					content: [
+						event.part.source === "data"
+							? {
+								type: "output_audio",
+								b64_json: event.part.data,
+								mime_type: mimeType,
+								...(event.part.format ? { format: event.part.format } : {}),
+							}
+							: {
+								type: "output_audio",
+								audio_url: { url: event.part.data },
+								mime_type: mimeType,
+								...(event.part.format ? { format: event.part.format } : {}),
+							},
+					],
+				},
 			},
 		};
 	}

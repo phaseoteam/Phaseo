@@ -18,11 +18,13 @@ import { audioTranscriptionRoutes } from "./audio-transcription";
 import { audioTranslationRoutes } from "./audio-translation";
 import { imagesGenerationsRoutes } from "./images-generations";
 import { imagesEditsRoutes } from "./images-edits";
-import { videosRoutes } from "./videos";
+import {
+    disabledBatchRoutes,
+    disabledFilesRoutes,
+    disabledMusicRoutes,
+    disabledVideosRoutes,
+} from "./feature-disabled";
 import { ocrRoutes } from "./ocr";
-import { musicGenerateRoutes } from "./music-generate";
-import { batchRoutes } from "./batches";
-import { filesRoutes } from "./files";
 import { asyncJobsRoutes } from "./async-jobs";
 
 export const inferenceRouter = new Hono<Env>();
@@ -39,14 +41,14 @@ inferenceRouter.route("/audio/transcriptions", audioTranscriptionRoutes);
 inferenceRouter.route("/audio/translations", audioTranslationRoutes);
 inferenceRouter.route("/images/generations", imagesGenerationsRoutes);
 inferenceRouter.route("/images/edits", imagesEditsRoutes);
-inferenceRouter.route("/videos", videosRoutes);
-inferenceRouter.route("/video/generations", videosRoutes);
+inferenceRouter.route("/videos", disabledVideosRoutes);
+inferenceRouter.route("/video/generations", disabledVideosRoutes);
 inferenceRouter.route("/ocr", ocrRoutes);
-inferenceRouter.route("/music/generate", musicGenerateRoutes);
-inferenceRouter.route("/music/generations", musicGenerateRoutes);
-inferenceRouter.route("/batch", batchRoutes);
-inferenceRouter.route("/batches", batchRoutes);
-inferenceRouter.route("/files", filesRoutes);
+inferenceRouter.route("/music/generate", disabledMusicRoutes);
+inferenceRouter.route("/music/generations", disabledMusicRoutes);
+inferenceRouter.route("/batch", disabledBatchRoutes);
+inferenceRouter.route("/batches", disabledBatchRoutes);
+inferenceRouter.route("/files", disabledFilesRoutes);
 inferenceRouter.route("/async", asyncJobsRoutes);
 
 // Backward-compatible alias for existing imports.

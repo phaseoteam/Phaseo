@@ -1,0 +1,7 @@
+{
+  "alias_slug": "google/veo-latest",
+  "resolved_api_model_id": "google/veo-3.1-preview",
+  "channel": "preview",
+  "is_enabled": true,
+  "notes": null
+}

@@ -227,11 +227,75 @@
     "capabilities": []
   },
   {
+    "api_model_id": "openai/chat-latest",
+    "provider_api_model_id": "openai:openai/chat-latest",
+    "provider_model_slug": "chat-latest",
+    "internal_model_id": "openai/chat-latest",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 16384,
+    "effective_from": "2026-05-05T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/codex-mini",
     "provider_api_model_id": "openai:openai/codex-mini",
     "provider_model_slug": "codex-mini-latest",
     "internal_model_id": "openai/codex-mini",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -281,7 +345,13 @@
     "max_output_tokens": null,
     "effective_from": "2020-06-11T00:00:00",
     "effective_to": "2024-01-04T00:00:00",
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/dall-e-2",
@@ -1787,7 +1857,7 @@
     "provider_api_model_id": "openai:openai/gpt-4o-mini-transcribe",
     "provider_model_slug": "gpt-4o-mini-transcribe",
     "internal_model_id": "openai/gpt-4o-mini-transcribe",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio_stt",
@@ -1795,14 +1865,27 @@
     "max_output_tokens": 2000,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [
+          { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "include", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+        ]
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-4o-mini-tts",
     "provider_api_model_id": "openai:openai/gpt-4o-mini-tts",
     "provider_model_slug": "gpt-4o-mini-tts",
     "internal_model_id": "openai/gpt-4o-mini-tts",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "audio_tts",
@@ -1810,7 +1893,13 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-4o-search-preview",
@@ -1832,7 +1921,7 @@
     "provider_api_model_id": "openai:openai/gpt-4o-transcribe",
     "provider_model_slug": "gpt-4o-transcribe",
     "internal_model_id": "openai/gpt-4o-transcribe",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,audio",
     "output_modalities": "text,audio_stt",
@@ -1840,7 +1929,20 @@
     "max_output_tokens": 2000,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [
+          { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "include", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+        ]
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-4-turbo-2023-03-14",
@@ -2947,7 +3049,7 @@
       },
         {
           "capability_id": "batch",
-          "status": "disabled",
+          "status": "coming_soon",
           "params": []
         }
     ]
@@ -3200,7 +3302,7 @@
       },
         {
           "capability_id": "batch",
-          "status": "disabled",
+          "status": "coming_soon",
           "params": []
         }
     ]
@@ -3325,7 +3427,7 @@
       },
         {
           "capability_id": "batch",
-          "status": "active",
+          "status": "coming_soon",
           "params": []
         }
     ]
@@ -3450,7 +3552,7 @@
       },
         {
           "capability_id": "batch",
-          "status": "active",
+          "status": "coming_soon",
           "params": []
         }
     ]
@@ -4978,7 +5080,7 @@
     "provider_api_model_id": "openai:openai/whisper-1",
     "provider_model_slug": "whisper-1",
     "internal_model_id": "openai/whisper-1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "audio",
     "output_modalities": "text",
@@ -4986,6 +5088,27 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "audio.transcription",
+        "status": "active",
+        "params": [
+          { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+        ]
+      },
+      {
+        "capability_id": "audio.translations",
+        "status": "active",
+        "params": [
+          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
+          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+        ]
+      }
+    ]
   }
 ]

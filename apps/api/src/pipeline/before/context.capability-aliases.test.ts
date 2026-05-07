@@ -41,6 +41,17 @@ describe("getContextCapabilityCandidates", () => {
 		]);
 	});
 
+	it("expands audio speech capability aliases", () => {
+		expect(getContextCapabilityCandidates("audio.speech")).toEqual([
+			"audio.speech",
+			"audio.generate",
+		]);
+		expect(getContextCapabilityCandidates("audio.generate")).toEqual([
+			"audio.generate",
+			"audio.speech",
+		]);
+	});
+
 	it("keeps unrelated capabilities unchanged", () => {
 		expect(getContextCapabilityCandidates("text.generate")).toEqual([
 			"text.generate",

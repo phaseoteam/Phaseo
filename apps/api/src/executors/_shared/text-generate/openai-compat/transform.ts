@@ -113,13 +113,17 @@ export function irToOpenAIResponses(
 				content: msg.content.map(mapContentPart),
 			});
 		} else if (msg.role === "assistant") {
+			const assistantContent = msg.content.map(mapAssistantContentPart).filter(Boolean);
+
 			// Assistant message with optional tool calls
-			inputItems.push({
-				type: "message",
-				role: "assistant",
-				content: msg.content.map(mapAssistantContentPart).filter(Boolean),
-				...(msg.phase !== undefined ? { phase: msg.phase } : {}),
-			});
+			if (hasMeaningfulAssistantContent(assistantContent)) {
+				inputItems.push({
+					type: "message",
+					role: "assistant",
+					content: assistantContent,
+					...(msg.phase !== undefined ? { phase: msg.phase } : {}),
+				});
+			}
 
 			// Add tool calls as function_call items
 			if (msg.toolCalls) {
@@ -372,6 +376,13 @@ function mapAssistantContentPart(part: IRContentPart): any {
 	return { type: "output_text", text: String(part) };
 }
 
+function hasMeaningfulAssistantContent(content: any[]): boolean {
+	return content.some((part) => {
+		if (!part || typeof part !== "object") return false;
+		return typeof part.text === "string" && part.text.length > 0;
+	});
+}
+
 /**
  * Transform OpenAI Responses API response to IR format
  *
@@ -403,6 +414,146 @@ export function openAIResponsesToIR(
 	// Process output items
 	// Group by index to handle multiple choices
 	const choicesMap = new Map<number, IRChoice>();
+	const toInlineImagePart = (value: any): IRContentPart | null => {
+		if (!value || typeof value !== "object") return null;
+		const type = String(value.type ?? "").toLowerCase();
+		const isImageType =
+			type === "output_image" ||
+			type === "image" ||
+			type === "image_url" ||
+			type === "input_image";
+		if (!isImageType) return null;
+
+		const b64 =
+			typeof value.b64_json === "string"
+				? value.b64_json
+				: typeof value.data === "string"
+					? value.data
+					: null;
+		const mimeType =
+			typeof value.mime_type === "string"
+				? value.mime_type
+				: typeof value.mimeType === "string"
+					? value.mimeType
+					: undefined;
+
+		if (b64) {
+			return {
+				type: "image",
+				source: "data",
+				data: b64,
+				...(mimeType ? { mimeType } : {}),
+			};
+		}
+
+		const urlValue =
+			typeof value.image_url === "string"
+				? value.image_url
+				: typeof value.image_url?.url === "string"
+					? value.image_url.url
+					: typeof value.url === "string"
+						? value.url
+						: null;
+		if (!urlValue) return null;
+
+		return {
+			type: "image",
+			source: "url",
+			data: urlValue,
+			...(mimeType ? { mimeType } : {}),
+		};
+	};
+
+	const extractInlineImages = (value: any): IRContentPart[] => {
+		if (!Array.isArray(value)) return [];
+		const out: IRContentPart[] = [];
+		for (const part of value) {
+			const imagePart = toInlineImagePart(part);
+			if (imagePart) out.push(imagePart);
+		}
+		return out;
+	};
+
+	const toInlineAudioPart = (value: any): IRContentPart | null => {
+		if (!value || typeof value !== "object") return null;
+		const type = String(value.type ?? "").toLowerCase();
+		const isAudioType =
+			type === "output_audio" ||
+			type === "audio" ||
+			type === "audio_url" ||
+			type === "input_audio";
+		if (!isAudioType) return null;
+
+		const mimeType =
+			typeof value.mime_type === "string"
+				? value.mime_type
+				: typeof value.mimeType === "string"
+					? value.mimeType
+					: undefined;
+		const normalizedMimeType = mimeType?.toLowerCase();
+		const format =
+			typeof value.format === "string"
+				? value.format
+				: normalizedMimeType === "audio/wav" || normalizedMimeType === "audio/x-wav"
+					? "wav"
+					: normalizedMimeType === "audio/mpeg" || normalizedMimeType === "audio/mp3"
+						? "mp3"
+						: normalizedMimeType === "audio/flac"
+							? "flac"
+							: normalizedMimeType === "audio/m4a" || normalizedMimeType === "audio/mp4" || normalizedMimeType === "audio/x-m4a"
+								? "m4a"
+								: normalizedMimeType === "audio/ogg"
+									? "ogg"
+									: normalizedMimeType === "audio/l16" || normalizedMimeType === "audio/pcm"
+										? "pcm16"
+										: normalizedMimeType === "audio/l24"
+											? "pcm24"
+											: undefined;
+
+		const b64 =
+			typeof value.b64_json === "string"
+				? value.b64_json
+				: typeof value.audio_base64 === "string"
+					? value.audio_base64
+					: typeof value.data === "string"
+						? value.data
+						: null;
+		if (b64) {
+			return {
+				type: "audio",
+				source: "data",
+				data: b64,
+				...(format ? { format } : {}),
+			};
+		}
+
+		const urlValue =
+			typeof value.audio_url === "string"
+				? value.audio_url
+				: typeof value.audio_url?.url === "string"
+					? value.audio_url.url
+					: typeof value.url === "string"
+						? value.url
+						: null;
+		if (!urlValue) return null;
+
+		return {
+			type: "audio",
+			source: "url",
+			data: urlValue,
+			...(format ? { format } : {}),
+		};
+	};
+
+	const extractInlineAudios = (value: any): IRContentPart[] => {
+		if (!Array.isArray(value)) return [];
+		const out: IRContentPart[] = [];
+		for (const part of value) {
+			const audioPart = toInlineAudioPart(part);
+			if (audioPart) out.push(audioPart);
+		}
+		return out;
+	};
 
 	const outputItems = Array.isArray(json?.output_items)
 		? json.output_items
@@ -463,6 +614,9 @@ export function openAIResponsesToIR(
 						text: main,
 					});
 				}
+
+				choice.message.content.push(...extractInlineImages(item.content));
+				choice.message.content.push(...extractInlineAudios(item.content));
 			}
 		} else if (item.type === "reasoning" || item.type === "reasoning_details") {
 			const reasoningText = extractReasoningText(item);
@@ -471,6 +625,24 @@ export function openAIResponsesToIR(
 					type: "reasoning_text",
 					text: reasoningText,
 				});
+			}
+		} else if (
+			item.type === "output_image" ||
+			item.type === "image" ||
+			item.type === "image_url"
+		) {
+			const imagePart = toInlineImagePart(item);
+			if (imagePart) {
+				choice.message.content.push(imagePart);
+			}
+		} else if (
+			item.type === "output_audio" ||
+			item.type === "audio" ||
+			item.type === "audio_url"
+		) {
+			const audioPart = toInlineAudioPart(item);
+			if (audioPart) {
+				choice.message.content.push(audioPart);
 			}
 		} else if (item.type === "function_call" || item.type === "tool_call") {
 			// Tool call from assistant

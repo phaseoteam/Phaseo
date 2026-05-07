@@ -2,6 +2,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "./visibility";
+import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 
 export interface ModelCard {
     model_id: string;
@@ -120,7 +121,10 @@ export function mapRawToModelCard(
         model_id: raw.model_id ?? raw.id ?? raw.slug ?? '',
         name: raw.name ?? '',
         organisation_id: raw.organisation_id ?? '',
-        organisation_name: raw.organisation?.name ?? null,
+        organisation_name: normalizeOrganisationDisplayName(
+            raw.organisation?.name,
+            raw.organisation_id,
+        ),
         organisation_colour:
             raw.organisation?.colour ?? raw.organisation?.color ?? null,
         status: raw.status ?? null,

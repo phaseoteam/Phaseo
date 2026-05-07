@@ -68,5 +68,49 @@ describe("encodeUnifiedStreamEvent", () => {
 		expect(encoded?.frame.response?.status).toBe("completed");
 		expect(encoded?.frame.response?.usage?.total_tokens).toBe(5);
 	});
+
+	it("encodes image deltas for openai chat completions", () => {
+		const encoded = encodeUnifiedStreamEvent(
+			"openai.chat.completions",
+			{
+				type: "delta_content_part",
+				part: {
+					type: "image",
+					source: "data",
+					data: "ZmFrZQ==",
+					mimeType: "image/png",
+				},
+				choiceIndex: 0,
+			},
+			{ requestId: "req_img", model: "gemini-test" },
+		);
+
+		expect(encoded?.frame.object).toBe("chat.completion.chunk");
+		expect(encoded?.frame.choices?.[0]?.delta?.images?.[0]?.image_url?.url).toBe(
+			"data:image/png;base64,ZmFrZQ==",
+		);
+	});
+
+	it("encodes image content parts for openai responses", () => {
+		const encoded = encodeUnifiedStreamEvent(
+			"openai.responses",
+			{
+				type: "delta_content_part",
+				part: {
+					type: "image",
+					source: "data",
+					data: "ZmFrZQ==",
+					mimeType: "image/png",
+				},
+				choiceIndex: 0,
+			},
+			{ requestId: "resp_img", model: "gemini-test" },
+		);
+
+		expect(encoded?.eventName).toBe("response.output_item.added");
+		expect(encoded?.frame.item?.type).toBe("message");
+		expect(encoded?.frame.item?.content?.[0]?.type).toBe("output_image");
+		expect(encoded?.frame.item?.content?.[0]?.b64_json).toBe("ZmFrZQ==");
+	});
 });
 
