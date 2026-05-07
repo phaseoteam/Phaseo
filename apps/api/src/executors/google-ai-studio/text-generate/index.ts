@@ -25,6 +25,8 @@ import {
 } from "../../google/shared/thinking";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
+import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -582,31 +584,21 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 			const totalMs = Date.now() - upstreamStartMs;
 			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
-			const encoder = new TextEncoder();
-			const chatStream = new ReadableStream<Uint8Array>({
-				start(controller) {
-					controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalPayload)}\n\n`));
-					controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-					controller.close();
-				},
-			});
 			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 			const stream =
 				protocol === "openai.chat.completions"
-					? chatStream
-					: resolveStreamForProtocol(
-						new Response(chatStream),
-						{
-							...args,
-							providerModelSlug: model,
-							ir: {
-								...args.ir,
-								model,
-								stream: true,
-							},
-						} as ExecutorExecuteArgs,
-						"chat",
-					);
+					? buildSyntheticServerToolStream({
+						protocol,
+						payload: finalPayload,
+						requestId,
+						model,
+						created: finalPayload.created,
+					})
+					: createSyntheticResponsesStreamFromIR(irResponse, requestId);
+
+			if (!stream) {
+				throw new Error("google_ai_studio_synthetic_stream_failed");
+			}
 
 			return {
 				kind: "stream",

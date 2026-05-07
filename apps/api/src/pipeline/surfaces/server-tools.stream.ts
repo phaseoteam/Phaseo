@@ -121,13 +121,13 @@ function buildUnifiedEventsFromResponsesPayload(payload: any): UnifiedStreamEven
 						choiceIndex: outputIndex,
 					});
 				}
-			}
-			for (const part of parseResponsesMediaParts(contentParts)) {
-				events.push({
-					type: "delta_content_part",
-					part,
-					choiceIndex: outputIndex,
-				});
+				for (const mediaPart of parseResponsesMediaParts([part])) {
+					events.push({
+						type: "delta_content_part",
+						part: mediaPart,
+						choiceIndex: outputIndex,
+					});
+				}
 			}
 		}
 		if (itemType === "reasoning") {

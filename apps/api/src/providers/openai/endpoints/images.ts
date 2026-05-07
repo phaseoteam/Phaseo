@@ -38,10 +38,7 @@ function logRawImageResponse(
             model: args.model,
             status: status ?? null,
             contentType: contentType ?? null,
-            rawTextPreview:
-                typeof rawText === "string" && rawText.length > 0
-                    ? rawText.slice(0, 1200)
-                    : null,
+            rawTextLength: typeof rawText === "string" ? rawText.length : null,
         });
         return;
     }

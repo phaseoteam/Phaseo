@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { consumeTextProtocolStreamToIR } from "./server-tools.stream";
+import { buildSyntheticServerToolStream, consumeTextProtocolStreamToIR } from "./server-tools.stream";
 
 function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 	const encoder = new TextEncoder();
@@ -227,6 +227,62 @@ describe("consumeTextProtocolStreamToIR", () => {
 				data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
 				mimeType: "image/png",
 			},
+		]);
+	});
+
+	it("preserves response content ordering when media precedes text", async () => {
+		const syntheticStream = buildSyntheticServerToolStream({
+			protocol: "openai.responses",
+			requestId: "resp_gemini_image_order",
+			model: "google/gemini-2.5-flash-image",
+			payload: {
+				id: "resp_gemini_image_order",
+				object: "response",
+				created_at: 1778073808,
+				model: "google/gemini-2.5-flash-image",
+				status: "completed",
+				output: [
+					{
+						type: "message",
+						id: "msg_gemini_image_order",
+						status: "completed",
+						role: "assistant",
+						content: [
+							{
+								type: "output_image",
+								b64_json: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
+								mime_type: "image/png",
+							},
+							{ type: "output_text", text: "Then some text.", annotations: [] },
+						],
+					},
+				],
+				usage: {
+					input_tokens: 12,
+					output_tokens: 18,
+					total_tokens: 30,
+				},
+			},
+		});
+
+		expect(syntheticStream).not.toBeNull();
+
+		const consumed = await consumeTextProtocolStreamToIR({
+			protocol: "openai.responses",
+			stream: syntheticStream as ReadableStream<Uint8Array>,
+			requestId: "resp_gemini_image_order",
+			model: "google/gemini-2.5-flash-image",
+			provider: "google-ai-studio",
+		});
+
+		expect(consumed.ir.choices[0]?.message?.content).toEqual([
+			{
+				type: "image",
+				source: "data",
+				data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB",
+				mimeType: "image/png",
+			},
+			{ type: "text", text: "Then some text." },
 		]);
 	});
 });

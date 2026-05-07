@@ -8,7 +8,7 @@ vi.mock("@/runtime/env", () => ({
 
 type QueryResult = {
     data: any;
-    error: { message?: string } | null;
+    error: { message?: string; code?: string } | null;
 };
 
 type QueryState = {
