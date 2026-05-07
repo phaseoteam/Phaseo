@@ -327,6 +327,36 @@ function formatPriceWithUnit(
 	return `${amount} / ${normalizedUnit}`;
 }
 
+function inferPriceUnitFromModality(modalityKey: string): string | null {
+	if (modalityKey === "image") return "image";
+	if (modalityKey === "video") return "video";
+	if (modalityKey === "audio" || modalityKey === "audio_tts") return "minute";
+	return null;
+}
+
+function summarizePricingValues(values: string[]): string | null {
+	const parsed = values
+		.map((value) => {
+			const match = value.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s+\/\s+(.+)$/);
+			if (!match) return null;
+			const min = Number(match[1]?.replace(/,/g, ""));
+			const max = Number((match[2] ?? match[1])?.replace(/,/g, ""));
+			const unit = match[3]?.trim();
+			if (!Number.isFinite(min) || !Number.isFinite(max) || !unit) return null;
+			return { min, max, unit };
+		})
+		.filter((entry): entry is { min: number; max: number; unit: string } => Boolean(entry));
+	if (parsed.length === 0) return null;
+	const unit = parsed[0]?.unit ?? null;
+	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
+	const min = Math.min(...parsed.map((entry) => entry.min));
+	const max = Math.max(...parsed.map((entry) => entry.max));
+	const minText = formatPrice(min, { allowZero: true });
+	const maxText = formatPrice(max, { allowZero: true });
+	if (!minText || !maxText) return null;
+	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
+}
+
 function getModalityIcon(value: string): LucideIcon {
 	const normalized = value.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("embed")) return Binary;
@@ -475,23 +505,34 @@ function ModelCardImpl({
 	const standardOutputPrice = formatPrice(model.lowest_standard_output_price, {
 		allowZero: true,
 	});
-	const ioPriceSummary =
-		inputPrice && outputPrice
-			? `${inputPrice} / ${outputPrice}`
-			: inputPrice
-				? inputPrice
-				: outputPrice
-					? outputPrice
+	const primaryInputKey = inputModalities[0]
+		? normalizeModalityOrderKey(String(inputModalities[0]))
+		: "";
+	const primaryOutputKey = outputModalities[0]
+		? normalizeModalityOrderKey(String(outputModalities[0]))
+		: "";
+	const outputUsesCheapestTierPrefix =
+		primaryOutputKey === "image" || primaryOutputKey === "video";
+	const formatStructuredPriceSummary = (
+		input: string | null,
+		output: string | null,
+	) => {
+		const formattedOutput =
+			output && outputUsesCheapestTierPrefix ? `${output}+` : output;
+		return input && formattedOutput
+			? `${input} / ${formattedOutput}`
+			: input
+				? input
+				: formattedOutput
+					? formattedOutput
 					: null;
-	const standardIoPriceSummary =
-		standardInputPrice && standardOutputPrice
-			? `${standardInputPrice} / ${standardOutputPrice}`
-			: standardInputPrice
-				? standardInputPrice
-				: standardOutputPrice
-					? standardOutputPrice
-					: null;
-	const textPriceSummary = standardIoPriceSummary ?? ioPriceSummary;
+	};
+	const ioPriceSummary = formatStructuredPriceSummary(inputPrice, outputPrice);
+	const standardIoPriceSummary = formatStructuredPriceSummary(
+		standardInputPrice,
+		standardOutputPrice,
+	);
+	const structuredPriceSummary = standardIoPriceSummary ?? ioPriceSummary;
 	const explicitFromPrice = formatFromPrice(
 		model.lowest_from_price,
 		model.lowest_from_price_unit,
@@ -541,33 +582,153 @@ function ModelCardImpl({
 	const priceSummary =
 		isFreeDisplayModel
 			? "Free"
-			: isTextModel && textPriceSummary
-				? textPriceSummary
+			: structuredPriceSummary
+				? structuredPriceSummary
 				: fromPriceSummary;
-	const priceLabel = isTextModel ? "Pricing" : "From:";
-	const pricingDetailRows = isTextModel
-		? [
+	const priceLabel = structuredPriceSummary || isTextModel ? "Pricing" : "From:";
+	const fallbackInputLabel =
+		primaryInputKey === "image"
+			? "Image Inputs"
+			: primaryInputKey === "audio"
+				? "Audio Input"
+				: primaryInputKey === "video"
+					? "Video Input"
+					: "Input";
+	const fallbackOutputLabel =
+		primaryOutputKey === "image"
+			? "Output Images (from)"
+			: primaryOutputKey === "audio"
+				? "Audio Output"
+				: primaryOutputKey === "video"
+					? "Video Output (from)"
+					: "Output";
+	const fallbackInputUnit =
+		normalizeFromPriceUnit(model.lowest_from_price_unit) ??
+		inferPriceUnitFromModality(primaryInputKey);
+	const fallbackOutputUnit =
+		(primaryOutputKey === primaryInputKey
+			? normalizeFromPriceUnit(model.lowest_from_price_unit)
+			: null) ?? inferPriceUnitFromModality(primaryOutputKey);
+	const explicitPricingDetailRows = (model.pricing_detail_rows ?? []).filter(
+		(row) =>
+			Boolean(String(row?.label ?? "").trim()) &&
+			Boolean(String(row?.value ?? "").trim()),
+	);
+	const standardPricingRows = [
+		{
+			id: "input",
+			label: String(model.lowest_standard_input_price_label ?? "").trim() || "Input",
+			value: formatPriceWithUnit(
+				model.lowest_standard_input_price,
+				model.lowest_standard_input_price_unit,
+			),
+		},
+		{
+			id: "output",
+			label:
+				String(model.lowest_standard_output_price_label ?? "").trim() || "Output",
+			value: formatPriceWithUnit(
+				model.lowest_standard_output_price,
+				model.lowest_standard_output_price_unit,
+			),
+		},
+	].filter((row) => Boolean(row.value));
+	const fallbackPricingRows = [
+		{
+			id: "input",
+			label: fallbackInputLabel,
+			value: formatFromPrice(
+				model.lowest_input_price,
+				fallbackInputUnit,
+				{ allowZero: true },
+			),
+		},
+		{
+			id: "output",
+			label: fallbackOutputLabel,
+			value: formatPriceWithUnit(
+				model.lowest_output_price,
+				fallbackOutputUnit,
+			),
+		},
+	].filter((row) => Boolean(row.value));
+	const pricingRowById = new Map<
+		string,
+		{ id: string; label: string; value: string | null }
+	>();
+	for (const row of fallbackPricingRows) pricingRowById.set(row.id, row);
+	for (const row of standardPricingRows) pricingRowById.set(row.id, row);
+	let pricingDetailRows =
+		explicitPricingDetailRows.length > 0
+			? explicitPricingDetailRows.map((row, index) => ({
+					id: `explicit-${index}`,
+					label: row.label,
+					value: row.value,
+				}))
+			: ["input", "output"]
+					.map((id) => pricingRowById.get(id))
+					.filter((row): row is { id: string; label: string; value: string } =>
+						Boolean(row?.value),
+					);
+	if (pricingDetailRows.length === 0 && priceSummary) {
+		pricingDetailRows = [
+			{
+				id: "summary",
+				label: "Pricing",
+				value: priceSummary,
+			},
+		];
+	}
+	const pricingDetailGroups = pricingDetailRows.reduce<
+		Array<{
+			id: string;
+			baseLabel: string;
+			items: Array<{ id: string; label: string; value: string; variant: string | null }>;
+		}>
+	>((groups, row) => {
+		const match = row.label.match(/^(.*?)(?: \((.+)\))?$/);
+		const baseLabel = match?.[1]?.trim() || row.label;
+		const variant = match?.[2]?.trim() || null;
+		const existingGroup = groups.find((group) => group.baseLabel === baseLabel);
+		if (existingGroup) {
+			existingGroup.items.push({
+				id: row.id,
+				label: row.label,
+				value: row.value,
+				variant,
+			});
+			return groups;
+		}
+		groups.push({
+			id: row.id,
+			baseLabel,
+			items: [
 				{
-					id: "input",
-					label:
-						String(model.lowest_standard_input_price_label ?? "").trim() || "Input",
-					value: formatPriceWithUnit(
-						model.lowest_standard_input_price,
-						model.lowest_standard_input_price_unit,
-					),
+					id: row.id,
+					label: row.label,
+					value: row.value,
+					variant,
 				},
-				{
-					id: "output",
-					label:
-						String(model.lowest_standard_output_price_label ?? "").trim() ||
-						"Output",
-					value: formatPriceWithUnit(
-						model.lowest_standard_output_price,
-						model.lowest_standard_output_price_unit,
-					),
-				},
-			].filter((row) => Boolean(row.value))
-		: [];
+			],
+		});
+		return groups;
+	}, []);
+	const getVideoAudioGroup = (variant: string | null) => {
+		if (!variant) return { heading: null, detail: null as string | null };
+		if (variant.endsWith(", with audio")) {
+			return {
+				heading: "With audio",
+				detail: variant.slice(0, -", with audio".length) || null,
+			};
+		}
+		if (variant.endsWith(", no audio")) {
+			return {
+				heading: "No audio",
+				detail: variant.slice(0, -", no audio".length) || null,
+			};
+		}
+		return { heading: null, detail: variant };
+	};
 	const formatModalities = (values: string[]) => {
 		const unique = sortModalitiesForDisplay(Array.from(
 			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
@@ -797,7 +958,7 @@ function ModelCardImpl({
 							</div>
 						) : null}
 						{priceSummary ? (
-							isTextModel && pricingDetailRows.length > 0 ? (
+							pricingDetailRows.length > 0 ? (
 								<HoverCard openDelay={120} closeDelay={100}>
 									<HoverCardTrigger asChild>
 										<button
@@ -811,16 +972,133 @@ function ModelCardImpl({
 											</span>
 										</button>
 									</HoverCardTrigger>
-									<HoverCardContent align="start" className="w-52 p-3">
+									<HoverCardContent
+										align="start"
+										className="w-fit min-w-[13rem] max-w-[22rem] p-3"
+									>
 										<div className="space-y-2">
-											{pricingDetailRows.map((row) => (
-												<div key={row.id} className="space-y-0.5 text-xs">
-													<div className="font-semibold text-foreground">
-														{row.label}
+											{pricingDetailGroups.map((group) => {
+												const shouldGroupVariants =
+													group.items.length > 1 &&
+													group.items.every((item) => Boolean(item.variant));
+												if (!shouldGroupVariants) {
+													return group.items.map((item) => (
+														<div key={item.id} className="space-y-0.5 text-xs">
+															<div className="font-semibold text-foreground">
+																{item.label}
+															</div>
+															<div className="text-muted-foreground">{item.value}</div>
+														</div>
+													));
+												}
+												if (group.baseLabel === "Image Output" && group.items.length >= 3) {
+													const summarizedValue = summarizePricingValues(
+														group.items.map((item) => item.value),
+													);
+													if (summarizedValue) {
+														return (
+															<div key={group.id} className="space-y-0.5 text-xs">
+																<div className="font-semibold text-foreground">
+																	{group.baseLabel}
+																</div>
+																<div className="text-muted-foreground">
+																	{summarizedValue}
+																</div>
+															</div>
+														);
+													}
+												}
+												if (group.baseLabel === "Video Output") {
+													const audioGroups = group.items.reduce<
+														Array<{
+															id: string;
+															heading: string | null;
+															items: Array<{ id: string; detail: string | null; value: string }>;
+														}>
+													>((acc, item) => {
+														const parsed = getVideoAudioGroup(item.variant);
+														const key = parsed.heading ?? "__default__";
+														const existing = acc.find(
+															(candidate) => (candidate.heading ?? "__default__") === key,
+														);
+														if (existing) {
+															existing.items.push({
+																id: item.id,
+																detail: parsed.detail,
+																value: item.value,
+															});
+															return acc;
+														}
+														acc.push({
+															id: item.id,
+															heading: parsed.heading,
+															items: [
+																{
+																	id: item.id,
+																	detail: parsed.detail,
+																	value: item.value,
+																},
+															],
+														});
+														return acc;
+													}, []);
+													return (
+														<div key={group.id} className="space-y-1.5 text-xs">
+															<div className="font-semibold text-foreground">
+																{group.baseLabel}
+															</div>
+															<div className="space-y-1.5">
+																{audioGroups.map((audioGroup) => (
+																	<div key={audioGroup.id} className="space-y-1">
+																		{audioGroup.heading ? (
+																			<div className="text-[11px] font-medium text-foreground/80">
+																				{audioGroup.heading}
+																			</div>
+																		) : null}
+																		<div className="space-y-1">
+																			{audioGroup.items.map((item) => (
+																				<div
+																					key={item.id}
+																					className="flex items-baseline justify-between gap-3"
+																				>
+																					<div className="text-muted-foreground">
+																						{item.detail ?? "Standard"}
+																					</div>
+																					<div className="shrink-0 text-muted-foreground">
+																						{item.value}
+																					</div>
+																				</div>
+																			))}
+																		</div>
+																	</div>
+																))}
+															</div>
+														</div>
+													);
+												}
+												return (
+													<div key={group.id} className="space-y-1 text-xs">
+														<div className="font-semibold text-foreground">
+															{group.baseLabel}
+														</div>
+														<div className="space-y-1">
+															{group.items.map((item) => (
+																<div
+																	key={item.id}
+																	className="flex items-baseline justify-between gap-3"
+																>
+																	<div className="text-muted-foreground">
+																		{item.variant}
+																	</div>
+																	<div className="shrink-0 text-muted-foreground">
+																		{item.value}
+																	</div>
+																</div>
+															))}
+														</div>
 													</div>
-													<div className="text-muted-foreground">{row.value}</div>
-												</div>
-											))}
+												);
+											})}
 										</div>
 									</HoverCardContent>
 								</HoverCard>

@@ -52,6 +52,10 @@ export interface ModelCard {
     lowest_standard_output_price_unit?: string | null;
     lowest_from_price?: number | null;
     lowest_from_price_unit?: string | null;
+    pricing_detail_rows?: Array<{
+        label: string;
+        value: string;
+    }>;
     popularity_tokens_week?: number | null;
     throughput_week?: number | null;
     latency_week?: number | null;

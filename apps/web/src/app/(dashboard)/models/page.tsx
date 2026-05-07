@@ -355,6 +355,10 @@ type GatewaySignals = {
 	lowestFromPrice: number | null;
 	lowestFromPriceUnit: string | null;
 	fromPriceByUnit: Map<string, number>;
+	pricingDetailRows: Array<{
+		label: string;
+		value: string;
+	}>;
 };
 
 function createEmptyGatewaySignals(): GatewaySignals {
@@ -388,6 +392,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		lowestFromPrice: null,
 		lowestFromPriceUnit: null,
 		fromPriceByUnit: new Map<string, number>(),
+		pricingDetailRows: [],
 	};
 }
 
@@ -520,6 +525,19 @@ function aggregateGatewaySignals(
 			} else {
 				existing.lowestFromPrice = null;
 				existing.lowestFromPriceUnit = null;
+			}
+		}
+		for (const detailRow of row.provider.pricingDetailRows ?? []) {
+			if (!detailRow?.label || !detailRow?.value) continue;
+			const exists = existing.pricingDetailRows.some(
+				(candidate) =>
+					candidate.label === detailRow.label && candidate.value === detailRow.value,
+			);
+			if (!exists) {
+				existing.pricingDetailRows.push({
+					label: detailRow.label,
+					value: detailRow.value,
+				});
 			}
 		}
 		const apiDateCandidate = String(row.effectiveFrom ?? "").trim();
@@ -804,6 +822,7 @@ function withGatewayMetadata(
 				signals?.lowestStandardOutputPriceUnit ?? null,
 			lowest_from_price: signals?.lowestFromPrice ?? null,
 			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
+			pricing_detail_rows: (signals?.pricingDetailRows ?? []).slice(0, 6),
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
 			throughput_week: weeklyMetrics.throughputWeek,
 			latency_week: weeklyMetrics.latencyWeek,
