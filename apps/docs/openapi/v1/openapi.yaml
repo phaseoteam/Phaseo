@@ -7390,6 +7390,7 @@ components:
         - nvidia/nvidia-nemotron-nano-12b-v2-vl
         - nvidia/nvidia-nemotron-nano-9b-v2
         - openai/babbage-002
+        - openai/chat-latest
         - openai/chatgpt-4o
         - openai/computer-use-preview
         - openai/davinci-002
@@ -7406,6 +7407,9 @@ components:
         - openai/gpt-4o-2024-08-06
         - openai/gpt-4o-2024-11-20
         - openai/gpt-4o-mini
+        - openai/gpt-4o-mini-transcribe
+        - openai/gpt-4o-mini-tts
+        - openai/gpt-4o-transcribe
         - openai/gpt-5
         - openai/gpt-5-chat
         - openai/gpt-5-codex
@@ -7451,6 +7455,7 @@ components:
         - openai/text-embedding-3-large
         - openai/text-embedding-3-small
         - openai/text-embedding-ada-002
+        - openai/whisper-1
         - poolside/laguna-m.1
         - poolside/laguna-m.1:free
         - poolside/laguna-xs.2
@@ -7593,6 +7598,7 @@ components:
         - x-ai/grok-4.3
         - x-ai/grok-code-fast-1
         - x-ai/grok-imagine-image
+        - x-ai/grok-imagine-image-quality
         - x-ai/grok-imagine-video
         - xiaomi/mimo-v2-flash
         - xiaomi/mimo-v2-omni
