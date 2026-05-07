@@ -805,6 +805,14 @@ export const AudioSpeechSchema = z.object({
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
+}).superRefine((obj, ctx) => {
+    if (obj.stream_format !== undefined) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["stream_format"],
+            message: "audio.speech does not support stream_format; binary audio is returned by default and response_format controls the encoding.",
+        });
+    }
 });
 export type AudioSpeechRequest = z.infer<typeof AudioSpeechSchema>;
 

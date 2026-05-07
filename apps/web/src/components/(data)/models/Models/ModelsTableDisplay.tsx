@@ -424,6 +424,16 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [hasInteractedWithStatuses, setHasInteractedWithStatuses] = useState(
+		selectedStatuses.length > 0,
+	);
+	const effectiveSelectedStatuses = useMemo(
+		() =>
+			!hasInteractedWithStatuses && selectedStatuses.length === 0
+				? ["active"]
+				: selectedStatuses,
+		[hasInteractedWithStatuses, selectedStatuses],
+	);
 	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -641,8 +651,8 @@ export default function ModelsTableDisplay({
 			}
 
 			if (
-				selectedStatuses.length > 0 &&
-				!selectedStatuses.includes(
+				effectiveSelectedStatuses.length > 0 &&
+				!effectiveSelectedStatuses.includes(
 					normalizeStatusFilterValue(item.gatewayStatus),
 				)
 			) {
@@ -663,13 +673,13 @@ export default function ModelsTableDisplay({
 		selectedFeatures,
 		selectedInputModalities,
 		selectedOutputModalities,
-		selectedStatuses,
+		effectiveSelectedStatuses,
 		selectedTiers,
 		yearSelected,
 	]);
 
 	const activeFilterCount =
-		selectedStatuses.length +
+		(hasInteractedWithStatuses ? selectedStatuses.length : 0) +
 		selectedEndpoints.length +
 		selectedInputModalities.length +
 		selectedOutputModalities.length +
@@ -678,6 +688,7 @@ export default function ModelsTableDisplay({
 		(yearSelected > 0 ? 1 : 0);
 
 	const resetFilters = () => {
+		setHasInteractedWithStatuses(false);
 		setSelectedStatuses([]);
 		setSelectedEndpoints([]);
 		setSelectedInputModalities([]);
@@ -829,8 +840,13 @@ export default function ModelsTableDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={statusOptions}
-						selected={selectedStatuses}
-						onToggle={(value) => setSelectedStatuses(toggleInList(selectedStatuses, value))}
+						selected={effectiveSelectedStatuses}
+						onToggle={(value) => {
+							setHasInteractedWithStatuses(true);
+							setSelectedStatuses(
+								toggleInList(effectiveSelectedStatuses, value),
+							);
+						}}
 						labelForValue={formatStatusLabel}
 					/>
 				</AccordionContent>

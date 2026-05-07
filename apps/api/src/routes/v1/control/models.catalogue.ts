@@ -366,6 +366,31 @@ function toNormalizedStatus(value: string | null | undefined): string | null {
     return normalized.length > 0 ? normalized : null;
 }
 
+const COMING_SOON_CAPABILITIES = new Set([
+    "batch",
+    "video.generate",
+    "video.edit",
+    "music.generate",
+]);
+
+function normalizeCapabilityStatusForPublicCatalogue(
+    capabilityId: string | null | undefined,
+    rawStatus: string | null | undefined
+):
+    | "active"
+    | "coming_soon"
+    | "deranked_lvl1"
+    | "deranked_lvl2"
+    | "deranked_lvl3"
+    | "disabled"
+    | "internal_testing" {
+    const normalized = normalizeCapabilityStatus(rawStatus);
+    if (capabilityId && COMING_SOON_CAPABILITIES.has(capabilityId.trim().toLowerCase())) {
+        return "coming_soon";
+    }
+    return normalized;
+}
+
 function matchesRequestedStatus(args: {
     requestedStatus: string;
     modelStatus: string | null;
@@ -402,6 +427,24 @@ function chunkArray<T>(values: T[], size: number): T[][] {
         chunks.push(values.slice(i, i + chunkSize));
     }
     return chunks;
+}
+
+function isMissingColumnError(error: unknown, column: string, table?: string): boolean {
+    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
+    const code = String(candidate?.code ?? "");
+    const message = String(candidate?.message ?? "");
+    if (code !== "PGRST204" && code !== "42703") return false;
+    if (!message.toLowerCase().includes(column.toLowerCase())) return false;
+    if (!table) return true;
+    return message.toLowerCase().includes(table.toLowerCase());
+}
+
+function withNullEffectiveWindow<T extends Record<string, unknown>>(rows: T[]): T[] {
+    return rows.map((row) => ({
+        ...row,
+        effective_from: null,
+        effective_to: null,
+    }));
 }
 
 function parseModelKey(value?: string | null): { providerId: string; apiModelId: string; capabilityId: string } | null {
@@ -861,12 +904,27 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
     const providerRows: ProviderModelRow[] = [];
     for (const modelIdChunk of chunkArray(modelIds, 200)) {
-        const { data, error: providerError } = await supabase
+        let { data, error: providerError }: { data: ProviderModelRow[] | null; error: any } = await supabase
             .from("data_api_provider_models")
             .select(
                 "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, routing_status, input_modalities, output_modalities, effective_from, effective_to"
             )
             .in("model_id", modelIdChunk);
+
+        if (
+            providerError &&
+            (isMissingColumnError(providerError, "effective_from", "data_api_provider_models") ||
+                isMissingColumnError(providerError, "effective_to", "data_api_provider_models"))
+        ) {
+            const fallback = await supabase
+                .from("data_api_provider_models")
+                .select(
+                    "provider_api_model_id, provider_id, api_model_id, model_id, provider_model_slug, is_active_gateway, routing_status, input_modalities, output_modalities"
+                )
+                .in("model_id", modelIdChunk);
+            data = withNullEffectiveWindow((fallback.data ?? []) as ProviderModelRow[]);
+            providerError = fallback.error;
+        }
 
         if (providerError) {
             throw new Error(`Failed to load provider models: ${providerError.message || "unknown error"}`);
@@ -881,10 +939,24 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         .filter((id): id is string => Boolean(id));
     let capabilityRows: CapabilityRow[] = [];
     for (const providerModelIdChunk of chunkArray(providerModelIds, 200)) {
-        const { data: capabilityRowsRaw, error: capabilityError } = await supabase
+        let { data: capabilityRowsRaw, error: capabilityError }: { data: CapabilityRow[] | null; error: any } = await supabase
             .from("data_api_provider_model_capabilities")
             .select("provider_api_model_id, capability_id, status, params, effective_from, effective_to")
             .in("provider_api_model_id", providerModelIdChunk);
+
+        if (
+            capabilityError &&
+            (isMissingColumnError(capabilityError, "effective_from", "data_api_provider_model_capabilities") ||
+                isMissingColumnError(capabilityError, "effective_to", "data_api_provider_model_capabilities"))
+        ) {
+            const fallback = await supabase
+                .from("data_api_provider_model_capabilities")
+                .select("provider_api_model_id, capability_id, status, params")
+                .in("provider_api_model_id", providerModelIdChunk);
+            capabilityRowsRaw = withNullEffectiveWindow((fallback.data ?? []) as CapabilityRow[]);
+            capabilityError = fallback.error;
+        }
+
         if (capabilityError) {
             throw new Error(`Failed to load provider capabilities: ${capabilityError.message || "unknown error"}`);
         }
@@ -980,7 +1052,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     }
 
     const nowIso = new Date().toISOString();
-    const { data: pricingRows, error: pricingError } = await supabase
+    let { data: pricingRows, error: pricingError }: { data: PricingRuleRow[] | null; error: any } = await supabase
         .from("data_api_pricing_rules")
         .select("model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, effective_from, effective_to")
         .eq("pricing_plan", "standard")
@@ -990,6 +1062,19 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             `and(effective_from.lte.${nowIso},effective_to.is.null)`,
             `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
         ].join(","));
+
+    if (
+        pricingError &&
+        (isMissingColumnError(pricingError, "effective_from", "data_api_pricing_rules") ||
+            isMissingColumnError(pricingError, "effective_to", "data_api_pricing_rules"))
+    ) {
+        const fallback = await supabase
+            .from("data_api_pricing_rules")
+            .select("model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency")
+            .eq("pricing_plan", "standard");
+        pricingRows = withNullEffectiveWindow((fallback.data ?? []) as PricingRuleRow[]);
+        pricingError = fallback.error;
+    }
 
     if (pricingError) {
         throw new Error(`Failed to load pricing rules: ${pricingError.message || "unknown error"}`);
@@ -1094,7 +1179,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                 const providerStatus = normalizeProviderStatus(providerDetails?.status);
                 const providerRoutingStatus = normalizeRoutingStatus(providerDetails?.routing_status);
                 const modelRoutingStatus = normalizeRoutingStatus(row.routing_status);
-                const capabilityStatus = normalizeCapabilityStatus(cap.status);
+                const capabilityStatus = normalizeCapabilityStatusForPublicCatalogue(cap.capability_id, cap.status);
                 const effectiveFrom = cap.effective_from ?? row.effective_from ?? null;
                 const effectiveTo = cap.effective_to ?? row.effective_to ?? null;
                 providerEntries.push({

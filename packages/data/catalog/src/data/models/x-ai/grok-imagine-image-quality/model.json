@@ -1,0 +1,27 @@
+{
+  "model_id": "x-ai/grok-imagine-image-quality",
+  "organisation_id": "x-ai",
+  "name": "Grok Imagine Image Quality",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-05-06T00:00:00",
+  "release_date": "2026-05-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "image",
+  "api_model_id": "x-ai/grok-imagine-image-quality",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://x.ai/news/grok-imagine-quality-mode"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://docs.x.ai/developers/models/grok-imagine-image-quality"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,7 @@
+{
+  "alias_slug": "z-ai/glm-latest",
+  "resolved_api_model_id": "z-ai/glm-5.1",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

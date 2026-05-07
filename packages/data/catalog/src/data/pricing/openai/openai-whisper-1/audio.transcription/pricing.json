@@ -1,0 +1,21 @@
+{
+  "key": "openai:openai/whisper-1:audio.transcription",
+  "api_provider_id": "openai",
+  "provider_slug": "openai",
+  "api_model_id": "openai/whisper-1",
+  "capability_id": "audio.transcription",
+  "rules": [
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Aligned to OpenAI Whisper transcription pricing at $0.006/minute using 40 audio tokens/sec.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-25T00:00:00"
+    }
+  ]
+}

@@ -165,9 +165,10 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 		const requestedStream = ir.stream === true;
+		const shouldForceStreamExecution = requestedStream || preparedServerTools.config.enabled;
 		const irForExecution: IRChatRequest = {
 			...ir,
-			stream: true,
+			stream: shouldForceStreamExecution,
 		};
 
 		// Enforce canonical IR invariants before provider execution.

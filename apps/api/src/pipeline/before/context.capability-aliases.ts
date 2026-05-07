@@ -18,6 +18,10 @@ const IMAGE_CONTEXT_CAPABILITY_ALIASES = [
 	"images.generate",
 	"images.generations",
 ] as const;
+const AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES = [
+	"audio.speech",
+	"audio.generate",
+] as const;
 
 function normalizeContextCapability(value: string): string {
 	return String(value ?? "").trim().toLowerCase();
@@ -79,6 +83,16 @@ export function getContextCapabilityCandidates(capability: string, model?: strin
 			candidates.push("text.generate");
 		}
 		return Array.from(new Set<string>(candidates));
+	}
+	if (
+		AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES.includes(
+			normalized as (typeof AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES)[number],
+		)
+	) {
+		return Array.from(new Set<string>([
+			normalized,
+			...AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES,
+		]));
 	}
 	return [normalized];
 }

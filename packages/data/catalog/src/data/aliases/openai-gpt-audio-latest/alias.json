@@ -1,0 +1,7 @@
+{
+  "alias_slug": "openai/gpt-audio-latest",
+  "resolved_api_model_id": "openai/gpt-audio-1.5",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

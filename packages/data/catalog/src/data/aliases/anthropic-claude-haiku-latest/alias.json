@@ -1,0 +1,7 @@
+{
+  "alias_slug": "anthropic/claude-haiku-latest",
+  "resolved_api_model_id": "anthropic/claude-haiku-4.5",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

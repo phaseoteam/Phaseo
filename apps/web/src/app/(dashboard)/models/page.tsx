@@ -9,6 +9,7 @@ import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorMod
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
+import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
@@ -253,7 +254,12 @@ function buildOptionCounts(
 function buildCreatorOptions(models: ModelsPageModel[]): OptionCount[] {
 	const counts = new Map<string, number>();
 	for (const model of models) {
-		const creator = String(model.organisation_name ?? "").trim();
+		const creator = String(
+			normalizeOrganisationDisplayName(
+				model.organisation_name,
+				model.organisation_id,
+			) ?? "",
+		).trim();
 		if (!creator) continue;
 		counts.set(creator, (counts.get(creator) ?? 0) + 1);
 	}
@@ -731,7 +737,11 @@ function withGatewayMetadata(
 			model_id: modelId,
 			name: fallbackName,
 			organisation_id: fallbackOrganisationId,
-			organisation_name: model?.organisation_name ?? null,
+			organisation_name:
+				normalizeOrganisationDisplayName(
+					model?.organisation_name,
+					fallbackOrganisationId,
+				) ?? null,
 			organisation_colour: model?.organisation_colour ?? null,
 			primary_date: resolvedPrimaryDate,
 			primary_timestamp: resolvedPrimaryTimestamp,
@@ -850,7 +860,11 @@ function withGatewayMetadata(
 				model_id: modelId,
 				name: model.name ?? modelId,
 				organisation_id: model.organisation_id ?? "",
-				organisation_name: model.organisation_name ?? null,
+				organisation_name:
+					normalizeOrganisationDisplayName(
+						model.organisation_name,
+						model.organisation_id,
+					) ?? null,
 				organisation_colour: model.organisation_colour ?? null,
 				primary_date: model.primary_date ?? null,
 				primary_timestamp: model.primary_timestamp ?? null,

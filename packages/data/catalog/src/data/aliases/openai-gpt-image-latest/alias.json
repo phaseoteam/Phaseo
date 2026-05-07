@@ -1,0 +1,7 @@
+{
+  "alias_slug": "openai/gpt-image-latest",
+  "resolved_api_model_id": "openai/gpt-image-2",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": null
+}

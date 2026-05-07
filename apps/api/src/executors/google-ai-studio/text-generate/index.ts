@@ -24,6 +24,9 @@ import {
 	resolveGoogleThinkingLevelForEffort,
 } from "../../google/shared/thinking";
 import { googleUsageMetadataToIRUsage } from "@providers/google-ai-studio/usage";
+import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
+import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 
 const DEFAULT_LYRIA_RETRY_ATTEMPTS = 3;
 const DEFAULT_LYRIA_RETRY_DELAY_MS = 300;
@@ -36,6 +39,17 @@ function parsePositiveInt(value: unknown, fallback: number): number {
 
 function isLyriaModelName(value: string): boolean {
 	return String(value ?? "").toLowerCase().includes("lyria-3");
+}
+
+function isGeminiImageModelName(value: string): boolean {
+	const normalized = String(value ?? "").toLowerCase();
+	return (
+		normalized.includes("gemini-2-5-flash-image") ||
+		normalized.includes("gemini-2.5-flash-image") ||
+		normalized.includes("gemini-3-pro-image-preview") ||
+		normalized.includes("image-preview") ||
+		normalized.includes("flash-image")
+	);
 }
 
 function isRetryableGoogleStatus(status: number): boolean {
@@ -190,8 +204,13 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 	}
 
 	// Response modalities (text/image/audio)
-	if (Array.isArray(ir.modalities) && ir.modalities.length > 0) {
-		const mapped = ir.modalities
+	const requestedModalities = Array.isArray(ir.modalities) && ir.modalities.length > 0
+		? ir.modalities
+		: isGeminiImageModelName(modelOverride ?? ir.model)
+			? (["text", "image"] as const)
+			: [];
+	if (requestedModalities.length > 0) {
+		const mapped = requestedModalities
 			.map((mode) => (typeof mode === "string" ? mode.toUpperCase() : ""))
 			.filter((mode) => mode === "TEXT" || mode === "IMAGE" || mode === "AUDIO");
 		if (mapped.length > 0) {
@@ -453,6 +472,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 
 	// Determine model candidates (must be in URL, not body)
 	const requestedModel = providerModelSlug || ir.model || "gemini-2.0-flash-exp";
+	const forceSyntheticImageStream = Boolean(ir.stream) && isGeminiImageModelName(requestedModel);
 	const modelCandidates = resolveGoogleModelCandidates(requestedModel);
 	let model = modelCandidates[0] || "gemini-2.0-flash-exp";
 
@@ -469,7 +489,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const makeEndpoint = (candidateModel: string, stream: boolean) =>
 		stream
 			? `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent?alt=sse`
-			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:streamGenerateContent`;
+			: `${baseUrl}/models/${encodeURIComponent(candidateModel)}:generateContent`;
 
 	const lyriaRetryAttempts = parsePositiveInt(
 		bindings.GOOGLE_AI_STUDIO_LYRIA_RETRY_ATTEMPTS,
@@ -484,7 +504,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const doRequest = async (candidateModel: string) => {
 			const requestBody = await irToGemini(ir, candidateModel);
-			const endpoint = makeEndpoint(candidateModel, Boolean(ir.stream));
+			const endpoint = makeEndpoint(
+				candidateModel,
+				Boolean(ir.stream) && !forceSyntheticImageStream,
+			);
 			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: {
@@ -541,6 +564,55 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
+			};
+		}
+
+		if (forceSyntheticImageStream) {
+			const rawData = await response.json();
+			const data = normalizeGeminiResponsePayload(rawData);
+			const irResponse = geminiToIR(data, requestId, model, providerId);
+			applyGoogleOutputTokenFallback(irResponse);
+
+			const bill: any = {
+				cost_cents: 0,
+				currency: "USD",
+			};
+			const usageMeters = normalizeTextUsageForPricing(irResponse.usage ?? data?.usageMetadata);
+			if (usageMeters) {
+				bill.usage = usageMeters;
+			}
+
+			const totalMs = Date.now() - upstreamStartMs;
+			const finalPayload = encodeOpenAIChatResponse(irResponse, requestId);
+			const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
+			const stream =
+				protocol === "openai.chat.completions"
+					? buildSyntheticServerToolStream({
+						protocol,
+						payload: finalPayload,
+						requestId,
+						model,
+						created: finalPayload.created,
+					})
+					: createSyntheticResponsesStreamFromIR(irResponse, requestId);
+
+			if (!stream) {
+				throw new Error("google_ai_studio_synthetic_stream_failed");
+			}
+
+			return {
+				kind: "stream",
+				stream,
+				upstream: response,
+				bill,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				usageFinalizer: async () => bill.usage ?? null,
+				timing: {
+					latencyMs: totalMs,
+					generationMs: 0,
+				},
 			};
 		}
 
@@ -780,17 +852,229 @@ export function transformStream(
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
 	const provider = args.providerId || "google-ai-studio";
+	const toPayloadEntries = (payload: any): any[] => {
+		if (Array.isArray(payload)) return payload.filter((entry) => entry && typeof entry === "object");
+		return payload && typeof payload === "object" ? [payload] : [];
+	};
+	const splitSseBlocks = (value: string): { blocks: string[]; remainder: string } => {
+		const normalized = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+		const blocks = normalized.split(/\n\n/);
+		return {
+			blocks: blocks.slice(0, -1),
+			remainder: blocks[blocks.length - 1] ?? "",
+		};
+	};
+	const emitPayloadEntries = (
+		payloadEntries: any[],
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	): number => {
+		let emitted = 0;
+		for (const payloadEntry of payloadEntries) {
+			const irChunk: IRStreamChunk = {
+				id: args.requestId,
+				created,
+				model,
+				provider,
+				choices: [],
+			};
+
+			if (Array.isArray(payloadEntry?.candidates)) {
+				for (const cand of payloadEntry.candidates) {
+					const index = cand.index || 0;
+					const parts = cand.content?.parts || [];
+
+					let content = "";
+					let reasoning = "";
+					const mediaParts: IRContentPart[] = [];
+					const toolCalls: Array<{
+						index: number;
+						id?: string;
+						name?: string;
+						arguments?: string;
+					}> = [];
+					let functionCallIndex = 0;
+
+					for (const [partIdx, part] of parts.entries()) {
+						if (part.text) {
+							if (part.thought) {
+								reasoning += part.text;
+							} else {
+								content += part.text;
+							}
+						} else if (part.functionCall) {
+							const toolIndex = functionCallIndex++;
+							const stateKey = `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
+							let state = toolStates.get(stateKey);
+							if (!state) {
+								state = {
+									id: `call_${args.requestId}_${index}_${partIdx}`,
+									argumentsSoFar: "",
+									emittedName: false,
+								};
+								toolStates.set(stateKey, state);
+							}
+
+							const partialArgs = typeof part.functionCall.partialArgs === "string"
+								? part.functionCall.partialArgs
+								: "";
+							const hasPartialArgs = partialArgs.length > 0;
+							const nextArguments = hasPartialArgs
+								? `${state.argumentsSoFar}${partialArgs}`
+								: JSON.stringify(part.functionCall.args || {});
+							let argumentsDelta = "";
+							if (hasPartialArgs) {
+								argumentsDelta = partialArgs;
+							} else if (!state.argumentsSoFar) {
+								argumentsDelta = nextArguments;
+							} else if (nextArguments.startsWith(state.argumentsSoFar)) {
+								argumentsDelta = nextArguments.slice(state.argumentsSoFar.length);
+							} else if (nextArguments !== state.argumentsSoFar) {
+								argumentsDelta = nextArguments;
+							}
+
+							const functionDelta: { name?: string; arguments?: string } = {};
+							if (!state.emittedName && part.functionCall.name) {
+								functionDelta.name = part.functionCall.name;
+								state.emittedName = true;
+							}
+							if (argumentsDelta) {
+								functionDelta.arguments = argumentsDelta;
+								state.argumentsSoFar = nextArguments;
+							}
+
+							if (Object.keys(functionDelta).length > 0) {
+								toolCalls.push({
+									index: toolIndex,
+									id: state.id,
+									name: functionDelta.name,
+									arguments: functionDelta.arguments,
+								});
+							}
+						} else {
+							const inlineData = normalizeGeminiInlineData(part);
+							if (inlineData?.data) {
+								const mediaPart = inlineDataToIRContentPart(inlineData);
+								if (mediaPart) {
+									mediaParts.push(mediaPart);
+								}
+							}
+						}
+					}
+
+					const delta: IRStreamDelta = {};
+					if (content) delta.content = content;
+					const deltaContentParts: any[] = [];
+					if (reasoning) {
+						deltaContentParts.push({
+							type: "reasoning_text",
+							text: reasoning,
+						} as any);
+					}
+					if (mediaParts.length > 0) {
+						deltaContentParts.push(...mediaParts);
+					}
+					if (deltaContentParts.length > 0) {
+						delta.contentParts = deltaContentParts;
+					}
+
+					let finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
+					if (finishReason === "stop" && toolCalls.length > 0) {
+						finishReason = "tool_calls";
+					}
+
+					const choice: any = {
+						index,
+						delta: {
+							role: "assistant",
+							...delta,
+						},
+						finishReason,
+					};
+					if (toolCalls.length > 0) {
+						choice.delta.toolCalls = toolCalls;
+					}
+
+					if (Object.keys(choice.delta).length > 0 || finishReason) {
+						irChunk.choices.push(choice);
+					}
+				}
+			}
+
+			const chunkUsage = googleUsageMetadataToIRUsage(payloadEntry?.usageMetadata);
+			if (chunkUsage) {
+				irChunk.usage = chunkUsage;
+			}
+
+			if (irChunk.choices.length === 0 && !irChunk.usage) {
+				continue;
+			}
+
+			const openAIChunk = encodeIRChunkToOpenAI(irChunk);
+			controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
+			emitted += 1;
+		}
+		return emitted;
+	};
 
 	const openAIStream = new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let rawText = "";
+			let emittedChunkCount = 0;
 			try {
 				while (true) {
 					const { value, done } = await reader.read();
-					if (done) break;
+					if (done) {
+						const trimmed = buf.trim();
+						if (trimmed.length > 0) {
+							const { blocks, remainder } = splitSseBlocks(`${buf}\n\n`);
+							buf = remainder;
+							for (const block of blocks) {
+								const dataStr = block
+									.split(/\n/)
+									.map((line) => line.replace(/\r$/, ""))
+									.filter((line) => line.startsWith("data:"))
+									.map((line) => line.slice(5).trimStart())
+									.join("")
+									.trim();
+								if (!dataStr || dataStr === "[DONE]") continue;
+								let payload: any;
+								try {
+									payload = JSON.parse(dataStr);
+								} catch {
+									continue;
+								}
+								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
+							}
+						}
+						if (emittedChunkCount === 0 && rawText.trim().length > 0) {
+							const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+							const fallbackPayloads = normalized.startsWith("data:")
+								? normalized
+									.split("\n")
+									.map((line) => line.trim())
+									.filter((line) => line.startsWith("data:"))
+									.map((line) => line.slice(5).trimStart())
+									.filter((line) => line.length > 0 && line !== "[DONE]")
+								: [normalized];
+							for (const payloadStr of fallbackPayloads) {
+								let payload: any;
+								try {
+									payload = JSON.parse(payloadStr);
+								} catch {
+									continue;
+								}
+								emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
+							}
+						}
+						break;
+					}
 
-					buf += decoder.decode(value, { stream: true });
-					const lines = buf.split(/\r?\n\r?\n/); // Split by double newline (SSE blocks)
-					buf = lines.pop() ?? "";
+					const decoded = decoder.decode(value, { stream: true });
+					rawText += decoded;
+					buf += decoded;
+					const split = splitSseBlocks(buf);
+					const lines = split.blocks;
+					buf = split.remainder;
 
 					for (const block of lines) {
 						// Extract data payload; Gemini SSE can include multiple data: lines.
@@ -809,158 +1093,7 @@ export function transformStream(
 						} catch {
 							continue;
 						}
-
-						// Convert to IR Chunk
-						const irChunk: IRStreamChunk = {
-							id: args.requestId,
-							created,
-							model,
-							provider,
-							choices: [],
-						};
-
-						// Native ID
-						// Note: Google doesn't send ID in stream chunks usually
-
-						if (payload.candidates) {
-							for (const cand of payload.candidates) {
-								const index = cand.index || 0;
-								const parts = cand.content?.parts || [];
-
-								// Accumulate content from parts
-								let content = "";
-								let reasoning = "";
-								const mediaParts: IRContentPart[] = [];
-								const toolCalls: Array<{
-									index: number;
-									id?: string;
-									name?: string;
-									arguments?: string;
-								}> = [];
-								let functionCallIndex = 0;
-
-								for (const [partIdx, part] of parts.entries()) {
-									if (part.text) {
-										// Check if it's a thought part (Google's reasoning format)
-										if (part.thought) {
-											reasoning += part.text;
-											// If we get a signature or summary in a chunk, we might want to capture it
-											// but usually they come in full objects at the end or in specific blocks.
-											// For now, we'll just accumulate reasoning text.
-										} else {
-											content += part.text;
-										}
-									} else if (part.functionCall) {
-										const toolIndex = functionCallIndex++;
-										const stateKey = `${index}:${partIdx}:${part.functionCall.name || "tool"}`;
-										let state = toolStates.get(stateKey);
-										if (!state) {
-											state = {
-												id: `call_${args.requestId}_${index}_${partIdx}`,
-												argumentsSoFar: "",
-												emittedName: false,
-											};
-											toolStates.set(stateKey, state);
-										}
-
-										const partialArgs = typeof part.functionCall.partialArgs === "string"
-											? part.functionCall.partialArgs
-											: "";
-										const hasPartialArgs = partialArgs.length > 0;
-										const nextArguments = hasPartialArgs
-											? `${state.argumentsSoFar}${partialArgs}`
-											: JSON.stringify(part.functionCall.args || {});
-										let argumentsDelta = "";
-										if (hasPartialArgs) {
-											argumentsDelta = partialArgs;
-										} else if (!state.argumentsSoFar) {
-											argumentsDelta = nextArguments;
-										} else if (nextArguments.startsWith(state.argumentsSoFar)) {
-											argumentsDelta = nextArguments.slice(state.argumentsSoFar.length);
-										} else if (nextArguments !== state.argumentsSoFar) {
-											// If Gemini sends a non-prefix update, emit current snapshot.
-											argumentsDelta = nextArguments;
-										}
-
-										const functionDelta: { name?: string; arguments?: string } = {};
-										if (!state.emittedName && part.functionCall.name) {
-											functionDelta.name = part.functionCall.name;
-											state.emittedName = true;
-										}
-										if (argumentsDelta) {
-											functionDelta.arguments = argumentsDelta;
-											state.argumentsSoFar = nextArguments;
-										}
-
-										if (Object.keys(functionDelta).length > 0) {
-											toolCalls.push({
-												index: toolIndex,
-												id: state.id,
-												name: functionDelta.name,
-												arguments: functionDelta.arguments,
-											});
-										}
-									} else {
-										const inlineData = normalizeGeminiInlineData(part);
-										if (inlineData?.data) {
-											const mediaPart = inlineDataToIRContentPart(inlineData);
-											if (mediaPart) {
-												mediaParts.push(mediaPart);
-											}
-										}
-									}
-								}
-
-								// Construct delta
-								const delta: IRStreamDelta = {};
-								if (content) delta.content = content;
-								// Map reasoning to contentParts for IR
-								const deltaContentParts: any[] = [];
-								if (reasoning) {
-									// In streaming, we might not have the signature yet, but we'll pass the text.
-									deltaContentParts.push({
-										type: "reasoning_text",
-										text: reasoning
-									} as any);
-								}
-								if (mediaParts.length > 0) {
-									deltaContentParts.push(...mediaParts);
-								}
-								if (deltaContentParts.length > 0) {
-									delta.contentParts = deltaContentParts;
-								}
-
-								let finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
-								if (finishReason === "stop" && toolCalls.length > 0) {
-									finishReason = "tool_calls";
-								}
-
-								const choice: any = {
-									index,
-									delta: {
-										role: "assistant",
-										...delta,
-									},
-									finishReason,
-								};
-								if (toolCalls.length > 0) {
-									choice.delta.toolCalls = toolCalls;
-								}
-
-								if (Object.keys(choice.delta).length > 0 || finishReason) {
-									irChunk.choices.push(choice);
-								}
-							}
-						}
-
-						const chunkUsage = googleUsageMetadataToIRUsage(payload.usageMetadata);
-						if (chunkUsage) {
-							irChunk.usage = chunkUsage;
-						}
-
-						// Now encode IR Chunk to OpenAI Chunk (bytes)
-						const openAIChunk = encodeIRChunkToOpenAI(irChunk);
-						controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
+						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 					}
 				}
 				controller.enqueue(encoder.encode("data: [DONE]\n\n"));

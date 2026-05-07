@@ -258,6 +258,51 @@ describe("openAIResponsesToIR", () => {
 
 			expect(ir.choices[0].message.phase).toBe("final_answer");
 		});
+
+		it("parses output_image and output_audio blocks from responses message content", () => {
+			const response = {
+				id: "resp_media",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "message",
+						output_index: 0,
+						role: "assistant",
+						content: [
+							{
+								type: "output_image",
+								b64_json: "aW1hZ2UtYnl0ZXM=",
+								mime_type: "image/png",
+							},
+							{
+								type: "output_audio",
+								b64_json: "YXVkaW8tYnl0ZXM=",
+								mime_type: "audio/wav",
+							},
+						],
+					},
+				],
+			};
+
+			const ir = openAIResponsesToIR(response, "req_media", "gemini-2.5-flash-image", "google-ai-studio");
+			expect(ir.choices).toHaveLength(1);
+			expect(ir.choices[0]?.message.content).toEqual([
+				{
+					type: "image",
+					source: "data",
+					data: "aW1hZ2UtYnl0ZXM=",
+					mimeType: "image/png",
+				},
+				{
+					type: "audio",
+					source: "data",
+					data: "YXVkaW8tYnl0ZXM=",
+					format: "wav",
+				},
+			]);
+		});
 	});
 });
 
@@ -437,6 +482,61 @@ describe("irToOpenAIResponses", () => {
 			role: "assistant",
 			phase: "commentary",
 		});
+	});
+
+	it("omits empty assistant wrapper messages for tool-only follow-up turns", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-5.4-nano",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Use the weather tool and then summarise weather in one concise sentence." }],
+			}, {
+				role: "assistant",
+				content: [{ type: "text", text: "" }],
+				toolCalls: [{
+					id: "call_weather",
+					name: "get_weather",
+					arguments: "{\"city\":\"London\"}",
+				}],
+			}, {
+				role: "tool",
+				toolResults: [{
+					toolCallId: "call_weather",
+					content: "{\"city\":\"London\",\"temperature_c\":14,\"condition\":\"Cloudy\"}",
+				}],
+			}],
+			stream: false,
+			tools: [{
+				name: "get_weather",
+				description: "Get weather for a city.",
+				parameters: {
+					type: "object",
+					properties: {
+						city: { type: "string" },
+					},
+					required: ["city"],
+				},
+			}],
+		} as any, "gpt-5.4-nano", "openai");
+
+		expect(request.input).toEqual([
+			{
+				type: "message",
+				role: "user",
+				content: [{ type: "input_text", text: "Use the weather tool and then summarise weather in one concise sentence." }],
+			},
+			{
+				type: "function_call",
+				call_id: "call_weather",
+				name: "get_weather",
+				arguments: "{\"city\":\"London\"}",
+			},
+			{
+				type: "function_call_output",
+				call_id: "call_weather",
+				output: "{\"city\":\"London\",\"temperature_c\":14,\"condition\":\"Cloudy\"}",
+			},
+		]);
 	});
 
 	it("passes OpenAI context_management from provider_options to upstream OpenAI request", () => {

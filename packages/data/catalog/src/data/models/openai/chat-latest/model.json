@@ -1,0 +1,37 @@
+{
+  "model_id": "openai/chat-latest",
+  "organisation_id": "openai",
+  "name": "chat-latest",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-05-05T00:00:00",
+  "release_date": "2026-05-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "openai/chat-latest",
+  "family_id": "openai/gpt-5.5",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/chat-latest"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-08-31T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 16384
+    }
+  ],
+  "benchmarks": []
+}

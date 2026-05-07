@@ -11,6 +11,80 @@ import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "..
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
+function shouldLogRawImageResponse(args: ProviderExecuteArgs): boolean {
+    return (
+        args.meta?.debug?.enabled === true ||
+        args.meta?.debug?.return_upstream_response === true ||
+        args.meta?.returnUpstreamResponse === true
+    );
+}
+
+function logRawImageResponse(
+    args: ProviderExecuteArgs,
+    details: {
+        json: any;
+        normalized: any;
+        rawText?: string | null;
+        contentType?: string | null;
+        status?: number | null;
+    },
+) {
+    const { json, normalized, rawText, contentType, status } = details;
+    if (!shouldLogRawImageResponse(args)) return;
+    if (!json || typeof json !== "object") {
+        console.log("[gateway][openai][images] raw upstream response missing or non-object", {
+            requestId: args.meta?.requestId ?? null,
+            provider: args.providerId,
+            model: args.model,
+            status: status ?? null,
+            contentType: contentType ?? null,
+            rawTextLength: typeof rawText === "string" ? rawText.length : null,
+        });
+        return;
+    }
+
+    console.log("[gateway][openai][images] raw upstream response summary", {
+        requestId: args.meta?.requestId ?? null,
+        provider: args.providerId,
+        model: args.model,
+        status: status ?? null,
+        contentType: contentType ?? null,
+        topLevel: {
+            size: json.size ?? null,
+            quality: json.quality ?? null,
+            output_format: json.output_format ?? null,
+            created: json.created ?? null,
+        },
+        usage: {
+            input_tokens: json.usage?.input_tokens ?? null,
+            output_tokens: json.usage?.output_tokens ?? null,
+            total_tokens: json.usage?.total_tokens ?? null,
+            input_image_tokens:
+                json.usage?.input_image_tokens ??
+                json.usage?.input_tokens_details?.image_tokens ??
+                null,
+            input_text_tokens:
+                json.usage?.input_text_tokens ??
+                json.usage?.input_tokens_details?.text_tokens ??
+                null,
+            output_image_tokens:
+                json.usage?.output_image_tokens ??
+                json.usage?.output_tokens_details?.image_tokens ??
+                null,
+            output_text_tokens:
+                json.usage?.output_text_tokens ??
+                json.usage?.output_tokens_details?.text_tokens ??
+                null,
+        },
+        data_count: Array.isArray(json.data) ? json.data.length : 0,
+        normalized: {
+            size: normalized?.size ?? null,
+            quality: normalized?.quality ?? null,
+            output_format: normalized?.output_format ?? null,
+        },
+    });
+}
+
 
 
 function mapGatewayToOpenAIImages(body: ImagesGenerationRequest) {
@@ -34,6 +108,9 @@ function mapOpenAIToGatewayImages(json: any): any {
     return {
         created: json.created,
         data: json.data,
+        output_format: json.output_format,
+        quality: json.quality,
+        size: json.size,
         usage: json.usage,
     };
 }
@@ -71,22 +148,44 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         upstream_id: res.headers.get("x-request-id"),
         finish_reason: null,
     };
-    const json = await res.clone().json().catch(() => null);
+    const contentType = res.headers.get("content-type");
+    const rawText = shouldLogRawImageResponse(args)
+        ? await res.clone().text().catch(() => null)
+        : null;
+    const json = rawText != null
+        ? (() => {
+            try {
+                return rawText ? JSON.parse(rawText) : null;
+            } catch {
+                return null;
+            }
+        })()
+        : await res.clone().json().catch(() => null);
     const normalized = json ? mapOpenAIToGatewayImages(json) : undefined;
+    logRawImageResponse(args, {
+        json,
+        normalized,
+        rawText,
+        contentType,
+        status: res.status,
+    });
 
     if (res.ok && args.pricingCard) {
         const outputImageCount = resolveOutputImageCount(modifiedBody, normalized);
         // Image providers are commonly priced by request count.
-        const usageMeters: Record<string, number> = normalized?.usage && typeof normalized.usage === "object"
-            ? { ...(normalized.usage as Record<string, number>) }
+        const usageMeters: Record<string, unknown> = normalized?.usage && typeof normalized.usage === "object"
+            ? { ...(normalized.usage as Record<string, unknown>) }
             : { total_tokens: 0 };
         if (typeof usageMeters.requests !== "number") usageMeters.requests = 1;
         if (typeof usageMeters.output_image !== "number") usageMeters.output_image = outputImageCount;
+        if (typeof normalized?.size === "string") usageMeters.size = normalized.size;
+        if (typeof normalized?.quality === "string") usageMeters.quality = normalized.quality;
+        if (typeof normalized?.output_format === "string") usageMeters.output_format = normalized.output_format;
 
         const pricedUsage = computeBill(
-            usageMeters,
+            usageMeters as Record<string, any>,
             args.pricingCard,
-            buildImagePricingRequestOptions(modifiedBody),
+            buildImagePricingRequestOptions(modifiedBody, usageMeters),
         );
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;

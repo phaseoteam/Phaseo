@@ -6,6 +6,16 @@
 			"dependsOn": ["^build"],
 			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"]
 		},
+		"@ai-stats/web#build": {
+			"dependsOn": ["^build"],
+			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"],
+			"inputs": [
+				"$TURBO_DEFAULT$",
+				"apps/api/src/**",
+				"apps/api/openapi.openai.yml",
+				"apps/api/openapi.anthropic.json"
+			]
+		},
 		"lint": { "outputs": [] },
 		"typecheck": { "outputs": [] },
 		"clean": { "cache": false }

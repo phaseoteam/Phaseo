@@ -8,6 +8,7 @@ export interface ModelOverviewHeader {
 	name: string;
 	organisation_id: string;
 	organisation: { name: string; country_code: string };
+	aliases: string[];
 	family_id?: string;
 	status?: string | null;
 	hidden?: boolean;
@@ -33,6 +34,35 @@ function organisationFromModelId(modelId: string | null | undefined): string | n
 	if (!normalized || !normalized.includes("/")) return null;
 	const [organisationId] = normalized.split("/", 1);
 	return normalizeId(organisationId);
+}
+
+async function fetchAliasesForApiModel(
+	supabase: Awaited<ReturnType<typeof createClient>>,
+	apiModelId: string | null | undefined,
+): Promise<string[]> {
+	const normalizedApiModelId = normalizeId(apiModelId);
+	if (!normalizedApiModelId) return [];
+
+	const { data, error } = await supabase
+		.from("data_api_model_aliases")
+		.select("alias_slug")
+		.eq("api_model_id", normalizedApiModelId)
+		.eq("is_enabled", true)
+		.order("alias_slug", { ascending: true });
+
+	if (error) {
+		if (!isMissingRelationError(error)) throw error;
+		return [];
+	}
+
+	return Array.from(
+		new Set(
+			(data ?? [])
+				.map((row: { alias_slug?: unknown }) => normalizeId(row?.alias_slug))
+				.filter((alias): alias is string => Boolean(alias))
+				.filter((alias) => alias !== normalizedApiModelId),
+		),
+	).sort((left, right) => left.localeCompare(right));
 }
 
 export async function fetchModelOverviewHeader(
@@ -136,6 +166,7 @@ export async function fetchModelOverviewHeader(
 			organisationName = organisationRow?.name ?? resolvedOrganisationId;
 			organisationCountryCode = organisationRow?.country_code ?? "";
 		}
+		const aliases = await fetchAliasesForApiModel(supabase, resolvedApiModelId);
 
 		return {
 			model_id: resolvedApiModelId,
@@ -145,6 +176,7 @@ export async function fetchModelOverviewHeader(
 				name: organisationName ?? "Unknown",
 				country_code: organisationCountryCode,
 			},
+			aliases,
 			status: null,
 			hidden: false,
 		};
@@ -157,12 +189,14 @@ export async function fetchModelOverviewHeader(
 	if (!rawOrg) {
 		throw new Error(`Organisation not found for model ${modelId}`);
 	}
+	const aliases = await fetchAliasesForApiModel(supabase, data.model_id);
 
 	return {
 		model_id: data.model_id,
 		name: data.name,
 		organisation_id: data.organisation_id,
 		organisation: rawOrg as { name: string; country_code: string },
+		aliases,
 		family_id: data.family_id || undefined,
 		status: (data as any).status ?? null,
 		hidden: Boolean((data as any).hidden),

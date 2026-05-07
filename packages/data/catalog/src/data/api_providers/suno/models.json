@@ -15,7 +15,7 @@
     "capabilities": [
       {
         "capability_id": "music.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]
@@ -36,7 +36,7 @@
     "capabilities": [
       {
         "capability_id": "music.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]
@@ -57,7 +57,7 @@
     "capabilities": [
       {
         "capability_id": "music.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]
@@ -78,7 +78,7 @@
     "capabilities": [
       {
         "capability_id": "music.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]
@@ -99,7 +99,7 @@
     "capabilities": [
       {
         "capability_id": "music.generate",
-        "status": "active",
+        "status": "coming_soon",
         "params": []
       }
     ]

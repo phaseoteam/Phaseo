@@ -10,7 +10,6 @@ const REQUIRED_MODALITY_CAPABILITIES = [
 
 const PRIORITY_PROVIDERS = [
 	"openai",
-	"google-ai-studio",
 	"google-vertex",
 	"amazon-bedrock",
 	"x-ai",

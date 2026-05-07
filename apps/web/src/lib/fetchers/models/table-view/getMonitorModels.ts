@@ -72,6 +72,37 @@ type MonitorModelRpcRow = {
 	weekly_latency_model: number | null;
 };
 
+const MONITOR_RPC_PAGE_SIZE = 1000;
+
+async function fetchAllMonitorModelRows(
+	includeHidden: boolean,
+): Promise<MonitorModelRpcRow[]> {
+	const supabase = createAdminClient();
+	const rows: MonitorModelRpcRow[] = [];
+
+	for (let from = 0; ; from += MONITOR_RPC_PAGE_SIZE) {
+		const to = from + MONITOR_RPC_PAGE_SIZE - 1;
+		const { data, error } = await supabase
+			.rpc("get_monitor_model_rows", {
+				p_include_hidden: includeHidden,
+			})
+			.range(from, to);
+
+		if (error) {
+			throw error;
+		}
+
+		const page = (data ?? []) as MonitorModelRpcRow[];
+		rows.push(...page);
+
+		if (page.length < MONITOR_RPC_PAGE_SIZE) {
+			break;
+		}
+	}
+
+	return rows;
+}
+
 export async function getMonitorModels(
 	filters: MonitorModelFilters = {},
 	includeHidden: boolean
@@ -95,15 +126,7 @@ export async function getMonitorModels(
 	cacheTag("data:models");
 	cacheTag("data:api_providers");
 
-	const supabase = createAdminClient();
-	const { data: rpcRows, error: rpcError } = await supabase.rpc(
-		"get_monitor_model_rows",
-		{ p_include_hidden: includeHidden },
-	);
-
-	if (rpcError) {
-		throw rpcError;
-	}
+	const rpcRows = await fetchAllMonitorModelRows(includeHidden);
 
 	const featureOrderIndexForRow = new Map(
 		featureOrder.map((feature, index) => [feature, index]),

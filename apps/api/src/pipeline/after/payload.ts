@@ -88,10 +88,14 @@ function buildResponsesPayload(ctx: PipelineContext, result: RequestResult): Any
     // IR usage is authoritative for canonical token mapping.
     // Keep raw non-token fields by layering canonical IR usage over raw usage.
     const usage = irUsage ? { ...(rawUsage ?? {}), ...irUsage } : rawUsage;
-    const hasRawOutput = Array.isArray(raw?.output) || Array.isArray(raw?.output_items);
-    const outputRaw = hasRawOutput
-        ? (Array.isArray(raw?.output) ? raw.output : raw?.output_items)
-        : (ir ? buildResponsesOutput(ir, ctx.requestId) : []);
+    const rawOutputItems = Array.isArray(raw?.output)
+        ? raw.output
+        : (Array.isArray(raw?.output_items) ? raw.output_items : null);
+    const irOutputItems = ir ? buildResponsesOutput(ir, ctx.requestId) : [];
+    const outputRaw =
+        Array.isArray(rawOutputItems) && rawOutputItems.length > 0
+            ? rawOutputItems
+            : irOutputItems;
     const output = backfillAssistantPhaseFromIr(outputRaw, ir);
     const resolvedId = ctx.requestId ?? raw?.id ?? (ctx.requestId ? `resp_${ctx.requestId.replace(/^req_/, "")}` : ctx.requestId);
     // Separate native response ID (from response body) and upstream request ID (from headers)
@@ -433,6 +437,41 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
     return out;
 }
 
+function resolveTopLevelPricingUsage(usage: any): {
+	totalNanos: number;
+	totalCents: number;
+	currency: string;
+	lines: any[];
+} | undefined {
+	const pricing = usage?.pricing_breakdown ?? usage?.pricing;
+	if (!pricing || typeof pricing !== "object") return undefined;
+
+	const totalNanos =
+		typeof pricing.total_nanos === "number"
+			? pricing.total_nanos
+			: (typeof pricing.totalNanos === "number" ? pricing.totalNanos : 0);
+	const totalCents =
+		typeof pricing.total_cents === "number"
+			? pricing.total_cents
+			: (typeof pricing.totalCents === "number" ? pricing.totalCents : 0);
+	const currency = typeof pricing.currency === "string" ? pricing.currency : "USD";
+	const lines = Array.isArray(pricing.lines) ? pricing.lines : [];
+
+	if (totalNanos <= 0 && totalCents <= 0 && lines.length === 0) return undefined;
+	return { totalNanos, totalCents, currency, lines };
+}
+
+function attachTopLevelPricing(body: any, usage: any) {
+	if (!body || typeof body !== "object") return body;
+	const pricing = resolveTopLevelPricingUsage(usage);
+	if (!pricing) return body;
+	if (body.cost_nanos == null) body.cost_nanos = pricing.totalNanos;
+	if (body.cost_cents == null) body.cost_cents = pricing.totalCents;
+	if (body.currency == null) body.currency = pricing.currency;
+	if (!Array.isArray(body.pricing_lines)) body.pricing_lines = pricing.lines;
+	return body;
+}
+
 function toOaiChatChoices(choices: GatewayCompletionsChoice[] | undefined) {
     if (!Array.isArray(choices)) return [];
     return choices.map((c) => ({
@@ -695,7 +734,7 @@ export function formatClientPayload(args: {
         if (usage) {
             response.usage = normalizeAnthropicUsage(usage, asChatResponse(result.ir)?.usage);
         }
-        return response;
+        return attachTopLevelPricing(response, usage);
     }
 
     if (ctx.endpoint === "chat.completions") {
@@ -711,7 +750,7 @@ export function formatClientPayload(args: {
         }
         if (meta) body.meta = meta;
         if (usage) body.usage = usage;
-        return body;
+        return attachTopLevelPricing(body, usage);
     }
 
     if (ctx.endpoint === "responses") {
@@ -744,7 +783,7 @@ export function formatClientPayload(args: {
         }
         if (meta) body.meta = meta;
 
-        return body;
+        return attachTopLevelPricing(body, usage);
     }
 
 	if (ctx.endpoint === "moderations") {
@@ -770,7 +809,7 @@ export function formatClientPayload(args: {
             body.nativeResponseId = nativeResponseId;
         }
 		if (meta) body.meta = meta;
-		return body;
+		return attachTopLevelPricing(body, usage);
 	}
 
 	if (ctx.endpoint === "rerank") {
@@ -801,7 +840,7 @@ export function formatClientPayload(args: {
 			body.nativeResponseId = nativeResponseId;
 		}
 		if (meta) body.meta = meta;
-		return body;
+		return attachTopLevelPricing(body, usage);
 	}
 
 	// Fallback: keep payload structure
@@ -811,7 +850,7 @@ export function formatClientPayload(args: {
         ...(usage ? { usage } : {}),
     };
     if (meta) fallback.meta = meta;
-    return fallback;
+    return attachTopLevelPricing(fallback, usage);
 }
 
 

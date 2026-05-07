@@ -1,5 +1,5 @@
 import type { ExecutorExecuteArgs } from "@executors/types";
-import type { IRChatResponse } from "@core/ir";
+import type { IRChatResponse, IRContentPart } from "@core/ir";
 import { openAIResponsesToIR } from "./transform";
 import { openAIChatToIR } from "./transform-chat";
 import { getProviderQuirks } from "./quirks";
@@ -48,6 +48,66 @@ function normalizeResponsesEvent(event: string | null): string | null {
 	if (event === "response.output.delta") return "response.output_text.delta";
 	if (event === "response.text.delta") return "response.output_text.delta";
 	return event;
+}
+
+function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
+	if (!Array.isArray(value)) return [];
+	const parts: Array<Extract<IRContentPart, { type: "image" | "audio" }>> = [];
+	for (const item of value) {
+		if (!item || typeof item !== "object") continue;
+		const type = String(item.type ?? "").toLowerCase();
+		if (type === "image_url") {
+			const rawUrl =
+				typeof item.image_url === "string"
+					? item.image_url
+					: (typeof item.image_url?.url === "string" ? item.image_url.url : null);
+			if (!rawUrl) continue;
+			if (rawUrl.startsWith("data:")) {
+				const match = rawUrl.match(/^data:([^;,]+)?;base64,(.+)$/i);
+				if (!match) continue;
+				parts.push({
+					type: "image",
+					source: "data",
+					data: match[2],
+					mimeType:
+						(typeof item.mime_type === "string" ? item.mime_type : match[1]) || "image/png",
+				});
+				continue;
+			}
+			parts.push({
+				type: "image",
+				source: "url",
+				data: rawUrl,
+				...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+			});
+			continue;
+		}
+		if (type === "audio_url") {
+			const rawUrl =
+				typeof item.audio_url === "string"
+					? item.audio_url
+					: (typeof item.audio_url?.url === "string" ? item.audio_url.url : null);
+			if (!rawUrl) continue;
+			if (rawUrl.startsWith("data:")) {
+				const match = rawUrl.match(/^data:([^;,]+)?;base64,(.+)$/i);
+				if (!match) continue;
+				parts.push({
+					type: "audio",
+					source: "data",
+					data: match[2],
+					format: item.format,
+				});
+				continue;
+			}
+			parts.push({
+				type: "audio",
+				source: "url",
+				data: rawUrl,
+				format: item.format,
+			});
+		}
+	}
+	return parts;
 }
 export function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
@@ -327,6 +387,7 @@ export function transformResponsesStreamToChat(
 type ResponsesStreamChoiceState = {
 	text: string;
 	reasoning: string;
+	mediaParts: Array<Extract<IRContentPart, { type: "image" | "audio" }>>;
 	finishReason?: string | null;
 	messageOutputIndex?: number;
 	reasoningOutputIndex?: number;
@@ -368,6 +429,7 @@ export function transformChatStreamToResponses(
 			entry = {
 				text: "",
 				reasoning: "",
+				mediaParts: [],
 				toolCalls: new Map(),
 			};
 			choiceStates.set(index, entry);
@@ -525,6 +587,15 @@ export function transformChatStreamToResponses(
 									}, controller);
 								}
 
+								for (const part of parseChatMediaParts(choice?.delta?.images)) {
+									entry.mediaParts.push(part);
+									ensureMessageIndex(choiceIndex, entry);
+								}
+								for (const part of parseChatMediaParts(choice?.delta?.audios)) {
+									entry.mediaParts.push(part);
+									ensureMessageIndex(choiceIndex, entry);
+								}
+
 								const toolDeltas = Array.isArray(choice?.delta?.tool_calls) ? choice.delta.tool_calls : [];
 								for (const toolDelta of toolDeltas) {
 									const toolIndex = Number(toolDelta?.index ?? 0);
@@ -595,6 +666,14 @@ export function transformChatStreamToResponses(
 												tool.emittedAdded = true;
 											}
 										}
+									}
+									for (const part of parseChatMediaParts(message.images)) {
+										entry.mediaParts.push(part);
+										ensureMessageIndex(choiceIndex, entry);
+									}
+									for (const part of parseChatMediaParts(message.audios)) {
+										entry.mediaParts.push(part);
+										ensureMessageIndex(choiceIndex, entry);
 									}
 								}
 							}
@@ -734,7 +813,7 @@ function buildResponsesOutputFromState(
 				},
 			});
 		}
-		if (entry.messageOutputIndex != null && entry.text.length > 0) {
+		if (entry.messageOutputIndex != null && (entry.text.length > 0 || entry.mediaParts.length > 0)) {
 			outputItems.push({
 				index: entry.messageOutputIndex,
 				item: {
@@ -742,7 +821,49 @@ function buildResponsesOutputFromState(
 					id: entry.messageItemId ?? `msg_${requestId}_${choiceIndex}`,
 					status: "completed",
 					role: "assistant",
-					content: [{ type: "output_text", text: entry.text, annotations: [] }],
+					content: [
+						...(entry.text.length > 0 ? [{ type: "output_text", text: entry.text, annotations: [] }] : []),
+						...entry.mediaParts.map((part) => {
+							if (part.type === "image") {
+								if (part.source === "data") {
+									return {
+										type: "output_image",
+										b64_json: part.data,
+										mime_type: part.mimeType,
+									};
+								}
+								return {
+									type: "output_image",
+									image_url: { url: part.data },
+									mime_type: part.mimeType,
+								};
+							}
+							const mimeType = (() => {
+								if (part.format === "wav") return "audio/wav";
+								if (part.format === "mp3") return "audio/mpeg";
+								if (part.format === "flac") return "audio/flac";
+								if (part.format === "m4a") return "audio/m4a";
+								if (part.format === "ogg") return "audio/ogg";
+								if (part.format === "pcm16") return "audio/l16";
+								if (part.format === "pcm24") return "audio/l24";
+								return "audio/wav";
+							})();
+							if (part.source === "data") {
+								return {
+									type: "output_audio",
+									b64_json: part.data,
+									mime_type: mimeType,
+									...(part.format ? { format: part.format } : {}),
+								};
+							}
+							return {
+								type: "output_audio",
+								audio_url: { url: part.data },
+								mime_type: mimeType,
+								...(part.format ? { format: part.format } : {}),
+							};
+						}),
+					],
 				},
 			});
 		}

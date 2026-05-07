@@ -2,6 +2,8 @@
 // Why: Keeps stream accounting and lifecycle handling protocol-agnostic.
 // How: Parses protocol stream frames (chat/responses/messages) into canonical events.
 
+import type { IRContentPart } from "@core/ir";
+
 type StopReason = string | null | undefined;
 
 export type UnifiedStreamEvent =
@@ -21,6 +23,12 @@ export type UnifiedStreamEvent =
 			arguments?: string;
 			choiceIndex?: number;
 			toolIndex?: number;
+			payload?: any;
+	  }
+	| {
+			type: "delta_content_part";
+			part: Extract<IRContentPart, { type: "image" | "audio" }>;
+			choiceIndex?: number;
 			payload?: any;
 	  }
 	| { type: "usage"; usage: any; payload?: any }
@@ -97,6 +105,121 @@ function deriveResponsesStopReason(response: any): StopReason {
 	return status || "stop";
 }
 
+function parseChatMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
+	if (!Array.isArray(value)) return [];
+	const parts: Array<Extract<IRContentPart, { type: "image" | "audio" }>> = [];
+	for (const item of value) {
+		if (!item || typeof item !== "object") continue;
+		const type = String(item.type ?? "").toLowerCase();
+		if (type === "image_url") {
+			const rawUrl =
+				typeof item.image_url === "string"
+					? item.image_url
+					: (typeof item.image_url?.url === "string" ? item.image_url.url : null);
+			if (!rawUrl) continue;
+			if (rawUrl.startsWith("data:")) {
+				const match = rawUrl.match(/^data:([^;,]+)?;base64,(.+)$/i);
+				if (!match) continue;
+				parts.push({
+					type: "image",
+					source: "data",
+					data: match[2],
+					mimeType:
+						(typeof item.mime_type === "string" ? item.mime_type : match[1]) || "image/png",
+				});
+				continue;
+			}
+			parts.push({
+				type: "image",
+				source: "url",
+				data: rawUrl,
+				...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+			});
+			continue;
+		}
+		if (type === "audio_url") {
+			const rawUrl =
+				typeof item.audio_url === "string"
+					? item.audio_url
+					: (typeof item.audio_url?.url === "string" ? item.audio_url.url : null);
+			if (!rawUrl) continue;
+			if (rawUrl.startsWith("data:")) {
+				const match = rawUrl.match(/^data:([^;,]+)?;base64,(.+)$/i);
+				if (!match) continue;
+				parts.push({
+					type: "audio",
+					source: "data",
+					data: match[2],
+					format: item.format,
+				});
+				continue;
+			}
+			parts.push({
+				type: "audio",
+				source: "url",
+				data: rawUrl,
+				format: item.format,
+			});
+		}
+	}
+	return parts;
+}
+
+function parseResponsesMediaParts(value: any): Array<Extract<IRContentPart, { type: "image" | "audio" }>> {
+	if (!Array.isArray(value)) return [];
+	const parts: Array<Extract<IRContentPart, { type: "image" | "audio" }>> = [];
+	for (const item of value) {
+		if (!item || typeof item !== "object") continue;
+		const type = String(item.type ?? "").toLowerCase();
+		if (type === "output_image" || type === "image" || type === "image_url") {
+			if (typeof item.b64_json === "string" && item.b64_json.length > 0) {
+				parts.push({
+					type: "image",
+					source: "data",
+					data: item.b64_json,
+					...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+				});
+				continue;
+			}
+			const rawUrl =
+				typeof item.image_url === "string"
+					? item.image_url
+					: (typeof item.image_url?.url === "string" ? item.image_url.url : null);
+			if (!rawUrl) continue;
+			parts.push({
+				type: "image",
+				source: "url",
+				data: rawUrl,
+				...(typeof item.mime_type === "string" ? { mimeType: item.mime_type } : {}),
+			});
+			continue;
+		}
+		if (type === "output_audio" || type === "audio" || type === "audio_url") {
+			if (typeof item.b64_json === "string" && item.b64_json.length > 0) {
+				parts.push({
+					type: "audio",
+					source: "data",
+					data: item.b64_json,
+					format: item.format,
+				});
+				continue;
+			}
+			const rawUrl =
+				typeof item.audio_url === "string"
+					? item.audio_url
+					: (typeof item.audio_url?.url === "string" ? item.audio_url.url : null);
+			if (!rawUrl) continue;
+			parts.push({
+				type: "audio",
+				source: "url",
+				data: rawUrl,
+				format: item.format,
+			});
+		}
+	}
+	return parts;
+}
+
 function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 	const events: UnifiedStreamEvent[] = [];
 
@@ -139,6 +262,22 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 					type: "delta_text",
 					channel: "reasoning_text",
 					text: delta.reasoning,
+					choiceIndex,
+					payload: choice,
+				});
+			}
+			for (const part of parseChatMediaParts(delta?.images)) {
+				events.push({
+					type: "delta_content_part",
+					part,
+					choiceIndex,
+					payload: choice,
+				});
+			}
+			for (const part of parseChatMediaParts(delta?.audios)) {
+				events.push({
+					type: "delta_content_part",
+					part,
 					choiceIndex,
 					payload: choice,
 				});
@@ -190,6 +329,22 @@ function extractOpenAIChatEvents(frame: any): UnifiedStreamEvent[] {
 			events.push({ type: "usage", usage: frame.usage, payload: frame });
 		}
 		const choice = Array.isArray(frame?.choices) ? frame.choices[0] : null;
+		for (const part of parseChatMediaParts(choice?.message?.images)) {
+			events.push({
+				type: "delta_content_part",
+				part,
+				choiceIndex: 0,
+				payload: choice,
+			});
+		}
+		for (const part of parseChatMediaParts(choice?.message?.audios)) {
+			events.push({
+				type: "delta_content_part",
+				part,
+				choiceIndex: 0,
+				payload: choice,
+			});
+		}
 		const finishReason = choice?.finish_reason ?? "stop";
 		events.push({
 			type: "stop",
@@ -263,6 +418,17 @@ function extractOpenAIResponsesEvents(
 	) {
 		const item = frame?.item;
 		const itemType = String(item?.type ?? "").toLowerCase();
+		if (itemType === "message") {
+			for (const part of parseResponsesMediaParts(item?.content)) {
+				events.push({
+					type: "delta_content_part",
+					part,
+					choiceIndex:
+						typeof frame?.output_index === "number" ? frame.output_index : undefined,
+					payload: frame,
+				});
+			}
+		}
 		if (itemType === "function_call" || itemType === "tool_call") {
 			events.push({
 				type: "delta_tool",

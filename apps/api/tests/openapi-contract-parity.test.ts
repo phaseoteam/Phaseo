@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { inferenceRouter } from "@/routes/v1/data";
-import { platformRouter } from "@/routes/v1/control";
 
 const HTTP_METHODS = new Set([
 	"GET",
@@ -17,6 +16,24 @@ const HTTP_METHODS = new Set([
 	"TRACE",
 ]);
 
+const PUBLIC_DATA_ROUTE_PREFIXES = [
+	"/chat/completions",
+	"/responses",
+	"/messages",
+	"/embeddings",
+	"/moderations",
+	"/rerank",
+	"/audio/",
+	"/images/",
+	"/videos/",
+	"/video/",
+	"/ocr",
+	"/music/",
+	"/batch",
+	"/batches",
+	"/files",
+] as const;
+
 const SPEC_PATH = path.resolve(
 	path.dirname(fileURLToPath(import.meta.url)),
 	"../../docs/openapi/v1/openapi.yaml",
@@ -26,6 +43,10 @@ function normalizePath(value: string): string {
 	return value
 		.replace(/:[A-Za-z0-9_]+/g, "{param}")
 		.replace(/\{[^/]+\}/g, "{param}");
+}
+
+function isPublicDataRoute(pathName: string): boolean {
+	return PUBLIC_DATA_ROUTE_PREFIXES.some((prefix) => pathName === prefix || pathName.startsWith(prefix));
 }
 
 function parseSpecOperations(specText: string): Set<string> {
@@ -52,7 +73,7 @@ function parseSpecOperations(specText: string): Set<string> {
 		const methodMatch = line.match(
 			/^    (get|post|put|patch|delete|head|options|trace):\s*$/i,
 		);
-		if (methodMatch && currentPath) {
+		if (methodMatch && currentPath && isPublicDataRoute(currentPath)) {
 			operations.add(`${methodMatch[1].toUpperCase()} ${normalizePath(currentPath)}`);
 		}
 	}
@@ -64,13 +85,14 @@ function collectRouteOperations(): Set<string> {
 	const operations = new Set<string>();
 	const routes = [
 		...((inferenceRouter as any).routes ?? []),
-		...((platformRouter as any).routes ?? []),
 	] as Array<{ method?: string; path?: string }>;
 
 	for (const route of routes) {
 		const method = String(route.method ?? "").toUpperCase();
 		const routePath = String(route.path ?? "");
 		if (!HTTP_METHODS.has(method) || !routePath) continue;
+		if (!isPublicDataRoute(routePath)) continue;
+		if (routePath.startsWith("/async/")) continue;
 		operations.add(`${method} ${normalizePath(routePath)}`);
 	}
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildImagePricingRequestOptions, resolveImageResolution, resolveImageSize } from "./image-request-options";
+import {
+	buildImagePricingRequestOptions,
+	inferImagePricingVariant,
+	resolveImageResolution,
+	resolveImageSize,
+} from "./image-request-options";
 
 describe("image-request-options", () => {
 	it("resolves canonical size from explicit size first", () => {
@@ -28,6 +33,65 @@ describe("image-request-options", () => {
 			quality: "high",
 			image_params: {
 				resolution: "1024x1024",
+				quality: "high",
+			},
+		});
+	});
+
+	it("infers pricing quality and resolution from image output tokens when request used auto defaults", () => {
+		const options = buildImagePricingRequestOptions(
+			{
+				size: "auto",
+				quality: "auto",
+			},
+			{
+				output_tokens: 4160,
+			},
+		);
+
+		expect(options).toEqual({
+			size: "1024x1024",
+			resolution: "1024x1024",
+			quality: "high",
+			image_params: {
+				resolution: "1024x1024",
+				quality: "high",
+			},
+		});
+	});
+
+	it("infers portrait image variants from explicit output image token usage", () => {
+		expect(
+			inferImagePricingVariant({
+				output_tokens_details: {
+					output_images: 1584,
+				},
+			}),
+		).toEqual({
+			quality: "medium",
+			resolution: "1024x1536",
+		});
+	});
+
+	it("prefers resolved response params over token inference when request used auto", () => {
+		const options = buildImagePricingRequestOptions(
+			{
+				size: "auto",
+				quality: "auto",
+			},
+			{
+				size: "1024x1536",
+				quality: "high",
+				output_tokens: 4160,
+			},
+		);
+
+		expect(options).toEqual({
+			size: "1024x1536",
+			resolution: "1024x1536",
+			quality: "high",
+			image_params: {
+				resolution: "1024x1536",
 				quality: "high",
 			},
 		});

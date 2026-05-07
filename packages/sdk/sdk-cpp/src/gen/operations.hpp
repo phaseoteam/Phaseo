@@ -114,6 +114,16 @@ inline Response CreateVideoAlias(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateVideoDownloadUrl(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/videos/" + (path.count("video_id") ? path.at("video_id") : std::string{}) + "/download_url";
+	return client.request("POST", resolved_path, body);
+}
+
+inline Response CreateVideoDownloadUrlAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/video/generations/" + (path.count("video_id") ? path.at("video_id") : std::string{}) + "/download_url";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/workspaces";
 	return client.request("POST", resolved_path, body);
@@ -176,6 +186,11 @@ inline Response GetCurrentApiKey(Client& client, const std::map<std::string, std
 
 inline Response GetGeneration(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/generations";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetHealth(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/health";
 	return client.request("GET", resolved_path, body);
 }
 

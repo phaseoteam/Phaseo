@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enrichSuccessPayload } from "./payload";
+import { enrichSuccessPayload, formatClientPayload } from "./payload";
 
 describe("enrichSuccessPayload model selection", () => {
 	it("backfills assistant phase from IR when raw output message omits it", async () => {
@@ -300,5 +300,93 @@ describe("enrichSuccessPayload model selection", () => {
 			mime_type: "audio/wav",
 			format: "wav",
 		});
+	});
+
+	it("falls back to IR output when raw responses output is present but empty", async () => {
+		const ctx: any = {
+			endpoint: "responses",
+			protocol: "openai.responses",
+			requestId: "req_test_image_fallback",
+			model: "google/gemini-2.5-flash-image",
+			body: {},
+			meta: {},
+		};
+		const result: any = {
+			provider: "google-ai-studio",
+			ir: {
+				choices: [{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{ type: "text", text: "tiny blue square" },
+							{
+								type: "image",
+								source: "data",
+								data: "aW1hZ2UtYnl0ZXM=",
+								mimeType: "image/png",
+							},
+						],
+					},
+					finishReason: "stop",
+				}],
+				usage: {
+					inputTokens: 5,
+					outputTokens: 7,
+					totalTokens: 12,
+				},
+			},
+			rawResponse: {
+				id: "resp_empty_output",
+				model: "gemini-2.5-flash-image",
+				output: [],
+				usage: {
+					input_tokens: 5,
+					output_tokens: 7,
+					total_tokens: 12,
+				},
+			},
+		};
+
+		const payload = await enrichSuccessPayload(ctx, result);
+		expect(payload.output).toHaveLength(1);
+		expect(payload.output[0]?.content).toContainEqual({
+			type: "output_image",
+			b64_json: "aW1hZ2UtYnl0ZXM=",
+			mime_type: "image/png",
+		});
+	});
+
+	it("surfaces pricing metadata at the top level for non-chat payloads", () => {
+		const body = formatClientPayload({
+			ctx: {
+				endpoint: "embeddings",
+				protocol: "openai.compat",
+				requestId: "req_pricing_top_level",
+			} as any,
+			result: {
+				provider: "google-ai-studio",
+			} as any,
+			payload: {
+				object: "list",
+				data: [],
+				usage: {
+					input_tokens: 12,
+					total_tokens: 12,
+					pricing_breakdown: {
+						total_nanos: 123_000,
+						total_cents: 0,
+						currency: "USD",
+						lines: [{ dimension: "input_text_tokens" }],
+					},
+				},
+			},
+			includeMeta: false,
+		});
+
+		expect(body.cost_nanos).toBe(123_000);
+		expect(body.currency).toBe("USD");
+		expect(body.pricing_lines).toEqual([{ dimension: "input_text_tokens" }]);
+		expect(body.usage?.pricing_breakdown?.total_nanos).toBe(123_000);
 	});
 });

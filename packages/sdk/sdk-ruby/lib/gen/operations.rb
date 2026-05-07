@@ -135,6 +135,18 @@ module AiStats
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.createVideoDownloadUrl(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/videos/#{path["video_id"]}/download_url"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.createVideoDownloadUrlAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/video/generations/#{path["video_id"]}/download_url"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/workspaces"
@@ -210,6 +222,12 @@ module AiStats
       def self.getGeneration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/generations"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getHealth(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/health"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

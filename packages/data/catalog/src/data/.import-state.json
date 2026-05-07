@@ -55,7 +55,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "d746379be2d8f2859dc9c9e44d189f2b",
+      "hash": "aa50e2d7d3a05d9eb99ce71fe3ccef07",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -107,7 +107,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "622e10d46176b604abec5f4dd2b28231",
+      "hash": "ec0bd2b614e26c9bddd5ba656d9d00c0",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -159,7 +159,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/byteplus/models.json": {
-      "hash": "b91205b260814c0e43a0b401c1a4ba95",
+      "hash": "225b7cf4fc3418a2cbe0dc9ae8518988",
       "meta": {
         "api_provider_id": "byteplus",
         "kind": "provider_models"
@@ -287,7 +287,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/fireworks/models.json": {
-      "hash": "6db06ed88c1544d58fe51dd7e55bfc09",
+      "hash": "2235388502ca206ffa536cf69787e705",
       "meta": {
         "api_provider_id": "fireworks",
         "kind": "provider_models"
@@ -313,7 +313,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/gmicloud/models.json": {
-      "hash": "8a168e2b6351809722e6ccf72a0d5441",
+      "hash": "7d6f6aed8fe3692d602a5c3608812803",
       "meta": {
         "api_provider_id": "gmicloud",
         "kind": "provider_models"
@@ -326,7 +326,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "4f303f0b3d983912f974a692499ea813",
+      "hash": "f17d4debdf6aba6fccf7a22d76c07497",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -339,7 +339,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-vertex/models.json": {
-      "hash": "d99d5374c832591d68ccc00bd8267916",
+      "hash": "2c9c2c918dd5c41fac416e1829f3fb6c",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -352,7 +352,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/groq/models.json": {
-      "hash": "ed3a878ab9efb60ae224d7f1de48588f",
+      "hash": "5dcec2cc39d47a74b314dabbca52ff5d",
       "meta": {
         "api_provider_id": "groq",
         "kind": "provider_models"
@@ -455,7 +455,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/minimax/models.json": {
-      "hash": "f5b6a3a449a1132909725ffa01efc343",
+      "hash": "76cf3dc8dfc479c91be9e73f63f9545f",
       "meta": {
         "api_provider_id": "minimax",
         "kind": "provider_models"
@@ -481,7 +481,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/mistral/models.json": {
-      "hash": "79169cc3d33a3dcbe55de558a34d7b06",
+      "hash": "5ee90c82361acb9127905bf795c6fcb5",
       "meta": {
         "api_provider_id": "mistral",
         "kind": "provider_models"
@@ -533,7 +533,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/nebius-token-factory/models.json": {
-      "hash": "392bb08cfb1f58d10cdc0f8a2f455f9b",
+      "hash": "5c7794879f1258f16900ad084806d676",
       "meta": {
         "api_provider_id": "nebius-token-factory",
         "kind": "provider_models"
@@ -565,7 +565,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/models.json": {
-      "hash": "bed24329f555f8f92a5c7a611e8a2f1e",
+      "hash": "e52246343b71430f9d434da9417df388",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
@@ -584,7 +584,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/openai/models.json": {
-      "hash": "705d0df2bbc38a9523d9131100f51e2a",
+      "hash": "f8623256f7f5302f40deb6bebe438f72",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -666,7 +666,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/suno/models.json": {
-      "hash": "98b900033f1d1f95d59c8df185325faf",
+      "hash": "fb4fd4b6826bbe9851374783e686ab07",
       "meta": {
         "api_provider_id": "suno",
         "kind": "provider_models"
@@ -692,14 +692,14 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice/models.json": {
-      "hash": "203a91d85b1650f5a747217d0af1707b",
+      "hash": "5639b812f3f08dce7ca367d96d1c9be1",
       "meta": {
         "api_provider_id": "venice",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/api_provider.json": {
-      "hash": "c81da16506d6a61125f3c342a1edc50e",
+      "hash": "8fc0b55da90b26aa63bc2a87ec80c326",
       "meta": {
         "api_provider_id": "venice-e2ee"
       }
@@ -744,7 +744,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/x-ai/models.json": {
-      "hash": "52b10275bc437ee4dd9a1b3ab5a0ee0d",
+      "hash": "60e8d0b41ee03d842105d368cc7a7da9",
       "meta": {
         "api_provider_id": "x-ai",
         "kind": "provider_models"
@@ -1763,7 +1763,7 @@
       }
     },
     "../../packages/data/catalog/src/data/benchmarks/expert-swe/benchmark.json": {
-      "hash": "f9f2c2b30e347cdbc6934ef33450dab9",
+      "hash": "898dc4618b6354630f4fbd7da214fcb5",
       "meta": {
         "benchmark_id": "expert-swe"
       }
@@ -4835,33 +4835,33 @@
       }
     },
     "../../packages/data/catalog/src/data/families/ibm-granite-3.0/family.json": {
-      "hash": "e68a2b149b47342994e16c5abcba8e9b",
+      "hash": "2f5207c6a27cd48d9afae8623766a49d",
       "meta": {
-        "family_id": "ibm/granite-3.0"
+        "family_id": "ibm/granite-3-0"
       }
     },
     "../../packages/data/catalog/src/data/families/ibm-granite-3.1/family.json": {
-      "hash": "9393e7be6fd478aa5c331f8d0acbcea6",
+      "hash": "30e40a5eec2dca5990fb24f02c20384a",
       "meta": {
-        "family_id": "ibm/granite-3.1"
+        "family_id": "ibm/granite-3-1"
       }
     },
     "../../packages/data/catalog/src/data/families/ibm-granite-3.2/family.json": {
-      "hash": "6c20c7851776adad516eb9e327773054",
+      "hash": "bc8dc0dedf9977d15d42285f95ea7326",
       "meta": {
-        "family_id": "ibm/granite-3.2"
+        "family_id": "ibm/granite-3-2"
       }
     },
     "../../packages/data/catalog/src/data/families/ibm-granite-3.3/family.json": {
-      "hash": "d6f2cef406efe0acaac8e991722bbdcd",
+      "hash": "183c4fa43eb1ce65d3c35c98e25c9f5c",
       "meta": {
-        "family_id": "ibm/granite-3.3"
+        "family_id": "ibm/granite-3-3"
       }
     },
     "../../packages/data/catalog/src/data/families/ibm-granite-4.0/family.json": {
-      "hash": "7b2f3f4e2473a78d003ea740231f0178",
+      "hash": "6fcfb9da20442043ed64eaf50cf5b48f",
       "meta": {
-        "family_id": "ibm/granite-4.0"
+        "family_id": "ibm/granite-4-0"
       }
     },
     "../../packages/data/catalog/src/data/families/ibm-granite-embedding/family.json": {
@@ -4925,7 +4925,7 @@
       }
     },
     "../../packages/data/catalog/src/data/families/moonshotai-kimi-k2/family.json": {
-      "hash": "b9f4a2b49f3fceb34a558ed113f58c1f",
+      "hash": "8a6f1945a297a7a2c690396c54236f4d",
       "meta": {
         "family_id": "moonshotai/kimi-k2"
       }
@@ -5041,7 +5041,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ai21/jamba-large-1.5/model.json": {
-      "hash": "428012c13a8a61c6f59b4d0085609026",
+      "hash": "9b0861a90371d07723916e840a657c7a",
       "meta": {
         "model_id": "ai21/jamba-large-1.5",
         "organisation_id": "ai21",
@@ -5049,7 +5049,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ai21/jamba-large-1.6/model.json": {
-      "hash": "0e3de45267d1e553165b49ea421e1177",
+      "hash": "414d3c4b2a6624c22288599daccf8694",
       "meta": {
         "model_id": "ai21/jamba-large-1.6",
         "organisation_id": "ai21",
@@ -5057,7 +5057,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ai21/jamba-large-1.7/model.json": {
-      "hash": "007401f3d65a1a2f0be391bba29f48c6",
+      "hash": "4dcc1f5fda05846c8115f5a94ea4db1a",
       "meta": {
         "model_id": "ai21/jamba-large-1.7",
         "organisation_id": "ai21",
@@ -5065,7 +5065,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ai21/jamba-mini-1.5/model.json": {
-      "hash": "f75bc417a5ac1521514291a60d302618",
+      "hash": "e91dabdb883e170379fd97ea8410ea78",
       "meta": {
         "model_id": "ai21/jamba-mini-1.5",
         "organisation_id": "ai21",
@@ -5073,7 +5073,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ai21/jamba-mini-1.6/model.json": {
-      "hash": "7d2dce5269b6511d8c5571a72e7cfd91",
+      "hash": "bbd9d6d8ae2c1ff03b29f6f0e79394cf",
       "meta": {
         "model_id": "ai21/jamba-mini-1.6",
         "organisation_id": "ai21",
@@ -5081,7 +5081,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/ai21/jamba-mini-1.7/model.json": {
-      "hash": "aa1b58fb295e2c7e7f2251615945aed8",
+      "hash": "14751bc2f18df0160fdc91810ed9a822",
       "meta": {
         "model_id": "ai21/jamba-mini-1.7",
         "organisation_id": "ai21",
@@ -5409,7 +5409,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-3.7-sonnet/model.json": {
-      "hash": "3b0ad4fb72904c89b061a035fbc381c2",
+      "hash": "d524ca2ff76f2134de5bde8329abe306",
       "meta": {
         "model_id": "anthropic/claude-3.7-sonnet",
         "organisation_id": "anthropic",
@@ -5465,7 +5465,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-opus-4.1/model.json": {
-      "hash": "26849152c17a17f9c86cd957951da799",
+      "hash": "4cf378ce5029b994a90b326633095a47",
       "meta": {
         "model_id": "anthropic/claude-opus-4.1",
         "organisation_id": "anthropic",
@@ -5481,7 +5481,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-opus-4.6/model.json": {
-      "hash": "50e9c177a6ed8248810598d4464c8092",
+      "hash": "e66edaad85ca560a76261455d40951bc",
       "meta": {
         "model_id": "anthropic/claude-opus-4.6",
         "organisation_id": "anthropic",
@@ -5513,7 +5513,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/anthropic/claude-sonnet-4.6/model.json": {
-      "hash": "8c9bd760440cb7c70ed9e772a20d80e5",
+      "hash": "c0fa249f0f36323097527b5b48294c53",
       "meta": {
         "model_id": "anthropic/claude-sonnet-4.6",
         "organisation_id": "anthropic",
@@ -5553,7 +5553,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/baidu/ernie-4.5-21b-a3b/model.json": {
-      "hash": "c367821de7c91a29b4595b33a5ad2011",
+      "hash": "5a2a1b7813de4fabe035f424d461386e",
       "meta": {
         "model_id": "baidu/ernie-4.5-21b-a3b",
         "organisation_id": "baidu",
@@ -5561,7 +5561,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/baidu/ernie-4.5-21b-a3b-thinking/model.json": {
-      "hash": "e14e7f00d013da86ff1421b85d306b7d",
+      "hash": "0da18959777c3cd7138bf2ef67605e21",
       "meta": {
         "model_id": "baidu/ernie-4.5-21b-a3b-thinking",
         "organisation_id": "baidu",
@@ -5569,7 +5569,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/baidu/ernie-4.5-300b-a47b/model.json": {
-      "hash": "b2edc181857aa18a6f066a9a8054bfed",
+      "hash": "0ad2abbbac3080fc44787f0026e2f32b",
       "meta": {
         "model_id": "baidu/ernie-4.5-300b-a47b",
         "organisation_id": "baidu",
@@ -5585,7 +5585,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/baidu/ernie-4.5-vl-28b-a3b/model.json": {
-      "hash": "04da378863002aa41455c85b7b42e2dc",
+      "hash": "efe39c436664ca202df49c519bc72289",
       "meta": {
         "model_id": "baidu/ernie-4.5-vl-28b-a3b",
         "organisation_id": "baidu",
@@ -5601,7 +5601,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/baidu/ernie-4.5-vl-424b-a47b/model.json": {
-      "hash": "bacbe8f8afbd40823621323e6fc3dacb",
+      "hash": "d4fb4c7200a545e40fd7fc992579753d",
       "meta": {
         "model_id": "baidu/ernie-4.5-vl-424b-a47b",
         "organisation_id": "baidu",
@@ -8025,7 +8025,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/exaone-3.0/model.json": {
-      "hash": "b797c0b6e9cd12d1a2238df60046a88e",
+      "hash": "deec65778724de26eed4e56b9ab41b21",
       "meta": {
         "model_id": "lg/exaone-3.0",
         "organisation_id": "lg",
@@ -8033,7 +8033,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/exaone-3.5-2.4b/model.json": {
-      "hash": "d013f7118cd5d691bf9a3a2b9c4e2376",
+      "hash": "06c0b427fcc885c8200153fdf5f1a0dc",
       "meta": {
         "model_id": "lg/exaone-3.5-2.4b",
         "organisation_id": "lg",
@@ -8041,7 +8041,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/exaone-3.5-32b/model.json": {
-      "hash": "842420943ffec2b57e7f5020249cfec3",
+      "hash": "99199b2fa503fce7d92bde86087b31f9",
       "meta": {
         "model_id": "lg/exaone-3.5-32b",
         "organisation_id": "lg",
@@ -8049,7 +8049,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/exaone-3.5-7.8b/model.json": {
-      "hash": "304b54297066b6fba867636346246217",
+      "hash": "2c5d2fe0fbe1f26268a7a6df2aee311a",
       "meta": {
         "model_id": "lg/exaone-3.5-7.8b",
         "organisation_id": "lg",
@@ -8057,7 +8057,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/exaone-4.0-1.2b/model.json": {
-      "hash": "5c627633245847026d79c591f204346b",
+      "hash": "14e271efd13c561a3819ec385c543e96",
       "meta": {
         "model_id": "lg/exaone-4.0-1.2b",
         "organisation_id": "lg",
@@ -8065,7 +8065,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/lg/exaone-4.0-32b/model.json": {
-      "hash": "c16a4f2e5e0c3d5fd600f45be9b24e84",
+      "hash": "a59341d8b7722231484728c4e72d9b95",
       "meta": {
         "model_id": "lg/exaone-4.0-32b",
         "organisation_id": "lg",
@@ -8201,7 +8201,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-2-13b-chat/model.json": {
-      "hash": "8df905f5b55a7c0e771aec02ecc5692d",
+      "hash": "bf9116c47a162b60c173bbe7b89a415f",
       "meta": {
         "model_id": "meta/llama-2-13b-chat",
         "organisation_id": "meta",
@@ -8209,7 +8209,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-2-70b-chat/model.json": {
-      "hash": "1f8a6723e2aceea9b26fd7ad9979b479",
+      "hash": "b673b7671942db2298a60020b90531b6",
       "meta": {
         "model_id": "meta/llama-2-70b-chat",
         "organisation_id": "meta",
@@ -8217,7 +8217,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-2-7b-chat/model.json": {
-      "hash": "74bdd3c97ff5a70cf2fa31012d9e35ab",
+      "hash": "15e7933ad3d6747845ae3633fc6ab5c7",
       "meta": {
         "model_id": "meta/llama-2-7b-chat",
         "organisation_id": "meta",
@@ -8225,7 +8225,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3-70b/model.json": {
-      "hash": "1c147b77e4c69b1eb84805be773bb189",
+      "hash": "5f078a67bf436a387c837a943cfef99a",
       "meta": {
         "model_id": "meta/llama-3-70b",
         "organisation_id": "meta",
@@ -8233,7 +8233,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3-8b/model.json": {
-      "hash": "71fb757474af9c7c48c7e4e2fc7dafe0",
+      "hash": "8f049d0b5619d85973bd40924d46e41c",
       "meta": {
         "model_id": "meta/llama-3-8b",
         "organisation_id": "meta",
@@ -8249,7 +8249,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.1-405b/model.json": {
-      "hash": "ec6131b1666c46d943756a1a681d1a66",
+      "hash": "f9601ce05340642e218d8787d5e2af3c",
       "meta": {
         "model_id": "meta/llama-3.1-405b",
         "organisation_id": "meta",
@@ -8257,7 +8257,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.1-70b/model.json": {
-      "hash": "996ad66ee850e8cb1999dc6969c6800d",
+      "hash": "d962a51405834e276c5ebf8cabc3f8cf",
       "meta": {
         "model_id": "meta/llama-3.1-70b",
         "organisation_id": "meta",
@@ -8265,7 +8265,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.1-8b/model.json": {
-      "hash": "422f6ad7d043ec3b7f53e224feeb3d71",
+      "hash": "8a1832a36a7e7a675a4c712a9c7a8164",
       "meta": {
         "model_id": "meta/llama-3.1-8b",
         "organisation_id": "meta",
@@ -8273,7 +8273,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.2-11b-vision/model.json": {
-      "hash": "8e252cdf9557092781019f3587386dd0",
+      "hash": "e61aafb0b5f009dd6de11bbe32f56acb",
       "meta": {
         "model_id": "meta/llama-3.2-11b-vision",
         "organisation_id": "meta",
@@ -8281,7 +8281,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.2-1b/model.json": {
-      "hash": "4ce4139733b1ca516e4d268d9cb41656",
+      "hash": "ca47fbd2b65b8529a37d6e71ab8e6954",
       "meta": {
         "model_id": "meta/llama-3.2-1b",
         "organisation_id": "meta",
@@ -8289,7 +8289,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.2-3b/model.json": {
-      "hash": "2e0e72a2fcc87536b419fdf866429edf",
+      "hash": "3199f47e5abcd79a865f175070a8081b",
       "meta": {
         "model_id": "meta/llama-3.2-3b",
         "organisation_id": "meta",
@@ -8297,7 +8297,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.2-90b-vision/model.json": {
-      "hash": "2505238d16d32635a775467fd50909e0",
+      "hash": "c550b9549064197ca639acc89b46761e",
       "meta": {
         "model_id": "meta/llama-3.2-90b-vision",
         "organisation_id": "meta",
@@ -8305,7 +8305,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-3.3-70b/model.json": {
-      "hash": "099037ba6c0367fb2a9038b6f67f1e33",
+      "hash": "a8238881a04e4b6a3f8aa3def462955b",
       "meta": {
         "model_id": "meta/llama-3.3-70b",
         "organisation_id": "meta",
@@ -8313,7 +8313,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-4-maverick/model.json": {
-      "hash": "32b64e864c8c6b4a4f3775689de9672e",
+      "hash": "322f5890ab6f410d534498e594cb0050",
       "meta": {
         "model_id": "meta/llama-4-maverick",
         "organisation_id": "meta",
@@ -8321,7 +8321,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/meta/llama-4-scout/model.json": {
-      "hash": "e12bf8a192cf9cdfc0ba306d8dce05cf",
+      "hash": "ecb48544ba0cedede5b8dbf08179f6c1",
       "meta": {
         "model_id": "meta/llama-4-scout",
         "organisation_id": "meta",
@@ -8473,7 +8473,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4/model.json": {
-      "hash": "fad21ab770aee7370a82e2c16f8cdf05",
+      "hash": "95e2919ab9b90091875b8cf659afb168",
       "meta": {
         "model_id": "microsoft/phi-4",
         "organisation_id": "microsoft",
@@ -8481,7 +8481,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4-mini/model.json": {
-      "hash": "16ecaad1aad33e50d5df98d7ca37fd08",
+      "hash": "d703b64f356626b0018ccb2e237b2ab3",
       "meta": {
         "model_id": "microsoft/phi-4-mini",
         "organisation_id": "microsoft",
@@ -8489,7 +8489,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4-mini-flash-reasoning/model.json": {
-      "hash": "aa4d691cf9788d2511b5f823befe303e",
+      "hash": "2faf4eadd4b4eae5aa8f00c767994dc4",
       "meta": {
         "model_id": "microsoft/phi-4-mini-flash-reasoning",
         "organisation_id": "microsoft",
@@ -8497,7 +8497,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4-mini-reasoning/model.json": {
-      "hash": "228bc1f37918c49ac996cc23087e9d22",
+      "hash": "98d96b155b67dd3c66d4d779a5020630",
       "meta": {
         "model_id": "microsoft/phi-4-mini-reasoning",
         "organisation_id": "microsoft",
@@ -8505,7 +8505,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4-multimodal-instruct/model.json": {
-      "hash": "d9c6bcee8ee32491fb15efe79892a469",
+      "hash": "0da046d36b527640f0653b3433e947a1",
       "meta": {
         "model_id": "microsoft/phi-4-multimodal-instruct",
         "organisation_id": "microsoft",
@@ -8513,7 +8513,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4-reasoning/model.json": {
-      "hash": "6682aa2cba427504023bdbd2b19f8bfb",
+      "hash": "d7245f1250cbb1596895d703f8ce02bc",
       "meta": {
         "model_id": "microsoft/phi-4-reasoning",
         "organisation_id": "microsoft",
@@ -8521,7 +8521,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/microsoft/phi-4-reasoning-plus/model.json": {
-      "hash": "faac067c95b30194092a27376e55e048",
+      "hash": "22bd199afb31945c33e842166a799761",
       "meta": {
         "model_id": "microsoft/phi-4-reasoning-plus",
         "organisation_id": "microsoft",
@@ -10033,7 +10033,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/openai/gpt-4.5/model.json": {
-      "hash": "06009122caaa9736084dde11cead3d1c",
+      "hash": "c8fa46da7f3dd0086f54cfb4319e15b3",
       "meta": {
         "model_id": "openai/gpt-4.5",
         "organisation_id": "openai",
@@ -13025,7 +13025,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-3/model.json": {
-      "hash": "f780d610d8ce90fb8a69a7d917671262",
+      "hash": "c54c93a4f21eea5c6c96871ddd5c3625",
       "meta": {
         "model_id": "x-ai/grok-3",
         "organisation_id": "x-ai",
@@ -13057,7 +13057,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-4/model.json": {
-      "hash": "d8af9fd52e2012f1cd234284dec5f93d",
+      "hash": "ef5ac2fe7ab668eaa4ec92ddc64f348e",
       "meta": {
         "model_id": "x-ai/grok-4",
         "organisation_id": "x-ai",
@@ -13097,7 +13097,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-4.1-non-thinking/model.json": {
-      "hash": "d5f8671b49b958dc2f6f70b6a4c5e9d8",
+      "hash": "b9248520476359f416444f3d36c9b827",
       "meta": {
         "model_id": "x-ai/grok-4.1-non-thinking",
         "organisation_id": "x-ai",
@@ -13105,7 +13105,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-4.1-thinking/model.json": {
-      "hash": "acb89530b598b8e75d20c2300c01db30",
+      "hash": "c1826bfa9b1411bdfec6575ae7f9784e",
       "meta": {
         "model_id": "x-ai/grok-4.1-thinking",
         "organisation_id": "x-ai",
@@ -13137,7 +13137,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-code-fast-1/model.json": {
-      "hash": "0c6d12e22b0bdff447e69e88c162f840",
+      "hash": "f1bbd6c8544f417bf00571c4d0c2da12",
       "meta": {
         "model_id": "x-ai/grok-code-fast-1",
         "organisation_id": "x-ai",
@@ -13153,7 +13153,7 @@
       }
     },
     "../../packages/data/catalog/src/data/models/x-ai/grok-imagine-image-pro/model.json": {
-      "hash": "9241391567f8a8c5a96645efa4520551",
+      "hash": "11429e102c9f19536ca04421b7d46085",
       "meta": {
         "model_id": "x-ai/grok-imagine-image-pro",
         "organisation_id": "x-ai",
@@ -13417,37 +13417,31 @@
       }
     },
     "../../packages/data/catalog/src/data/aliases/google-gemini-flash-latest/alias.json": {
-      "hash": "4d3486711993e656078efbf09f033f4c",
+      "hash": "b2614c2262fceff37cafcf0ef6e5a890",
       "meta": {
         "alias_slug": "google/gemini-flash-latest"
       }
     },
     "../../packages/data/catalog/src/data/aliases/google-gemini-flash-lite-latest/alias.json": {
-      "hash": "c8d1c8f764a718a7474630be88faaa05",
+      "hash": "aa25d91415c2866297bc0b49aa50c219",
       "meta": {
         "alias_slug": "google/gemini-flash-lite-latest"
       }
     },
     "../../packages/data/catalog/src/data/aliases/google-gemini-pro-latest/alias.json": {
-      "hash": "2abf1a7aed94cb0f498c5f103470b4ba",
+      "hash": "cd4d2a1146a4bc91f54f9f113b67b39d",
       "meta": {
         "alias_slug": "google/gemini-pro-latest"
       }
     },
-    "../../packages/data/catalog/src/data/aliases/minimax-m2.x-latest/alias.json": {
-      "hash": "4ac793c22b83e92e244a74427fef995b",
-      "meta": {
-        "alias_slug": "minimax/m2.x-latest"
-      }
-    },
     "../../packages/data/catalog/src/data/aliases/openai-gpt-chat-latest/alias.json": {
-      "hash": "f4bf52134bfe8c8475c26c5cb855d44f",
+      "hash": "578427ac2193d670e63e4f7a5daf5213",
       "meta": {
         "alias_slug": "openai/gpt-chat-latest"
       }
     },
     "../../packages/data/catalog/src/data/aliases/openai-gpt-latest/alias.json": {
-      "hash": "5bd28098b5a1ce331b74bb64f9038ea5",
+      "hash": "7b19684afca6f8c993af6dbc6b09a56f",
       "meta": {
         "alias_slug": "openai/gpt-latest"
       }
@@ -13465,7 +13459,7 @@
       }
     },
     "../../packages/data/catalog/src/data/aliases/openai-gpt-pro-latest/alias.json": {
-      "hash": "7932e12a57d0d7b3637b9fd97f212a23",
+      "hash": "1136338824cec588c3895e7bde57eb5e",
       "meta": {
         "alias_slug": "openai/gpt-pro-latest"
       }
@@ -15424,7 +15418,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/crofai/deepseek-deepseek-v3.2/text.generate/pricing.json": {
-      "hash": "c225b36356d4e23b68498505db517077",
+      "hash": "eafa713616260b64330ce3c02cf534db",
       "meta": {
         "api_provider_id": "crofai",
         "capability_id": "text.generate",
@@ -15442,7 +15436,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/crofai/deepseek-deepseek-v4-pro/text.generate/pricing.json": {
-      "hash": "9b5e2452709edce06e6ac8102f2f2953",
+      "hash": "750dba5ca94bbc5be3710f2006ee7cf5",
       "meta": {
         "api_provider_id": "crofai",
         "capability_id": "text.generate",
@@ -15469,7 +15463,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/crofai/minimax-minimax-m2.5/text.generate/pricing.json": {
-      "hash": "b62ae0cf02fb1d2a22146172fb862a42",
+      "hash": "72ff4cc95eba987f650187936f91464f",
       "meta": {
         "api_provider_id": "crofai",
         "capability_id": "text.generate",
@@ -15568,7 +15562,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/crofai/z-ai-glm-5/text.generate/pricing.json": {
-      "hash": "85a03e73166646e174276cc787896c63",
+      "hash": "6a9303f463e35a87df10610a2f437c25",
       "meta": {
         "api_provider_id": "crofai",
         "capability_id": "text.generate",
@@ -15586,7 +15580,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/crofai/z-ai-glm-5.1-precision/text.generate/pricing.json": {
-      "hash": "b7b5e79df873bed989eef7a37872889f",
+      "hash": "37809c8d258aad55ef5b2893eff51b03",
       "meta": {
         "api_provider_id": "crofai",
         "capability_id": "text.generate",
@@ -17791,7 +17785,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/mistral/mistral-mistral-moderation/text.moderate/pricing.json": {
-      "hash": "2fa7c692199ff092e3c9ff13cab95233",
+      "hash": "488dd10e79112a23735875ccc8c43875",
       "meta": {
         "api_provider_id": "mistral",
         "capability_id": "text.moderate",
@@ -17800,7 +17794,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/mistral/mistral-mistral-moderation-2/text.moderate/pricing.json": {
-      "hash": "9f4052f84cd5e48858a3addb9f3560dd",
+      "hash": "07f173eade08f3d3fbd13ba2376ccbca",
       "meta": {
         "api_provider_id": "mistral",
         "capability_id": "text.moderate",
@@ -19780,7 +19774,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-omni-moderation/moderations.create/pricing.json": {
-      "hash": "cb3dfe21b332985b99d7b71690049923",
+      "hash": "05ad541f864dbbda020b35fa99552b82",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "moderations.create",
@@ -19789,7 +19783,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-omni-moderation/text.moderate/pricing.json": {
-      "hash": "9a81833f36903f2b46136960802110c4",
+      "hash": "8fbd5e9ce4240685d67351bd9f1b792f",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.moderate",
@@ -21562,7 +21556,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-4/text.generate/pricing.json": {
-      "hash": "f565f2d8616fadfd2384d034a1e8d1f9",
+      "hash": "dcb18f40c3b1af2a44c30fddde33be53",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -21580,7 +21574,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-4.1-thinking/text.generate/pricing.json": {
-      "hash": "d82759d7f202afb8f7cf78bb7735cce4",
+      "hash": "6d1f5c55c590a606ee62bf8c7e7a933a",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -21589,7 +21583,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-4.20-beta-0309/text.generate/pricing.json": {
-      "hash": "62c7c0dd32d72f010adcc60b22355c2c",
+      "hash": "d4c8c8bdb8ce9851690c46b6a27c74d7",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -21598,7 +21592,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-4.20-multi-agent-beta-0309/text.generate/pricing.json": {
-      "hash": "3ee62963a7aef87f4a2acb01c50698e8",
+      "hash": "026f5f05a9037781a174d0a99c1fb6c9",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -21607,7 +21601,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-4.3/text.generate/pricing.json": {
-      "hash": "dc21e814b3741d20d86247a55a92d9fd",
+      "hash": "7e78ba746a50b748b118f262acc4aeb1",
       "meta": {
         "api_provider_id": "x-ai",
         "capability_id": "text.generate",
@@ -22200,7 +22194,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-2025-01-25/text.generate/pricing.json": {
-      "hash": "19b24a9995102a0540a918789e79c912",
+      "hash": "da9eb29d10d09e1d8a61a5e2b51cd34e",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22209,7 +22203,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-2025-04-28/text.generate/pricing.json": {
-      "hash": "9627e53e8e865b48e338471e1c95c98f",
+      "hash": "decd207d1fd3cee7b78fd5bf85431a51",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22218,7 +22212,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-2025-07-14/text.generate/pricing.json": {
-      "hash": "f4ec100d191c19a7c2fd61a8b1871202",
+      "hash": "c996b187f59d8abec6eddbbefa96a913",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22227,7 +22221,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-2025-07-28/text.generate/pricing.json": {
-      "hash": "909597cbb3214f4fca8e147b8971d3f8",
+      "hash": "624b1be55ee6d9b9468efe58ef94981e",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22236,7 +22230,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-2025-09-11/text.generate/pricing.json": {
-      "hash": "574f71fbc7e10f6a8afc482e3b5a3c86",
+      "hash": "9ec0b73a65118bb24105636a2e89f064",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22245,7 +22239,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-2025-12-01/text.generate/pricing.json": {
-      "hash": "fdf25d3026bea66fb92db648cf3a30b0",
+      "hash": "b7315321c5772961256e90813a3909ad",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22254,7 +22248,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-plus-character/text.generate/pricing.json": {
-      "hash": "88e5da394063c03ab885eaff88f78b8b",
+      "hash": "6fb8b004bbe4604597046a0a9e4008e7",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22263,7 +22257,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-turbo-2024-11-01/text.generate/pricing.json": {
-      "hash": "d015caff6551daaec93753f60b195251",
+      "hash": "7c7b1653aa216aa26f68f124ae74bfe5",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22272,7 +22266,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-turbo-2025-04-28/text.generate/pricing.json": {
-      "hash": "003bdb5ac4de4f3f23c8a47e5f88a067",
+      "hash": "4630bc272b82455b6b2353049422b00a",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22281,7 +22275,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-vl-max-2025-04-08/text.generate/pricing.json": {
-      "hash": "52a76055854722767da1980115b21553",
+      "hash": "77cec859f999d2de9e22fed3169994d0",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22290,7 +22284,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-vl-max-2025-08-13/text.generate/pricing.json": {
-      "hash": "80744a0af4a518214079e4a7508d7dcd",
+      "hash": "c0f99d8a7fe4ac9e03455ff82acf464e",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22299,7 +22293,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-vl-plus-2025-01-25/text.generate/pricing.json": {
-      "hash": "3990044072bee9beca1e4d8dbffbdb2c",
+      "hash": "081024a235eb1257475b208c6712c1f3",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22308,7 +22302,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-vl-plus-2025-05-07/text.generate/pricing.json": {
-      "hash": "c40eaf3926163d25861709bf7c298c06",
+      "hash": "ac7d4b0d0c072b7e350b988fea348c36",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22317,7 +22311,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen-vl-plus-2025-08-15/text.generate/pricing.json": {
-      "hash": "78803172746d99d3c746af1032568a9b",
+      "hash": "8bc889e6512d7f692b09d0436ac1dba5",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22326,7 +22320,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-coder-next/text.generate/pricing.json": {
-      "hash": "36884f6d2737c49668553431ad3022dd",
+      "hash": "7f3336800ecccb7858e05a32d60eb198",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22335,7 +22329,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-coder-plus-2025-07-22/text.generate/pricing.json": {
-      "hash": "9d3cf6ff17867d4dcc4da2f04841bab1",
+      "hash": "518bbf60597cd1b7c234bde8b2fea5dc",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22344,7 +22338,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-coder-plus-2025-09-23/text.generate/pricing.json": {
-      "hash": "56ba6712739e8c41465e508bbc1eb324",
+      "hash": "14e4376244260c482ecc24235ebab666",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22353,7 +22347,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-max-2025-09-23/text.generate/pricing.json": {
-      "hash": "ff811f24776ae8a71a391f49ca4a3c53",
+      "hash": "3959483f91d2b4efe8b1e4011caa928b",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22362,7 +22356,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-max-2026-01-23/text.generate/pricing.json": {
-      "hash": "4208ccc0b79b6265d9ffeeb91bb8529b",
+      "hash": "77dd2c06e798435510535c5a52b24ed6",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22371,7 +22365,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-max-preview/text.generate/pricing.json": {
-      "hash": "1fb23d45693190f2eeb2a64f011c2a65",
+      "hash": "3c262a72ae2710eb3a282bccaf867072",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22380,7 +22374,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-next-80b-a3b/text.generate/pricing.json": {
-      "hash": "198e5bf335e939783b1e79c08bd741d0",
+      "hash": "2ea592730d02ca86d2c347d72877af42",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22389,7 +22383,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-next-80b-a3b-thinking/text.generate/pricing.json": {
-      "hash": "133f0698a5073d814e3e96dad581bee2",
+      "hash": "daad0d573fcc8b2a3b6ad35401456b80",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22398,7 +22392,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-vl-235b-a22b/text.generate/pricing.json": {
-      "hash": "93bdf2016cce0e03ed7b20f58606cf69",
+      "hash": "5ef3e433adb40a871d880d4f806a69dc",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22407,7 +22401,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-vl-235b-a22b-thinking/text.generate/pricing.json": {
-      "hash": "33de247d2ff69cd31622c3542a575ad3",
+      "hash": "fff118aa8b54254c02ebf35e0a2b4ab8",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22416,7 +22410,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-vl-flash-2025-10-15/text.generate/pricing.json": {
-      "hash": "ffb368113d647c6f3709f70690115416",
+      "hash": "053e3ef1a5f740ae0428602f26965542",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22425,7 +22419,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-vl-flash-2026-01-22/text.generate/pricing.json": {
-      "hash": "faf2e27a8061525e8c8333d16c14e7ad",
+      "hash": "7ec4b5ef1db32cd8f6e760c84e0bf854",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22434,7 +22428,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-vl-plus-2025-09-23/text.generate/pricing.json": {
-      "hash": "c3d9c91efa47c6484106475d6efc35e8",
+      "hash": "7366943489f6fc19e4b9d7a2997541c5",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22443,7 +22437,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwen3-vl-plus-2025-12-19/text.generate/pricing.json": {
-      "hash": "c87ccf7388f76674c8e9f0d496d80bc5",
+      "hash": "d4b00a7f1bf48ec3f9e8302ab7a6bc8b",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22452,7 +22446,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-qwq-plus/text.generate/pricing.json": {
-      "hash": "36e45cfb871a40db8cae33ccd7d03084",
+      "hash": "b585f67cb7040dbe204192082a86f923",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "capability_id": "text.generate",
@@ -22461,7 +22455,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3-coder/text.generate/pricing.json": {
-      "hash": "483cd2b2eccbc0cb64a7ab2e220885c4",
+      "hash": "579011b59cead6ffce433a8399b2c0f5",
       "meta": {
         "api_provider_id": "atlascloud",
         "capability_id": "text.generate",
@@ -22470,7 +22464,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/atlascloud/qwen-qwen3-max-2026-01-23/text.generate/pricing.json": {
-      "hash": "d6124f1e3ff5ad03dd5346a16c0243ec",
+      "hash": "8209d50a5895a532ef1434adcc463d1a",
       "meta": {
         "api_provider_id": "atlascloud",
         "capability_id": "text.generate",
@@ -22506,7 +22500,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/groq/meta-llama-prompt-guard-2-22m/text.generate/pricing.json": {
-      "hash": "d9da9097a8976a57ff0a6456f0d49f4d",
+      "hash": "e60ce1ac8e91e92ca12eabee44fc9ad9",
       "meta": {
         "api_provider_id": "groq",
         "capability_id": "text.generate",
@@ -22515,7 +22509,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/groq/meta-llama-prompt-guard-2-86m/text.generate/pricing.json": {
-      "hash": "dc4a6ba0d963c01745de2e4354a18384",
+      "hash": "2beb668dad843d259065a569bead6643",
       "meta": {
         "api_provider_id": "groq",
         "capability_id": "text.generate",
@@ -22524,7 +22518,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/groq/qwen-qwen3-32b/text.generate/pricing.json": {
-      "hash": "4be7c8b6e0e0dc2dfad3df3cc527fdc5",
+      "hash": "84ddefc23f5d45a8b3d5fdd56c5d98d8",
       "meta": {
         "api_provider_id": "groq",
         "capability_id": "text.generate",
@@ -22533,7 +22527,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-r1-turbo/text.generate/pricing.json": {
-      "hash": "38de61a6ac78b397a43c4e55946b7cfb",
+      "hash": "320d837f35740820f8518f83a6d93ace",
       "meta": {
         "api_provider_id": "novita",
         "capability_id": "text.generate",
@@ -22542,7 +22536,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/novita/deepseek-deepseek-v3-turbo/text.generate/pricing.json": {
-      "hash": "77b481136d663e646232ef91ad11ef66",
+      "hash": "f3123f91837386735914d3a8da42ef75",
       "meta": {
         "api_provider_id": "novita",
         "capability_id": "text.generate",
@@ -22551,7 +22545,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/novita/minimax-minimax-m2.5-highspeed/text.generate/pricing.json": {
-      "hash": "b0c9b3534e012ac63e706eb91247fb45",
+      "hash": "f17fd25407e1be0ee96844223cf2bc97",
       "meta": {
         "api_provider_id": "novita",
         "capability_id": "text.generate",
@@ -22560,7 +22554,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-3.5-turbo-16k/text.generate/pricing.json": {
-      "hash": "b9df627c053fe457b64dc79094a52c87",
+      "hash": "f08c99e47428d936bcde60bba35dd25f",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -22569,7 +22563,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-3.5-turbo-2023-03-21/text.generate/pricing.json": {
-      "hash": "6bac88e46822dce392859391c9df762c",
+      "hash": "d2b5f6b6406f3a2fa280a128875bad94",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -22578,7 +22572,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-4-turbo-2024-01-25/text.generate/pricing.json": {
-      "hash": "6c88a629e0dd1d70b30a2bcae05e5841",
+      "hash": "55abf2c21862a789afafe8369bd267e8",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -22587,7 +22581,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-1-mini/image.edit/pricing.json": {
-      "hash": "5aba698fdac12e7afab884d5eac3ca8f",
+      "hash": "9f8bd73a0bb11ad70eeb57e8537fe05a",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "image.edit",
@@ -22596,7 +22590,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-1.5/image.edit/pricing.json": {
-      "hash": "b9d9fb52a8120f6826e69c08453c22c1",
+      "hash": "1ddd42cf6e89cc9fbeb4099d84d0d442",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "image.edit",
@@ -22605,7 +22599,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-1.5/image.generate/pricing.json": {
-      "hash": "12d11e311ff195e6e198725d6a28af18",
+      "hash": "8cc293834d73703d78b82569adb526b8",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "image.generate",
@@ -22614,7 +22608,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-2/image.edit/pricing.json": {
-      "hash": "93fbfbcc9da7642fc02ed71fbf83b2e2",
+      "hash": "5764adaea32f671b9e3f30cbb87c7d8e",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "image.edit",
@@ -22623,7 +22617,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-image-2/image.generate/pricing.json": {
-      "hash": "04d5c86d92379e6a3217cb293ee0ef92",
+      "hash": "61f8deb5b6476defd375f74acbe1608b",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "image.generate",
@@ -22632,7 +22626,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/openai/openai-o1-mini/text.generate/pricing.json": {
-      "hash": "24367dbf7aa589af30269873694503be",
+      "hash": "b279098bcbebc81200255b289378216d",
       "meta": {
         "api_provider_id": "openai",
         "capability_id": "text.generate",
@@ -22641,7 +22635,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/venice/venice-venice-uncensored/text.generate/pricing.json": {
-      "hash": "678173059c833ff5fdd142f5e0d26c4c",
+      "hash": "d9f4b5fb13e50b4975f5bcb35c688157",
       "meta": {
         "api_provider_id": "venice",
         "capability_id": "text.generate",
@@ -22650,7 +22644,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/venice-e2ee/qwen-qwen3-30b-a3b/text.generate/pricing.json": {
-      "hash": "cd604f0e3e28fcf23307700b442a0a6b",
+      "hash": "34f551887c8f880e861c9a5ecd683d01",
       "meta": {
         "api_provider_id": "venice-e2ee",
         "capability_id": "text.generate",
@@ -22659,7 +22653,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/venice-e2ee/venice-venice-uncensored-1.1/text.generate/pricing.json": {
-      "hash": "cea78a97319ec352af6956933ac75ed6",
+      "hash": "69ac3776e7dfc3852b9932c622028951",
       "meta": {
         "api_provider_id": "venice-e2ee",
         "capability_id": "text.generate",
@@ -22822,7 +22816,7 @@
       }
     },
     "../../packages/data/catalog/src/data/pricing/novita/inclusionai-ling-2.6-1t/text.generate/pricing.json": {
-      "hash": "9206c61fdb32735a791d13b31cc40deb",
+      "hash": "8fff57d8a135acbf9d21d83bc415b277",
       "meta": {
         "api_provider_id": "novita",
         "capability_id": "text.generate",
@@ -22840,10 +22834,245 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cloudflare/models.json": {
-      "hash": "a299920d63efd77576e228c3b2605eaa",
+      "hash": "d0aa4bfb688799998512b47652870594",
       "meta": {
         "api_provider_id": "cloudflare",
         "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/families/anthropic-claude-4.5/family.json": {
+      "hash": "4fe4296b3d0bb969cabc600c642bc7ef",
+      "meta": {
+        "family_id": "anthropic/claude-4.5"
+      }
+    },
+    "../../packages/data/catalog/src/data/families/anthropic-claude-4.6/family.json": {
+      "hash": "e06b449012485c371a5d453ac7fd393e",
+      "meta": {
+        "family_id": "anthropic/claude-4.6"
+      }
+    },
+    "../../packages/data/catalog/src/data/families/google-lyria-3/family.json": {
+      "hash": "054137279dc6cb4931ac10461d80429f",
+      "meta": {
+        "family_id": "google/lyria-3"
+      }
+    },
+    "../../packages/data/catalog/src/data/families/google-veo-3.1/family.json": {
+      "hash": "de9d5ce59c48128558596bfff8d2b47b",
+      "meta": {
+        "family_id": "google/veo-3.1"
+      }
+    },
+    "../../packages/data/catalog/src/data/families/ibm-granite-4.1/family.json": {
+      "hash": "cedd3c10feef75dd4d9c51c8e85e1582",
+      "meta": {
+        "family_id": "ibm/granite-4-1"
+      }
+    },
+    "../../packages/data/catalog/src/data/families/openai-gpt-5.5/family.json": {
+      "hash": "eafd5cd2bf124e866010d8ed90bc7444",
+      "meta": {
+        "family_id": "openai/gpt-5.5"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-imagine-image-pro/image.generate/pricing.json": {
+      "hash": "5527e5e6c86d0d05b9e6fbcd68fc4a0a",
+      "meta": {
+        "api_provider_id": "x-ai",
+        "capability_id": "image.generate",
+        "model_id": "x-ai/grok-imagine-image-pro",
+        "model_key": "x-ai:x-ai/grok-imagine-image-pro:image.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-4o-mini-tts/audio.speech/pricing.json": {
+      "hash": "3fa03623736694db1ce76720fa1f0569",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.speech",
+        "model_id": "openai/gpt-4o-mini-tts",
+        "model_key": "openai:openai/gpt-4o-mini-tts:audio.speech"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-4o-mini-transcribe/audio.transcription/pricing.json": {
+      "hash": "fc65a8a8ad81eea9615232c181515535",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.transcription",
+        "model_id": "openai/gpt-4o-mini-transcribe",
+        "model_key": "openai:openai/gpt-4o-mini-transcribe:audio.transcription"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-gpt-4o-transcribe/audio.transcription/pricing.json": {
+      "hash": "c778b0c73108fba11504dabfd3ea3b89",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.transcription",
+        "model_id": "openai/gpt-4o-transcribe",
+        "model_key": "openai:openai/gpt-4o-transcribe:audio.transcription"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-whisper-1/audio.transcription/pricing.json": {
+      "hash": "2350eeab918a61c6b3d8e484e3ef6779",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.transcription",
+        "model_id": "openai/whisper-1",
+        "model_key": "openai:openai/whisper-1:audio.transcription"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-whisper-1/audio.translations/pricing.json": {
+      "hash": "d0c5111498b98e7ff25b8c0f7955cd22",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "audio.translations",
+        "model_id": "openai/whisper-1",
+        "model_key": "openai:openai/whisper-1:audio.translations"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/openai/chat-latest/model.json": {
+      "hash": "76e2707e2fa98298f7f6132ac3cbce5a",
+      "meta": {
+        "model_id": "openai/chat-latest",
+        "organisation_id": "openai",
+        "previous_model_id": "openai/gpt-5-3-chat-2026-03-03"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/openai/openai-chat-latest/text.generate/pricing.json": {
+      "hash": "73563a5f0ce43ac3e245eff8c1efbc12",
+      "meta": {
+        "api_provider_id": "openai",
+        "capability_id": "text.generate",
+        "model_id": "openai/chat-latest",
+        "model_key": "openai:openai/chat-latest:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/google-veo-latest/alias.json": {
+      "hash": "e280edf145223b654d97adb339212b4e",
+      "meta": {
+        "alias_slug": "google/veo-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/moonshotai-kimi-latest/alias.json": {
+      "hash": "cc02d21027d155de3ad8a9bb2c276604",
+      "meta": {
+        "alias_slug": "moonshotai/kimi-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/x-ai/grok-imagine-image-quality/model.json": {
+      "hash": "3a4eed7b8dfa5a81752a5dd5c0be8b39",
+      "meta": {
+        "model_id": "x-ai/grok-imagine-image-quality",
+        "organisation_id": "x-ai",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-imagine-image-quality/image.edit/pricing.json": {
+      "hash": "a25b1014919fca983bcd825c79f97a71",
+      "meta": {
+        "api_provider_id": "x-ai",
+        "capability_id": "image.edit",
+        "model_id": "x-ai/grok-imagine-image-quality",
+        "model_key": "x-ai:x-ai/grok-imagine-image-quality:image.edit"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/x-ai/x-ai-grok-imagine-image-quality/image.generate/pricing.json": {
+      "hash": "9133dc222e53c669018672128ae155be",
+      "meta": {
+        "api_provider_id": "x-ai",
+        "capability_id": "image.generate",
+        "model_id": "x-ai/grok-imagine-image-quality",
+        "model_key": "x-ai:x-ai/grok-imagine-image-quality:image.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/anthropic-claude-haiku-latest/alias.json": {
+      "hash": "944529b379a360cbc1fa49ef34490dbd",
+      "meta": {
+        "alias_slug": "anthropic/claude-haiku-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/anthropic-claude-opus-latest/alias.json": {
+      "hash": "33caaf7c1901fcba14d07f59bb2fdb99",
+      "meta": {
+        "alias_slug": "anthropic/claude-opus-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/anthropic-claude-sonnet-latest/alias.json": {
+      "hash": "e06585d70a061c1572c508b5c980b948",
+      "meta": {
+        "alias_slug": "anthropic/claude-sonnet-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/deepseek-deepseek-flash-latest/alias.json": {
+      "hash": "54a42ad12dad8915308e1f202f8fede9",
+      "meta": {
+        "alias_slug": "deepseek/deepseek-flash-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/deepseek-deepseek-pro-latest/alias.json": {
+      "hash": "65b2f6d6c08f493ce14bb9a2ca302ad1",
+      "meta": {
+        "alias_slug": "deepseek/deepseek-pro-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/google-gemini-embedding-latest/alias.json": {
+      "hash": "dfcb5833ff345517c144b0806d39e39b",
+      "meta": {
+        "alias_slug": "google/gemini-embedding-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/google-veo-fast-latest/alias.json": {
+      "hash": "4086474729398cc5367d57facdf4ccbf",
+      "meta": {
+        "alias_slug": "google/veo-fast-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/google-veo-lite-latest/alias.json": {
+      "hash": "0795e2258b48162a0b08661de0db2e17",
+      "meta": {
+        "alias_slug": "google/veo-lite-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/minimax-minimax-latest/alias.json": {
+      "hash": "149d4751e156aa1d29dec06f720328cc",
+      "meta": {
+        "alias_slug": "minimax/minimax-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/openai-gpt-audio-latest/alias.json": {
+      "hash": "67e9b05906fc98fb0c4c65ae5d8ca208",
+      "meta": {
+        "alias_slug": "openai/gpt-audio-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/openai-gpt-image-latest/alias.json": {
+      "hash": "5542535761d687678450883dbca5ed86",
+      "meta": {
+        "alias_slug": "openai/gpt-image-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/x-ai-grok-latest/alias.json": {
+      "hash": "5c2c6de3cb643fddc6aaa012d0938ef7",
+      "meta": {
+        "alias_slug": "x-ai/grok-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/z-ai-glm-latest/alias.json": {
+      "hash": "d7e87dca36b9cdbedf87c5a8fe242af8",
+      "meta": {
+        "alias_slug": "z-ai/glm-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/z-ai-glm-turbo-latest/alias.json": {
+      "hash": "cebd36493720f00ec882967625301e93",
+      "meta": {
+        "alias_slug": "z-ai/glm-turbo-latest"
+      }
+    },
+    "../../packages/data/catalog/src/data/aliases/z-ai-glm-vision-latest/alias.json": {
+      "hash": "9c9d378a14c112489df3d144843da560",
+      "meta": {
+        "alias_slug": "z-ai/glm-vision-latest"
       }
     }
   }
