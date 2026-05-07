@@ -574,6 +574,13 @@ export default function ModelsDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [hasInteractedWithStatuses, setHasInteractedWithStatuses] = useState(
+		selectedStatuses.length > 0,
+	);
+	const effectiveSelectedStatuses: GatewayStatusFilter[] =
+		!hasInteractedWithStatuses && selectedStatuses.length === 0
+			? ["active"]
+			: (selectedStatuses as GatewayStatusFilter[]);
 	const [selectedEndpoints, setSelectedEndpoints] = useQueryState("endpoints", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -742,7 +749,7 @@ export default function ModelsDisplay({
 	} = facets;
 
 	const activeFilterCount =
-		selectedStatuses.length +
+		effectiveSelectedStatuses.length +
 		selectedEndpoints.length +
 		selectedInputModalities.length +
 		selectedOutputModalities.length +
@@ -840,8 +847,8 @@ export default function ModelsDisplay({
 
 			if (
 				exclude !== "statuses" &&
-				selectedStatuses.length > 0 &&
-				!selectedStatuses.includes(prepared.status)
+				effectiveSelectedStatuses.length > 0 &&
+				!effectiveSelectedStatuses.includes(prepared.status)
 			) {
 				return false;
 			}
@@ -922,12 +929,12 @@ export default function ModelsDisplay({
 			deferredSearch,
 			selectedContextMin,
 			selectedCreators,
+			effectiveSelectedStatuses,
 			selectedEndpoints,
 			selectedFeatures,
 			selectedInputModalities,
 			selectedOutputModalities,
 			selectedProviders,
-			selectedStatuses,
 			selectedSupportedParameters,
 			selectedYears,
 		],
@@ -1076,6 +1083,7 @@ export default function ModelsDisplay({
 	]);
 
 	const resetFilters = () => {
+		setHasInteractedWithStatuses(false);
 		setSelectedStatuses([]);
 		setSelectedEndpoints([]);
 		setSelectedInputModalities([]);
@@ -1250,10 +1258,13 @@ export default function ModelsDisplay({
 				<AccordionContent className="pt-1" disableAnimation>
 					<FilterCheckboxList
 						options={gatewayStatusOptions}
-						selected={selectedStatuses}
-						onToggle={(value) =>
-							setSelectedStatuses(toggleInList(selectedStatuses, value))
-						}
+						selected={effectiveSelectedStatuses}
+						onToggle={(value) => {
+							setHasInteractedWithStatuses(true);
+							setSelectedStatuses(
+								toggleInList(effectiveSelectedStatuses, value),
+							);
+						}}
 						labelForValue={(value) => {
 							if (value === "active") return "Active On Gateway";
 							if (value === "coming_soon") return "Coming Soon";
