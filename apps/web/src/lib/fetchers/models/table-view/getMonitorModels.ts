@@ -590,7 +590,7 @@ async function fetchPricingSupplements(
 	return result;
 }
 
-export async function getMonitorModels(
+async function getMonitorModelsCached(
 	filters: MonitorModelFilters = {},
 	includeHidden: boolean
 ): Promise<{
@@ -999,5 +999,19 @@ export async function getMonitorModels(
 		allFeatures,
 		allStatuses,
 	};
+}
+
+export async function getMonitorModels(
+	filters: MonitorModelFilters = {},
+	includeHidden: boolean,
+): Promise<{
+	models: MonitorModelData[];
+	allTiers: string[];
+	allEndpoints: string[];
+	allModalities: string[];
+	allFeatures: string[];
+	allStatuses: string[];
+}> {
+	return getMonitorModelsCached(filters, includeHidden);
 }
 
