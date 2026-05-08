@@ -74,7 +74,7 @@ jobs:
 
       - name: NuGet login (OIDC -> temporary API key)
         id: nuget_login
-        uses: NuGet/login@ebc737b6fc418a6ca0073cf116ec8dc156d8b81e
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841
         with:
           user: ${{ vars.NUGET_TRUSTED_PUBLISHING_USER || github.repository_owner }}
 

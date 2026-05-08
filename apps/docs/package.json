@@ -10,9 +10,9 @@
 		"clean": "rimraf .mint"
 	},
 	"dependencies": {
-		"mintlify": "4.2.334"
+		"mintlify": "4.2.555"
 	},
 	"devDependencies": {
-		"typescript": "^6.0.2"
+		"typescript": "^6.0.3"
 	}
 }
