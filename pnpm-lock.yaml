@@ -480,8 +480,8 @@ importers:
         specifier: ^1.58.2
         version: 1.58.2
       '@shikijs/colorized-brackets':
-        specifier: ^3.13.0
-        version: 3.23.0
+        specifier: ^4.0.2
+        version: 4.0.2
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.2.4
@@ -4040,8 +4040,9 @@ packages:
   '@rushstack/eslint-patch@1.16.1':
     resolution: {integrity: sha512-TvZbIpeKqGQQ7X0zSCvPH9riMSFQFSggnfBjFZ1mEoILW+UuXCKwOoPcgjMwiUtRqFZ8jWhPJc4um14vC6I4ag==}
 
-  '@shikijs/colorized-brackets@3.23.0':
-    resolution: {integrity: sha512-r8kPEhesLaQHU29J+VdNjkGTDoY+42B3FkW9dedU5DyLikPXh4feTcQp9ftUp4BXFseOSRVOvyHjLjsND0Wwyw==}
+  '@shikijs/colorized-brackets@4.0.2':
+    resolution: {integrity: sha512-MbkEkWvcSHJjWUpo+JtkvjCYBudpog+T1+ptN0Ks1zEqTDG/fb4A/oCCjyY76r4s4xjbK1bHdyO6A5rmjmus4Q==}
+    engines: {node: '>=20'}
 
   '@shikijs/core@3.23.0':
     resolution: {integrity: sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==}
@@ -15045,9 +15046,9 @@ snapshots:
 
   '@rushstack/eslint-patch@1.16.1': {}
 
-  '@shikijs/colorized-brackets@3.23.0':
+  '@shikijs/colorized-brackets@4.0.2':
     dependencies:
-      shiki: 3.23.0
+      shiki: 4.0.2
 
   '@shikijs/core@3.23.0':
     dependencies:
