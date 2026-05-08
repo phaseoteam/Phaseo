@@ -142,7 +142,7 @@ public final class AIStats {
 		this.enableDeprecationWarnings = enableDeprecationWarnings;
 		this.warningsAsErrors = warningsAsErrors;
 		this.logger = logger;
-		this.telemetry = new TelemetryRecorder(devtoolsConfig, "2.0.3");
+		this.telemetry = new TelemetryRecorder(devtoolsConfig, "2.0.4");
 		this.lifecycleResolver = lifecycleResolver == null ? this::fetchModelLifecycle : lifecycleResolver;
 		this.asyncJobs = new AsyncJobsResource(this);
 	}
