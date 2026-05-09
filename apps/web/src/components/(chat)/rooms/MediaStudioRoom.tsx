@@ -84,6 +84,7 @@ import {
 	Info,
 	Loader2,
 	MessageCircleDashed,
+	RotateCcw,
 	Settings as SettingsIcon,
 	Trash2,
 } from "lucide-react";
@@ -113,6 +114,7 @@ type MediaHistoryPayload = {
 	videoSeconds?: number | null;
 	videoResolution?: string | null;
 	imageSettings?: ImageGenerationSettings | null;
+	generationParams?: Record<string, unknown> | null;
 };
 
 type GenerationEntry = {
@@ -137,6 +139,7 @@ type GenerationEntry = {
 	videoSeconds?: number | null;
 	videoResolution?: string | null;
 	imageSettings?: ImageGenerationSettings | null;
+	generationParams?: Record<string, unknown> | null;
 	isTemporary?: boolean;
 };
 
@@ -244,6 +247,11 @@ function parseImageGenerationSettings(value: unknown): ImageGenerationSettings |
 		return null;
 	}
 	return settings;
+}
+
+function parseGenerationParams(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	return { ...(value as Record<string, unknown>) };
 }
 
 function buildImageGenerationSettings(
@@ -778,6 +786,9 @@ function toEntry(record: {
 		imageSettings: parseImageGenerationSettings(
 			payload.imageSettings ?? payload.image_settings,
 		),
+		generationParams: parseGenerationParams(
+			payload.generationParams ?? payload.generation_params,
+		),
 	};
 }
 
@@ -790,6 +801,7 @@ function buildResolvedEntries(args: {
 	resourceId?: string | null;
 	metrics?: Partial<EntryMetrics>;
 	imageSettings?: ImageGenerationSettings | null;
+	generationParams?: Record<string, unknown> | null;
 	isTemporary: boolean;
 }): GenerationEntry[] {
 	const {
@@ -833,6 +845,7 @@ function buildResolvedEntries(args: {
 			status,
 			resourceId: resourceId ?? null,
 			imageSettings: imageSettings ?? baseEntry.imageSettings ?? null,
+			generationParams: baseEntry.generationParams ?? null,
 			isTemporary,
 			...metricsPatch,
 		}));
@@ -846,6 +859,7 @@ function buildResolvedEntries(args: {
 			status,
 			resourceId: resourceId ?? null,
 			imageSettings: imageSettings ?? baseEntry.imageSettings ?? null,
+			generationParams: baseEntry.generationParams ?? null,
 			isTemporary,
 			...metricsPatch,
 		},
@@ -869,6 +883,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 	const [entries, setEntries] = useState<GenerationEntry[]>([]);
 	const [previewEntryId, setPreviewEntryId] = useState<string | null>(null);
 	const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null);
+	const [retryingEntryId, setRetryingEntryId] = useState<string | null>(null);
 	const [videoAspectRatios, setVideoAspectRatios] = useState<Record<string, number>>({});
 	const entriesRef = useRef<GenerationEntry[]>([]);
 	const pollingEntryIdsRef = useRef<Set<string>>(new Set());
@@ -1119,6 +1134,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											completionTokens: entry.completionTokens ?? null,
 											totalTokens: entry.totalTokens ?? null,
 											imageSettings: entry.imageSettings ?? null,
+											generationParams: entry.generationParams ?? null,
 										},
 									}),
 								),
@@ -1173,6 +1189,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							completionTokens: entry.completionTokens ?? null,
 							totalTokens: entry.totalTokens ?? null,
 							imageSettings: entry.imageSettings ?? null,
+							generationParams: entry.generationParams ?? null,
 						},
 					}),
 				),
@@ -1479,240 +1496,325 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		setError(null);
 	};
 
-	const submit = async () => {
-		const trimmedPrompt = prompt.trim();
-		if (!trimmedPrompt || isLoading || submitModelIds.length === 0) return;
-		if (roomId === "video" && hasPendingEntries) {
-			setError("Please wait until the current video generation has completed.");
-			return;
-		}
-		setError(null);
-		setIsLoading(true);
-		try {
-			const pendingEntries = submitModelIds.map((selectedId) => {
+	const submitGeneration = useCallback(
+		async (options?: {
+			prompt?: string;
+			selectedModelIds?: string[];
+			activeModelId?: string;
+			temporaryMode?: boolean;
+			clearPromptAfterSuccess?: boolean;
+			retrySourceEntry?: GenerationEntry | null;
+			retryEntryId?: string | null;
+		}) => {
+			const effectivePrompt = options?.prompt ?? prompt;
+			const effectiveSelectedModelIds =
+				options?.selectedModelIds ?? selectedModelIds;
+			const effectiveActiveModelId = options?.activeModelId ?? activeModelId;
+			const effectiveTemporaryMode = options?.temporaryMode ?? temporaryMode;
+			const clearPromptAfterSuccess = options?.clearPromptAfterSuccess ?? true;
+			const retrySourceEntry = options?.retrySourceEntry ?? null;
+			const retryEntryId = options?.retryEntryId ?? null;
+			const trimmedPrompt = effectivePrompt.trim();
+			const enabledSelectedModelIds = effectiveSelectedModelIds.filter((selectedId) => {
 				const profile = modelSettings.getProfileForModel(selectedId);
-				let imageSettings: ImageGenerationSettings | null = null;
-				let videoSeconds: number | null = null;
-				let videoResolution: string | null = null;
-				if (roomId === "image") {
-					const imageParams =
-						(profile.params as ImageRoomParams) ??
-						getDefaultImageRoomParams(selectedId);
-					const imageRequestOptions = buildImageRequestOptions(
-						selectedId,
-						imageParams,
-					);
-					imageSettings = buildImageGenerationSettings(
-						selectedId,
-						imageParams,
-						imageRequestOptions,
-					);
-				} else {
-					const videoParams =
-						(profile.params as VideoRoomParams) ??
-						getDefaultVideoRoomParams(selectedId);
-					const videoRequestOptions = buildVideoRequestOptions(
-						selectedId,
-						videoParams,
-					);
-					videoSeconds = toOptionalNumber(
-						videoRequestOptions.duration ??
-							videoRequestOptions.duration_seconds ??
-							videoRequestOptions.seconds,
-					);
-					videoResolution = toOptionalString(
-						videoRequestOptions.size ??
-							videoRequestOptions.resolution ??
-							videoRequestOptions.input_resolution,
-					);
-				}
-				return {
-					id: crypto.randomUUID(),
-					createdAt: nowIso(),
-					modelId: selectedId,
-					prompt: trimmedPrompt,
-					url: "",
-					status: "pending" as const,
-					statusLabel: "queued",
-					progressPercent: null,
-					resourceId: null,
-					requestId: null,
-					providerId: null,
-					providerName: null,
-					finishReason: null,
-					durationMs: null,
-					costUsd: null,
-					promptTokens: null,
-					completionTokens: null,
-					totalTokens: null,
-					videoSeconds,
-					videoResolution,
-					imageSettings,
-					isTemporary: temporaryMode,
-				};
+				return profile.enabled !== false;
 			});
-			const pendingEntryByModelId = new Map(
-				pendingEntries.map((entry) => [entry.modelId, entry]),
-			);
-			await addEntries(pendingEntries);
+			const effectiveSubmitModelIds =
+				roomId !== "video"
+					? enabledSelectedModelIds
+					: (() => {
+							const preferredModelId =
+								effectiveActiveModelId &&
+								enabledSelectedModelIds.includes(effectiveActiveModelId)
+									? effectiveActiveModelId
+									: enabledSelectedModelIds[0];
+							return preferredModelId ? [preferredModelId] : [];
+						})();
+			if (!trimmedPrompt || isLoading || effectiveSubmitModelIds.length === 0) return;
+			if (roomId === "video" && hasPendingEntries) {
+				setError("Please wait until the current video generation has completed.");
+				return;
+			}
+			setError(null);
+			setIsLoading(true);
+			try {
+				const pendingEntries = effectiveSubmitModelIds.map((selectedId) => {
+					const profile = modelSettings.getProfileForModel(selectedId);
+					let imageSettings: ImageGenerationSettings | null = null;
+					let videoSeconds: number | null = null;
+					let videoResolution: string | null = null;
+					let generationParams: Record<string, unknown> | null = null;
+					if (roomId === "image") {
+						const imageParams =
+							(selectedId === retrySourceEntry?.modelId
+								? (retrySourceEntry.generationParams as ImageRoomParams | null)
+								: null) ??
+							(profile.params as ImageRoomParams) ??
+							getDefaultImageRoomParams(selectedId);
+						const imageRequestOptions = buildImageRequestOptions(
+							selectedId,
+							imageParams,
+						);
+						generationParams = { ...imageParams };
+						imageSettings = buildImageGenerationSettings(
+							selectedId,
+							imageParams,
+							imageRequestOptions,
+						);
+					} else {
+						const videoParams =
+							(selectedId === retrySourceEntry?.modelId
+								? (retrySourceEntry.generationParams as VideoRoomParams | null)
+								: null) ??
+							(profile.params as VideoRoomParams) ??
+							getDefaultVideoRoomParams(selectedId);
+						const videoRequestOptions = buildVideoRequestOptions(
+							selectedId,
+							videoParams,
+						);
+						generationParams = { ...videoParams };
+						videoSeconds = toOptionalNumber(
+							videoRequestOptions.duration ?? 
+								videoRequestOptions.duration_seconds ?? 
+								videoRequestOptions.seconds,
+						);
+						videoResolution = toOptionalString(
+							videoRequestOptions.size ??
+								videoRequestOptions.resolution ??
+								videoRequestOptions.input_resolution,
+						);
+					}
+					return {
+						id: crypto.randomUUID(),
+						createdAt: nowIso(),
+						modelId: selectedId,
+						prompt: trimmedPrompt,
+						url: "",
+						status: "pending" as const,
+						statusLabel: "queued",
+						progressPercent: null,
+						resourceId: null,
+						requestId: null,
+						providerId: null,
+						providerName: null,
+						finishReason: null,
+						durationMs: null,
+						costUsd: null,
+						promptTokens: null,
+						completionTokens: null,
+						totalTokens: null,
+						videoSeconds,
+						videoResolution,
+						imageSettings,
+						generationParams,
+						isTemporary: effectiveTemporaryMode,
+					};
+				});
+				const pendingEntryByModelId = new Map(
+					pendingEntries.map((entry) => [entry.modelId, entry]),
+				);
+				if (retryEntryId) {
+					await replaceEntry(retryEntryId, pendingEntries);
+				} else {
+					await addEntries(pendingEntries);
+				}
 
-			let hasSuccess = false;
-			const failures: string[] = [];
-			await Promise.all(
-				submitModelIds.map(async (targetModelId) => {
-					const pendingEntry = pendingEntryByModelId.get(targetModelId);
-					if (!pendingEntry) return;
-					try {
-						const profile = modelSettings.getProfileForModel(targetModelId);
-						const requestBody: Record<string, unknown> = {
-							model: targetModelId,
-							prompt: trimmedPrompt,
-						};
-						let imageSettings: ImageGenerationSettings | null =
-							pendingEntry.imageSettings ?? null;
-						if (profile.providerId && profile.providerId !== "auto") {
-							requestBody.provider = {
-								only: [profile.providerId],
+				let hasSuccess = false;
+				const failures: string[] = [];
+				await Promise.all(
+					effectiveSubmitModelIds.map(async (targetModelId) => {
+						const pendingEntry = pendingEntryByModelId.get(targetModelId);
+						if (!pendingEntry) return;
+						try {
+							const profile = modelSettings.getProfileForModel(targetModelId);
+							const requestBody: Record<string, unknown> = {
+								model: targetModelId,
+								prompt: trimmedPrompt,
 							};
-						}
-						if (roomId === "image") {
-							const imageParams =
-								(profile.params as ImageRoomParams) ??
-								getDefaultImageRoomParams(targetModelId);
-							const imageRequestOptions = buildImageRequestOptions(
-								targetModelId,
-								imageParams,
-							);
-							imageSettings = buildImageGenerationSettings(
-								targetModelId,
-								imageParams,
-								imageRequestOptions,
-							);
-							Object.assign(
-								requestBody,
-								imageRequestOptions,
-							);
-						} else {
-							Object.assign(
-								requestBody,
-								buildVideoRequestOptions(
+							let imageSettings: ImageGenerationSettings | null =
+								pendingEntry.imageSettings ?? null;
+							if (profile.providerId && profile.providerId !== "auto") {
+								requestBody.provider = {
+									only: [profile.providerId],
+								};
+							}
+							if (roomId === "image") {
+								const imageParams =
+									(pendingEntry.generationParams as ImageRoomParams | null) ??
+									(profile.params as ImageRoomParams) ??
+									getDefaultImageRoomParams(targetModelId);
+								const imageRequestOptions = buildImageRequestOptions(
 									targetModelId,
-									(profile.params as VideoRoomParams) ??
-										getDefaultVideoRoomParams(targetModelId),
-								),
+									imageParams,
+								);
+								imageSettings = buildImageGenerationSettings(
+									targetModelId,
+									imageParams,
+									imageRequestOptions,
+								);
+								Object.assign(requestBody, imageRequestOptions);
+							} else {
+								Object.assign(
+									requestBody,
+									buildVideoRequestOptions(
+										targetModelId,
+										(pendingEntry.generationParams as VideoRoomParams | null) ??
+										(profile.params as VideoRoomParams) ??
+											getDefaultVideoRoomParams(targetModelId),
+									),
+								);
+							}
+
+							const response = await fetch(`/api/chat/${roomId}`, {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									requestBody,
+									appHeaders: APP_HEADERS,
+								}),
+							});
+
+							if (!response.ok) {
+								const text = await response.text();
+								throw new Error(text || `Request failed (${response.status})`);
+							}
+
+							const contentType = response.headers.get("content-type") ?? "";
+							if (!contentType.includes("application/json")) {
+								const blob = await response.blob();
+								const objectUrl = URL.createObjectURL(blob);
+								await replaceEntry(pendingEntry.id, [
+									{
+										...pendingEntry,
+										url: objectUrl,
+										status: "completed",
+										statusLabel: "completed",
+										progressPercent: 100,
+									},
+								]);
+								hasSuccess = true;
+								return;
+							}
+
+							const payload = await response.json().catch(() => ({}));
+							const metrics = extractEntryMetrics(payload);
+							const rawStatus = getGenerationStatus(payload);
+							const resourceId = getResourceId(payload);
+							const extractedUrls = extractGenerationUrls(payload);
+							const normalizedStatus = normalizeMediaGenerationStatus(rawStatus);
+							const hasCompletionSignal = hasVideoCompletionSignal(payload, metrics);
+							let shouldResolveViaContentProxy =
+								roomId === "video" &&
+								Boolean(resourceId) &&
+								extractedUrls.length === 0 &&
+								(normalizedStatus === "completed" || hasCompletionSignal);
+							if (shouldResolveViaContentProxy && resourceId) {
+								const ready = await isVideoContentProxyReady(resourceId);
+								if (!ready) shouldResolveViaContentProxy = false;
+							}
+							const urls =
+								shouldResolveViaContentProxy && resourceId
+									? [buildVideoContentProxyUrl(resourceId)]
+									: extractedUrls;
+							const nextStatus: GenerationEntry["status"] =
+								roomId === "video" && resourceId && urls.length === 0
+									? "pending"
+									: toMediaEntryStatus({
+											rawStatus,
+											hasUrls: urls.length > 0,
+										});
+							const nextEntries = buildResolvedEntries({
+								baseEntry: pendingEntry,
+								modelId: targetModelId,
+								prompt: trimmedPrompt,
+								urls,
+								status: nextStatus,
+								resourceId: roomId === "video" ? resourceId : null,
+								metrics,
+								imageSettings,
+								isTemporary: effectiveTemporaryMode,
+							});
+							await replaceEntry(pendingEntry.id, nextEntries);
+							if (roomId === "video" && nextStatus === "pending") {
+								void pollVideoEntryUntilSettled(nextEntries[0]?.id ?? pendingEntry.id);
+							}
+							if (nextStatus !== "failed") {
+								hasSuccess = true;
+							}
+						} catch (err) {
+							failures.push(
+								err instanceof Error ? err.message : `Generation failed (${targetModelId})`,
 							);
-						}
-
-						const response = await fetch(`/api/chat/${roomId}`, {
-							method: "POST",
-							headers: {
-								"Content-Type": "application/json",
-							},
-							body: JSON.stringify({
-								requestBody,
-								appHeaders: APP_HEADERS,
-							}),
-						});
-
-						if (!response.ok) {
-							const text = await response.text();
-							throw new Error(text || `Request failed (${response.status})`);
-						}
-
-						const contentType = response.headers.get("content-type") ?? "";
-						if (!contentType.includes("application/json")) {
-							const blob = await response.blob();
-							const objectUrl = URL.createObjectURL(blob);
 							await replaceEntry(pendingEntry.id, [
 								{
 									...pendingEntry,
-									url: objectUrl,
-									status: "completed",
-									statusLabel: "completed",
-									progressPercent: 100,
+									status: "failed",
+									statusLabel: "failed",
+									progressPercent: null,
 								},
 							]);
-							hasSuccess = true;
-							return;
 						}
-
-						const payload = await response.json().catch(() => ({}));
-						const metrics = extractEntryMetrics(payload);
-						const rawStatus = getGenerationStatus(payload);
-						const resourceId = getResourceId(payload);
-						const extractedUrls = extractGenerationUrls(payload);
-						const normalizedStatus = normalizeMediaGenerationStatus(rawStatus);
-						const hasCompletionSignal = hasVideoCompletionSignal(payload, metrics);
-						let shouldResolveViaContentProxy =
-							roomId === "video" &&
-							Boolean(resourceId) &&
-							extractedUrls.length === 0 &&
-							(normalizedStatus === "completed" || hasCompletionSignal);
-						if (shouldResolveViaContentProxy && resourceId) {
-							const ready = await isVideoContentProxyReady(resourceId);
-							if (!ready) shouldResolveViaContentProxy = false;
-						}
-						const urls =
-							shouldResolveViaContentProxy && resourceId
-								? [buildVideoContentProxyUrl(resourceId)]
-								: extractedUrls;
-						const nextStatus: GenerationEntry["status"] =
-							roomId === "video" && resourceId && urls.length === 0
-								? "pending"
-								: toMediaEntryStatus({
-										rawStatus,
-										hasUrls: urls.length > 0,
-									});
-						const nextEntries = buildResolvedEntries({
-							baseEntry: pendingEntry,
-							modelId: targetModelId,
-							prompt: trimmedPrompt,
-							urls,
-							status: nextStatus,
-							resourceId: roomId === "video" ? resourceId : null,
-							metrics,
-							imageSettings,
-							isTemporary: temporaryMode,
-						});
-						await replaceEntry(pendingEntry.id, nextEntries);
-						if (roomId === "video" && nextStatus === "pending") {
-							void pollVideoEntryUntilSettled(nextEntries[0]?.id ?? pendingEntry.id);
-						}
-						if (nextStatus !== "failed") {
-							hasSuccess = true;
-						}
-					} catch (err) {
-						failures.push(
-							err instanceof Error ? err.message : `Generation failed (${targetModelId})`,
-						);
-						await replaceEntry(pendingEntry.id, [
-							{
-								...pendingEntry,
-								status: "failed",
-								statusLabel: "failed",
-								progressPercent: null,
-							},
-						]);
-					}
-				}),
-			);
-
-			if (hasSuccess) {
-				setPrompt("");
-			}
-			if (failures.length > 0) {
-				setError(
-					failures.length === 1
-						? failures[0]
-						: `${failures.length} generation requests failed.`,
+					}),
 				);
+
+				if (hasSuccess && clearPromptAfterSuccess) {
+					setPrompt("");
+				}
+				if (failures.length > 0) {
+					setError(
+						failures.length === 1
+							? failures[0]
+							: `${failures.length} generation requests failed.`,
+					);
+				}
+			} catch (err) {
+				setError(err instanceof Error ? err.message : "Generation failed");
+			} finally {
+				setIsLoading(false);
 			}
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Generation failed");
-		} finally {
-			setIsLoading(false);
-		}
-	};
+		},
+		[
+			activeModelId,
+			addEntries,
+			hasPendingEntries,
+			isLoading,
+			isVideoContentProxyReady,
+			modelSettings,
+			prompt,
+			pollVideoEntryUntilSettled,
+			roomId,
+			replaceEntry,
+			selectedModelIds,
+			temporaryMode,
+		],
+	);
+
+	const retryEntry = useCallback(
+		async (entry: GenerationEntry) => {
+			if (isLoading) return;
+			setRetryingEntryId(entry.id);
+			try {
+				await submitGeneration({
+					prompt: entry.prompt,
+					selectedModelIds: [entry.modelId],
+					activeModelId: entry.modelId,
+					temporaryMode: entry.isTemporary ?? temporaryMode,
+					clearPromptAfterSuccess: false,
+					retrySourceEntry: entry,
+					retryEntryId: entry.id,
+				});
+			} finally {
+				setRetryingEntryId((current) => (current === entry.id ? null : current));
+			}
+		},
+		[isLoading, submitGeneration, temporaryMode],
+	);
+
+	const submit = useCallback(() => {
+		void submitGeneration();
+	}, [submitGeneration]);
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -1860,46 +1962,65 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 										<div className="flex items-center justify-between gap-2">
 											<p className="text-[11px] text-muted-foreground">Cost: {formatCost(entry.costUsd)}</p>
 											{entry.status === "failed" ? (
-												<AlertDialog
-													open={deleteEntryId === entry.id}
-													onOpenChange={(open) => {
-														setDeleteEntryId(open ? entry.id : null);
-													}}
-												>
-													<AlertDialogTrigger asChild>
-														<Button
-															type="button"
-															variant="ghost"
-															size="icon"
-															className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
-															aria-label="Delete failed generation"
-														>
-															<Trash2 className="h-3.5 w-3.5" />
-														</Button>
-													</AlertDialogTrigger>
-													<AlertDialogContent>
-														<AlertDialogHeader>
-															<AlertDialogTitle>
-																Remove failed generation?
-															</AlertDialogTitle>
-															<AlertDialogDescription>
-																This removes the failed item from your local room
-																history.
-															</AlertDialogDescription>
-														</AlertDialogHeader>
-														<AlertDialogFooter>
-															<AlertDialogCancel>Cancel</AlertDialogCancel>
-															<AlertDialogAction
-																className="bg-destructive text-white hover:bg-destructive/90"
-																onClick={() => {
-																	void confirmDeleteEntry(entry.id);
-																}}
+												<div className="flex items-center gap-1">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7"
+														onClick={() => {
+															void retryEntry(entry);
+														}}
+														disabled={isLoading}
+														aria-label="Retry failed generation"
+													>
+														{retryingEntryId === entry.id && isLoading ? (
+															<Loader2 className="h-3.5 w-3.5 animate-spin" />
+														) : (
+															<RotateCcw className="h-3.5 w-3.5" />
+														)}
+													</Button>
+													<AlertDialog
+														open={deleteEntryId === entry.id}
+														onOpenChange={(open) => {
+															setDeleteEntryId(open ? entry.id : null);
+														}}
+													>
+														<AlertDialogTrigger asChild>
+															<Button
+																type="button"
+																variant="ghost"
+																size="icon"
+																className="h-7 w-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+																aria-label="Delete failed generation"
 															>
-																Delete
-															</AlertDialogAction>
-														</AlertDialogFooter>
-													</AlertDialogContent>
-												</AlertDialog>
+																<Trash2 className="h-3.5 w-3.5" />
+															</Button>
+														</AlertDialogTrigger>
+														<AlertDialogContent>
+															<AlertDialogHeader>
+																<AlertDialogTitle>
+																	Remove failed generation?
+																</AlertDialogTitle>
+																<AlertDialogDescription>
+																	This removes the failed item from your local room
+																	history.
+																</AlertDialogDescription>
+															</AlertDialogHeader>
+															<AlertDialogFooter>
+																<AlertDialogCancel>Cancel</AlertDialogCancel>
+																<AlertDialogAction
+																	className="bg-destructive text-white hover:bg-destructive/90"
+																	onClick={() => {
+																		void confirmDeleteEntry(entry.id);
+																	}}
+																>
+																	Delete
+																</AlertDialogAction>
+															</AlertDialogFooter>
+														</AlertDialogContent>
+													</AlertDialog>
+												</div>
 											) : entry.url ? (
 												<a
 													className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -1938,43 +2059,62 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 										<div className="flex items-center gap-2">
 											<p className="text-xs text-muted-foreground">Cost: {formatCost(entry.costUsd)}</p>
 											{entry.status === "failed" ? (
-												<AlertDialog
-													open={deleteEntryId === entry.id}
-													onOpenChange={(open) => {
-														setDeleteEntryId(open ? entry.id : null);
-													}}
-												>
-													<AlertDialogTrigger asChild>
-														<Button
-															type="button"
-															variant="ghost"
-															size="icon"
-															className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-															aria-label="Delete failed generation"
-														>
-															<Trash2 className="h-4 w-4" />
-														</Button>
-													</AlertDialogTrigger>
-													<AlertDialogContent>
-														<AlertDialogHeader>
-															<AlertDialogTitle>Remove failed generation?</AlertDialogTitle>
-															<AlertDialogDescription>
-																This removes the failed item from your local room history.
-															</AlertDialogDescription>
-														</AlertDialogHeader>
-														<AlertDialogFooter>
-															<AlertDialogCancel>Cancel</AlertDialogCancel>
-															<AlertDialogAction
-																className="bg-destructive text-white hover:bg-destructive/90"
-																onClick={() => {
-																	void confirmDeleteEntry(entry.id);
-																}}
+												<div className="flex items-center gap-1">
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon"
+														className="h-8 w-8"
+														onClick={() => {
+															void retryEntry(entry);
+														}}
+														disabled={isLoading}
+														aria-label="Retry failed generation"
+													>
+														{retryingEntryId === entry.id && isLoading ? (
+															<Loader2 className="h-4 w-4 animate-spin" />
+														) : (
+															<RotateCcw className="h-4 w-4" />
+														)}
+													</Button>
+													<AlertDialog
+														open={deleteEntryId === entry.id}
+														onOpenChange={(open) => {
+															setDeleteEntryId(open ? entry.id : null);
+														}}
+													>
+														<AlertDialogTrigger asChild>
+															<Button
+																type="button"
+																variant="ghost"
+																size="icon"
+																className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+																aria-label="Delete failed generation"
 															>
-																Delete
-															</AlertDialogAction>
-														</AlertDialogFooter>
-													</AlertDialogContent>
-												</AlertDialog>
+																<Trash2 className="h-4 w-4" />
+															</Button>
+														</AlertDialogTrigger>
+														<AlertDialogContent>
+															<AlertDialogHeader>
+																<AlertDialogTitle>Remove failed generation?</AlertDialogTitle>
+																<AlertDialogDescription>
+																	This removes the failed item from your local room history.
+																</AlertDialogDescription>
+															</AlertDialogHeader>
+															<AlertDialogFooter>
+																<AlertDialogCancel>Cancel</AlertDialogCancel>
+																<AlertDialogAction
+																	className="bg-destructive text-white hover:bg-destructive/90"
+																	onClick={() => {
+																		void confirmDeleteEntry(entry.id);
+																	}}
+																>
+																	Delete
+																</AlertDialogAction>
+															</AlertDialogFooter>
+														</AlertDialogContent>
+													</AlertDialog>
+												</div>
 											) : entry.url ? (
 												<a
 													className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
