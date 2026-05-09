@@ -6,6 +6,8 @@
 "use cache";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { fetchPublicGatewayRequestRows } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
+import { sumTokens } from "@/lib/utils/sumTokens";
 
 
 // Type definitions for API responses
@@ -50,6 +52,24 @@ export type RankingsResponse = {
     trending: TrendingModel[];
     summary: SummaryStats;
 };
+
+const DEFAULT_SUMMARY_STATS: SummaryStats = {
+    total_requests_24h: 0,
+    total_tokens_24h: 0,
+    total_models: 0,
+    total_providers: 0,
+    avg_latency_ms: 0,
+    success_rate_24h: 0,
+};
+
+function toFiniteNumber(value: unknown): number {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function roundTokens(value: unknown): number {
+	return Math.max(0, Math.round(sumTokens(value)));
+}
 
 export type PerformanceData = {
     model_id: string;
@@ -279,7 +299,7 @@ export async function getRankings(
         supabase.rpc("get_public_trending_models", {
             p_limit: 20,
         }),
-        supabase.rpc("get_public_summary_stats"),
+        getPublicSummaryStats(),
     ]);
 
     console.log("[getRankings] Rankings response:", {
@@ -293,8 +313,7 @@ export async function getRankings(
         data: trendingRes.data,
     });
     console.log("[getRankings] Summary response:", {
-        error: summaryRes.error,
-        data: summaryRes.data,
+        data: summaryRes,
     });
 
     if (rankingsRes.error) {
@@ -303,23 +322,73 @@ export async function getRankings(
     if (trendingRes.error) {
         console.error("[getRankings] Trending error:", trendingRes.error);
     }
-    if (summaryRes.error) {
-        console.error("[getRankings] Summary error:", summaryRes.error);
-    }
-
     return {
         ok: !rankingsRes.error,
         rankings: (rankingsRes.data ?? []) as RankingModel[],
         trending: (trendingRes.data ?? []) as TrendingModel[],
-        summary: summaryRes.data?.[0] ?? {
-            total_requests_24h: 0,
-            total_tokens_24h: 0,
-            total_models: 0,
-            total_providers: 0,
-            avg_latency_ms: 0,
-            success_rate_24h: 0,
-        },
+        summary: summaryRes ?? DEFAULT_SUMMARY_STATS,
     };
+}
+
+export async function getPublicSummaryStats(): Promise<SummaryStats> {
+	cacheLife("hours");
+	cacheTag("public-rankings");
+	cacheTag("data:gateway_requests");
+
+	const rows = await fetchPublicGatewayRequestRows(1, { successOnly: false });
+	if (!rows.length) {
+		return DEFAULT_SUMMARY_STATS;
+	}
+
+	let totalRequests = 0;
+	let totalTokens = 0;
+	let totalModels = 0;
+	let totalProviders = 0;
+	let totalLatency = 0;
+	let latencySamples = 0;
+	let successfulRequests = 0;
+	const modelIds = new Set<string>();
+	const providerIds = new Set<string>();
+
+	for (const row of rows) {
+		totalRequests += 1;
+		totalTokens += roundTokens(row.usage);
+		if (row.model_id) modelIds.add(row.model_id);
+		if (row.provider) providerIds.add(row.provider);
+
+		const latency = toFiniteNumber(row.latency_ms);
+		if (latency > 0) {
+			totalLatency += latency;
+			latencySamples += 1;
+		}
+
+		if (row.success) {
+			successfulRequests += 1;
+		}
+	}
+
+	totalModels = modelIds.size;
+	totalProviders = providerIds.size;
+
+	return {
+		total_requests_24h: totalRequests,
+		total_tokens_24h: totalTokens,
+		total_models: totalModels,
+		total_providers: totalProviders,
+		avg_latency_ms: latencySamples > 0 ? Math.round(totalLatency / latencySamples) : 0,
+		success_rate_24h: totalRequests > 0 ? successfulRequests / totalRequests : 0,
+	};
+}
+
+export async function getPublicMonthlyTokenTotal(): Promise<number> {
+	cacheLife("days");
+	cacheTag("public-rankings");
+	cacheTag("data:gateway_requests");
+
+	const rows = await fetchPublicGatewayRequestRows(30, { successOnly: true });
+	if (!rows.length) return 0;
+
+	return rows.reduce((total, row) => total + roundTokens(row.usage), 0);
 }
 
 /**
