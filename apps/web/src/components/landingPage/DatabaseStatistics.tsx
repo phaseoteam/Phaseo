@@ -1,6 +1,6 @@
 import Link from "next/link";
 import getDbStats from "@/lib/fetchers/landing/dbStats";
-import { getGatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
+import { getPublicMonthlyTokenTotal } from "@/lib/fetchers/rankings/getRankingsData";
 
 function roundDisplayValue(raw: number, bucket: number) {
 	if (bucket <= 0) return raw;
@@ -27,15 +27,10 @@ function formatCompact(value: number) {
 	return value.toLocaleString();
 }
 
-function formatGatewayTokenValue(value: number) {
-	if (!Number.isFinite(value) || value <= 0) return "Live data pending";
-	return `${formatCompact(value)}+`;
-}
-
 export default async function DatabaseStats() {
-	const [data, gatewayMetrics] = await Promise.all([
+	const [data, monthlyTokenTotal] = await Promise.all([
 		getDbStats(),
-		getGatewayMarketingMetrics(24 * 30),
+		getPublicMonthlyTokenTotal(),
 	]);
 
 	const stats = [
@@ -50,8 +45,8 @@ export default async function DatabaseStats() {
 			route: "/api-providers",
 		},
 		{
-			label: "Gateway tokens (30d)",
-			value: formatGatewayTokenValue(gatewayMetrics.summary.tokens24h ?? 0),
+			label: "Monthly tokens",
+			value: `${formatCompact(monthlyTokenTotal ?? 0)}+`,
 			route: "/",
 		},
 	] as const;

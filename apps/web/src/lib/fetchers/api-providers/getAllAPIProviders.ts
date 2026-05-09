@@ -1,7 +1,9 @@
 // lib/fetchers/api-providers/getAllAPIProviders.ts
 import { cacheLife, cacheTag } from "next/cache";
 import { filterVisibleAPIProviders } from "./visibility";
+import { fetchPublicGatewayRequestRows } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { sumTokens } from "@/lib/utils/sumTokens";
 
 export type ProviderModalityKey =
     | "text"
@@ -51,12 +53,6 @@ type PricingRuleRow = {
     price_per_unit?: number | string | null;
     effective_from?: string | null;
     effective_to?: string | null;
-};
-
-type MarketShareRow = {
-    name?: string | null;
-    tokens?: number | string | null;
-    share_pct?: number | string | null;
 };
 
 const MODALITY_KEYS: ProviderModalityKey[] = [
@@ -137,26 +133,8 @@ function isFreePricingRule(row: PricingRuleRow): boolean {
     return String(row.model_key ?? "").toLowerCase().includes(":free:");
 }
 
-function toTokenMap(rows: unknown): Map<string, number> {
-    const out = new Map<string, number>();
-    for (const row of (rows ?? []) as MarketShareRow[]) {
-        const providerId = String(row.name ?? "").trim();
-        if (!providerId) continue;
-        const tokens = Number(row.tokens ?? 0);
-        out.set(providerId, Number.isFinite(tokens) ? Math.max(0, tokens) : 0);
-    }
-    return out;
-}
-
-function toShareMap(rows: unknown): Map<string, number> {
-    const out = new Map<string, number>();
-    for (const row of (rows ?? []) as MarketShareRow[]) {
-        const providerId = String(row.name ?? "").trim();
-        if (!providerId) continue;
-        const share = Number(row.share_pct ?? 0);
-        out.set(providerId, Number.isFinite(share) ? Math.max(0, share) : 0);
-    }
-    return out;
+function toTokenCount(value: unknown): number {
+    return Math.max(0, Math.round(sumTokens(value)));
 }
 
 export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
@@ -178,7 +156,7 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
     ].join(",");
 
-    const [providersRes, providerModelsRes, pricingRulesRes, dailyUsageRes, monthlyUsageRes] = await Promise.all([
+    const [providersRes, providerModelsRes, pricingRulesRes, gatewayUsageRows] = await Promise.all([
         supabase
             .from("data_api_providers")
             .select("api_provider_id, api_provider_name, colour, country_code")
@@ -193,14 +171,7 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             .select("model_key, effective_from, effective_to")
             .ilike("model_key", "%:free:%")
             .or(activeWindowClause),
-        supabase.rpc("get_public_market_share", {
-            p_dimension: "provider",
-            p_time_range: "today",
-        }),
-        supabase.rpc("get_public_market_share", {
-            p_dimension: "provider",
-            p_time_range: "month",
-        }),
+        fetchPublicGatewayRequestRows(30, { successOnly: true }),
     ]);
 
     if (providersRes.error) {
@@ -310,22 +281,39 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         );
     }
 
-    if (dailyUsageRes.error) {
-        console.warn(
-            "[getAllAPIProviders] get_public_market_share(today) failed; defaulting daily token stats to 0.",
-            dailyUsageRes.error.message
+    const dayStartMs = Date.now() - 24 * 60 * 60 * 1000;
+    const dailyRequestsByProvider = new Map<string, number>();
+    const dailyTokensByProvider = new Map<string, number>();
+    const monthlyTokensByProvider = new Map<string, number>();
+
+    for (const row of gatewayUsageRows) {
+        const providerId = String(row.provider ?? "").trim();
+        if (!providerId) continue;
+
+        const createdAtMs = row.created_at ? new Date(row.created_at).getTime() : Number.NaN;
+        const tokens = toTokenCount(row.usage);
+
+        monthlyTokensByProvider.set(
+            providerId,
+            (monthlyTokensByProvider.get(providerId) ?? 0) + tokens,
         );
-    }
-    if (monthlyUsageRes.error) {
-        console.warn(
-            "[getAllAPIProviders] get_public_market_share(month) failed; defaulting monthly token stats to 0.",
-            monthlyUsageRes.error.message
+
+        if (!Number.isFinite(createdAtMs) || createdAtMs < dayStartMs) continue;
+
+        dailyRequestsByProvider.set(
+            providerId,
+            (dailyRequestsByProvider.get(providerId) ?? 0) + 1,
+        );
+        dailyTokensByProvider.set(
+            providerId,
+            (dailyTokensByProvider.get(providerId) ?? 0) + tokens,
         );
     }
 
-    const dailyTokensByProvider = toTokenMap(dailyUsageRes.data);
-    const monthlyTokensByProvider = toTokenMap(monthlyUsageRes.data);
-    const dailyShareByProvider = toShareMap(dailyUsageRes.data);
+    const totalDailyRequests = Array.from(dailyRequestsByProvider.values()).reduce(
+        (sum, value) => sum + value,
+        0
+    );
 
     const modalitySupportByProvider = new Map<string, ProviderModalitySupport>();
     for (const providerId of new Set([
@@ -367,7 +355,11 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
                 total_monthly_tokens:
                     monthlyTokensByProvider.get(r.api_provider_id) ?? 0,
                 daily_share_pct:
-                    dailyShareByProvider.get(r.api_provider_id) ?? 0,
+                    totalDailyRequests > 0
+                        ? ((dailyRequestsByProvider.get(r.api_provider_id) ?? 0) /
+                                totalDailyRequests) *
+                            100
+                        : 0,
                 modality_support:
                     modalitySupportByProvider.get(r.api_provider_id) ??
                     createEmptyModalitySupport(),
