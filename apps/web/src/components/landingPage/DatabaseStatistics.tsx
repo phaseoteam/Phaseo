@@ -27,6 +27,11 @@ function formatCompact(value: number) {
 	return value.toLocaleString();
 }
 
+function formatGatewayTokenValue(value: number) {
+	if (!Number.isFinite(value) || value <= 0) return "Live data pending";
+	return `${formatCompact(value)}+`;
+}
+
 export default async function DatabaseStats() {
 	const [data, gatewayMetrics] = await Promise.all([
 		getDbStats(),
@@ -45,8 +50,8 @@ export default async function DatabaseStats() {
 			route: "/api-providers",
 		},
 		{
-			label: "Gateway monthly tokens",
-			value: `${formatCompact(gatewayMetrics.summary.tokens24h ?? 0)}+`,
+			label: "Gateway tokens (30d)",
+			value: formatGatewayTokenValue(gatewayMetrics.summary.tokens24h ?? 0),
 			route: "/",
 		},
 	] as const;
