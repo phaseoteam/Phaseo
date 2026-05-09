@@ -114,6 +114,7 @@ type MediaHistoryPayload = {
 	videoSeconds?: number | null;
 	videoResolution?: string | null;
 	imageSettings?: ImageGenerationSettings | null;
+	generationParams?: Record<string, unknown> | null;
 };
 
 type GenerationEntry = {
@@ -138,6 +139,7 @@ type GenerationEntry = {
 	videoSeconds?: number | null;
 	videoResolution?: string | null;
 	imageSettings?: ImageGenerationSettings | null;
+	generationParams?: Record<string, unknown> | null;
 	isTemporary?: boolean;
 };
 
@@ -245,6 +247,11 @@ function parseImageGenerationSettings(value: unknown): ImageGenerationSettings |
 		return null;
 	}
 	return settings;
+}
+
+function parseGenerationParams(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+	return { ...(value as Record<string, unknown>) };
 }
 
 function buildImageGenerationSettings(
@@ -779,6 +786,9 @@ function toEntry(record: {
 		imageSettings: parseImageGenerationSettings(
 			payload.imageSettings ?? payload.image_settings,
 		),
+		generationParams: parseGenerationParams(
+			payload.generationParams ?? payload.generation_params,
+		),
 	};
 }
 
@@ -791,6 +801,7 @@ function buildResolvedEntries(args: {
 	resourceId?: string | null;
 	metrics?: Partial<EntryMetrics>;
 	imageSettings?: ImageGenerationSettings | null;
+	generationParams?: Record<string, unknown> | null;
 	isTemporary: boolean;
 }): GenerationEntry[] {
 	const {
@@ -834,6 +845,7 @@ function buildResolvedEntries(args: {
 			status,
 			resourceId: resourceId ?? null,
 			imageSettings: imageSettings ?? baseEntry.imageSettings ?? null,
+			generationParams: baseEntry.generationParams ?? null,
 			isTemporary,
 			...metricsPatch,
 		}));
@@ -847,6 +859,7 @@ function buildResolvedEntries(args: {
 			status,
 			resourceId: resourceId ?? null,
 			imageSettings: imageSettings ?? baseEntry.imageSettings ?? null,
+			generationParams: baseEntry.generationParams ?? null,
 			isTemporary,
 			...metricsPatch,
 		},
@@ -1121,6 +1134,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											completionTokens: entry.completionTokens ?? null,
 											totalTokens: entry.totalTokens ?? null,
 											imageSettings: entry.imageSettings ?? null,
+											generationParams: entry.generationParams ?? null,
 										},
 									}),
 								),
@@ -1175,6 +1189,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							completionTokens: entry.completionTokens ?? null,
 							totalTokens: entry.totalTokens ?? null,
 							imageSettings: entry.imageSettings ?? null,
+							generationParams: entry.generationParams ?? null,
 						},
 					}),
 				),
@@ -1488,6 +1503,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 			activeModelId?: string;
 			temporaryMode?: boolean;
 			clearPromptAfterSuccess?: boolean;
+			retrySourceEntry?: GenerationEntry | null;
+			retryEntryId?: string | null;
 		}) => {
 			const effectivePrompt = options?.prompt ?? prompt;
 			const effectiveSelectedModelIds =
@@ -1495,6 +1512,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 			const effectiveActiveModelId = options?.activeModelId ?? activeModelId;
 			const effectiveTemporaryMode = options?.temporaryMode ?? temporaryMode;
 			const clearPromptAfterSuccess = options?.clearPromptAfterSuccess ?? true;
+			const retrySourceEntry = options?.retrySourceEntry ?? null;
+			const retryEntryId = options?.retryEntryId ?? null;
 			const trimmedPrompt = effectivePrompt.trim();
 			const enabledSelectedModelIds = effectiveSelectedModelIds.filter((selectedId) => {
 				const profile = modelSettings.getProfileForModel(selectedId);
@@ -1524,14 +1543,19 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					let imageSettings: ImageGenerationSettings | null = null;
 					let videoSeconds: number | null = null;
 					let videoResolution: string | null = null;
+					let generationParams: Record<string, unknown> | null = null;
 					if (roomId === "image") {
 						const imageParams =
+							(selectedId === retrySourceEntry?.modelId
+								? (retrySourceEntry.generationParams as ImageRoomParams | null)
+								: null) ??
 							(profile.params as ImageRoomParams) ??
 							getDefaultImageRoomParams(selectedId);
 						const imageRequestOptions = buildImageRequestOptions(
 							selectedId,
 							imageParams,
 						);
+						generationParams = { ...imageParams };
 						imageSettings = buildImageGenerationSettings(
 							selectedId,
 							imageParams,
@@ -1539,15 +1563,19 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						);
 					} else {
 						const videoParams =
+							(selectedId === retrySourceEntry?.modelId
+								? (retrySourceEntry.generationParams as VideoRoomParams | null)
+								: null) ??
 							(profile.params as VideoRoomParams) ??
 							getDefaultVideoRoomParams(selectedId);
 						const videoRequestOptions = buildVideoRequestOptions(
 							selectedId,
 							videoParams,
 						);
+						generationParams = { ...videoParams };
 						videoSeconds = toOptionalNumber(
-							videoRequestOptions.duration ??
-								videoRequestOptions.duration_seconds ??
+							videoRequestOptions.duration ?? 
+								videoRequestOptions.duration_seconds ?? 
 								videoRequestOptions.seconds,
 						);
 						videoResolution = toOptionalString(
@@ -1578,13 +1606,18 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						videoSeconds,
 						videoResolution,
 						imageSettings,
+						generationParams,
 						isTemporary: effectiveTemporaryMode,
 					};
 				});
 				const pendingEntryByModelId = new Map(
 					pendingEntries.map((entry) => [entry.modelId, entry]),
 				);
-				await addEntries(pendingEntries);
+				if (retryEntryId) {
+					await replaceEntry(retryEntryId, pendingEntries);
+				} else {
+					await addEntries(pendingEntries);
+				}
 
 				let hasSuccess = false;
 				const failures: string[] = [];
@@ -1607,6 +1640,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							}
 							if (roomId === "image") {
 								const imageParams =
+									(pendingEntry.generationParams as ImageRoomParams | null) ??
 									(profile.params as ImageRoomParams) ??
 									getDefaultImageRoomParams(targetModelId);
 								const imageRequestOptions = buildImageRequestOptions(
@@ -1624,6 +1658,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									requestBody,
 									buildVideoRequestOptions(
 										targetModelId,
+										(pendingEntry.generationParams as VideoRoomParams | null) ??
 										(profile.params as VideoRoomParams) ??
 											getDefaultVideoRoomParams(targetModelId),
 									),
@@ -1742,11 +1777,15 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		},
 		[
 			activeModelId,
+			addEntries,
 			hasPendingEntries,
 			isLoading,
+			isVideoContentProxyReady,
 			modelSettings,
 			prompt,
+			pollVideoEntryUntilSettled,
 			roomId,
+			replaceEntry,
 			selectedModelIds,
 			temporaryMode,
 		],
@@ -1763,6 +1802,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					activeModelId: entry.modelId,
 					temporaryMode: entry.isTemporary ?? temporaryMode,
 					clearPromptAfterSuccess: false,
+					retrySourceEntry: entry,
+					retryEntryId: entry.id,
 				});
 			} finally {
 				setRetryingEntryId((current) => (current === entry.id ? null : current));
