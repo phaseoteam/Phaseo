@@ -257,8 +257,8 @@ importers:
         specifier: ^3.32.6
         version: 3.32.6(react@19.2.5)
       '@statsig/session-replay':
-        specifier: ^3.32.6
-        version: 3.32.6
+        specifier: ^3.33.0
+        version: 3.33.0
       '@statsig/web-analytics':
         specifier: ^3.32.6
         version: 3.32.6
@@ -4153,6 +4153,9 @@ packages:
   '@statsig/client-core@3.32.6':
     resolution: {integrity: sha512-VailldiMHr5GSI18tBB3yiqrVNMim9b5iE38JZJYSywJcb5WclJkbJMOAf2ql+g1OtIS0QzrjEQ7dP3Vf6sYAw==}
 
+  '@statsig/client-core@3.33.0':
+    resolution: {integrity: sha512-i0eiAtFkm7Ny38etC5rJ/fkWiAECgyfK23/KIFk8z8LvPW77QmUXJfNeTqFikEOKAsAGU/pxXmchpo8hn9nWBA==}
+
   '@statsig/js-client@3.32.6':
     resolution: {integrity: sha512-F6yRAgzFuboVsgsRnxcr7hJrSZu4TK7B5I9DRkQKGxk+Em3oSLFz53SkzWgUcPqtt3htsFjic2aNhIfpeBFEqg==}
 
@@ -4161,8 +4164,8 @@ packages:
     peerDependencies:
       react: ^16.6.3 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@statsig/session-replay@3.32.6':
-    resolution: {integrity: sha512-BWiR7juEKi+so6Q53MNP+y79hJ8gVQmBq3GctmMwjaVKdHZ20b4yEsB/HZRHoqWSXG3Fz4ApnxOAZ5MHTb6+pQ==}
+  '@statsig/session-replay@3.33.0':
+    resolution: {integrity: sha512-sHWFczZGnn9E0JzuB5QH02WGX61Q9ZsBEHD6Z0EHcldKMs33KanE1tTvraRlCMSy8hlbyVdtjwjc4KBAmtABxQ==}
 
   '@statsig/web-analytics@3.32.6':
     resolution: {integrity: sha512-TztjGKxfKjNrr/csmF3rec3b0a02Tq+eytYO6l1+5LzHeNrPrcx832iBVFyy1K6uVD+g5BvjitC84WOcQthgLw==}
@@ -15328,6 +15331,8 @@ snapshots:
 
   '@statsig/client-core@3.32.6': {}
 
+  '@statsig/client-core@3.33.0': {}
+
   '@statsig/js-client@3.32.6':
     dependencies:
       '@statsig/client-core': 3.32.6
@@ -15338,10 +15343,10 @@ snapshots:
       '@statsig/js-client': 3.32.6
       react: 19.2.5
 
-  '@statsig/session-replay@3.32.6':
+  '@statsig/session-replay@3.33.0':
     dependencies:
       '@rrweb/record': 2.0.0-alpha.17
-      '@statsig/client-core': 3.32.6
+      '@statsig/client-core': 3.33.0
       rrweb: 2.0.0-alpha.17
 
   '@statsig/web-analytics@3.32.6':
@@ -18261,7 +18266,7 @@ snapshots:
       eslint: 10.1.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.1.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.1.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@10.1.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.1.0(jiti@2.6.1))
@@ -18298,7 +18303,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.1.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -18312,7 +18317,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1)))(eslint@10.1.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.1.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9

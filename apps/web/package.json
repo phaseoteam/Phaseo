@@ -68,7 +68,7 @@
 		"@react-three/fiber": "^9.4.0",
 		"@statsig/js-client": "^3.32.6",
 		"@statsig/react-bindings": "^3.32.6",
-		"@statsig/session-replay": "^3.32.6",
+		"@statsig/session-replay": "^3.33.0",
 		"@statsig/web-analytics": "^3.32.6",
 		"@stripe/react-stripe-js": "^6.3.0",
 		"@stripe/stripe-js": "^9.4.0",
