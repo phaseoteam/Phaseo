@@ -16,7 +16,10 @@ import { cn } from "@/lib/utils";
 import { Search as SearchIcon, Sparkles } from "lucide-react";
 import { curatedGroups } from "./Search.constants";
 import { SearchRowItem } from "./SearchRowItem";
-import type { SearchData } from "@/lib/fetchers/search/getSearchData";
+import type {
+	CompactSearchData,
+	SearchData,
+} from "@/lib/fetchers/search/getSearchData";
 
 interface Props {
 	className?: string;
@@ -26,7 +29,10 @@ interface Props {
 type SearchableItem = {
 	id: string;
 	title: string;
-	searchKeywords: string[];
+	subtitle?: string | null;
+	href?: string;
+	logoId?: string | null;
+	flagIso?: string;
 };
 
 function normalizeSearchTerm(value: string): string {
@@ -39,6 +45,101 @@ function normalizeSearchTerm(value: string): string {
 
 let cachedSearchData: SearchData | null = null;
 let searchDataRequest: Promise<SearchData> | null = null;
+
+function buildSearchKeywords(item: SearchableItem): string[] {
+	const keywords = new Set<string>();
+	const terms = [
+		item.id,
+		item.title,
+		item.subtitle,
+		item.href,
+		item.logoId,
+		item.flagIso,
+	];
+
+	for (const term of terms) {
+		if (!term) continue;
+
+		keywords.add(term);
+
+		const normalized = normalizeSearchTerm(term);
+		if (normalized) keywords.add(normalized);
+
+		const dotted = term.replace(/-/g, ".");
+		const dashed = term.replace(/\./g, "-");
+		const compact = term.replace(/[\s._-]+/g, "");
+
+		keywords.add(dotted);
+		keywords.add(dashed);
+		keywords.add(compact);
+		keywords.add(normalizeSearchTerm(dotted));
+		keywords.add(normalizeSearchTerm(dashed));
+		keywords.add(normalizeSearchTerm(compact));
+	}
+
+	return Array.from(keywords).filter(Boolean);
+}
+
+function isCompactSearchData(value: unknown): value is CompactSearchData {
+	return Boolean(
+		value &&
+			typeof value === "object" &&
+			Array.isArray((value as CompactSearchData).m) &&
+			Array.isArray((value as CompactSearchData).o) &&
+			Array.isArray((value as CompactSearchData).b) &&
+			Array.isArray((value as CompactSearchData).p) &&
+			Array.isArray((value as CompactSearchData).s) &&
+			Array.isArray((value as CompactSearchData).c),
+	);
+}
+
+function expandSearchData(value: SearchData | CompactSearchData): SearchData {
+	if (!isCompactSearchData(value)) return value;
+
+	return {
+		models: value.m.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		organisations: value.o.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		benchmarks: value.b.map(([id, title, subtitle, href]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+		})),
+		apiProviders: value.p.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		subscriptionPlans: value.s.map(([id, title, subtitle, href, logoId]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			logoId,
+		})),
+		countries: value.c.map(([id, title, subtitle, href, flagIso]) => ({
+			id,
+			title,
+			subtitle,
+			href,
+			flagIso,
+		})),
+	};
+}
 
 async function fetchSearchData(): Promise<SearchData> {
 	if (cachedSearchData) return cachedSearchData;
@@ -53,7 +154,9 @@ async function fetchSearchData(): Promise<SearchData> {
 			if (!response.ok) {
 				throw new Error("Failed to load search data");
 			}
-			return (await response.json()) as SearchData;
+			return expandSearchData(
+				(await response.json()) as SearchData | CompactSearchData,
+			);
 		})
 		.then((data) => {
 			cachedSearchData = data;
@@ -106,7 +209,7 @@ function getMatchScore(item: SearchableItem, term: string): number {
 		return 500;
 	}
 	if (
-		item.searchKeywords.some((keyword) => {
+		buildSearchKeywords(item).some((keyword) => {
 			const keywordLower = keyword.toLowerCase();
 			if (keywordLower.includes(rawTerm)) return true;
 			if (!hasNormalizedTerm) return false;
@@ -339,7 +442,7 @@ export default function Search({ className, initialData = null }: Props) {
 											<SearchRowItem
 												key={item.id}
 												{...item}
-												keywords={item.searchKeywords}
+												keywords={buildSearchKeywords(item)}
 												onSelect={handleSelect}
 												type={categoryConfig.type}
 											/>
