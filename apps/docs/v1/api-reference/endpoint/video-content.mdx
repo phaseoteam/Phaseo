@@ -4,9 +4,11 @@ badge: "Beta"
 openapi: "GET /videos/{video_id}/content"
 description: "Download the rendered video content for a completed generation."
 ---
-Returns the raw video binary from the upstream provider when the generation is ready.
+Returns the raw video binary when the generation is ready.
 
-Use this endpoint when you want authenticated byte access through the API itself.
+<Warning>
+The public video routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
 
 - It is only available once the job is complete and output access allows direct bytes.
 - For browser-friendly or temporary direct downloads, prefer `POST /videos/{video_id}/download_url`.

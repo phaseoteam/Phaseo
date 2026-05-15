@@ -237,6 +237,40 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
 		});
 
+		it("maps server-side web search usage into IR usage", () => {
+			const openaiResponse = {
+				id: "resp_search_usage",
+				object: "response",
+				status: "completed",
+				created_at: 1234567890,
+				output: [
+					{
+						type: "message",
+						output_index: 0,
+						role: "assistant",
+						content: [{ type: "output_text", text: "ok" }],
+					},
+				],
+				usage: {
+					input_tokens: 90,
+					output_tokens: 30,
+					total_tokens: 120,
+					server_tool_use: {
+						datetime_requests: 1,
+						web_search_requests: 2,
+						web_fetch_requests: 3,
+					},
+				},
+			};
+
+			const ir = openAIResponsesToIR(openaiResponse, "req_search_usage", "gpt-4.1-mini", "openai");
+			expect(ir.usage?._ext?.serverToolUse).toEqual({
+				datetime_requests: 1,
+				web_search_requests: 2,
+				web_fetch_requests: 3,
+			});
+		});
+
 		it("preserves assistant message phase from responses output", () => {
 			const openaiResponse = {
 				id: "resp_openai",
@@ -307,6 +341,51 @@ describe("openAIResponsesToIR", () => {
 });
 
 describe("irToOpenAIResponses", () => {
+	it("preserves native web search tools and tool choice", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-4.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			tools: [{
+				name: "web_search_preview",
+				type: "web_search_preview",
+				parameters: {},
+				raw: {
+					type: "web_search_preview",
+					search_context_size: "medium",
+				},
+			}],
+			toolChoice: { name: "web_search_preview" },
+		} as any, "gpt-4.1", "openai");
+
+		expect(request.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "medium",
+		}]);
+		expect(request.tool_choice).toBe("web_search_preview");
+	});
+
+	it("passes web_search_options through to upstream responses requests", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-4.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			webSearchOptions: {
+				search_context_size: "high",
+			},
+		} as any, "gpt-4.1", "openai");
+
+		expect(request.web_search_options).toEqual({
+			search_context_size: "high",
+		});
+	});
+
 	it("preserves caller-provided OpenAI reasoning.summary", () => {
 		const request = irToOpenAIResponses({
 			model: "openai/gpt-5-nano",

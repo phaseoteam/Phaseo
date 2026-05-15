@@ -5,12 +5,12 @@ openapi: "GET /gateway/models/me"
 description: "Browse the subset of gateway models available to the current team."
 ---
 
-Returns the team-scoped gateway catalogue for the authenticated management key. This route is useful when you want the same model-shape payload as `GET /gateway/models`, but limited to the models currently visible to the team behind the calling key.
+Returns the team-scoped model catalogue for the authenticated management key.
 
 Notes:
 - Supports the same public query filters as the main models catalogue, including `endpoints`, `provider`, `limit`, and `offset`.
-- The response shape matches the gateway models catalogue, so you can reuse the same UI or internal tooling against both routes.
-- This route is intended for management and dashboard-style discovery, not end-user inference traffic.
+- The response shape matches `GET /gateway/models`.
+- This route is intended for management and dashboard discovery, not end-user inference traffic.
 
 ### Response
 

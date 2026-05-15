@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 0.8B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.5 0.8B is a large-scale multimodal vision-language model designed for high-precision understanding and reasoning across text, images, and video.",
   "announced_date": "2026-03-02T00:00:00",
   "release_date": "2026-03-02T00:00:00",
   "deprecation_date": null,

@@ -1,7 +1,7 @@
 -- Fix gateway_deduct_and_check_top_up_once to tolerate legacy return shapes from deduct_and_check_top_up.
 
 create or replace function public.gateway_deduct_and_check_top_up_once(
-  p_workspace_id uuid,
+  p_team_id uuid,
   p_request_id text,
   p_cost_nanos bigint
 )
@@ -26,8 +26,8 @@ declare
   v_auto_top_up_account_id text;
   v_stripe_customer_id text;
 begin
-  if p_workspace_id is null then
-    raise exception 'missing_workspace_id';
+  if p_team_id is null then
+    raise exception 'missing_team_id';
   end if;
 
   if coalesce(trim(p_request_id), '') = '' then
@@ -39,26 +39,26 @@ begin
   end if;
 
   insert into public.gateway_request_charges (
-    workspace_id,
+    team_id,
     request_id,
     cost_nanos,
     status,
     created_at,
     updated_at
   ) values (
-    p_workspace_id,
+    p_team_id,
     p_request_id,
     p_cost_nanos,
     'applying',
     now(),
     now()
   )
-  on conflict (workspace_id, request_id) do nothing;
+  on conflict (team_id, request_id) do nothing;
 
   select *
   into v_charge
   from public.gateway_request_charges
-  where workspace_id = p_workspace_id
+  where team_id = p_team_id
     and request_id = p_request_id
   for update;
 
@@ -86,14 +86,14 @@ begin
   set status = 'applying',
       error_message = null,
       updated_at = now()
-  where workspace_id = p_workspace_id
+  where team_id = p_team_id
     and request_id = p_request_id;
 
   begin
     select *
     into v_result
     from public.deduct_and_check_top_up(
-      p_workspace_id := p_workspace_id,
+      p_team_id := p_team_id,
       p_cost_nanos := p_cost_nanos
     );
 
@@ -103,7 +103,7 @@ begin
     set status = 'failed',
         error_message = sqlerrm,
         updated_at = now()
-    where workspace_id = p_workspace_id
+    where team_id = p_team_id
       and request_id = p_request_id;
     raise;
   end;
@@ -139,7 +139,7 @@ begin
       deducted_status = v_status,
       auto_top_up_required = v_status = 'top_up_required',
       updated_at = now()
-  where workspace_id = p_workspace_id
+  where team_id = p_team_id
     and request_id = p_request_id;
 
   return query
@@ -152,6 +152,5 @@ begin
     v_stripe_customer_id;
 end;
 $$;
-
 revoke all on function public.gateway_deduct_and_check_top_up_once(uuid, text, bigint) from public;
 grant execute on function public.gateway_deduct_and_check_top_up_once(uuid, text, bigint) to service_role;

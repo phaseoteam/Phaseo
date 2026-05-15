@@ -4,6 +4,7 @@
   "name": "Composer 1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Composer 1 is a language model from Cursor for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-10-29T00:00:00",
   "release_date": "2025-10-29T00:00:00",
   "deprecation_date": null,

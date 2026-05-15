@@ -336,10 +336,8 @@ as $$
   where (p_include_hidden or coalesce(dm.hidden, false) = false)
   order by pm.provider_api_model_id asc, cap.capability_id asc;
 $$;
-
 comment on function public.get_monitor_model_rows(boolean) is
   'Returns provider-capability monitor rows with joined model/provider/pricing metadata and 7d raw gateway usage metrics.';
-
 create or replace function public.get_usage_tokens_weekly_model_provider(
   p_since timestamptz default now() - interval '8 weeks'
 )
@@ -401,9 +399,7 @@ as $$
   from grouped g
   order by g.week_bucket desc, g.total_tokens desc;
 $$;
-
 comment on function public.get_usage_tokens_weekly_model_provider(timestamptz) is
   'Aggregates weekly model/provider usage directly from gateway_requests without relying on removed rollup tables.';
-
 grant execute on function public.get_monitor_model_rows(boolean) to authenticated, service_role;
 grant execute on function public.get_usage_tokens_weekly_model_provider(timestamptz) to authenticated, service_role;

@@ -4,6 +4,7 @@
 // How: Calls RPC/SQL to fetch provider, pricing, and gating context.
 
 import { getSupabaseAdmin, getCache } from "@/runtime/env";
+import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { keyVersionToken } from "@/core/kv";
 import { contextSchema } from "./schemas";
 import { loadPriceCard } from "@pipeline/pricing";
@@ -12,6 +13,7 @@ import {
 	applyNebiusRegionalModelAllowlist,
 	splitProviderScopedModel,
 } from "./context.nebius";
+import { applyExplicitProviderModelRouting } from "./context.provider-offers";
 import {
 	clampTtl,
 	cloneGatewayContextData,
@@ -387,12 +389,20 @@ async function fetchTestingProviderSnapshots(args: {
         const providerKey = `${providerId}::${providerModelSlug ?? ""}`;
         const alreadySupported = existingSupportByKey.get(providerKey) ?? false;
         if (alreadySupported) continue;
+        const residency = getProviderResidencyMetadata({
+            providerId,
+            providerModelSlug,
+        });
         testingProviders.push({
             providerId,
             providerStatus: "active",
             providerRoutingStatus: "active",
             modelRoutingStatus: normalizeRoutingStatus(row?.routing_status),
             capabilityStatus: cap?.status ?? "active",
+            residencyMode: residency.residencyMode,
+            executionRegions: residency.executionRegions,
+            dataRegions: residency.dataRegions,
+            zeroDataRetention: residency.zeroDataRetention,
             supportsEndpoint: true,
             baseWeight: 1,
             byokMeta: byokByProvider.get(providerId) ?? [],
@@ -565,6 +575,10 @@ export async function fetchGatewayContext(args: {
             parsed,
             requestedModel: args.model,
         });
+        parsed = applyExplicitProviderModelRouting({
+            parsed,
+            requestedModel: args.model,
+        });
 
         const resolvedModelForPricing = parsed.resolvedModel ?? args.model;
         if ((parsed.providers ?? []).length > 0) {
@@ -689,6 +703,10 @@ export async function fetchGatewayContext(args: {
             parsed,
             requestedModel: args.model,
         });
+        parsed = applyExplicitProviderModelRouting({
+            parsed,
+            requestedModel: args.model,
+        });
 
         // Enrich with team settings + provider rollout statuses.
         parsed.teamSettings = {
@@ -712,7 +730,7 @@ export async function fetchGatewayContext(args: {
             const providerStatusQuery = providerIds.length
                 ? supabase
                       .from("data_api_providers")
-                      .select("api_provider_id,status,routing_status")
+                      .select("api_provider_id,status,routing_status,provider_family_id,offer_scope,offer_label")
                       .in("api_provider_id", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
 
@@ -752,6 +770,9 @@ export async function fetchGatewayContext(args: {
 
             const rolloutStatusByProvider = new Map<string, ProviderRolloutStatus>();
             const routingStatusByProvider = new Map<string, RoutingStatus>();
+            const providerFamilyByProvider = new Map<string, string | null>();
+            const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
+            const offerLabelByProvider = new Map<string, string | null>();
             if (!providerStatusResult?.error) {
                 for (const row of providerStatusResult.data ?? []) {
                     if (!row?.api_provider_id) continue;
@@ -763,12 +784,46 @@ export async function fetchGatewayContext(args: {
                         row.api_provider_id,
                         normalizeRoutingStatus(row.routing_status),
                     );
+                    providerFamilyByProvider.set(
+                        row.api_provider_id,
+                        typeof row.provider_family_id === "string" && row.provider_family_id.trim().length > 0
+                            ? row.provider_family_id
+                            : null,
+                    );
+                    offerScopeByProvider.set(
+                        row.api_provider_id,
+                        row.offer_scope === "global" || row.offer_scope === "regional" || row.offer_scope === "specialized"
+                            ? row.offer_scope
+                            : null,
+                    );
+                    offerLabelByProvider.set(
+                        row.api_provider_id,
+                        typeof row.offer_label === "string" && row.offer_label.trim().length > 0
+                            ? row.offer_label
+                            : null,
+                    );
                 }
             }
 
             parsed.providers = (parsed.providers ?? []).map((provider) => {
+                const residency = getProviderResidencyMetadata({
+                    providerId: provider.providerId,
+                    providerModelSlug: provider.providerModelSlug,
+                });
                 return {
                     ...provider,
+                    providerFamilyId:
+                        providerFamilyByProvider.get(provider.providerId) ??
+                        provider.providerFamilyId ??
+                        null,
+                    offerScope:
+                        offerScopeByProvider.get(provider.providerId) ??
+                        provider.offerScope ??
+                        null,
+                    offerLabel:
+                        offerLabelByProvider.get(provider.providerId) ??
+                        provider.offerLabel ??
+                        null,
                     providerStatus:
                         rolloutStatusByProvider.get(provider.providerId) ??
                         normalizeProviderStatus(provider.providerStatus) ??
@@ -783,6 +838,13 @@ export async function fetchGatewayContext(args: {
                     capabilityStatus:
                         normalizeCapabilityStatus(provider.capabilityStatus) ??
                         "active",
+                    residencyMode:
+                        provider.residencyMode ?? residency.residencyMode,
+                    executionRegions:
+                        provider.executionRegions ?? residency.executionRegions,
+                    dataRegions: provider.dataRegions ?? residency.dataRegions,
+                    zeroDataRetention:
+                        provider.zeroDataRetention ?? residency.zeroDataRetention,
                 };
             });
         } catch {

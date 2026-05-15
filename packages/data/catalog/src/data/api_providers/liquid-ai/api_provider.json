@@ -5,5 +5,10 @@
   "link": "https://www.liquid.ai/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#000000"
+  "colour": "#000000",
+  "privacy_policy_url": "https://www.liquid.ai/privacy-policy",
+  "terms_of_service_url": "https://www.liquid.ai/terms-conditions",
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "Liquid AI says it may use inputs and outputs shared through its services to train, fine-tune, and otherwise enhance AI models and related technologies.",
+  "prompt_training_source_url": "https://www.liquid.ai/privacy-policy"
 }

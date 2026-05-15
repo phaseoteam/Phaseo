@@ -1,0 +1,123 @@
+---
+title: "Set up coding agents with SKILL.md"
+description: "Pair the SDK with a SKILL.md file so local coding agents can use your AI Stats integration consistently."
+---
+
+This recipe is for teams building internal tools, CLIs, or coding-agent workflows on top of the gateway SDKs.
+
+<Visibility for="humans">
+<Note>
+If you want a reusable starting point instead of writing every skill from scratch, install the public AI Stats skills from [`AI-Stats/skills`](https://github.com/AI-Stats/skills):
+
+```bash
+npx skills add AI-Stats/skills --agent codex --skill '*'
+```
+
+Then keep project-specific instructions in your local `SKILL.md`.
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+Reusable AI Stats skills live in [`AI-Stats/skills`](https://github.com/AI-Stats/skills). Install them first with:
+
+```bash
+npx skills add AI-Stats/skills --agent codex --skill '*'
+```
+
+Then layer project-local instructions into the repository `SKILL.md`.
+</Note>
+</Visibility>
+
+The main idea is simple:
+
+- keep your SDK setup inside the repository
+- add a `SKILL.md` file that teaches the agent how the project expects requests to be made
+- point the agent at that file during setup so request patterns stay consistent
+
+## 1. Install the SDK
+
+If you're using TypeScript or JavaScript:
+
+<CodeGroup>
+```bash npm
+npm install @ai-stats/sdk
+```
+
+```bash pnpm
+pnpm add @ai-stats/sdk
+```
+
+```bash yarn
+yarn add @ai-stats/sdk
+```
+
+```bash bun
+bun add @ai-stats/sdk
+```
+</CodeGroup>
+
+If you're using Python:
+
+```bash
+pip install ai-stats
+```
+
+## 2. Add a project-local skill file
+
+Create `SKILL.md` in the repository root or the agent skill location your team uses.
+
+```md
+# AI Stats Gateway
+
+- Use `https://api.phaseo.app/v1` as the gateway base URL.
+- Read the API key from `AI_STATS_API_KEY`.
+- Prefer the Responses API for new text integrations.
+- Use preset slugs when the repository defines shared request defaults.
+- Log request ids and model ids for debugging.
+- For async video jobs, store the returned id and poll status until terminal.
+```
+
+## 3. Keep the first integration tiny
+
+For coding agents, smaller request helpers are easier to reuse than large wrappers.
+
+```ts
+import AIStats from "@ai-stats/sdk";
+
+export const gateway = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY!,
+});
+```
+
+Then keep one obvious call path per surface:
+
+- text generation
+- async video
+- embeddings
+- image generation
+
+## 4. What the skill should encode
+
+Your `SKILL.md` should answer the questions that waste the most agent time:
+
+- which endpoint family to prefer
+- which environment variable holds credentials
+- which model ids or preset slugs are approved
+- how request ids should be logged
+- how async jobs should be tracked
+
+## 5. Recommended repository pattern
+
+- SDK helper in one shared module
+- `SKILL.md` next to the integration code or at repository root
+- one short example per major endpoint
+- one note covering request logging and error handling
+
+This gives both humans and coding agents the same operational entrypoint.
+
+## Related guides
+
+- [Codex](../guides/integrations/codex.mdx)
+- [AI SDK integration](../guides/integrations/ai-sdk.mdx)
+- [Examples](../guides/examples.mdx)

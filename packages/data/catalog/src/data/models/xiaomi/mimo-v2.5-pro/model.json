@@ -4,6 +4,7 @@
   "name": "MiMo V2.5 Pro",
   "status": "Available",
   "previous_model_id": "xiaomi/mimo-v2-pro",
+  "description": "MiMo V2.5 Pro is Xiaomi's flagship model, delivering strong performance in general agentic capabilities, complex software engineering, and long-horizon tasks, with top rankings on benchmarks such as ClawEval, GDPVal, and SWE-bench Pro.",
   "announced_date": "2026-04-22T00:00:00",
   "release_date": "2026-04-22T00:00:00",
   "deprecation_date": null,

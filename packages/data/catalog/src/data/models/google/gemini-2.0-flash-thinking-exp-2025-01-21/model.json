@@ -4,6 +4,7 @@
   "name": "Gemini 2.0 Flash Thinking Exp (2025-01-21)",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini 2.0 Flash Thinking Exp (2025-01-21) is a reasoning model from Google for multi-step analysis, math, and tool-driven tasks. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-01-21T00:00:00",
   "release_date": "2025-01-21T00:00:00",
   "deprecation_date": "2025-11-04T00:00:00",

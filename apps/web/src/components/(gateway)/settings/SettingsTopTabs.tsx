@@ -90,24 +90,7 @@ function getTabSet(
 		pathname.startsWith("/settings/workspaces") ||
 		pathname.startsWith("/settings/teams")
 	) {
-		return [
-			{
-				href: "/settings/workspaces/general",
-				label: "General",
-				match: [
-					"/settings/workspaces",
-					"/settings/workspaces/members",
-					"/settings/workspaces/settings",
-					"/settings/teams",
-					"/settings/teams/members",
-					"/settings/teams/settings",
-				],
-			},
-			{
-				href: "/settings/workspaces/access",
-				label: "Access",
-			},
-		];
+		return null;
 	}
 
 	if (pathname.startsWith("/settings/beta")) {
@@ -161,22 +144,7 @@ function getTabSet(
 		pathname.startsWith("/settings/privacy") ||
 		pathname.startsWith("/settings/guardrails")
 	) {
-		const tabs: Tab[] = [
-			{ href: "/settings/keys", label: "API Keys" },
-			{ href: "/settings/apps", label: "Apps" },
-			{
-				href: "/settings/management-api-keys",
-				label: "Management Keys",
-				badge: "Beta",
-				match: ["/settings/management-api-keys", "/settings/provisioning-keys"],
-			},
-			{ href: "/settings/routing", label: "Routing" },
-			{ href: "/settings/byok", label: "BYOK" },
-			{ href: "/settings/presets", label: "Presets", badge: "Beta" },
-			{ href: "/settings/privacy", label: "Privacy", badge: "Alpha" },
-			{ href: "/settings/guardrails", label: "Guardrails", badge: "Alpha" },
-		];
-		return tabs;
+		return null;
 	}
 
 	return null;

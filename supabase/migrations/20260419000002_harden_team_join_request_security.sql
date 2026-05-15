@@ -21,10 +21,8 @@ as $$
       and (ti.max_uses is null or coalesce(ti.uses_count, 0) < ti.max_uses)
   );
 $$;
-
 revoke all on function public.is_active_invite_for_team(uuid, uuid) from public;
 grant execute on function public.is_active_invite_for_team(uuid, uuid) to authenticated;
-
 drop policy if exists team_join_requests_insert on public.team_join_requests;
 create policy team_join_requests_insert
   on public.team_join_requests
@@ -39,7 +37,6 @@ create policy team_join_requests_insert
     and not public.is_team_member(team_id)
     and public.is_active_invite_for_team(invite_id, team_id)
   );
-
 -- Only admins can update pending requests, and only to final decided states.
 drop policy if exists team_join_requests_update on public.team_join_requests;
 create policy team_join_requests_update
@@ -56,12 +53,10 @@ create policy team_join_requests_update
     and decided_by = auth.uid()
     and decided_at is not null
   );
-
 -- One pending request per (team, requester) to prevent spam/races.
 create unique index if not exists team_join_requests_pending_unique
   on public.team_join_requests (team_id, requester_user_id)
   where status = 'pending'::join_request_status;
-
 -- Guard cross-team invite linkage and state transitions at the table level.
 create or replace function public.enforce_team_join_request_write_rules()
 returns trigger
@@ -135,14 +130,12 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists team_join_requests_write_rules_guard on public.team_join_requests;
 create trigger team_join_requests_write_rules_guard
 before insert or update
 on public.team_join_requests
 for each row
 execute function public.enforce_team_join_request_write_rules();
-
 -- Atomic approval flow: verifies admin rights, locks request, enforces invite-team
 -- consistency, increments invite uses, upserts membership, and marks request approved.
 create or replace function public.approve_team_join_request(
@@ -217,7 +210,6 @@ begin
   end if;
 end;
 $$;
-
 -- Atomic reject flow: verifies admin rights, locks request, and marks denied once.
 create or replace function public.reject_team_join_request(
   p_request_id uuid
@@ -270,9 +262,7 @@ begin
   end if;
 end;
 $$;
-
 revoke all on function public.approve_team_join_request(uuid) from public;
 grant execute on function public.approve_team_join_request(uuid) to authenticated;
-
 revoke all on function public.reject_team_join_request(uuid) from public;
 grant execute on function public.reject_team_join_request(uuid) to authenticated;

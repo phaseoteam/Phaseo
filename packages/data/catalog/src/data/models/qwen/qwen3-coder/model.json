@@ -4,6 +4,7 @@
   "name": "Qwen3 Coder",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 Coder is a Mixture-of-Experts (MoE) code generation model developed by the Qwen team. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

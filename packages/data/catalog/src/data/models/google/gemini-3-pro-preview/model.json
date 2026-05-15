@@ -4,6 +4,7 @@
   "name": "Gemini 3 Pro Preview",
   "status": "Retired",
   "previous_model_id": "google/gemini-2-5-pro-preview-2025-06-05",
+  "description": "Gemini 3 Pro Preview is a variant of Gemini 3.1 Pro that improves tool selection behavior by preventing overuse of a general bash tool when more efficient third-party.",
   "announced_date": "2025-11-18T00:00:00",
   "release_date": "2025-11-18T00:00:00",
   "deprecation_date": "2026-02-26T00:00:00",

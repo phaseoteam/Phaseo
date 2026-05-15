@@ -14,12 +14,14 @@ import type {
 	IRToolResult,
 	IRTool,
 } from "@core/ir";
+import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
 	normalizeThinkingConfig,
 	normalizeOpenAIToolChoice,
+	normalizeProviderGeoPreferences,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
 	normalizeProviderCacheOptions,
@@ -86,15 +88,9 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		}
 	}
 
-	const tools: IRTool[] | undefined = req.tools?.map((t: any) => ({
-		name: t.function?.name || t.name,
-		description: t.function?.description || t.description,
-		parameters: t.function?.parameters || t.parameters || {},
-	}));
+	const tools: IRTool[] | undefined = req.tools?.map(decodeOpenAITool);
 
-	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice, {
-		unknownStringFallback: "auto",
-	});
+	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
 
 	const reasoningFromRequest = req.reasoning
 		? {
@@ -146,6 +142,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		seed: req.seed,
 		tools,
 		toolChoice,
+		webSearchOptions: reqAny.web_search_options ?? reqAny.webSearchOptions,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls,
 		reasoning:
@@ -168,6 +165,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			service_tier: (req as any).service_tier,
 			speed: (req as any).speed,
 		}),
+		geo: normalizeProviderGeoPreferences(req as any),
 		promptCacheKey: (req as any).prompt_cache_key,
 		promptCacheRetention: providerCacheOptions.promptCacheRetention,
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
@@ -177,6 +175,24 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		vendor,
 		userId: req.user_id ?? req.user,
 		metadata,
+	};
+}
+
+function decodeOpenAITool(tool: any): IRTool {
+	if (isOpenAINativeWebSearchTool(tool)) {
+		return {
+			name: tool.type,
+			type: tool.type,
+			description: typeof tool.description === "string" ? tool.description : undefined,
+			parameters: {},
+			raw: { ...tool },
+		};
+	}
+
+	return {
+		name: extractToolNameOrType(tool) ?? "tool",
+		description: tool.function?.description || tool.description,
+		parameters: tool.function?.parameters || tool.parameters || {},
 	};
 }
 

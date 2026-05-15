@@ -1,0 +1,157 @@
+---
+title: "Build a Next.js Web Chat App"
+description: "Use the existing Next.js sample chat app as a full walkthrough, with a copyable build prompt at the top."
+---
+
+Use this page when you want a small Next.js chat app that feels real, but still keeps your AI Stats API key on the server.
+
+<Prompt
+  description="Build a **Next.js web chat app** on top of AI Stats Gateway."
+  icon="message-square"
+  actions={["copy", "cursor"]}
+>
+{`You are building a small production-style chat app with AI Stats Gateway.
+
+Create a Next.js app with:
+- a chat UI
+- a model picker backed by GET /v1/models
+- a server-side route that calls POST /v1/responses
+- server-side API key handling using AI_STATS_API_KEY
+- loading, success, and error states
+
+Keep the app intentionally small and easy to inspect.
+
+Implementation requirements:
+- Use one local API route for model discovery.
+- Use one local API route for responses generation.
+- Keep secrets server-side only.
+- Show the request/response flow clearly in code.
+- Add a short README with setup and run steps.
+
+Verification:
+- Run the app if possible.
+- Verify one successful chat turn.
+- Report the exact files changed, what you verified, and any remaining assumptions.`}
+</Prompt>
+
+## Sample project
+
+- GitHub: [examples/web-chat-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/web-chat-nextjs)
+- Local repo path: `examples/web-chat-nextjs`
+
+## What this app does
+
+- fetches available models from `GET /v1/models`
+- submits chat turns through `POST /v1/responses`
+- keeps the API key on the server
+- gives you a simple starting point for a real product without OAuth complexity
+
+## Key files
+
+- `app/api/models/route.ts`
+- `app/api/responses/route.ts`
+- `app/components/ChatClient.tsx`
+- `lib/gateway.ts`
+
+## Why the sample is structured this way
+
+### 1. The browser does not call AI Stats directly
+
+The UI talks to your own Next.js routes first. Those routes call AI Stats on the server.
+
+This gives you:
+
+- server-side secret handling
+- one place to manage headers and request payloads
+- an easier upgrade path if you later add auth, rate limits, or logging
+
+### 2. Model discovery is separated from generation
+
+Keep model listing and chat generation in separate routes so each part stays easy to understand:
+
+- one route for listing models
+- one route for running the chat request
+
+### 3. The UI owns interaction state only
+
+The React client handles:
+
+- input state
+- loading state
+- error presentation
+- rendered messages
+
+The server route handles the AI call. The browser just handles the user experience.
+
+## Run the sample
+
+<CodeGroup>
+```bash npm
+cd examples/web-chat-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/web-chat-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/web-chat-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/web-chat-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+Set:
+
+- `AI_STATS_API_KEY`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+Then run:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+Open `http://localhost:3000`.
+
+## How to make it your own
+
+- switch the default model to your chosen production target
+- add streaming if your UX needs token-by-token output
+- add auth later if the app becomes multi-user
+- swap the server route internals to the TypeScript SDK later if you want a higher-level client
+
+## When to use a different starting point
+
+- use the Node quickstart when you want a script or backend smoke test, not a UI
+- use the Python quickstart when the first integration lives in a worker, CLI, or backend service
+
+## Related guides
+
+- [Mini app starter prompts](./mini-app-starter-prompts)
+- [Examples](../guides/examples)
+- [Quickstart](../quickstart)

@@ -1,860 +1,277 @@
 // Purpose: Provider adapter module.
-// Why: Encapsulates provider-specific configuration and endpoint mapping.
-// How: Exposes provider-specific helpers for routing and execution.
+// Why: Encapsulates shared OpenAI-compatible URL/key/header helpers while keeping provider definitions provider-local.
+// How: Reads the merged provider-local registry and applies a small set of shared routing/env alias utilities.
 
 import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
+import type { OpenAICompatConfig } from "./types";
+import { OPENAI_COMPAT_CONFIG } from "./registry";
+import { CROFAI_API_KEY_ENVS, CROFAI_BASE_URL_ENVS } from "../crofai/config";
+import { WEIGHTSANDBIASES_API_KEY_ENVS } from "../weights-and-biases/config";
+import { ARCEE_API_KEY_ENVS } from "../arcee/config";
+import { ALIBABA_CLOUD_API_KEY_ENVS } from "../alibaba/config";
+import { GMI_CLOUD_API_KEY_ENVS } from "../gmicloud/config";
+import {
+	NEBIUS_TOKEN_FACTORY_API_KEY_ENVS,
+	NEBIUS_EU_NORTH_1_BASE_URL_ENVS,
+	NEBIUS_US_CENTRAL_1_BASE_URL_ENVS,
+} from "../nebius-token-factory/config";
+import { BYTEPLUS_API_KEY_ENVS, BYTEPLUS_BASE_URL_ENVS } from "../byteplus/config";
 
 function configError(code: string): Error & { code: string } {
-    const error = new Error(code) as Error & { code: string };
-    error.code = code;
-    return error;
+	const error = new Error(code) as Error & { code: string };
+	error.code = code;
+	return error;
 }
 
-export type OpenAICompatConfig = {
-    providerId: string;
-    baseUrl?: string;
-    pathPrefix?: string;
-    apiKeyEnv?: string;
-    baseUrlEnv?: string;
-    apiKeyHeader?: string;
-    apiKeyPrefix?: string;
-    supportsResponses?: boolean;
-};
-
 const OPENAI_CHAT_ONLY_MODELS = new Set<string>([
-    "gpt-audio",
-    "gpt-audio-mini",
-    "openai/gpt-audio",
-    "openai/gpt-audio-mini",
+	"gpt-audio",
+	"gpt-audio-mini",
+	"openai/gpt-audio",
+	"openai/gpt-audio-mini",
 ]);
 
 const OPENAI_LEGACY_COMPLETIONS_MODELS = new Set<string>([
-    "babbage-002",
-    "davinci-002",
-    "openai/babbage-002",
-    "openai/davinci-002",
+	"babbage-002",
+	"davinci-002",
+	"openai/babbage-002",
+	"openai/davinci-002",
 ]);
 
 const ALIBABA_RESPONSES_PATH_PREFIX = "/api/v2/apps/protocols/compatible-mode/v1";
 const ALIBABA_COMPAT_PROVIDER_IDS = new Set<string>(["alibaba-cloud", "alibaba", "qwen"]);
-const WEIGHTSANDBIASES_API_KEY_ENVS = ["WEIGHTSANDBIASES_API_KEY", "WANDB_API_KEY"] as const;
-const ARCEE_API_KEY_ENVS = ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] as const;
-const ALIBABA_CLOUD_API_KEY_ENVS = ["ALIBABA_CLOUD_API_KEY"] as const;
-const GMI_CLOUD_API_KEY_ENVS = ["GMI_API_KEY", "GMI_CLOUD_API_KEY"] as const;
-const NEBIUS_TOKEN_FACTORY_API_KEY_ENVS = ["NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"] as const;
-const NEBIUS_EU_NORTH_1_BASE_URL_ENVS = ["NEBIUS_EU_NORTH_1_BASE_URL", "NEBIUS_BASE_URL"] as const;
-const NEBIUS_US_CENTRAL_1_BASE_URL_ENVS = ["NEBIUS_US_CENTRAL_1_BASE_URL", "NEBIUS_BASE_URL"] as const;
-const BYTEPLUS_API_KEY_ENVS = ["BYTEPLUS_API_KEY", "BYTEDANCE_SEED_API_KEY", "ARK_API_KEY"] as const;
-const BYTEPLUS_BASE_URL_ENVS = ["BYTEPLUS_BASE_URL", "BYTEDANCE_SEED_BASE_URL"] as const;
-
-export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
-    openai: {
-        providerId: "openai",
-        baseUrl: "https://api.openai.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "OPENAI_API_KEY",
-        baseUrlEnv: "OPENAI_BASE_URL",
-        supportsResponses: true,
-    },
-    "alibaba-cloud": {
-        providerId: "alibaba-cloud",
-        baseUrl: "https://dashscope-intl.aliyuncs.com",
-        pathPrefix: "/compatible-mode/v1",
-        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
-        baseUrlEnv: "ALIBABA_BASE_URL",
-        supportsResponses: true,
-    },
-    alibaba: {
-        providerId: "alibaba",
-        baseUrl: "https://dashscope-intl.aliyuncs.com",
-        pathPrefix: "/compatible-mode/v1",
-        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
-        baseUrlEnv: "ALIBABA_BASE_URL",
-        supportsResponses: true,
-    },
-    qwen: {
-        providerId: "qwen",
-        baseUrl: "https://dashscope-intl.aliyuncs.com",
-        pathPrefix: "/compatible-mode/v1",
-        apiKeyEnv: "ALIBABA_CLOUD_API_KEY",
-        baseUrlEnv: "ALIBABA_BASE_URL",
-        supportsResponses: true,
-    },
-    "atlas-cloud": {
-        providerId: "atlas-cloud",
-        baseUrl: "https://api.atlascloud.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "ATLAS_CLOUD_API_KEY",
-        baseUrlEnv: "ATLAS_CLOUD_BASE_URL",
-    },
-    atlascloud: {
-        providerId: "atlascloud",
-        baseUrl: "https://api.atlascloud.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "ATLAS_CLOUD_API_KEY",
-        baseUrlEnv: "ATLAS_CLOUD_BASE_URL",
-    },
-    arcee: {
-        providerId: "arcee",
-        baseUrl: "https://api.arcee.ai",
-        pathPrefix: "/api/v1",
-        apiKeyEnv: "ARCEE_API_KEY",
-        baseUrlEnv: "ARCEE_BASE_URL",
-        supportsResponses: false,
-    },
-    "arcee-ai": {
-        providerId: "arcee-ai",
-        baseUrl: "https://api.arcee.ai",
-        pathPrefix: "/api/v1",
-        apiKeyEnv: "ARCEE_API_KEY",
-        baseUrlEnv: "ARCEE_BASE_URL",
-        supportsResponses: false,
-    },
-    ai21: {
-        providerId: "ai21",
-        baseUrl: "https://api.ai21.com",
-        pathPrefix: "/studio/v1",
-        apiKeyEnv: "AI21_API_KEY",
-        baseUrlEnv: "AI21_BASE_URL",
-        supportsResponses: false,
-    },
-    akashml: {
-        providerId: "akashml",
-        baseUrl: "https://api.akashml.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "AKASHML_API_KEY",
-        baseUrlEnv: "AKASHML_BASE_URL",
-        supportsResponses: false,
-    },
-    "amazon-bedrock": {
-        providerId: "amazon-bedrock",
-        baseUrlEnv: "AMAZON_BEDROCK_BASE_URL",
-        apiKeyEnv: "AMAZON_BEDROCK_API_KEY",
-        pathPrefix: "/v1",
-        supportsResponses: false,
-    },
-    baseten: {
-        providerId: "baseten",
-        baseUrl: "https://inference.baseten.co",
-        pathPrefix: "/v1",
-        apiKeyEnv: "BASETEN_API_KEY",
-        baseUrlEnv: "BASETEN_BASE_URL",
-        apiKeyPrefix: "Api-Key ",
-        supportsResponses: false,
-    },
-    "bytedance-seed": {
-        providerId: "bytedance-seed",
-        baseUrl: "https://ark.ap-southeast.bytepluses.com",
-        baseUrlEnv: "BYTEDANCE_SEED_BASE_URL",
-        apiKeyEnv: "BYTEDANCE_SEED_API_KEY",
-        pathPrefix: "/api/v3",
-        supportsResponses: false,
-    },
-    byteplus: {
-        providerId: "byteplus",
-        baseUrl: "https://ark.ap-southeast.bytepluses.com",
-        baseUrlEnv: "BYTEPLUS_BASE_URL",
-        apiKeyEnv: "BYTEPLUS_API_KEY",
-        pathPrefix: "/api/v3",
-        supportsResponses: false,
-    },
-    cerebras: {
-        providerId: "cerebras",
-        baseUrl: "https://api.cerebras.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "CEREBRAS_API_KEY",
-        baseUrlEnv: "CEREBRAS_BASE_URL",
-        supportsResponses: false,
-    },
-    clarifai: {
-        providerId: "clarifai",
-        baseUrl: "https://api.clarifai.com",
-        pathPrefix: "/v2/ext/openai/v1",
-        apiKeyEnv: "CLARIFAI_PAT",
-        baseUrlEnv: "CLARIFAI_BASE_URL",
-        supportsResponses: true,
-    },
-    chutes: {
-        providerId: "chutes",
-        baseUrl: "https://llm.chutes.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "CHUTES_API_KEY",
-        baseUrlEnv: "CHUTES_BASE_URL",
-        supportsResponses: false,
-    },
-    cohere: {
-        providerId: "cohere",
-        baseUrl: "https://api.cohere.ai",
-        pathPrefix: "/compatibility/v1",
-        apiKeyEnv: "COHERE_API_KEY",
-        baseUrlEnv: "COHERE_BASE_URL",
-        supportsResponses: false,
-    },
-    voyage: {
-        providerId: "voyage",
-        baseUrl: "https://api.voyageai.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "VOYAGE_API_KEY",
-        baseUrlEnv: "VOYAGE_BASE_URL",
-        supportsResponses: false,
-    },
-    voyageai: {
-        providerId: "voyageai",
-        baseUrl: "https://api.voyageai.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "VOYAGE_API_KEY",
-        baseUrlEnv: "VOYAGE_BASE_URL",
-        supportsResponses: false,
-    },
-    deepinfra: {
-        providerId: "deepinfra",
-        baseUrl: "https://api.deepinfra.com",
-        pathPrefix: "/v1/openai",
-        apiKeyEnv: "DEEPINFRA_API_KEY",
-        baseUrlEnv: "DEEPINFRA_BASE_URL",
-        supportsResponses: false,
-    },
-    deepseek: {
-        providerId: "deepseek",
-        baseUrl: "https://api.deepseek.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "DEEPSEEK_API_KEY",
-        baseUrlEnv: "DEEPSEEK_BASE_URL",
-    },
-    featherless: {
-        providerId: "featherless",
-        baseUrl: "https://api.featherless.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "FEATHERLESS_API_KEY",
-        baseUrlEnv: "FEATHERLESS_BASE_URL",
-        apiKeyHeader: "Authentication",
-    },
-    friendli: {
-        providerId: "friendli",
-        baseUrl: "https://api.friendli.ai",
-        pathPrefix: "/serverless/v1",
-        apiKeyEnv: "FRIENDLI_TOKEN",
-        baseUrlEnv: "FRIENDLI_BASE_URL",
-        supportsResponses: false,
-    },
-    gmicloud: {
-        providerId: "gmicloud",
-        baseUrl: "https://api.gmi-serving.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "GMI_API_KEY",
-        baseUrlEnv: "GMI_BASE_URL",
-    },
-    "google-vertex": {
-        providerId: "google-vertex",
-        baseUrlEnv: "GOOGLE_VERTEX_BASE_URL",
-        apiKeyEnv: "GOOGLE_VERTEX_API_KEY",
-        pathPrefix: "",
-        supportsResponses: false,
-    },
-    groq: {
-        providerId: "groq",
-        baseUrl: "https://api.groq.com",
-        pathPrefix: "/openai/v1",
-        apiKeyEnv: "GROQ_API_KEY",
-        baseUrlEnv: "GROQ_BASE_URL",
-        supportsResponses: true,
-    },
-    hyperbolic: {
-        providerId: "hyperbolic",
-        baseUrl: "https://api.hyperbolic.xyz",
-        pathPrefix: "/v1",
-        apiKeyEnv: "HYPERBOLIC_API_KEY",
-        baseUrlEnv: "HYPERBOLIC_BASE_URL",
-    },
-    inception: {
-        providerId: "inception",
-        baseUrl: "https://api.inceptionlabs.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "INCEPTION_API_KEY",
-        baseUrlEnv: "INCEPTION_BASE_URL",
-    },
-    infermatic: {
-        providerId: "infermatic",
-        baseUrl: "https://api.totalgpt.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "INFERMATIC_API_KEY",
-        baseUrlEnv: "INFERMATIC_BASE_URL",
-    },
-    inflection: {
-        providerId: "inflection",
-        baseUrlEnv: "INFLECTION_BASE_URL",
-        apiKeyEnv: "INFLECTION_API_KEY",
-        pathPrefix: "/v1",
-        supportsResponses: false,
-    },
-    ionrouter: {
-        providerId: "ionrouter",
-        baseUrl: "https://api.ionrouter.io",
-        pathPrefix: "/v1",
-        apiKeyEnv: "IONROUTER_API_KEY",
-        baseUrlEnv: "IONROUTER_BASE_URL",
-        supportsResponses: false,
-    },
-    mancer: {
-        providerId: "mancer",
-        baseUrl: "https://mancer.tech",
-        pathPrefix: "/oai/v1",
-        apiKeyEnv: "MANCER_API_KEY",
-        baseUrlEnv: "MANCER_BASE_URL",
-    },
-    minimax: {
-        providerId: "minimax",
-        // MiniMax OpenAI compatibility docs use api.minimax.io for international endpoints.
-        baseUrl: "https://api.minimax.io",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MINIMAX_API_KEY",
-        baseUrlEnv: "MINIMAX_BASE_URL",
-    },
-    "minimax-lightning": {
-        providerId: "minimax-lightning",
-        baseUrl: "https://api.minimax.io",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MINIMAX_API_KEY",
-        baseUrlEnv: "MINIMAX_BASE_URL",
-    },
-    mistral: {
-        providerId: "mistral",
-        baseUrl: "https://api.mistral.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MISTRAL_AI_API_KEY",
-        baseUrlEnv: "MISTRAL_BASE_URL",
-        supportsResponses: false,
-    },
-    "moonshot-ai": {
-        providerId: "moonshot-ai",
-        baseUrl: "https://api.moonshot.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_AI_API_KEY",
-        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
-    },
-    moonshotai: {
-        providerId: "moonshotai",
-        baseUrl: "https://api.moonshot.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_AI_API_KEY",
-        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
-    },
-    "moonshot-ai-turbo": {
-        providerId: "moonshot-ai-turbo",
-        baseUrl: "https://api.moonshot.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_AI_API_KEY",
-        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
-    },
-    "moonshotai-turbo": {
-        providerId: "moonshotai-turbo",
-        baseUrl: "https://api.moonshot.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MOONSHOT_AI_API_KEY",
-        baseUrlEnv: "MOONSHOT_AI_BASE_URL",
-    },
-    morph: {
-        providerId: "morph",
-        baseUrl: "https://api.morphllm.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "MORPH_API_KEY",
-        baseUrlEnv: "MORPH_BASE_URL",
-    },
-    morpheus: {
-        providerId: "morpheus",
-        baseUrl: "https://api.mor.org",
-        pathPrefix: "/api/v1",
-        apiKeyEnv: "MORPHEUS_API_KEY",
-        baseUrlEnv: "MORPHEUS_BASE_URL",
-    },
-    novitaai: {
-        providerId: "novitaai",
-        baseUrl: "https://api.novita.ai",
-        // Novita OpenAI-compatible endpoints are documented under /openai/v1.
-        pathPrefix: "/openai/v1",
-        apiKeyEnv: "NOVITA_API_KEY",
-        baseUrlEnv: "NOVITA_BASE_URL",
-        supportsResponses: false,
-    },
-    novita: {
-        providerId: "novita",
-        baseUrl: "https://api.novita.ai",
-        pathPrefix: "/openai/v1",
-        apiKeyEnv: "NOVITA_API_KEY",
-        baseUrlEnv: "NOVITA_BASE_URL",
-        supportsResponses: false,
-    },
-    nvidia: {
-        providerId: "nvidia",
-        baseUrl: "https://integrate.api.nvidia.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "NVIDIA_API_KEY",
-        baseUrlEnv: "NVIDIA_BASE_URL",
-    },
-    stepfun: {
-        providerId: "stepfun",
-        baseUrl: "https://api.stepfun.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "STEPFUN_API_KEY",
-        baseUrlEnv: "STEPFUN_BASE_URL",
-    },
-    venice: {
-        providerId: "venice",
-        baseUrl: "https://api.venice.ai",
-        pathPrefix: "/api/v1",
-        apiKeyEnv: "VENICE_API_KEY",
-        baseUrlEnv: "VENICE_BASE_URL",
-        supportsResponses: true,
-    },
-    "venice-e2ee": {
-        providerId: "venice-e2ee",
-        baseUrl: "https://api.venice.ai",
-        pathPrefix: "/api/v1",
-        apiKeyEnv: "VENICE_API_KEY",
-        baseUrlEnv: "VENICE_BASE_URL",
-        supportsResponses: true,
-    },
-    crusoe: {
-        providerId: "crusoe",
-        baseUrl: "https://api.crusoe.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "CRUSOE_API_KEY",
-        baseUrlEnv: "CRUSOE_BASE_URL",
-    },
-    parasail: {
-        providerId: "parasail",
-        baseUrl: "https://api.parasail.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "PARASAIL_API_KEY",
-        baseUrlEnv: "PARASAIL_BASE_URL",
-    },
-    phala: {
-        providerId: "phala",
-        baseUrl: "https://api.redpill.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "PHALA_API_KEY",
-        baseUrlEnv: "PHALA_BASE_URL",
-        supportsResponses: false,
-    },
-    sambanova: {
-        providerId: "sambanova",
-        apiKeyEnv: "SAMBANOVA_API_KEY",
-        baseUrlEnv: "SAMBANOVA_BASE_URL",
-        pathPrefix: "",
-        supportsResponses: false,
-    },
-    siliconflow: {
-        providerId: "siliconflow",
-        baseUrl: "https://api.siliconflow.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "SILICONFLOW_API_KEY",
-        baseUrlEnv: "SILICONFLOW_BASE_URL",
-    },
-    "weights-and-biases": {
-        providerId: "weights-and-biases",
-        baseUrl: "https://api.inference.wandb.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "WEIGHTSANDBIASES_API_KEY",
-        baseUrlEnv: "WANDB_BASE_URL",
-        supportsResponses: false,
-    },
-    together: {
-        providerId: "together",
-        baseUrl: "https://api.together.xyz",
-        pathPrefix: "/v1",
-        apiKeyEnv: "TOGETHER_API_KEY",
-        baseUrlEnv: "TOGETHER_BASE_URL",
-        supportsResponses: false,
-    },
-    xiaomi: {
-        providerId: "xiaomi",
-        pathPrefix: "/v1",
-        baseUrl: "https://api.xiaomimimo.com",
-        apiKeyEnv: "XIAOMI_MIMO_API_KEY",
-        baseUrlEnv: "XIAOMI_MIMO_BASE_URL",
-        supportsResponses: false,
-    },
-    // Primary Gemini keypath for AI Studio endpoints.
-    "google-ai-studio": {
-        providerId: "google-ai-studio",
-        pathPrefix: "/v1",
-        apiKeyEnv: "GOOGLE_AI_STUDIO_API_KEY",
-        baseUrlEnv: "GOOGLE_AI_STUDIO_BASE_URL",
-    },
-    "x-ai": {
-        providerId: "x-ai",
-        baseUrl: "https://api.x.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "X_AI_API_KEY",
-        baseUrlEnv: "XAI_BASE_URL",
-        supportsResponses: true,
-    },
-    xai: {
-        providerId: "xai",
-        baseUrl: "https://api.x.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "X_AI_API_KEY",
-        baseUrlEnv: "XAI_BASE_URL",
-        supportsResponses: true,
-    },
-    cloudflare: {
-        providerId: "cloudflare",
-        baseUrlEnv: "CLOUDFLARE_AI_GATEWAY_BASE_URL",
-        apiKeyEnv: "CLOUDFLARE_API_TOKEN",
-        pathPrefix: "",
-        supportsResponses: false,
-    },
-    // New providers - added during IR optimization and provider onboarding
-    fireworks: {
-        providerId: "fireworks",
-        baseUrl: "https://api.fireworks.ai",
-        pathPrefix: "/inference/v1",
-        apiKeyEnv: "FIREWORKS_API_KEY",
-        baseUrlEnv: "FIREWORKS_BASE_URL",
-        supportsResponses: true,
-    },
-    perplexity: {
-        providerId: "perplexity",
-        baseUrl: "https://api.perplexity.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "PERPLEXITY_API_KEY",
-        baseUrlEnv: "PERPLEXITY_BASE_URL",
-        supportsResponses: false,
-    },
-    poolside: {
-        providerId: "poolside",
-        baseUrl: "https://inference.poolside.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "POOLSIDE_API_KEY",
-        baseUrlEnv: "POOLSIDE_BASE_URL",
-        supportsResponses: false,
-    },
-    liquid: {
-        providerId: "liquid",
-        baseUrl: "https://api.liquid.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "LIQUID_API_KEY",
-        baseUrlEnv: "LIQUID_BASE_URL",
-    },
-    longcat: {
-        providerId: "longcat",
-        baseUrl: "https://api.longcat.chat",
-        pathPrefix: "/openai/v1",
-        apiKeyEnv: "LONGCAT_API_KEY",
-        baseUrlEnv: "LONGCAT_BASE_URL",
-        supportsResponses: false,
-    },
-    "liquid-ai": {
-        providerId: "liquid-ai",
-        baseUrl: "https://api.liquid.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "LIQUID_AI_API_KEY",
-        baseUrlEnv: "LIQUID_AI_BASE_URL",
-    },
-    "nebius-token-factory": {
-        providerId: "nebius-token-factory",
-        baseUrl: "https://api.tokenfactory.nebius.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "NEBIUS_API_KEY",
-        baseUrlEnv: "NEBIUS_BASE_URL",
-        supportsResponses: false,
-    },
-    "nebius-token-factory-eu-north-1": {
-        providerId: "nebius-token-factory-eu-north-1",
-        baseUrl: "https://api.tokenfactory.nebius.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "NEBIUS_API_KEY",
-        baseUrlEnv: "NEBIUS_EU_NORTH_1_BASE_URL",
-        supportsResponses: false,
-    },
-    "nebius-token-factory-us-central-1": {
-        providerId: "nebius-token-factory-us-central-1",
-        baseUrl: "https://api.tokenfactory.nebius.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "NEBIUS_API_KEY",
-        baseUrlEnv: "NEBIUS_US_CENTRAL_1_BASE_URL",
-        supportsResponses: false,
-    },
-    sourceful: {
-        providerId: "sourceful",
-        baseUrl: "https://api.sourceful.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "SOURCEFUL_API_KEY",
-        baseUrlEnv: "SOURCEFUL_BASE_URL",
-    },
-    relace: {
-        providerId: "relace",
-        baseUrl: "https://api.relace.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "RELACE_API_KEY",
-        baseUrlEnv: "RELACE_BASE_URL",
-    },
-    aionlabs: {
-        providerId: "aionlabs",
-        baseUrl: "https://api.aionlabs.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "AION_LABS_API_KEY",
-        baseUrlEnv: "AION_LABS_BASE_URL",
-    },
-    "aion-labs": {
-        providerId: "aion-labs",
-        baseUrl: "https://api.aionlabs.ai",
-        pathPrefix: "/v1",
-        apiKeyEnv: "AION_LABS_API_KEY",
-        baseUrlEnv: "AION_LABS_BASE_URL",
-    },
-    "z-ai": {
-        providerId: "z-ai",
-        baseUrl: "https://api.z.ai",
-        pathPrefix: "/api/paas/v4",
-        apiKeyEnv: "ZAI_API_KEY",
-        baseUrlEnv: "ZAI_BASE_URL",
-    },
-    zai: {
-        providerId: "zai",
-        baseUrl: "https://api.z.ai",
-        pathPrefix: "/api/paas/v4",
-        apiKeyEnv: "ZAI_API_KEY",
-        baseUrlEnv: "ZAI_BASE_URL",
-    },
-};
 
 function normalizePathSegment(value: string | undefined) {
-    if (!value) return "";
-    return `/${value.replace(/^\/+|\/+$/g, "")}`;
+	if (!value) return "";
+	return `/${value.replace(/^\/+|\/+$/g, "")}`;
 }
 
 function resolveFriendliPathPrefix(basePath: string, configuredPrefix: string): string {
-    const normalizedBasePath = basePath.replace(/\/+$/, "");
-    const serverlessPrefix = normalizePathSegment("/serverless");
-    const dedicatedPrefix = normalizePathSegment("/dedicated");
-    const serverlessV1Prefix = `${serverlessPrefix}/v1`;
-    const dedicatedV1Prefix = `${dedicatedPrefix}/v1`;
+	const normalizedBasePath = basePath.replace(/\/+$/, "");
+	const serverlessPrefix = normalizePathSegment("/serverless");
+	const dedicatedPrefix = normalizePathSegment("/dedicated");
+	const serverlessV1Prefix = `${serverlessPrefix}/v1`;
+	const dedicatedV1Prefix = `${dedicatedPrefix}/v1`;
 
-    // Friendli serverless is the default when no path is configured.
-    if (!normalizedBasePath || normalizedBasePath === "/") {
-        return configuredPrefix;
-    }
-    // Full mode+version path already present.
-    if (
-        normalizedBasePath === serverlessV1Prefix ||
-        normalizedBasePath.endsWith(serverlessV1Prefix) ||
-        normalizedBasePath === dedicatedV1Prefix ||
-        normalizedBasePath.endsWith(dedicatedV1Prefix)
-    ) {
-        return "";
-    }
-    // Mode-only path configured; append /v1 once.
-    if (
-        normalizedBasePath === serverlessPrefix ||
-        normalizedBasePath.endsWith(serverlessPrefix) ||
-        normalizedBasePath === dedicatedPrefix ||
-        normalizedBasePath.endsWith(dedicatedPrefix)
-    ) {
-        return "/v1";
-    }
-    return configuredPrefix;
-}
-
-function resolveNebiusBaseUrl(providerId: string): string | undefined {
-    if (providerId === "nebius-token-factory-eu-north-1") {
-        return readFirstBinding(NEBIUS_EU_NORTH_1_BASE_URL_ENVS);
-    }
-    if (providerId === "nebius-token-factory-us-central-1") {
-        return readFirstBinding(NEBIUS_US_CENTRAL_1_BASE_URL_ENVS);
-    }
-    if (providerId === "nebius-token-factory") {
-        return readFirstBinding(["NEBIUS_BASE_URL"]);
-    }
-    return undefined;
-}
-
-function isNebiusTokenFactoryProvider(providerId: string): boolean {
-    return (
-        providerId === "nebius-token-factory" ||
-        providerId === "nebius-token-factory-eu-north-1" ||
-        providerId === "nebius-token-factory-us-central-1"
-    );
-}
-
-export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
-    const fallback: OpenAICompatConfig = { providerId };
-    const config = OPENAI_COMPAT_CONFIG[providerId] ?? fallback;
-    const bindings = getBindings() as unknown as Record<string, string | undefined>;
-
-    const baseUrl =
-        ((providerId === "byteplus" || providerId === "bytedance-seed")
-            ? readFirstBinding(BYTEPLUS_BASE_URL_ENVS)
-            : undefined) ||
-        resolveNebiusBaseUrl(providerId) ||
-        (config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
-        config.baseUrl;
-    if (!baseUrl) {
-        throw configError(`${providerId}_base_url_missing`);
-    }
-
-    return {
-        ...config,
-        baseUrl,
-    };
-}
-
-export function isOpenAICompatProvider(providerId: string): boolean {
-    return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, providerId);
-}
-
-export function openAICompatUrl(providerId: string, path: string): string {
-    const config = resolveOpenAICompatConfig(providerId);
-    const suffix = normalizePathSegment(path);
-    const isAlibabaCompatProvider = ALIBABA_COMPAT_PROVIDER_IDS.has(providerId);
-    const isAlibabaResponsesRoute = isAlibabaCompatProvider && suffix === "/responses";
-    const isAlibabaChatRoute = isAlibabaCompatProvider && suffix === "/chat/completions";
-    let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
-    const configuredPrefix = normalizePathSegment(
-        isAlibabaResponsesRoute ? ALIBABA_RESPONSES_PATH_PREFIX : (config.pathPrefix ?? "/v1"),
-    );
-    let prefix = configuredPrefix;
-
-    // Many provider docs specify a base URL that already includes a path prefix
-    // (for example, `/v1` or `/compatible-mode/v1`). Avoid duplicating that path.
-    if (configuredPrefix) {
-        try {
-            const parsed = new URL(base);
-            const basePath = parsed.pathname.replace(/\/+$/, "");
-            if (providerId === "friendli") {
-                prefix = resolveFriendliPathPrefix(basePath, configuredPrefix);
-            }
-            if (prefix && (basePath === prefix || basePath.endsWith(prefix))) {
-                prefix = "";
-            } else if (isAlibabaResponsesRoute) {
-                const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");
-                if (chatPrefix && (basePath === chatPrefix || basePath.endsWith(chatPrefix))) {
-                    // Alibaba Responses lives under a different prefix than Chat.
-                    // If callers configure base URL ending in chat prefix, trim it before appending responses prefix.
-                    const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
-                    base = `${parsed.origin}${trimmedBasePath}`;
-                }
-            } else if (isAlibabaChatRoute) {
-                const responsesPrefix = normalizePathSegment(ALIBABA_RESPONSES_PATH_PREFIX);
-                if (responsesPrefix && (basePath === responsesPrefix || basePath.endsWith(responsesPrefix))) {
-                    // Alibaba Chat and Responses use different prefixes.
-                    // If callers configure base URL ending in responses prefix, trim it before appending chat prefix.
-                    const trimmedBasePath = basePath.slice(0, basePath.length - responsesPrefix.length).replace(
-                        /\/+$/,
-                        "",
-                    );
-                    base = `${parsed.origin}${trimmedBasePath}`;
-                }
-            }
-        } catch {
-            // Ignore parse failures; fallback keeps existing behavior.
-        }
-    }
-
-    return `${base}${prefix}${suffix}`;
-}
-
-export function openAICompatHeaders(
-    providerId: string,
-    key: string,
-    extraHeaders?: Record<string, string | undefined>,
-): Record<string, string> {
-    const config = resolveOpenAICompatConfig(providerId);
-    const headerName = config.apiKeyHeader ?? "Authorization";
-    const prefix = config.apiKeyPrefix ?? "Bearer ";
-    const headerValue = prefix ? `${prefix}${key}` : key;
-    return {
-        [headerName]: headerValue,
-        "Content-Type": "application/json",
-        ...(extraHeaders
-            ? Object.fromEntries(
-                Object.entries(extraHeaders).filter(([, value]) => typeof value === "string" && value.length > 0),
-            )
-            : {}),
-    };
+	if (!normalizedBasePath || normalizedBasePath === "/") {
+		return configuredPrefix;
+	}
+	if (
+		normalizedBasePath === serverlessV1Prefix ||
+		normalizedBasePath.endsWith(serverlessV1Prefix) ||
+		normalizedBasePath === dedicatedV1Prefix ||
+		normalizedBasePath.endsWith(dedicatedV1Prefix)
+	) {
+		return "";
+	}
+	if (
+		normalizedBasePath === serverlessPrefix ||
+		normalizedBasePath.endsWith(serverlessPrefix) ||
+		normalizedBasePath === dedicatedPrefix ||
+		normalizedBasePath.endsWith(dedicatedPrefix)
+	) {
+		return "/v1";
+	}
+	return configuredPrefix;
 }
 
 function readFirstBinding(names: readonly string[]): string | undefined {
-    const bindings = getBindings() as unknown as Record<string, string | undefined>;
-    for (const name of names) {
-        const value = bindings[name];
-        if (typeof value === "string" && value.trim().length > 0) {
-            return value;
-        }
-    }
-    return undefined;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	for (const name of names) {
+		const value = bindings[name];
+		if (typeof value === "string" && value.trim().length > 0) {
+			return value;
+		}
+	}
+	return undefined;
+}
+
+function resolveNebiusBaseUrl(providerId: string): string | undefined {
+	if (providerId === "nebius-token-factory-eu-north-1") {
+		return readFirstBinding(NEBIUS_EU_NORTH_1_BASE_URL_ENVS);
+	}
+	if (providerId === "nebius-token-factory-us-central-1") {
+		return readFirstBinding(NEBIUS_US_CENTRAL_1_BASE_URL_ENVS);
+	}
+	if (providerId === "nebius-token-factory") {
+		return readFirstBinding(["NEBIUS_BASE_URL"]);
+	}
+	return undefined;
+}
+
+function isNebiusTokenFactoryProvider(providerId: string): boolean {
+	return (
+		providerId === "nebius-token-factory" ||
+		providerId === "nebius-token-factory-eu-north-1" ||
+		providerId === "nebius-token-factory-us-central-1"
+	);
+}
+
+export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {
+	const fallback: OpenAICompatConfig = { providerId };
+	const config = OPENAI_COMPAT_CONFIG[providerId] ?? fallback;
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+
+	const baseUrl =
+		((providerId === "byteplus" || providerId === "bytedance-seed")
+			? readFirstBinding(BYTEPLUS_BASE_URL_ENVS)
+			: (providerId === "crofai")
+				? readFirstBinding(CROFAI_BASE_URL_ENVS)
+				: undefined) ||
+		resolveNebiusBaseUrl(providerId) ||
+		(config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
+		config.baseUrl;
+
+	if (!baseUrl) {
+		throw configError(`${providerId}_base_url_missing`);
+	}
+
+	return {
+		...config,
+		baseUrl,
+	};
+}
+
+export function isOpenAICompatProvider(providerId: string): boolean {
+	return Object.prototype.hasOwnProperty.call(OPENAI_COMPAT_CONFIG, providerId);
+}
+
+export function openAICompatUrl(providerId: string, path: string): string {
+	const config = resolveOpenAICompatConfig(providerId);
+	const suffix = normalizePathSegment(path);
+	const isAlibabaCompatProvider = ALIBABA_COMPAT_PROVIDER_IDS.has(providerId);
+	const isAlibabaResponsesRoute = isAlibabaCompatProvider && suffix === "/responses";
+	const isAlibabaChatRoute = isAlibabaCompatProvider && suffix === "/chat/completions";
+	let base = config.baseUrl?.replace(/\/+$/, "") ?? "";
+	const configuredPrefix = normalizePathSegment(
+		isAlibabaResponsesRoute ? ALIBABA_RESPONSES_PATH_PREFIX : (config.pathPrefix ?? "/v1"),
+	);
+	let prefix = configuredPrefix;
+
+	if (configuredPrefix) {
+		try {
+			const parsed = new URL(base);
+			const basePath = parsed.pathname.replace(/\/+$/, "");
+			if (providerId === "friendli") {
+				prefix = resolveFriendliPathPrefix(basePath, configuredPrefix);
+			}
+			if (isAlibabaResponsesRoute) {
+				const chatPrefix = normalizePathSegment(config.pathPrefix ?? "");
+				if (chatPrefix && basePath === chatPrefix) {
+					const trimmedBasePath = basePath.slice(0, basePath.length - chatPrefix.length).replace(/\/+$/, "");
+					base = `${parsed.origin}${trimmedBasePath}`;
+				}
+			} else if (isAlibabaChatRoute) {
+				const responsesPrefix = normalizePathSegment(ALIBABA_RESPONSES_PATH_PREFIX);
+				if (responsesPrefix && basePath === responsesPrefix) {
+					const trimmedBasePath = basePath.slice(0, basePath.length - responsesPrefix.length).replace(/\/+$/, "");
+					base = `${parsed.origin}${trimmedBasePath}`;
+				}
+			}
+
+			const resolvedBasePath = new URL(base).pathname.replace(/\/+$/, "");
+			if (
+				prefix &&
+				(resolvedBasePath === prefix || (!isAlibabaCompatProvider && resolvedBasePath.endsWith(prefix)))
+			) {
+				prefix = "";
+			}
+		} catch {
+			// ignore parse failures
+		}
+	}
+
+	return `${base}${prefix}${suffix}`;
+}
+
+export function openAICompatHeaders(
+	providerId: string,
+	key: string,
+	extraHeaders?: Record<string, string | undefined>,
+): Record<string, string> {
+	const config = resolveOpenAICompatConfig(providerId);
+	const headerName = config.apiKeyHeader ?? "Authorization";
+	const prefix = config.apiKeyPrefix ?? "Bearer ";
+	const headerValue = prefix ? `${prefix}${key}` : key;
+	return {
+		[headerName]: headerValue,
+		"Content-Type": "application/json",
+		...(extraHeaders
+			? Object.fromEntries(
+				Object.entries(extraHeaders).filter(([, value]) => typeof value === "string" && value.length > 0),
+			)
+			: {}),
+	};
 }
 
 export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
-    if (args.providerId === "weights-and-biases") {
-        return resolveProviderKey(args, () => readFirstBinding(WEIGHTSANDBIASES_API_KEY_ENVS));
-    }
+	if (args.providerId === "weights-and-biases") {
+		return resolveProviderKey(args, () => readFirstBinding(WEIGHTSANDBIASES_API_KEY_ENVS));
+	}
+	if (args.providerId === "arcee" || args.providerId === "arcee-ai") {
+		return resolveProviderKey(args, () => readFirstBinding(ARCEE_API_KEY_ENVS));
+	}
+	if (args.providerId === "alibaba-cloud") {
+		return resolveProviderKey(args, () => readFirstBinding(ALIBABA_CLOUD_API_KEY_ENVS));
+	}
+	if (args.providerId === "gmicloud") {
+		return resolveProviderKey(args, () => readFirstBinding(GMI_CLOUD_API_KEY_ENVS));
+	}
+	if (isNebiusTokenFactoryProvider(args.providerId)) {
+		return resolveProviderKey(args, () => readFirstBinding(NEBIUS_TOKEN_FACTORY_API_KEY_ENVS));
+	}
+	if (args.providerId === "byteplus" || args.providerId === "bytedance-seed") {
+		return resolveProviderKey(args, () => readFirstBinding(BYTEPLUS_API_KEY_ENVS));
+	}
+	if (args.providerId === "crofai") {
+		return resolveProviderKey(args, () => readFirstBinding(CROFAI_API_KEY_ENVS));
+	}
 
-    if (args.providerId === "arcee" || args.providerId === "arcee-ai") {
-        return resolveProviderKey(args, () => readFirstBinding(ARCEE_API_KEY_ENVS));
-    }
-
-    if (args.providerId === "alibaba-cloud") {
-        return resolveProviderKey(args, () => readFirstBinding(ALIBABA_CLOUD_API_KEY_ENVS));
-    }
-
-    if (args.providerId === "gmicloud") {
-        return resolveProviderKey(args, () => readFirstBinding(GMI_CLOUD_API_KEY_ENVS));
-    }
-
-    if (isNebiusTokenFactoryProvider(args.providerId)) {
-        return resolveProviderKey(args, () => readFirstBinding(NEBIUS_TOKEN_FACTORY_API_KEY_ENVS));
-    }
-
-    if (args.providerId === "byteplus" || args.providerId === "bytedance-seed") {
-        return resolveProviderKey(args, () => readFirstBinding(BYTEPLUS_API_KEY_ENVS));
-    }
-
-    const config = resolveOpenAICompatConfig(args.providerId);
-    const envKey = config.apiKeyEnv;
-    return resolveProviderKey(args, () => {
-        if (!envKey) return undefined;
-        const bindings = getBindings() as unknown as Record<string, string | undefined>;
-        return bindings[envKey];
-    });
+	const config = resolveOpenAICompatConfig(args.providerId);
+	const envKey = config.apiKeyEnv;
+	return resolveProviderKey(args, () => {
+		if (!envKey) return undefined;
+		const bindings = getBindings() as unknown as Record<string, string | undefined>;
+		return bindings[envKey];
+	});
 }
 
 export type OpenAICompatRoute = "responses" | "chat";
 
 function normalizeOpenAIModelName(model?: string | null): string {
-    if (!model) return "";
-    const value = model.trim();
-    if (!value) return "";
-    const parts = value.split("/");
-    return parts[parts.length - 1] || value;
+	if (!model) return "";
+	const value = model.trim();
+	if (!value) return "";
+	const parts = value.split("/");
+	return parts[parts.length - 1] || value;
 }
 
 export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
-    const config = resolveOpenAICompatConfig(providerId);
-    const normalized = normalizeOpenAIModelName(model);
+	const config = resolveOpenAICompatConfig(providerId);
+	const normalized = normalizeOpenAIModelName(model);
 
-    if (providerId === "openai") {
-        if (OPENAI_LEGACY_COMPLETIONS_MODELS.has(model ?? "") || OPENAI_LEGACY_COMPLETIONS_MODELS.has(normalized)) {
-            return "chat";
-        }
-        if (OPENAI_CHAT_ONLY_MODELS.has(model ?? "") || OPENAI_CHAT_ONLY_MODELS.has(normalized)) {
-            return "chat";
-        }
-        return "responses";
-    }
+	if (providerId === "openai") {
+		if (OPENAI_LEGACY_COMPLETIONS_MODELS.has(model ?? "") || OPENAI_LEGACY_COMPLETIONS_MODELS.has(normalized)) {
+			return "chat";
+		}
+		if (OPENAI_CHAT_ONLY_MODELS.has(model ?? "") || OPENAI_CHAT_ONLY_MODELS.has(normalized)) {
+			return "chat";
+		}
+		return "responses";
+	}
 
-    if (typeof config.supportsResponses === "boolean") {
-        return config.supportsResponses ? "responses" : "chat";
-    }
-    return "chat";
+	if (typeof config.supportsResponses === "boolean") {
+		return config.supportsResponses ? "responses" : "chat";
+	}
+	return "chat";
 }
 
 export function supportsOpenAICompatResponses(providerId: string, model?: string | null): boolean {
-    const config = resolveOpenAICompatConfig(providerId);
-    if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
-    return resolveOpenAICompatRoute(providerId, model) === "responses";
+	const config = resolveOpenAICompatConfig(providerId);
+	if (typeof config.supportsResponses === "boolean") return config.supportsResponses;
+	return resolveOpenAICompatRoute(providerId, model) === "responses";
 }
 
-
+export { OPENAI_COMPAT_CONFIG };
+export type { OpenAICompatConfig } from "./types";

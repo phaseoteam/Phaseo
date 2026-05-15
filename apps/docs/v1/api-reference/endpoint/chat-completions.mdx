@@ -6,11 +6,11 @@ description: "Generate chat-based completions using the OpenAI-compatible chat e
 
 ## Server tools
 
-`/v1/chat/completions` supports regular function tools and one gateway-managed server tool:
+`/v1/chat/completions` supports regular function tools and these gateway-managed server tools:
 
 - `gateway:datetime`
-
-Web-search tool types are temporarily disabled at the gateway request layer.
+- `gateway:web_search`
+- `gateway:web_fetch`
 
 ### Datetime example
 
@@ -49,5 +49,9 @@ When a server tool is used, usage includes:
 }
 ```
 
-Use `stream: false` when tools are present.
+`gateway:web_search` adds `server_tool_use.web_search_requests` and may also add `server_tool_use.web_fetch_requests` when fetched result content is returned. `gateway:web_fetch` adds `server_tool_use.web_fetch_requests`.
+
+## Streaming note
+
+`stream: true` is also supported. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn and re-emit a synthetic stream after continuing the loop.
 

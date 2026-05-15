@@ -28,15 +28,11 @@ begin
   end loop;
 end;
 $$;
-
 comment on function public.ensure_gateway_requests_partitions(integer) is
   'Creates current and future monthly partitions for gateway_requests up to months_ahead.';
-
 -- Create/repair current + next month immediately.
 select public.ensure_gateway_requests_partitions(1);
-
 create extension if not exists pg_cron with schema extensions;
-
 -- Ensure idempotent weekly schedule.
 do $$
 declare
@@ -55,7 +51,6 @@ exception
     -- best-effort: ignore if cron schema isn't ready or job doesn't exist
     null;
 end $$;
-
 -- Weekly Monday run at 03:00 UTC; keeps next month partition ready before month change.
 select cron.schedule(
   'ensure-gateway-requests-partitions',

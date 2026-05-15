@@ -4,6 +4,7 @@
   "name": "DeepSeek V3 Turbo",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek V3 Turbo is a high-compute variant of DeepSeek-V3.2 optimized for maximum reasoning and agentic performance. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

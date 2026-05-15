@@ -263,6 +263,12 @@ export function cloneGatewayContextData(value: GatewayContextData): GatewayConte
 			outputModalities: Array.isArray(provider.outputModalities)
 				? [...provider.outputModalities]
 				: provider.outputModalities ?? null,
+			executionRegions: Array.isArray(provider.executionRegions)
+				? [...provider.executionRegions]
+				: provider.executionRegions ?? null,
+			dataRegions: Array.isArray(provider.dataRegions)
+				? [...provider.dataRegions]
+				: provider.dataRegions ?? null,
 			capabilityParams: provider.capabilityParams ? { ...provider.capabilityParams } : {},
 		})),
 		pricing: { ...(value.pricing ?? {}) },

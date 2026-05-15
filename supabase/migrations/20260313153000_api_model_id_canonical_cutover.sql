@@ -4,16 +4,13 @@
 -- 1) Provider mapping table: add canonical FK column (model_id) and backfill from api_model_id.
 alter table public.data_api_provider_models
   add column if not exists model_id text;
-
 update public.data_api_provider_models
 set model_id = api_model_id
 where api_model_id is not null
   and btrim(api_model_id) <> ''
   and (model_id is null or model_id <> api_model_id);
-
 create index if not exists data_api_provider_models_model_id_idx
   on public.data_api_provider_models(model_id);
-
 -- 2) Legacy URL compatibility map: old internal model id -> canonical api model id.
 create table if not exists public.data_model_id_redirects (
   legacy_model_id text primary key,
@@ -22,10 +19,8 @@ create table if not exists public.data_model_id_redirects (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
 create index if not exists data_model_id_redirects_model_id_idx
   on public.data_model_id_redirects(model_id);
-
 with ranked_redirect_targets as (
   select
     pm.internal_model_id as legacy_model_id,
@@ -56,7 +51,6 @@ on conflict (legacy_model_id) do update
 set model_id = excluded.model_id,
     source = excluded.source,
     updated_at = now();
-
 -- 3) Ensure canonical data_models rows exist for each API model id in provider mappings.
 with inferred_org_ids as (
   select distinct
@@ -87,7 +81,6 @@ select
   'Auto-created during canonical API model backfill.' as description
 from missing_orgs mo
 on conflict (organisation_id) do nothing;
-
 with canonical_candidates as (
   select distinct on (pm.api_model_id)
     pm.api_model_id,
@@ -170,7 +163,6 @@ left join public.data_models existing
   on existing.model_id = r.model_id
 where existing.model_id is null
   and r.organisation_id is not null;
-
 -- 4) Copy key model child metadata from legacy ids to canonical ids.
 with legacy_to_canonical as (
   select distinct
@@ -200,7 +192,6 @@ where not exists (
     and existing.detail_name = details.detail_name
     and coalesce(existing.detail_value::text, '') = coalesce(details.detail_value::text, '')
 );
-
 with legacy_to_canonical as (
   select distinct
     pm.internal_model_id as legacy_model_id,
@@ -229,7 +220,6 @@ where not exists (
     and existing.url = links.url
     and coalesce(existing.platform, '') = coalesce(links.platform, '')
 );
-
 with legacy_to_canonical as (
   select distinct
     pm.internal_model_id as legacy_model_id,
@@ -274,7 +264,6 @@ where not exists (
     and coalesce(existing.other_info, '') = coalesce(br.other_info, '')
     and coalesce(existing.is_self_reported, false) = coalesce(br.is_self_reported, false)
 );
-
 -- Remap previous_model_id edges if they still point to legacy ids.
 update public.data_models dm
 set previous_model_id = redirects.model_id,
@@ -282,7 +271,6 @@ set previous_model_id = redirects.model_id,
 from public.data_model_id_redirects redirects
 where dm.previous_model_id = redirects.legacy_model_id
   and dm.model_id <> redirects.model_id;
-
 -- 5) Keep provider mapping canonical column synced.
 create or replace function public.sync_data_api_provider_models_model_id()
 returns trigger
@@ -304,16 +292,13 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists data_api_provider_models_sync_model_id_trigger
   on public.data_api_provider_models;
-
 create trigger data_api_provider_models_sync_model_id_trigger
 before insert or update of api_model_id, internal_model_id, model_id
 on public.data_api_provider_models
 for each row
 execute function public.sync_data_api_provider_models_model_id();
-
 -- 6) Add canonical FK from provider mappings to data_models.
 do $$
 begin
@@ -347,7 +332,6 @@ begin
   end if;
 end
 $$;
-
 -- 7) Final provider-row backfill using redirect mapping for legacy-only rows.
 update public.data_api_provider_models pm
 set model_id = redirects.model_id

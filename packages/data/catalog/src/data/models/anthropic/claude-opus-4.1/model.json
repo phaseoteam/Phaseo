@@ -4,6 +4,7 @@
   "name": "Claude Opus 4.1",
   "status": "Available",
   "previous_model_id": "anthropic/claude-opus-4-2025-05-21",
+  "description": "Claude Opus 4.1 is an updated version of Anthropic's flagship model, offering improved performance in coding, reasoning, and agentic tasks. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-08-05T00:00:00",
   "release_date": "2025-08-05T00:00:00",
   "deprecation_date": null,

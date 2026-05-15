@@ -4,6 +4,7 @@
   "name": "Gemini Robotics ER 1.5 Preview",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini Robotics ER 1.5 Preview is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-09-25T00:00:00",
   "release_date": "2025-09-25T00:00:00",
   "deprecation_date": "2026-04-14T00:00:00",

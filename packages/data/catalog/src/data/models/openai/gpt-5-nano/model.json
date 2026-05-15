@@ -4,6 +4,7 @@
   "name": "GPT 5 Nano",
   "status": "Available",
   "previous_model_id": "openai/gpt-4-1-nano-2025-04-14",
+  "description": "GPT 5 Nano is the smallest and fastest variant in the GPT-5 system, optimized for developer tools, rapid interactions, and ultra-low latency environments.",
   "announced_date": "2025-08-07T00:00:00",
   "release_date": "2025-08-07T00:00:00",
   "deprecation_date": null,

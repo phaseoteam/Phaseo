@@ -13,12 +13,13 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
@@ -27,8 +28,12 @@ export async function generateMetadata(props: {
 
 	return buildMetadata({
 		title: `${modelName} Playground - Single Prompt Test`,
-		description:
-			`Run multimodal playground tests for ${modelName} on AI Stats, including text, image, video, audio, embeddings, and moderation workflows.`,
+		description: buildModelPageMetadataDescription({
+			modelDescription,
+			suffix:
+				"Run multimodal playground tests across text, image, video, audio, embeddings, and moderation workflows.",
+			fallback: `Run multimodal playground tests for ${modelName} on AI Stats, including text, image, video, audio, embeddings, and moderation workflows.`,
+		}),
 		path,
 		keywords: [
 			modelName,

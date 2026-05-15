@@ -4,6 +4,7 @@
   "name": "Venice Uncensored",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Venice Uncensored is a language model from Venice for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

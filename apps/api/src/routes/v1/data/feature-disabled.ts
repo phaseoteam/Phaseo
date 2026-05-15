@@ -21,6 +21,39 @@ export function createFeatureDisabledRoutes(feature: string) {
 			},
 		});
 
+	const register = (method: "get" | "post" | "delete", path: string) => {
+		routes[method](path, () => respond());
+	};
+
+	switch (feature) {
+		case "videos":
+			for (const path of ["/", "/models", "/:id", "/:id/content"]) {
+				register("get", path);
+			}
+			for (const path of ["/", "/:id/cancel", "/:id/download_url"]) {
+				register("post", path);
+			}
+			register("delete", "/:id");
+			break;
+		case "batches":
+			register("post", "/");
+			register("get", "/:id");
+			register("post", "/:id/cancel");
+			break;
+		case "files":
+			register("post", "/");
+			register("get", "/");
+			register("get", "/:id");
+			register("get", "/:id/content");
+			break;
+		case "music":
+			register("post", "/");
+			register("get", "/:id");
+			break;
+		default:
+			break;
+	}
+
 	routes.all("/", () => respond());
 	routes.all("*", () => respond());
 	return routes;

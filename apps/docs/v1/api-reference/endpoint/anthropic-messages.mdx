@@ -4,13 +4,7 @@ openapi: "POST /messages"
 description: "Anthropic-compatible Messages endpoint at /v1/messages."
 ---
 
-Use `/v1/messages` to send Anthropic Messages API payloads through the gateway. The gateway normalizes your request into its internal IR, routes it to a compatible provider surface, and emits Anthropic-formatted responses.
-
-## Endpoint
-
-```http
-POST /v1/messages
-```
+`/v1/messages` accepts Anthropic Messages API payloads and returns Anthropic-formatted responses.
 
 ## Streaming
 
@@ -18,19 +12,48 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 
 ## Notes
 
-- The gateway honors the Anthropic request shape and supports tool use fields.
-- At current request-validation level, `stream: true` with tools is rejected with `400 invalid_request`. Use non-streaming tool loops for now.
+- Anthropic tool-use fields are supported.
+- `stream: true` also works with tool loops. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn, continue the loop, and re-emit a synthetic stream.
+- The Anthropic-native web search tool shape is also accepted directly in `tools`, for example `type: "web_search_20250305"`.
 - The `X-AIStats-Strictness` header controls how unsupported parameters are handled.
 
 ## Server tools
 
-`/v1/messages` also supports one gateway-managed server tool:
+`/v1/messages` also supports these gateway-managed server tools:
 
 - `gateway:datetime`
+- `gateway:web_search`
+- `gateway:web_fetch`
 
-Web-search tool types are temporarily disabled at the gateway request layer.
+AI Stats rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
 
-The gateway accepts this tool in `tools`, rewrites it to Anthropic-compatible tool format upstream, executes it server-side, and continues the tool loop.
+## Native provider web search
+
+When a compatible Anthropic model/provider pair supports native web search, you can also pass the native tool definition through directly:
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "Find the latest Anthropic web search guidance." }
+    ],
+    "tools": [
+      {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 3,
+        "allowed_domains": ["docs.anthropic.com"]
+      }
+    ],
+    "tool_choice": { "type": "tool", "name": "web_search" }
+  }'
+```
+
+Provider routing still filters for `web_search_options` support before execution.
 
 ### Datetime example
 
@@ -55,5 +78,5 @@ curl https://api.phaseo.app/v1/messages \
   }'
 ```
 
-When used, `usage.server_tool_use.datetime_requests` reports datetime tool invocations.
+When used, the `usage.server_tool_use.*` counters report server-tool invocations.
 

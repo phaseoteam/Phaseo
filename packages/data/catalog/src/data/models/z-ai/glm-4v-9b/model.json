@@ -4,6 +4,7 @@
   "name": "GLM 4V 9B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM-5.1 delivers a major leap in coding capability, with particularly significant gains in handling long-horizon tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

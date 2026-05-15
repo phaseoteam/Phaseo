@@ -1,0 +1,19 @@
+{
+  "model_id": "stepfun/step-3.6",
+  "organisation_id": "stepfun",
+  "name": "Step 3.6",
+  "status": "Rumoured",
+  "previous_model_id": "stepfun/step-3.5-flash",
+  "description": "Step 3.6 is StepFun's most capable open-source foundation model. It accepts text inputs and produces text outputs.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "stepfun/step-3.6",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

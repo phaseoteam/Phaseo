@@ -4,6 +4,7 @@
   "name": "Hailuo 2.3 Fast",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Hailuo 2.3 Fast is a video generation model from MiniMax. It accepts text prompts and reference images as input and generates video output, supporting both text-to-video and image-to-video workflows.",
   "announced_date": "2025-10-28T00:00:00",
   "release_date": "2025-10-28T00:00:00",
   "deprecation_date": null,

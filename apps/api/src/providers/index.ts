@@ -11,6 +11,8 @@ import { XiaomiAdapter } from "./xiaomi/index";
 import { AzureAdapter } from "./azure/index";
 import { AI21Adapter } from "./ai21/index";
 import { MistralAdapter } from "./mistral/index";
+import { CrofAIAdapter } from "./crofai/index";
+import { TensorixAdapter } from "./tensorix/index";
 import { ElevenLabsAdapter } from "./elevenlabs/index";
 import { SunoAdapter } from "./suno/index";
 import { createOpenAICompatibleAdapter } from "./openai-compatible/index";
@@ -26,6 +28,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
+    "anthropic-us": AnthropicAdapter,
     "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat executor
     xai: createOpenAICompatibleAdapter("xai"),
     xiaomi: XiaomiAdapter,
@@ -49,6 +52,8 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     cerebras: createOpenAICompatibleAdapter("cerebras"),
     chutes: createOpenAICompatibleAdapter("chutes"),
     cohere: createOpenAICompatibleAdapter("cohere"),
+    crofai: CrofAIAdapter,
+    tensorix: TensorixAdapter,
     voyage: createOpenAICompatibleAdapter("voyage"),
     voyageai: createOpenAICompatibleAdapter("voyageai"),
     crusoe: createOpenAICompatibleAdapter("crusoe"),
@@ -84,7 +89,9 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     phala: createOpenAICompatibleAdapter("phala"),
     poolside: createOpenAICompatibleAdapter("poolside"),
     qwen: createOpenAICompatibleAdapter("qwen"),
+    ovhcloud: createOpenAICompatibleAdapter("ovhcloud"),
     sambanova: createOpenAICompatibleAdapter("sambanova"),
+    scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
     together: createOpenAICompatibleAdapter("together"),
     "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),

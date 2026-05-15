@@ -1,0 +1,100 @@
+---
+title: "Build a Python Gateway CLI"
+description: "Use the Python quickstart sample as a full walkthrough for a Python-first CLI or backend integration."
+---
+
+Use this page when your first real AI Stats integration lives in Python and you want a practical starting point for a CLI, worker, or backend service.
+
+<Prompt
+  description="Build a **Python gateway CLI** around AI Stats routes."
+  icon="terminal-square"
+  actions={["copy", "cursor"]}
+>
+{`You are building a Python-first CLI or backend integration for AI Stats Gateway.
+
+Create a small Python app that:
+- reads AI_STATS_API_KEY from the environment
+- supports one control-route smoke mode
+- supports one text-generation command
+- keeps the implementation dependency-light
+
+Requirements:
+- Prefer the Python standard library unless there is a strong reason not to.
+- Keep the request payloads explicit.
+- Print clear success and failure output.
+- Include one or two useful commands instead of a huge general CLI.
+- Add a short README with examples.
+
+Deliverables:
+- Python app code
+- simple usage commands
+- .env.example or equivalent env documentation
+
+Verification:
+- run the smoke path if possible
+- run one successful generation path if possible
+- report exactly what you verified and what remains unverified.`}
+</Prompt>
+
+## Sample project
+
+- GitHub: [examples/gateway-python-quickstart](https://github.com/AI-Stats/AI-Stats/tree/main/examples/gateway-python-quickstart)
+- Local repo path: `examples/gateway-python-quickstart`
+
+## What this app does
+
+- supports control routes like:
+  - `GET /v1/health`
+  - `GET /v1/models`
+  - `GET /v1/providers`
+- supports generation routes like:
+  - `POST /v1/responses`
+  - `POST /v1/chat/completions`
+  - `POST /v1/embeddings`
+  - and several additional endpoints
+
+## Why this sample is useful
+
+It gives you:
+
+- a Python-first reference without third-party dependencies
+- explicit request payloads and response handling
+- a practical pattern for workers, scripts, and internal tools
+
+## Run the sample
+
+```bash
+cd examples/gateway-python-quickstart
+cp .env.example .env.local
+```
+
+Set:
+
+- `AI_STATS_API_KEY`
+
+Then try:
+
+```bash
+python quickstart.py smoke
+python quickstart.py responses --prompt "Return exactly: integration_ok"
+python quickstart.py --help
+```
+
+## What to look at in the code
+
+- how the environment is loaded
+- how the CLI dispatches commands
+- how different request payloads are built
+- how async video and music routes are handled separately from one-shot text routes
+
+## How to make it your own
+
+- strip it down to only the endpoints your service needs
+- keep one shared request helper instead of duplicating headers everywhere
+- switch to the Python SDK later if you want a higher-level client
+
+## Related guides
+
+- [Mini app starter prompts](./mini-app-starter-prompts)
+- [Ship structured JSON from Python](./sdk-python-presets-and-json)
+- [Examples](../guides/examples)

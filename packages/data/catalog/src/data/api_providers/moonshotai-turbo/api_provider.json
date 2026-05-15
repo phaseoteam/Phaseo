@@ -1,9 +1,17 @@
 {
   "api_provider_id": "moonshotai-turbo",
+  "provider_family_id": "moonshotai",
+  "offer_scope": "specialized",
+  "offer_label": "priority",
   "api_provider_name": "Moonshot AI Turbo",
   "description": null,
   "link": "https://platform.moonshot.ai/",
   "country_code": "CN",
-  "status": "NotReady",
-  "colour": "#333333"
+  "status": "Beta",
+  "colour": "#333333",
+  "privacy_policy_url": "https://platform.moonshot.ai/docs/agreement/userprivacy",
+  "terms_of_service_url": "https://platform.moonshot.ai/docs/agreement/modeluse.en-US",
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "Moonshot says user content helps optimize its models and that content may be used to provide, maintain, develop, and improve the services.",
+  "prompt_training_source_url": "https://platform.kimi.ai/docs/agreement/userprivacy"
 }

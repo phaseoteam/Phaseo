@@ -35,6 +35,39 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("accepts gateway web search server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "find recent AI news" }],
+			tools: [{
+				type: "gateway:web_search",
+				parameters: {
+					max_results: 5,
+					include_highlights: true,
+				},
+			}],
+			tool_choice: "gateway:web_search",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway web fetch server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "fetch this page" }],
+			tools: [{
+				type: "gateway:web_fetch",
+				parameters: {
+					max_chars: 8000,
+				},
+			}],
+			tool_choice: "gateway:web_fetch",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
 	it("rejects chat n", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
@@ -71,6 +104,39 @@ describe("text request schema validation", () => {
 				},
 			}],
 			tool_choice: "gateway:datetime",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway web search server tool on responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "find recent AI news",
+			tools: [{
+				type: "gateway:web_search",
+				parameters: {
+					max_results: 4,
+					include_text: false,
+				},
+			}],
+			tool_choice: "gateway:web_search",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway web fetch server tool on responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "fetch this page",
+			tools: [{
+				type: "gateway:web_fetch",
+				parameters: {
+					max_chars: 12000,
+				},
+			}],
+			tool_choice: "gateway:web_fetch",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -174,6 +240,72 @@ describe("text request schema validation", () => {
 			tools: [{
 				type: "gateway:datetime",
 				parameters: { timezone: "Europe/London" },
+			}],
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts explicit web_search_options on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "find recent AI news" }],
+			web_search_options: {
+				search_context_size: "high",
+			},
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway plugins on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "return strict JSON" }],
+			plugins: [{ id: "response-healing" }],
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway web search server tool on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "find recent AI news" }],
+			tools: [{
+				type: "gateway:web_search",
+				parameters: { max_results: 3 },
+			}],
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts native anthropic web search tools on messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "find recent AI news" }],
+			tools: [{
+				type: "web_search_20250305",
+				name: "web_search",
+				max_uses: 3,
+				allowed_domains: ["docs.anthropic.com"],
+			}],
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway web fetch server tool on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "fetch this page" }],
+			tools: [{
+				type: "gateway:web_fetch",
+				parameters: { max_chars: 4000 },
 			}],
 		});
 		expect(parsed.success).toBe(true);

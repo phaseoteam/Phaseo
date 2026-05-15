@@ -4,6 +4,7 @@
   "name": "Rerank 2 Lite",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Rerank 2 Lite is a reranking model from Voyage for improving retrieval quality by rescoring candidate results against a query. Use it to rescore retrieved passages, products, or documents before final ranking or generation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

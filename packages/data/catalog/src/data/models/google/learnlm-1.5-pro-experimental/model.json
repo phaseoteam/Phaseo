@@ -4,6 +4,7 @@
   "name": "LearnLM 1.5 Pro Experimental",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "LearnLM 1.5 Pro Experimental is a language model from Google for chat, writing, analysis, and general-purpose automation. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": "2024-11-19T00:00:00",
   "deprecation_date": null,

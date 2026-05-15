@@ -20,6 +20,7 @@ export type AsyncNotificationEventType =
 	| `job.${AsyncNotificationPhase}`
 	| `video.${AsyncNotificationPhase}`
 	| `batch.${AsyncNotificationPhase}`;
+export type AsyncJobLifecycleStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
 export type AsyncWebhookAttemptStatus = "delivered" | "scheduled_retry" | "failed_permanently";
 export type AsyncWebhookDeliveryAttempt = {
 	id: string;
@@ -310,12 +311,82 @@ function resolveAsyncErrorMeta(meta: AsyncNotificationMeta) {
 function sanitizePublicWebhookConfig(
 	kind: SupportedAsyncNotificationKind,
 	value: unknown,
-): { url: string; events: AsyncNotificationEventType[] } | null {
+): { url: string; events: AsyncNotificationEventType[]; has_secret: boolean } | null {
 	const parsed = parseAsyncWebhookConfig(kind, value);
 	if (!parsed) return null;
 	return {
 		url: parsed.url,
 		events: parsed.events,
+		has_secret: Boolean(parsed.secret),
+	};
+}
+
+function buildPublicWebhookDelivery(args: {
+	deliveries: Record<string, string>;
+	attempts: AsyncWebhookDeliveryAttempt[];
+	retryQueue: AsyncWebhookRetryQueue;
+}): Record<string, unknown> {
+	const deliveredEventTypes = Object.entries(args.deliveries)
+		.filter(([, deliveredAt]) => Boolean(normalizeIsoDate(deliveredAt)))
+		.map(([deliveryKey]) => deliveryKey)
+		.sort((a, b) => a.localeCompare(b));
+	const lastAttempt = args.attempts[args.attempts.length - 1] ?? null;
+	const lastDeliveredAttempt =
+		[...args.attempts].reverse().find((attempt) => attempt.status === "delivered") ?? null;
+	const lastFailedAttempt =
+		[...args.attempts]
+			.reverse()
+			.find((attempt) => attempt.status === "scheduled_retry" || attempt.status === "failed_permanently") ?? null;
+	return {
+		total_attempts: args.attempts.length,
+		delivered_events: deliveredEventTypes.length,
+		delivered_event_types: deliveredEventTypes,
+		pending_retries: Object.keys(args.retryQueue).length,
+		next_retry_at: computeNextRetryAtFromQueue(args.retryQueue),
+		last_attempt_at: lastAttempt?.tried_at ?? null,
+		last_attempt_status: lastAttempt?.status ?? null,
+		last_response_status: lastAttempt?.response_status ?? null,
+		last_delivered_at: lastDeliveredAttempt?.delivered_at ?? null,
+		last_failure_at: lastFailedAttempt?.tried_at ?? null,
+		last_error_message: lastFailedAttempt?.error_message ?? null,
+	};
+}
+
+export function buildPublicAsyncWebhook(
+	kind: SupportedAsyncNotificationKind,
+	value: unknown,
+): Record<string, unknown> | null {
+	const meta = normalizePlainObject(value);
+	const configSource =
+		meta?.webhook && typeof meta.webhook === "object" && !Array.isArray(meta.webhook)
+			? meta.webhook
+			: value;
+	const config = sanitizePublicWebhookConfig(kind, configSource);
+	const deliveries =
+		meta?.webhookDeliveries && typeof meta.webhookDeliveries === "object" && !Array.isArray(meta.webhookDeliveries)
+			? (meta.webhookDeliveries as Record<string, string>)
+			: meta?.webhook_deliveries && typeof meta.webhook_deliveries === "object" && !Array.isArray(meta.webhook_deliveries)
+				? (meta.webhook_deliveries as Record<string, string>)
+				: {};
+	const attempts = normalizeAsyncWebhookAttempts(
+		meta?.webhookAttempts ?? meta?.webhook_attempts,
+	);
+	const retryQueue = normalizeAsyncWebhookRetryQueue(
+		meta?.webhookRetryQueue ?? meta?.webhook_retry_queue,
+	);
+	if (!config && attempts.length === 0 && Object.keys(retryQueue).length === 0 && Object.keys(deliveries).length === 0) {
+		return null;
+	}
+	return {
+		url: config?.url ?? null,
+		events: config?.events ?? [],
+		has_secret: config?.has_secret ?? false,
+		delivery: buildPublicWebhookDelivery({
+			deliveries,
+			attempts,
+			retryQueue,
+		}),
+		attempts,
 	};
 }
 
@@ -543,9 +614,27 @@ function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyn
 	return url.toString();
 }
 
+export function toAsyncLifecycleStatus(status: string): AsyncJobLifecycleStatus {
+	switch (status) {
+		case "completed":
+			return "completed";
+		case "failed":
+		case "expired":
+			return "failed";
+		case "cancelled":
+			return "cancelled";
+		case "processing":
+		case "in_progress":
+			return "running";
+		default:
+			return "pending";
+	}
+}
+
 async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, meta: AsyncNotificationMeta, progress?: number | null) {
 	const status = toPublicVideoStatus(record.status);
 	const errorMeta = resolveAsyncErrorMeta(meta);
+	const webhook = buildPublicAsyncWebhook("video", meta);
 	const download = status === "completed"
 		? await issueSignedVideoDownloadUrl({
 			baseUrl,
@@ -559,6 +648,7 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 		object: "video",
 		kind: "video",
 		status,
+		lifecycle_status: toAsyncLifecycleStatus(status),
 		request_id: normalizeText(record.requestId),
 		native_id: normalizeText(record.nativeId),
 		session_id: normalizeText(record.sessionId),
@@ -579,6 +669,7 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 		resolution: normalizeText(meta.resolution),
 		quality: normalizeText(meta.quality),
 		output_access: normalizeText(meta.outputAccess ?? meta.output_access),
+		...(webhook ? { webhook } : {}),
 		key_source: normalizeText(meta.keySource ?? meta.key_source),
 		byok_key_id: normalizeText(meta.byokKeyId ?? meta.byok_key_id),
 		reservation_id: normalizeText(meta.reservationId ?? meta.reservation_id),
@@ -614,11 +705,13 @@ function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: 
 	const cancellable = status === "pending" || status === "in_progress";
 	const requestCounts = resolveBatchRequestCounts(meta);
 	const errorMeta = resolveAsyncErrorMeta(meta);
+	const webhook = buildPublicAsyncWebhook("batch", meta);
 	return {
 		id: record.internalId,
 		object: "batch",
 		kind: "batch",
 		status,
+		lifecycle_status: toAsyncLifecycleStatus(status),
 		request_id: normalizeText(record.requestId),
 		session_id: normalizeText(record.sessionId),
 		app_id: normalizeText(record.appId),
@@ -628,7 +721,7 @@ function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: 
 		polling_url: buildBatchPollingUrl(baseUrl, record.internalId),
 		websocket_url: buildAsyncWebSocketUrl(baseUrl, "batch", record.internalId),
 		cancel_url: cancellable ? buildBatchCancelUrl(baseUrl, record.internalId) : null,
-		webhook: sanitizePublicWebhookConfig("batch", meta.webhook),
+		...(webhook ? { webhook } : {}),
 		endpoint: normalizeText(meta.endpoint),
 		completion_window: normalizeText(meta.completionWindow) ?? normalizeText(meta.completion_window),
 		input_file_id: normalizeText(meta.inputFileId) ?? normalizeText(meta.input_file_id),

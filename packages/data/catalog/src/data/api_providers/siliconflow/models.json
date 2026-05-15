@@ -210,6 +210,48 @@
     ]
   },
   {
+    "api_model_id": "google/gemma-4-26b-a4b",
+    "provider_api_model_id": "siliconflow:google/gemma-4-26b-a4b",
+    "provider_model_slug": "google/gemma-4-26B-A4B-it",
+    "internal_model_id": "google/gemma-4-26b-a4b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "siliconflow:google/gemma-4-31b",
+    "provider_model_slug": "google/gemma-4-31B-it",
+    "internal_model_id": "google/gemma-4-31b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "inclusionai/ling-flash-2.0",
     "provider_api_model_id": "siliconflow:inclusionai/ling-flash-2.0",
     "provider_model_slug": "inclusionAI/Ling-flash-2.0",
@@ -840,6 +882,111 @@
     ]
   },
   {
+    "api_model_id": "qwen/qwen3.5-122b-a10b",
+    "provider_api_model_id": "siliconflow:qwen/qwen3.5-122b-a10b",
+    "provider_model_slug": "Qwen/Qwen3.5-122B-A10B",
+    "internal_model_id": "qwen/qwen3.5-122b-a10b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-27b",
+    "provider_api_model_id": "siliconflow:qwen/qwen3.5-27b",
+    "provider_model_slug": "Qwen/Qwen3.5-27B",
+    "internal_model_id": "qwen/qwen3.5-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-9b",
+    "provider_api_model_id": "siliconflow:qwen/qwen3.5-9b",
+    "provider_model_slug": "Qwen/Qwen3.5-9B",
+    "internal_model_id": "qwen/qwen3.5-9b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-27b",
+    "provider_api_model_id": "siliconflow:qwen/qwen3.6-27b",
+    "provider_model_slug": "Qwen/Qwen3.6-27B",
+    "internal_model_id": "qwen/qwen3.6-27b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-35b-a3b",
+    "provider_api_model_id": "siliconflow:qwen/qwen3.6-35b-a3b",
+    "provider_model_slug": "Qwen/Qwen3.6-35B-A3B",
+    "internal_model_id": "qwen/qwen3.6-35b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 262000,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwq-32b",
     "provider_api_model_id": "siliconflow:qwen/qwq-32b",
     "provider_model_slug": "Qwen/QwQ-32B",
@@ -885,7 +1032,7 @@
     "api_model_id": "tencent/hunyuan-a13b-instruct",
     "provider_api_model_id": "siliconflow:tencent/hunyuan-a13b-instruct",
     "provider_model_slug": "tencent/Hunyuan-A13B-Instruct",
-    "internal_model_id": "tencent/hy3-preview",
+    "internal_model_id": "tencent/hunyuan-a13b-instruct",
     "is_active_gateway": false,
     "quantization_scheme": "FP8",
     "input_modalities": "text",

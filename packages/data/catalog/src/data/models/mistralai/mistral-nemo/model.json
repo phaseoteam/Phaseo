@@ -4,6 +4,7 @@
   "name": "Mistral Nemo",
   "status": "Available",
   "previous_model_id": null,
+  "description": "A 12B parameter model with a 128k token context length built by Mistral in collaboration with NVIDIA. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Qwen3 VL 30b A3b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 VL 30b A3b is an open-weight multimodal model from Alibaba Cloud with 35 billion total parameters and 3 billion active parameters per token. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "GLM 4.5V",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM 4.5V is a vision-language foundation model for multimodal agent applications.",
   "announced_date": "2025-08-11T00:00:00",
   "release_date": "2025-08-11T00:00:00",
   "deprecation_date": null,

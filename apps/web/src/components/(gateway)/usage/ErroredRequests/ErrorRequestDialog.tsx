@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatRoomError } from "@/lib/chat/formatRoomError";
+import { buildRoutingExplanation } from "@/lib/gateway/usage/routingExplanation";
 
 export type ErrorDialogRow = {
 	request_id?: string | null;
@@ -223,6 +224,7 @@ export default function ErrorRequestDialog({
 		formattedGatewayError?.providerCandidateDiagnostics;
 	const providerEnablement = formattedGatewayError?.providerEnablement;
 	const routingDiagnostics = formattedGatewayError?.routingDiagnostics;
+	const routingExplanation = buildRoutingExplanation(formattedGatewayError);
 	const failedProviders = formattedGatewayError?.failedProviders ?? [];
 	const failedStatuses = formattedGatewayError?.failedStatuses ?? [];
 	return (
@@ -621,11 +623,24 @@ export default function ErrorRequestDialog({
 										</div>
 									) : null}
 									{routingDiagnostics &&
-									routingDiagnostics.filterStages.length > 0 ? (
+									(routingDiagnostics.filterStages.length > 0 ||
+										routingExplanation.length > 0) ? (
 										<div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
 											<div className="mb-2 font-medium text-slate-900">
 												Routing diagnostics
 											</div>
+											{routingExplanation.length > 0 ? (
+												<div className="mb-3 space-y-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sky-950">
+													<div className="font-medium text-sky-900">
+														Routing explanation
+													</div>
+													{routingExplanation.map((line, index) => (
+														<div key={`routing-explanation-${index}`}>
+															{line}
+														</div>
+													))}
+												</div>
+											) : null}
 											<div className="space-y-2">
 												{routingDiagnostics.filterStages.map((stage, index) => (
 													<div

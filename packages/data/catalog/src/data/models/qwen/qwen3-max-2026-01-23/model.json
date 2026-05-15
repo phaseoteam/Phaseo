@@ -4,6 +4,7 @@
   "name": "Qwen3 Max 2026 01 23",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 Max 2026 01 23 is an updated release built on the Qwen3 series, offering major improvements in reasoning, instruction following, multilingual support, and long-tail knowledge coverage compared to the January 2025 version.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

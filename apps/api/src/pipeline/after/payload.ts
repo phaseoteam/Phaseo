@@ -18,6 +18,30 @@ function asChatResponse(ir: RequestResult["ir"] | undefined): IRChatResponse | u
 	return ir as IRChatResponse;
 }
 
+function buildServerToolUsePayload(
+	serverToolUse:
+		| {
+			datetime_requests?: number;
+			web_search_requests?: number;
+			web_fetch_requests?: number;
+		}
+		| undefined,
+) {
+	if (!serverToolUse || typeof serverToolUse !== "object") return undefined;
+	const payload = {
+		...(typeof serverToolUse.datetime_requests === "number"
+			? { datetime_requests: serverToolUse.datetime_requests }
+			: {}),
+		...(typeof serverToolUse.web_search_requests === "number"
+			? { web_search_requests: serverToolUse.web_search_requests }
+			: {}),
+		...(typeof serverToolUse.web_fetch_requests === "number"
+			? { web_fetch_requests: serverToolUse.web_fetch_requests }
+			: {}),
+	};
+	return Object.keys(payload).length > 0 ? payload : undefined;
+}
+
 /**
  * Enrich the protocol-encoded response with gateway metadata
  *
@@ -227,11 +251,8 @@ function encodeResponsesUsage(usage: IRUsage) {
 		output_tokens: usage.outputTokens,
 		total_tokens: usage.totalTokens,
 	};
-	if (typeof usage._ext?.serverToolUse?.datetime_requests === "number") {
-		out.server_tool_use = {
-			datetime_requests: usage._ext.serverToolUse.datetime_requests,
-		};
-	}
+	const serverToolUse = buildServerToolUsePayload(usage._ext?.serverToolUse);
+	if (serverToolUse) out.server_tool_use = serverToolUse;
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
 	if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
 	return out;
@@ -698,10 +719,7 @@ function encodeChatUsage(usage: IRUsage) {
         cached_read_tokens_are_subset_of_input: usage.cachedReadTokensAreSubsetOfInput,
         reasoning_tokens: usage.reasoningTokens,
         cached_write_text_tokens: usage._ext?.cachedWriteTokens,
-        server_tool_use:
-            typeof usage._ext?.serverToolUse?.datetime_requests === "number"
-                ? { datetime_requests: usage._ext.serverToolUse.datetime_requests }
-                : undefined,
+        server_tool_use: buildServerToolUsePayload(usage._ext?.serverToolUse),
     };
 }
 

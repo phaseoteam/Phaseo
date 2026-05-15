@@ -1,0 +1,100 @@
+---
+title: "Build a Node REST Smoke App"
+description: "Use the Node quickstart sample as a walkthrough for a raw HTTP integration and smoke-test script."
+---
+
+Use this page when you want the smallest possible Node integration and you want to see every HTTP request clearly.
+
+<Prompt
+  description="Build a **Node REST smoke app** against AI Stats using raw HTTP."
+  icon="terminal"
+  actions={["copy", "cursor"]}
+>
+{`You are building a small Node.js integration against AI Stats Gateway using raw HTTP.
+
+Create a script-based app that:
+- reads AI_STATS_API_KEY from the environment
+- calls health and model discovery routes
+- makes one text generation request
+- optionally calls one additional surface such as embeddings
+
+Requirements:
+- Use raw fetch, not an SDK.
+- Keep the code dependency-light.
+- Keep request payloads explicit and easy to audit.
+- Print clear success and error output in the terminal.
+- Support a quick smoke mode and a fuller end-to-end mode.
+
+Deliverables:
+- the script
+- package.json commands
+- a short README
+- an .env.example entry
+
+Verification:
+- run the smoke mode if possible
+- run one full request path if possible
+- report what was verified and any remaining assumptions.`}
+</Prompt>
+
+## Sample project
+
+- GitHub: [examples/gateway-node-quickstart](https://github.com/AI-Stats/AI-Stats/tree/main/examples/gateway-node-quickstart)
+- Local repo path: `examples/gateway-node-quickstart`
+
+## What this app does
+
+- calls `GET /v1/health`
+- calls `GET /v1/models`
+- exercises generation routes like `POST /v1/responses`
+- gives you a raw HTTP reference for smoke tests, scripts, and backend checks
+
+## When this sample is the right fit
+
+Start here when:
+
+- you want to debug raw API calls directly
+- you do not want SDK abstractions yet
+- you are building a script, worker, or CLI rather than a web UI
+
+## Run the sample
+
+```bash
+cd examples/gateway-node-quickstart
+cp .env.example .env.local
+```
+
+Set:
+
+- `AI_STATS_API_KEY`
+
+Then run either:
+
+```bash
+npm run smoke
+```
+
+or:
+
+```bash
+npm run start
+```
+
+## What to look at in the code
+
+- how the script loads `.env.local`
+- how the authorization header is attached
+- how each request is built explicitly
+- how non-200 responses are surfaced instead of swallowed
+
+## How to make it your own
+
+- trim the script to only the routes your service actually needs
+- move shared request code into one helper if multiple scripts will use it
+- upgrade to the TypeScript SDK later if the raw HTTP path becomes repetitive
+
+## Related guides
+
+- [Mini app starter prompts](./mini-app-starter-prompts)
+- [Launch on the free router](./free-router-first-deploy)
+- [Examples](../guides/examples)

@@ -134,6 +134,7 @@ describe("buildAsyncNotificationData", () => {
 			object: "video",
 			kind: "video",
 			status: "completed",
+			lifecycle_status: "completed",
 			request_id: "req_video_123",
 			native_id: "vertex-op-123",
 			session_id: "sess_video_123",
@@ -205,6 +206,34 @@ describe("buildAsyncNotificationData", () => {
 					secret: "whsec_batch_secret",
 					events: ["job.completed", "batch.failed"],
 				},
+				webhookDeliveries: {
+					"job.completed": "2026-05-03T10:01:35.000Z",
+				},
+				webhookAttempts: [
+					{
+						id: "batch.completed:1",
+						delivery_key: "batch.completed",
+						event_type: "batch.completed",
+						status: "delivered",
+						attempt_number: 1,
+						max_attempts: 4,
+						tried_at: "2026-05-03T10:01:34.000Z",
+						delivered_at: "2026-05-03T10:01:35.000Z",
+						response_status: 200,
+					},
+				],
+				webhookRetryQueue: {
+					"batch.failed": {
+						deliveryKey: "batch.failed",
+						eventType: "batch.failed",
+						phase: "failed",
+						attemptCount: 2,
+						nextRetryAt: "2026-05-03T10:02:00.000Z",
+						lastTriedAt: "2026-05-03T10:01:40.000Z",
+						lastStatusCode: 500,
+						lastErrorMessage: "Webhook returned HTTP 500",
+					},
+				},
 				endpoint: "/v1/responses",
 				completionWindow: "24h",
 				inputFileId: "file_in",
@@ -249,6 +278,7 @@ describe("buildAsyncNotificationData", () => {
 			object: "batch",
 			kind: "batch",
 			status: "in_progress",
+			lifecycle_status: "running",
 			request_id: "req_123",
 			session_id: "sess_123",
 			app_id: "app_123",
@@ -261,6 +291,36 @@ describe("buildAsyncNotificationData", () => {
 			webhook: {
 				url: "https://example.com/hooks/batch",
 				events: ["job.completed", "batch.failed"],
+				has_secret: true,
+				delivery: {
+					total_attempts: 1,
+					delivered_events: 1,
+					delivered_event_types: ["job.completed"],
+					pending_retries: 1,
+					next_retry_at: "2026-05-03T10:02:00.000Z",
+					last_attempt_at: "2026-05-03T10:01:34.000Z",
+					last_attempt_status: "delivered",
+					last_response_status: 200,
+					last_delivered_at: "2026-05-03T10:01:35.000Z",
+					last_failure_at: null,
+					last_error_message: null,
+				},
+				attempts: [
+					{
+						id: "batch.completed:1",
+						delivery_key: "batch.completed",
+						event_type: "batch.completed",
+						status: "delivered",
+						attempt_number: 1,
+						max_attempts: 4,
+						tried_at: "2026-05-03T10:01:34.000Z",
+						delivered_at: "2026-05-03T10:01:35.000Z",
+						response_status: 200,
+						error_message: null,
+						next_retry_at: null,
+						response_body_preview: null,
+					},
+				],
 			},
 			endpoint: "/v1/responses",
 			completion_window: "24h",
@@ -328,6 +388,7 @@ describe("buildAsyncNotificationData", () => {
 		expect(payload).toMatchObject({
 			id: "batch_456",
 			status: "completed",
+			lifecycle_status: "completed",
 			cancel_url: null,
 			websocket_url: "wss://api.phaseo.app/v1/async/batch/batch_456/ws",
 		});
@@ -493,6 +554,7 @@ describe("buildAsyncNotificationData", () => {
 		expect(payload).toMatchObject({
 			id: "video_failed_123",
 			status: "failed",
+			lifecycle_status: "failed",
 			upstream_error: {
 				code: "PERMISSION_DENIED",
 				message: "The caller does not have permission.",
@@ -599,6 +661,7 @@ describe("buildAsyncNotificationData", () => {
 		expect(payload).toMatchObject({
 			id: "batch_failed_123",
 			status: "failed",
+			lifecycle_status: "failed",
 			upstream_error: {
 				code: "rate_limit_exceeded",
 				message: "Rate limit exceeded.",

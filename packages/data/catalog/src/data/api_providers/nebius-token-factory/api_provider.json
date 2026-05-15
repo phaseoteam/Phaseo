@@ -5,5 +5,10 @@
   "link": "https://nebius.com/docs",
   "country_code": "NL",
   "status": "Beta",
-  "colour": "#6366F1"
+  "colour": "#6366F1",
+  "privacy_policy_url": "https://docs.nebius.com/legal/privacy",
+  "terms_of_service_url": "https://docs.nebius.com/legal/agreement",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Nebius says it will not use Customer Content to train Nebius Models, though it may process Input and Output to improve AI Features after removing personal data and confidential information.",
+  "prompt_training_source_url": "https://docs.nebius.com/legal/specific-terms/ai-features"
 }

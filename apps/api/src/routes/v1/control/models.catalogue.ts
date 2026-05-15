@@ -192,6 +192,7 @@ export type CatalogueModel = {
     model_id: string;
     previous_model_id: string | null;
     name: string | null;
+    description: string | null;
     release_date: string | null;
     deprecation_date: string | null;
     retirement_date: string | null;
@@ -847,7 +848,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const modelQuery = supabase
         .from("data_models")
         .select(
-            "model_id, previous_model_id, name, release_date, deprecation_date, retirement_date, status, organisation_id, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
+            "model_id, previous_model_id, name, description, release_date, deprecation_date, retirement_date, status, organisation_id, input_types, output_types, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name, country_code, colour)"
         )
         .eq("hidden", false);
     const { data: modelRows, error: modelError } = await modelQuery;
@@ -861,6 +862,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             model_id: string;
             previous_model_id: string | null;
             name: string | null;
+            description: string | null;
             release_date: string | null;
             deprecation_date: string | null;
             retirement_date: string | null;
@@ -879,6 +881,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             model_id: model.model_id,
             previous_model_id: model.previous_model_id ?? null,
             name: model.name ?? null,
+            description: model.description ?? null,
             release_date: model.release_date ?? null,
             deprecation_date: model.deprecation_date ?? null,
             retirement_date: model.retirement_date ?? null,
@@ -1392,6 +1395,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             model_id: info.model_id,
             previous_model_id: info.previous_model_id,
             name: info.name,
+            description: info.description,
             release_date: info.release_date,
             deprecation_date: info.deprecation_date,
             retirement_date: info.retirement_date,

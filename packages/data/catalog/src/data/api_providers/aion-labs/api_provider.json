@@ -5,5 +5,10 @@
   "link": "https://www.aionlabs.ai/",
   "country_code": "IL",
   "status": "Beta",
-  "colour": "#0F172A"
+  "colour": "#0F172A",
+  "privacy_policy_url": "https://www.aionlabs.ai/privacy/",
+  "terms_of_service_url": "https://www.aionlabs.ai/terms/",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Aion Labs says user content is processed solely as necessary to provide the services, including forwarding prompts to upstream providers, and user content remains owned by the user.",
+  "prompt_training_source_url": "https://www.aionlabs.ai/terms/"
 }

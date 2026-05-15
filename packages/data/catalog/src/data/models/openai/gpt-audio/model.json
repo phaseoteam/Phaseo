@@ -4,6 +4,7 @@
   "name": "GPT Audio",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT Audio is OpenAI's first generally available audio model. The new snapshot features an upgraded decoder for more natural sounding voices and maintains better voice consistency.",
   "announced_date": "2025-08-28T00:00:00",
   "release_date": "2025-08-28T00:00:00",
   "deprecation_date": null,

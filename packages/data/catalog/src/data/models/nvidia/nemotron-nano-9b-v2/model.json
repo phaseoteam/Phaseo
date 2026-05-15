@@ -4,6 +4,7 @@
   "name": "Nemotron Nano 9b V2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nemotron Nano 9b V2 is a large language model (LLM) trained from scratch by NVIDIA, and designed as a unified model for both reasoning and non-reasoning tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

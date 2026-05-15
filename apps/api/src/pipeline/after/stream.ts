@@ -13,7 +13,12 @@ import { handleSuccessAudit } from "./audit";
 import { recordUsageAndChargeOnce } from "./charge";
 import { shapeUsageForClient, stripUsagePricing } from "../usage";
 import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
-import { onCallEnd, reportProbeResult, maybeOpenOnRecentErrors } from "../execute/health";
+import {
+	classifyProviderHealthImpact,
+	onCallEnd,
+	reportProbeResult,
+	maybeOpenOnRecentErrors,
+} from "../execute/health";
 import { getBaseModel } from "../execute/utils";
 import { logDebugEvent, previewValue } from "../debug";
 import { ensureRuntimeForBackground } from "@/runtime/env";
@@ -29,6 +34,22 @@ import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
 } from "../execute/sticky-routing";
+import { applyResponsePlugins } from "@/plugins/registry";
+
+function getStreamTerminalPayload(frame: any): any | null {
+    if (!frame || typeof frame !== "object") return null;
+    if (frame.object === "response" || frame.object === "chat.completion") {
+        return frame;
+    }
+    if (
+        frame.response &&
+        typeof frame.response === "object" &&
+        (frame.response.object === "response" || frame.response.object === "chat.completion")
+    ) {
+        return frame.response;
+    }
+    return null;
+}
 
 export async function handleStreamResponse(
     ctx: PipelineContext,
@@ -56,6 +77,7 @@ export async function handleStreamResponse(
     let cachedFinishReason: string | null = null;
     let latestStreamUsageRaw: any = null;
     let latestGatewaySnapshot: any = null;
+    let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
     const requestedToolResultCount = countRequestedToolResults(ctx.body);
@@ -204,6 +226,27 @@ export async function handleStreamResponse(
                 }
             }
 
+            const terminalPayload = getStreamTerminalPayload(next);
+            if (terminalPayload && !appliedStreamResponsePlugins) {
+                const pluginFinishReason =
+                    normalizeFinishReason(extractFinishReason(terminalPayload), result.provider) ??
+                    cachedFinishReason;
+                const pluginOutcome = applyResponsePlugins({
+                    ctx,
+                    result,
+                    payload: terminalPayload,
+                    finishReason: pluginFinishReason,
+                });
+                ctx.pluginExecutions = pluginOutcome.executions;
+                appliedStreamResponsePlugins = pluginOutcome.executions.length > 0;
+                if (terminalPayload === next) {
+                    Object.assign(next, pluginOutcome.payload);
+                } else {
+                    next.response = pluginOutcome.payload;
+                }
+                latestGatewaySnapshot = pluginOutcome.payload;
+            }
+
             // Add meta to final frame when available and requested
             if (includeMeta && next?.object === "chat.completion" && next?.usage && ctx.meta.generation_ms !== undefined) {
                 const generationMs = ctx.meta.generation_ms;
@@ -239,6 +282,9 @@ export async function handleStreamResponse(
                                 unsupported_params: entry.unsupportedParams,
                             })) ?? [],
                     },
+                    ...(ctx.pluginExecutions?.length
+                        ? { plugin_executions: ctx.pluginExecutions }
+                        : {}),
                 };
             }
             if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
@@ -339,10 +385,15 @@ export async function handleStreamResponse(
                 result.upstream.status >= 200 &&
                 result.upstream.status < 400 &&
                 !info?.aborted;
+            const healthImpact = classifyProviderHealthImpact({
+                upstreamStatus: result.upstream.status,
+                aborted: info?.aborted === true,
+            });
             await onCallEnd(ctx.endpoint, {
                 provider: result.provider,
                 model: baseModel,
                 ok,
+                healthImpact,
                 latency_ms: ctx.meta.latency_ms ?? 0,
                 generation_ms: ctx.meta.generation_ms ?? null,
                 tokens_in: Number(
@@ -358,9 +409,9 @@ export async function handleStreamResponse(
                         0
                 ),
             });
-            if (isProbe) {
+            if (isProbe && healthImpact !== "neutral") {
                 await reportProbeResult(ctx.endpoint, result.provider, baseModel, ok);
-            } else {
+            } else if (healthImpact === "failure") {
                 await maybeOpenOnRecentErrors(ctx.endpoint, result.provider, baseModel);
             }
 

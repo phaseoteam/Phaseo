@@ -4,9 +4,12 @@ badge: "Beta"
 openapi: "POST /videos/{video_id}/download_url"
 description: "Issue a temporary signed download URL for a completed video generation."
 ---
-Returns a short-lived signed URL for downloading rendered video content without streaming the binary through the API response body.
+Optional request fields let you choose:
 
-Use this when you need a temporary direct download link for a completed video job. Optional request fields let you choose:
+<Warning>
+The public video routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
+
 - `ttl_seconds` for link lifetime
 - `disposition` as `attachment` or `inline`
 - `index` when a generation has multiple outputs
@@ -15,5 +18,3 @@ The response returns:
 
 - `download_url`
 - `expires_at`
-
-This is the preferred path for handing completed video output to browsers or external download clients.

@@ -1,0 +1,66 @@
+---
+title: "Build an ops runbook agent in Go"
+description: "Use the Go Agent SDK to combine a few deterministic local tools into one bounded troubleshooting loop."
+---
+
+Use this recipe when a Go service needs to answer operational questions with local context.
+
+## 1. Install the SDKs
+
+```bash
+go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest
+go get github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go@latest
+```
+
+## 2. Define small runtime tools
+
+```go
+statusTool := aistatsagent.DefineTool(aistatsagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx aistatsagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. Create the agent
+
+```go
+agent := aistatsagent.CreateAgent(aistatsagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []aistatsagent.Tool{statusTool},
+})
+```
+
+## 4. Run one bounded troubleshooting turn
+
+```go
+client, _ := aistatsagent.CreateGatewayAgentClient(aistatsagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), aistatsagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## When this recipe fits
+
+- the workflow belongs inside one Go service
+- the supporting context already exists as local or internal calls
+- you want an agent loop without introducing a larger job system yet
+
+## Related
+
+- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
+- [Ground extraction with web fetch](./tool-grounding-with-web-fetch.mdx)

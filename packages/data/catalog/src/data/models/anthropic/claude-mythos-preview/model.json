@@ -4,6 +4,7 @@
   "name": "Claude Mythos Preview",
   "status": "Withheld",
   "previous_model_id": null,
+  "description": "Claude Mythos Preview is Anthropic's most capable Sonnet-class model yet, with frontier performance across coding, agents, and professional work. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2026-04-07T00:00:00",
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Molmo 2 4B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Molmo 2 4B is a multimodal model from AllenAI that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": "2025-12-16T00:00:00",
   "release_date": "2025-12-16T00:00:00",
   "deprecation_date": null,

@@ -483,9 +483,9 @@ async function UsageLogsContent({
 							preset={preset}
 							customFrom={customFrom}
 							customTo={customTo}
-							filters={filters}
 						/>
 					</div>
+					{filters}
 				</div>
 				{content}
 			</div>

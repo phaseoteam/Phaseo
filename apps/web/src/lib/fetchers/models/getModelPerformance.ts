@@ -6,6 +6,7 @@ const SUCCESS_WINDOW_HOURS = 24;
 const SUCCESS_BUCKET_MINUTES = 15;
 const PROVIDER_WINDOW_HOURS = 24;
 const PROVIDER_UPTIME_BUCKET_HOURS = 6;
+const PAGE_SIZE = 5000;
 
 type RpcModelPerformanceResponse = {
 	last_24h?: any;
@@ -15,6 +16,18 @@ type RpcModelPerformanceResponse = {
 	hourly_5d?: any[];
 	time_of_day_5d?: any[];
 	cumulative_tokens?: any;
+};
+
+type GatewayRequestStatsRow = {
+	provider: string | null;
+	success: boolean | null;
+	status_code: number | null;
+	error_code: string | null;
+	created_at: string | null;
+	latency_ms: number | null;
+	generation_ms: number | null;
+	throughput: number | null;
+	usage: unknown;
 };
 
 export type ModelPerformancePoint = {
@@ -210,7 +223,9 @@ export async function getModelPerformanceMetricsCached(
 		expire: 60 * 60 * 24,
 	});
 	cacheTag("data:gateway_usage_rollups");
+	cacheTag("data:gateway_requests");
 	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
+	cacheTag(`data:gateway_requests:model:${modelId}`);
 	cacheTag(`model:performance:${modelId}`);
 
 	return getModelPerformanceMetrics(modelId, includeHidden, hours);
@@ -228,7 +243,9 @@ export async function getModelPerformanceActivitySnapshotCached(
 		expire: 60 * 60 * 6,
 	});
 	cacheTag("data:gateway_usage_rollups");
+	cacheTag("data:gateway_requests");
 	cacheTag(`data:gateway_usage_rollups:model:${modelId}`);
+	cacheTag(`data:gateway_requests:model:${modelId}`);
 	cacheTag(`model:performance:${modelId}`);
 
 	return getModelPerformanceActivitySnapshot(modelId, includeHidden);
@@ -238,6 +255,75 @@ function toNumber(value: any): number | null {
 	if (value === null || value === undefined) return null;
 	const parsed = Number(value);
 	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+	if (!value || typeof value !== "object") return null;
+	return value as Record<string, unknown>;
+}
+
+function readNestedNumber(
+	record: Record<string, unknown> | null,
+	key: string,
+): number | null {
+	if (!record) return null;
+	const parsed = Number(record[key]);
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractOutputTokensFromUsage(usage: unknown): number | null {
+	const record = toRecord(usage);
+	if (!record) return null;
+
+	const keysInPriorityOrder = [
+		"output_tokens",
+		"completion_tokens",
+		"generated_tokens",
+		"response_tokens",
+		"outputTokens",
+		"completionTokens",
+		"total_output_tokens",
+		"totalOutputTokens",
+		"total_tokens",
+		"totalTokens",
+	] as const;
+
+	for (const key of keysInPriorityOrder) {
+		const value = toFiniteNumber(record[key]);
+		if (value != null && value > 0) return value;
+	}
+	return null;
+}
+
+function normalizeHealthSignal(value: unknown): string {
+	return String(value ?? "").trim().toLowerCase();
+}
+
+function isRateLimitSignal(value: unknown): boolean {
+	const normalized = normalizeHealthSignal(value);
+	if (!normalized) return false;
+	return (
+		normalized.includes("rate limit") ||
+		normalized.includes("rate_limit") ||
+		normalized.includes("too many requests") ||
+		normalized.includes("ratelimit") ||
+		normalized.includes("quota exceeded")
+	);
+}
+
+function classifyRequestHealthImpact(row: GatewayRequestStatsRow):
+	| "success"
+	| "failure"
+	| "neutral" {
+	if (row.success === true) return "success";
+	if (Number(row.status_code ?? 0) === 429) return "neutral";
+	if (isRateLimitSignal(row.error_code)) return "neutral";
+	return "failure";
 }
 
 function mapSummary(value: any): ModelPerformanceSummary {
@@ -369,6 +455,44 @@ async function getModelAliases(client: any, modelId: string): Promise<string[]> 
 	return Array.from(aliases);
 }
 
+async function fetchGatewayRequestStatsRows(args: {
+	client: ReturnType<typeof createAdminClient>;
+	modelIds: string[];
+	fromIso: string;
+	toIso: string;
+	providerIds?: string[];
+}): Promise<GatewayRequestStatsRow[]> {
+	const rows: GatewayRequestStatsRow[] = [];
+
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const to = offset + PAGE_SIZE - 1;
+		let query = args.client
+			.from("gateway_requests")
+			.select(
+				"provider, success, status_code, error_code, created_at, latency_ms, generation_ms, throughput, usage",
+			)
+			.in("model_id", args.modelIds)
+			.gte("created_at", args.fromIso)
+			.lte("created_at", args.toIso)
+			.order("created_at", { ascending: true })
+			.range(offset, to);
+
+		if (args.providerIds && args.providerIds.length > 0) {
+			query = query.in("provider", args.providerIds);
+		}
+
+		const { data, error } = await query;
+		if (error) {
+			throw new Error(error.message ?? "Failed to fetch model performance request stats");
+		}
+		if (!Array.isArray(data) || data.length === 0) break;
+		rows.push(...(data as GatewayRequestStatsRow[]));
+		if (data.length < PAGE_SIZE) break;
+	}
+
+	return rows;
+}
+
 async function getProviderDailySeries7d(
 	client: any,
 	modelId: string,
@@ -386,24 +510,16 @@ async function getProviderDailySeries7d(
 		.filter(Boolean);
 
 	try {
-		let rollupQuery = client
-			.from("gateway_usage_rollup_15m_model_provider")
-			.select(
-				"bucket_15m, provider, requests, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
-			)
-			.in("canonical_model_id", aliases)
-			.gte("bucket_15m", start.toISOString())
-			.lte("bucket_15m", now.toISOString())
-			.order("bucket_15m", { ascending: true });
-
-		if (sanitizedPreferredProviders.length > 0) {
-			rollupQuery = rollupQuery.in("provider", sanitizedPreferredProviders);
-		}
-
-		const { data, error } = await rollupQuery;
-		if (error) {
-			throw error;
-		}
+		const rows = await fetchGatewayRequestStatsRows({
+			client,
+			modelIds: aliases,
+			fromIso: start.toISOString(),
+			toIso: now.toISOString(),
+			providerIds:
+				sanitizedPreferredProviders.length > 0
+					? sanitizedPreferredProviders
+					: undefined,
+		});
 
 		type Aggregate = {
 			requests: number;
@@ -411,23 +527,34 @@ async function getProviderDailySeries7d(
 			throughputSamples: number;
 			latencySum: number;
 			latencySamples: number;
+			generationSum: number;
+			generationSamples: number;
 		};
 
 		const aggregateByProviderDay = new Map<string, Aggregate>();
 		const requestCountByProvider = new Map<string, number>();
 
-		for (const row of data ?? []) {
+		for (const row of rows) {
 			const provider = String(row?.provider ?? "").trim();
 			if (!provider) continue;
-			const day = toUtcDayKey(String(row?.bucket_15m ?? ""));
+			const createdAt = new Date(String(row?.created_at ?? ""));
+			if (!Number.isFinite(createdAt.getTime())) continue;
+			const day = toUtcDayKey(createdAt);
 			if (!day) continue;
 
-			const requests = Number(row?.requests ?? 0);
-			const throughputSum = Number(row?.throughput_sum ?? 0);
-			const throughputSamples = Number(row?.throughput_samples ?? 0);
-			const latencySum = Number(row?.latency_sum_ms ?? 0);
-			const latencySamples = Number(row?.latency_samples ?? 0);
-			if (!Number.isFinite(requests) || requests <= 0) continue;
+			const latencyMs = toFiniteNumber(row.latency_ms);
+			const generationMs = toFiniteNumber(row.generation_ms);
+			const explicitThroughput = toFiniteNumber(row.throughput);
+			const outputTokens = extractOutputTokensFromUsage(row.usage) ?? 0;
+			const derivedThroughput =
+				explicitThroughput != null && explicitThroughput > 0
+					? explicitThroughput
+					: generationMs != null &&
+					  generationMs > 0 &&
+					  outputTokens > 0
+					? (outputTokens * 1000) / generationMs
+					: null;
+			const healthImpact = classifyRequestHealthImpact(row);
 
 			const key = `${provider}::${day}`;
 			const current = aggregateByProviderDay.get(key) ?? {
@@ -436,23 +563,28 @@ async function getProviderDailySeries7d(
 				throughputSamples: 0,
 				latencySum: 0,
 				latencySamples: 0,
+				generationSum: 0,
+				generationSamples: 0,
 			};
 
-			current.requests += requests;
-			if (Number.isFinite(throughputSum) && Number.isFinite(throughputSamples)) {
-				current.throughputSum += throughputSum;
-				current.throughputSamples += Math.max(0, throughputSamples);
-			}
-			if (Number.isFinite(latencySum) && Number.isFinite(latencySamples)) {
-				current.latencySum += latencySum;
-				current.latencySamples += Math.max(0, latencySamples);
+			current.requests += 1;
+			if (healthImpact === "success") {
+				if (derivedThroughput != null && derivedThroughput > 0) {
+					current.throughputSum += derivedThroughput;
+					current.throughputSamples += 1;
+				}
+				if (latencyMs != null && latencyMs > 0) {
+					current.latencySum += latencyMs;
+					current.latencySamples += 1;
+				}
+				if (generationMs != null && generationMs > 0) {
+					current.generationSum += generationMs;
+					current.generationSamples += 1;
+				}
 			}
 
 			aggregateByProviderDay.set(key, current);
-			requestCountByProvider.set(
-				provider,
-				(requestCountByProvider.get(provider) ?? 0) + requests,
-			);
+			requestCountByProvider.set(provider, (requestCountByProvider.get(provider) ?? 0) + 1);
 		}
 
 		const topProviders =
@@ -509,8 +641,10 @@ async function getProviderDailySeries7d(
 						aggregate.latencySamples > 0
 							? aggregate.latencySum / aggregate.latencySamples
 							: null,
-					// Not currently tracked in 15m rollup table.
-					avgGenerationMs: null,
+					avgGenerationMs:
+						aggregate.generationSamples > 0
+							? aggregate.generationSum / aggregate.generationSamples
+							: null,
 					requests: aggregate.requests,
 				});
 			}
@@ -518,7 +652,7 @@ async function getProviderDailySeries7d(
 
 		return points;
 	} catch (error) {
-		console.warn("[perf] rollup provider daily series failed", {
+		console.warn("[perf] provider daily series failed", {
 			modelId,
 			error,
 		});

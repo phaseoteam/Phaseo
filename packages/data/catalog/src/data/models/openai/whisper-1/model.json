@@ -4,6 +4,7 @@
   "name": "Whisper 1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Whisper 1 is OpenAI's open-source automatic speech recognition model, available via API as `whisper-1`. It supports transcription and translation across 50+ languages from audio files up to 25 MB.",
   "announced_date": "2023-03-01T00:00:00",
   "release_date": "2023-03-01T00:00:00",
   "deprecation_date": null,

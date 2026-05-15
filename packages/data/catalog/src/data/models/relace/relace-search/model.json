@@ -4,6 +4,7 @@
   "name": "Relace Search",
   "status": null,
   "previous_model_id": null,
+  "description": "The relace-search model uses 4-12 `view_file` and `grep` tools in parallel to explore a codebase and return relevant files to the user request. It is aimed at retrieval-heavy assistants, browsing, and research synthesis.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

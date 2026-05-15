@@ -4,6 +4,7 @@
   "name": "Seed OSS 36B Instruct",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seed OSS 36B Instruct is a language model from ByteDance for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

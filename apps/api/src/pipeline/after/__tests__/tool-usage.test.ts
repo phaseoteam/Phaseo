@@ -62,6 +62,44 @@ describe("tool usage helpers", () => {
 		expect(metrics.output_tool_call_count).toBe(2);
 	});
 
+	it("counts grounding metadata web results and citations for provider-native search outputs", () => {
+		const metrics = summarizeToolUsage({
+			payload: {
+				candidates: [
+					{
+						groundingMetadata: {
+							groundingChunks: [
+								{
+									web: {
+										uri: "https://example.com/docs",
+										title: "AI Stats Docs",
+									},
+								},
+								{
+									web: {
+										uri: "https://example.com/blog",
+										title: "AI Stats Blog",
+									},
+								},
+							],
+							groundingSupports: [
+								{
+									segment: {
+										text: "Grounded answer segment",
+									},
+									groundingChunkIndices: [0, 1],
+								},
+							],
+						},
+					},
+				],
+			},
+		});
+
+		expect(metrics.output_web_search_result_count).toBe(2);
+		expect(metrics.output_citation_count).toBe(2);
+	});
+
 	it("attaches metrics without overriding existing populated values", () => {
 		const usage = attachToolUsageMetrics(
 			{ output_tool_call_count: 4, request_tool_result_count: 9 },

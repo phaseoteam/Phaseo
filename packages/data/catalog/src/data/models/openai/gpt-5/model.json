@@ -4,6 +4,7 @@
   "name": "GPT 5",
   "status": "Available",
   "previous_model_id": "openai/gpt-4-5-2025-02-27",
+  "description": "GPT 5 is OpenAI's most advanced model, offering major improvements in reasoning, code quality, and user experience. It supports up to 400K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-08-07T00:00:00",
   "release_date": "2025-08-07T00:00:00",
   "deprecation_date": null,

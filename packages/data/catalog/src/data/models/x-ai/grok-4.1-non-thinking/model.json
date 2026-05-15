@@ -4,6 +4,7 @@
   "name": "Grok 4.1 Non Thinking",
   "status": "Deprecated",
   "previous_model_id": "x-ai/grok-4-fast-non-reasoning-2025-09-20",
+  "description": "Grok 4.1 Non Thinking is a reasoning model from xAI. It accepts text and image inputs with text output, and is suited for agentic workflows, instruction-following tasks, and applications requiring high factual.",
   "announced_date": "2025-11-17T00:00:00",
   "release_date": "2025-11-17T00:00:00",
   "deprecation_date": "2026-05-06T00:00:00",

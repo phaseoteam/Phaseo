@@ -4,6 +4,7 @@
   "name": "Morph V3 Fast",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Morph's fastest apply model for code edits. ~10,500 tokens/sec with 96% accuracy for rapid code transformations. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

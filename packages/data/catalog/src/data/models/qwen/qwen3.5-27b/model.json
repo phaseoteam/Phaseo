@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 27B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "The Qwen3.5 27B native vision-language Dense model incorporates a linear attention mechanism, delivering fast response times while balancing inference speed and performance.",
   "announced_date": "2026-02-24T00:00:00",
   "release_date": "2026-02-24T00:00:00",
   "deprecation_date": null,

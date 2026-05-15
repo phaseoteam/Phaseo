@@ -14,6 +14,29 @@ export type PresetConfig = {
 	models?: string[];
 	only_providers?: string[];
 	ignore_providers?: string[];
+	provider?: {
+		order?: string[];
+		only?: string[];
+		ignore?: string[];
+		required_execution_region?: string;
+		required_data_region?: string;
+		require_zero_data_retention?: boolean;
+		max_price?: {
+			prompt?: number;
+			completion?: number;
+			image?: number;
+			audio?: number;
+			request?: number;
+		};
+		preferred_min_throughput?: number | Record<string, number>;
+		preferred_max_latency?: number | Record<string, number>;
+	};
+	plugins?: Array<Record<string, unknown>>;
+	routing_mode?: "balanced" | "price" | "latency" | "throughput";
+	response_caching?: {
+		enabled?: boolean;
+		ttl_seconds?: number;
+	};
 	parameters?: {
 		temperature?: number;
 		top_p?: number;
@@ -36,6 +59,7 @@ export type PresetVisibility = "private" | "team" | "public";
 
 export type CreatePresetInput = {
 	name: string;
+	slug?: string;
 	description?: string;
 	creatorUserId: string;
 	workspaceId: string;
@@ -98,6 +122,96 @@ function sanitizeConfig(config: PresetConfig): Record<string, unknown> {
 
 	if (config.ignore_providers && Array.isArray(config.ignore_providers) && config.ignore_providers.length > 0) {
 		sanitized.ignore_providers = config.ignore_providers;
+	}
+
+	if (config.provider && typeof config.provider === "object") {
+		const providerConfig: Record<string, unknown> = {};
+		if (Array.isArray(config.provider.order) && config.provider.order.length > 0) {
+			providerConfig.order = config.provider.order;
+		}
+		if (Array.isArray(config.provider.only) && config.provider.only.length > 0) {
+			providerConfig.only = config.provider.only;
+		}
+		if (Array.isArray(config.provider.ignore) && config.provider.ignore.length > 0) {
+			providerConfig.ignore = config.provider.ignore;
+		}
+		if (
+			typeof config.provider.required_execution_region === "string" &&
+			config.provider.required_execution_region.trim()
+		) {
+			providerConfig.required_execution_region =
+				config.provider.required_execution_region.trim().toLowerCase();
+		}
+		if (
+			typeof config.provider.required_data_region === "string" &&
+			config.provider.required_data_region.trim()
+		) {
+			providerConfig.required_data_region =
+				config.provider.required_data_region.trim().toLowerCase();
+		}
+		if (typeof config.provider.require_zero_data_retention === "boolean") {
+			providerConfig.require_zero_data_retention =
+				config.provider.require_zero_data_retention;
+		}
+		if (config.provider.max_price && typeof config.provider.max_price === "object") {
+			const maxPrice: Record<string, number> = {};
+			for (const meter of ["prompt", "completion", "image", "audio", "request"] as const) {
+				const value = config.provider.max_price[meter];
+				if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+					maxPrice[meter] = value;
+				}
+			}
+			if (Object.keys(maxPrice).length > 0) {
+				providerConfig.max_price = maxPrice;
+			}
+		}
+		if (
+			typeof config.provider.preferred_min_throughput === "number" ||
+			(config.provider.preferred_min_throughput &&
+				typeof config.provider.preferred_min_throughput === "object")
+		) {
+			providerConfig.preferred_min_throughput =
+				config.provider.preferred_min_throughput;
+		}
+		if (
+			typeof config.provider.preferred_max_latency === "number" ||
+			(config.provider.preferred_max_latency &&
+				typeof config.provider.preferred_max_latency === "object")
+		) {
+			providerConfig.preferred_max_latency =
+				config.provider.preferred_max_latency;
+		}
+		if (Object.keys(providerConfig).length > 0) {
+			sanitized.provider = providerConfig;
+		}
+	}
+
+	if (
+		config.routing_mode &&
+		["balanced", "price", "latency", "throughput"].includes(config.routing_mode)
+	) {
+		sanitized.routing_mode = config.routing_mode;
+	}
+
+	if (Array.isArray(config.plugins) && config.plugins.length > 0) {
+		sanitized.plugins = config.plugins;
+	}
+
+	if (config.response_caching && typeof config.response_caching === "object") {
+		const responseCaching: Record<string, unknown> = {};
+		if (typeof config.response_caching.enabled === "boolean") {
+			responseCaching.enabled = config.response_caching.enabled;
+		}
+		if (
+			typeof config.response_caching.ttl_seconds === "number" &&
+			Number.isFinite(config.response_caching.ttl_seconds) &&
+			config.response_caching.ttl_seconds > 0
+		) {
+			responseCaching.ttl_seconds = config.response_caching.ttl_seconds;
+		}
+		if (Object.keys(responseCaching).length > 0) {
+			sanitized.response_caching = responseCaching;
+		}
 	}
 
 	if (config.parameters) {

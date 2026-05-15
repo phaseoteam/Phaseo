@@ -4,6 +4,7 @@
   "name": "Granite Vision 3.2 2B",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Vision 3.2 2B is a multimodal model from IBM that can work across text and visual inputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

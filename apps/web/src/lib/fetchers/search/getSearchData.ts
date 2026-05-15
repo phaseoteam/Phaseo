@@ -108,6 +108,10 @@ export interface SearchData {
     countries: SearchableCountry[];
 }
 
+export function compactSearchData(data: SearchData): SearchData {
+    return data;
+}
+
 // Transform functions
 function transformModels(models: ModelCard[]): SearchableModel[] {
     return models.map(model => ({

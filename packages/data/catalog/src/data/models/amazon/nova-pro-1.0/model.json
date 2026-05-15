@@ -4,6 +4,7 @@
   "name": "Nova Pro 1.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nova Pro 1.0 is a fast, cost-effective reasoning model for everyday workloads that can process text, images, and videos to generate text. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2024-12-03T00:00:00",
   "release_date": "2024-12-04T00:00:00",
   "deprecation_date": null,

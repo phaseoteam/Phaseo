@@ -5,5 +5,7 @@
   "link": "https://docs.arcee.ai/",
   "country_code": "US",
   "status": "Beta",
-  "colour": "#008C8C"
+  "colour": "#008C8C",
+  "privacy_policy_url": "https://www.arcee.ai/privacy-policy",
+  "terms_of_service_url": "https://www.arcee.ai/terms-and-conditions"
 }

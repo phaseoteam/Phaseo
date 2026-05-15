@@ -1,0 +1,230 @@
+---
+title: "Mini App Starter Prompts"
+description: "Copyable prompts for coding agents to build small AI Stats apps with raw HTTP, SDKs, or agent runtimes."
+---
+
+Use this page when you want to hand a coding agent one concrete prompt that produces a small, working app shape instead of a vague integration plan.
+
+<Tip>
+These prompts are written to be outcome-focused and implementation-specific so they work better in Cursor, Claude Code, Codex, and similar tools.
+</Tip>
+
+## How to use these prompts
+
+<Steps>
+  <Step title="Pick the integration surface">
+    Choose the prompt that matches how you want the app to call AI Stats:
+
+    - raw HTTP
+    - one official SDK
+    - Vercel AI SDK
+    - Agent SDK
+  </Step>
+  <Step title="Replace the bracketed variables">
+    Fill in values like `[APP IDEA]`, `[FRAMEWORK]`, `[MODEL]`, and `[LANGUAGE]` before you paste the prompt into your coding agent.
+  </Step>
+  <Step title="Ask for verification, not just code">
+    Keep the verification lines in the prompt. They force the agent to report what it actually ran, what it assumed, and what still needs manual setup.
+  </Step>
+</Steps>
+
+## Prompt packs
+
+<AccordionGroup>
+  <Accordion title="Raw HTTP mini app" icon="globe">
+    <Prompt
+      description="Build a small app that uses **raw HTTP** against AI Stats instead of an SDK."
+      icon="globe"
+      actions={["copy", "cursor"]}
+    >
+{`You are implementing a small production-style demo app with AI Stats Gateway.
+
+Build a [FRAMEWORK] mini app for [APP IDEA].
+
+Requirements:
+- Use raw HTTP requests, not an AI Stats SDK.
+- Use the AI Stats endpoint [ENDPOINT].
+- Use model [MODEL].
+- Read the API key from an environment variable named AI_STATS_API_KEY.
+- Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
+- Show the user input, the request submission state, the model output, and any gateway error state.
+- Add one example request payload in comments or docs so the integration is easy to audit later.
+
+Implementation details:
+- Use fetch.
+- Keep the request body explicit instead of hiding fields behind abstractions.
+- Add basic validation for empty input before making the API request.
+- Handle non-200 responses cleanly and surface the response body when useful.
+- Keep secrets server-side only.
+
+Deliverables:
+- The app code.
+- A short README section explaining how to run it.
+- A .env.example entry for AI_STATS_API_KEY.
+
+Verification:
+- Run the local app if possible.
+- Verify one successful request path.
+- Report exactly what you verified, what you could not verify, and any remaining assumptions.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="TypeScript SDK mini app" icon="file-code-2">
+    <Prompt
+      description="Build a mini app on the **TypeScript SDK** with a small, inspectable integration."
+      icon="file-code-2"
+      actions={["copy", "cursor"]}
+    >
+{`You are building a small app on top of the AI Stats TypeScript SDK.
+
+Create a [FRAMEWORK] mini app for [APP IDEA].
+
+Requirements:
+- Use @ai-stats/sdk.
+- Use model [MODEL].
+- Prefer the responses API unless there is a strong reason to use another endpoint.
+- Read the API key from AI_STATS_API_KEY.
+- Keep the code compact and understandable for a first integration.
+- Show loading, success, and failure states in the UI.
+
+Implementation details:
+- Use one server-side integration boundary instead of scattering SDK calls across many files.
+- Keep the request shape explicit, including model, input, and any important options.
+- Include one example of response parsing that extracts the final assistant text safely.
+- Add minimal comments only where the SDK response shape would otherwise be unclear.
+
+Deliverables:
+- Working app code.
+- Short setup instructions.
+- One short explanation of why the TypeScript SDK path is better than raw HTTP for this mini app.
+
+Verification:
+- Run the app if possible.
+- Exercise one end-to-end request.
+- Report the exact files changed and any remaining setup the user must do.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Python SDK mini app" icon="snake">
+    <Prompt
+      description="Build a small Python app or service using the **official Python SDK**."
+      icon="snake"
+      actions={["copy", "cursor"]}
+    >
+{`You are implementing a small AI-powered Python app with AI Stats Gateway.
+
+Build a [PYTHON FRAMEWORK OR APP TYPE] app for [APP IDEA].
+
+Requirements:
+- Use the official Python SDK ai_stats.
+- Use model [MODEL].
+- Read credentials from AI_STATS_API_KEY.
+- Keep the code small enough for a new team member to understand quickly.
+- Include one user input path and one model output path.
+- Include clean error handling for invalid input and upstream gateway failures.
+
+Implementation details:
+- Prefer one integration module that owns the AI Stats client creation.
+- Use the SDK response shape directly rather than wrapping it in unnecessary abstractions.
+- If structured output is useful for the app, use it and validate the returned shape.
+- Add a short README section with install and run steps.
+
+Deliverables:
+- App code.
+- Any dependency updates.
+- Short usage instructions.
+
+Verification:
+- Run the relevant command if possible.
+- Verify one successful request path or explain why you could not.
+- Call out any environment variables or local services the user still needs.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Vercel AI SDK mini app" icon="sparkles">
+    <Prompt
+      description="Build a small app using **AI Stats through the Vercel AI SDK**."
+      icon="sparkles"
+      actions={["copy", "cursor"]}
+    >
+{`You are building a mini app that uses AI Stats through the Vercel AI SDK provider.
+
+Create a [FRAMEWORK] app for [APP IDEA].
+
+Requirements:
+- Use the AI Stats Vercel AI SDK provider.
+- Use model [MODEL].
+- Read the AI Stats API key from AI_STATS_API_KEY.
+- Keep the UX lightweight and oriented around one clear user task.
+- Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
+
+Implementation details:
+- Keep the provider wiring explicit.
+- Use the AI SDK primitives in a standard, framework-appropriate way.
+- Avoid unnecessary extra state management for the first version.
+- Add one short explanation of how the provider model id is chosen.
+
+Deliverables:
+- App code.
+- Setup steps.
+- A brief note on how to switch to a different model later.
+
+Verification:
+- Run the app if possible.
+- Verify the main user flow.
+- Report any unverified parts separately.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Agent SDK mini app" icon="bot">
+    <Prompt
+      description="Build a small app with the **AI Stats Agent SDK** and one bounded tool loop."
+      icon="bot"
+      actions={["copy", "cursor"]}
+    >
+{`You are building a small agentic app on top of AI Stats Gateway.
+
+Create a [LANGUAGE] mini app for [APP IDEA] using the AI Stats Agent SDK.
+
+Requirements:
+- Use the AI Stats Agent SDK for [LANGUAGE].
+- Use model [MODEL].
+- Include one or two deterministic local tools only.
+- Keep the tool loop bounded and easy to debug.
+- Read the API key from AI_STATS_API_KEY.
+- Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
+
+Implementation details:
+- Keep the agent definition in one place.
+- Keep tool definitions small and deterministic.
+- Avoid a giant general-purpose agent framework for the first version.
+- Add a note about where run state would be persisted if the app later becomes resumable.
+
+Deliverables:
+- App code.
+- Setup instructions.
+- A short explanation of why the Agent SDK is better than a one-shot completion for this workflow.
+
+Verification:
+- Run the main path if possible.
+- Verify one end-to-end agent run.
+- Report any remaining assumptions, especially around environment setup or local tool dependencies.`}
+    </Prompt>
+  </Accordion>
+</AccordionGroup>
+
+## How to make the prompts work better
+
+- Replace `[APP IDEA]` with one narrow user job, not a broad product pitch.
+- Replace `[MODEL]` with the exact model id you want the agent to use.
+- Say whether the output should be free text, strict JSON, chat, or one generated asset.
+- Mention the UI framework and deployment target when you know them.
+- Add one or two constraints that matter, such as `EU-only providers`, `use streaming`, or `keep all secrets server-side`.
+
+## Related guides
+
+- [Quickstart](../quickstart.mdx)
+- [Examples](../guides/examples.mdx)
+- [TypeScript SDK overview](../sdk-reference/typescript/overview.mdx)
+- [Python SDK overview](../sdk-reference/python/overview.mdx)
+- [Agent SDK overview](../sdk-reference/agent-sdk/overview.mdx)

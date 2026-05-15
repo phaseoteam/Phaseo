@@ -4,6 +4,7 @@
   "name": "Voyage 4 Large",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Voyage 4 Large is an embedding model from Voyage for vector search and semantic retrieval workflows. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2026-01-15T00:00:00",
   "release_date": "2026-01-15T00:00:00",
   "deprecation_date": null,

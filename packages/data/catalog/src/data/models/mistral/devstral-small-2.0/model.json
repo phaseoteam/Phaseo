@@ -4,6 +4,7 @@
   "name": "Devstral Small 2.0",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Devstral Small 2.0 is a multimodal model from Mistral that can work across text and visual inputs. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2025-12-09T00:00:00",
   "release_date": "2025-12-09T00:00:00",
   "deprecation_date": "2026-02-27T00:00:00",

@@ -4,6 +4,7 @@
   "name": "Code Davinci Edit 001",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Code Davinci Edit 001 is a coding model from OpenAI for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": "2023-07-06T00:00:00",

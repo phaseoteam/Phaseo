@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 35B A3B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.5 35B A3B is a native vision-language model designed with a hybrid architecture that integrates linear attention mechanisms and a sparse mixture-of-experts model, achieving higher inference efficiency.",
   "announced_date": "2026-02-24T00:00:00",
   "release_date": "2026-02-24T00:00:00",
   "deprecation_date": null,

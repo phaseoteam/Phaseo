@@ -4,6 +4,7 @@
   "name": "GPT 4 (2023-03-14)",
   "status": "Retired",
   "previous_model_id": "openai/gpt-3-5-turbo-2023-11-06",
+  "description": "GPT 4 (2023-03-14) is a large-scale multimodal language model capable of solving difficult problems with greater accuracy than previous models due to its broader general knowledge and advanced reasoning.",
   "announced_date": null,
   "release_date": "2023-03-14T00:00:00",
   "deprecation_date": "2025-09-26T00:00:00",

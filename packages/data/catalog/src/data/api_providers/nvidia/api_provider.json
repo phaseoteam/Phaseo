@@ -5,5 +5,10 @@
   "link": "https://docs.api.nvidia.com/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#76B900"
+  "colour": "#76B900",
+  "privacy_policy_url": "https://www.nvidia.com/en-us/about-nvidia/privacy-policy/",
+  "terms_of_service_url": "https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "NVIDIA's API trial terms and model trial notices say user content is used to provide the API service and, unless a specific service discloses otherwise, inputs and outputs are not stored after the session or used beyond service delivery.",
+  "prompt_training_source_url": "https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf"
 }

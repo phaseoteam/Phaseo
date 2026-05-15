@@ -27,10 +27,8 @@ create table if not exists public.model_discovery_runs (
   constraint model_discovery_runs_changes_count_check check (changes_count >= 0),
   constraint model_discovery_runs_stale_models_deleted_check check (stale_models_deleted >= 0)
 );
-
 create index if not exists model_discovery_runs_started_at_idx
   on public.model_discovery_runs (started_at desc);
-
 create table if not exists public.model_discovery_seen_models (
   provider_id text not null,
   model_id text not null,
@@ -41,6 +39,5 @@ create table if not exists public.model_discovery_seen_models (
   constraint model_discovery_seen_models_pkey primary key (provider_id, model_id),
   constraint model_discovery_seen_models_last_run_id_fkey foreign key (last_run_id) references public.model_discovery_runs(id) on delete set null
 );
-
 create index if not exists model_discovery_seen_models_last_seen_at_idx
   on public.model_discovery_seen_models (last_seen_at);

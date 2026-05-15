@@ -4,6 +4,7 @@
   "name": "Eleven Turbo V2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Eleven Turbo V2 is a language model from ElevenLabs for chat, writing, analysis, and general-purpose automation. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

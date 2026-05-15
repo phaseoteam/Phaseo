@@ -8,6 +8,8 @@ import { detectTextProtocol } from "@protocols/detect";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
 import { finalizeRequest } from "../after";
+import { handleSuccessAudit } from "../after/audit";
+import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
 import type { PipelineRunnerArgs } from "./types";
 import {
@@ -27,6 +29,26 @@ import {
 	mergeIRUsageTotals,
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
+import {
+	buildResponseCacheFingerprint,
+	buildResponseCacheKey,
+	isResponseCacheEligible,
+	resolveResponseCachePolicy,
+	type CachedResponseRecord,
+} from "@/core/response-cache";
+import {
+	dispatchBackground,
+	ensureRuntimeForBackground,
+	getResponseCache,
+} from "@/runtime/env";
+import {
+	buildManagedSearchObservabilityFromToolResults,
+	mergeSearchObservability,
+} from "../after/search-observability";
+import {
+	buildManagedWebFetchObservabilityFromToolResults,
+	mergeWebFetchObservability,
+} from "../after/fetch-observability";
 
 function looksLikeStackTrace(value: string): boolean {
 	return /\n\s*at\s+[^\n]+/i.test(value) || /Error:\s*[^\n]+/i.test(value);
@@ -72,6 +94,102 @@ function createJsonErrorResponse(
 			},
 		},
 	);
+}
+
+function cloneJsonValue<T>(value: T): T {
+	if (value === null || value === undefined) return value;
+	return JSON.parse(JSON.stringify(value)) as T;
+}
+
+async function handleCachedTextResponse(args: {
+	pre: PipelineRunnerArgs["pre"];
+	endpoint: PipelineRunnerArgs["endpoint"];
+	timingHeader?: string;
+	record: CachedResponseRecord;
+}): Promise<Response> {
+	const { pre, endpoint, timingHeader, record } = args;
+	const ctx = pre.ctx;
+	ctx.meta.generation_ms = 0;
+	ctx.meta.latency_ms = ctx.meta.before_ms ?? 0;
+
+	const result = {
+		kind: "completed" as const,
+		upstream: new Response(null, {
+			status: record.statusCode,
+			headers: { "Content-Type": "application/json" },
+		}),
+		provider: record.providerId ?? "response-cache",
+		generationTimeMs: 0,
+		bill: {
+			cost_cents: 0,
+			currency: record.currency ?? "USD",
+			usage:
+				record.usage && typeof record.usage === "object"
+					? cloneJsonValue(record.usage)
+					: undefined,
+			upstream_id: record.nativeResponseId ?? null,
+			finish_reason: record.finishReason ?? null,
+		},
+		mappedRequest: null,
+		rawResponse: null,
+	} as const;
+
+	let releaseRuntime: () => void = () => {};
+	try {
+		releaseRuntime = ensureRuntimeForBackground();
+	} catch (error) {
+		console.error("[gateway] failed to initialize runtime for cached response audit", {
+			requestId: ctx.requestId,
+			endpoint,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+
+	dispatchBackground(
+		(async () => {
+			try {
+				await handleSuccessAudit(
+					ctx,
+					result as any,
+					false,
+					record.usage ?? {},
+					0,
+					0,
+					record.currency ?? "USD",
+					record.finishReason ?? null,
+					record.statusCode,
+					record.nativeResponseId ?? null,
+					record.responseBody,
+				);
+			} finally {
+				releaseRuntime();
+			}
+		})(),
+	);
+
+	const responseBody = cloneJsonValue(record.responseBody);
+	if (
+		(ctx.meta?.debug?.enabled || ctx.meta.returnMeta) &&
+		responseBody &&
+		typeof responseBody === "object"
+	) {
+		const responseBodyRecord = responseBody as Record<string, any>;
+		const existingMeta =
+			responseBodyRecord.meta && typeof responseBodyRecord.meta === "object"
+				? responseBodyRecord.meta
+				: {};
+		responseBodyRecord.meta = {
+			...existingMeta,
+			...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
+			...(ctx.guardrailEnforcement
+				? { guardrail_enforcement: ctx.guardrailEnforcement }
+				: {}),
+		};
+	}
+
+	const headers = makeHeaders(timingHeader);
+	headers.set("X-AI-Stats-Response-Cache", "hit");
+	return createResponse(responseBody, record.statusCode, headers);
 }
 
 async function materializeStreamResultToCompleted(args: {
@@ -170,6 +288,110 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			...ir,
 			stream: shouldForceStreamExecution,
 		};
+		const responseCacheEligibility = isResponseCacheEligible({
+			endpoint,
+			stream: requestedStream,
+			debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled),
+			hasTools: Array.isArray(pre.ctx.body?.tools) && pre.ctx.body.tools.length > 0,
+			serverToolsEnabled: preparedServerTools.config.enabled,
+		});
+		pre.ctx.responseCache = {
+			enabled: false,
+			status: "bypass",
+			reason: responseCacheEligibility.reason,
+			key: null,
+			fingerprint: null,
+			ttlSeconds: null,
+			ttlSource: null,
+		};
+
+		const responseCacheStore = getResponseCache();
+		if (responseCacheEligibility.eligible && responseCacheStore) {
+			const presetResponseCaching = pre.ctx.preset?.config?.responseCaching ?? null;
+			const responseCachePolicy = resolveResponseCachePolicy({
+				presetTtlSeconds: presetResponseCaching?.ttlSeconds ?? null,
+				presetDisabled: presetResponseCaching?.enabled === false,
+			});
+			if (!responseCachePolicy.enabled || !responseCachePolicy.ttlSeconds) {
+				pre.ctx.responseCache = {
+					enabled: false,
+					status: "bypass",
+					reason: "disabled_by_policy",
+					key: null,
+					fingerprint: null,
+					ttlSeconds: null,
+					ttlSource: responseCachePolicy.source,
+				};
+			} else {
+				const fingerprint = await buildResponseCacheFingerprint({
+					workspaceId: pre.ctx.workspaceId,
+					endpoint,
+					model: pre.ctx.model,
+					body: pre.ctx.body,
+					protocol,
+					presetId: pre.ctx.preset?.id ?? null,
+					presetSlug: pre.ctx.preset?.slug ?? null,
+					routingMode: pre.ctx.routingMode ?? null,
+				});
+				const cacheKey = buildResponseCacheKey(
+					pre.ctx.workspaceId,
+					fingerprint.digest,
+				);
+				pre.ctx.responseCache = {
+					enabled: true,
+					status: "miss",
+					reason: null,
+					key: cacheKey,
+					fingerprint: fingerprint.digest,
+					ttlSeconds: responseCachePolicy.ttlSeconds,
+					ttlSource: responseCachePolicy.source,
+				};
+				const cacheLookupStartedAt = performance.now();
+				const cachedRecord = await responseCacheStore.get<CachedResponseRecord>(cacheKey);
+				timing.timer.record(
+					"response_cache_lookup",
+					performance.now() - cacheLookupStartedAt,
+				);
+				if (cachedRecord?.responseBody) {
+					const ageMs = Math.max(
+						0,
+						Date.now() - new Date(cachedRecord.createdAt).getTime(),
+					);
+					pre.ctx.responseCache = {
+						enabled: true,
+						status: "hit",
+						reason: null,
+						key: cacheKey,
+						fingerprint: fingerprint.digest,
+						ttlSeconds: cachedRecord.ttlSeconds,
+						ttlSource: responseCachePolicy.source,
+						createdAt: cachedRecord.createdAt,
+						ageMs,
+						providerId: cachedRecord.providerId ?? null,
+					};
+					timing.timer.record("execute_total", 0);
+					const header = timing.timer.header();
+					pre.ctx.timing = timing.timer.snapshot();
+					pre.ctx.timer = timing.timer;
+					return await handleCachedTextResponse({
+						pre,
+						endpoint,
+						timingHeader: header || undefined,
+						record: cachedRecord,
+					});
+				}
+			}
+		} else if (responseCacheEligibility.eligible && !responseCacheStore) {
+			pre.ctx.responseCache = {
+				enabled: false,
+				status: "bypass",
+				reason: "store_not_configured",
+				key: null,
+				fingerprint: null,
+				ttlSeconds: null,
+				ttlSource: null,
+			};
+		}
 
 		// Enforce canonical IR invariants before provider execution.
 		const irIssues = validateTextIRContract(ir);
@@ -236,13 +458,19 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 		if (preparedServerTools.config.enabled && exec.result.kind === "completed" && exec.result.ir) {
 			const maxServerToolRounds = 8;
 			let serverToolRounds = 0;
-			let datetimeRequests = 0;
+			const serverToolUsage = {
+				datetimeRequests: 0,
+				webSearchRequests: 0,
+				webFetchRequests: 0,
+			};
 			let aggregateUsage = (exec.result.ir as IRChatResponse).usage;
 			let latestIrResponse = exec.result.ir as IRChatResponse;
 			let nextIrRequest = irForExecution;
+			let searchObservability = pre.ctx.searchObservability ?? null;
+			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
 
 			while (true) {
-				const continuation = buildServerToolContinuation(
+				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
 				);
@@ -266,7 +494,19 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					});
 				}
 				serverToolRounds += 1;
-				datetimeRequests += continuation.datetimeRequests;
+				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests;
+				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests;
+				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests;
+				searchObservability = mergeSearchObservability(
+					searchObservability,
+					buildManagedSearchObservabilityFromToolResults(continuation.toolResults),
+				);
+				webFetchObservability = mergeWebFetchObservability(
+					webFetchObservability,
+					buildManagedWebFetchObservabilityFromToolResults(continuation.toolResults),
+				);
+				pre.ctx.searchObservability = searchObservability;
+				pre.ctx.webFetchObservability = webFetchObservability;
 
 				nextIrRequest = {
 					...nextIrRequest,
@@ -351,22 +591,29 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				exec.result.ir = latestIrResponse;
 			}
 
-			if (datetimeRequests > 0) {
+			pre.ctx.searchObservability = searchObservability;
+			pre.ctx.webFetchObservability = webFetchObservability;
+
+			if (
+				serverToolUsage.datetimeRequests > 0 ||
+				serverToolUsage.webSearchRequests > 0 ||
+				serverToolUsage.webFetchRequests > 0
+			) {
 				const mergedUsage = attachServerToolUsage(aggregateUsage, {
-					datetimeRequests,
+					...serverToolUsage,
 				});
 				if (exec.result.ir) {
 					(exec.result.ir as IRChatResponse).usage = mergedUsage;
 				}
 				exec.result.bill.usage = attachServerToolUsageToRawUsage(
 					(exec.result.bill.usage as Record<string, any> | undefined) ?? undefined,
-					{ datetimeRequests },
+					{ ...serverToolUsage },
 				);
 				if (exec.result.rawResponse && typeof exec.result.rawResponse === "object") {
 					const rawResponse = { ...(exec.result.rawResponse as Record<string, any>) };
 					rawResponse.usage = attachServerToolUsageToRawUsage(
 						rawResponse.usage as Record<string, any> | undefined,
-						{ datetimeRequests },
+						{ ...serverToolUsage },
 					);
 					exec.result.rawResponse = rawResponse;
 				}

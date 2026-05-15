@@ -27,6 +27,7 @@ export type ModelsPageModel = Omit<
 	| "organisation_id"
 	| "organisation_name"
 	| "organisation_colour"
+	| "description"
 	| "primary_date"
 	| "primary_timestamp"
 	| "primary_group_key"
@@ -57,6 +58,8 @@ export type ModelsPageModel = Omit<
 	| "popularity_tokens_week"
 	| "throughput_week"
 	| "latency_week"
+	| "router_requests_30d"
+	| "router_spend_nanos_30d"
 	>,
 	"gateway_status"
 > & {

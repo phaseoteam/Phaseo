@@ -4,6 +4,7 @@
   "name": "Gemma 3n E2B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemma 3n E2B is optimized for efficient execution on mobile and low-resource devices, such as phones, laptops, and tablets.",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-06-25T00:00:00",
   "deprecation_date": null,

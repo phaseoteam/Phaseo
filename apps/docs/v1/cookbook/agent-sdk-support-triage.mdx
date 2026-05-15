@@ -1,0 +1,189 @@
+---
+title: "Support triage with presets and guardrail-aware failures"
+description: "Run a preset-driven support triage agent that returns strict JSON, pauses high-risk cases for review, and keeps guardrail failures visible."
+---
+
+Use this recipe when one support workflow should:
+
+- inherit routing and prompt defaults from a dashboard preset
+- return strict structured output
+- pause risky cases for human review
+- keep gateway failures visible in logs instead of hiding them inside agent code
+
+## 1. Start with a preset
+
+Create a preset such as `support-triage` that owns:
+
+- the default routed model or router target
+- provider preferences
+- the support-system prompt
+- stable decoding parameters
+
+That keeps the agent code focused on workflow control instead of duplicating request policy.
+
+## 2. Define a narrow triage contract
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+Keep the first output shape small enough that operators can inspect it quickly.
+
+## 3. Create the preset-driven agent
+
+```ts
+import { createAgent } from "@ai-stats/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+The SDK resolves `preset: "support-triage"` to the gateway alias form `@support-triage`.
+
+## 4. Configure the gateway-backed adapter
+
+Use adapter defaults for the parts that should stay fixed across every triage run:
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@ai-stats/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.AI_STATS_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. Run the workflow with bounded retries
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+If the run pauses for review, resume it explicitly:
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. Treat gateway failures as operational events
+
+Do not hide failures by swallowing them inside the agent callback chain.
+
+Instead, catch `AgentGatewayError` explicitly:
+
+```ts
+import { AgentGatewayError } from "@ai-stats/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+Then:
+
+1. let the runtime persist `failed` run and step state
+2. inspect `loaded.run.errorDetails` or `loaded.steps[n].errorDetails` on later recovery paths when the original exception is no longer in memory
+3. inspect the request details for:
+   - guardrail enforcement
+   - routing details
+   - plugin execution
+   - request ids and provider data
+
+That is especially important when:
+
+- a guardrail blocks the request
+- the preset allowlist rejects the requested model
+- provider credentials or enablement filters remove the routed candidate set
+- response healing fails to recover schema-valid JSON
+
+## 7. What to verify
+
+After one successful run and one intentionally risky run, confirm:
+
+- the request detail view shows the preset-driven request target
+- high-risk cases pause in `waiting_for_human`
+- retrying model steps persist `modelAttempts`
+- guardrail or preset failures remain visible in request details, not hidden inside agent exceptions
+
+## Related guides
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
+- [Recover malformed structured JSON](./response-healing-for-structured-json.mdx)
+- [Build a durable agent loop in TypeScript](./agent-sdk-durable-loop.mdx)

@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { AppWindow, ArrowDown, ArrowUp, ChevronDown, SlidersHorizontal, Server } from "lucide-react";
+import { AppWindow, ArrowDown, ArrowUp, ChevronDown, Shield, SlidersHorizontal, Server } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -31,30 +31,43 @@ import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
-import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
 import ProviderCard from "@/components/(data)/model/pricing/ProviderCard";
 import { cn } from "@/lib/utils";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
+import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
+import { mergeProviderPricingOffers } from "@/lib/providers/providerFamilyGroups";
 
-const PLAN_ORDER = ["free", "standard", "batch", "flex", "priority"] as const;
+const PLAN_ORDER = ["free", "standard", "priority", "flex", "batch"] as const;
 const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
 const VIEW_QUERY_KEY = "view";
 const QUANT_QUERY_KEY = "quant";
 
-const formatPlanLabel = (plan: string) =>
-    plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : plan;
-
 type SortOption = "default" | "pricing" | "throughput" | "latency" | "uptime";
 type SortDirection = "asc" | "desc";
 type PricingView = "api" | "subscription";
-const SORT_LABELS: Record<SortOption, string> = {
-    default: "Default",
-    pricing: "Price",
-    throughput: "Throughput",
-    latency: "Latency",
-    uptime: "Uptime",
+type WorkspacePrivacySettings = {
+    isAuthenticated: boolean;
+    privacyEnablePaidMayTrain: boolean;
+    privacyEnableFreeMayTrain: boolean;
+    privacyZdrOnly: boolean;
+    providerRestrictionMode: "none" | "allowlist" | "blocklist";
+    providerRestrictionProviderIds: string[];
+};
+const SORT_TRIGGER_LABELS: Record<SortOption, string> = {
+    default: "Sort by",
+    pricing: "Sort by Price",
+    throughput: "Sort by Throughput",
+    latency: "Sort by Latency",
+    uptime: "Sort by Uptime",
+};
+const SORT_OPTION_LABELS: Record<SortOption, string> = {
+    default: "Sort by Default",
+    pricing: "Sort by Price",
+    throughput: "Sort by Throughput",
+    latency: "Sort by Latency",
+    uptime: "Sort by Uptime",
 };
 const DEFAULT_SORT_DIRECTIONS: Record<Exclude<SortOption, "default">, SortDirection> = {
     pricing: "asc",
@@ -118,6 +131,16 @@ function getPreferredPlan(plans: string[]): string {
     return plans[0] || "standard";
 }
 
+function getProviderAvailablePlans(provider: ProviderPricing): string[] {
+    const set = new Set<string>();
+    for (const rule of provider.pricing_rules) {
+        set.add(rule.pricing_plan || "standard");
+    }
+    const ordered = PLAN_ORDER.filter((plan) => set.has(plan));
+    const extras = Array.from(set).filter((plan) => !PLAN_ORDER.includes(plan as any)).sort();
+    return [...ordered, ...extras];
+}
+
 function normalizedRulePrice(
     rule: ProviderPricing["pricing_rules"][number]
 ): number | null {
@@ -166,6 +189,56 @@ function getProviderModelScopeForPlan(
     return matchingProviderModels.length > 0
         ? matchingProviderModels
         : provider.provider_models;
+}
+
+function getProviderDefaultPlan(provider: ProviderPricing): string {
+    return getPreferredPlan(getProviderAvailablePlans(provider));
+}
+
+function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
+    const override = provider.provider_models.find(
+        (model) => typeof model.prompt_training_policy_override === "string" && model.prompt_training_policy_override.trim()
+    )?.prompt_training_policy_override;
+    return normalizeProviderPromptTrainingPolicy(
+        override ?? provider.provider.prompt_training_policy ?? null
+    );
+}
+
+function getIgnoredPrivacyReasons(
+    provider: ProviderPricing,
+    settings: WorkspacePrivacySettings
+): string[] {
+    const reasons: string[] = [];
+    const providerId = provider.provider.api_provider_id;
+    const providerIds = settings.providerRestrictionProviderIds;
+    if (settings.providerRestrictionMode === "allowlist" && providerIds.length) {
+        if (!providerIds.includes(providerId)) {
+            reasons.push("Not in workspace provider allowlist");
+        }
+    } else if (settings.providerRestrictionMode === "blocklist" && providerIds.length) {
+        if (providerIds.includes(providerId)) {
+            reasons.push("Blocked by workspace provider restrictions");
+        }
+    }
+
+    if (settings.privacyZdrOnly) {
+        const zdr = provider.provider.zero_data_retention ?? "unknown";
+        if (zdr !== "default" && zdr !== "optional") {
+            reasons.push("Does not meet workspace ZDR-only requirement");
+        }
+    }
+
+    const trainingPolicy = getProviderPromptTrainingPolicy(provider);
+    if (trainingPolicy === "may_train") {
+        const defaultPlan = getProviderDefaultPlan(provider);
+        if (defaultPlan === "free" && !settings.privacyEnableFreeMayTrain) {
+            reasons.push("Free training-on-inputs endpoints are disabled in workspace privacy settings");
+        } else if (defaultPlan !== "free" && !settings.privacyEnablePaidMayTrain) {
+            reasons.push("Paid training-on-inputs endpoints are disabled in workspace privacy settings");
+        }
+    }
+
+    return reasons;
 }
 
 function hasPricingForPlan(provider: ProviderPricing, plan: string): boolean {
@@ -290,6 +363,7 @@ export default function ModelPricingClient({
     creatorOrgId,
     runtimeStats = {},
     routingHealth = {},
+    workspacePrivacySettings = null,
     showHeader = true,
 }: {
     providers: ProviderPricing[];
@@ -297,12 +371,17 @@ export default function ModelPricingClient({
     creatorOrgId?: string | null;
     runtimeStats?: ProviderRuntimeStatsMap;
     routingHealth?: ProviderRoutingStatusMap;
+    workspacePrivacySettings?: WorkspacePrivacySettings | null;
     showHeader?: boolean;
 }) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const hasApiProviders = providers.some(
+    const displayProviders = useMemo(
+        () => mergeProviderPricingOffers(providers),
+        [providers]
+    );
+    const hasApiProviders = displayProviders.some(
         (provider) =>
             provider.provider_models.length > 0 || provider.pricing_rules.length > 0
     );
@@ -310,19 +389,6 @@ export default function ModelPricingClient({
     const defaultPricingView: PricingView =
         !hasApiProviders && hasSubscriptionPlans ? "subscription" : "api";
 
-    const availablePlans = useMemo(() => {
-        const s = new Set<string>();
-        for (const p of providers) {
-            for (const r of p.pricing_rules) {
-                s.add(r.pricing_plan || "standard");
-            }
-        }
-        return PLAN_ORDER.filter((x) => s.has(x));
-    }, [providers]);
-
-    const [plan, setPlan] = useState<string>(
-        getPreferredPlan(availablePlans)
-    );
     const [sort, setSort] = useState<SortOption>(() => {
         const fromUrl = searchParams.get(SORT_QUERY_KEY);
         return isSortOption(fromUrl) ? fromUrl : "default";
@@ -339,8 +405,9 @@ export default function ModelPricingClient({
         getQuantizationFilterFromUrl(searchParams.get(QUANT_QUERY_KEY))
     );
     const [showAllProviders, setShowAllProviders] = useState(false);
+    const [showIgnoredProviders, setShowIgnoredProviders] = useState(false);
 
-    const sortLabel = SORT_LABELS[sort];
+    const sortLabel = SORT_TRIGGER_LABELS[sort];
 
     const sortedSubscriptionPlans = useMemo(() => {
         return [...subscriptionPlans].sort((a, b) => {
@@ -371,24 +438,24 @@ export default function ModelPricingClient({
 
     const quantizationOptions = useMemo(() => {
         const values = new Set<string>();
-        for (const provider of providers) {
-            const scope = getProviderModelScopeForPlan(provider, plan);
-            for (const model of scope) {
+        for (const provider of displayProviders) {
+            for (const model of provider.provider_models) {
                 const quant = normalizeQuantizationScheme(model.quantization_scheme);
                 if (quant) values.add(quant);
             }
         }
         return Array.from(values).sort((a, b) => a.localeCompare(b));
-    }, [providers, plan]);
+    }, [displayProviders]);
     const hasQuantizationOptions = quantizationOptions.length > 0;
 
     const sortedProviders = useMemo(() => {
-        const list = providers.filter((provider) =>
-            isProviderVisibleForPlan(provider, plan)
+        const list = displayProviders.filter((provider) =>
+            provider.pricing_rules.length > 0 || provider.provider_models.length > 0
         );
         const getProviderSortPrice = (provider: ProviderPricing): number | null => {
+            const preferredPlan = getProviderDefaultPlan(provider);
             const planRules = provider.pricing_rules.filter(
-                (r) => (r.pricing_plan || "standard") === plan
+                (r) => (r.pricing_plan || "standard") === preferredPlan
             );
             if (!planRules.length) return null;
 
@@ -410,7 +477,10 @@ export default function ModelPricingClient({
         };
 
         const isProviderActiveForPlan = (provider: ProviderPricing) => {
-            const modelScope = getProviderModelScopeForPlan(provider, plan);
+            const modelScope = getProviderModelScopeForPlan(
+                provider,
+                getProviderDefaultPlan(provider)
+            );
             return modelScope.some((pm) => isProviderModelActiveForPlan(pm));
         };
 
@@ -510,20 +580,53 @@ export default function ModelPricingClient({
         }
 
         return list.sort(withCreatorBias);
-    }, [providers, creatorOrgId, runtimeStats, sort, sortDirection, plan]);
+    }, [displayProviders, creatorOrgId, runtimeStats, sort, sortDirection]);
 
-    const filteredProviders = useMemo(() => {
-        if (quantizationFilter === "all") return sortedProviders;
+    const { filteredProviders, ignoredProviderReasons } = useMemo(() => {
+        const quantizedProviders =
+            quantizationFilter === "all"
+                ? sortedProviders
+                : sortedProviders.filter((provider) =>
+                      provider.provider_models.some(
+                          (pm) =>
+                              normalizeQuantizationScheme(pm.quantization_scheme) ===
+                              quantizationFilter
+                      )
+                  );
 
-        return sortedProviders.filter((provider) => {
-            const scope = getProviderModelScopeForPlan(provider, plan);
-            return scope.some(
-                (pm) =>
-                    normalizeQuantizationScheme(pm.quantization_scheme) ===
-                    quantizationFilter
-            );
-        });
-    }, [sortedProviders, quantizationFilter, plan]);
+        const ignoredReasonMap = new Map<string, string[]>();
+        if (!workspacePrivacySettings?.isAuthenticated) {
+            return {
+                filteredProviders: quantizedProviders,
+                ignoredProviderReasons: ignoredReasonMap,
+            };
+        }
+
+        const eligible: ProviderPricing[] = [];
+        const ignored: ProviderPricing[] = [];
+        for (const provider of quantizedProviders) {
+            const reasons = getIgnoredPrivacyReasons(provider, workspacePrivacySettings);
+            if (reasons.length) {
+                ignoredReasonMap.set(provider.provider.api_provider_id, reasons);
+                if (showIgnoredProviders) ignored.push(provider);
+            } else {
+                eligible.push(provider);
+            }
+        }
+
+        return {
+            filteredProviders: showIgnoredProviders ? [...eligible, ...ignored] : eligible,
+            ignoredProviderReasons: ignoredReasonMap,
+        };
+    }, [quantizationFilter, showIgnoredProviders, sortedProviders, workspacePrivacySettings]);
+    const ignoredProviderCount = ignoredProviderReasons.size;
+    const canShowIgnoredToggle =
+        Boolean(workspacePrivacySettings?.isAuthenticated) && ignoredProviderCount > 0;
+    const allProvidersHiddenByPrivacy =
+        sortedProviders.length > 0 &&
+        filteredProviders.length === 0 &&
+        ignoredProviderCount > 0 &&
+        !showIgnoredProviders;
     const hasProviderOverflow =
         filteredProviders.length > DEFAULT_VISIBLE_PROVIDER_COUNT;
     const alwaysVisibleProviders = hasProviderOverflow
@@ -553,14 +656,6 @@ export default function ModelPricingClient({
         },
         [pathname, router, searchParams]
     );
-
-    useEffect(() => {
-        if (availablePlans.some((availablePlan) => availablePlan === plan)) return;
-        const fallbackPlan = getPreferredPlan(availablePlans);
-        if (fallbackPlan !== plan) {
-            setPlan(fallbackPlan);
-        }
-    }, [availablePlans, plan]);
 
     useEffect(() => {
         const nextSort = isSortOption(searchParams.get(SORT_QUERY_KEY))
@@ -599,7 +694,7 @@ export default function ModelPricingClient({
 
     useEffect(() => {
         setShowAllProviders(false);
-    }, [plan, quantizationFilter, sort, sortDirection]);
+    }, [quantizationFilter, sort, sortDirection, showIgnoredProviders]);
 
     useEffect(() => {
         try {
@@ -734,21 +829,6 @@ export default function ModelPricingClient({
                     {hasApiProviders ? (
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-2.5">
-                                {availablePlans.length === 0 ? (
-                                    <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-muted-foreground dark:border-zinc-800">
-                                        Pricing tiers unavailable
-                                    </span>
-                                ) : availablePlans.length === 1 ? (
-                                    <span className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium dark:border-zinc-800">
-                                        {formatPlanLabel(availablePlans[0])} Tier
-                                    </span>
-                                ) : (
-                                    <PricingPlanSelect
-                                        value={plan}
-                                        onChange={setPlan}
-                                        plans={availablePlans}
-                                    />
-                                )}
                                 {hasQuantizationOptions ? (
                                     <Select
                                         value={quantizationFilter}
@@ -771,8 +851,18 @@ export default function ModelPricingClient({
                                         </SelectContent>
                                     </Select>
                                 ) : null}
-                            </div>
-                            <div className="flex items-center gap-2.5">
+                                <Select value={sort} onValueChange={onSortChange}>
+                                    <SelectTrigger className="h-9 w-[210px] bg-background">
+                                        <SelectValue placeholder="Sort by">{sortLabel}</SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="default">{SORT_OPTION_LABELS.default}</SelectItem>
+                                        <SelectItem value="pricing">{SORT_OPTION_LABELS.pricing}</SelectItem>
+                                        <SelectItem value="throughput">{SORT_OPTION_LABELS.throughput}</SelectItem>
+                                        <SelectItem value="latency">{SORT_OPTION_LABELS.latency}</SelectItem>
+                                        <SelectItem value="uptime">{SORT_OPTION_LABELS.uptime}</SelectItem>
+                                    </SelectContent>
+                                </Select>
                                 {sort !== "default" ? (
                                     <TooltipProvider>
                                         <Tooltip>
@@ -802,18 +892,18 @@ export default function ModelPricingClient({
                                         </Tooltip>
                                     </TooltipProvider>
                                 ) : null}
-                                <Select value={sort} onValueChange={onSortChange}>
-                                    <SelectTrigger className="h-9 w-[170px] bg-background">
-                                        <SelectValue placeholder="Sort">{sortLabel}</SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="default">Default</SelectItem>
-                                        <SelectItem value="pricing">Price</SelectItem>
-                                        <SelectItem value="throughput">Throughput</SelectItem>
-                                        <SelectItem value="latency">Latency</SelectItem>
-                                        <SelectItem value="uptime">Uptime</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                {canShowIgnoredToggle ? (
+                                    <label className="inline-flex items-center gap-2.5 rounded-md border border-zinc-200 bg-background px-3 py-1.5 text-sm text-foreground dark:border-zinc-800">
+                                        <Switch
+                                            checked={showIgnoredProviders}
+                                            onCheckedChange={setShowIgnoredProviders}
+                                            aria-label="Show ignored providers"
+                                        />
+                                        <span>Show ignored</span>
+                                    </label>
+                                ) : null}
                             </div>
                         </div>
                     ) : null}
@@ -824,7 +914,14 @@ export default function ModelPricingClient({
                                     <ProviderCard
                                         key={prov.provider.api_provider_id}
                                         provider={prov}
-                                        plan={plan}
+                                        defaultPlan={getProviderDefaultPlan(prov)}
+                                        availablePlans={getProviderAvailablePlans(prov)}
+                                        comparisonProviders={displayProviders}
+                                        privacyIgnoredReasons={
+                                            ignoredProviderReasons.get(
+                                                prov.provider.api_provider_id
+                                            ) ?? null
+                                        }
                                         runtimeStats={
                                             runtimeStats[prov.provider.api_provider_id] ?? null
                                         }
@@ -851,7 +948,14 @@ export default function ModelPricingClient({
                                                         <ProviderCard
                                                             key={prov.provider.api_provider_id}
                                                             provider={prov}
-                                                            plan={plan}
+                                                            defaultPlan={getProviderDefaultPlan(prov)}
+                                                            availablePlans={getProviderAvailablePlans(prov)}
+                                                            comparisonProviders={displayProviders}
+                                                            privacyIgnoredReasons={
+                                                                ignoredProviderReasons.get(
+                                                                    prov.provider.api_provider_id
+                                                                ) ?? null
+                                                            }
                                                             runtimeStats={
                                                                 runtimeStats[
                                                                     prov.provider.api_provider_id
@@ -896,6 +1000,30 @@ export default function ModelPricingClient({
                                 </>
                             ) : null}
                         </div>
+                    ) : allProvidersHiddenByPrivacy ? (
+                        <Empty className="rounded-lg border p-10">
+                            <EmptyHeader>
+                                <EmptyMedia variant="icon">
+                                    <Shield className="size-5" />
+                                </EmptyMedia>
+                                <EmptyTitle>All providers hidden</EmptyTitle>
+                                <EmptyDescription>
+                                    Your workspace privacy preferences are currently filtering out every provider for this model.
+                                </EmptyDescription>
+                            </EmptyHeader>
+                            <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                                <Button asChild type="button" variant="outline">
+                                    <Link href="/settings/privacy">Update Privacy Settings</Link>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setShowIgnoredProviders(true)}
+                                >
+                                    Show Hidden Providers
+                                </Button>
+                            </div>
+                        </Empty>
                     ) : sortedProviders.length > 0 ? (
                         <Empty className="rounded-lg border p-8">
                             <EmptyHeader>

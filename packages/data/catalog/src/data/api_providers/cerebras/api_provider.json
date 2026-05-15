@@ -5,5 +5,10 @@
   "link": "https://inference-docs.cerebras.ai/",
   "country_code": "US",
   "status": "Active",
-  "colour": "#F97316"
+  "colour": "#F97316",
+  "privacy_policy_url": "https://www.cerebras.ai/privacy-policy",
+  "terms_of_service_url": "https://www.cerebras.ai/terms-of-service",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Cerebras says it does not retain inputs and outputs associated with its training, inference, and chatbot services.",
+  "prompt_training_source_url": "https://www.cerebras.ai/privacy-policy"
 }

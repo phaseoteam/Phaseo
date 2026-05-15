@@ -1,0 +1,129 @@
+{
+  "key": "venice:x-ai/grok-4.3:text.generate",
+  "api_provider_id": "venice",
+  "provider_slug": "venice",
+  "api_model_id": "x-ai/grok-4.3",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.42,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.23,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.83,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.83,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.45,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.67,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    }
+  ]
+}

@@ -4,6 +4,7 @@
   "name": "Gemini Diffusion",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemini Diffusion is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": null,
   "deprecation_date": null,

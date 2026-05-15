@@ -3,6 +3,7 @@ import {
 	normalizeImageConfig,
 	normalizeModalities,
 	normalizeOpenAIToolChoice,
+	normalizeProviderGeoPreferences,
 	normalizeThinkingConfig,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
@@ -151,11 +152,49 @@ describe("normalizeOpenAIToolChoice", () => {
 		).toEqual({ name: "get_weather" });
 	});
 
+	it("maps native tool object values", () => {
+		expect(
+			normalizeOpenAIToolChoice({
+				type: "web_search_preview",
+			}),
+		).toEqual({ name: "web_search_preview" });
+	});
+
 	it("applies unknown string fallback when configured", () => {
 		expect(
 			normalizeOpenAIToolChoice("something-else", {
 				unknownStringFallback: "auto",
 			}),
 		).toBe("auto");
+	});
+
+	it("preserves unknown string values as named tool choices by default", () => {
+		expect(normalizeOpenAIToolChoice("web_search_preview")).toEqual({
+			name: "web_search_preview",
+		});
+	});
+});
+
+describe("normalizeProviderGeoPreferences", () => {
+	it("maps provider routing geo controls into IR geo preferences", () => {
+		expect(
+			normalizeProviderGeoPreferences({
+				provider: {
+					required_execution_region: "eu",
+					requiredDataRegion: "de",
+					require_zero_data_retention: true,
+					inferenceGeo: "us",
+				},
+			}),
+		).toEqual({
+			requiredExecutionRegion: "eu",
+			requiredDataRegion: "de",
+			requireZeroDataRetention: true,
+			inferenceGeo: "us",
+		});
+	});
+
+	it("returns undefined when no geo controls are present", () => {
+		expect(normalizeProviderGeoPreferences({ provider: {} })).toBeUndefined();
 	});
 });

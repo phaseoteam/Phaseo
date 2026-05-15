@@ -9,20 +9,30 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 import { permanentRedirect } from "next/navigation";
+import {
+	resolveQuickstartRequestContext,
+	type QuickstartSearchParams,
+} from "@/components/(data)/model/quickstart/requestContext";
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
 	const path = getModelPath(modelId, "quickstart");
 	const imagePath = `/og/models/${modelId}`;
 
-	const description = `${modelName} Gateway support on AI Stats. View providers, streaming support, and routing options for this model.`;
+	const description = buildModelPageMetadataDescription({
+		modelDescription,
+		suffix:
+			"View providers, streaming support, request examples, and routing options for this model on AI Stats.",
+		fallback: `${modelName} Gateway support on AI Stats. View providers, streaming support, and routing options for this model.`,
+	});
 
 	return buildMetadata({
 		title: `${modelName} Gateway - Providers & Routing Options`,
@@ -41,11 +51,18 @@ export async function generateMetadata(props: {
 
 export default async function Page({
 	params,
+	searchParams,
 }: {
 	params: Promise<ModelRouteParams>;
+	searchParams: Promise<QuickstartSearchParams>;
 }) {
-	const routeParams = await params;
+	const [routeParams, routeSearchParams] = await Promise.all([
+		params,
+		searchParams,
+	]);
 	const includeHidden = false;
+	const quickstartRequestContext =
+		resolveQuickstartRequestContext(routeSearchParams);
 	const { requestedModelId, canonicalModelId } = await resolveModelRouteIds(
 		routeParams,
 		includeHidden,
@@ -57,7 +74,11 @@ export default async function Page({
 
 	return (
 		<ModelDetailShell modelId={modelId} tab="quickstart" includeHidden={includeHidden}>
-			<ModelQuickstartSection modelId={modelId} includeHidden={includeHidden} />
+			<ModelQuickstartSection
+				modelId={modelId}
+				includeHidden={includeHidden}
+				quickstartRequestContext={quickstartRequestContext}
+			/>
 		</ModelDetailShell>
 	);
 }

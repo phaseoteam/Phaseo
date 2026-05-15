@@ -4,6 +4,7 @@
   "name": "Ling Flash 2.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Ling Flash 2.0 is an instant (instruct) model from inclusionAI with 104B total parameters and 7.4B active parameters, designed for real-world agents that require fast responses, strong execution, and high token efficiency.",
   "announced_date": "2025-09-17T00:00:00",
   "release_date": "2025-09-17T00:00:00",
   "deprecation_date": null,

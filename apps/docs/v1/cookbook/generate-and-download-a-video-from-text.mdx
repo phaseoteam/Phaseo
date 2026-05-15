@@ -1,0 +1,97 @@
+---
+title: "Generate and download a video from text"
+description: "Create one text-to-video job, poll until terminal, and fetch the final output safely."
+---
+
+Use this recipe when your application needs the smallest production-safe text-to-video loop without introducing webhooks yet.
+
+## Goal
+
+- Submit a video generation job.
+- Poll until terminal.
+- Download the result or fetch the binary content.
+
+## 1. Create the job
+
+```bash
+curl https://api.phaseo.app/v1/videos \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/veo-3.1-lite",
+    "prompt": "A cinematic sunrise over a mountain lake",
+    "duration": 8,
+    "aspect_ratio": "16:9"
+  }'
+```
+
+The create call returns an async job record immediately. Persist the returned `id` as soon as you receive it.
+
+## 2. Respect the polling guidance
+
+Poll the status endpoint and respect the gateway guidance where possible.
+
+```bash
+curl https://api.phaseo.app/v1/videos/VIDEO_ID \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Watch for:
+
+- `status`
+- `poll_after_seconds`
+- `content_url`
+- `download_url`
+- `outputs`
+
+Terminal states include:
+
+- `completed`
+- `failed`
+- `cancelled`
+- `expired`
+
+## 3. Fetch the final output
+
+When the job completes, choose the retrieval path that matches your app.
+
+Use content bytes directly:
+
+```bash
+curl https://api.phaseo.app/v1/videos/VIDEO_ID/content \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  --output result.mp4
+```
+
+Or request a short-lived download URL when your application needs a handoff link:
+
+```bash
+curl -X POST https://api.phaseo.app/v1/videos/VIDEO_ID/download_url \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 4. Treat failed jobs as first-class outcomes
+
+Do not build only for the happy path.
+
+Capture:
+
+- the final job status
+- any surfaced provider or error detail
+- the gateway request id
+
+That gives you enough context to distinguish provider-side failures from polling bugs in your own application.
+
+## 5. When to switch to webhooks
+
+Move to a webhook flow when:
+
+- users do not stay connected while the job runs
+- you need server-side delivery to another system
+- polling load becomes noisy at scale
+
+## Related guides
+
+- [Run async video with webhooks](./async-video-webhooks.mdx)
+- [API Reference: Video generation](../api-reference/endpoint/video-generation.mdx)
+- [API Reference: Video status](../api-reference/endpoint/video-status.mdx)

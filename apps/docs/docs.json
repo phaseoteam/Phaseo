@@ -2,7 +2,7 @@
 	"$schema": "https://mintlify.com/docs.json",
 	"theme": "mint",
 	"name": "AI Stats Docs",
-	"description": "Get started with the AI Stats API in 5 minutes.",
+	"description": "Documentation for AI Stats Gateway, SDKs, routing, pricing, guardrails, async jobs, and model discovery across providers.",
 	"colors": {
 		"primary": "#2563eb",
 		"light": "#93c5fd",
@@ -65,6 +65,7 @@
 								"expanded": false,
 								"pages": [
 									"v1/guides/routing-and-fallbacks",
+									"v1/guides/service-tiers",
 									"v1/guides/presets",
 									"v1/guides/multimodality",
 									{
@@ -111,6 +112,7 @@
 								"expanded": false,
 								"pages": [
 									"v1/guides/integrations/index",
+									"v1/guides/integrations/docs-mcp",
 									"v1/guides/integrations/ai-sdk",
 									"v1/guides/integrations/claude-code",
 									"v1/guides/integrations/codex",
@@ -466,7 +468,7 @@
 						]
 					},
 					{
-						"tab": "SDK Reference (Alpha)",
+						"tab": "Client SDKs",
 						"icon": "package",
 						"menu": [
 							{
@@ -909,6 +911,229 @@
 						]
 					},
 					{
+						"tab": "Agent SDK",
+						"icon": "bot",
+						"menu": [
+							{
+								"item": "Overview",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/agent-sdk/overview"
+										]
+									}
+								]
+							},
+							{
+								"item": "TypeScript Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/typescript/agent-sdk-overview",
+											"v1/sdk-reference/typescript/agent-sdk-installation",
+											"v1/sdk-reference/typescript/agent-sdk"
+										]
+									}
+								]
+							},
+							{
+								"item": "Python Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/python/agent-sdk-overview",
+											"v1/sdk-reference/python/agent-sdk-installation",
+											"v1/sdk-reference/python/agent-sdk"
+										]
+									}
+								]
+							},
+							{
+								"item": "Go Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/go/agent-sdk-overview",
+											"v1/sdk-reference/go/agent-sdk-installation",
+											"v1/sdk-reference/go/agent-sdk"
+										]
+									}
+								]
+							},
+							{
+								"item": "C# Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/csharp/agent-sdk-overview",
+											"v1/sdk-reference/csharp/agent-sdk-installation",
+											"v1/sdk-reference/csharp/agent-sdk"
+										]
+									}
+								]
+							},
+							{
+								"item": "PHP Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/php/agent-sdk-overview",
+											"v1/sdk-reference/php/agent-sdk-installation",
+											"v1/sdk-reference/php/agent-sdk"
+										]
+									}
+								]
+							},
+							{
+								"item": "Ruby Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/ruby/agent-sdk-overview",
+											"v1/sdk-reference/ruby/agent-sdk-installation",
+											"v1/sdk-reference/ruby/agent-sdk"
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"tab": "Cookbook",
+						"icon": "chef-hat",
+						"groups": [
+							{
+								"group": "Start Here",
+								"icon": "sparkles",
+								"expanded": true,
+								"pages": [
+									"v1/cookbook/index",
+									"v1/cookbook/free-router-first-deploy"
+								]
+							},
+							{
+								"group": "Project Walkthroughs",
+								"icon": "folder-open",
+								"expanded": true,
+								"pages": [
+									"v1/cookbook/build-a-nextjs-web-chat-app",
+									"v1/cookbook/build-an-oauth-nextjs-workbench",
+									"v1/cookbook/build-a-node-rest-smoke-app",
+									"v1/cookbook/build-a-python-gateway-cli"
+								]
+							},
+							{
+								"group": "Prompt Packs",
+								"icon": "wand-sparkles",
+								"expanded": false,
+								"pages": [
+									"v1/cookbook/mini-app-starter-prompts"
+								]
+							},
+							{
+								"group": "Routing and Policy",
+								"icon": "route",
+								"expanded": false,
+								"pages": [
+									"v1/cookbook/preset-rollout-and-routing-debug",
+									"v1/cookbook/sort-providers-by-price-latency-or-throughput",
+									"v1/cookbook/pin-or-ignore-providers-per-request",
+									"v1/cookbook/route-only-to-eu-or-zdr-providers",
+									"v1/cookbook/guardrails-for-api-keys",
+									"v1/cookbook/response-caching-with-presets"
+								]
+							},
+							{
+								"group": "Video and Async Jobs",
+								"icon": "clapperboard",
+								"expanded": false,
+								"pages": [
+									"v1/cookbook/choose-a-video-generation-model",
+									"v1/cookbook/generate-and-download-a-video-from-text",
+									"v1/cookbook/use-image-inputs-for-video-generation",
+									"v1/cookbook/send-provider-specific-video-options",
+									"v1/cookbook/async-video-webhooks",
+									"v1/cookbook/async-batch-webhooks"
+								]
+							},
+							{
+								"group": "Search, Grounding, and Structured Outputs",
+								"icon": "search-check",
+								"expanded": false,
+								"pages": [
+									"v1/cookbook/sdk-python-presets-and-json",
+									"v1/cookbook/sdk-typescript-managed-search",
+									"v1/cookbook/web-search-debugging",
+									"v1/cookbook/tool-grounding-with-web-fetch",
+									"v1/cookbook/response-healing-for-structured-json",
+									"v1/cookbook/plugin-defaults-and-response-healing"
+								]
+							},
+							{
+								"group": "Agent Workflows",
+								"icon": "bot",
+								"expanded": false,
+								"pages": [
+									"v1/cookbook/agent-sdk-durable-loop",
+									"v1/cookbook/agent-sdk-research-brief",
+									"v1/cookbook/agent-sdk-support-triage",
+									"v1/cookbook/agent-sdk-python-structured-extraction",
+									"v1/cookbook/agent-sdk-go-ops-runbook",
+									"v1/cookbook/agent-sdk-csharp-ticket-triage",
+									"v1/cookbook/agent-sdk-php-content-review",
+									"v1/cookbook/agent-sdk-ruby-rag-notes",
+									"v1/cookbook/agent-sdk-coding-review",
+									"v1/cookbook/agent-sdk-parallel-tools",
+									"v1/cookbook/coding-agents-skill-md"
+								]
+							},
+							{
+								"group": "All recipes",
+								"icon": "chef-hat",
+								"expanded": false,
+								"pages": [
+									"v1/cookbook/free-router-first-deploy",
+									"v1/cookbook/preset-rollout-and-routing-debug",
+									"v1/cookbook/sort-providers-by-price-latency-or-throughput",
+									"v1/cookbook/pin-or-ignore-providers-per-request",
+									"v1/cookbook/route-only-to-eu-or-zdr-providers",
+									"v1/cookbook/choose-a-video-generation-model",
+									"v1/cookbook/generate-and-download-a-video-from-text",
+									"v1/cookbook/use-image-inputs-for-video-generation",
+									"v1/cookbook/send-provider-specific-video-options",
+									"v1/cookbook/async-video-webhooks",
+									"v1/cookbook/async-batch-webhooks",
+									"v1/cookbook/guardrails-for-api-keys",
+									"v1/cookbook/response-caching-with-presets",
+									"v1/cookbook/sdk-python-presets-and-json",
+									"v1/cookbook/sdk-typescript-managed-search",
+									"v1/cookbook/web-search-debugging",
+									"v1/cookbook/tool-grounding-with-web-fetch",
+									"v1/cookbook/response-healing-for-structured-json",
+									"v1/cookbook/plugin-defaults-and-response-healing",
+									"v1/cookbook/agent-sdk-durable-loop",
+									"v1/cookbook/agent-sdk-research-brief",
+									"v1/cookbook/agent-sdk-support-triage",
+									"v1/cookbook/agent-sdk-python-structured-extraction",
+									"v1/cookbook/agent-sdk-go-ops-runbook",
+									"v1/cookbook/agent-sdk-csharp-ticket-triage",
+									"v1/cookbook/agent-sdk-php-content-review",
+									"v1/cookbook/agent-sdk-ruby-rag-notes",
+									"v1/cookbook/agent-sdk-coding-review",
+									"v1/cookbook/agent-sdk-parallel-tools",
+									"v1/cookbook/coding-agents-skill-md"
+								]
+							}
+						]
+					},
+					{
 						"tab": "Changelog",
 						"icon": "history",
 						"groups": [
@@ -972,10 +1197,27 @@
 	"interaction": {
 		"drilldown": false
 	},
+	"redirects": [
+		{
+			"source": "/v1/:slug*.mdx",
+			"destination": "/v1/:slug*"
+		}
+	],
 	"contextual": {
 		"options": [
 			"copy",
-			"view"
+			"view",
+			"chatgpt",
+			"claude",
+			"devin",
+			"grok",
+			"aistudio",
+			"perplexity",
+			"mcp",
+			"add-mcp",
+			"cursor",
+			"vscode",
+			"windsurf"
 		]
 	},
 	"footer": {

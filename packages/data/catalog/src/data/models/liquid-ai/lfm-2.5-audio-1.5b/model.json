@@ -4,6 +4,7 @@
   "name": "LFM 2.5 Audio 1.5B",
   "status": null,
   "previous_model_id": null,
+  "description": "LFM 2.5 Audio 1.5B is a language model from Liquid AI for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -7,6 +7,10 @@ description: "Retrieve the current status for a previously created batch job."
 
 Fetch the latest upstream batch object for a batch created through `POST /batches`.
 
+<Warning>
+The public batch routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
+
 Common lifecycle states include `queued`, `processing`, `completed`, `failed`, `cancelled`, and `expired`.
 
 Use `POST /batches/{batch_id}/cancel` when the batch should no longer continue processing.

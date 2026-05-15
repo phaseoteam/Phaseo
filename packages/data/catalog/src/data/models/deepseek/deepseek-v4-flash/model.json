@@ -4,6 +4,7 @@
   "name": "DeepSeek V4 Flash",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek V4 Flash is an efficiency-optimized Mixture-of-Experts model from DeepSeek with 284B total parameters and 13B activated parameters, supporting a 1M-token context window.",
   "announced_date": "2026-04-24T00:00:00",
   "release_date": "2026-04-24T00:00:00",
   "deprecation_date": null,

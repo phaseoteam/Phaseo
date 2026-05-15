@@ -4,6 +4,7 @@
   "name": "QwQ 32B",
   "status": null,
   "previous_model_id": null,
+  "description": "QwQ 32B is a reasoning model from Qwen for multi-step analysis, math, and tool-driven tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

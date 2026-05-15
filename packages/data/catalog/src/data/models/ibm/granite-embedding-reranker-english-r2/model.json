@@ -4,6 +4,7 @@
   "name": "Granite Embedding Reranker English R2",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Embedding Reranker English R2 is a reranking model from IBM for improving retrieval quality by rescoring candidate results against a query. Use it to rescore retrieved passages, products, or documents before final ranking or generation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

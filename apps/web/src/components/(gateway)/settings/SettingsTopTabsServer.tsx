@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, PanelLeftIcon } from "lucide-react";
+import { ChevronDown, ChevronRight, PanelLeftIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/ui/sidebar";
+import { getActiveSettingsNav } from "./Sidebar.config";
+import SettingsSidebarTrigger from "./SettingsSidebarTrigger";
 
 type Tab = {
 	href: string;
@@ -37,55 +39,9 @@ const USAGE_TABS: Tab[] = [
 	{ href: "/settings/usage/alerts", label: "Alerts" },
 ];
 
-const API_TABS_BASE: Tab[] = [
-	{
-		href: "/settings/keys",
-		label: "API Keys",
-		match: ["/settings/keys"],
-	},
-	{ href: "/settings/apps", label: "Apps", match: ["/settings/apps"] },
-	{
-		href: "/settings/management-api-keys",
-		label: "Management Keys",
-		match: ["/settings/management-api-keys", "/settings/provisioning-keys"],
-	},
-	{ href: "/settings/routing", label: "Routing", match: ["/settings/routing"] },
-	{ href: "/settings/byok", label: "BYOK", match: ["/settings/byok"] },
-	{ href: "/settings/presets", label: "Presets", match: ["/settings/presets"] },
-	{
-		href: "/settings/privacy",
-		label: "Privacy",
-		match: ["/settings/privacy"],
-		badge: "Alpha",
-	},
-	{
-		href: "/settings/guardrails",
-		label: "Guardrails",
-		match: ["/settings/guardrails"],
-		badge: "Alpha",
-	},
-];
-
 const OAUTH_TABS: Tab[] = [
 	{ href: "/settings/oauth-apps", label: "OAuth Apps" },
 	{ href: "/settings/authorized-apps", label: "OAuth Integrations" },
-];
-
-const WORKSPACE_TABS: Tab[] = [
-	{
-		href: "/settings/workspaces/general",
-		label: "General",
-		match: [
-			"/settings/workspaces/members",
-			"/settings/workspaces/settings",
-			"/settings/teams/members",
-			"/settings/teams/settings",
-		],
-	},
-	{
-		href: "/settings/workspaces/access",
-		label: "Access",
-	},
 ];
 
 function resolveTabs(pathname: string): Tab[] | null {
@@ -123,7 +79,7 @@ function resolveTabs(pathname: string): Tab[] | null {
 		pathname.startsWith("/settings/workspaces") ||
 		pathname.startsWith("/settings/teams")
 	) {
-		return WORKSPACE_TABS;
+		return null;
 	}
 
 	if (pathname.startsWith("/settings/beta")) {
@@ -151,7 +107,7 @@ function resolveTabs(pathname: string): Tab[] | null {
 		pathname.startsWith("/settings/privacy") ||
 		pathname.startsWith("/settings/guardrails")
 	) {
-		return API_TABS_BASE;
+		return null;
 	}
 	// Developer and other pages: sidebar is enough.
 	return null;
@@ -159,13 +115,19 @@ function resolveTabs(pathname: string): Tab[] | null {
 
 export default function SettingsTopTabsServer({
 	isEnterpriseInvoiceMode,
+	showBroadcast = true,
 }: {
 	isEnterpriseInvoiceMode?: boolean;
+	showBroadcast?: boolean;
 } = {}) {
 	void isEnterpriseInvoiceMode;
 	const pathname = usePathname() ?? "";
 	const { toggleSidebar } = useSidebar();
 	const tabs = resolveTabs(pathname);
+	const activeNav = React.useMemo(
+		() => getActiveSettingsNav(pathname, { showBroadcast }),
+		[pathname, showBroadcast],
+	);
 
 	const containerRef = React.useRef<HTMLDivElement | null>(null);
 	const linkRefs = React.useRef<Record<string, HTMLAnchorElement | null>>({});
@@ -174,14 +136,6 @@ export default function SettingsTopTabsServer({
 	const matchScore = React.useCallback((t: Tab) => {
 		// Treat the account index route as details, since `/settings/account` redirects.
 		if (pathname === "/settings/account" && t.href === "/settings/account/details") {
-			return { exact: true, len: t.href.length };
-		}
-
-		// Treat index routes as general; both old and new paths are valid.
-		if (
-			(pathname === "/settings/workspaces" || pathname === "/settings/teams") &&
-			t.href === "/settings/workspaces/general"
-		) {
 			return { exact: true, len: t.href.length };
 		}
 
@@ -235,7 +189,33 @@ export default function SettingsTopTabsServer({
 		};
 	}, [activeTab?.href, setIndicatorToHref]);
 
-	if (!tabs?.length) return null;
+	if (!tabs?.length) {
+		return (
+			<>
+				<SettingsSidebarTrigger showBroadcast={showBroadcast} />
+				<div className="hidden lg:flex items-center border-b border-border text-sm">
+					<span className="px-2 pb-2 font-medium text-muted-foreground">
+						{activeNav?.group.heading ?? "Settings"}
+					</span>
+					<ChevronRight
+						aria-hidden="true"
+						className="mb-2 mx-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/70"
+					/>
+					<span className="pb-2 font-semibold text-foreground">
+						{activeNav?.item.label ?? "Settings"}
+					</span>
+					{activeNav?.item.badge ? (
+						<Badge
+							variant="outline"
+							className="mb-2 h-5 px-1.5 text-[10px] uppercase tracking-wide"
+						>
+							{activeNav.item.badge}
+						</Badge>
+					) : null}
+				</div>
+			</>
+		);
+	}
 
 	return (
 		<>

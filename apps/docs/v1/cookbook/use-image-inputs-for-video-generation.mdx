@@ -1,0 +1,77 @@
+---
+title: "Use image inputs for video generation"
+description: "Attach first-frame or reference-image inputs to a video generation request with the gateway input reference shape."
+---
+
+Use this recipe when the video should be guided by one or more images instead of relying on prompt text alone.
+
+## Goal
+
+- Send a valid `input_references` array.
+- Use one image as a first frame or general reference.
+- Keep the request portable across providers where possible.
+
+## 1. Start with one reference image
+
+The video API accepts structured input references.
+
+```bash
+curl https://api.phaseo.app/v1/videos \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/veo-3.1-lite",
+    "prompt": "Animate this image into a slow cinematic push-in.",
+    "input_references": [
+      {
+        "type": "image_url",
+        "role": "first_frame",
+        "image_url": {
+          "url": "https://example.com/reference.png"
+        }
+      }
+    ]
+  }'
+```
+
+## 2. Use the role deliberately
+
+Common roles include:
+
+- `first_frame`
+- `last_frame`
+- `reference`
+- `source`
+
+Keep the first version simple and use one image first. Then add more references only when the model and provider path clearly support the extra structure you need.
+
+## 3. Keep the prompt aligned with the image
+
+Reference images work best when the prompt explains the intended motion or transformation instead of re-describing the whole scene from scratch.
+
+Better pattern:
+
+- describe the motion, pacing, framing, and ending state
+
+Weaker pattern:
+
+- re-list every visible object already present in the image
+
+## 4. Verify the selected model actually supports this flow
+
+Before shipping:
+
+- check the model in `GET /v1/videos/models`
+- confirm the input types and supported parameters match your request
+
+This avoids building against a prompt-only model and discovering the mismatch after paid requests start failing.
+
+## 5. Add provider-specific overrides only if needed
+
+If one provider needs extra video options, add them through `provider_params` instead of rewriting the whole request around one provider.
+
+## Related guides
+
+- [Choose a video generation model](./choose-a-video-generation-model.mdx)
+- [Send provider-specific video options](./send-provider-specific-video-options.mdx)
+- [API Reference: Video generation](../api-reference/endpoint/video-generation.mdx)

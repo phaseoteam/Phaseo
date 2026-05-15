@@ -4,6 +4,7 @@
   "name": "Laguna M.1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Laguna M.1 is a language model from Poolside for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

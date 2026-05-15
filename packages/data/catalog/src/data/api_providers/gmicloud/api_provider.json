@@ -5,5 +5,10 @@
   "link": "https://docs.gmicloud.ai/",
   "country_code": "US",
   "status": "Beta",
-  "colour": "#3B82F6"
+  "colour": "#3B82F6",
+  "privacy_policy_url": "https://docs.gmicloud.ai/privacy",
+  "terms_of_service_url": "https://www.gmicloud.ai/ja/terms-and-conditions",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "GMI Cloud's public MaaS materials state that request data is ephemeral, is not stored for training, and zero-retention configurations are available for sensitive workloads.",
+  "prompt_training_source_url": "https://www.gmicloud.ai/en/blog/where-to-find-pre-built-llm-inference-models-for-chatbot-development-2026-guide"
 }

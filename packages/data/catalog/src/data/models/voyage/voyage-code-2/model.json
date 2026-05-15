@@ -4,6 +4,7 @@
   "name": "Voyage Code 2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Voyage Code 2 is an embedding model from Voyage for vector search and semantic retrieval workflows. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -5,5 +5,10 @@
   "link": null,
   "country_code": null,
   "status": "NotReady",
-  "colour": "#276282"
+  "colour": "#276282",
+  "privacy_policy_url": "https://portal.nousresearch.com/privacy",
+  "terms_of_service_url": "https://portal.nousresearch.com/terms",
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "Nous Research's portal privacy policy says conversations hosted on its website may be used to train and fine-tune models and support research and development.",
+  "prompt_training_source_url": "https://portal.nousresearch.com/privacy"
 }

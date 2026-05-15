@@ -4,6 +4,7 @@
   "name": "Speech 02 Turbo",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Speech 02 Turbo is a language model from MiniMax for chat, writing, analysis, and general-purpose automation. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": "2025-04-02T00:00:00",
   "release_date": "2025-04-02T00:00:00",
   "deprecation_date": null,

@@ -1,0 +1,557 @@
+[
+  {
+    "id": "ai21",
+    "link": "https://www.ai21.com/pricing/",
+    "finalUrl": "https://www.ai21.com/pricing/",
+    "candidates": [
+      "https://www.ai21.com/terms-policies/privacy-policy/",
+      "https://www.ai21.com/terms-policies/terms-of-use/",
+      "https://www.ai21.com/terms-policies/acceptable-use/"
+    ]
+  },
+  {
+    "id": "anthropic-aws",
+    "link": "https://aws.amazon.com/claude-platform",
+    "finalUrl": "https://aws.amazon.com/claude-platform/",
+    "candidates": [
+      "https://aws.amazon.com/service-terms/",
+      "https://aws.amazon.com/events/terms/?nc1=f_cc",
+      "https://aws.amazon.com/privacy/?nc1=f_pr",
+      "https://aws.amazon.com/terms/?nc1=f_pr",
+      "https://aws.amazon.com/legal/?nc1=f_cc"
+    ]
+  },
+  {
+    "id": "baseten",
+    "link": "https://docs.baseten.co/",
+    "finalUrl": "https://docs.baseten.co/overview",
+    "candidates": [
+      "https://docs.baseten.co/deployment/autoscaling/overview"
+    ]
+  },
+  {
+    "id": "cloudflare",
+    "link": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+    "finalUrl": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+    "candidates": [
+      "https://www.cloudflare.com/privacypolicy/",
+      "https://www.cloudflare.com/website-terms/"
+    ]
+  },
+  {
+    "id": "elevenlabs",
+    "link": "https://elevenlabs.io/docs/",
+    "finalUrl": "https://elevenlabs.io/docs/overview/intro",
+    "candidates": []
+  },
+  {
+    "id": "google-vertex-eu",
+    "link": "https://cloud.google.com/vertex-ai?hl=en",
+    "finalUrl": "https://cloud.google.com/products/gemini-enterprise-agent-platform?hl=en",
+    "candidates": [
+      "https://policies.google.com/privacy",
+      "https://policies.google.com/terms",
+      "https://cloud.google.com/product-terms"
+    ]
+  },
+  {
+    "id": "ionrouter",
+    "link": "https://ionrouter.io/docs",
+    "finalUrl": "https://ionrouter.io/docs",
+    "candidates": []
+  },
+  {
+    "id": "moonshotai",
+    "link": "https://platform.moonshot.ai/",
+    "finalUrl": "https://platform.moonshot.ai/",
+    "candidates": [
+      "https://platform.moonshot.ai/docs/agreement/userprivacy"
+    ]
+  },
+  {
+    "id": "novita",
+    "link": "https://novita.ai/docs/guides/introduction",
+    "finalUrl": "https://novita.ai/docs/guides/introduction",
+    "candidates": []
+  },
+  {
+    "id": "phala",
+    "link": "https://www.phala.network/",
+    "finalUrl": "https://phala.com/",
+    "candidates": [
+      "https://phala.com/privacy",
+      "https://phala.com/terms",
+      "https://phala.com/success-stories/legal"
+    ]
+  },
+  {
+    "id": "suno",
+    "link": "https://suno.com/",
+    "finalUrl": "https://suno.com/",
+    "candidates": []
+  },
+  {
+    "id": "weights-and-biases",
+    "link": "https://docs.wandb.ai/inference",
+    "finalUrl": "https://docs.wandb.ai/inference",
+    "candidates": []
+  },
+  {
+    "id": "aion-labs",
+    "link": "https://www.aionlabs.ai/",
+    "finalUrl": "https://www.aionlabs.ai/",
+    "candidates": [
+      "https://www.aionlabs.ai/terms/",
+      "https://www.aionlabs.ai/privacy/"
+    ]
+  },
+  {
+    "id": "anthropic-aws-us",
+    "link": "https://aws.amazon.com/claude-platform",
+    "finalUrl": "https://aws.amazon.com/claude-platform/",
+    "candidates": [
+      "https://aws.amazon.com/service-terms/",
+      "https://aws.amazon.com/events/terms/?nc1=f_cc",
+      "https://aws.amazon.com/privacy/?nc1=f_pr",
+      "https://aws.amazon.com/terms/?nc1=f_pr",
+      "https://aws.amazon.com/legal/?nc1=f_cc"
+    ]
+  },
+  {
+    "id": "black-forest-labs",
+    "link": "https://docs.bfl.ai/",
+    "finalUrl": "https://docs.bfl.ai/quick_start/introduction",
+    "candidates": [
+      "https://bfl.ai/legal/privacy-policy",
+      "https://bfl.ai/legal/developer-terms-of-service",
+      "https://bfl.ai/legal/flux-api-service-terms",
+      "https://bfl.ai/legal/terms-of-use",
+      "https://bfl.ai/legal/responsible-ai-development-policy",
+      "https://bfl.ai/legal/usage-policy",
+      "https://bfl.ai/legal/intellectual-property-policy",
+      "https://bfl.ai/legal/imprint"
+    ]
+  },
+  {
+    "id": "cohere",
+    "link": "https://docs.cohere.com/v2/cohere-documentation",
+    "finalUrl": "https://docs.cohere.com/v2/cohere-documentation",
+    "candidates": []
+  },
+  {
+    "id": "fireworks",
+    "link": "https://docs.fireworks.ai/getting-started/introduction",
+    "finalUrl": "https://docs.fireworks.ai/getting-started/introduction",
+    "candidates": [
+      "https://fireworks.ai/privacy-policy",
+      "https://fireworks.ai/terms-of-service",
+      "https://docs.fireworks.ai/deployments/autoscaling"
+    ]
+  },
+  {
+    "id": "groq",
+    "link": "https://console.groq.com/docs/overview",
+    "finalUrl": "https://console.groq.com/docs/overview",
+    "candidates": [
+      "https://console.groq.com/docs/legal"
+    ]
+  },
+  {
+    "id": "liquid-ai",
+    "link": "https://www.liquid.ai/",
+    "finalUrl": "https://www.liquid.ai/",
+    "candidates": [
+      "https://www.liquid.ai/privacy-policy",
+      "https://www.liquid.ai/terms-conditions"
+    ]
+  },
+  {
+    "id": "moonshotai-turbo",
+    "link": "https://platform.moonshot.ai/",
+    "finalUrl": "https://platform.moonshot.ai/",
+    "candidates": [
+      "https://platform.moonshot.ai/docs/agreement/userprivacy"
+    ]
+  },
+  {
+    "id": "nvidia",
+    "link": "https://docs.api.nvidia.com/",
+    "finalUrl": "https://docs.api.nvidia.com/",
+    "candidates": [
+      "https://www.nvidia.com/en-us/about-nvidia/privacy-policy/",
+      "https://developer.nvidia.com/legal/terms",
+      "https://www.nvidia.com/en-us/about-nvidia/privacy-center/"
+    ]
+  },
+  {
+    "id": "poolside",
+    "link": "https://poolside.ai/models",
+    "finalUrl": "https://poolside.ai/models",
+    "candidates": [
+      "https://poolside.ai/legal"
+    ]
+  },
+  {
+    "id": "tensorix",
+    "link": "https://docs.tensorix.ai/",
+    "finalUrl": "https://docs.tensorix.ai/",
+    "candidates": [
+      "https://tensorix.ai/privacy"
+    ]
+  },
+  {
+    "id": "x-ai",
+    "link": "https://docs.x.ai/docs/overview",
+    "finalUrl": "https://docs.x.ai/overview",
+    "candidates": []
+  },
+  {
+    "id": "akashml",
+    "link": "https://akashml.com/#pricing",
+    "finalUrl": "https://akashml.com/",
+    "candidates": [
+      "https://akashml.com/privacy",
+      "https://akashml.com/terms"
+    ]
+  },
+  {
+    "id": "anthropic-us",
+    "link": "https://docs.anthropic.com/en/home",
+    "finalUrl": "https://platform.claude.com/docs/en/home",
+    "candidates": [
+      "https://www.anthropic.com/legal/privacy",
+      "https://www.anthropic.com/legal/commercial-terms",
+      "https://www.anthropic.com/legal/consumer-terms",
+      "https://www.anthropic.com/legal/cookies",
+      "https://www.anthropic.com/legal/aup"
+    ]
+  },
+  {
+    "id": "canopy-wave",
+    "link": "https://canopywave.com/",
+    "finalUrl": "https://canopywave.com/",
+    "candidates": [
+      "https://canopywave.com/events/april-promotion-terms",
+      "https://canopywave.com/terms",
+      "https://canopywave.com/privacy"
+    ]
+  },
+  {
+    "id": "crofai",
+    "link": "https://crof.ai/docs",
+    "finalUrl": "https://crof.ai/docs",
+    "candidates": []
+  },
+  {
+    "id": "friendli",
+    "link": "https://friendli.ai/docs/openapi/serverless/overview",
+    "finalUrl": "https://friendli.ai/docs/openapi/model-apis/overview",
+    "candidates": []
+  },
+  {
+    "id": "hyperbolic",
+    "link": "https://docs.hyperbolic.xyz/docs/supported-models",
+    "finalUrl": "https://www.hyperbolic.ai/docs/overview/overview",
+    "candidates": []
+  },
+  {
+    "id": "meta",
+    "link": "https://ai.meta.com",
+    "finalUrl": "https://ai.meta.com/",
+    "candidates": []
+  },
+  {
+    "id": "morph",
+    "link": "https://www.morphllm.com/pricing",
+    "finalUrl": "https://www.morphllm.com/pricing",
+    "candidates": [
+      "https://www.morphllm.com/privacy/tos",
+      "https://www.morphllm.com/privacy"
+    ]
+  },
+  {
+    "id": "openai",
+    "link": "https://platform.openai.com/docs/overview",
+    "finalUrl": "https://platform.openai.com/docs/overview",
+    "candidates": []
+  },
+  {
+    "id": "sambanova",
+    "link": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
+    "finalUrl": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
+    "candidates": []
+  },
+  {
+    "id": "together",
+    "link": "https://docs.together.ai/",
+    "finalUrl": "https://docs.together.ai/intro",
+    "candidates": [
+      "https://docs.together.ai/docs/privacy-and-security"
+    ]
+  },
+  {
+    "id": "xiaomi",
+    "link": "https://platform.xiaomimimo.com/#/docs/welcome",
+    "finalUrl": "https://platform.xiaomimimo.com/",
+    "candidates": []
+  },
+  {
+    "id": "alibaba-cloud",
+    "link": "https://www.alibabacloud.com/help/en/model-studio/models",
+    "finalUrl": "https://www.alibabacloud.com/help/en/model-studio/models",
+    "candidates": []
+  },
+  {
+    "id": "arcee-ai",
+    "link": "https://docs.arcee.ai/",
+    "finalUrl": "https://docs.arcee.ai/",
+    "candidates": []
+  },
+  {
+    "id": "cerebras",
+    "link": "https://inference-docs.cerebras.ai/",
+    "finalUrl": "https://inference-docs.cerebras.ai/introduction",
+    "candidates": []
+  },
+  {
+    "id": "crusoe",
+    "link": "https://docs.crusoecloud.com/",
+    "finalUrl": "https://docs.crusoecloud.com/",
+    "candidates": []
+  },
+  {
+    "id": "gmicloud",
+    "link": "https://docs.gmicloud.ai/",
+    "finalUrl": "https://docs.gmicloud.ai/",
+    "candidates": []
+  },
+  {
+    "id": "inceptron",
+    "link": "https://docs.inceptron.io/",
+    "finalUrl": "https://docs.inceptron.io/",
+    "candidates": []
+  },
+  {
+    "id": "minimax",
+    "link": "https://www.minimax.io/platform_overview",
+    "finalUrl": "https://www.minimax.io/",
+    "candidates": []
+  },
+  {
+    "id": "nebius-token-factory",
+    "link": "https://nebius.com/docs",
+    "finalUrl": "https://docs.nebius.com/",
+    "candidates": [
+      "https://docs.nebius.com/legal"
+    ]
+  },
+  {
+    "id": "openai-eu",
+    "link": "https://platform.openai.com/docs/overview",
+    "finalUrl": "https://platform.openai.com/docs/overview",
+    "candidates": []
+  },
+  {
+    "id": "siliconflow",
+    "link": "https://docs.siliconflow.com/en/",
+    "finalUrl": "https://docs.siliconflow.com/en/userguide/introduction",
+    "candidates": [
+      "https://docs.siliconflow.com/en/legals/terms-of-service"
+    ]
+  },
+  {
+    "id": "venice",
+    "link": "https://docs.venice.ai/",
+    "finalUrl": "https://docs.venice.ai/overview/about-venice",
+    "candidates": [
+      "https://docs.venice.ai/overview/privacy"
+    ]
+  },
+  {
+    "id": "z-ai",
+    "link": "https://docs.z.ai/guides/overview/quick-start",
+    "finalUrl": "https://docs.z.ai/guides/overview/quick-start",
+    "candidates": [
+      "https://docs.z.ai/legal-agreement/privacy-policy"
+    ]
+  },
+  {
+    "id": "amazon-bedrock",
+    "link": "https://aws.amazon.com/bedrock",
+    "finalUrl": "https://aws.amazon.com/bedrock/",
+    "candidates": [
+      "https://aws.amazon.com/bedrock/security-privacy-responsible-ai/",
+      "https://aws.amazon.com/events/terms/?nc1=f_cc",
+      "https://aws.amazon.com/privacy/?nc1=f_pr",
+      "https://aws.amazon.com/terms/?nc1=f_pr",
+      "https://aws.amazon.com/legal/?nc1=f_cc"
+    ]
+  },
+  {
+    "id": "atlascloud",
+    "link": "https://docs.atlascloud.ai/",
+    "finalUrl": "https://www.atlascloud.ai/docs",
+    "candidates": [
+      "https://www.atlascloud.ai/docs/privacy"
+    ]
+  },
+  {
+    "id": "chutes",
+    "link": "https://chutes.ai/",
+    "finalUrl": "https://chutes.ai/",
+    "candidates": [
+      "https://chutes.ai/privacy",
+      "https://chutes.ai/terms"
+    ]
+  },
+  {
+    "id": "deepinfra",
+    "link": "https://deepinfra.com/docs/",
+    "finalUrl": "https://docs.deepinfra.com/",
+    "candidates": [
+      "https://docs.deepinfra.com/account/data-privacy"
+    ]
+  },
+  {
+    "id": "google-ai-studio",
+    "link": "https://aistudio.google.com/",
+    "finalUrl": "https://aistudio.google.com/welcome",
+    "candidates": []
+  },
+  {
+    "id": "infermatic",
+    "link": "https://infermatic.ai/models/",
+    "finalUrl": "https://infermatic.ai/models/",
+    "candidates": [
+      "https://infermatic.ai/privacy-policy/",
+      "https://infermatic.ai/terms-and-conditions/"
+    ]
+  },
+  {
+    "id": "minimax-lightning",
+    "link": "https://www.minimax.io/platform_overview",
+    "finalUrl": "https://www.minimax.io/",
+    "candidates": []
+  },
+  {
+    "id": "nebius-token-factory-fast",
+    "link": "https://nebius.com/docs",
+    "finalUrl": "https://docs.nebius.com/",
+    "candidates": [
+      "https://docs.nebius.com/legal"
+    ]
+  },
+  {
+    "id": "parasail",
+    "link": "https://docs.parasail.io/",
+    "finalUrl": "https://docs.parasail.io/parasail-docs",
+    "candidates": [
+      "https://docs.parasail.io/parasail-docs/security-and-account-management/data-privacy-retention"
+    ]
+  },
+  {
+    "id": "sourceful",
+    "link": "https://www.sourceful.com/",
+    "finalUrl": "https://www.sourceful.com/",
+    "candidates": [
+      "https://www.sourceful.com/legal/privacy-policy",
+      "https://www.sourceful.com/legal/spring-terms-of-use",
+      "https://www.sourceful.com/legal/vulnerability-disclosure-policy"
+    ]
+  },
+  {
+    "id": "venice-e2ee",
+    "link": "https://docs.venice.ai/",
+    "finalUrl": "https://docs.venice.ai/overview/about-venice",
+    "candidates": [
+      "https://docs.venice.ai/overview/privacy"
+    ]
+  },
+  {
+    "id": "anthropic",
+    "link": "https://docs.anthropic.com/en/home",
+    "finalUrl": "https://platform.claude.com/docs/en/home",
+    "candidates": [
+      "https://www.anthropic.com/legal/privacy",
+      "https://www.anthropic.com/legal/commercial-terms",
+      "https://www.anthropic.com/legal/consumer-terms",
+      "https://www.anthropic.com/legal/cookies",
+      "https://www.anthropic.com/legal/aup"
+    ]
+  },
+  {
+    "id": "azure",
+    "link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
+    "finalUrl": "https://learn.microsoft.com/en-us/azure/foundry/",
+    "candidates": [
+      "https://learn.microsoft.com/en-us/legal/termsofuse",
+      "https://aka.ms/yourcaliforniaprivacychoices",
+      "https://www.microsoft.com/legal/intellectualproperty/Trademarks/"
+    ]
+  },
+  {
+    "id": "clarifai",
+    "link": "https://docs.clarifai.com/getting-started/quickstart/",
+    "finalUrl": "https://docs.clarifai.com/getting-started/quickstart/",
+    "candidates": [
+      "https://docs.clarifai.com/resources/privacy-security"
+    ]
+  },
+  {
+    "id": "deepseek",
+    "link": "https://api-docs.deepseek.com/",
+    "finalUrl": "https://api-docs.deepseek.com/",
+    "candidates": []
+  },
+  {
+    "id": "google-vertex",
+    "link": "https://cloud.google.com/vertex-ai?hl=en",
+    "finalUrl": "https://cloud.google.com/products/gemini-enterprise-agent-platform?hl=en",
+    "candidates": [
+      "https://policies.google.com/privacy",
+      "https://policies.google.com/terms",
+      "https://cloud.google.com/product-terms"
+    ]
+  },
+  {
+    "id": "inflection",
+    "link": "https://developers.inflection.ai/docs/authentication",
+    "finalUrl": "https://developers.inflection.ai/docs/authentication",
+    "candidates": []
+  },
+  {
+    "id": "mistral",
+    "link": "https://docs.mistral.ai/",
+    "finalUrl": "https://docs.mistral.ai/",
+    "candidates": [
+      "https://mistral.ai/terms",
+      "https://mistral.ai/legal"
+    ]
+  },
+  {
+    "id": "nextbit",
+    "link": "https://www.nextbit256.com/docs",
+    "finalUrl": "https://www.nextbit256.com/docs",
+    "candidates": []
+  },
+  {
+    "id": "perplexity",
+    "link": "https://docs.perplexity.ai/",
+    "finalUrl": "https://docs.perplexity.ai/docs/getting-started/overview",
+    "candidates": [
+      "https://docs.perplexity.ai/docs/resources/privacy-security"
+    ]
+  },
+  {
+    "id": "stepfun",
+    "link": "https://platform.stepfun.com/",
+    "finalUrl": "https://platform.stepfun.com/",
+    "candidates": []
+  },
+  {
+    "id": "voyage",
+    "link": "https://docs.voyageai.com",
+    "finalUrl": "https://docs.voyageai.com/docs/introduction",
+    "candidates": []
+  }
+]

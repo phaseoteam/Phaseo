@@ -4,6 +4,7 @@
   "name": "Gemini 2.5 Flash Exp Native Audio Thinking Dialog",
   "status": null,
   "previous_model_id": null,
+  "description": "Gemini 2.5 Flash Exp Native Audio Thinking Dialog is a reasoning model from Google for multi-step analysis, math, and tool-driven tasks. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

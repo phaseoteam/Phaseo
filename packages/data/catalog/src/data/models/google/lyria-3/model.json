@@ -4,6 +4,7 @@
   "name": "Lyria 3",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Lyria 3 is Google's family of music generation models, available through the Gemini API. It is aimed at prompt-driven soundtrack, jingle, and creative audio workflows.",
   "announced_date": "2026-02-18T00:00:00",
   "release_date": "2026-02-18T00:00:00",
   "deprecation_date": null,

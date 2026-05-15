@@ -3,6 +3,7 @@
 // How: Uses code-first text param policy + provider capability metadata.
 
 import type { Endpoint } from "@core/types";
+import { isNativeWebSearchTool, isNativeWebSearchToolType } from "@core/nativeTools";
 import type { ProviderCandidate } from "./types";
 import {
 	expandCapabilityParamAliases,
@@ -60,6 +61,23 @@ function hasToolUsageInResponsesInput(items: any[]): boolean {
 			item.type === "function_call_output" ||
 			item.tool_call_id ||
 			item.call_id)
+	);
+}
+
+function hasNativeWebSearchToolUsage(tools: unknown, toolChoice: unknown): boolean {
+	const hasTool = Array.isArray(tools) && tools.some((tool) => isNativeWebSearchTool(tool));
+	if (hasTool) return true;
+
+	if (typeof toolChoice === "string") {
+		return isNativeWebSearchToolType(toolChoice.trim());
+	}
+
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const value = toolChoice as Record<string, unknown>;
+	return (
+		isNativeWebSearchToolType(value.type) ||
+		isNativeWebSearchToolType(value.name) ||
+		isNativeWebSearchToolType((value.function as Record<string, unknown> | undefined)?.name)
 	);
 }
 
@@ -125,6 +143,9 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
 		hasToolUsageInResponsesInput(rawBody.input)
 	) {
 		params.push("tools");
+	}
+	if (hasNativeWebSearchToolUsage(rawBody.tools, rawBody.tool_choice)) {
+		params.push("web_search_options");
 	}
 
 	return normalizeParamPaths(params);

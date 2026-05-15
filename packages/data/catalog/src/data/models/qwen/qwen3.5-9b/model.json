@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 9B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.5 9B is a multimodal foundation model from the Qwen3.5 family, designed to deliver strong reasoning, coding, and visual understanding in an efficient 9B-parameter architecture.",
   "announced_date": "2026-03-02T00:00:00",
   "release_date": "2026-03-02T00:00:00",
   "deprecation_date": null,

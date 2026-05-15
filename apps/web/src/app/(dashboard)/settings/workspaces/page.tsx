@@ -5,5 +5,5 @@ export const metadata = {
 };
 
 export default function WorkspacesPage() {
-	redirect("/settings/workspaces/general");
+	redirect("/settings/workspaces/settings");
 }

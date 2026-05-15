@@ -4,6 +4,7 @@
   "name": "MiMo V2 Omni",
   "status": "Available",
   "previous_model_id": null,
+  "description": "MiMo V2 Omni is a frontier omni-modal model that natively processes image, video, and audio inputs within a unified architecture. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2026-03-18T00:00:00",
   "release_date": "2026-03-18T00:00:00",
   "deprecation_date": null,

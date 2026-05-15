@@ -4,6 +4,7 @@
   "name": "Voxtral Mini Transcribe 2",
   "status": "Available",
   "previous_model_id": "mistral/voxtral-mini-transcribe-2025-07-15",
+  "description": "Voxtral Mini Transcribe 2 is a speech-to-text model from Mistral for transcription and spoken-language understanding workflows. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2026-02-04T00:00:00",
   "release_date": "2026-02-04T00:00:00",
   "deprecation_date": null,

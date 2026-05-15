@@ -4,6 +4,7 @@
   "name": "Magistral Small 1.2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Magistral Small 1.2 is a multimodal model from Mistral that can work across text and visual inputs. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2025-09-17T00:00:00",
   "release_date": "2025-09-17T00:00:00",
   "deprecation_date": null,

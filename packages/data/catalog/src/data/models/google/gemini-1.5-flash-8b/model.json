@@ -4,6 +4,7 @@
   "name": "Gemini 1.5 Flash 8B",
   "status": "Retired",
   "previous_model_id": "google/gemini-1-0-nano-2023-12-06",
+  "description": "Gemini 1.5 Flash 8B is Google's GA high-efficiency multimodal model optimized for low-latency, high-volume workloads. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2024-10-03T00:00:00",
   "release_date": "2024-03-15T00:00:00",
   "deprecation_date": "2025-09-24T00:00:00",

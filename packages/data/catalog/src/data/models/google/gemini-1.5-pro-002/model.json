@@ -4,6 +4,7 @@
   "name": "Gemini 1.5 Pro 002",
   "status": "Retired",
   "previous_model_id": "google/gemini-1-0-pro-2023-12-06",
+  "description": "Gemini 1.5 Pro 002 is a variant of Gemini 3.1 Pro that improves tool selection behavior by preventing overuse of a general bash tool when more efficient third-party.",
   "announced_date": "2024-09-24T00:00:00",
   "release_date": "2024-09-24T00:00:00",
   "deprecation_date": "2025-09-24T00:00:00",

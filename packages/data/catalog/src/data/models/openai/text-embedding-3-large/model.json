@@ -4,6 +4,7 @@
   "name": "Text Embedding 3 Large",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Text Embedding 3 Large is OpenAI's most capable embedding model for both english and non-english tasks. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2024-01-25T00:00:00",
   "release_date": "2024-01-25T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "MiniMax M2.7",
   "status": "Available",
   "previous_model_id": "minimax/minimax-m2-5-2026-02-12",
+  "description": "MiniMax M2.7 is a next-generation large language model designed for autonomous, real-world productivity and continuous improvement. It supports up to 204.8K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2026-03-18T00:00:00",
   "release_date": "2026-03-18T00:00:00",
   "deprecation_date": null,

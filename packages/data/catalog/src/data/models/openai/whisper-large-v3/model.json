@@ -4,6 +4,7 @@
   "name": "Whisper Large V3",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Whisper Large V3 is OpenAI's open-source automatic speech recognition model offering both audio transcription and translation. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

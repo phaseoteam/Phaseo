@@ -28,5 +28,20 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.6",
+    "provider_api_model_id": "stepfun:stepfun/step-3.6",
+    "provider_model_slug": "step-3.6",
+    "internal_model_id": "stepfun/step-3.6",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

@@ -53,7 +53,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { featureLabels } from "@/lib/config/featureLabels";
-import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
+import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
 
 type OptionCount = {
@@ -86,14 +86,12 @@ const STATUS_FILTER_DISPLAY_ORDER = [
 ] as const;
 
 interface ModelsTableDisplayProps {
-	initialModelData: MonitorModelData[];
+	initialModelData: MonitorModelTableRow[];
 	allEndpoints: string[];
 	allModalities: string[];
 	allFeatures: string[];
 	allStatuses: string[];
 	allTiers: string[];
-	weeklyTokensByModel: Record<string, number>;
-	weeklyTokensByModelProvider: Record<string, number>;
 }
 
 function parseCsvParam(value: string | null): string[] {
@@ -392,6 +390,61 @@ function getModalityOptions(
 	return [...canonical, ...additional];
 }
 
+function OutputModalityButtonRow({
+	options,
+	selected,
+	onToggle,
+}: {
+	options: OptionCount[];
+	selected: string[];
+	onToggle: (value: string) => void;
+}) {
+	if (options.length === 0) return null;
+
+	return (
+		<div className="flex gap-2 overflow-x-auto pb-1">
+			{options.map((option) => {
+				const checked = selected.includes(option.value);
+				const Icon = getModalityIcon(option.value);
+				const tone = getModalityTone(option.value);
+
+				return (
+					<button
+						key={option.value}
+						type="button"
+						onClick={() => onToggle(option.value)}
+						aria-pressed={checked}
+						className={cn(
+							"group inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+							checked
+								? tone.badgeClassName
+								: "border-border/70 bg-background text-foreground hover:bg-muted/45",
+						)}
+					>
+						<span
+							className={cn(
+								"inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/80",
+								checked ? tone.sidebarIconSelectedClassName : tone.sidebarIconHoverClassName,
+							)}
+						>
+							<Icon className="h-3.5 w-3.5" />
+						</span>
+						<span>{toTitleCase(option.value)}</span>
+						<span
+							className={cn(
+								"inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-medium tabular-nums",
+								checked ? "bg-black/5 dark:bg-white/10" : "bg-muted text-muted-foreground",
+							)}
+						>
+							{option.count}
+						</span>
+					</button>
+				);
+			})}
+		</div>
+	);
+}
+
 export default function ModelsTableDisplay({
 	initialModelData,
 	allEndpoints,
@@ -399,8 +452,6 @@ export default function ModelsTableDisplay({
 	allFeatures,
 	allStatuses,
 	allTiers,
-	weeklyTokensByModel,
-	weeklyTokensByModelProvider,
 }: ModelsTableDisplayProps) {
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -412,7 +463,7 @@ export default function ModelsTableDisplay({
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities", "outputModalities"];
+	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities"];
 	const [openFilterSections, setOpenFilterSections] = useState<string[]>([
 		...DEFAULT_OPEN_SECTIONS,
 	]);
@@ -873,27 +924,6 @@ export default function ModelsTableDisplay({
 				</AccordionContent>
 			</AccordionItem>
 
-			<AccordionItem value="outputModalities" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
-					<span className="flex items-center gap-2">
-						<ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
-						Output Modalities
-					</span>
-				</AccordionTrigger>
-				<AccordionContent className="pt-1" disableAnimation>
-					<FilterCheckboxList
-						options={outputModalityOptions}
-						selected={selectedOutputModalities}
-						onToggle={(value) =>
-							setSelectedOutputModalities(toggleInList(selectedOutputModalities, value))
-						}
-						iconForValue={getModalityIcon}
-						labelForValue={toTitleCase}
-						toneForValue={getModalityTone}
-					/>
-				</AccordionContent>
-			</AccordionItem>
-
 			<AccordionItem value="tiers" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
@@ -1076,13 +1106,27 @@ export default function ModelsTableDisplay({
 							</div>
 						</div>
 					</div>
+
+					<div className="mt-3 space-y-2">
+						<div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+							<ArrowUpCircle className="h-3.5 w-3.5" />
+							Output modalities
+						</div>
+						<OutputModalityButtonRow
+							options={outputModalityOptions}
+							selected={selectedOutputModalities}
+							onToggle={(value) =>
+								setSelectedOutputModalities(
+									toggleInList(selectedOutputModalities, value),
+								)
+							}
+						/>
+					</div>
 				</div>
 
 				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
 					<MonitorTableClient
 						initialModelData={initialModelData}
-						weeklyTokensByModel={weeklyTokensByModel}
-						weeklyTokensByModelProvider={weeklyTokensByModelProvider}
 					/>
 				</div>
 			</section>

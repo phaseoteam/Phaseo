@@ -4,6 +4,7 @@
   "name": "LFM 2.5 VL 1.6B",
   "status": null,
   "previous_model_id": null,
+  "description": "LFM 2.5 VL 1.6B is a multimodal model from Liquid AI that can work across text and visual inputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

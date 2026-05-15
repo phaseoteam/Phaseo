@@ -4,6 +4,7 @@
   "name": "DeepSeek V3.1",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "DeepSeek V3.1 is a high-compute variant of DeepSeek-V3.2 optimized for maximum reasoning and agentic performance.",
   "announced_date": "2025-08-21T00:00:00",
   "release_date": "2025-08-21T00:00:00",
   "deprecation_date": null,

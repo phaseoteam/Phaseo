@@ -11,12 +11,13 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
@@ -25,8 +26,12 @@ export async function generateMetadata(props: {
 
 	return buildMetadata({
 		title: `${modelName} Pricing - Effective Cost & History`,
-		description:
-			`${modelName} pricing on AI Stats. Track weighted effective input/output pricing and 30-day pricing history by provider and meter.`,
+		description: buildModelPageMetadataDescription({
+			modelDescription,
+			suffix:
+				"Track weighted effective input and output pricing plus 30-day pricing history by provider and meter.",
+			fallback: `${modelName} pricing on AI Stats. Track weighted effective input/output pricing and 30-day pricing history by provider and meter.`,
+		}),
 		path,
 		keywords: [
 			modelName,

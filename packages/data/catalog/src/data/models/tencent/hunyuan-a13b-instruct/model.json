@@ -1,0 +1,41 @@
+{
+  "model_id": "tencent/hunyuan-a13b-instruct",
+  "organisation_id": "tencent",
+  "name": "Hunyuan A13B Instruct",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Hunyuan A13B Instruct is a 13B active parameter Mixture-of-Experts (MoE) language model developed by Tencent, with a total parameter count of 80B and support for reasoning via Chain-of-Thought.",
+  "announced_date": "2025-06-30T00:00:00",
+  "release_date": "2025-06-30T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "tencent/hunyuan-a13b-instruct",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/tencent/Hunyuan-A13B-Instruct"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131000
+    },
+    {
+      "name": "output_context_length",
+      "value": 131000
+    },
+    {
+      "name": "parameter_count",
+      "value": 80000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 13000000000
+    }
+  ],
+  "benchmarks": []
+}

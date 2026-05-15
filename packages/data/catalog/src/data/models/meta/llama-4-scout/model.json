@@ -4,6 +4,7 @@
   "name": "Llama 4 Scout",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Llama 4 Scout is a multimodal model from Meta that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": null,
   "release_date": "2025-04-05T00:00:00",
   "deprecation_date": null,

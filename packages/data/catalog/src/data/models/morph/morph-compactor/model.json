@@ -4,6 +4,7 @@
   "name": "Morph Compactor",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Morph Compactor is a language model from Morph for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

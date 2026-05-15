@@ -237,6 +237,8 @@ export type GatewayUsage = {
 
     server_tool_use?: {
         datetime_requests?: number;
+        web_search_requests?: number;
+        web_fetch_requests?: number;
     };
 
 }

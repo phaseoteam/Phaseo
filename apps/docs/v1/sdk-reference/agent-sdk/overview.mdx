@@ -1,0 +1,44 @@
+---
+title: "Agent SDK Overview"
+description: "Build local, resumable agent loops on top of AI Stats Gateway across the supported SDK languages."
+---
+
+Use the AI Stats Agent SDKs when your application needs more than one-shot generation:
+
+- multi-step tool loops
+- local runtime tools
+- gateway-backed model turns
+- resumable application-owned run state
+- consistent request routing across the same languages as the core client SDKs
+
+## Supported languages
+
+The current Agent SDK language set matches the primary client SDK set exposed in AI Stats quickstart:
+
+- [TypeScript](../typescript/agent-sdk)
+- [Python](../python/agent-sdk)
+- [Go](../go/agent-sdk)
+- [C#](../csharp/agent-sdk)
+- [PHP](../php/agent-sdk)
+- [Ruby](../ruby/agent-sdk)
+
+## Common model
+
+Each Agent SDK keeps the same minimal mental model:
+
+- define one agent
+- define zero or more local tools
+- create a gateway-backed model client
+- run a bounded loop over the `responses` API
+
+The TypeScript package is still the most feature-complete today, but all listed languages now expose the same baseline quickstart surface for local tool-driven loops.
+
+## TypeScript-first recipes
+
+The current cookbook recipes are TypeScript-first:
+
+- [Build a durable agent loop](../../cookbook/agent-sdk-durable-loop)
+- [Research with agent-backed web search](../../cookbook/agent-sdk-research-brief)
+- [Triage support with preset-driven agents](../../cookbook/agent-sdk-support-triage)
+- [Review code with local runtime tools](../../cookbook/agent-sdk-coding-review)
+- [Fan out local tools concurrently](../../cookbook/agent-sdk-parallel-tools)

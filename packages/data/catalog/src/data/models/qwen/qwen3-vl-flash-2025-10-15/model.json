@@ -4,6 +4,7 @@
   "name": "Qwen3 VL Flash 2025 10 15",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 VL Flash 2025 10 15 is a fast, efficient language model from Alibaba's Qwen 3.6 series. It supports text, image, and video input with a 1M token context window.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

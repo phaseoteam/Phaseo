@@ -4,6 +4,7 @@
   "name": "GLM 4.6",
   "status": "Available",
   "previous_model_id": "z-ai/glm-4-5-2025-07-28",
+  "description": "Compared with GLM-4.5, this generation brings several key improvements: Longer context window: The context window has been expanded from 128K to 200K tokens, enabling the model to handle more complex.",
   "announced_date": "2025-09-30T00:00:00",
   "release_date": "2025-09-30T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
 
 import type { PresetConfig, PresetData, ProviderCandidate } from "./types";
 import { normalizeProviderId, normalizeProviderList } from "@/lib/config/providerAliases";
+import { mergeGatewayPlugins } from "@/plugins/normalize";
 
 /**
  * Merge preset configuration with request body
@@ -13,6 +14,10 @@ import { normalizeProviderId, normalizeProviderList } from "@/lib/config/provide
 export function mergePresetWithBody(body: any, preset: PresetData): any {
 	const config = preset.config;
 	const merged = { ...body };
+
+	if (config.defaultModel && merged.model === undefined) {
+		merged.model = config.defaultModel;
+	}
 
 	// Apply default parameters (don't override existing values)
 	if (config.defaultParams) {
@@ -50,6 +55,83 @@ export function mergePresetWithBody(body: any, preset: PresetData): any {
 		} else if (merged.system !== undefined) {
 			// Anthropic-style system parameter
 			merged.system = config.systemPrompt + "\n\n" + merged.system;
+		}
+	}
+
+	const mergedPlugins = mergeGatewayPlugins(config.plugins, merged.plugins);
+	if (mergedPlugins.length > 0) {
+		merged.plugins = mergedPlugins.map((plugin) => ({
+			id: plugin.id,
+			enabled: plugin.enabled,
+			...plugin.config,
+		}));
+	}
+
+	if (config.provider) {
+		const presetProvider: Record<string, unknown> = {};
+		if (config.provider.order?.length) {
+			presetProvider.order = config.provider.order;
+		}
+		if (config.provider.only?.length) {
+			presetProvider.only = config.provider.only;
+		}
+		if (config.provider.ignore?.length) {
+			presetProvider.ignore = config.provider.ignore;
+		}
+		if (config.provider.requiredExecutionRegion) {
+			presetProvider.required_execution_region =
+				config.provider.requiredExecutionRegion;
+		}
+		if (config.provider.requiredDataRegion) {
+			presetProvider.required_data_region =
+				config.provider.requiredDataRegion;
+		}
+		if (typeof config.provider.requireZeroDataRetention === "boolean") {
+			presetProvider.require_zero_data_retention =
+				config.provider.requireZeroDataRetention;
+		}
+		if (config.provider.maxPrice) {
+			presetProvider.max_price = config.provider.maxPrice;
+		}
+		if (config.provider.preferredMinThroughput !== null && config.provider.preferredMinThroughput !== undefined) {
+			presetProvider.preferred_min_throughput = config.provider.preferredMinThroughput;
+		}
+		if (config.provider.preferredMaxLatency !== null && config.provider.preferredMaxLatency !== undefined) {
+			presetProvider.preferred_max_latency = config.provider.preferredMaxLatency;
+		}
+		if (Object.keys(presetProvider).length > 0) {
+			const requestProvider =
+				merged.provider && typeof merged.provider === "object" && !Array.isArray(merged.provider)
+					? merged.provider
+					: {};
+			merged.provider = {
+				...presetProvider,
+				...requestProvider,
+				max_price:
+					requestProvider.max_price ??
+					requestProvider.maxPrice ??
+					presetProvider.max_price,
+				required_execution_region:
+					requestProvider.required_execution_region ??
+					requestProvider.requiredExecutionRegion ??
+					presetProvider.required_execution_region,
+				required_data_region:
+					requestProvider.required_data_region ??
+					requestProvider.requiredDataRegion ??
+					presetProvider.required_data_region,
+				require_zero_data_retention:
+					requestProvider.require_zero_data_retention ??
+					requestProvider.requireZeroDataRetention ??
+					presetProvider.require_zero_data_retention,
+				preferred_min_throughput:
+					requestProvider.preferred_min_throughput ??
+					requestProvider.preferredMinThroughput ??
+					presetProvider.preferred_min_throughput,
+				preferred_max_latency:
+					requestProvider.preferred_max_latency ??
+					requestProvider.preferredMaxLatency ??
+					presetProvider.preferred_max_latency,
+			};
 		}
 	}
 
@@ -141,4 +223,29 @@ export function applyProviderPreferences(
 		}
 		return provider;
 	});
+}
+
+export function resolvePresetRoutingMode(
+	config: PresetConfig,
+	fallback?: string | null
+): "balanced" | "price" | "latency" | "throughput" | null {
+	const candidate = (config.routingMode ?? "").toLowerCase();
+	if (
+		candidate === "balanced" ||
+		candidate === "price" ||
+		candidate === "latency" ||
+		candidate === "throughput"
+	) {
+		return candidate;
+	}
+	const fallbackCandidate = (fallback ?? "").toLowerCase();
+	if (
+		fallbackCandidate === "balanced" ||
+		fallbackCandidate === "price" ||
+		fallbackCandidate === "latency" ||
+		fallbackCandidate === "throughput"
+	) {
+		return fallbackCandidate;
+	}
+	return null;
 }

@@ -77,13 +77,13 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Run your tool, then send the tool result back in the next request so the assistant can finish the answer.
 
-## Built-in server tool: datetime
+## Built-in server tools
 
-The gateway currently exposes one built-in server tool:
+The gateway currently exposes these built-in server tools:
 
 - `gateway:datetime`
-
-Web-search tool types are temporarily disabled at the gateway request layer.
+- `gateway:web_search`
+- `gateway:web_fetch`
 
 This tool runs on the gateway side (no client-side executor required). The gateway rewrites it into an upstream tool/function call, executes it, and feeds the tool result back into the model loop.
 
@@ -110,13 +110,62 @@ Notes:
 - Usage includes `usage.server_tool_use.datetime_requests`.
 - Prefer `tool_choice: "auto"` so the model can decide when to call it.
 
-## Current limitation
+### Web search example
 
-At the gateway request-contract layer, `stream: true` with tools currently returns `400 invalid_request` with:
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:web_search",
+      "parameters": {
+        "max_results": 5,
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
 
-`Streaming with tools is not supported. Set stream to false when tools are present.`
+Notes:
 
-For now, run tool-calling requests with `stream: false`.
+- The model supplies the search query when it calls the tool.
+- Usage includes `usage.server_tool_use.web_search_requests`.
+- When fetched result text or highlights are returned, usage also includes `usage.server_tool_use.web_fetch_requests`.
+
+### Web fetch example
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:web_fetch",
+      "parameters": {
+        "max_chars": 12000
+      }
+    }
+  ]
+}
+```
+
+Notes:
+
+- The model supplies the target `url` when it calls the tool.
+- Only HTTP(S) URLs and text-like content types are supported.
+- HTML content is reduced to bounded plain text before being injected back into the model loop.
+- Usage includes `usage.server_tool_use.web_fetch_requests`.
+
+## Streaming behavior
+
+Tool-calling requests can also use `stream: true`.
+
+For gateway-managed server tools, the gateway may:
+
+- materialize the upstream tool-call turn
+- execute the server tool
+- continue the model loop
+- re-emit a synthetic stream back to the client
+
+That keeps the client-side contract streaming-friendly even when the gateway executes part of the tool loop itself.
 
 ## Next guides
 

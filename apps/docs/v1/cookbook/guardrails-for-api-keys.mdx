@@ -1,0 +1,98 @@
+---
+title: "Roll out guardrails on API keys"
+description: "Apply guardrails to API keys, test enforcement before rollout, and verify blocks, redactions, and flags from activity views."
+---
+
+Use this recipe when you need to protect one or more API keys with budget limits, routing restrictions, prompt-injection checks, or sensitive-info handling.
+
+## 1. Create the guardrail under the workspace
+
+Create guardrails at the workspace level first so the same policy can be reused across multiple keys.
+
+Recommended first pass:
+
+- add model and provider restrictions before content checks
+- keep the first rollout narrow to one key or one environment
+- name the guardrail after the policy outcome, not the team name
+
+## 2. Attach it to a target API key
+
+From the API key settings page, attach the guardrail to the key that should receive enforcement.
+
+Use this sequence:
+
+1. start with a staging or low-risk key
+2. attach one guardrail at a time when possible
+3. confirm the key detail dialog shows the applied guardrail
+
+## 3. Set budget policy and routing restrictions
+
+Common combination:
+
+- daily cost limit
+- provider blocklist for low-trust providers
+- model allowlist for the exact production models that should remain routable
+
+Use the live preview in the guardrail editor to verify:
+
+- which providers stay allowed
+- which models become blocked
+- whether `Only allow` is narrower than intended
+
+## 4. Add prompt-injection and sensitive-info rules
+
+For a practical rollout:
+
+- start prompt injection with `flag` or `redact`
+- move to `block` only after reviewing false positives
+- use deterministic sensitive-info rules first:
+  - email
+  - phone
+  - SSN
+  - credit card
+  - IP address
+
+If you need custom patterns, add them as explicit regex rules and test them in the preview input before saving.
+
+## 5. Test the policy before broad rollout
+
+Use the guardrail preview with:
+
+- one benign input
+- one clearly disallowed input
+- one realistic production-like prompt
+
+Look for:
+
+- correct redaction text
+- correct blocked/allowed behavior
+- no accidental matches on unrelated content
+
+## 6. Verify enforcement in activity and logs
+
+After sending real requests through the guarded key, verify:
+
+- the Guardrail Enforcement panel on the activity page
+- request detail dialogs for blocked or redacted requests
+- the API key detail dialog for per-key guardrail activity
+
+You should see:
+
+- blocked counts
+- redacted counts
+- flagged counts
+- the specific guardrail and detector details when enforcement happened
+
+## 7. Expand rollout safely
+
+When the first key behaves correctly:
+
+1. attach the same guardrail to more keys
+2. tighten actions from `flag` to `redact` or `block`
+3. add higher-latency name and address detection only where the latency tradeoff is acceptable
+
+## Related
+
+- [Presets](../guides/presets.mdx)
+- [Quickstart](../quickstart.mdx)
+- [Coding agents with `SKILL.md`](./coding-agents-skill-md.mdx)

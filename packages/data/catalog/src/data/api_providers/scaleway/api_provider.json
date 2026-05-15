@@ -1,0 +1,24 @@
+{
+  "api_provider_id": "scaleway",
+  "api_provider_name": "Scaleway",
+  "description": null,
+  "link": "https://www.scaleway.com/en/generative-apis/",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "eu"
+  ],
+  "default_data_regions": [
+    "eu"
+  ],
+  "zero_data_retention": "unknown",
+  "residency_source_url": "https://www.scaleway.com/en/generative-apis/",
+  "regional_pricing_mode": "offer_specific",
+  "pricing_source_url": "https://www.scaleway.com/en/pricing/model-as-a-service/",
+  "regional_pricing_notes": "Scaleway publishes Generative APIs pricing in EUR on its public Model-as-a-Service pricing page.",
+  "country_code": "FR",
+  "status": "Alpha",
+  "colour": "#4F46E5",
+  "privacy_policy_url": "https://www.scaleway.com/en/privacy-policy/",
+  "terms_of_service_url": "https://www.scaleway.com/en/terms-of-service/",
+  "prompt_training_policy": "unknown"
+}

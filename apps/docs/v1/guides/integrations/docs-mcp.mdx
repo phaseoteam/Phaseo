@@ -1,0 +1,103 @@
+---
+title: "Docs MCP"
+description: "Connect the AI Stats documentation MCP server to Codex, Claude Code, Cursor, or VS Code."
+---
+
+If you want your coding agent to answer AI Stats questions using the live docs instead of stale training data, connect the AI Stats documentation MCP server.
+
+This MCP server is read-only. It helps agents search the docs and read full pages while they work.
+
+## Server URL
+
+`https://ai-stats.phaseo.app/mcp`
+
+## What it gives you
+
+- live search across the AI Stats docs
+- full page content when an agent needs more detail
+- access to the hosted [skill.md](https://ai-stats.phaseo.app/skill.md) capability summary
+
+## Codex
+
+Add the server:
+
+```bash
+codex mcp add aiStatsDocs --url https://ai-stats.phaseo.app/mcp
+```
+
+Check it:
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+Add the server for the current project:
+
+```bash
+claude mcp add --transport http ai-stats-docs https://ai-stats.phaseo.app/mcp
+```
+
+Make it available across all projects:
+
+```bash
+claude mcp add --transport http --scope user ai-stats-docs https://ai-stats.phaseo.app/mcp
+```
+
+Check it:
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+Use the contextual menu in the docs to install the MCP server in Cursor, or add it manually:
+
+```json
+{
+  "mcpServers": {
+    "aiStatsDocs": {
+      "url": "https://ai-stats.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+Use the contextual menu in the docs to install the MCP server in VS Code, or add it manually:
+
+```json
+{
+  "servers": {
+    "aiStatsDocs": {
+      "type": "http",
+      "url": "https://ai-stats.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+## When to use this
+
+Use Docs MCP when you want your agent to:
+
+- look up the latest request shape before writing code
+- confirm endpoint support for a model or provider
+- check routing, presets, guardrails, or async-job behavior
+- pull examples from the docs while staying in your editor
+
+## Good prompts
+
+- `Look up the Responses request format in the AI Stats docs and give me a minimal example.`
+- `Use the AI Stats docs MCP server to check how provider.sort works before you change this request.`
+- `Find the guardrails docs in AI Stats and summarize the parts that affect provider routing.`
+
+## Related guides
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [Quickstart](../../quickstart.mdx)
+- [API Reference](../../api-reference/introduction.mdx)

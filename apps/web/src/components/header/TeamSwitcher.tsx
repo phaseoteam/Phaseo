@@ -236,12 +236,12 @@ export default function TeamSwitcher({
 							className="rounded-md py-1.5 text-sm cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70 focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
 						>
 							<Link
-								href="/settings/workspaces"
+								href="/settings/workspaces/settings"
 								className="flex w-full items-center"
 								onClick={(e) => {
 									e.preventDefault();
 									setIsTeamMenuOpen(false);
-									navigateWithViewTransition("/settings/workspaces");
+									navigateWithViewTransition("/settings/workspaces/settings");
 								}}
 							>
 								<Users className="mr-2 h-4 w-4" />
@@ -344,6 +344,23 @@ export default function TeamSwitcher({
 						>
 							<FlaskConical className="h-4 w-4" />
 							<span>Experiments</span>
+						</Link>
+					</DropdownMenuItem>
+
+					<DropdownMenuItem
+						asChild
+						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+					>
+						<Link
+							href="/settings/workspaces/settings"
+							onClick={(e) => {
+								e.preventDefault();
+								setIsProfileMenuOpen(false);
+								navigateWithViewTransition("/settings/workspaces/settings");
+							}}
+						>
+							<Users className="h-4 w-4" />
+							<span>Workspaces</span>
 						</Link>
 					</DropdownMenuItem>
 

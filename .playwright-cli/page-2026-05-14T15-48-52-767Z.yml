@@ -1,0 +1,255 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "AI Stats" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - img "AI Stats" [ref=e8]
+          - navigation [ref=e11]:
+            - link "Models" [ref=e12] [cursor=pointer]:
+              - /url: /models
+            - link "Providers" [ref=e13] [cursor=pointer]:
+              - /url: /api-providers
+            - link "Apps" [ref=e14] [cursor=pointer]:
+              - /url: /apps
+            - link "Rankings" [ref=e15] [cursor=pointer]:
+              - /url: /rankings
+            - link "Playground" [ref=e16] [cursor=pointer]:
+              - /url: /chat
+        - generic [ref=e17]:
+          - button "Open search" [ref=e19] [cursor=pointer]:
+            - img
+            - generic [ref=e20]: Search...
+            - generic: Ctrl K
+          - link "Sign In" [ref=e22] [cursor=pointer]:
+            - /url: /sign-in
+            - button "Sign In" [ref=e23]
+    - main [ref=e24]:
+      - main [ref=e27]:
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - generic [ref=e30]:
+              - generic [ref=e31]:
+                - img "Gemini 3.1 Flash-Lite" [ref=e35]
+                - generic [ref=e36]:
+                  - 'heading "Google: Gemini 3.1 Flash-Lite" [level=1] [ref=e38]':
+                    - link "Google:" [ref=e39] [cursor=pointer]:
+                      - /url: /organisations/google
+                    - text: Gemini 3.1 Flash-Lite
+                  - button "Model identifiers" [ref=e41] [cursor=pointer]:
+                    - generic [ref=e42]: google/gemini-3.1-flash-lite
+                    - img [ref=e44]
+              - generic [ref=e46]:
+                - link "Chat" [ref=e47] [cursor=pointer]:
+                  - /url: /chat?model=google/gemini-3.1-flash-lite
+                  - img
+                  - text: Chat
+                - link "Compare" [ref=e48] [cursor=pointer]:
+                  - /url: /compare?models=google/gemini-3.1-flash-lite
+                  - img
+                  - text: Compare
+            - paragraph [ref=e51]: Gemini 3.1 Flash-Lite is an AI model from Google. It accepts text, image, video, and audio inputs and produces text outputs. On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.
+          - generic [ref=e56]:
+            - link "Overview" [ref=e57] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite?sort=pricing&dir=asc
+            - link "Playground" [ref=e58] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/playground?sort=pricing&dir=asc
+            - link "Providers" [ref=e59] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/providers?sort=pricing&dir=asc
+            - link "Pricing" [ref=e60] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/pricing?sort=pricing&dir=asc
+            - link "Performance" [ref=e61] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/performance?sort=pricing&dir=asc
+            - link "Apps" [ref=e62] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/apps?sort=pricing&dir=asc
+            - link "Activity" [ref=e63] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/activity?sort=pricing&dir=asc
+            - link "Quickstart" [ref=e64] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/quickstart?sort=pricing&dir=asc
+            - link "Benchmarks" [ref=e65] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/benchmarks?sort=pricing&dir=asc
+            - link "Family" [ref=e66] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/family?sort=pricing&dir=asc
+            - link "Timeline" [ref=e67] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/timeline?sort=pricing&dir=asc
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - heading "Quickstart" [level=2] [ref=e73]:
+                - img [ref=e74]
+                - text: Quickstart
+              - paragraph [ref=e77]: Use one of the accepted identifiers below for the selected endpoint.
+            - generic [ref=e78]:
+              - alert [ref=e79]:
+                - img [ref=e80]
+                - generic [ref=e82]: Model identifiers
+                - generic [ref=e84]:
+                  - code [ref=e85]: google/gemini-3.1-flash-lite
+                  - code [ref=e86]: google/gemini-flash-lite-latest
+              - generic [ref=e87]:
+                - heading "1) Get an API key" [level=3] [ref=e88]
+                - paragraph [ref=e89]:
+                  - text: Create a key in
+                  - link "Dashboard API Keys" [ref=e90] [cursor=pointer]:
+                    - /url: /settings/keys
+                    - generic [ref=e91]: Dashboard
+                    - img [ref=e92]
+                    - generic [ref=e94]: API Keys
+                  - text: ", then set it as"
+                  - code [ref=e95]: AI_STATS_API_KEY
+                  - text: in your environment variables.
+                - alert [ref=e96]:
+                  - img [ref=e97]
+                  - generic [ref=e99]: Keep your API key secret
+                  - generic [ref=e100]: This key grants access to all models and your credits. Treat it like a password, do not share it, commit it to source control, or expose it in client-side code. Rotate keys immediately if you suspect compromise.
+              - generic [ref=e101]:
+                - heading "2) Choose endpoint, language, and streaming" [level=3] [ref=e102]
+                - generic [ref=e103]:
+                  - generic [ref=e104]:
+                    - text: Endpoint
+                    - combobox [ref=e105] [cursor=pointer]:
+                      - img [ref=e106]
+                    - combobox [ref=e108]
+                  - generic [ref=e109]:
+                    - text: Language
+                    - combobox [ref=e110] [cursor=pointer]:
+                      - img [ref=e111]
+                    - combobox [ref=e113]
+                  - generic [ref=e114]:
+                    - text: Streaming
+                    - generic [ref=e116]:
+                      - switch [ref=e117] [cursor=pointer]
+                      - checkbox
+                      - generic [ref=e118]: Enable SSE
+                    - paragraph [ref=e119]: "Add \"stream\": true to receive token events."
+                - alert [ref=e120]:
+                  - img [ref=e121]
+                  - generic [ref=e123]: Page routing preference
+                  - generic [ref=e124]: "This page is using Sort by Price. Gateway-native samples include routingMode: \"price\" to mirror that preference."
+              - generic [ref=e125]:
+                - heading "3) Send your first request" [level=3] [ref=e126]
+                - generic [ref=e127]:
+                  - heading "Code" [level=4] [ref=e128]
+                  - generic [ref=e129]:
+                    - generic [ref=e130]:
+                      - generic [ref=e131]: bash
+                      - button [ref=e132] [cursor=pointer]
+                    - code [ref=e135]: "# 1) Set your key export AI_STATS_API_KEY=\"aistats_***\" # 2) Send a request curl -s https://api.phaseo.app/v1/responses \\ -H \"Authorization: Bearer $AI_STATS_API_KEY\" \\ -H \"Content-Type: application/json\" \\ -d '{ \"model\": \"google/gemini-3.1-flash-lite\", \"input\": \"Give me one fun fact about cURL.\", \"routingMode\": \"price\" }'"
+    - contentinfo [ref=e136]:
+      - generic [ref=e137]:
+        - generic [ref=e138]:
+          - generic [ref=e139]:
+            - generic [ref=e140]: Community
+            - generic [ref=e141]:
+              - link "Discord" [ref=e142] [cursor=pointer]:
+                - /url: https://discord.gg/zDw73wamdX
+                - img "Discord" [ref=e143]
+                - generic [ref=e144]: Discord
+              - link "GitHub" [ref=e145] [cursor=pointer]:
+                - /url: https://github.com/AI-Stats/AI-Stats
+                - img "GitHub" [ref=e146]
+                - generic [ref=e147]: GitHub
+              - link "Instagram" [ref=e148] [cursor=pointer]:
+                - /url: https://instagram.com/ai__stats
+                - img "Instagram" [ref=e149]
+                - generic [ref=e150]: Instagram
+              - link "Reddit" [ref=e151] [cursor=pointer]:
+                - /url: https://reddit.com/r/AIStats/
+                - img "Reddit" [ref=e152]
+                - generic [ref=e153]: Reddit
+              - link "LinkedIn" [ref=e154] [cursor=pointer]:
+                - /url: https://www.linkedin.com/company/phaseoapp/
+                - img "LinkedIn" [ref=e155]
+                - generic [ref=e156]: LinkedIn
+              - link "X" [ref=e157] [cursor=pointer]:
+                - /url: https://x.com/ai_stats_team
+                - img "X" [ref=e158]
+                - generic [ref=e159]: X
+          - generic [ref=e160]:
+            - generic [ref=e161]: Platform
+            - generic [ref=e162]:
+              - link "Documentation" [ref=e163] [cursor=pointer]:
+                - /url: https://docs.ai-stats.phaseo.app
+                - img
+                - generic [ref=e164]: Docs
+              - link "Roadmap" [ref=e165] [cursor=pointer]:
+                - /url: /roadmap
+                - img
+                - generic [ref=e166]: Roadmap
+              - link "Tools" [ref=e167] [cursor=pointer]:
+                - /url: /tools
+                - img
+                - generic [ref=e168]: Tools
+              - link "Migrate" [ref=e169] [cursor=pointer]:
+                - /url: /migrate
+                - img
+                - generic [ref=e170]: Migrate
+              - link "Pricing" [ref=e171] [cursor=pointer]:
+                - /url: /pricing
+                - img
+                - generic [ref=e172]: Pricing
+              - link "Model Pricing Calculator" [ref=e173] [cursor=pointer]:
+                - /url: /tools/pricing-calculator
+                - img
+                - generic [ref=e174]: Model Pricing Calculator
+              - link "Works With AI Stats" [ref=e175] [cursor=pointer]:
+                - /url: /works-with
+                - img
+                - generic [ref=e176]: Works With
+          - generic [ref=e177]:
+            - generic [ref=e178]: Support
+            - generic [ref=e179]:
+              - link "Contribute" [ref=e180] [cursor=pointer]:
+                - /url: /contribute
+                - img
+                - generic [ref=e181]: Contribute
+              - link "Database monitor" [ref=e182] [cursor=pointer]:
+                - /url: /monitor
+                - img
+                - generic [ref=e183]: Database monitor
+              - link "Status" [ref=e184] [cursor=pointer]:
+                - /url: https://ai-stats.instatus.com/
+                - img
+                - generic [ref=e185]: Status
+              - link "FAQ" [ref=e186] [cursor=pointer]:
+                - /url: /faq
+                - img
+                - generic [ref=e187]: FAQ
+              - link "Contact" [ref=e188] [cursor=pointer]:
+                - /url: /contact
+                - img
+                - generic [ref=e189]: Contact
+              - 'button "Current theme: System. Click to switch to Light." [ref=e190] [cursor=pointer]':
+                - generic [ref=e191]:
+                  - generic [ref=e193]:
+                    - img
+                  - generic [ref=e195]: Theme
+          - generic [ref=e196]:
+            - generic [ref=e197]: Company
+            - generic [ref=e198]:
+              - link "About AI Stats" [ref=e199] [cursor=pointer]:
+                - /url: /about
+                - img
+                - generic [ref=e200]: About
+              - link "Announcements" [ref=e201] [cursor=pointer]:
+                - /url: /announcements
+                - img
+                - generic [ref=e202]: Announcements
+              - link "Changelog" [ref=e203] [cursor=pointer]:
+                - /url: https://docs.ai-stats.phaseo.app/v1/changelog
+                - img
+                - generic [ref=e204]: Changelog
+              - link "Terms of Service" [ref=e205] [cursor=pointer]:
+                - /url: /terms
+                - img
+                - generic [ref=e206]: Terms
+              - link "Privacy Policy" [ref=e207] [cursor=pointer]:
+                - /url: /privacy
+                - img
+                - generic [ref=e208]: Privacy
+        - separator [ref=e209]
+        - generic [ref=e211]:
+          - text: © 2025 AI Stats
+          - generic [ref=e212]: If you run into any issues or notice any data errors, please visit our GitHub and report an issue.
+  - generic [ref=e214]: xl
+  - region "Notifications alt+T"

@@ -4,6 +4,7 @@
   "name": "GPT 2",
   "status": "Retired",
   "previous_model_id": "openai/gpt-1-2018-06-11",
+  "description": "GPT 2 is OpenAI's high-quality speech-to-text model built on GPT-4o audio capabilities. It's priced per token (input and output), making it suitable for workflows that benefit from token-level billing transparency.",
   "announced_date": "2019-02-14T00:00:00",
   "release_date": "2019-11-05T00:00:00",
   "deprecation_date": null,

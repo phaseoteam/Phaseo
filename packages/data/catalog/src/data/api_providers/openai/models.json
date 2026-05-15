@@ -1870,12 +1870,48 @@
         "capability_id": "audio.transcription",
         "status": "active",
         "params": [
-          { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "include", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+          {
+            "param_id": "language",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "prompt",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "timestamp_granularities",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "include",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
         ]
       }
     ]
@@ -1934,12 +1970,48 @@
         "capability_id": "audio.transcription",
         "status": "active",
         "params": [
-          { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "include", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+          {
+            "param_id": "language",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "prompt",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "timestamp_granularities",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "include",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
         ]
       }
     ]
@@ -2551,7 +2623,7 @@
     "context_length": 128000,
     "max_output_tokens": 16384,
     "effective_from": "2025-12-11T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-10T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -2813,7 +2885,7 @@
     "context_length": 128000,
     "max_output_tokens": 16384,
     "effective_from": "2026-03-03T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-08-10T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -3047,11 +3119,11 @@
           }
         ]
       },
-        {
-          "capability_id": "batch",
-          "status": "coming_soon",
-          "params": []
-        }
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": []
+      }
     ]
   },
   {
@@ -3300,11 +3372,11 @@
           }
         ]
       },
-        {
-          "capability_id": "batch",
-          "status": "coming_soon",
-          "params": []
-        }
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": []
+      }
     ]
   },
   {
@@ -3425,11 +3497,11 @@
           }
         ]
       },
-        {
-          "capability_id": "batch",
-          "status": "coming_soon",
-          "params": []
-        }
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": []
+      }
     ]
   },
   {
@@ -3550,11 +3622,11 @@
           }
         ]
       },
-        {
-          "capability_id": "batch",
-          "status": "coming_soon",
-          "params": []
-        }
+      {
+        "capability_id": "batch",
+        "status": "coming_soon",
+        "params": []
+      }
     ]
   },
   {
@@ -5156,20 +5228,68 @@
         "capability_id": "audio.transcription",
         "status": "active",
         "params": [
-          { "param_id": "language", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "timestamp_granularities", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+          {
+            "param_id": "language",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "prompt",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "timestamp_granularities",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
         ]
       },
       {
         "capability_id": "audio.translations",
         "status": "active",
         "params": [
-          { "param_id": "prompt", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+          {
+            "param_id": "prompt",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
         ]
       }
     ]

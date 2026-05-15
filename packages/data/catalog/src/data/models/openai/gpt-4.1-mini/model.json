@@ -4,6 +4,7 @@
   "name": "GPT 4.1 Mini",
   "status": "Available",
   "previous_model_id": "openai/gpt-4o-2024-08-06",
+  "description": "GPT 4.1 Mini is a mid-sized model delivering performance competitive with GPT-4o at substantially lower latency and cost. It supports up to 1.0M of input context for long documents, codebases, and agent workflows.",
   "announced_date": null,
   "release_date": "2025-04-14T00:00:00",
   "deprecation_date": null,

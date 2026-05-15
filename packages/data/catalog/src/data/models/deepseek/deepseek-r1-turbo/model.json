@@ -4,6 +4,7 @@
   "name": "DeepSeek R1 Turbo",
   "status": "Available",
   "previous_model_id": null,
+  "description": "May 28th update to the [original DeepSeek R1](/deepseek/deepseek-r1) Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

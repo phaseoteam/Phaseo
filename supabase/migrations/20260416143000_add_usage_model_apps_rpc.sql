@@ -53,8 +53,6 @@ as $$
   order by t.total_tokens desc, t.requests desc, t.app_id asc
   limit (select value from normalized_limit);
 $$;
-
 comment on function public.get_usage_model_apps(text[], integer, timestamptz) is
   'Aggregates app usage for model aliases from gateway_usage_rollup_daily_app_model and returns public app metadata.';
-
 grant execute on function public.get_usage_model_apps(text[], integer, timestamptz) to authenticated, service_role;

@@ -4,6 +4,7 @@
   "name": "Llama 2 7B Chat",
   "status": null,
   "previous_model_id": null,
+  "description": "Llama 2 7B Chat is a language model from Meta for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

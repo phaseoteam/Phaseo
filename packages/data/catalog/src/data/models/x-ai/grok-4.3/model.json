@@ -4,6 +4,7 @@
   "name": "Grok 4.3",
   "status": "Available",
   "previous_model_id": "x-ai/grok-4.20",
+  "description": "Grok 4.3 is a reasoning model from xAI. It accepts text and image inputs with text output, and is suited for agentic workflows, instruction-following tasks, and applications requiring high factual.",
   "announced_date": "2026-04-30T00:00:00",
   "release_date": "2026-04-30T00:00:00",
   "deprecation_date": null,

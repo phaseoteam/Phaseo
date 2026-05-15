@@ -10,6 +10,10 @@ import type { Timer } from "../telemetry/timer";
 import type { Endpoint, RequestMeta } from "@core/types";
 import type { PriceCard } from "../pricing";
 import type { ProviderAdapter } from "@providers/types";
+import type {
+    GatewayPluginExecutionMetadata,
+    NormalizedGatewayPluginConfig,
+} from "@/plugins/types";
 
 /**
  * Represents the result of a gate check (authentication/authorization check)
@@ -21,6 +25,10 @@ export type GateCheck = {
     resetAt: string | null;
     now?: string | null;
     balanceNanos?: number | null;
+    limitWindow?: "daily" | "weekly" | "monthly" | null;
+    limitMetric?: "requests" | "cost" | "soft_blocked" | null;
+    currentValue?: number | null;
+    limitValue?: number | null;
     buckets?: {
         daily?: {
             windowStart: string | null;
@@ -81,12 +89,35 @@ export type PresetConfig = {
     // Provider routing
     allowedProviders?: string[] | null;
     deniedProviders?: string[] | null;
+    provider?: {
+        order?: string[] | null;
+        only?: string[] | null;
+        ignore?: string[] | null;
+        requiredExecutionRegion?: string | null;
+        requiredDataRegion?: string | null;
+        requireZeroDataRetention?: boolean | null;
+        maxPrice?: {
+            prompt?: number | string | null;
+            completion?: number | string | null;
+            image?: number | string | null;
+            audio?: number | string | null;
+            request?: number | string | null;
+        } | null;
+        preferredMinThroughput?: number | Record<string, number> | null;
+        preferredMaxLatency?: number | Record<string, number> | null;
+    } | null;
 
     // Default parameters (merged with request)
     defaultParams?: Record<string, any> | null;
 
     // Advanced routing
     providerPreferences?: Record<string, number> | null;
+    routingMode?: "balanced" | "price" | "latency" | "throughput" | null;
+    plugins?: NormalizedGatewayPluginConfig[] | null;
+    responseCaching?: {
+        enabled?: boolean | null;
+        ttlSeconds?: number | null;
+    } | null;
 };
 
 /**
@@ -95,6 +126,7 @@ export type PresetConfig = {
 export type PresetData = {
     id: string;
     name: string;
+    slug: string | null;
     description: string | null;
     config: PresetConfig;
     visibility: "private" | "team" | "public";
@@ -127,10 +159,29 @@ export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "comi
  */
 export type GatewayProviderSnapshot = {
     providerId: string;
+    providerFamilyId?: string | null;
+    offerScope?: "global" | "regional" | "specialized" | null;
+    offerLabel?: string | null;
+    apiModelId?: string | null;
+    pricingKey?: string | null;
     providerStatus?: ProviderRolloutStatus | null;
     providerRoutingStatus?: RoutingStatus | null;
     modelRoutingStatus?: RoutingStatus | null;
     capabilityStatus?: CapabilityRoutingStatus | null;
+    residencyMode?:
+        | "unknown"
+        | "provider_managed"
+        | "customer_selectable"
+        | "account_selected"
+        | null;
+    executionRegions?: string[] | null;
+    dataRegions?: string[] | null;
+    zeroDataRetention?:
+        | "unknown"
+        | "unsupported"
+        | "optional"
+        | "default"
+        | null;
     supportsEndpoint: boolean;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -172,6 +223,7 @@ export type TeamSettings = {
     betaChannelEnabled: boolean | null;
     alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
+    defaultPlugins?: NormalizedGatewayPluginConfig[] | null;
     billingMode: "wallet" | "invoice";
 };
 
@@ -229,10 +281,29 @@ export type GatewayContextData = {
  */
 export type ProviderCandidate = {
     providerId: string;
+    providerFamilyId?: string | null;
+    offerScope?: "global" | "regional" | "specialized" | null;
+    offerLabel?: string | null;
+    apiModelId?: string | null;
+    pricingKey?: string | null;
     providerStatus?: ProviderRolloutStatus | null;
     providerRoutingStatus?: RoutingStatus | null;
     modelRoutingStatus?: RoutingStatus | null;
     capabilityStatus?: CapabilityRoutingStatus | null;
+    residencyMode?:
+        | "unknown"
+        | "provider_managed"
+        | "customer_selectable"
+        | "account_selected"
+        | null;
+    executionRegions?: string[] | null;
+    dataRegions?: string[] | null;
+    zeroDataRetention?:
+        | "unknown"
+        | "unsupported"
+        | "optional"
+        | "default"
+        | null;
     adapter: ProviderAdapter;
     baseWeight: number;
     byokMeta: ByokKeyMeta[];
@@ -299,6 +370,7 @@ export type ProviderAttemptLog = {
     provider: string;
     endpoint: Endpoint;
     model: string;
+    api_model_id?: string | null;
     provider_model_slug?: string | null;
     outcome:
         | "success"
@@ -334,8 +406,142 @@ export type WorkspacePolicy = {
     providerAllowlist: string[] | null;
     providerBlocklist: string[] | null;
     allowedApiModels: string[] | null;
+    blockedApiModels?: string[] | null;
+    promptInjectionAction: PromptInjectionAction | null;
+    promptInjectionGuardrailIds: string[];
+    sensitiveInfoRules: SensitiveInfoRule[];
+    sensitiveInfoGuardrailIds: string[];
     enforceAllowed: boolean;
     activeGuardrailIds: string[];
+};
+
+export type GuardrailAction = "flag" | "redact" | "block";
+
+export type PromptInjectionAction = GuardrailAction;
+export type SensitiveInfoAction = GuardrailAction;
+
+export type SensitiveInfoBuiltinRuleId =
+    | "email_address"
+    | "phone_number"
+    | "ssn"
+    | "credit_card_number"
+    | "ip_address"
+    | "person_name"
+    | "physical_address";
+
+export type SensitiveInfoBuiltinRule = {
+    id: SensitiveInfoBuiltinRuleId;
+    kind: "builtin";
+    action: SensitiveInfoAction;
+};
+
+export type SensitiveInfoCustomRule = {
+    id: string;
+    kind: "custom";
+    action: SensitiveInfoAction;
+    name: string;
+    pattern: string;
+    flags?: string | null;
+};
+
+export type SensitiveInfoRule = SensitiveInfoBuiltinRule | SensitiveInfoCustomRule;
+
+export type GuardrailEnforcementDetection = {
+    detectorId: string;
+    category: string;
+    variant: "regex" | "typoglycemia" | "base64" | "hex" | "spaced" | "entity_heuristic";
+};
+
+export type GuardrailEnforcement = {
+    source: "prompt_injection" | "sensitive_info" | "multiple";
+    action: GuardrailAction;
+    detectionCount: number;
+    redactionCount: number;
+    guardrailIds: string[];
+    detections: GuardrailEnforcementDetection[];
+};
+
+export type GuardrailEnforcementPayload = GuardrailEnforcement & {
+    actions: GuardrailAction[];
+    blocked: boolean;
+    flagged: boolean;
+    redacted: boolean;
+    detection_count: number;
+    redaction_count: number;
+    guardrail_ids: string[];
+    detectors: Array<{
+        detector_id: string;
+        category: string;
+        variant: GuardrailEnforcementDetection["variant"];
+    }>;
+};
+
+export type ResponseCacheDiagnostics = {
+    enabled: boolean;
+    status: "bypass" | "miss" | "hit";
+    reason: string | null;
+    key: string | null;
+    fingerprint: string | null;
+    ttlSeconds: number | null;
+    ttlSource: string | null;
+    createdAt?: string | null;
+    ageMs?: number | null;
+    providerId?: string | null;
+};
+
+export type SearchObservabilityResultItem = {
+    type: string | null;
+    title: string | null;
+    url: string | null;
+    snippet: string | null;
+};
+
+export type SearchObservabilityCitation = {
+    type: string | null;
+    title: string | null;
+    url: string | null;
+    text: string | null;
+};
+
+export type ManagedSearchObservabilityEntry = {
+    provider: string | null;
+    query: string | null;
+    requestId: string | null;
+    searchType: string | null;
+    resultCount: number;
+};
+
+export type NativeSearchObservabilityEntry = {
+    type: string | null;
+    query: string | null;
+    status: string | null;
+};
+
+export type SearchObservability = {
+    usedNativeWebSearch: boolean;
+    usedManagedWebSearch: boolean;
+    resultCount: number;
+    citationCount: number;
+    results: SearchObservabilityResultItem[];
+    citations: SearchObservabilityCitation[];
+    nativeSearches: NativeSearchObservabilityEntry[];
+    managedSearches: ManagedSearchObservabilityEntry[];
+};
+
+export type ManagedWebFetchObservabilityEntry = {
+    provider: string | null;
+    url: string | null;
+    finalUrl: string | null;
+    title: string | null;
+    status: number | null;
+    contentType: string | null;
+    returnedChars: number;
+    truncated: boolean;
+};
+
+export type WebFetchObservability = {
+    requestCount: number;
+    fetches: ManagedWebFetchObservabilityEntry[];
 };
 
 /**
@@ -351,6 +557,7 @@ export type PipelineContext = {
     meta: RequestMeta;
     rawBody: any;
     body: any;
+    requestedModel: string;
     model: string;
     workspaceId: string;
     stream: boolean;
@@ -360,6 +567,8 @@ export type PipelineContext = {
     paramRoutingDiagnostics?: ParamRoutingDiagnostics;
     providerCandidateBuildDiagnostics?: ProviderCandidateBuildDiagnostics;
     providerEnablementDiagnostics?: ProviderEnablementDiagnostics;
+    plugins?: NormalizedGatewayPluginConfig[];
+    pluginExecutions?: GatewayPluginExecutionMetadata[];
     providers: ProviderCandidate[];
     pricing: Record<string, PriceCard>;
     gating: {
@@ -370,12 +579,17 @@ export type PipelineContext = {
     preset?: {
         id: string;
         name: string;
+        slug?: string | null;
         config: PresetConfig;
     } | null;
     internal?: boolean;
     timing?: Record<string, number>;
     timer?: Timer;
     routingDiagnostics?: Record<string, any> | null;
+    guardrailEnforcement?: GuardrailEnforcementPayload | null;
+    searchObservability?: SearchObservability | null;
+    webFetchObservability?: WebFetchObservability | null;
+    responseCache?: ResponseCacheDiagnostics | null;
     attemptErrors?: Array<Record<string, unknown>>;
     providerAttempts?: ProviderAttemptLog[];
     // Enrichment data for observability (wide events)

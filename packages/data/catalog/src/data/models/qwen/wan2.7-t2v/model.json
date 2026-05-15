@@ -4,6 +4,7 @@
   "name": "Wan 2.7 T2V",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Wan 2.7 T2V is a video generation model from Qwen for prompt-driven clip and scene creation. It is aimed at text-to-video, multimodal clip generation, and motion design workflows.",
   "announced_date": "2026-04-03T00:00:00",
   "release_date": "2026-04-03T00:00:00",
   "deprecation_date": null,

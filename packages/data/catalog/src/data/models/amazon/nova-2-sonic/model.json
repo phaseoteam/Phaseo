@@ -4,6 +4,7 @@
   "name": "Nova 2 Sonic",
   "status": "Available",
   "previous_model_id": "amazon/nova-sonic-2025-04-08",
+  "description": "Nova 2 Sonic is a speech-to-text model from Amazon for transcription and spoken-language understanding workflows. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2025-12-02T00:00:00",
   "release_date": "2025-12-02T00:00:00",
   "deprecation_date": null,

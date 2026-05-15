@@ -1,4 +1,5 @@
 import { getBindings } from "@/runtime/env";
+import { buildPublicAsyncWebhook, toAsyncLifecycleStatus } from "@core/async-notifications";
 
 import {
 	DEFAULT_VIDEO_DOWNLOAD_TTL_SECONDS,
@@ -355,11 +356,13 @@ export async function toPublicVideoResponse(args: {
 		id: args.id,
 		object: "video",
 		status,
+		lifecycle_status: toAsyncLifecycleStatus(status),
 		output_access: outputAccess,
 		progress,
 		progress_source: progressSource,
 		polling_url: buildVideoPollingUrl(args.requestUrl, args.id),
 		poll_after_seconds: DEFAULT_VIDEO_POLL_SECONDS,
+		cancel_url: null,
 		generation_id: generationId ?? null,
 		created_at: createdAt,
 		started_at: normalizeText((args.payload as any)?.started_at) ?? null,
@@ -382,6 +385,10 @@ export async function toPublicVideoResponse(args: {
 		...(errorValue ? { error: errorValue } : {}),
 		billing: buildVideoBilling(args.record, args.meta, status),
 	};
+	const webhook = buildPublicAsyncWebhook("video", args.meta);
+	if (webhook) {
+		response.webhook = webhook;
+	}
 	if (includeUnsignedUrls) {
 		response.content_url = buildVideoContentUrl(args.requestUrl, args.id, 0);
 	}

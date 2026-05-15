@@ -4,6 +4,7 @@
   "name": "Dall-E",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Dall-E is an image generation model from OpenAI for visual creation workflows. It is aimed at illustration, design exploration, and marketing creative.",
   "announced_date": "2021-01-05T00:00:00",
   "release_date": "2021-01-05T00:00:00",
   "deprecation_date": null,

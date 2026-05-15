@@ -1,0 +1,28 @@
+{
+  "api_provider_id": "tensorix",
+  "api_provider_name": "Tensorix",
+  "provider_family_id": "tensorix",
+  "offer_scope": "global",
+  "description": null,
+  "link": "https://docs.tensorix.ai/",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "eu"
+  ],
+  "default_data_regions": [
+    "eu"
+  ],
+  "zero_data_retention": "default",
+  "residency_source_url": "https://docs.tensorix.ai/",
+  "regional_pricing_mode": "same_as_global",
+  "pricing_source_url": "https://tensorix.ai/pricing/",
+  "regional_pricing_notes": "Tensorix publicly markets EU-hosted platform pricing rather than separate regional endpoint tiers.",
+  "country_code": null,
+  "status": "NotReady",
+  "colour": "#2563EB",
+  "privacy_policy_url": "https://tensorix.ai/privacy-policy",
+  "terms_of_service_url": "https://tensorix.ai/terms",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Tensorix publicly states that it does not store prompts or completions and operates with zero data retention on EU-hosted infrastructure.",
+  "prompt_training_source_url": "https://tensorix.ai/privacy-policy"
+}

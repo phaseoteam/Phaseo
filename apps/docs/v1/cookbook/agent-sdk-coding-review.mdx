@@ -1,0 +1,154 @@
+---
+title: "Run a coding-review agent with runtime tools"
+description: "Build a resumable coding-review workflow with local runtime tools, strict JSON, and human approval checkpoints."
+---
+
+Use this recipe when one workflow should:
+
+- inspect code-related context with local runtime tools
+- return strict structured output instead of free-form prose
+- pause high-risk decisions for human approval
+- checkpoint progress between model turns and tool calls
+
+## 1. Define one narrow output contract
+
+```ts
+type CodeReviewPlan = {
+  risk: "low" | "medium" | "high";
+  summary: string;
+  recommendedActions: string[];
+  needsApproval: boolean;
+};
+```
+
+This keeps the first coding workflow inspectable in logs and easy to pass to downstream worker steps.
+
+## 2. Define small runtime tools
+
+```ts
+import { defineTool } from "@ai-stats/agent-sdk";
+
+const lookupDiffSummary = defineTool({
+  id: "lookup-diff-summary",
+  description: "Return a short summary of the changed files in one pull request.",
+  async execute(input: { pullRequestId: string }) {
+    return {
+      pullRequestId: input.pullRequestId,
+      files: ["apps/api/src/pipeline/before/index.ts"],
+      summary: "Changes touch request validation.",
+    };
+  },
+});
+
+const lookupFailingChecks = defineTool({
+  id: "lookup-failing-checks",
+  description: "Return the failing CI checks for one pull request.",
+  async execute(input: { pullRequestId: string }) {
+    return {
+      pullRequestId: input.pullRequestId,
+      failingChecks: ["web-typecheck"],
+    };
+  },
+});
+```
+
+Keep these tools deterministic and idempotent so the checkpointed step data stays useful if a worker resumes later.
+
+## 3. Create the agent with a human-review seam
+
+```ts
+import { createAgent } from "@ai-stats/agent-sdk";
+
+const codingReviewAgent = createAgent<string, CodeReviewPlan>({
+  id: "coding-review-agent",
+  model: "ai-stats/free",
+  instructions:
+    "Use the available tools to inspect the coding task, then return a strict JSON review plan.",
+  tools: [lookupDiffSummary, lookupFailingChecks],
+  parseOutput(text) {
+    return JSON.parse(text) as CodeReviewPlan;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsApproval
+      ? {
+          reason: "coding_review_approval_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+## 4. Use the gateway-backed adapter for strict JSON
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@ai-stats/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.AI_STATS_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "code_review_plan",
+    schema: {
+      type: "object",
+      properties: {
+        risk: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        summary: { type: "string" },
+        recommendedActions: {
+          type: "array",
+          items: { type: "string" },
+          minItems: 1,
+        },
+        needsApproval: { type: "boolean" },
+      },
+      required: ["risk", "summary", "recommendedActions", "needsApproval"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. Run and resume the workflow
+
+```ts
+const result = await codingReviewAgent.run({
+  input: "Review pull request pr_482 and produce a remediation plan.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+if (result.run.status === "waiting_for_human") {
+  const continued = await codingReviewAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the plan.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. What to verify
+
+After one run with tools and one run that pauses for approval, confirm:
+
+- request detail views show the runtime tool loop clearly
+- paused runs enter `waiting_for_human`
+- step records checkpoint after tool execution
+- schema failures or plugin-healing activity stay visible in logs
+
+## Related guides
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Build a durable agent loop](./agent-sdk-durable-loop.mdx)
+- [Build a durable agent loop in TypeScript](./agent-sdk-durable-loop.mdx)
+- [Recover malformed structured JSON](./response-healing-for-structured-json.mdx)

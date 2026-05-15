@@ -4,6 +4,7 @@
   "name": "OCR 3",
   "status": "Available",
   "previous_model_id": null,
+  "description": "OCR 3 is a document understanding model from Mistral for OCR, extraction, and page-level visual reasoning. It is suited to extracting text, structure, and answers from PDFs, scans, and screenshots.",
   "announced_date": "2025-12-18T00:00:00",
   "release_date": "2025-12-18T00:00:00",
   "deprecation_date": null,

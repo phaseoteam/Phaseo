@@ -2,11 +2,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
+import { BookOpenText } from "lucide-react";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";
 import { SearchWrapper } from "./Search/SearchWrapper";
 import { HeaderAnnouncements } from "./HeaderAnnouncements";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 
 const releaseMessage = "Introducing AI Stats Gateway";
@@ -59,10 +61,25 @@ export default function Header() {
 			<div className="hidden shrink-0 items-center gap-3 lg:flex">
 				<Suspense
 					fallback={
-						<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-[15rem] rounded-lg" />
+						<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-16 rounded-lg" />
 					}
 				>
-					<SearchWrapper className="w-[var(--site-header-search-width,13rem)] xl:w-[var(--site-header-search-width-xl,15rem)]" />
+					<Link href={docsLink} target="_blank" rel="noreferrer" prefetch={false}>
+						<Button
+							variant="ghost"
+							className="h-[var(--site-header-control-h,2.25rem)] rounded-lg px-2 text-[13px] font-medium text-zinc-600 shadow-none hover:bg-zinc-100/70 xl:px-2.5 dark:text-zinc-300 dark:hover:bg-zinc-900/60"
+						>
+							<BookOpenText className="h-3.5 w-3.5" />
+							Docs
+						</Button>
+					</Link>
+				</Suspense>
+				<Suspense
+					fallback={
+						<Skeleton className="h-[var(--site-header-control-h,2.5rem)] w-[var(--site-header-control-h,2.25rem)] rounded-lg xl:w-[15rem]" />
+					}
+				>
+					<SearchWrapper className="w-[var(--site-header-control-h,2.25rem)] xl:w-[var(--site-header-search-width-xl,15rem)]" />
 				</Suspense>
 				<Suspense
 					fallback={

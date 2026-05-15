@@ -19,7 +19,13 @@ function SubmitButton() {
 	);
 }
 
-export default function EmailPassword({ returnUrl }: { returnUrl?: string }) {
+export default function EmailPassword({
+	returnUrl,
+	isLastUsed = false,
+}: {
+	returnUrl?: string;
+	isLastUsed?: boolean;
+}) {
 	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 	const [showPassword, setShowPassword] = React.useState(false);
 	const [password, setPassword] = React.useState("");
@@ -28,9 +34,16 @@ export default function EmailPassword({ returnUrl }: { returnUrl?: string }) {
 		<div className="grid gap-4">
 			<div className="flex items-center gap-2">
 				<div className="flex-1 border-t border-border" />
-				<span className="px-2 text-sm text-muted-foreground">
-					Or sign in with email
-				</span>
+				<div className="flex items-center gap-2 px-2">
+					<span className="text-sm text-muted-foreground">
+						Or sign in with email
+					</span>
+					{isLastUsed ? (
+						<span className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+							Last Used
+						</span>
+					) : null}
+				</div>
 				<div className="flex-1 border-t border-border" />
 			</div>
 
@@ -99,6 +112,18 @@ export default function EmailPassword({ returnUrl }: { returnUrl?: string }) {
 				>
 					Sign up
 				</Link>
+				<div className="mt-2">
+					<Link
+						href={
+							returnUrl
+								? `/sign-in/enterprise?returnUrl=${encodeURIComponent(returnUrl)}`
+								: "/sign-in/enterprise"
+						}
+						className="text-muted-foreground underline underline-offset-4"
+					>
+						Enterprise Login
+					</Link>
+				</div>
 			</div>
 
 			<ForgotPasswordDialog

@@ -48,6 +48,9 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			args.ir,
 			args.maxOutputTokens,
 			args.providerModelSlug || args.ir.model,
+			{
+				inferenceGeo: resolveAnthropicInferenceGeo(args.providerId, args.ir),
+			},
 		);
 
 		const requestBody = {
@@ -351,10 +354,24 @@ function isClaudeOpus47Model(model: string | null | undefined): boolean {
 	return normalized.includes("claude-opus-4-7") || normalized.includes("claude-opus-4.7");
 }
 
+function supportsAnthropicFastMode(model: string | null | undefined): boolean {
+	const normalized = normalizeModelId(model);
+	if (!normalized) return false;
+	return (
+		normalized.includes("claude-opus-4-6") ||
+		normalized.includes("claude-opus-4.6") ||
+		normalized.includes("claude-opus-4-7") ||
+		normalized.includes("claude-opus-4.7")
+	);
+}
+
 export function irToAnthropicMessages(
 	ir: IRChatRequest,
 	providerMaxOutputTokens?: number | null,
 	modelHint?: string | null,
+	options?: {
+		inferenceGeo?: "global" | "us" | null;
+	},
 ): any {
 	const messages: any[] = [];
 	let system: string | undefined;
@@ -414,6 +431,9 @@ export function irToAnthropicMessages(
 		system: system || undefined,
 		max_tokens: maxTokens,
 	};
+	if (options?.inferenceGeo) {
+		request.inference_geo = options.inferenceGeo;
+	}
 
 	// Sampling params are rejected by Claude Opus 4.7, so omit them on that model.
 	if (!isOpus47) {
@@ -499,9 +519,31 @@ export function irToAnthropicMessages(
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
 		speed: ir.speed,
+		model: resolvedModel,
 	});
 
 	return request;
+}
+
+export function resolveAnthropicInferenceGeo(
+	providerId: string,
+	ir?: IRChatRequest,
+): "global" | "us" | null {
+	const explicitInferenceGeo = String(ir?.geo?.inferenceGeo ?? "")
+		.trim()
+		.toLowerCase();
+	if (explicitInferenceGeo === "global" || explicitInferenceGeo === "us") {
+		return explicitInferenceGeo;
+	}
+
+	const requiredExecutionRegion = String(ir?.geo?.requiredExecutionRegion ?? "")
+		.trim()
+		.toLowerCase();
+	if (requiredExecutionRegion === "us") return "us";
+	if (requiredExecutionRegion === "global") return "global";
+
+	if (providerId === "anthropic-us") return "us";
+	return null;
 }
 
 function buildAnthropicStructuredOutputInstruction(ir: IRChatRequest): string | undefined {
@@ -593,7 +635,7 @@ function applyAnthropicCacheControlDefaults(
 }
 function applyAnthropicServiceControls(
 	request: any,
-	controls: { serviceTier?: string; speed?: string },
+	controls: { serviceTier?: string; speed?: string; model?: string | null },
 ) {
 	const speed = typeof controls.speed === "string" ? controls.speed.toLowerCase() : undefined;
 	if (speed === "fast") {
@@ -606,6 +648,10 @@ function applyAnthropicServiceControls(
 	const tier = controls.serviceTier.toLowerCase();
 
 	if (tier === "priority") {
+		if (supportsAnthropicFastMode(controls.model)) {
+			request.speed = "fast";
+			return;
+		}
 		request.service_tier = "auto";
 		return;
 	}

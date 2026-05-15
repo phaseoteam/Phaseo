@@ -4,6 +4,7 @@
   "name": "Qwen Plus 2025 09 11",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen Plus 2025 09 11 is a 131K context model with a balanced performance, speed, and cost combination. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

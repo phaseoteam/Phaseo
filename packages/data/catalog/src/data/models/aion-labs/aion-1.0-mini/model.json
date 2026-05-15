@@ -4,6 +4,7 @@
   "name": "Aion 1.0 Mini",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Aion 1.0 Mini is a distilled version of the DeepSeek-R1 model, designed for strong performance in reasoning domains such as mathematics, coding, and logic.",
   "announced_date": "2025-01-29T00:00:00",
   "release_date": "2025-01-29T00:00:00",
   "deprecation_date": null,

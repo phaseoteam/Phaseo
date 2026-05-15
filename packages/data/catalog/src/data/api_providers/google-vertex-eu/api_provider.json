@@ -1,0 +1,29 @@
+{
+  "api_provider_id": "google-vertex-eu",
+  "api_provider_name": "Google Vertex",
+  "provider_family_id": "google-vertex",
+  "offer_label": "EU",
+  "offer_scope": "regional",
+  "description": null,
+  "link": "https://cloud.google.com/vertex-ai?hl=en",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "eu"
+  ],
+  "default_data_regions": [
+    "eu"
+  ],
+  "zero_data_retention": "unknown",
+  "residency_source_url": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/locations",
+  "regional_pricing_mode": "offer_specific",
+  "pricing_source_url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
+  "regional_pricing_notes": "Europe multi-region Vertex endpoint. For generally available Gemini 3 and later model families, non-global endpoint pricing starts on July 1, 2026. Before July 1, 2026, Google states that Global endpoint pricing applies to non-global endpoints.",
+  "country_code": "US",
+  "status": "Alpha",
+  "colour": "#4285F4",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Google Cloud says Vertex AI customer data is not used to train or fine-tune AI/ML models without prior permission or instruction, though some abuse-monitoring and short-lived caching scenarios can still apply.",
+  "prompt_training_source_url": "https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance",
+  "privacy_policy_url": "https://policies.google.com/privacy",
+  "terms_of_service_url": "https://cloud.google.com/product-terms"
+}

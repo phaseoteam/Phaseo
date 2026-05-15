@@ -4,6 +4,7 @@
   "name": "Longcat Flash Cat",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Longcat Flash Cat is a language model from Meituan for chat, writing, analysis, and general-purpose automation. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

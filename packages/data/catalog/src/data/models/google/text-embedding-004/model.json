@@ -4,6 +4,7 @@
   "name": "Text Embedding 004",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "gemini-embedding-001 provides a unified cutting edge experience across domains, including science, legal, finance, and coding. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2024-05-14T00:00:00",
   "release_date": "2024-05-14T00:00:00",
   "deprecation_date": "2025-12-03T00:00:00",

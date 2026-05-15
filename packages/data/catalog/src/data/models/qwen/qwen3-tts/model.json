@@ -4,6 +4,7 @@
   "name": "Qwen 3 TTS (2025-11-27)",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 TTS (2025-11-27) is a text-to-speech model from Qwen for turning text into spoken audio. It is suited to narration, assistants, and spoken user interfaces.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

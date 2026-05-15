@@ -4,6 +4,7 @@
   "name": "Devstral Medium 1.0",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Devstral Medium 1.0 is a coding model from Mistral for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-07-10T00:00:00",
   "release_date": "2025-07-10T00:00:00",
   "deprecation_date": "2026-02-27T00:00:00",

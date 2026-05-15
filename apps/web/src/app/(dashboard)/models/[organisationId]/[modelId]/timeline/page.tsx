@@ -8,13 +8,14 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 import { permanentRedirect } from "next/navigation";
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
@@ -23,8 +24,12 @@ export async function generateMetadata(props: {
 
 	return buildMetadata({
 		title: `${modelName} Timeline - Announcements & Release History`,
-		description:
-			`Explore the release timeline for ${modelName} on AI Stats, including announcements, launches, version changes, deprecations, and retirement milestones over time.`,
+		description: buildModelPageMetadataDescription({
+			modelDescription,
+			suffix:
+				"Explore announcements, launches, version changes, deprecations, and retirement milestones over time.",
+			fallback: `Explore the release timeline for ${modelName} on AI Stats, including announcements, launches, version changes, deprecations, and retirement milestones over time.`,
+		}),
 		path,
 		imagePath,
 		keywords: [

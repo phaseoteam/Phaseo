@@ -125,7 +125,15 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "5m"
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-02-07T00:00:00"
     },
@@ -137,7 +145,15 @@
       "currency": "USD",
       "pricing_plan": "priority",
       "note": null,
-      "match": [],
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1h"
+        }
+      ],
       "priority": 100,
       "effective_from": "2026-02-07T00:00:00"
     },

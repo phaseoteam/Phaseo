@@ -66,6 +66,10 @@ export type GatewayBindings = {
     CLOUDFLARE_AI_GATEWAY_BASE_URL?: string;
     COHERE_API_KEY?: string;
     COHERE_BASE_URL?: string;
+    CROFAI_API_KEY?: string;
+    CROFAI_BASE_URL?: string;
+    CROF_AI_API_KEY?: string;
+    CROF_AI_BASE_URL?: string;
     VOYAGE_API_KEY?: string;
     VOYAGE_BASE_URL?: string;
     CRUSOE_API_KEY?: string;
@@ -128,6 +132,8 @@ export type GatewayBindings = {
     NEBIUS_US_CENTRAL_1_BASE_URL?: string;
     NEXTBIT_API_KEY?: string;
     STEPFUN_API_KEY?: string;
+    TENSORIX_API_KEY?: string;
+    TENSORIX_BASE_URL?: string;
     VENICE_API_KEY?: string;
     VENICE_BASE_URL?: string;
     WEIGHTSANDBIASES_API_KEY?: string;
@@ -155,10 +161,14 @@ export type GatewayBindings = {
     POOLSIDE_BASE_URL?: string;
     PHALA_API_KEY?: string;
     PHALA_BASE_URL?: string;
+    OVH_AI_ENDPOINTS_ACCESS_TOKEN?: string;
+    OVH_AI_ENDPOINTS_URL?: string;
     RELACE_API_KEY?: string;
     RELACE_BASE_URL?: string;
     SAMBANOVA_API_KEY?: string;
     SAMBANOVA_BASE_URL?: string;
+    SCW_SECRET_KEY?: string;
+    SCALEWAY_BASE_URL?: string;
     SILICONFLOW_API_KEY?: string;
     SILICONFLOW_BASE_URL?: string;
     SOURCEFUL_API_KEY?: string;

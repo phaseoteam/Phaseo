@@ -1,0 +1,11 @@
+{
+  "tags": [
+    "github-actions",
+    "node"
+  ],
+  "sentinels": [
+    "package.json"
+  ],
+  "detectedAt": "2026-05-11T21:54:38.258Z",
+  "rootPath": "E:\\ai-stats-public"
+}

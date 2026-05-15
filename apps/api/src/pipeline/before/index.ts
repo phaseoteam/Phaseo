@@ -17,6 +17,35 @@ import { isProviderCapabilityEnabled, normalizeCapability } from "@/executors";
 import { adapterFor } from "@/providers/index";
 import type { ProviderEnablementDiagnostics } from "./types";
 import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
+import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
+import { findUnknownGatewayPluginIds } from "@/plugins/registry";
+
+function resolveRequestRoutingModeOverride(
+    body: any,
+    fallback: string | null,
+): string | null {
+    const providerSort = body?.provider?.sort;
+    if (typeof providerSort !== "string") return fallback;
+
+    const normalized = providerSort.trim().toLowerCase();
+    if (
+        normalized === "price" ||
+        normalized === "pricing" ||
+        normalized === "cost"
+    ) {
+        return "price";
+    }
+    if (normalized === "latency" || normalized === "speed") {
+        return "latency";
+    }
+    if (normalized === "throughput" || normalized === "tps") {
+        return "throughput";
+    }
+    if (normalized === "balanced" || normalized === "default") {
+        return "balanced";
+    }
+    return fallback;
+}
 
 /**
  * BEFORE STAGE
@@ -40,7 +69,7 @@ export async function beforeRequest(
     // 2) JSON (raw body for tracing + schema guard)
     const j = await timer.span("guardJson", () => guardJson(req, workspaceId, requestId));
     if (!j.ok) return j as { ok: false; response: Response };
-    const rawBody = j.value;
+    let rawBody = j.value;
     const betaCapabilities = normalizeReturnFlag(
         req.headers.get("x-aistats-beta-capabilities") ??
         rawBody?.beta_capabilities ??
@@ -105,24 +134,58 @@ export async function beforeRequest(
     // 5.3) Apply preset configuration if present
     let mergedBody = body;
     let presetFilteredProviders = providers;
-    let presetInfo: { id: string; name: string; config: any } | null = null;
+    let resolvedRoutingMode = context.teamSettings?.routingMode ?? null;
+    let presetInfo: { id: string; name: string; slug?: string | null; config: any } | null = null;
 
     if (context.preset) {
-        const { mergePresetWithBody, filterProvidersByPreset, applyProviderPreferences } = await import("./presetMerge");
+        const {
+            mergePresetWithBody,
+            filterProvidersByPreset,
+            applyProviderPreferences,
+            resolvePresetRoutingMode,
+            validatePresetModel,
+        } = await import("./presetMerge");
 
         // Merge preset config with request body
         mergedBody = mergePresetWithBody(body, context.preset);
+        const presetModelValidationError = validatePresetModel(
+            resolvedModel || model,
+            context.preset.config,
+        );
+        if (presetModelValidationError) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    details: [{
+                        message: presetModelValidationError,
+                        path: ["preset", "config", "models"],
+                        keyword: "preset_model_not_allowed",
+                        params: {
+                            preset: context.preset.name,
+                            model: resolvedModel || model,
+                        },
+                    }],
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
 
         // Filter providers by preset constraints
         presetFilteredProviders = filterProvidersByPreset(providers, context.preset.config);
 
         // Apply provider preferences/weights
         presetFilteredProviders = applyProviderPreferences(presetFilteredProviders, context.preset.config);
+        resolvedRoutingMode = resolvePresetRoutingMode(
+            context.preset.config,
+            resolvedRoutingMode,
+        );
 
         // Save preset info for context
         presetInfo = {
             id: context.preset.id,
             name: context.preset.name,
+            slug: context.preset.slug ?? null,
             config: context.preset.config,
         };
 
@@ -141,6 +204,36 @@ export async function beforeRequest(
                 }),
             };
         }
+    }
+
+    const resolvedPlugins = resolveGatewayPlugins({
+        workspaceDefaults: context.teamSettings?.defaultPlugins,
+        presetDefaults: context.preset?.config?.plugins,
+        requestPlugins: mergedBody?.plugins,
+    });
+    if (resolvedPlugins.length > 0 || mergedBody?.plugins !== undefined) {
+        mergedBody = {
+            ...mergedBody,
+            plugins: resolvedPlugins,
+        };
+    }
+    const unknownPluginIds = findUnknownGatewayPluginIds(resolvedPlugins);
+    if (unknownPluginIds.length > 0) {
+        return {
+            ok: false,
+            response: err("validation_error", {
+                details: [{
+                    message: `Unknown gateway plugin id${unknownPluginIds.length > 1 ? "s" : ""}: ${unknownPluginIds.join(", ")}`,
+                    path: ["plugins"],
+                    keyword: "unknown_gateway_plugin",
+                    params: {
+                        pluginIds: unknownPluginIds,
+                    },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
     }
 
     const { fetchWorkspacePolicy, applyWorkspacePolicy } = await import("./workspacePolicy");
@@ -189,6 +282,9 @@ export async function beforeRequest(
                         keyword: "model_not_allowed_by_workspace_policy",
                         params: workspacePolicyFailure.diagnostics,
                     }],
+                    routing_diagnostics: {
+                        workspacePolicy: workspacePolicyFailure.diagnostics,
+                    },
                     request_id: requestId,
                     workspace_id: workspaceId,
                 }),
@@ -204,12 +300,50 @@ export async function beforeRequest(
                     keyword: "no_providers_after_workspace_policy_filter",
                     params: workspacePolicyFailure.diagnostics,
                 }],
+                routing_diagnostics: {
+                    workspacePolicy: workspacePolicyFailure.diagnostics,
+                },
                 request_id: requestId,
                 workspace_id: workspaceId,
             }),
         };
     }
     presetFilteredProviders = workspacePolicyResult.providers;
+
+    const { applyPromptInjectionGuardrails } = await import("./promptInjection");
+    const promptInjectionResult = applyPromptInjectionGuardrails({
+        body: mergedBody,
+        rawBody,
+        endpoint,
+        workspacePolicy,
+        requestId,
+        workspaceId,
+    });
+    if (!promptInjectionResult.ok) {
+        return promptInjectionResult as { ok: false; response: Response };
+    }
+    mergedBody = promptInjectionResult.body;
+    rawBody = promptInjectionResult.rawBody;
+
+    const { applySensitiveInfoGuardrails } = await import("./sensitiveInfo");
+    const sensitiveInfoResult = applySensitiveInfoGuardrails({
+        body: mergedBody,
+        rawBody,
+        endpoint,
+        workspacePolicy,
+        requestId,
+        workspaceId,
+        existingEnforcement: promptInjectionResult.enforcement,
+    });
+    if (!sensitiveInfoResult.ok) {
+        return sensitiveInfoResult as { ok: false; response: Response };
+    }
+    mergedBody = sensitiveInfoResult.body;
+    rawBody = sensitiveInfoResult.rawBody;
+    resolvedRoutingMode = resolveRequestRoutingModeOverride(
+        mergedBody,
+        resolvedRoutingMode,
+    );
 
     // 5.5) Capability validation - parameter support and token limits
     const capabilityValidation = await timer.span("validateCapabilities", () =>
@@ -404,6 +538,7 @@ export async function beforeRequest(
         meta,
         rawBody,
         body: mergedBody,
+        requestedModel: model,
         model: resolvedModel || model,
         workspaceId,
         stream,
@@ -412,6 +547,7 @@ export async function beforeRequest(
         paramRoutingDiagnostics: capabilityValidation.paramRoutingDiagnostics,
         providerCandidateBuildDiagnostics: candidateDiagnostics,
         providerEnablementDiagnostics,
+        plugins: normalizeGatewayPlugins(mergedBody?.plugins),
         providers: enabledProviders,
         providerCapabilitiesBeta: betaCapabilities,
         pricing: context.pricing,
@@ -426,9 +562,13 @@ export async function beforeRequest(
         teamEnrichment: context.teamEnrichment ?? null,
         keyEnrichment: context.keyEnrichment ?? null,
         teamSettings: context.teamSettings ?? null,
-        routingMode: context.teamSettings?.routingMode ?? null,
+        routingMode: resolvedRoutingMode,
         keyId: apiKeyId ?? null,
         testingMode: testingModeEnabled,
+        routingDiagnostics: {
+            workspacePolicy: workspacePolicyResult.diagnostics,
+        },
+        guardrailEnforcement: sensitiveInfoResult.enforcement,
     };
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);

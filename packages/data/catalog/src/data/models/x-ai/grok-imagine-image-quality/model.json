@@ -4,6 +4,7 @@
   "name": "Grok Imagine Image Quality",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok Imagine Image Quality is an image generation model from xAI for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2026-05-06T00:00:00",
   "release_date": "2026-05-06T00:00:00",
   "deprecation_date": null,

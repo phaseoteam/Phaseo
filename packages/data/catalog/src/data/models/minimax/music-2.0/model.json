@@ -4,6 +4,7 @@
   "name": "Music 2.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Music 2.0 is a music generation model from MiniMax for creating songs, instrumentals, and audio clips from prompts. It is aimed at prompt-driven soundtrack, jingle, and creative audio workflows.",
   "announced_date": "2025-10-29T00:00:00",
   "release_date": "2025-10-29T00:00:00",
   "deprecation_date": null,

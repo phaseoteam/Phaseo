@@ -4,6 +4,7 @@
   "name": "Seed Translation",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seed Translation is a translation model from ByteDance for converting text between languages. It is aimed at multilingual translation and localization workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

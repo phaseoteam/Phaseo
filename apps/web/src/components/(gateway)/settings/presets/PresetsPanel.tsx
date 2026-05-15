@@ -139,13 +139,13 @@ export default function PresetsPanel({
 							</EmptyHeader>
 						</Empty>
 					) : (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+						<div className="overflow-hidden rounded-xl border border-border/70">
 							{team.presets.map((p: any) => (
 								<div
 									key={p.id}
-									className="relative p-4 border rounded-md bg-white dark:bg-zinc-950 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+									className="relative border-b border-border/70 px-4 py-4 transition-colors last:border-b-0 hover:bg-muted/20"
 								>
-								<div className="flex items-start justify-between">
+								<div className="flex items-start justify-between gap-4">
 										<div className="flex items-start gap-3 flex-1 min-w-0">
 											<div className="flex-shrink-0 mt-0.5">
 												<PresetLogo name={p.name} className="w-10 h-10 rounded-lg" />
@@ -169,7 +169,12 @@ export default function PresetsPanel({
 														{p.description}
 													</p>
 												)}
-												<div className="mt-2 flex flex-wrap gap-1">
+												{p.slug && (
+													<p className="mt-1 text-xs text-muted-foreground">
+														Invoke with <span className="font-mono">@{p.slug}</span>
+													</p>
+												)}
+												<div className="mt-3 flex flex-wrap gap-1.5">
 													{p.config?.provider && (
 														<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
 															<Logo
@@ -202,6 +207,46 @@ export default function PresetsPanel({
 															has system prompt
 														</span>
 													)}
+													{p.config?.routing_mode && (
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+															route: {p.config.routing_mode}
+														</span>
+													)}
+													{p.config?.provider_preferences &&
+														Object.keys(p.config.provider_preferences).length > 0 && (
+															<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+																weights: {Object.keys(p.config.provider_preferences).length}
+															</span>
+														)}
+													{p.config?.response_caching?.enabled && (
+														<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300">
+															cache: {p.config?.response_caching?.ttl_seconds ?? 300}s
+														</span>
+													)}
+													{Array.isArray(p.config?.plugins) &&
+														p.config.plugins.some(
+															(plugin: any) =>
+																plugin &&
+																typeof plugin === "object" &&
+																plugin.id === "response-healing" &&
+																plugin.enabled !== false,
+														) && (
+															<span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+																response healing
+																{(() => {
+																	const plugin = p.config.plugins.find(
+																		(plugin: any) =>
+																			plugin &&
+																			typeof plugin === "object" &&
+																			plugin.id === "response-healing" &&
+																			plugin.enabled !== false,
+																	);
+																	return plugin?.mode === "strict"
+																		? " (strict)"
+																		: "";
+																})()}
+															</span>
+														)}
 												</div>
 											</div>
 										</div>

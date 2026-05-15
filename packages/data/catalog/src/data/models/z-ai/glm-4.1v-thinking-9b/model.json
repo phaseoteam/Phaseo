@@ -4,6 +4,7 @@
   "name": "GLM 4.1V Thinking 9B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM 4.1V Thinking 9B is a reasoning model from z.AI for multi-step analysis, math, and tool-driven tasks.",
   "announced_date": "2025-07-02T00:00:00",
   "release_date": "2025-07-02T00:00:00",
   "deprecation_date": null,

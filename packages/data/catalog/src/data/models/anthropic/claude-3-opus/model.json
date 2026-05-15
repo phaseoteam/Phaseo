@@ -4,6 +4,7 @@
   "name": "Claude 3 Opus",
   "status": "Retired",
   "previous_model_id": "anthropic/claude-2-1-2023-11-22",
+  "description": "Claude 3 Opus is a multimodal model from Anthropic that can work across text and visual inputs. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2024-03-04T00:00:00",
   "release_date": "2024-03-04T00:00:00",
   "deprecation_date": "2025-06-30T00:00:00",

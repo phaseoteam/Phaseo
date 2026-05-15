@@ -1,8 +1,18 @@
 {
   "api_provider_id": "mistral",
   "api_provider_name": "Mistral",
+  "provider_family_id": "mistral",
+  "offer_scope": "global",
   "description": null,
   "link": "https://docs.mistral.ai/",
+  "zero_data_retention": "optional",
+  "residency_source_url": "https://help.mistral.ai/en/articles/347612-can-i-activate-zero-data-retention-zdr",
+  "residency_notes": "Zero Data Retention can be enabled for Mistral AI Studio on request.",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Mistral says API data is not used for model training.",
+  "prompt_training_source_url": "https://docs.mistral.ai/admin/security-access/privacy",
+  "privacy_policy_url": "https://legal.mistral.ai/terms/privacy-policy?language=fr-FR",
+  "terms_of_service_url": "https://legal.mistral.ai/terms/commercial-terms-of-service",
   "country_code": "FR",
   "status": "Active",
   "colour": "#E97A35"

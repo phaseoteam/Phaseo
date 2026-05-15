@@ -4,6 +4,7 @@
   "name": "Grok 4 Fast Reasoning",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok 4 Fast Reasoning is xAI's best agentic tool calling model that shines in real-world use cases like customer support and deep research. 2M context window.",
   "announced_date": "2025-09-20T00:00:00",
   "release_date": "2025-09-20T00:00:00",
   "deprecation_date": null,

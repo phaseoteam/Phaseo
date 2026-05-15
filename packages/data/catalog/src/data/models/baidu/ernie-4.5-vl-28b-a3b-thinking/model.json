@@ -4,6 +4,7 @@
   "name": "Ernie 4.5 VL 28b A3b Thinking",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Ernie 4.5 VL 28b A3b Thinking is a video generation model from Baidu for prompt-driven clip and scene creation. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

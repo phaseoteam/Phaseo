@@ -4,6 +4,7 @@
   "name": "Text Embedding V4",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Text Embedding V4 is the latest proprietary model of the Qwen family, specifically designed for text embedding and ranking tasks. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

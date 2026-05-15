@@ -4,6 +4,7 @@
   "name": "v0 1.5 sm",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "v0 1.5 sm is a multimodal model from Vercel that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

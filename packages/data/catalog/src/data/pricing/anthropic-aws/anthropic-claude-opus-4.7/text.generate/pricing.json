@@ -1,0 +1,201 @@
+{
+    "key":  "anthropic-aws:anthropic/claude-opus-4.7:text.generate",
+    "api_provider_id":  "anthropic-aws",
+    "provider_slug":  "anthropic-aws",
+    "api_model_id":  "anthropic/claude-opus-4.7",
+    "capability_id":  "text.generate",
+    "rules":  [
+                  {
+                      "meter":  "input_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  5,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_read_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  0.5,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "output_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  25,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_write_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  6.25,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+                                    {
+                                        "path":  "cache_ttl",
+                                        "op":  "eq",
+                                        "or_group":  1,
+                                        "and_index":  1,
+                                        "value":  "5m"
+                                    }
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_write_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  10,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+                                    {
+                                        "path":  "cache_ttl",
+                                        "op":  "eq",
+                                        "or_group":  1,
+                                        "and_index":  1,
+                                        "value":  "1h"
+                                    }
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "input_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  30,
+                      "currency":  "USD",
+                      "pricing_plan":  "priority",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_read_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  3,
+                      "currency":  "USD",
+                      "pricing_plan":  "priority",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "output_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  150,
+                      "currency":  "USD",
+                      "pricing_plan":  "priority",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_write_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  37.5,
+                      "currency":  "USD",
+                      "pricing_plan":  "priority",
+                      "note":  null,
+                      "match":  [
+                                    {
+                                        "path":  "cache_ttl",
+                                        "op":  "eq",
+                                        "or_group":  1,
+                                        "and_index":  1,
+                                        "value":  "5m"
+                                    }
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_write_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  60,
+                      "currency":  "USD",
+                      "pricing_plan":  "priority",
+                      "note":  null,
+                      "match":  [
+                                    {
+                                        "path":  "cache_ttl",
+                                        "op":  "eq",
+                                        "or_group":  1,
+                                        "and_index":  1,
+                                        "value":  "1h"
+                                    }
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "input_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  2.5,
+                      "currency":  "USD",
+                      "pricing_plan":  "batch",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  },
+                  {
+                      "meter":  "output_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  12.5,
+                      "currency":  "USD",
+                      "pricing_plan":  "batch",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2026-04-16T00:00:00"
+                  }
+              ]
+}

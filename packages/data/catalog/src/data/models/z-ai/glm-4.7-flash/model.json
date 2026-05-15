@@ -4,6 +4,7 @@
   "name": "GLM 4.7 Flash",
   "status": "Available",
   "previous_model_id": null,
+  "description": "As a 30B-class SOTA model, GLM-4.7-Flash offers a new option that balances performance and efficiency. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": "2026-01-19T00:00:00",
   "release_date": "2026-01-19T00:00:00",
   "deprecation_date": null,

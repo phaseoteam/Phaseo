@@ -5,7 +5,11 @@ openapi: "POST /files"
 description: "Upload a file for batch processing. The gateway stores ownership metadata so the same workspace can later retrieve the file or its content."
 ---
 
-Use this endpoint to upload input files for batch jobs. The returned `file_id` should be persisted by your application and reused for:
+Save the returned `file_id` and reuse it with:
+
+<Warning>
+The public files routes are currently mounted but temporarily disabled, so requests currently return `501 not_implemented`.
+</Warning>
 
 - `POST /v1/batches`
 - `GET /v1/files/{file_id}`

@@ -1,0 +1,41 @@
+---
+title: "Usage"
+description: "Run a minimal local agent loop on top of AI Stats Gateway with the Ruby Agent SDK."
+---
+
+## Install
+
+```bash
+gem install ai_stats_sdk ai_stats_agent_sdk
+```
+
+## Quickstart
+
+```ruby
+require "ai_stats_agent_sdk"
+
+agent = AIStatsAgentSdk.create_agent(
+  id: "quickstart-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Answer concisely and helpfully."
+)
+
+result = agent.run(
+  input: "Give me one fun fact about cURL.",
+  client: AIStatsAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## What it ships
+
+- `AIStatsAgentSdk.create_agent(...)`
+- `AIStatsAgentSdk.define_tool(...)`
+- `AIStatsAgentSdk.create_gateway_agent_client(...)`
+- a bounded tool loop over the AI Stats `responses` API
+
+## Related
+
+- [Agent SDK overview](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)
