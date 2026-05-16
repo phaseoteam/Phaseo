@@ -723,9 +723,9 @@ async function upsertAutomation(
 	definition: AutomationDefinition,
 	status: "enabled" | "disabled",
 ): Promise<void> {
-	const legacyNames =
+	const legacyNames: string[] =
 		definition.name === RESEND_ONBOARDING_AUTOMATION_NAMES.WELCOME_7_DAY_BRANCH
-			? RESEND_ONBOARDING_AUTOMATION_LEGACY_NAMES.WELCOME_7_DAY_BRANCH
+			? [...RESEND_ONBOARDING_AUTOMATION_LEGACY_NAMES.WELCOME_7_DAY_BRANCH]
 			: [];
 	const current = existing.find(
 		(automation) =>

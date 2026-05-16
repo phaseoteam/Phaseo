@@ -52,6 +52,7 @@ describe("buildGuardrailRestrictionPreview", () => {
 				activeProviderModels,
 				providerRestrictionMode: "none",
 				providerRestrictionProviderIds: [],
+				modelRestrictionMode: "none",
 				allowedApiModelIds: [],
 			}),
 		).toEqual({
@@ -72,6 +73,7 @@ describe("buildGuardrailRestrictionPreview", () => {
 				activeProviderModels,
 				providerRestrictionMode: "allowlist",
 				providerRestrictionProviderIds: ["anthropic", "openai"],
+				modelRestrictionMode: "none",
 				allowedApiModelIds: [],
 			}),
 		).toEqual({
@@ -92,6 +94,7 @@ describe("buildGuardrailRestrictionPreview", () => {
 				activeProviderModels,
 				providerRestrictionMode: "blocklist",
 				providerRestrictionProviderIds: ["xai"],
+				modelRestrictionMode: "allowlist",
 				allowedApiModelIds: ["claude-sonnet", "gpt-4.1"],
 			}),
 		).toEqual({

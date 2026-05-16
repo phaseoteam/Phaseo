@@ -4,6 +4,8 @@ import { notFound } from "next/navigation"
 import ProfileDashboard from "@/components/(gateway)/settings/profile/ProfileDashboard"
 import { getPublicProfileSnapshot } from "@/lib/fetchers/profile/getProfileSnapshot"
 
+export const dynamic = "force-dynamic"
+
 type PageProps = {
 	params: Promise<{ slug: string }>
 }

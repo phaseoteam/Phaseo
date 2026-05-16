@@ -592,11 +592,11 @@ function parseWebFetchMaxChars(
 function decodeHtmlEntities(value: string): string {
 	return value
 		.replace(/&nbsp;/gi, " ")
-		.replace(/&amp;/gi, "&")
 		.replace(/&lt;/gi, "<")
 		.replace(/&gt;/gi, ">")
 		.replace(/&quot;/gi, '"')
-		.replace(/&#39;/gi, "'");
+		.replace(/&#39;/gi, "'")
+		.replace(/&amp;/gi, "&");
 }
 
 function collapseWhitespace(value: string): string {
@@ -611,10 +611,10 @@ function extractHtmlTitle(value: string): string | null {
 
 function htmlToText(value: string): string {
 	const stripped = value
-		.replace(/<script[\s\S]*?<\/script>/gi, " ")
-		.replace(/<style[\s\S]*?<\/style>/gi, " ")
-		.replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-		.replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+		.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
+		.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
+		.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript\s*>/gi, " ")
+		.replace(/<svg\b[^>]*>[\s\S]*?<\/svg\s*>/gi, " ")
 		.replace(/<[^>]+>/g, " ");
 	return collapseWhitespace(decodeHtmlEntities(stripped));
 }

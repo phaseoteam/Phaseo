@@ -8,6 +8,37 @@ import {
 } from "@/utils/serverActionAuth";
 
 export type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
+export type SensitiveInfoAction = "flag" | "redact" | "block";
+export type PromptInjectionAction = "flag" | "redact" | "block";
+export type SensitiveInfoRuleId =
+	| "email_address"
+	| "phone_number"
+	| "ssn"
+	| "credit_card_number"
+	| "ip_address"
+	| "person_name"
+	| "physical_address";
+
+export type SensitiveInfoBuiltinRulePayload = {
+	id: SensitiveInfoRuleId;
+	kind: "builtin";
+	enabled: boolean;
+	action: SensitiveInfoAction;
+};
+
+export type SensitiveInfoCustomRulePayload = {
+	id: string;
+	kind: "custom";
+	enabled: boolean;
+	action: SensitiveInfoAction;
+	name: string;
+	pattern: string;
+	flags?: string | null;
+};
+
+export type SensitiveInfoRulePayload =
+	| SensitiveInfoBuiltinRulePayload
+	| SensitiveInfoCustomRulePayload;
 
 export type GlobalGuardrailsSettingsPayload = {
 	privacyEnablePaidMayTrain?: boolean;
@@ -96,7 +127,13 @@ export type GuardrailUpsertPayload = {
 	providerRestrictionProviderIds?: string[];
 	providerRestrictionEnforceAllowed?: boolean;
 
+	modelRestrictionMode?: ProviderRestrictionMode;
 	allowedApiModelIds?: string[];
+	promptInjectionEnabled?: boolean;
+	promptInjectionAction?: PromptInjectionAction;
+	sensitiveInfoEnabled?: boolean;
+	sensitiveInfoDefaultAction?: SensitiveInfoAction;
+	sensitiveInfoRules?: SensitiveInfoRulePayload[];
 	budgets?: GuardrailBudgetPayload;
 };
 
@@ -145,8 +182,26 @@ export async function createGuardrail(payload: GuardrailUpsertPayload) {
 			payload.providerRestrictionEnforceAllowed;
 	}
 
+	if (payload.modelRestrictionMode) {
+		row.model_restriction_mode = payload.modelRestrictionMode;
+	}
 	if (Array.isArray(payload.allowedApiModelIds)) {
 		row.allowed_api_model_ids = payload.allowedApiModelIds;
+	}
+	if (typeof payload.promptInjectionEnabled === "boolean") {
+		row.prompt_injection_enabled = payload.promptInjectionEnabled;
+	}
+	if (payload.promptInjectionAction) {
+		row.prompt_injection_action = payload.promptInjectionAction;
+	}
+	if (typeof payload.sensitiveInfoEnabled === "boolean") {
+		row.sensitive_info_enabled = payload.sensitiveInfoEnabled;
+	}
+	if (payload.sensitiveInfoDefaultAction) {
+		row.sensitive_info_default_action = payload.sensitiveInfoDefaultAction;
+	}
+	if (Array.isArray(payload.sensitiveInfoRules)) {
+		row.sensitive_info_rules = payload.sensitiveInfoRules;
 	}
 
 	const budgets = payload.budgets ?? {};
@@ -213,8 +268,26 @@ export async function updateGuardrail(id: string, payload: GuardrailUpsertPayloa
 			payload.providerRestrictionEnforceAllowed;
 	}
 
+	if (payload.modelRestrictionMode) {
+		row.model_restriction_mode = payload.modelRestrictionMode;
+	}
 	if (Array.isArray(payload.allowedApiModelIds)) {
 		row.allowed_api_model_ids = payload.allowedApiModelIds;
+	}
+	if (typeof payload.promptInjectionEnabled === "boolean") {
+		row.prompt_injection_enabled = payload.promptInjectionEnabled;
+	}
+	if (payload.promptInjectionAction) {
+		row.prompt_injection_action = payload.promptInjectionAction;
+	}
+	if (typeof payload.sensitiveInfoEnabled === "boolean") {
+		row.sensitive_info_enabled = payload.sensitiveInfoEnabled;
+	}
+	if (payload.sensitiveInfoDefaultAction) {
+		row.sensitive_info_default_action = payload.sensitiveInfoDefaultAction;
+	}
+	if (Array.isArray(payload.sensitiveInfoRules)) {
+		row.sensitive_info_rules = payload.sensitiveInfoRules;
 	}
 
 	const budgets = payload.budgets ?? {};

@@ -414,7 +414,7 @@ function derivePlanMultiplier(args: {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
-		let basePrice =
+		let basePrice: number | null | undefined =
 			baseRuleMap.get(buildRuleComparisonKey(rule)) ??
 			baseRuleMapIgnoringEndpoint.get(
 				buildRuleComparisonKeyIgnoringEndpoint(rule),

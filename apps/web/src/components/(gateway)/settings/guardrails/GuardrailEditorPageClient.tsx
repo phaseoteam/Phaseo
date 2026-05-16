@@ -67,9 +67,9 @@ type ActiveProviderModel = {
 	providerId: string;
 	apiModelId: string;
 	internalModelId: string | null;
-	internalModelName: string | null;
-	organisationId: string | null;
-	organisationName: string | null;
+	internalModelName?: string | null;
+	organisationId?: string | null;
+	organisationName?: string | null;
 };
 type KeyOption = { id: string; name: string; prefix: string; status: string };
 type GuardrailHandlingState = "disabled" | PromptInjectionAction;
