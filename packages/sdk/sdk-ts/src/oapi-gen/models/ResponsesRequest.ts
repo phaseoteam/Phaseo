@@ -43,10 +43,41 @@ export interface ResponsesRequest {
   previous_response_id?: string;
   prompt_cache_key?: string | null;
   provider?: {
+    allow_fallbacks?: boolean | null;
+    data_collection?: "allow" | "deny" | null;
+    enforce_distillable_text?: boolean | null;
     ignore?: string[];
     include_alpha?: boolean;
+    max_price?: {
+      audio?: number | string;
+      completion?: number | string;
+      image?: number | string;
+      prompt?: number | string;
+      request?: number | string;
+    };
     only?: string[];
     order?: string[];
+    preferred_max_latency?:
+      | number
+      | {
+          [key: string]: number;
+        };
+    preferred_min_throughput?:
+      | number
+      | {
+          [key: string]: number;
+        };
+    quantizations?: string[] | null;
+    require_parameters?: boolean | null;
+    require_zero_data_retention?: boolean | null;
+    required_data_region?: string | null;
+    required_execution_region?: string | null;
+    sort?:
+      | string
+      | {
+          [key: string]: unknown;
+        };
+    zdr?: boolean | null;
   };
   provider_options?: {
     anthropic?: {
@@ -88,7 +119,14 @@ export interface ResponsesRequest {
   stream?: boolean;
   temperature?: number;
   text?: {};
-  tool_choice?: "auto" | "none" | "required" | "gateway:datetime" | {};
+  tool_choice?:
+    | "auto"
+    | "none"
+    | "required"
+    | "gateway:datetime"
+    | "gateway:web_search"
+    | "gateway:web_fetch"
+    | {};
   tools?:
     | {
         function: {
@@ -105,6 +143,24 @@ export interface ResponsesRequest {
         };
         timezone?: string;
         type: "gateway:datetime";
+      }
+    | {
+        include_highlights?: boolean;
+        include_text?: boolean;
+        max_results?: number;
+        parameters?: {
+          include_highlights?: boolean;
+          include_text?: boolean;
+          max_results?: number;
+        };
+        type: "gateway:web_search";
+      }
+    | {
+        max_chars?: number;
+        parameters?: {
+          max_chars?: number;
+        };
+        type: "gateway:web_fetch";
       }[];
   top_p?: number;
   truncation?: "auto" | "disabled";

@@ -78,6 +78,8 @@ export type GatewayBindings = {
     DEEPINFRA_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
     DEEPSEEK_BASE_URL?: string;
+    EXA_API_KEY?: string;
+    EXA_BASE_URL?: string;
     FEATHERLESS_API_KEY?: string;
     FEATHERLESS_BASE_URL?: string;
     FIREWORKS_API_KEY?: string;
@@ -131,7 +133,10 @@ export type GatewayBindings = {
     NEBIUS_EU_NORTH_1_BASE_URL?: string;
     NEBIUS_US_CENTRAL_1_BASE_URL?: string;
     NEXTBIT_API_KEY?: string;
+    NVIDIA_API_KEY?: string;
+    NVIDIA_BASE_URL?: string;
     STEPFUN_API_KEY?: string;
+    STEPFUN_BASE_URL?: string;
     TENSORIX_API_KEY?: string;
     TENSORIX_BASE_URL?: string;
     VENICE_API_KEY?: string;

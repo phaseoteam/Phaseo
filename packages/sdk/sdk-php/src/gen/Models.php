@@ -921,6 +921,30 @@ class GatewayModelsResponse
 	public $total;
 }
 
+class GatewayWebFetchToolDefinition
+{
+	/** @var int|null */
+	public $max_chars;
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string */
+	public $type;
+}
+
+class GatewayWebSearchToolDefinition
+{
+	/** @var bool|null */
+	public $include_highlights;
+	/** @var bool|null */
+	public $include_text;
+	/** @var int|null */
+	public $max_results;
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string */
+	public $type;
+}
+
 class GenerationResponse
 {
 	/** @var string|null */
@@ -1489,14 +1513,40 @@ class ProviderOptions
 
 class ProviderRoutingOptions
 {
+	/** @var bool|null */
+	public $allow_fallbacks;
+	/** @var string|null */
+	public $data_collection;
+	/** @var bool|null */
+	public $enforce_distillable_text;
 	/** @var array|null */
 	public $ignore;
 	/** @var bool|null */
 	public $include_alpha;
+	/** @var array<string, mixed>|null */
+	public $max_price;
 	/** @var array|null */
 	public $only;
 	/** @var array|null */
 	public $order;
+	/** @var float|array<string, mixed>|null */
+	public $preferred_max_latency;
+	/** @var float|array<string, mixed>|null */
+	public $preferred_min_throughput;
+	/** @var array|null */
+	public $quantizations;
+	/** @var bool|null */
+	public $require_parameters;
+	/** @var bool|null */
+	public $require_zero_data_retention;
+	/** @var string|null */
+	public $required_data_region;
+	/** @var string|null */
+	public $required_execution_region;
+	/** @var string|array<string, mixed>|null */
+	public $sort;
+	/** @var bool|null */
+	public $zdr;
 }
 
 class ProvisioningKey
@@ -1831,6 +1881,10 @@ class ServerToolUsage
 {
 	/** @var int|null */
 	public $datetime_requests;
+	/** @var int|null */
+	public $web_fetch_requests;
+	/** @var int|null */
+	public $web_search_requests;
 }
 
 class TextContentPart

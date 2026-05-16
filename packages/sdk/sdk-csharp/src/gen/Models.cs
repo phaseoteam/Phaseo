@@ -1270,6 +1270,38 @@ public sealed class GatewayModelsResponse
 
 }
 
+public sealed class GatewayWebFetchToolDefinition
+{
+	[JsonPropertyName("max_chars")]
+	public int? MaxChars { get; set; }
+
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class GatewayWebSearchToolDefinition
+{
+	[JsonPropertyName("include_highlights")]
+	public bool? IncludeHighlights { get; set; }
+
+	[JsonPropertyName("include_text")]
+	public bool? IncludeText { get; set; }
+
+	[JsonPropertyName("max_results")]
+	public int? MaxResults { get; set; }
+
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class GenerationResponse
 {
 	[JsonPropertyName("app_id")]
@@ -2044,17 +2076,56 @@ public sealed class ProviderOptions
 
 public sealed class ProviderRoutingOptions
 {
+	[JsonPropertyName("allow_fallbacks")]
+	public bool? AllowFallbacks { get; set; }
+
+	[JsonPropertyName("data_collection")]
+	public string? DataCollection { get; set; }
+
+	[JsonPropertyName("enforce_distillable_text")]
+	public bool? EnforceDistillableText { get; set; }
+
 	[JsonPropertyName("ignore")]
 	public List<string>? Ignore { get; set; }
 
 	[JsonPropertyName("include_alpha")]
 	public bool? IncludeAlpha { get; set; }
 
+	[JsonPropertyName("max_price")]
+	public Dictionary<string, object>? MaxPrice { get; set; }
+
 	[JsonPropertyName("only")]
 	public List<string>? Only { get; set; }
 
 	[JsonPropertyName("order")]
 	public List<string>? Order { get; set; }
+
+	[JsonPropertyName("preferred_max_latency")]
+	public object? PreferredMaxLatency { get; set; }
+
+	[JsonPropertyName("preferred_min_throughput")]
+	public object? PreferredMinThroughput { get; set; }
+
+	[JsonPropertyName("quantizations")]
+	public List<string>? Quantizations { get; set; }
+
+	[JsonPropertyName("require_parameters")]
+	public bool? RequireParameters { get; set; }
+
+	[JsonPropertyName("require_zero_data_retention")]
+	public bool? RequireZeroDataRetention { get; set; }
+
+	[JsonPropertyName("required_data_region")]
+	public string? RequiredDataRegion { get; set; }
+
+	[JsonPropertyName("required_execution_region")]
+	public string? RequiredExecutionRegion { get; set; }
+
+	[JsonPropertyName("sort")]
+	public object? Sort { get; set; }
+
+	[JsonPropertyName("zdr")]
+	public bool? Zdr { get; set; }
 
 }
 
@@ -2516,6 +2587,12 @@ public sealed class ServerToolUsage
 {
 	[JsonPropertyName("datetime_requests")]
 	public int? DatetimeRequests { get; set; }
+
+	[JsonPropertyName("web_fetch_requests")]
+	public int? WebFetchRequests { get; set; }
+
+	[JsonPropertyName("web_search_requests")]
+	public int? WebSearchRequests { get; set; }
 
 }
 

@@ -1132,6 +1132,20 @@ type GatewayModelsResponse struct {
 	Total int `json:"total"`
 }
 
+type GatewayWebFetchToolDefinition struct {
+	MaxChars *int `json:"max_chars,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
+type GatewayWebSearchToolDefinition struct {
+	IncludeHighlights *bool `json:"include_highlights,omitempty"`
+	IncludeText *bool `json:"include_text,omitempty"`
+	MaxResults *int `json:"max_results,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
 type GenerationResponse struct {
 	AppId *string `json:"app_id,omitempty"`
 	Byok *bool `json:"byok,omitempty"`
@@ -1251,6 +1265,7 @@ const (
 	KnownModelIdAnthropicClaudeOpus45 KnownModelId = "anthropic/claude-opus-4.5"
 	KnownModelIdAnthropicClaudeOpus46 KnownModelId = "anthropic/claude-opus-4.6"
 	KnownModelIdAnthropicClaudeOpus47 KnownModelId = "anthropic/claude-opus-4.7"
+	KnownModelIdAnthropicClaudeOpus47Fast KnownModelId = "anthropic/claude-opus-4.7-fast"
 	KnownModelIdAnthropicClaudeSonnet4 KnownModelId = "anthropic/claude-sonnet-4"
 	KnownModelIdAnthropicClaudeSonnet45 KnownModelId = "anthropic/claude-sonnet-4.5"
 	KnownModelIdAnthropicClaudeSonnet46 KnownModelId = "anthropic/claude-sonnet-4.6"
@@ -1280,6 +1295,7 @@ const (
 	KnownModelIdBytedanceSeedance20 KnownModelId = "bytedance/seedance-2.0"
 	KnownModelIdBytedanceSeedance20Fast KnownModelId = "bytedance/seedance-2.0-fast"
 	KnownModelIdCogitoCogito671bV21 KnownModelId = "cogito/cogito-671b-v2.1"
+	KnownModelIdCrofaiGreg KnownModelId = "crofai/greg"
 	KnownModelIdDeepseekDeepseekOcr KnownModelId = "deepseek/deepseek-ocr"
 	KnownModelIdDeepseekDeepseekOcr2 KnownModelId = "deepseek/deepseek-ocr-2"
 	KnownModelIdDeepseekDeepseekProverV2671b KnownModelId = "deepseek/deepseek-prover-v2-671b"
@@ -1298,6 +1314,7 @@ const (
 	KnownModelIdDeepseekDeepseekV32Thinking KnownModelId = "deepseek/deepseek-v3.2-thinking"
 	KnownModelIdDeepseekDeepseekV4Flash KnownModelId = "deepseek/deepseek-v4-flash"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
+	KnownModelIdDeepseekDeepseekV4ProPrecision KnownModelId = "deepseek/deepseek-v4-pro-precision"
 	KnownModelIdEssentialAiRnj1 KnownModelId = "essential-ai/rnj-1"
 	KnownModelIdGoogleGemini20Flash KnownModelId = "google/gemini-2.0-flash"
 	KnownModelIdGoogleGemini20FlashLite KnownModelId = "google/gemini-2.0-flash-lite"
@@ -1327,6 +1344,7 @@ const (
 	KnownModelIdGoogleGemma426bA4b KnownModelId = "google/gemma-4-26b-a4b"
 	KnownModelIdGoogleGemma426bA4bFree KnownModelId = "google/gemma-4-26b-a4b:free"
 	KnownModelIdGoogleGemma431b KnownModelId = "google/gemma-4-31b"
+	KnownModelIdGoogleGemma431bIt KnownModelId = "google/gemma-4-31b-it"
 	KnownModelIdGoogleGemma431bFree KnownModelId = "google/gemma-4-31b:free"
 	KnownModelIdGoogleLyria3ClipPreview KnownModelId = "google/lyria-3-clip-preview"
 	KnownModelIdGoogleLyria3ProPreview KnownModelId = "google/lyria-3-pro-preview"
@@ -1387,7 +1405,6 @@ const (
 	KnownModelIdMistralMinistral314b KnownModelId = "mistral/ministral-3-14b"
 	KnownModelIdMistralMinistral33b KnownModelId = "mistral/ministral-3-3b"
 	KnownModelIdMistralMinistral38b KnownModelId = "mistral/ministral-3-8b"
-	KnownModelIdMistralMistral3124b KnownModelId = "mistral/mistral-3.1-24b"
 	KnownModelIdMistralMistralEmbed KnownModelId = "mistral/mistral-embed"
 	KnownModelIdMistralMistralLarge21 KnownModelId = "mistral/mistral-large-2.1"
 	KnownModelIdMistralMistralLarge3 KnownModelId = "mistral/mistral-large-3"
@@ -1411,7 +1428,9 @@ const (
 	KnownModelIdMoonshotaiKimiK2Instruct0905 KnownModelId = "moonshotai/kimi-k2-instruct-0905"
 	KnownModelIdMoonshotaiKimiK2Thinking KnownModelId = "moonshotai/kimi-k2-thinking"
 	KnownModelIdMoonshotaiKimiK25 KnownModelId = "moonshotai/kimi-k2.5"
+	KnownModelIdMoonshotaiKimiK25Lightning KnownModelId = "moonshotai/kimi-k2.5-lightning"
 	KnownModelIdMoonshotaiKimiK26 KnownModelId = "moonshotai/kimi-k2.6"
+	KnownModelIdMoonshotaiKimiK26Precision KnownModelId = "moonshotai/kimi-k2.6-precision"
 	KnownModelIdMorphMorphV3Fast KnownModelId = "morph/morph-v3-fast"
 	KnownModelIdMorphMorphV3Large KnownModelId = "morph/morph-v3-large"
 	KnownModelIdNexAgiDeepseekV31NexN1 KnownModelId = "nex-agi/deepseek-v3.1-nex-n1"
@@ -1531,6 +1550,7 @@ const (
 	KnownModelIdQwenQwen2572b KnownModelId = "qwen/qwen2.5-72b"
 	KnownModelIdQwenQwen257b KnownModelId = "qwen/qwen2.5-7b"
 	KnownModelIdQwenQwen257b1m KnownModelId = "qwen/qwen2.5-7b-1m"
+	KnownModelIdQwenQwen25Coder7b KnownModelId = "qwen/qwen2.5-coder-7b"
 	KnownModelIdQwenQwen25Vl32b KnownModelId = "qwen/qwen2.5-vl-32b"
 	KnownModelIdQwenQwen25Vl32bInstruct KnownModelId = "qwen/qwen2.5-vl-32b-instruct"
 	KnownModelIdQwenQwen25Vl72b KnownModelId = "qwen/qwen2.5-vl-72b"
@@ -1591,6 +1611,7 @@ const (
 	KnownModelIdQwenQwen35397bA17b KnownModelId = "qwen/qwen3.5-397b-a17b"
 	KnownModelIdQwenQwen354b KnownModelId = "qwen/qwen3.5-4b"
 	KnownModelIdQwenQwen359b KnownModelId = "qwen/qwen3.5-9b"
+	KnownModelIdQwenQwen359bChat KnownModelId = "qwen/qwen3.5-9b-chat"
 	KnownModelIdQwenQwen35Flash KnownModelId = "qwen/qwen3.5-flash"
 	KnownModelIdQwenQwen35Plus KnownModelId = "qwen/qwen3.5-plus"
 	KnownModelIdQwenQwen35Plus20260420 KnownModelId = "qwen/qwen3.5-plus-2026-04-20"
@@ -1638,7 +1659,6 @@ const (
 	KnownModelIdVoyageVoyageMultimodal35 KnownModelId = "voyage/voyage-multimodal-3.5"
 	KnownModelIdXAiGrok2Vision KnownModelId = "x-ai/grok-2-vision"
 	KnownModelIdXAiGrok3Mini KnownModelId = "x-ai/grok-3-mini"
-	KnownModelIdXAiGrok41Fast KnownModelId = "x-ai/grok-4.1-fast"
 	KnownModelIdXAiGrok420Beta0309 KnownModelId = "x-ai/grok-4.20-beta-0309"
 	KnownModelIdXAiGrok420MultiAgentBeta0309 KnownModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
 	KnownModelIdXAiGrok43 KnownModelId = "x-ai/grok-4.3"
@@ -1653,6 +1673,7 @@ const (
 	KnownModelIdXiaomiMimoV2TtsFree KnownModelId = "xiaomi/mimo-v2-tts:free"
 	KnownModelIdXiaomiMimoV25 KnownModelId = "xiaomi/mimo-v2.5"
 	KnownModelIdXiaomiMimoV25Pro KnownModelId = "xiaomi/mimo-v2.5-pro"
+	KnownModelIdXiaomiMimoV25ProPrecision KnownModelId = "xiaomi/mimo-v2.5-pro-precision"
 	KnownModelIdXiaomiMimoV25TtsFree KnownModelId = "xiaomi/mimo-v2.5-tts:free"
 	KnownModelIdZAiGlm432b KnownModelId = "z-ai/glm-4-32b"
 	KnownModelIdZAiGlm47FlashFree KnownModelId = "z-ai/glm-4-7-flash:free"
@@ -1670,6 +1691,7 @@ const (
 	KnownModelIdZAiGlm5Code KnownModelId = "z-ai/glm-5-code"
 	KnownModelIdZAiGlm5Turbo KnownModelId = "z-ai/glm-5-turbo"
 	KnownModelIdZAiGlm51 KnownModelId = "z-ai/glm-5.1"
+	KnownModelIdZAiGlm51Precision KnownModelId = "z-ai/glm-5.1-precision"
 	KnownModelIdZAiGlm5vTurbo KnownModelId = "z-ai/glm-5v-turbo"
 	KnownModelIdZaiOrgGlm45Air KnownModelId = "zai-org/glm-4.5-air"
 	KnownModelIdZaiGlm5 KnownModelId = "zai/glm-5"
@@ -1946,10 +1968,23 @@ type ProviderOptions struct {
 }
 
 type ProviderRoutingOptions struct {
+	AllowFallbacks *bool `json:"allow_fallbacks,omitempty"`
+	DataCollection *string `json:"data_collection,omitempty"`
+	EnforceDistillableText *bool `json:"enforce_distillable_text,omitempty"`
 	Ignore *[]string `json:"ignore,omitempty"`
 	IncludeAlpha *bool `json:"include_alpha,omitempty"`
+	MaxPrice *map[string]interface{} `json:"max_price,omitempty"`
 	Only *[]string `json:"only,omitempty"`
 	Order *[]string `json:"order,omitempty"`
+	PreferredMaxLatency interface{} `json:"preferred_max_latency,omitempty"`
+	PreferredMinThroughput interface{} `json:"preferred_min_throughput,omitempty"`
+	Quantizations *[]string `json:"quantizations,omitempty"`
+	RequireParameters *bool `json:"require_parameters,omitempty"`
+	RequireZeroDataRetention *bool `json:"require_zero_data_retention,omitempty"`
+	RequiredDataRegion *string `json:"required_data_region,omitempty"`
+	RequiredExecutionRegion *string `json:"required_execution_region,omitempty"`
+	Sort interface{} `json:"sort,omitempty"`
+	Zdr *bool `json:"zdr,omitempty"`
 }
 
 type ProvisioningKey struct {
@@ -2138,6 +2173,8 @@ type ResponsesWebSocketUpgradeRequiredResponse struct {
 
 type ServerToolUsage struct {
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
+	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
+	WebSearchRequests *int `json:"web_search_requests,omitempty"`
 }
 
 type TextContentPart struct {

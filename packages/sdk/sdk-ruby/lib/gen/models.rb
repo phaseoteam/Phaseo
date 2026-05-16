@@ -753,6 +753,24 @@ module AiStats
     # @!attribute [rw] total
     #   @return [Integer]
     GatewayModelsResponse = Struct.new(:availability_mode, :limit, :models, :offset, :ok, :privacy_scope, :total, keyword_init: true)
+    # @!attribute [rw] max_chars
+    #   @return [Integer, nil]
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayWebFetchToolDefinition = Struct.new(:max_chars, :parameters, :type, keyword_init: true)
+    # @!attribute [rw] include_highlights
+    #   @return [Boolean, nil]
+    # @!attribute [rw] include_text
+    #   @return [Boolean, nil]
+    # @!attribute [rw] max_results
+    #   @return [Integer, nil]
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayWebSearchToolDefinition = Struct.new(:include_highlights, :include_text, :max_results, :parameters, :type, keyword_init: true)
     # @!attribute [rw] app_id
     #   @return [String, nil]
     # @!attribute [rw] byok
@@ -1206,15 +1224,41 @@ module AiStats
     # @!attribute [rw] openai
     #   @return [Hash{String => Object}, nil]
     ProviderOptions = Struct.new(:anthropic, :google, :openai, keyword_init: true)
+    # @!attribute [rw] allow_fallbacks
+    #   @return [Boolean, nil]
+    # @!attribute [rw] data_collection
+    #   @return [String, nil]
+    # @!attribute [rw] enforce_distillable_text
+    #   @return [Boolean, nil]
     # @!attribute [rw] ignore
     #   @return [Array<String>, nil]
     # @!attribute [rw] include_alpha
     #   @return [Boolean, nil]
+    # @!attribute [rw] max_price
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] only
     #   @return [Array<String>, nil]
     # @!attribute [rw] order
     #   @return [Array<String>, nil]
-    ProviderRoutingOptions = Struct.new(:ignore, :include_alpha, :only, :order, keyword_init: true)
+    # @!attribute [rw] preferred_max_latency
+    #   @return [Float, Hash{String => Object}, nil]
+    # @!attribute [rw] preferred_min_throughput
+    #   @return [Float, Hash{String => Object}, nil]
+    # @!attribute [rw] quantizations
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] require_parameters
+    #   @return [Boolean, nil]
+    # @!attribute [rw] require_zero_data_retention
+    #   @return [Boolean, nil]
+    # @!attribute [rw] required_data_region
+    #   @return [String, nil]
+    # @!attribute [rw] required_execution_region
+    #   @return [String, nil]
+    # @!attribute [rw] sort
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] zdr
+    #   @return [Boolean, nil]
+    ProviderRoutingOptions = Struct.new(:allow_fallbacks, :data_collection, :enforce_distillable_text, :ignore, :include_alpha, :max_price, :only, :order, :preferred_max_latency, :preferred_min_throughput, :quantizations, :require_parameters, :require_zero_data_retention, :required_data_region, :required_execution_region, :sort, :zdr, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] id
@@ -1489,7 +1533,11 @@ module AiStats
     ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
     # @!attribute [rw] datetime_requests
     #   @return [Integer, nil]
-    ServerToolUsage = Struct.new(:datetime_requests, keyword_init: true)
+    # @!attribute [rw] web_fetch_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] web_search_requests
+    #   @return [Integer, nil]
+    ServerToolUsage = Struct.new(:datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type

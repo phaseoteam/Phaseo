@@ -291,7 +291,7 @@ function stripPricingFromUsage(usage: any): any {
 
 export async function auditSuccess(args: {
     requestId: string; workspaceId: string;
-    provider: string; model: string; endpoint: Endpoint;
+    provider: string; model: string; requestedModel?: string; endpoint: Endpoint;
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
@@ -358,7 +358,7 @@ export async function auditSuccess(args: {
             workspaceId: args.workspaceId,
             endpoint: args.endpoint,
             model: args.model,
-            canonicalModel: args.model,
+            canonicalModel: args.requestedModel ?? args.model,
             provider: args.provider,
             stream: args.stream,
             byok: args.byok,
@@ -480,6 +480,7 @@ type AuditFailureExecute = {
     workspaceId: string;
     endpoint: Endpoint;
     model: string;
+    requestedModel?: string;
     provider?: string | null;
     stream: boolean;
     statusCode: number;
@@ -623,7 +624,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             workspaceId: args.workspaceId,
             endpoint: args.endpoint,
             model: args.model,
-            canonicalModel: args.model,
+            canonicalModel: args.requestedModel ?? args.model,
             provider: args.provider ?? null,
             stream: !!args.stream,
             byok: !!args.byok,
