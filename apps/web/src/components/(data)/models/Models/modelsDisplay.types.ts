@@ -59,7 +59,7 @@ export type ModelsPageModel = Omit<
 	| "popularity_tokens_week"
 	| "throughput_week"
 	| "latency_week"
->,
+	>,
 	"gateway_status"
 > & {
 	description?: string | null;

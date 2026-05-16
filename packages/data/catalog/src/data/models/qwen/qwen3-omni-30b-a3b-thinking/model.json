@@ -4,6 +4,7 @@
   "name": "Qwen 3 Omni 30B A3B Thinking",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 Omni 30B A3B Thinking is a multimodal model that unifies strong text generation with visual understanding for images and videos. Its Thinking variant enhances reasoning in STEM, math, and complex tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

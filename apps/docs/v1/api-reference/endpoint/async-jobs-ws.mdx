@@ -4,7 +4,7 @@ description: "Subscribe to owned batch or video async job updates over WebSocket
 ---
 
 <Note type="warning">
-Experimental endpoint. This surface is WebSocket-only and is currently intended for async batch and video lifecycle updates.
+Experimental endpoint. This route is WebSocket-only and currently supports async batch and video lifecycle updates.
 </Note>
 
 Successful connection is HTTP `101 Switching Protocols` (not `200`). If you call this path as a normal HTTP GET without WebSocket upgrade headers, the gateway returns `426 websocket_upgrade_required`.
@@ -16,7 +16,7 @@ Successful connection is HTTP `101 Switching Protocols` (not `200`). If you call
 - Method semantics: WebSocket starts as an HTTP `GET` with `Upgrade: websocket`
 - Auth: `Authorization: Bearer YOUR_API_KEY`
 
-The gateway enforces workspace ownership before opening the socket. If the async job is missing or not owned by the caller, the HTTP handshake fails with `404 async_job_not_found_or_not_owned`.
+AI Stats checks workspace ownership before opening the socket. If the async job is missing or not owned by the caller, the HTTP handshake fails with `404 async_job_not_found_or_not_owned`.
 
 ## Query parameters
 
@@ -41,7 +41,7 @@ The socket sends JSON envelopes with a `type` and `data` field.
 - `pong`
   - sent in reply to a client `ping` message
 
-The `data` payload follows the same owned async-job shape used by webhook/web UI notifications, including status, routing metadata, file/content links where available, and terminal billing fields for supported kinds.
+The `data` payload follows the same owned async-job shape used by webhook and web UI notifications, including status, routing metadata, file/content links where available, and terminal billing fields for supported kinds.
 
 Batch payloads can also include:
 
@@ -63,12 +63,12 @@ Common identity fields include:
 - `native_id`
   - provider-native operation / batch id when the upstream returned one
 
-Failed batch and video payloads can also include the same normalized gateway failure diagnostics used by the request error contract when that metadata was captured during execution or reconciliation:
+Failed batch and video payloads can also include the same normalized gateway failure fields used by the request error contract when that metadata was captured during execution or reconciliation:
 
 - `upstream_error`
   - normalized upstream provider error object with fields like `code`, `message`, `description`, `param`, and `status`
 - `provider_failure_diagnostics`
-  - compact gateway classification of the failure category, implicated provider, and optional operator hint
+  - compact classification of the failure category, implicated provider, and optional hint
 - `failure_sample`
   - per-attempt upstream failure summaries, including provider, status, retryability, and upstream error fields when available
 - `routing_diagnostics`
@@ -76,7 +76,7 @@ Failed batch and video payloads can also include the same normalized gateway fai
 - `provider_enablement`
   - capability/provider activation diagnostics when enablement gating was part of the failure path
 - `provider_candidate_diagnostics`
-  - candidate counts and dropped-provider summary data when the gateway computed a narrowed provider set
+  - candidate counts and dropped-provider summary data when AI Stats computed a narrowed provider set
 
 For video jobs, timing fields use the same explicit semantics as the rest of the gateway where available:
 
@@ -130,4 +130,4 @@ Async job payloads can also include webhook dispatch state copied from the owned
 
 ## Terminal behavior
 
-When `close_on_terminal=true`, the gateway closes the socket after a terminal `completed`, `failed`, or `cancelled` update. Disable that flag if you want the client to keep the connection open and decide when to close it.
+When `close_on_terminal=true`, AI Stats closes the socket after a terminal `completed`, `failed`, or `cancelled` update. Disable that flag if you want the client to keep the connection open and decide when to close it.

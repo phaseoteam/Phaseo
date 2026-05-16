@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import ModelsTableDisplay from "@/components/(data)/models/Models/ModelsTableDisplay";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
+import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = {
@@ -51,6 +52,64 @@ function buildWeeklyTokensMaps(
 	};
 }
 
+function toCompactTableRows(
+	rows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	weeklyTokensByModel: Record<string, number>,
+	weeklyTokensByModelProvider: Record<string, number>,
+): MonitorModelTableRow[] {
+	return rows.map((row) => {
+		const modelKeys = [row.modelId, row.apiModelId]
+			.map((value) => normalizeRankingModelKey(String(value ?? "")))
+			.filter(Boolean);
+		const providerKey = normalizeRankingModelKey(row.provider.id);
+		let weeklyTokens = 0;
+
+		for (const modelKey of modelKeys) {
+			const providerCompositeKey = providerKey
+				? `${modelKey}::${providerKey}`
+				: "";
+			const providerValue = Number(
+				weeklyTokensByModelProvider[providerCompositeKey] ?? Number.NaN,
+			);
+			if (Number.isFinite(providerValue) && providerValue >= 0) {
+				weeklyTokens = providerValue;
+				break;
+			}
+
+			const modelValue = Number(weeklyTokensByModel[modelKey] ?? 0);
+			if (Number.isFinite(modelValue) && modelValue > weeklyTokens) {
+				weeklyTokens = modelValue;
+			}
+		}
+
+		return {
+			id: row.id,
+			model: row.model,
+			modelId: row.modelId,
+			organisationId: row.organisationId,
+			organisationName: row.organisationName,
+			provider: {
+				name: row.provider.name,
+				id: row.provider.id,
+				inputPrice: row.provider.inputPrice,
+				outputPrice: row.provider.outputPrice,
+				features: row.provider.features,
+			},
+			endpoint: row.endpoint,
+			gatewayStatus: row.gatewayStatus,
+			inputModalities: row.inputModalities,
+			outputModalities: row.outputModalities,
+			context: row.context,
+			maxOutput: row.maxOutput,
+			quantization: row.quantization,
+			tier: row.tier,
+			added: row.added,
+			retired: row.retired,
+			popularityTokensWeek: weeklyTokens,
+		};
+	});
+}
+
 export default async function ModelsTablePage() {
 	// Ensure request-scoped rendering before time-dependent calculations.
 	await headers();
@@ -66,17 +125,20 @@ export default async function ModelsTablePage() {
 	} = monitorResult;
 	const { weeklyTokensByModel, weeklyTokensByModelProvider } =
 		buildWeeklyTokensMaps(modelData);
+	const compactModelData = toCompactTableRows(
+		modelData,
+		weeklyTokensByModel,
+		weeklyTokensByModelProvider,
+	);
 
 	return (
 		<ModelsTableDisplay
-			initialModelData={modelData}
+			initialModelData={compactModelData}
 			allEndpoints={allEndpoints}
 			allModalities={allModalities}
 			allFeatures={allFeatures}
 			allTiers={allTiers}
 			allStatuses={allStatuses}
-			weeklyTokensByModel={weeklyTokensByModel}
-			weeklyTokensByModelProvider={weeklyTokensByModelProvider}
 		/>
 	);
 }

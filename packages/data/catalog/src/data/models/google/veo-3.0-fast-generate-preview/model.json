@@ -4,6 +4,7 @@
   "name": "Veo 3.0 Fast Generate Preview",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Google's mid-tier video generation model balancing speed and quality. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": "2025-07-17T00:00:00",
   "deprecation_date": "2025-11-12T00:00:00",

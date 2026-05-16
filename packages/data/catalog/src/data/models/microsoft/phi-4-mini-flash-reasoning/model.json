@@ -4,6 +4,7 @@
   "name": "Phi 4 Mini Flash Reasoning",
   "status": null,
   "previous_model_id": null,
+  "description": "Phi 4 Mini Flash Reasoning is a reasoning model from Microsoft for multi-step analysis, math, and tool-driven tasks. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

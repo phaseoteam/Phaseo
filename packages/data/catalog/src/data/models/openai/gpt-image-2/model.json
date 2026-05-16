@@ -4,6 +4,7 @@
   "name": "GPT Image 2",
   "status": "Available",
   "previous_model_id": "openai/gpt-image-1.5",
+  "description": "GPT Image 2 is an image generation model from OpenAI for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2026-04-21T00:00:00",
   "release_date": "2026-04-21T00:00:00",
   "deprecation_date": null,

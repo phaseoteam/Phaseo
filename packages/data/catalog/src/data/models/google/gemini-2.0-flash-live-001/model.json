@@ -4,6 +4,7 @@
   "name": "Gemini 2.0 Flash Live 001",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini 2.0 Flash Live 001 is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": "2025-04-09T00:00:00",
   "release_date": "2025-04-09T00:00:00",
   "deprecation_date": "2025-10-20T00:00:00",

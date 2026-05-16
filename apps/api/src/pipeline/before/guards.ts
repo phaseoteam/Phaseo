@@ -55,6 +55,45 @@ function allowsNoCreditForFreeRequest(args: { model: string; context: any; provi
     return pricedCards.every((card) => isFreePriceCard(card));
 }
 
+function describeKeyLimitExceeded(args: {
+	reason: string | null;
+	limitWindow?: "daily" | "weekly" | "monthly" | null;
+	limitMetric?: "requests" | "cost" | "soft_blocked" | null;
+	currentValue?: number | null;
+	limitValue?: number | null;
+}): string {
+	if (args.limitMetric === "soft_blocked") {
+		return "This API key is currently soft-blocked and cannot send requests.";
+	}
+
+	const windowLabel =
+		args.limitWindow === "daily"
+			? "daily"
+			: args.limitWindow === "weekly"
+				? "weekly"
+				: args.limitWindow === "monthly"
+					? "monthly"
+					: "configured";
+	const metricLabel =
+		args.limitMetric === "cost"
+			? "spend limit"
+			: args.limitMetric === "requests"
+				? "request limit"
+				: "limit";
+
+	if (
+		typeof args.currentValue === "number" &&
+		Number.isFinite(args.currentValue) &&
+		typeof args.limitValue === "number" &&
+		Number.isFinite(args.limitValue) &&
+		args.limitValue > 0
+	) {
+		return `This API key has reached its ${windowLabel} ${metricLabel} (${args.currentValue}/${args.limitValue}).`;
+	}
+
+	return `This API key has reached its ${windowLabel} ${metricLabel}.`;
+}
+
 function normalizeFormKey(key: string): { key: string; array: boolean } {
     if (/\[\]$/.test(key)) {
         return { key: key.slice(0, -2), array: true };
@@ -304,6 +343,19 @@ export async function guardContext(args: {
                 response: err("key_limit_exceeded", {
                     reason: context.keyLimit.reason ?? "key_limit_exceeded",
                     reset_at: context.keyLimit.resetAt,
+                    now: context.keyLimit.now ?? null,
+                    limit_window: context.keyLimit.limitWindow ?? null,
+                    limit_metric: context.keyLimit.limitMetric ?? null,
+                    current_value: context.keyLimit.currentValue ?? null,
+                    limit_value: context.keyLimit.limitValue ?? null,
+                    buckets: context.keyLimit.buckets ?? null,
+                    description: describeKeyLimitExceeded({
+                        reason: context.keyLimit.reason ?? null,
+                        limitWindow: context.keyLimit.limitWindow ?? null,
+                        limitMetric: context.keyLimit.limitMetric ?? null,
+                        currentValue: context.keyLimit.currentValue ?? null,
+                        limitValue: context.keyLimit.limitValue ?? null,
+                    }),
                     request_id: args.requestId,
                     workspace_id: args.workspaceId,
                 }),

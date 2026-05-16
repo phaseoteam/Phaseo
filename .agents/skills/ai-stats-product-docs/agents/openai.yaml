@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Stats Product Docs"
+  short_description: "Rewrite AI Stats docs in a product-facing voice."
+  default_prompt: "Use $ai-stats-product-docs to rewrite this documentation in a product-facing, customer-readable voice."

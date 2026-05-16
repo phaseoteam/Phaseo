@@ -4,6 +4,10 @@
 
 import { z } from "zod";
 import type { Endpoint } from "./types";
+import {
+	ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES,
+	OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES,
+} from "./nativeTools";
 
 const ProviderRoutingSchema = z.object({
     // Existing gateway routing hints
@@ -17,6 +21,12 @@ const ProviderRoutingSchema = z.object({
     allowFallbacks: z.boolean().nullable().optional(),
     require_parameters: z.boolean().nullable().optional(),
     requireParameters: z.boolean().nullable().optional(),
+    required_execution_region: z.string().nullable().optional(),
+    requiredExecutionRegion: z.string().nullable().optional(),
+    required_data_region: z.string().nullable().optional(),
+    requiredDataRegion: z.string().nullable().optional(),
+    require_zero_data_retention: z.boolean().nullable().optional(),
+    requireZeroDataRetention: z.boolean().nullable().optional(),
     data_collection: z.enum(["allow", "deny"]).nullable().optional(),
     dataCollection: z.enum(["allow", "deny"]).nullable().optional(),
     zdr: z.boolean().nullable().optional(),
@@ -221,6 +231,7 @@ export const ResponsesSchema = z.object({
     text: z.record(z.string(), z.any()).optional(),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
     tools: z.array(z.record(z.string(), z.any())).optional(),
+    web_search_options: z.record(z.string(), z.any()).optional(),
     top_p: z.number().min(0).max(1).optional(),
     truncation: z.enum(["auto", "disabled"]).optional(),
     user: z.string().optional(),
@@ -460,6 +471,46 @@ const GatewayDatetimeToolSchema = z.object({
 	timezone: z.string().min(1).optional(),
 });
 
+const GatewayWebSearchToolSchema = z.object({
+	type: z.literal("gateway:web_search"),
+	parameters: z.object({
+		max_results: z.number().int().positive().max(10).optional(),
+		include_text: z.boolean().optional(),
+		include_highlights: z.boolean().optional(),
+	}).optional(),
+	max_results: z.number().int().positive().max(10).optional(),
+	include_text: z.boolean().optional(),
+	include_highlights: z.boolean().optional(),
+});
+
+const GatewayWebFetchToolSchema = z.object({
+	type: z.literal("gateway:web_fetch"),
+	parameters: z.object({
+		max_chars: z.number().int().positive().max(50000).optional(),
+	}).optional(),
+	url: z.string().url().optional(),
+	max_chars: z.number().int().positive().max(50000).optional(),
+});
+
+const OpenAINativeWebSearchToolSchema = z.object({
+	type: z.enum(OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES),
+}).passthrough();
+
+const AnthropicNativeWebSearchToolSchema = z.object({
+	type: z.enum(ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES),
+	name: z.string().optional(),
+	max_uses: z.number().int().positive().optional(),
+	allowed_domains: z.array(z.string().min(1)).optional(),
+	blocked_domains: z.array(z.string().min(1)).optional(),
+	user_location: z.object({
+		type: z.string(),
+		city: z.string().optional(),
+		region: z.string().optional(),
+		country: z.string().optional(),
+		timezone: z.string().optional(),
+	}).passthrough().optional(),
+}).passthrough();
+
 export const ChatCompletionsSchema = z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
@@ -522,11 +573,20 @@ export const ChatCompletionsSchema = z.object({
     temperature: z.number().min(0).max(2).optional().default(1),
 
     // Tools
-    tools: z.array(z.union([FunctionToolSchema, GatewayDatetimeToolSchema])).optional(),
+    tools: z.array(
+		z.union([
+			FunctionToolSchema,
+			GatewayDatetimeToolSchema,
+			GatewayWebSearchToolSchema,
+			GatewayWebFetchToolSchema,
+			OpenAINativeWebSearchToolSchema,
+		]),
+	).optional(),
 
     max_tool_calls: z.number().int().positive().optional(),
     parallel_tool_calls: z.boolean().optional().default(true),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+    web_search_options: z.record(z.string(), z.any()).optional(),
 
     logprobs: z.boolean().optional().default(false),
     top_logprobs: z.number().int().min(0).max(20).optional(),
@@ -620,7 +680,13 @@ export const AnthropicMessagesSchema = z.object({
     top_p: z.number().min(0).max(1).optional(),
     top_k: z.number().int().positive().optional(),
     stream: z.boolean().optional().default(false),
-    tools: z.array(z.union([AnthropicToolSchema, GatewayDatetimeToolSchema])).optional(),
+    tools: z.array(z.union([
+		AnthropicToolSchema,
+		GatewayDatetimeToolSchema,
+		GatewayWebSearchToolSchema,
+		GatewayWebFetchToolSchema,
+		AnthropicNativeWebSearchToolSchema,
+	])).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),
     metadata: z.object({
         user_id: z.string().optional(),
@@ -633,6 +699,9 @@ export const AnthropicMessagesSchema = z.object({
     }).optional(),
 
     stop_sequences: z.array(z.string()).optional(),
+    web_search_options: z.record(z.string(), z.any()).optional(),
+    webSearchOptions: z.record(z.string(), z.any()).optional(),
+    plugins: z.array(z.any()).optional(),
     provider_options: ResponsesProviderOptionsSchema.optional(),
     usage: z.boolean().optional(),
     // Gateway-only flags (not forwarded upstream)

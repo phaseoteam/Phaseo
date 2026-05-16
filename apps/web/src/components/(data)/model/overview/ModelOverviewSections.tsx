@@ -18,6 +18,7 @@ import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";
+import type { QuickstartRequestContext } from "@/components/(data)/model/quickstart/requestContext";
 import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmarks";
 import KeyDates from "@/components/(data)/model/overview/KeyDates";
 import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
@@ -61,6 +62,7 @@ type ModelOverviewSectionsProps = {
 	modelId: string;
 	model?: ModelOverviewPage | null;
 	includeHidden: boolean;
+	quickstartRequestContext?: QuickstartRequestContext;
 };
 
 export type ModelSectionSharedProps = {
@@ -408,7 +410,11 @@ export async function ModelQuickstartSection({
 	modelId,
 	includeHidden,
 	surface = "page",
-}: ModelSectionSharedProps & { surface?: ModelSectionSurface }) {
+	quickstartRequestContext,
+}: ModelSectionSharedProps & {
+	surface?: ModelSectionSurface;
+	quickstartRequestContext?: QuickstartRequestContext;
+}) {
 	const gatewayMetadata = await getModelGatewayMetadataCached(
 		modelId,
 		includeHidden,
@@ -454,6 +460,7 @@ export async function ModelQuickstartSection({
 					endpoint={quickstartEndpoint}
 					supportedEndpoints={supportedEndpoints}
 					showHeader={surface !== "overview"}
+					requestContext={quickstartRequestContext}
 				/>
 			) : (
 				<p className="text-sm text-muted-foreground">
@@ -904,7 +911,10 @@ export function ModelOverviewSectionsSkeleton() {
 async function ModelQuickstartOverviewGate({
 	modelId,
 	includeHidden,
-}: ModelSectionSharedProps) {
+	quickstartRequestContext,
+}: ModelSectionSharedProps & {
+	quickstartRequestContext?: QuickstartRequestContext;
+}) {
 	const providerPricing = await getModelPricingCached(
 		modelId,
 		includeHidden,
@@ -924,6 +934,7 @@ async function ModelQuickstartOverviewGate({
 			modelId={modelId}
 			includeHidden={includeHidden}
 			surface="overview"
+			quickstartRequestContext={quickstartRequestContext}
 		/>
 	);
 }
@@ -932,6 +943,7 @@ export default function ModelOverviewSections({
 	modelId,
 	model,
 	includeHidden,
+	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
 	const modelStatus = model?.status ?? null;
@@ -981,6 +993,7 @@ export default function ModelOverviewSections({
 					<ModelQuickstartOverviewGate
 						modelId={modelId}
 						includeHidden={includeHidden}
+						quickstartRequestContext={quickstartRequestContext}
 					/>
 				</Suspense>
 			)}

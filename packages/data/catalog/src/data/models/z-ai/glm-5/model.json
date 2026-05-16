@@ -4,6 +4,7 @@
   "name": "GLM 5",
   "status": "Available",
   "previous_model_id": "z-ai/glm-4-7-2025-12-22",
+  "description": "GLM 5 is Z.ai's flagship open-source foundation model engineered for complex systems design and long-horizon agent workflows. It accepts text inputs and produces text outputs.",
   "announced_date": "2026-02-11T00:00:00",
   "release_date": "2026-02-11T00:00:00",
   "deprecation_date": null,

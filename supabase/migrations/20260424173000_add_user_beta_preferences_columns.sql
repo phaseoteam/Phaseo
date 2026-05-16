@@ -1,9 +1,7 @@
 alter table public.users
 	add column if not exists beta_opt_in boolean;
-
 alter table public.users
 	add column if not exists beta_features jsonb;
-
 update public.users
 set
 	beta_opt_in = coalesce(beta_opt_in, false),
@@ -14,7 +12,6 @@ set
 where beta_opt_in is null
 	or beta_features is null
 	or jsonb_typeof(beta_features) <> 'object';
-
 alter table public.users
 	alter column beta_opt_in set default false,
 	alter column beta_opt_in set not null,

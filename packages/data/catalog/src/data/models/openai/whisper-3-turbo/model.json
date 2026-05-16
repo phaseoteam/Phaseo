@@ -4,6 +4,7 @@
   "name": "Whisper 3 Turbo",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Whisper 3 Turbo is an optimized version of OpenAI's Whisper Large V3 speech recognition model, designed for speed and cost efficiency. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 Plus (2026-04-20)",
   "status": "Available",
   "previous_model_id": "qwen/qwen3.5-plus-2026-02-15",
+  "description": "Qwen 3.5 Plus (2026-04-20) is a large-scale multimodal language model from Alibaba. It accepts text, image, and video input and produces text output, with a 1M token context window.",
   "announced_date": "2026-04-20T00:00:00",
   "release_date": "2026-04-20T00:00:00",
   "deprecation_date": null,

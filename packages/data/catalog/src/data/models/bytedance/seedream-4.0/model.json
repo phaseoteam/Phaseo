@@ -4,6 +4,7 @@
   "name": "Seedream 4.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seedream 4.0 is an image generation model from ByteDance for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

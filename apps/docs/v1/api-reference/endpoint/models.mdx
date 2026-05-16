@@ -5,30 +5,32 @@ openapi: "GET /gateway/models"
 description: "Browse gateway-native models through AI Stats Gateway, including optional non-routable availability details."
 ---
 
-Returns the public gateway catalogue for gateway-visible models. By default the route only returns models that are currently publicly routable through the gateway. Set `availability=all` to include models that are known but not currently routable, along with provider-level availability status.
+By default, this endpoint only returns models that are currently routable. Set `availability=all` to include models that are known but not currently available.
 
-Notes:
-- `endpoints` use public names like `chat.completions`, `responses`, and `messages`.
-- `status` filters by the canonical model lifecycle state, for example `active`, `deprecated`, or `retired`.
-- `provider` filters by public provider id, for example `openai`, `anthropic`, or `google_vertex`.
-- `provider_status` filters the provider rollout tier inside each model, for example `active`, `beta`, `alpha`, or `not_ready`.
-- `provider_routing_status` filters the provider-level routing gate for the mapping, for example `active`, `deranked_lvl1`, `deranked_lvl2`, `deranked_lvl3`, or `disabled`.
-- `model_routing_status` filters the model-level routing gate for the mapping, using the same routing-state values.
-- `capability_status` filters the provider capability state for the requested endpoint mapping, for example `active`, `coming_soon`, `internal_testing`, `disabled`, or a deranked state.
-- `provider_availability_status` filters the provider-side rollout state inside each model, for example `active`, `coming_soon`, or `inactive`.
-- `provider_availability_reason` filters the provider-side rollout explanation, for example `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, `soft_blocked`, `scheduled`, `provider_disabled`, `model_disabled`, or `internal_testing`.
-- `organisation` filters by the prefix in the public model ID, for example `anthropic` in `anthropic/claude-3-haiku`.
-- `privacy_scope=shared` is supported today. `privacy_scope=team` is reserved and currently returns `501`.
-- `availability=active` is the default and keeps the response limited to currently servable routes.
-- `availability=all` includes models or providers that are `coming_soon`, `inactive`, or not yet listed as routable.
-- Future-dated `effective_from` mappings and `internal_testing` capabilities stay hidden from the default active catalogue, but appear as `coming_soon` under `availability=all` so upcoming activations can be prepared safely before public rollout.
-- Provider entries can now expose:
-  - `availability_status`
-  - `availability_reason`
-  - `provider_status`
-  - `provider_routing_status`
-  - `model_routing_status`
-  - `capability_status`
+## Useful filters
+
+- `endpoints` uses public names like `chat.completions`, `responses`, and `messages`
+- `status` filters by model lifecycle, for example `active`, `deprecated`, or `retired`
+- `provider` filters by public provider ID, for example `openai`, `anthropic`, or `google_vertex`
+- `provider_status` filters the provider rollout tier, for example `active`, `beta`, `alpha`, or `not_ready`
+- `provider_routing_status` filters provider-level routing state
+- `model_routing_status` filters model-level routing state
+- `capability_status` filters provider capability state for the requested endpoint mapping
+- `provider_availability_status` filters provider-side availability, for example `active`, `coming_soon`, or `inactive`
+- `provider_availability_reason` filters provider-side availability reason, for example `preview_only`, `provider_not_ready`, `gated`, `access_limited`, or `region_limited`
+- `organisation` filters by the public model ID prefix, for example `anthropic` in `anthropic/claude-3-haiku`
+- `privacy_scope=shared` is supported today. `privacy_scope=team` currently returns `501`
+- `availability=active` is the default
+- `availability=all` includes models or providers that are `coming_soon`, `inactive`, or not yet publicly routable
+
+Provider entries can also include:
+
+- `availability_status`
+- `availability_reason`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
 
 ### Response
 
@@ -146,4 +148,4 @@ Notes:
 }
 ```
 
-`availability_reason` is the stable single-field explanation for why a provider entry is active, preview-only, or inactive. It mirrors the main rollout/routability states already encoded by the lower-level status fields, for example `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, `soft_blocked`, `scheduled`, `coming_soon`, `internal_testing`, `provider_disabled`, `model_disabled`, `capability_disabled`, `provider_inactive`, `inactive`, or `retired`.
+`availability_reason` is the single-field explanation for why a provider entry is active, preview-only, or inactive.

@@ -4,7 +4,7 @@ description: "Common request parameters across API endpoints, including routing 
 icon: "sliders-horizontal"
 ---
 
-Parameter support varies by endpoint and model. Use this page as a quick reference, then confirm details on each endpoint page.
+Parameter support varies by endpoint and model.
 
 ## Common request parameters
 
@@ -18,7 +18,20 @@ Parameter support varies by endpoint and model. Use this page as a quick referen
 | `stop` | string or string[] | Define explicit stop sequences. |
 | `tools`, `tool_choice` | object / string | Tool-calling controls on compatible endpoints. |
 | `response_format` | string or object | Ask for plain text, JSON, or schema-constrained responses. |
+| `service_tier` | string | Request a supported pricing or routing tier such as `priority` or `flex` on compatible text APIs. |
 | `meta`, `usage` | boolean | Include extra metadata and usage details in responses. |
+
+`service_tier` is supported on the main text request surfaces:
+
+- [Anthropic Messages](/v1/api-reference/endpoint/anthropic-messages)
+- [Chat Completions](/v1/api-reference/endpoint/chat-completions)
+- [Responses](/v1/api-reference/endpoint/responses)
+
+Use `priority` or `flex` when the model/provider combination supports those tiers. `Standard` is the default when `service_tier` is omitted. `Batch` uses the Batch API rather than this field.
+
+For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. AI Stats may normalize or map these values across providers while preserving Anthropic-compatible request behavior on `/v1/messages`.
+
+If you are using an official Anthropic SDK with a custom base URL pointed at AI Stats, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, prefer raw HTTP requests or the gateway-native/OpenAI-style text APIs.
 
 ## Provider routing parameters
 
@@ -30,10 +43,24 @@ The `provider` object lets you influence routing behavior:
 | `only` | string[] | Restrict routing to specific providers. |
 | `ignore` | string[] | Exclude specific providers. |
 | `include_alpha` | boolean | Allow alpha providers in routing decisions. |
+| `sort` | string or object | Rank providers for this request, typically by `price`, `latency`, or `throughput`. |
+| `required_execution_region` | string | Restrict routing to providers that execute in a required region. |
+| `required_data_region` | string | Restrict routing to providers that store or process data in a required region. |
+| `require_zero_data_retention` | boolean | Restrict routing to providers that meet zero-data-retention requirements. |
+| `max_price` | object | Set price ceilings for prompt, completion, image, audio, or request costs. |
+| `quantizations` | string[] | Narrow routing to specific quantization variants when supported. |
 
 ## Provider-specific options
 
-Use `provider_options` when you need provider-native configuration (for example cache controls). Keep these isolated so you can preserve portability between providers.
+Use `provider_options` when you need provider-native configuration such as:
+
+- `openai.context_management`
+- `openai.prompt_cache_retention`
+- `anthropic.cache_control`
+- `google.cache_control`
+- `google.cached_content`
+
+Keep these isolated so you can preserve portability between providers.
 
 ## Debug parameters
 
@@ -60,7 +87,10 @@ Use `debug` for controlled troubleshooting:
   "max_output_tokens": 300,
   "provider": {
     "order": ["openai", "anthropic"],
-    "ignore": ["some-provider"]
+    "ignore": ["some-provider"],
+    "sort": "latency",
+    "required_execution_region": "eu",
+    "require_zero_data_retention": true
   },
   "debug": {
     "enabled": true,
@@ -72,9 +102,9 @@ Use `debug` for controlled troubleshooting:
 
 ## Related pages
 
-- [Streaming](./streaming.mdx)
-- [Limits](./limits.mdx)
-- [Errors and Debugging](./errors.mdx)
+- [Streaming](./streaming)
+- [Limits](./limits)
+- [Errors and Debugging](./errors)
 
 <Visibility for="agents">
 If you are implementing parameter handling as an agent:

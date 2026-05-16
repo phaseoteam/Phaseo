@@ -4,6 +4,7 @@
   "name": "Llama 3.1 Nemotron Nano 4B V1.1",
   "status": null,
   "previous_model_id": null,
+  "description": "Llama 3.1 Nemotron Nano 4B V1.1 is a 49B-parameter, English-centric reasoning/chat model derived from Meta's Llama-3.3-70B-Instruct with a 128K context.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "MiniMax M2",
   "status": "Available",
   "previous_model_id": "minimax/minimax-m1-2025-06-16",
+  "description": "MiniMax M2 is a compact, high-efficiency large language model optimized for end-to-end coding and agentic workflows.",
   "announced_date": "2025-10-27T00:00:00",
   "release_date": "2025-10-27T00:00:00",
   "deprecation_date": null,

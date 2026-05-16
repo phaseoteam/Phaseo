@@ -1,0 +1,213 @@
+---
+title: "Pin or ignore providers per request"
+description: "Use request-level provider controls to prefer one provider order, constrain the pool, or remove a provider from consideration."
+---
+
+Use this recipe when one request should prefer a specific provider path without changing your workspace-wide routing defaults.
+
+## Goal
+
+- Try providers in a preferred order.
+- Restrict a request to an approved provider subset.
+- Ignore one provider temporarily without editing presets.
+
+## 1. Try providers in a specific order
+
+Use `provider.order` when you already know the preferred route sequence.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-4.6",
+    "input": "Write a concise launch summary.",
+    "provider": {
+      "order": ["anthropic-us", "anthropic"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-opus-4.6",
+  input: "Write a concise launch summary.",
+  provider: {
+    order: ["anthropic-us", "anthropic"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-opus-4.6",
+        "input": "Write a concise launch summary.",
+        "provider": {
+            "order": ["anthropic-us", "anthropic"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+This puts the listed providers first in the candidate order before the rest of the eligible pool.
+
+## 2. Restrict the request to a fixed provider subset
+
+Use `provider.only` when the request must stay inside one small allow list.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "input": "Extract the action items.",
+    "provider": {
+      "only": ["openai", "openai-eu"],
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.4-nano",
+  input: "Extract the action items.",
+  provider: {
+    only: ["openai", "openai-eu"],
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.4-nano",
+        "input": "Extract the action items.",
+        "provider": {
+            "only": ["openai", "openai-eu"],
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+This keeps the request inside those providers and then applies the chosen ranking mode inside that subset.
+
+## 3. Remove one provider from consideration
+
+Use `provider.ignore` when one provider should be skipped for a request or short-lived rollout.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta/llama-4-maverick",
+    "input": "Summarize the transcript.",
+    "provider": {
+      "ignore": ["deepinfra"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "meta/llama-4-maverick",
+  input: "Summarize the transcript.",
+  provider: {
+    ignore: ["deepinfra"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "meta/llama-4-maverick",
+        "input": "Summarize the transcript.",
+        "provider": {
+            "ignore": ["deepinfra"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+This is useful when:
+
+- one provider is degraded
+- you are validating another provider path
+- you want to compare routing outcomes without editing a preset
+
+## 4. Combine the controls carefully
+
+You can combine these controls, but keep the intent simple:
+
+- use `order` to express preference
+- use `only` to enforce the candidate pool
+- use `ignore` to carve one provider out
+
+One practical pattern combines:
+
+- `only` to keep the request inside `google-vertex` and `google-vertex-eu`
+- `order` to prefer `google-vertex-eu` first
+- `sort: "latency"` to rank inside that allowed set
+
+## 5. When to move this into a preset
+
+If the same provider rules appear in multiple services, stop copying them per request and move them into a preset instead.
+
+Use request-level routing when the override is:
+
+- temporary
+- caller-specific
+- tied to one user flow
+
+## Related guides
+
+- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)

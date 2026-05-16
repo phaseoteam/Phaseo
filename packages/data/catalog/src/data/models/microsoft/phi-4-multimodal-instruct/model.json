@@ -4,6 +4,7 @@
   "name": "Phi 4 multimodal instruct",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Phi 4 multimodal instruct is a multimodal model from Microsoft that can work across text and visual inputs.",
   "announced_date": null,
   "release_date": "2025-02-01T00:00:00",
   "deprecation_date": null,

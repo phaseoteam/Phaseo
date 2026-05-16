@@ -4,6 +4,7 @@
   "name": "Ministral 3B",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Ministral 3B is a language model from Mistral for chat, writing, analysis, and general-purpose automation.",
   "announced_date": "2024-10-09T00:00:00",
   "release_date": "2024-10-09T00:00:00",
   "deprecation_date": "2025-12-02T00:00:00",

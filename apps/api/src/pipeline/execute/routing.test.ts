@@ -57,23 +57,40 @@ function health(
 
 function candidate(args: {
 	providerId: string;
+	providerFamilyId?: string | null;
+	offerScope?: "global" | "regional" | "specialized" | null;
+	offerLabel?: string | null;
+	apiModelId?: string | null;
+	providerModelSlug?: string | null;
 	providerStatus?: "active" | "beta" | "alpha" | "not_ready";
 	providerRoutingStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
 	modelRoutingStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
 	capabilityStatus?: "active" | "deranked" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled" | "internal_testing";
+	residencyMode?: "unknown" | "provider_managed" | "customer_selectable" | "account_selected" | null;
+	executionRegions?: string[] | null;
+	dataRegions?: string[] | null;
+	zeroDataRetention?: "unknown" | "unsupported" | "optional" | "default" | null;
 	pricingCard?: any;
 }) {
 	return {
 		providerId: args.providerId,
+		providerFamilyId: args.providerFamilyId ?? null,
+		offerScope: args.offerScope ?? null,
+		offerLabel: args.offerLabel ?? null,
 		providerStatus: args.providerStatus ?? "active",
 		providerRoutingStatus: args.providerRoutingStatus ?? "active",
 		modelRoutingStatus: args.modelRoutingStatus ?? "active",
 		capabilityStatus: args.capabilityStatus ?? "active",
+		residencyMode: args.residencyMode ?? "unknown",
+		executionRegions: args.executionRegions ?? null,
+		dataRegions: args.dataRegions ?? null,
+		zeroDataRetention: args.zeroDataRetention ?? "unknown",
+		apiModelId: args.apiModelId ?? null,
 		adapter: { name: args.providerId } as any,
 		baseWeight: 1,
 		byokMeta: [],
 		pricingCard: args.pricingCard ?? null,
-		providerModelSlug: null,
+		providerModelSlug: args.providerModelSlug ?? null,
 	} as any;
 }
 
@@ -238,6 +255,180 @@ describe("routeProviders testing mode", () => {
 		expect(modelGate?.afterCount).toBe(1);
 	});
 
+	it("filters providers by residency requirements", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					executionRegions: ["us", "eu"],
+					dataRegions: ["us", "eu"],
+					zeroDataRetention: "optional",
+				}),
+				candidate({
+					providerId: "anthropic",
+					executionRegions: null,
+					dataRegions: null,
+					zeroDataRetention: "optional",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: {
+					provider: {
+						required_execution_region: "eu",
+						required_data_region: "eu",
+						require_zero_data_retention: true,
+					},
+				},
+				testingMode: false,
+			}
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"openai",
+		]);
+		const residencyGate = result.diagnostics.filterStages.find(
+			(stage) => stage.stage === "residency_gate",
+		);
+		expect(residencyGate?.afterCount).toBe(1);
+	});
+
+	it("keeps regional offers out of the default routing pool when a global sibling exists", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					providerFamilyId: "openai",
+					offerScope: "global",
+				}),
+				candidate({
+					providerId: "openai-eu",
+					providerFamilyId: "openai",
+					offerScope: "regional",
+					offerLabel: "EU",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-5.5",
+				workspaceId: "team_123",
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["openai"]);
+		const offerStage = result.diagnostics.filterStages.find(
+			(stage) => stage.stage === "offer_scope_gate",
+		);
+		expect(offerStage?.afterCount).toBe(1);
+		expect(offerStage?.droppedProviders[0]?.reason).toBe(
+			"regional_offer_requires_explicit_opt_in",
+		);
+	});
+
+	it("allows explicit opt-in to a regional offer through provider.only", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					providerFamilyId: "openai",
+					offerScope: "global",
+				}),
+				candidate({
+					providerId: "openai-eu",
+					providerFamilyId: "openai",
+					offerScope: "regional",
+					offerLabel: "EU",
+					executionRegions: ["eu"],
+					dataRegions: ["eu"],
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-5.5",
+				workspaceId: "team_123",
+				body: {
+					provider: {
+						only: ["openai-eu"],
+						required_execution_region: "eu",
+					},
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"openai-eu",
+		]);
+	});
+
+	it("routes priority-tier requests to specialized provider offers", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "minimax",
+					providerFamilyId: "minimax",
+					offerScope: "global",
+				}),
+				candidate({
+					providerId: "minimax-lightning",
+					providerFamilyId: "minimax",
+					offerScope: "specialized",
+					offerLabel: "priority",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "minimax/minimax-m2.1",
+				workspaceId: "team_123",
+				body: {
+					service_tier: "priority",
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"minimax-lightning",
+		]);
+	});
+
+	it("expands provider.only for priority-tier specialized siblings", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "moonshotai",
+					providerFamilyId: "moonshotai",
+					offerScope: "global",
+				}),
+				candidate({
+					providerId: "moonshotai-turbo",
+					providerFamilyId: "moonshotai",
+					offerScope: "specialized",
+					offerLabel: "priority",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "moonshotai/kimi-k2",
+				workspaceId: "team_123",
+				body: {
+					service_tier: "priority",
+					provider: {
+						only: ["moonshotai"],
+					},
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"moonshotai-turbo",
+		]);
+	});
+
 	it("applies strong derank multipliers (legacy deranked maps to lvl1)", async () => {
 		const result = await routeProviders(
 			[
@@ -276,6 +467,108 @@ describe("routeProviders testing mode", () => {
 		);
 
 		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["google-ai-studio"]);
+	});
+
+	it("honors provider.sort=price from the request body", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 250,
+				lat_ewma_300s: 250,
+				tp_ewma_60s: 14,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 1200,
+				lat_ewma_300s: 1200,
+				tp_ewma_60s: 4,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					pricingCard: textPricingCard(0.00004, 0.00002),
+				}),
+				candidate({
+					providerId: "anthropic",
+					pricingCard: textPricingCard(0.00001, 0.000005),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: { provider: { sort: "price" } },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("anthropic");
+		expect(result.diagnostics.routingMode).toBe("price");
+	});
+
+	it("honors provider.sort=latency from the request body", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 220,
+				lat_ewma_300s: 220,
+				tp_ewma_60s: 6,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 950,
+				lat_ewma_300s: 950,
+				tp_ewma_60s: 12,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				candidate({ providerId: "anthropic" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: { provider: { sort: "latency" } },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("openai");
+		expect(result.diagnostics.routingMode).toBe("latency");
+	});
+
+	it("honors provider.sort=throughput from the request body", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 600,
+				lat_ewma_300s: 600,
+				tp_ewma_60s: 4,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 600,
+				lat_ewma_300s: 600,
+				tp_ewma_60s: 18,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				candidate({ providerId: "anthropic" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: { provider: { sort: "throughput" } },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("anthropic");
+		expect(result.diagnostics.routingMode).toBe("throughput");
 	});
 
 	it("prioritizes hinted provider when sticky cache metadata exists", async () => {
@@ -385,6 +678,126 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.stickyRouting.applied).toBe(false);
 	});
 
+	it("captures considered providers and ranked score diagnostics", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 300,
+				lat_ewma_300s: 350,
+				tp_ewma_60s: 12,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 800,
+				lat_ewma_300s: 900,
+				tp_ewma_60s: 6,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				candidate({ providerId: "anthropic" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini:fast",
+				workspaceId: "team_123",
+				testingMode: false,
+			},
+		);
+
+		expect(result.diagnostics.consideredProviders).toEqual([
+			expect.objectContaining({
+				providerId: "openai",
+				providerStatus: "active",
+			}),
+			expect.objectContaining({
+				providerId: "anthropic",
+				providerStatus: "active",
+			}),
+		]);
+		expect(result.diagnostics.rankedProviders[0]).toEqual(
+			expect.objectContaining({
+				providerId: expect.any(String),
+				score: expect.any(Number),
+				scoreFactors: expect.objectContaining({
+					successRate: expect.any(Number),
+					latencyScore: expect.any(Number),
+					throughputScore: expect.any(Number),
+					priceScore: expect.any(Number),
+					tokenAffinity: expect.any(Number),
+					cacheBoostMultiplier: expect.any(Number),
+				}),
+			}),
+		);
+	});
+
+	it("keeps multiple free-model variants from the same provider routable", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 320,
+				lat_ewma_300s: 350,
+				tp_ewma_60s: 10,
+			}),
+			"google-ai-studio": health("google-ai-studio", {
+				lat_ewma_60s: 500,
+				lat_ewma_300s: 550,
+				tp_ewma_60s: 8,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					apiModelId: "openai/gpt-free-a",
+					providerModelSlug: "gpt-free-a",
+				}),
+				candidate({
+					providerId: "openai",
+					apiModelId: "openai/gpt-free-b",
+					providerModelSlug: "gpt-free-b",
+				}),
+				candidate({
+					providerId: "google-ai-studio",
+					apiModelId: "google/gemini-free",
+					providerModelSlug: "gemini-free",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "ai-stats/free",
+				workspaceId: "team_123",
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked).toHaveLength(3);
+		expect(
+			result.diagnostics.consideredProviders.filter(
+				(provider) => provider.providerId === "openai",
+			),
+		).toHaveLength(2);
+		expect(result.diagnostics.rankedProviders).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					providerId: "openai",
+					apiModelId: "openai/gpt-free-a",
+					providerModelSlug: "gpt-free-a",
+				}),
+				expect.objectContaining({
+					providerId: "openai",
+					apiModelId: "openai/gpt-free-b",
+					providerModelSlug: "gpt-free-b",
+				}),
+				expect.objectContaining({
+					providerId: "google-ai-studio",
+					apiModelId: "google/gemini-free",
+					providerModelSlug: "gemini-free",
+				}),
+			]),
+		);
+	});
+
 	it("deprioritizes providers with open circuit breakers when other options exist", async () => {
 		readHealthManyMock.mockImplementation(async () => ({
 			openai: health("openai", {
@@ -415,7 +828,12 @@ describe("routeProviders testing mode", () => {
 		expect(breakerStage?.beforeCount).toBe(2);
 		expect(breakerStage?.afterCount).toBe(1);
 		expect(breakerStage?.droppedProviders).toEqual([
-			{ providerId: "openai", reason: "breaker_open" },
+			{
+				providerId: "openai",
+				apiModelId: null,
+				providerModelSlug: null,
+				reason: "breaker_open",
+			},
 		]);
 	});
 });

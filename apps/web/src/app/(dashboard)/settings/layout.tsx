@@ -68,6 +68,7 @@ export default async function SettingsLayout({
 
 			<SidebarProvider defaultOpen className="flex flex-1 min-h-0">
 				<Sidebar
+					desktopClassName="hidden lg:block"
 					// Keep desktop sidebar fixed under sticky chrome (notice + header).
 					className="top-[calc(var(--site-header-height,4rem)+var(--site-notice-height,0px))] bottom-0 h-auto bg-white dark:bg-zinc-950"
 				>

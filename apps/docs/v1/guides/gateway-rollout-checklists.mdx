@@ -3,19 +3,19 @@ title: "Gateway Rollout Checklists"
 description: "Operational checklists for enabling providers, shipping async endpoints, exposing metadata, and keeping validation tight after large gateway changes."
 ---
 
-Use this page when you are landing a gateway feature that spans API behavior, docs, SDKs, usage tooling, and observability. The goal is to make rollout work repeatable and to reduce cleanup after large merges.
+Use this page when you are shipping a gateway feature that affects the API, docs, SDKs, dashboard, and operational tooling. The goal is to make launches repeatable and reduce follow-up cleanup.
 
 ## 1) Enable a new provider
 
-Use this checklist when a provider already exists in the codebase or catalog pipeline, but needs to become safely routable for real traffic.
+Use this checklist when a provider already exists in the codebase or catalog pipeline, but needs to become safely available for real traffic.
 
 - Confirm the provider and model IDs are canonical in the catalog data and do not introduce a duplicate slug or alias.
 - Confirm activation state is intentional:
-  - active and publicly routable
+  - active and publicly available
   - preview or internal testing only
   - disabled or region-limited with a clear reason
 - Add or verify provider credential wiring and any required base URL, region, project, or account configuration.
-- Make sure unsupported or gated mappings return structured diagnostics rather than disappearing from the catalog silently.
+- Make sure unsupported or gated mappings return clear structured errors rather than disappearing from the catalog silently.
 - Verify endpoint capability mapping per modality:
   - text
   - embeddings
@@ -28,7 +28,7 @@ Use this checklist when a provider already exists in the codebase or catalog pip
   - direct provider selection
   - ranked routing
   - disabled-path failure messaging
-- Expose the provider/model state correctly in:
+- Show the provider/model state correctly in:
   - `/v1/models`
   - product UI
   - admin audit views
@@ -40,7 +40,7 @@ Use this checklist when a provider already exists in the codebase or catalog pip
   - integration examples
 - Add targeted regression coverage for:
   - activation-state classification
-  - operator diagnostics
+  - operator-facing error detail
   - at least one success path or controlled mock path
 
 ### Required validation
@@ -56,7 +56,7 @@ Use this checklist when a provider already exists in the codebase or catalog pip
 
 ## 2) Enable a new async endpoint
 
-Use this checklist when adding a new long-running route such as video, batch, transcription, or another provider-backed async workflow.
+Use this checklist when adding a new long-running route such as video, batch, transcription, or another async workflow.
 
 - Define the full lifecycle explicitly:
   - create
@@ -79,18 +79,18 @@ Use this checklist when adding a new long-running route such as video, batch, tr
   - cancellation
   - expiry
   - partial-success cases
-- Add result and artifact affordances across product surfaces:
+- Add result and artifact support across the product:
   - async jobs UI
   - usage investigation views
   - SDK helpers
   - devtools or local viewer where relevant
-- Normalize upstream failures into the public gateway error contract instead of proxying raw provider responses.
-- Expose the same core correlation metadata as normal requests where possible:
+- Normalize upstream failures into the public gateway error format instead of proxying raw provider responses.
+- Reuse the same core correlation metadata as normal requests where possible:
   - routing or provider details
   - pricing lines or settled billing summary
   - content or cancel URLs
   - request counts for aggregate jobs such as batches
-- Keep docs and generated surfaces aligned:
+- Keep docs and generated outputs aligned:
   - OpenAPI endpoints and schemas
   - REST docs
   - SDK wrappers
@@ -114,19 +114,19 @@ Use this checklist when adding a new long-running route such as video, batch, tr
 
 Use this checklist when adding request metadata such as provider attempts, billing details, session IDs, or async-job correlation fields.
 
-- Decide the canonical source of the field first:
+- Decide the main source of truth for the field first:
   - request record
   - async job record
   - public response payload
   - webhook or websocket payload
-- Add the field consistently across every intended surface instead of only one:
+- Add the field consistently everywhere it is meant to appear instead of only one place:
   - API response or error shape
   - request persistence
   - async job persistence
-  - logs or investigate tooling
+  - logs or investigation tooling
   - SDK devtools recorder output
   - local viewer or devtools UI
-- For routed failures, make sure diagnostics survive normalization and are not dropped by intermediate helpers.
+- For routed failures, make sure the extra error detail survives normalization and is not dropped by intermediate helpers.
 - For async flows, verify the same generation can be correlated by:
   - request ID
   - session ID
@@ -138,8 +138,8 @@ Use this checklist when adding request metadata such as provider attempts, billi
 
 ### Required validation
 
-- targeted API tests for the payload or error surface
-- targeted web tests or `typecheck` for logs, jobs, or investigate UI updates
+- targeted API tests for the payload or error shape
+- targeted web tests or `typecheck` for logs, jobs, or investigation UI updates
 - targeted SDK recorder tests where recorder output changed
 - `pnpm --filter @ai-stats/gateway-api typecheck`
 - `pnpm --filter @ai-stats/web typecheck`
@@ -153,16 +153,16 @@ When a feature cuts across API, docs, SDKs, and UI, use this matrix to avoid par
 
 | If you changed... | Also check... |
 | --- | --- |
-| API response or error contract | OpenAPI, generated SDKs, SDK docs, examples, integration tests |
-| Async job metadata | jobs UI, investigate tooling, webhook payloads, devtools, ownership tests |
+| API response or error format | OpenAPI, generated SDKs, SDK docs, examples, integration tests |
+| Async job metadata | jobs UI, usage investigation tooling, webhook payloads, devtools, ownership tests |
 | Billing fields | usage logs, async jobs UI, settlement tests, docs wording |
-| Model or provider activation state | `/v1/models`, admin audit UI, product quickstart, docs, error diagnostics |
+| Model or provider activation state | `/v1/models`, admin audit UI, product quickstart, docs, error details |
 | File or artifact endpoints | ownership checks, content download tests, SDK file helpers, docs examples |
 | Viewer or devtools schema | devtools packages, viewer build output, schema tests, README snippets |
 
 ## 5) Minimal validation bundles
 
-Pick the smallest bundle that still covers the actual changed surface.
+Pick the smallest bundle that still covers the actual change.
 
 ### Docs-only slice
 

@@ -12,6 +12,8 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import type {
+	PriceComparisonDirection,
+	PriceComparisonKind,
 	TokenTier,
 	TokenTriple,
 	QualityRow,
@@ -22,14 +24,51 @@ import type {
 } from "./pricingHelpers";
 import { fmtUSD } from "./pricingHelpers";
 
-function renderDiscountFooter(basePrice?: number | null, _discountEndsAt?: string | null) {
-	if (basePrice == null) return null;
-	return (
-		<div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] leading-tight text-muted-foreground">
-			<span>
-				Was <span className="line-through tabular-nums">{fmtUSD(basePrice)}</span>
+type PricingComparisonAccent = "batch" | null;
+
+function renderComparisonToneClass(
+	kind?: PriceComparisonKind | null,
+	direction?: PriceComparisonDirection,
+	accent?: PricingComparisonAccent,
+) {
+	if (accent === "batch") {
+		return "text-xs font-semibold text-orange-700 tabular-nums dark:text-orange-300";
+	}
+	if (kind === "discount" || direction === "cheaper") {
+		return "text-xs font-semibold text-emerald-600 tabular-nums";
+	}
+	if (direction === "pricier") {
+		return "text-xs font-semibold text-fuchsia-700 tabular-nums";
+	}
+	return "text-xs font-semibold text-foreground tabular-nums";
+}
+
+function renderComparisonPrices(
+	currentPrice: number,
+	basePrice: number | null | undefined,
+	decimals: number,
+	kind?: PriceComparisonKind | null,
+	direction?: PriceComparisonDirection,
+	accent?: PricingComparisonAccent,
+) {
+	const currentClass = renderComparisonToneClass(kind, direction, accent);
+	if (basePrice == null) {
+		return (
+			<span className={currentClass}>
+				{formatUsdAligned(currentPrice, decimals)}
 			</span>
-		</div>
+		);
+	}
+
+	return (
+		<>
+			<span className="text-xs font-medium text-muted-foreground line-through tabular-nums">
+				{formatUsdAligned(basePrice, decimals)}
+			</span>
+			<span className={currentClass}>
+				{formatUsdAligned(currentPrice, decimals)}
+			</span>
+		</>
 	);
 }
 
@@ -216,10 +255,12 @@ export function TierTiles({
 	tiers,
 	dense = false,
 	unitLabel,
+	comparisonAccent = null,
 }: {
 	tiers: TokenTier[];
 	dense?: boolean;
 	unitLabel?: string;
+	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!tiers?.length) {
 		return <div className="text-sm text-muted-foreground">--</div>;
@@ -233,15 +274,14 @@ export function TierTiles({
 	const renderTierRow = (tier: TokenTier, key: string | number) => (
 		<div key={key} className="space-y-0.5">
 			<div className="flex items-baseline gap-1">
-				<span
-					className={
-						tier.basePer1M != null
-							? "text-xs font-semibold text-emerald-600 tabular-nums"
-							: "text-xs font-semibold text-foreground tabular-nums"
-					}
-				>
-					{formatUsdAligned(tier.per1M, sharedDecimals)}
-				</span>
+				{renderComparisonPrices(
+					tier.per1M,
+					tier.basePer1M,
+					sharedDecimals,
+					tier.comparisonKind,
+					tier.comparisonDirection,
+					comparisonAccent,
+				)}
 				{(() => {
 					const condition = formatTierConditionLabel(tier.label);
 					if (!condition) return null;
@@ -258,11 +298,6 @@ export function TierTiles({
 					);
 				})()}
 			</div>
-			{tier.basePer1M != null ? (
-				<div className="text-xs text-muted-foreground">
-					{renderDiscountFooter(tier.basePer1M, tier.discountEndsAt)}
-				</div>
-			) : null}
 		</div>
 	);
 
@@ -293,6 +328,7 @@ export function TokenTripleSection({
 	compact = false,
 	minimumSegments = [],
 	vertical = false,
+	comparisonAccent = null,
 }: {
 	title?: string;
 	triple?: TokenTriple;
@@ -302,6 +338,7 @@ export function TokenTripleSection({
 	compact?: boolean;
 	minimumSegments?: Array<"Input" | "Cache Reads" | "Cache Writes" | "Output">;
 	vertical?: boolean;
+	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!triple) return null;
 	const baseSegments = [
@@ -328,7 +365,13 @@ export function TokenTripleSection({
 		...segments.map((s, idx) => ({
 			key: `segment-${idx}`,
 			title: showSegmentLabels ? s.label : null,
-			content: <TierTiles tiers={s.tiers} dense={compact} />,
+			content: (
+				<TierTiles
+					tiers={s.tiers}
+					dense={compact}
+					comparisonAccent={comparisonAccent}
+				/>
+			),
 		})),
 	];
 	const columnsWrapClass = vertical
@@ -368,9 +411,11 @@ export function TokenTripleSection({
 export function ImageGenSection({
 	rows,
 	vertical = false,
+	comparisonAccent = null,
 }: {
 	rows?: QualityRow[];
 	vertical?: boolean;
+	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!rows || !rows.length) return null;
 
@@ -408,22 +453,16 @@ export function ImageGenSection({
 									return (
 										<div key={`${row.quality}-${label}-${itemIndex}`} className="space-y-0.5">
 											<div className="flex items-baseline gap-1">
-												<span
-													className={
-														item.basePrice != null
-															? "text-xs font-semibold text-emerald-600 tabular-nums"
-															: "text-xs font-semibold text-foreground tabular-nums"
-													}
-												>
-													{formatUsdAligned(item.price, sharedDecimals)}
-												</span>
+												{renderComparisonPrices(
+													item.price,
+													item.basePrice,
+													sharedDecimals,
+													item.comparisonKind,
+													item.comparisonDirection,
+													comparisonAccent,
+												)}
 												<span className="text-xs text-muted-foreground">{label}</span>
 											</div>
-											{item.basePrice != null ? (
-												<div className="text-xs text-muted-foreground">
-													{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-												</div>
-											) : null}
 										</div>
 									);
 								})}
@@ -441,6 +480,7 @@ export function VideoGenSection({
 	showAudioVariants = false,
 	audioHints = [],
 	vertical = false,
+	comparisonAccent = null,
 }: {
 	rows?: ResolutionRow[];
 	showAudioVariants?: boolean;
@@ -450,6 +490,7 @@ export function VideoGenSection({
 		audioMode: "with-audio" | "without-audio";
 	}>;
 	vertical?: boolean;
+	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!rows || !rows.length) return null;
 
@@ -479,6 +520,8 @@ export function VideoGenSection({
 				price: number;
 				audioMode: ResolutionRow["audioMode"];
 				basePrice: number | null;
+				comparisonKind?: PriceComparisonKind | null;
+				comparisonDirection?: PriceComparisonDirection;
 				discountEndsAt: string | null;
 			}
 		>();
@@ -511,12 +554,14 @@ export function VideoGenSection({
 				discountEndsAt: null,
 			};
 			const hasDiscountWindow = row.basePrice != null && Boolean(row.discountEndsAt);
-			if (hasDiscountWindow) {
+			if (hasDiscountWindow || row.comparisonKind === "vs-standard") {
 				const candidateBase = row.basePrice ?? null;
 				const currentBase = existing.basePrice ?? null;
 				if (candidateBase != null && (currentBase == null || candidateBase > currentBase)) {
 					existing.basePrice = candidateBase;
 					existing.discountEndsAt = row.discountEndsAt ?? null;
+					existing.comparisonKind = row.comparisonKind ?? null;
+					existing.comparisonDirection = row.comparisonDirection ?? null;
 				}
 			}
 			grouped.set(key, existing);
@@ -586,22 +631,16 @@ export function VideoGenSection({
 											{sortedItems.map((item, index) => (
 												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
 													<div className="flex items-baseline gap-1">
-														<span
-															className={
-																item.basePrice != null
-																	? "text-xs font-semibold text-emerald-600 tabular-nums"
-																	: "text-xs font-semibold text-foreground tabular-nums"
-															}
-														>
-															{formatUsdAligned(item.price, sharedDecimals)}
-														</span>
+														{renderComparisonPrices(
+															item.price,
+															item.basePrice,
+															sharedDecimals,
+															item.comparisonKind,
+															item.comparisonDirection,
+															comparisonAccent,
+														)}
 														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
-													{item.basePrice != null ? (
-														<div className="text-xs text-muted-foreground">
-															{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-														</div>
-													) : null}
 												</div>
 											))}
 										</div>
@@ -645,22 +684,16 @@ export function VideoGenSection({
 										{sortedColumnItems.map((item, index) => (
 											<div key={`${column.key}-${item.unit}-${item.resolution}-${index}`} className="space-y-0.5">
 												<div className="flex items-baseline gap-1">
-													<span
-														className={
-															item.basePrice != null
-																? "text-xs font-semibold text-emerald-600 tabular-nums"
-																: "text-xs font-semibold text-foreground tabular-nums"
-														}
-													>
-														{formatUsdAligned(item.price, sharedDecimals)}
-													</span>
+													{renderComparisonPrices(
+														item.price,
+														item.basePrice,
+														sharedDecimals,
+														item.comparisonKind,
+														item.comparisonDirection,
+														comparisonAccent,
+													)}
 													<span className="text-xs text-muted-foreground">{item.resolution}</span>
 												</div>
-												{item.basePrice != null ? (
-													<div className="text-xs text-muted-foreground">
-														{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-													</div>
-												) : null}
 											</div>
 										))}
 									</div>
@@ -695,22 +728,16 @@ export function VideoGenSection({
 											{sortedItems.map((item, index) => (
 												<div key={`${item.unit}-${item.resolution}-${item.price}-${index}`} className="space-y-0.5">
 													<div className="flex items-baseline gap-1">
-														<span
-															className={
-																item.basePrice != null
-																	? "text-xs font-semibold text-emerald-600 tabular-nums"
-																	: "text-xs font-semibold text-foreground tabular-nums"
-															}
-														>
-															{formatUsdAligned(item.price, sharedDecimals)}
-														</span>
+													{renderComparisonPrices(
+														item.price,
+														item.basePrice,
+														sharedDecimals,
+														item.comparisonKind,
+														item.comparisonDirection,
+														comparisonAccent,
+													)}
 														<span className="text-xs text-muted-foreground">{item.resolution}</span>
 													</div>
-													{item.basePrice != null ? (
-														<div className="text-xs text-muted-foreground">
-															{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-														</div>
-													) : null}
 												</div>
 											))}
 										</div>
@@ -731,10 +758,12 @@ export function InputsSection({
 	rows,
 	title,
 	compact = false,
+	comparisonAccent = null,
 }: {
 	rows?: UsageRow[];
 	title: string;
 	compact?: boolean;
+	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!rows?.length) return null;
 
@@ -750,6 +779,8 @@ export function InputsSection({
 			label: r.label,
 			price: r.price,
 			basePrice: r.basePrice,
+			comparisonKind: r.comparisonKind,
+			comparisonDirection: r.comparisonDirection,
 			discountEndsAt: r.discountEndsAt,
 		})),
 	);
@@ -773,23 +804,17 @@ export function InputsSection({
 					return (
 						<div key={`${item.unit}-${label}-${index}`} className="space-y-0.5">
 							<div className="flex items-baseline gap-1">
-								<span
-									className={
-										item.basePrice != null
-											? "text-xs font-semibold text-emerald-600 tabular-nums"
-											: "text-xs font-semibold text-foreground tabular-nums"
-									}
-								>
-									{formatUsdAligned(item.price, sharedDecimals)}
-								</span>
+								{renderComparisonPrices(
+									item.price,
+									item.basePrice,
+									sharedDecimals,
+									item.comparisonKind,
+									item.comparisonDirection,
+									comparisonAccent,
+								)}
 								<span className="text-xs text-muted-foreground">{label}</span>
 								{hasSingleUnit ? null : <span className="text-xs text-muted-foreground/80">({item.unit})</span>}
 							</div>
-							{item.basePrice != null ? (
-								<div className="text-xs text-muted-foreground">
-									{renderDiscountFooter(item.basePrice, item.discountEndsAt)}
-								</div>
-							) : null}
 						</div>
 					);
 				})}
@@ -798,7 +823,13 @@ export function InputsSection({
 	);
 }
 
-export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
+export function CacheWriteSection({
+	rows,
+	comparisonAccent = null,
+}: {
+	rows?: TokenTier[];
+	comparisonAccent?: PricingComparisonAccent;
+}) {
 	if (!rows?.length) return null;
 	const sharedDecimals = rows.reduce(
 		(max, tier) => Math.max(max, countUsdDecimals(tier.per1M)),
@@ -815,22 +846,16 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 				{rows.map((t, i) => (
 					<div key={`cache-write-${i}`} className="space-y-0.5">
 						<div className="flex items-baseline gap-1">
-							<span
-								className={
-									t.basePer1M != null
-										? "text-xs font-semibold text-emerald-600 tabular-nums"
-										: "text-xs font-semibold text-foreground tabular-nums"
-								}
-							>
-								{formatUsdAligned(t.per1M, sharedDecimals)}
-							</span>
+							{renderComparisonPrices(
+								t.per1M,
+								t.basePer1M,
+								sharedDecimals,
+								t.comparisonKind,
+								t.comparisonDirection,
+								comparisonAccent,
+							)}
 							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
 						</div>
-						{t.basePer1M != null ? (
-							<div className="text-xs text-muted-foreground">
-								{renderDiscountFooter(t.basePer1M, t.discountEndsAt)}
-							</div>
-						) : null}
 					</div>
 				))}
 			</div>
@@ -841,9 +866,11 @@ export function CacheWriteSection({ rows }: { rows?: TokenTier[] }) {
 export function RequestsSection({
 	rows,
 	compact = false,
+	comparisonAccent = null,
 }: {
 	rows?: TokenTier[];
 	compact?: boolean;
+	comparisonAccent?: PricingComparisonAccent;
 }) {
 	if (!rows?.length) return null;
 	const sharedDecimals = rows.reduce(
@@ -863,22 +890,16 @@ export function RequestsSection({
 				{rows.map((t, i) => (
 					<div key={`request-${i}`} className="space-y-0.5">
 						<div className="flex items-baseline gap-1">
-							<span
-								className={
-									t.basePrice != null || t.basePer1M != null
-										? "text-xs font-semibold text-emerald-600 tabular-nums"
-										: "text-xs font-semibold text-foreground tabular-nums"
-								}
-							>
-								{formatUsdAligned(t.price, sharedDecimals)}
-							</span>
+							{renderComparisonPrices(
+								t.price,
+								t.basePrice ?? t.basePer1M,
+								sharedDecimals,
+								t.comparisonKind,
+								t.comparisonDirection,
+								comparisonAccent,
+							)}
 							<span className="text-xs text-muted-foreground">{t.label || "All usage"}</span>
 						</div>
-						{t.basePrice != null || t.basePer1M != null ? (
-							<div className="text-xs text-muted-foreground">
-								{renderDiscountFooter(t.basePrice ?? t.basePer1M, t.discountEndsAt)}
-							</div>
-						) : null}
 					</div>
 				))}
 			</div>

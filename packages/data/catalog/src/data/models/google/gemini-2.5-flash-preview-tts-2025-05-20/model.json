@@ -4,6 +4,7 @@
   "name": "Gemini 2.5 Flash Preview TTS (2025-05-20)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemini 2.5 Flash Preview TTS (2025-05-20) is a text-to-speech model from Google for turning text into spoken audio. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-05-20T00:00:00",
   "deprecation_date": null,

@@ -5,5 +5,10 @@
   "link": "https://docs.hyperbolic.xyz/docs/supported-models",
   "country_code": "US",
   "status": "Active",
-  "colour": "#8B5CF6"
+  "colour": "#8B5CF6",
+  "privacy_policy_url": "https://www.hyperbolic.ai/privacy",
+  "terms_of_service_url": "https://www.hyperbolic.ai/terms",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Hyperbolic markets serverless inference as zero data retention and says request data is never stored or reused.",
+  "prompt_training_source_url": "https://www.hyperbolic.ai/docs/overview/overview"
 }

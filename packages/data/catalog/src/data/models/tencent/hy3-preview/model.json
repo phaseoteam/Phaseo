@@ -4,6 +4,7 @@
   "name": "Hy3 Preview",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Hy3 Preview is a high-efficiency Mixture-of-Experts model from Tencent designed for agentic workflows and production use. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2026-04-23T00:00:00",
   "release_date": "2026-04-23T00:00:00",
   "deprecation_date": null,

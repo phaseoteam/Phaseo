@@ -4,6 +4,7 @@
   "name": "Text Embedding Ada 002",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Text Embedding Ada 002 is OpenAI's legacy text embedding model. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2022-12-15T00:00:00",
   "release_date": "2022-12-15T00:00:00",
   "deprecation_date": null,

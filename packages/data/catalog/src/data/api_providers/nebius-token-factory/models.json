@@ -25,14 +25,14 @@
     "provider_api_model_id": "nebius-token-factory:deepseek/deepseek-v3.2",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3.2",
     "internal_model_id": "deepseek/deepseek-v3.2",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 164000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -130,14 +130,14 @@
     "provider_api_model_id": "nebius-token-factory:meta/llama-3.1-8b",
     "provider_model_slug": "llama-3.1-8b",
     "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -235,14 +235,14 @@
     "provider_api_model_id": "nebius-token-factory:minimax/minimax-m2.5",
     "provider_model_slug": "MiniMaxAI/MiniMax-M2.5",
     "internal_model_id": "minimax/minimax-m2.5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 196000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -277,14 +277,14 @@
     "provider_api_model_id": "nebius-token-factory:moonshotai/kimi-k2.5",
     "provider_model_slug": "moonshotai/Kimi-K2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "INT4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 256000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -487,14 +487,14 @@
     "provider_api_model_id": "nebius-token-factory:openai/gpt-oss-120b",
     "provider_model_slug": "openai/gpt-oss-120b-fast",
     "internal_model_id": "openai/gpt-oss-120b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -592,14 +592,14 @@
     "provider_api_model_id": "nebius-token-factory:qwen/qwen3.5-397b-a17b",
     "provider_model_slug": "Qwen/Qwen3.5-397B-A17B-fast",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 262000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -634,14 +634,14 @@
     "provider_api_model_id": "nebius-token-factory:qwen/qwen3-235b-a22b-thinking-2507",
     "provider_model_slug": "Qwen/Qwen3-235B-A22B-Thinking-2507-fast",
     "internal_model_id": "qwen/qwen3-235b-a22b-thinking-2507",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 262000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -760,14 +760,14 @@
     "provider_api_model_id": "nebius-token-factory:qwen/qwen3-next-80b-a3b-thinking",
     "provider_model_slug": "Qwen/Qwen3-Next-80B-A3B-Thinking-fast",
     "internal_model_id": "qwen/qwen3-next-80b-a3b-thinking",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 262000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-11T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -852,6 +852,174 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": "2026-04-13T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "google/gemma-3-27b",
+    "provider_api_model_id": "nebius-token-factory:google/gemma-3-27b",
+    "provider_model_slug": "google/gemma-3-27b-it",
+    "internal_model_id": "google/gemma-3-27b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 110000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3.3-70b",
+    "provider_api_model_id": "nebius-token-factory:meta/llama-3.3-70b",
+    "provider_model_slug": "Meta/Llama-3.3-70B-Instruct",
+    "internal_model_id": "meta/llama-3.3-70b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-coder-7b",
+    "provider_api_model_id": "nebius-token-factory:qwen/qwen2.5-coder-7b",
+    "provider_model_slug": "Qwen/Qwen2.5-Coder-7B",
+    "internal_model_id": "qwen/qwen2.5-coder-7b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-32b",
+    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-32b",
+    "provider_model_slug": "Qwen/Qwen3-32B",
+    "internal_model_id": "qwen/qwen3-32b",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 41000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-14b",
+    "provider_api_model_id": "nebius-token-factory:qwen/qwen3-14b",
+    "provider_model_slug": "Qwen/Qwen3-14B",
+    "internal_model_id": "qwen/qwen3-14b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwq-32b",
+    "provider_api_model_id": "nebius-token-factory:qwen/qwq-32b",
+    "provider_model_slug": "QwQ-32B",
+    "internal_model_id": "qwen/qwq-32b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-32b",
+    "provider_api_model_id": "nebius-token-factory:qwen/qwen2.5-32b",
+    "provider_model_slug": "Qwen2.5-32B-Instruct",
+    "internal_model_id": "qwen/qwen2.5-32b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen2.5-72b",
+    "provider_api_model_id": "nebius-token-factory:qwen/qwen2.5-72b",
+    "provider_model_slug": "Qwen2.5-72B-Instruct",
+    "internal_model_id": "qwen/qwen2.5-72b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",

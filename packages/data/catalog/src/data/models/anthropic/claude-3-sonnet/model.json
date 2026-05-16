@@ -4,6 +4,7 @@
   "name": "Claude 3 Sonnet",
   "status": "Retired",
   "previous_model_id": "anthropic/claude-2-1-2023-11-22",
+  "description": "Claude 3 Sonnet is Anthropic's most capable Sonnet-class model yet, with frontier performance across coding, agents, and professional work. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2024-03-04T00:00:00",
   "release_date": "2024-03-04T00:00:00",
   "deprecation_date": "2025-01-21T00:00:00",

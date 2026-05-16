@@ -10,7 +10,7 @@ alter table public.gateway_requests_old
 create table public.gateway_requests (
   id uuid not null default gen_random_uuid(),
   created_at timestamp with time zone not null default now(),
-  workspace_id uuid not null,
+  team_id uuid not null,
   request_id text not null,
   app_id uuid null,
   endpoint text not null,
@@ -23,7 +23,6 @@ create table public.gateway_requests (
   success boolean not null default false,
   error_code text null,
   error_message text null,
-  error_payload jsonb null,
   latency_ms integer null,
   generation_ms integer null,
   usage jsonb not null default '{}'::jsonb,
@@ -35,7 +34,7 @@ create table public.gateway_requests (
   location text null,
   constraint gateway_requests_pkey primary key (id, created_at),
   constraint gateway_requests_key_id_fkey foreign key (key_id) references public.keys (id) on delete set null,
-  constraint gateway_requests_workspace_id_fkey foreign key (workspace_id) references public.workspaces (id) on delete cascade
+  constraint gateway_requests_team_id_fkey foreign key (team_id) references public.teams (id) on delete cascade
 ) partition by range (created_at);
 do $$
 declare
@@ -75,7 +74,7 @@ create table if not exists public.gateway_requests_default
 insert into public.gateway_requests (
   id,
   created_at,
-  workspace_id,
+  team_id,
   request_id,
   app_id,
   endpoint,
@@ -101,7 +100,7 @@ insert into public.gateway_requests (
 select
   id,
   created_at,
-  workspace_id,
+  team_id,
   request_id,
   app_id,
   endpoint,
@@ -127,7 +126,7 @@ from public.gateway_requests_old;
 create index if not exists gateway_requests_created_idx
   on public.gateway_requests (created_at);
 create index if not exists gateway_requests_team_created_idx
-  on public.gateway_requests (workspace_id, created_at);
+  on public.gateway_requests (team_id, created_at);
 create index if not exists gateway_requests_key_created_idx
   on public.gateway_requests (key_id, created_at);
 drop table public.gateway_requests_old;

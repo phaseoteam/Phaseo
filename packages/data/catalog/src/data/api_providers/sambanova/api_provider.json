@@ -5,5 +5,10 @@
   "link": "https://docs.sambanova.ai/docs/en/get-started/quickstart",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#FF4D4F"
+  "colour": "#FF4D4F",
+  "privacy_policy_url": "https://sambanova.ai/privacy-policy",
+  "terms_of_service_url": "https://sambanova.ai/sambacloud-terms-of-service",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "SambaCloud says it never sees or collects customer data or user prompts.",
+  "prompt_training_source_url": "https://sambanova.ai/products/sambacloud"
 }

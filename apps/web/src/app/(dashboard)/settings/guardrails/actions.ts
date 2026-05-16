@@ -69,6 +69,7 @@ export async function updateGlobalGuardrailsSettings(
 	if (error) throw error;
 
 	revalidatePath("/settings/guardrails");
+	revalidatePath("/settings/privacy");
 }
 
 export type GuardrailBudgetPayload = {

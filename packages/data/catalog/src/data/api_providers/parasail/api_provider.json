@@ -5,5 +5,10 @@
   "link": "https://docs.parasail.io/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#84CC16"
+  "colour": "#84CC16",
+  "privacy_policy_url": "https://www.parasail.io/legal/privacy-policy",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Parasail says it does not use Input or Output, or personal data contained within them, to train its own models or improve the platform or service.",
+  "prompt_training_source_url": "https://docs.parasail.io/parasail-docs/security-and-account-management/data-privacy-retention",
+  "terms_of_service_url": "https://www.parasail.io/legal/terms-of-service"
 }

@@ -1,0 +1,107 @@
+[
+  {
+    "api_model_id": "openai/gpt-oss-120b",
+    "provider_api_model_id": "scaleway:openai/gpt-oss-120b",
+    "provider_model_slug": "gpt-oss-120b",
+    "internal_model_id": "openai/gpt-oss-120b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 32000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "meta/llama-3.3-70b",
+    "provider_api_model_id": "scaleway:meta/llama-3.3-70b",
+    "provider_model_slug": "llama-3.3-70b-instruct",
+    "internal_model_id": "meta/llama-3.3-70b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 100000,
+    "max_output_tokens": 16000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "mistral/mistral-small-3.2",
+    "provider_api_model_id": "scaleway:mistral/mistral-small-3.2",
+    "provider_model_slug": "mistral-small-3.2-24b-instruct-2506",
+    "internal_model_id": "mistral/mistral-small-3.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-30b-a3b",
+    "provider_api_model_id": "scaleway:qwen/qwen3-coder-30b-a3b",
+    "provider_model_slug": "qwen3-coder-30b-a3b-instruct",
+    "internal_model_id": "qwen/qwen3-coder-30b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 32000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-embedding-8b",
+    "provider_api_model_id": "scaleway:qwen/qwen3-embedding-8b",
+    "provider_model_slug": "qwen3-embedding-8b",
+    "internal_model_id": "qwen/qwen3-embedding-8b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "embeddings",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.embed",
+        "status": "active",
+        "params": []
+      }
+    ]
+  }
+]

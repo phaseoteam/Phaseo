@@ -1,10 +1,14 @@
 ---
 title: "Errors and Debugging"
-description: "Interpret Gateway error responses and use debug controls for faster issue triage."
+description: "Understand AI Stats error responses and fix common request, provider, and routing issues faster."
 icon: "bug"
 ---
 
-Gateway errors use a consistent JSON shape:
+Use this page to understand what an AI Stats error means and what to do next.
+
+Every error response follows the same JSON format, so your app can handle failures consistently across models and providers.
+
+## Example error response
 
 ```json
 {
@@ -45,48 +49,50 @@ Gateway errors use a consistent JSON shape:
 }
 ```
 
-Every response includes:
+## Fields you will always get
 
-- `generation_id`: a stable identifier you can share with support for faster investigation.
-- `status_code`: mirrors the HTTP status to make retries decisions easier.
-- `error`: a machine-readable error code (for example `validation_error`).
-- `error_type`: high-level classification (`user` or `system`).
-- `error_origin`: whether the failure is primarily attributed to the caller, the gateway, or an upstream provider.
-- `description`: a human-friendly explanation.
-- `details` (optional): structured validation errors when `error` is `validation_error`.
+- `generation_id`: a stable request ID you can share with support.
+- `status_code`: mirrors the HTTP status code.
+- `error`: a machine-readable error code, such as `validation_error`.
+- `error_type`: a high-level class, usually `user` or `system`.
+- `error_origin`: whether the problem was mainly caused by the caller, AI Stats, or an upstream provider.
+- `description`: a plain-language explanation of what happened.
+- `details` (optional): structured validation details when the error is a request-validation problem.
 
-Some responses also include richer diagnostics:
+## Extra fields you may see
 
-- `reason`: a more specific machine-readable subreason such as `all_candidates_failed` or `pricing_not_configured`.
-- `provider_candidate_diagnostics` and `provider_enablement`: explain why a known model/provider is not currently routable for `unsupported_model_or_endpoint` style failures.
-- `routing_diagnostics`: filter-stage detail for capability, rollout, and routing-status gates.
-- `provider_failure_diagnostics`: normalized operator-facing hints for missing credentials, missing access, region restrictions, rate limits, and similar execute-stage failures.
-- `upstream_error` and `failure_sample`: best-effort summaries of the first upstream/provider failure when the request reached a provider.
-- `failed_providers`, `failed_statuses`, and `attempt_count`: aggregate retry/failover context for routed request failures.
+Some errors include more detail to help you fix the issue faster:
+
+- `reason`: a more specific subreason such as `all_candidates_failed` or `pricing_not_configured`.
+- `provider_candidate_diagnostics` and `provider_enablement`: explain why a model could not be used with the requested endpoint.
+- `routing_diagnostics`: extra detail about how routing or availability checks narrowed the request.
+- `provider_failure_diagnostics`: hints for missing credentials, missing access, region restrictions, rate limits, and similar provider-side failures.
+- `upstream_error` and `failure_sample`: best-effort summaries of the first provider failure when the request reached a provider.
+- `failed_providers`, `failed_statuses`, and `attempt_count`: extra retry and failover context.
 
 ## Status class guidance
 
 | Status | Meaning | Recommended action |
 | --- | --- | --- |
-| `400-499` | Request/authentication/authorization issue | Fix request inputs or credentials before retrying. |
+| `400-499` | Request, auth, or permission problem | Fix the request or credentials before retrying. |
 | `429` | Provider or route-level throttling | Retry with backoff and respect `Retry-After`. |
-| `500-599` | Gateway or upstream provider failure | Retry with jittered backoff and log correlation ids. |
+| `500-599` | AI Stats or upstream provider failure | Retry with jittered backoff and log the request ID. |
 
 ## Common error codes
 
-| Type                   | HTTP Status | Description                                          |
-| ---------------------- | ----------- | ---------------------------------------------------- |
-| `authentication_error` | `401`       | Missing or invalid API key.                          |
-| `authorization_error`  | `403`       | Key lacks permission to access this resource.        |
-| `not_found_error`      | `404`       | The endpoint or resource could not be found.         |
-| `rate_limit_error`     | `429`       | Too many requests. Retry after the specified delay.  |
-| `validation_error`     | `400`       | Invalid parameters or request body.                  |
-| `provider_error`       | `502`       | Upstream model provider failed to respond correctly. |
-| `server_error`         | `500`       | Unexpected issue within the Gateway.                 |
+| Type | HTTP Status | Description |
+| --- | --- | --- |
+| `authentication_error` | `401` | Missing or invalid API key. |
+| `authorization_error` | `403` | The key does not have access to this resource. |
+| `not_found_error` | `404` | The endpoint or resource could not be found. |
+| `rate_limit_error` | `429` | Too many requests. Retry after the specified delay. |
+| `validation_error` | `400` | Invalid parameters or request body. |
+| `provider_error` | `502` | The upstream model provider failed to respond correctly. |
+| `server_error` | `500` | An unexpected issue happened inside AI Stats. |
 
-## Structured upstream diagnostics
+## When a provider fails
 
-When a routed request reaches one or more providers and still fails, the Gateway may include:
+If AI Stats reached a provider but the request still failed, you may see:
 
 - `provider_failure_diagnostics.category`
 - `provider_failure_diagnostics.hint`
@@ -102,39 +108,39 @@ Current categories include:
 - `rate_limited`
 - `server_error`
 
-These fields are intended to make triage easier without enabling full debug mode.
+These fields are meant to help you fix the problem without turning on full debug mode.
 
-## Unsupported model diagnostics
+## When a model or endpoint is not available
 
-For `unsupported_model_or_endpoint` responses, the Gateway may include:
+For `unsupported_model_or_endpoint` responses, AI Stats may include:
 
 - `provider_candidate_diagnostics`
 - `provider_enablement`
 - `missing_pricing_providers`
 - `routing_diagnostics`
 
-These help distinguish:
+This helps you distinguish between:
 
-- known but disabled
-- unsupported for endpoint
-- pricing missing
-- rollout-restricted or internal-testing-only mappings
+- a known model that is not active yet
+- a model that does not support the endpoint you asked for
+- missing pricing data
+- rollout or internal availability restrictions
 
-Representative fields:
+Common fields:
 
 - `provider_candidate_diagnostics.totalProviders`: how many providers were known for the model before endpoint filtering.
-- `provider_candidate_diagnostics.supportsEndpointCount`: how many of those providers support the requested endpoint at all.
-- `provider_candidate_diagnostics.candidateCount`: how many providers remained as executable candidates after adapter checks.
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: provider ids dropped because the provider does not support the requested endpoint.
-- `provider_candidate_diagnostics.droppedMissingAdapter`: provider/endpoint pairs dropped because a mapping exists but the gateway does not yet have an adapter for that endpoint.
+- `provider_candidate_diagnostics.supportsEndpointCount`: how many of those providers support the requested endpoint.
+- `provider_candidate_diagnostics.candidateCount`: how many providers remained after adapter checks.
+- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: providers dropped because they do not support the endpoint.
+- `provider_candidate_diagnostics.droppedMissingAdapter`: provider/endpoint pairs dropped because there is no gateway adapter for that endpoint yet.
 - `provider_enablement.capability`: the capability gate being enforced, such as `video_generation`.
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: provider ids before and after capability or enablement filtering.
+- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: providers before and after capability or enablement filtering.
 - `provider_enablement.dropped[].reason`: machine-readable reasons such as `pricing_missing`.
-- `routing_diagnostics.filterStages[].stage`: the routing/filter stage, for example capability, rollout, or routing-status filtering.
+- `routing_diagnostics.filterStages[].stage`: the routing stage, for example capability, rollout, or routing-status filtering.
 - `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: provider counts before and after each stage.
 - `routing_diagnostics.filterStages[].droppedProviders[].reason`: machine-readable reasons such as rollout or routing restrictions.
 
-Example:
+### Example
 
 ```json
 {
@@ -183,7 +189,7 @@ Example:
 }
 ```
 
-## Debug options
+## Optional debug mode
 
 Most request schemas support a `debug` object for controlled troubleshooting:
 
@@ -211,20 +217,20 @@ Use debug mode in development or tightly controlled environments only.
 
 ## Retry strategy
 
--   **400-series errors:** Fix your request before retrying.
--   **429:** Implement exponential backoff and honour the `Retry-After` header.
--   **500-series errors:** Retry safely after a short delay.
+- **400-series errors:** Fix your request before retrying.
+- **429:** Implement exponential backoff and honor the `Retry-After` header.
+- **500-series errors:** Retry safely after a short delay.
 
 Example:
 
 ```js
 if (error.error === "rate_limit_error") {
-	await sleep(retryAfterMs);
-	return retryRequest();
+  await sleep(retryAfterMs);
+  return retryRequest();
 }
 ```
 
-## Streaming-specific debugging
+## Streaming-specific notes
 
 - If the request fails before streaming begins, you get a standard JSON error payload.
 - If it fails mid-stream, treat the partial stream as incomplete and show a retry option.
@@ -232,9 +238,9 @@ if (error.error === "rate_limit_error") {
 
 ## Troubleshooting tips
 
--   Check the [Gateway status page](https://ai-stats.phaseo.app/status) for ongoing incidents.
--   Review request payloads against endpoint schema docs.
--   Share `generation_id` when contacting support.
+- Check the [Gateway status page](https://ai-stats.phaseo.app/status) for ongoing incidents.
+- Review your request payload against the endpoint docs.
+- Share `generation_id` when contacting support.
 
 ## Related resources
 
@@ -242,21 +248,21 @@ if (error.error === "rate_limit_error") {
 	<Card
 		title="Authentication"
 		icon="key"
-		href="./authentication.mdx"
+		href="./authentication"
 	>
 		Authenticate with bearer API keys.
 	</Card>
 	<Card
 		title="Limits"
 		icon="gauge"
-		href="./limits.mdx"
+		href="./limits"
 	>
 		Handle provider-driven throttling and retries.
 	</Card>
 	<Card
 		title="Streaming"
 		icon="radio"
-		href="./streaming.mdx"
+		href="./streaming"
 	>
 		Use SSE safely in production flows.
 	</Card>

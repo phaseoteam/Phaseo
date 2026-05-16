@@ -4,7 +4,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro",
     "provider_model_slug": "deepseek-v4-pro",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -15,7 +15,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -25,7 +25,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-pro-precision",
     "provider_model_slug": "deepseek-v4-pro-precision",
     "internal_model_id": "deepseek/deepseek-v4-pro",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -36,7 +36,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -46,7 +46,7 @@
     "provider_api_model_id": "crofai:deepseek-v4-flash",
     "provider_model_slug": "deepseek-v4-flash",
     "internal_model_id": "deepseek/deepseek-v4-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -57,7 +57,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -67,7 +67,7 @@
     "provider_api_model_id": "crofai:deepseek-v3.2",
     "provider_model_slug": "deepseek-v3.2",
     "internal_model_id": "deepseek/deepseek-v3.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -78,7 +78,49 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5-pro",
+    "provider_api_model_id": "crofai:mimo-v2.5-pro",
+    "provider_model_slug": "mimo-v2.5-pro",
+    "internal_model_id": "xiaomi/mimo-v2.5-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": "Q4_0",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-05-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5-pro-precision",
+    "provider_api_model_id": "crofai:mimo-v2.5-pro-precision",
+    "provider_model_slug": "mimo-v2.5-pro-precision",
+    "internal_model_id": "xiaomi/mimo-v2.5-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": "Q8_0",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-05-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
         "params": []
       }
     ]
@@ -88,7 +130,7 @@
     "provider_api_model_id": "crofai:glm-5.1",
     "provider_model_slug": "glm-5.1",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q6_K",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -99,7 +141,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -109,7 +151,7 @@
     "provider_api_model_id": "crofai:glm-5.1-precision",
     "provider_model_slug": "glm-5.1-precision",
     "internal_model_id": "z-ai/glm-5.1",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -120,7 +162,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -130,7 +172,7 @@
     "provider_api_model_id": "crofai:greg",
     "provider_model_slug": "greg",
     "internal_model_id": "crofai/greg",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "greg",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -141,7 +183,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -151,7 +193,7 @@
     "provider_api_model_id": "crofai:kimi-k2.6",
     "provider_model_slug": "kimi-k2.6",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q3_K_L",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -162,7 +204,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -172,7 +214,7 @@
     "provider_api_model_id": "crofai:kimi-k2.6-precision",
     "provider_model_slug": "kimi-k2.6-precision",
     "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "int4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -183,7 +225,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -193,7 +235,7 @@
     "provider_api_model_id": "crofai:kimi-k2.5",
     "provider_model_slug": "kimi-k2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_K_M",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -204,7 +246,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -214,7 +256,7 @@
     "provider_api_model_id": "crofai:kimi-k2.5-lightning",
     "provider_model_slug": "kimi-k2.5-lightning",
     "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "530b-int4",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -225,7 +267,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -235,7 +277,7 @@
     "provider_api_model_id": "crofai:glm-5",
     "provider_model_slug": "glm-5",
     "internal_model_id": "z-ai/glm-5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -246,7 +288,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -256,7 +298,7 @@
     "provider_api_model_id": "crofai:glm-4.7",
     "provider_model_slug": "glm-4.7",
     "internal_model_id": "z-ai/glm-4.7",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q8_0",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -267,7 +309,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -277,7 +319,7 @@
     "provider_api_model_id": "crofai:glm-4.7-flash",
     "provider_model_slug": "glm-4.7-flash",
     "internal_model_id": "z-ai/glm-4.7-flash",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -288,7 +330,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -298,7 +340,7 @@
     "provider_api_model_id": "crofai:gemma-4-31b-it",
     "provider_model_slug": "gemma-4-31b-it",
     "internal_model_id": "google/gemma-4-31b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -309,7 +351,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -319,7 +361,7 @@
     "provider_api_model_id": "crofai:minimax-m2.5",
     "provider_model_slug": "minimax-m2.5",
     "internal_model_id": "minimax/minimax-m2.5",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "awq",
     "input_modalities": "text",
     "output_modalities": "text",
@@ -330,7 +372,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -340,7 +382,7 @@
     "provider_api_model_id": "crofai:qwen3.6-27b",
     "provider_model_slug": "qwen3.6-27b",
     "internal_model_id": "qwen/qwen3.6-27b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -351,7 +393,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -361,7 +403,7 @@
     "provider_api_model_id": "crofai:qwen3.5-397b-a17b",
     "provider_model_slug": "qwen3.5-397b-a17b",
     "internal_model_id": "qwen/qwen3.5-397b-a17b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "Q4_0",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -372,7 +414,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -382,7 +424,7 @@
     "provider_api_model_id": "crofai:qwen3.5-9b",
     "provider_model_slug": "qwen3.5-9b",
     "internal_model_id": "qwen/qwen3.5-9b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -393,7 +435,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
@@ -403,7 +445,7 @@
     "provider_api_model_id": "crofai:qwen3.5-9b-chat",
     "provider_model_slug": "qwen3.5-9b-chat",
     "internal_model_id": "qwen/qwen3.5-9b",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "fp8",
     "input_modalities": "text,image",
     "output_modalities": "text",
@@ -414,7 +456,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]

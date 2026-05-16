@@ -1,0 +1,65 @@
+---
+title: "Summarize internal notes with the Ruby Agent SDK"
+description: "Use the Ruby Agent SDK to query local notes and return one bounded summary through AI Stats Gateway."
+---
+
+Use this recipe when a Ruby service needs a small internal-notes assistant without handing orchestration to another system.
+
+## 1. Install the SDKs
+
+```bash
+gem install ai_stats_sdk ai_stats_agent_sdk
+```
+
+## 2. Define a notes lookup tool
+
+```ruby
+lookup_note = AIStatsAgentSdk.define_tool(
+  AIStatsAgentSdk::Tool.new(
+    id: "lookup-note",
+    description: "Look up one internal note by topic.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+      },
+      required: ["topic"],
+    },
+    execute: lambda do |input, _context|
+      {
+        topic: input["topic"],
+        summary: "Presets centralize routing defaults so app code stays smaller.",
+      }
+    end
+  )
+)
+```
+
+## 3. Create and run the agent
+
+```ruby
+agent = AIStatsAgentSdk.create_agent(
+  id: "notes-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Use tools when helpful and answer in one short paragraph.",
+  tools: [lookup_note]
+)
+
+result = agent.run(
+  input: "Summarize our note about presets.",
+  client: AIStatsAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## When this recipe fits
+
+- the tool inputs are simple and deterministic
+- the Ruby app already owns the data source
+- you want an ergonomic local-tool pattern for one bounded workflow
+
+## Related
+
+- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
+- [Build a durable agent loop](./agent-sdk-durable-loop.mdx)

@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";
 
-type Provider = "google" | "github" | "gitlab";
+type SocialProviderId = "google" | "github" | "gitlab";
 
-const PROVIDERS: Provider[] = ["google", "github", "gitlab"];
+const SOCIAL_PROVIDER_IDS: SocialProviderId[] = ["google", "github", "gitlab"];
 
 type ProviderMeta = {
 	label: string;
@@ -16,7 +16,7 @@ type ProviderMeta = {
 	dark?: string;
 };
 
-const META: Record<Provider, ProviderMeta> = {
+const META: Record<SocialProviderId, ProviderMeta> = {
 	google: { label: "Google", logoId: "google" },
 	github: {
 		label: "GitHub",
@@ -26,7 +26,11 @@ const META: Record<Provider, ProviderMeta> = {
 	gitlab: { label: "GitLab", light: "/social/gitlab.svg" },
 };
 
-export default function OAuthButtons({ returnUrl }: { returnUrl?: string }) {
+export default function OAuthButtons({
+	returnUrl,
+}: {
+	returnUrl?: string;
+}) {
 	return (
 		<div className="grid gap-4">
 			<div className="flex items-center gap-2">
@@ -35,11 +39,12 @@ export default function OAuthButtons({ returnUrl }: { returnUrl?: string }) {
 				<div className="flex-1 border-t border-border" />
 			</div>
 
-			<div className="flex flex-col gap-3">
-				{PROVIDERS.map((id) => {
+			<div className="grid grid-cols-3 gap-3">
+				{SOCIAL_PROVIDER_IDS.map((id) => {
 					const meta = META[id];
 					return (
 						<form action={handleOAuthRedirect} key={id}>
+							<input type="hidden" name="authFlow" value="signup" />
 							<input type="hidden" name="provider" value={id} />
 							{returnUrl ? (
 								<input type="hidden" name="returnUrl" value={returnUrl} />
@@ -48,15 +53,15 @@ export default function OAuthButtons({ returnUrl }: { returnUrl?: string }) {
 								type="submit"
 								variant="outline"
 								aria-label={`Continue with ${meta.label}`}
-								className="w-full h-10 flex items-center justify-center relative"
+								className="h-12 w-full justify-center"
 							>
-								<div className="absolute left-3 flex items-center">
+								<span className="flex items-center justify-center">
 									{meta.logoId ? (
 										<Logo
 											id={meta.logoId}
-											width={16}
-											height={16}
-											className="h-4 w-4 shrink-0"
+											width={18}
+											height={18}
+											className="h-[18px] w-[18px] shrink-0"
 										/>
 									) : (
 										<>
@@ -64,9 +69,9 @@ export default function OAuthButtons({ returnUrl }: { returnUrl?: string }) {
 												<Image
 													src={meta.light}
 													alt={`${meta.label} logo`}
-													width={16}
-													height={16}
-													className="h-4 w-4 shrink-0 dark:hidden"
+													width={18}
+													height={18}
+													className="h-[18px] w-[18px] shrink-0 dark:hidden"
 												/>
 											) : null}
 											{(meta.dark ?? meta.light) ? (
@@ -75,16 +80,15 @@ export default function OAuthButtons({ returnUrl }: { returnUrl?: string }) {
 														meta.dark ?? meta.light!
 													}
 													alt={`${meta.label} logo`}
-													width={16}
-													height={16}
-													className="hidden h-4 w-4 shrink-0 dark:block"
+													width={18}
+													height={18}
+													className="hidden h-[18px] w-[18px] shrink-0 dark:block"
 												/>
 											) : null}
 										</>
 									)}
-								</div>
-
-								<span className="text-center">
+								</span>
+								<span className="sr-only">
 									Continue with {meta.label}
 								</span>
 							</Button>

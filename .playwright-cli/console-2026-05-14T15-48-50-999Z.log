@@ -1,0 +1,40 @@
+[    1439ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[    1590ms] [LOG] [HMR] connected @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[    1712ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[    1719ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[    1790ms] [LOG] 
+    _    ___      ____ _____  _    _____ ____  
+   / \  |_ _|    / ___|_   _|/ \  |_   _/ ___| 
+  / _ \  | |     \___ \ | | / _ \   | | \___ \ 
+ / ___ \ | |      ___) || |/ ___ \  | |  ___) |
+/_/   \_\___|    |____/ |_/_/   \_\ |_| |____/ 
+ @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[    1949ms] [WARNING] Image with src "http://localhost:3100/wordmark_light.svg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio. @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  471609ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  473954ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  474312ms] [LOG] [Fast Refresh] done in 2449ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  475080ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  475300ms] [LOG] [Fast Refresh] done in 324ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  478908ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  478910ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  479439ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  480135ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  480140ms] [LOG] [Fast Refresh] done in 790ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  484379ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  486872ms] [LOG] [Fast Refresh] done in 2602ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  490463ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  490475ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  490476ms] [LOG] [Fast Refresh] done in 22ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  490579ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  492752ms] [LOG] [Fast Refresh] done in 2275ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  494760ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  495890ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  496433ms] [LOG] [Fast Refresh] done in 1231ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  501710ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  502524ms] [LOG] [Fast Refresh] done in 915ms @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  503996ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  503998ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  534970ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  536338ms] [LOG] [HMR] connected @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  536359ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930
+[  536363ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0lcw_next_dist_13znt55._.js:2930

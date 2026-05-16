@@ -4,6 +4,7 @@
   "name": "GPT 4 Turbo (2024-01-25)",
   "status": "Available",
   "previous_model_id": "openai/gpt-4-turbo-2023-11-06",
+  "description": "The latest GPT-4 Turbo model with vision capabilities. Vision requests can now use JSON mode and function calling. Training data: up to December 2023.",
   "announced_date": null,
   "release_date": "2024-01-25T00:00:00",
   "deprecation_date": null,

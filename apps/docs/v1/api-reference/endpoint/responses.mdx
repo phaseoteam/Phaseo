@@ -5,11 +5,11 @@ openapi: "POST /responses"
 
 ## Server tools
 
-`/v1/responses` supports regular function tools and one gateway-managed server tool:
+`/v1/responses` supports regular function tools and these gateway-managed server tools:
 
 - `gateway:datetime`
-
-Web-search tool types are temporarily disabled at the gateway request layer.
+- `gateway:web_search`
+- `gateway:web_fetch`
 
 ### Datetime example
 
@@ -33,6 +33,12 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-When a server tool is used, usage includes `usage.server_tool_use.datetime_requests`.
+When a server tool is used, usage includes the matching `usage.server_tool_use.*` counters.
 
-Use `stream: false` when tools are present.
+- `gateway:datetime` -> `datetime_requests`
+- `gateway:web_search` -> `web_search_requests`
+- `gateway:web_fetch` -> `web_fetch_requests`
+
+## Streaming note
+
+`stream: true` is also supported. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn and re-emit a synthetic stream after continuing the loop.

@@ -4,6 +4,7 @@
   "name": "Ernie 4.5 21B A3B Thinking",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Ernie 4.5 21B A3B Thinking is Baidu's upgraded lightweight MoE model, refined to boost reasoning depth and quality for top-tier performance in logical puzzles, math, science, coding, text generation, and expert-level academic benchmarks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

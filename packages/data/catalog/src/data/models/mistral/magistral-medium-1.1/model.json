@@ -4,6 +4,7 @@
   "name": "Magistral Medium 1.1",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Magistral Medium 1.1 is a language model from Mistral for chat, writing, analysis, and general-purpose automation.",
   "announced_date": "2025-07-24T00:00:00",
   "release_date": "2025-07-24T00:00:00",
   "deprecation_date": "2025-10-31T00:00:00",

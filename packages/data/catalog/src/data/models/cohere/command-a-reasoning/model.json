@@ -4,6 +4,7 @@
   "name": "Command A Reasoning",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Command A Reasoning is a reasoning model from Cohere for multi-step analysis, math, and tool-driven tasks.",
   "announced_date": "2025-08-21T00:00:00",
   "release_date": "2025-08-21T00:00:00",
   "deprecation_date": null,

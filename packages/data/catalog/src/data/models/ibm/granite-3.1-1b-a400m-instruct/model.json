@@ -4,6 +4,7 @@
   "name": "Granite 3.1 1B A400M Instruct",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite 3.1 1B A400M Instruct is a language model from IBM for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

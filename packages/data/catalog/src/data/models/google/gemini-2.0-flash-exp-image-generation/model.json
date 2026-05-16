@@ -4,6 +4,7 @@
   "name": "Gemini 2.0 Flash Exp Image Generation",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini 2.0 Flash Exp Image Generation is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": "2025-11-11T00:00:00",

@@ -4,6 +4,7 @@
   "name": "Nvidia Nemotron Nano 12b V2 VL",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nvidia Nemotron Nano 12b V2 VL is a multimodal model from Nvidia that can work across text and visual inputs. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

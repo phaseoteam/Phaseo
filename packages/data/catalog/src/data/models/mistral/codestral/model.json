@@ -4,6 +4,7 @@
   "name": "Codestral (2025-07-30)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Codestral (2025-07-30) is a coding model from Mistral for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-07-30T00:00:00",
   "release_date": "2025-07-30T00:00:00",
   "deprecation_date": null,

@@ -1,6 +1,6 @@
 ---
 title: "Agent SDK Overview"
-description: "Build local, resumable agent loops on top of AI Stats Gateway with the public TypeScript Agent SDK."
+description: "Build local, resumable agent loops on top of AI Stats Gateway across the supported Agent SDK languages."
 ---
 
 Use the AI Stats Agent SDKs when your application needs more than one-shot generation:
@@ -11,11 +11,16 @@ Use the AI Stats Agent SDKs when your application needs more than one-shot gener
 - resumable application-owned run state
 - consistent request routing across the same languages as the core client SDKs
 
-## Public package
+## Supported languages
 
-The current public Agent SDK package is:
+The current Agent SDK language set matches the primary client SDK set exposed in AI Stats quickstart:
 
 - [TypeScript](../typescript/agent-sdk)
+- [Python](../python/agent-sdk)
+- [Go](../go/agent-sdk)
+- [C#](../csharp/agent-sdk)
+- [PHP](../php/agent-sdk)
+- [Ruby](../ruby/agent-sdk)
 
 ## Common model
 
@@ -26,7 +31,7 @@ Each Agent SDK keeps the same minimal mental model:
 - create a gateway-backed model client
 - run a bounded loop over the `responses` API
 
-The TypeScript package is the current public launch surface for local tool-driven loops on AI Stats Gateway.
+The TypeScript package is still the most feature-complete today and remains the current public launch focus for local tool-driven loops on AI Stats Gateway.
 
 ## TypeScript-first recipes
 

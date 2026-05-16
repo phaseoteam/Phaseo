@@ -79,4 +79,58 @@ describe("execute health state", () => {
         expect(snapshot.inflight).toBe(requestCount);
         expect(snapshot.last_updated).toBeGreaterThan(0);
     });
+
+    it("treats upstream rate limits as health-neutral", async () => {
+        const health = await import("./health");
+
+        expect(
+            health.classifyProviderHealthImpact({
+                upstreamStatus: 429,
+            }),
+        ).toBe("neutral");
+
+        expect(
+            health.classifyProviderHealthImpact({
+                errorCode: "rate_limit_exceeded",
+            }),
+        ).toBe("neutral");
+    });
+
+    it("treats aborted streams as health-neutral", async () => {
+        const health = await import("./health");
+
+        expect(
+            health.classifyProviderHealthImpact({
+                upstreamStatus: 200,
+                aborted: true,
+            }),
+        ).toBe("neutral");
+    });
+
+    it("does not degrade provider health metrics for neutral outcomes", async () => {
+        const health = await import("./health");
+        const endpoint = "responses";
+        const provider = "openai";
+        const model = "gpt-5.4-nano";
+
+        await health.onCallStart(endpoint, provider, model);
+        await flushBackground();
+
+        await health.onCallEnd(endpoint, {
+            provider,
+            model,
+            ok: false,
+            healthImpact: "neutral",
+            latency_ms: 250,
+        });
+        await flushBackground();
+
+        const snapshot = await health.readHealth(endpoint, provider, model);
+        expect(snapshot.inflight).toBe(0);
+        expect(snapshot.err_ewma_10s).toBe(0);
+        expect(snapshot.err_ewma_60s).toBe(0);
+        expect(snapshot.err_ewma_300s).toBe(0);
+        expect(snapshot.rec_tot_ew_60s).toBe(0);
+        expect(snapshot.breaker).toBe("closed");
+    });
 });

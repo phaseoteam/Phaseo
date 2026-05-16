@@ -4,6 +4,7 @@
   "name": "GPT Realtime 2",
   "status": "Available",
   "previous_model_id": "openai/gpt-realtime-1.5",
+  "description": "GPT Realtime 2 is OpenAI's first generally available audio model. The new snapshot features an upgraded decoder for more natural sounding voices and maintains better voice consistency.",
   "announced_date": "2026-05-07T00:00:00",
   "release_date": "2026-05-07T00:00:00",
   "deprecation_date": null,

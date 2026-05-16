@@ -4,6 +4,7 @@
   "name": "Llama 2 13B Chat",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Llama 2 13B Chat is a language model from Meta for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": "2023-06-20T00:00:00",
   "deprecation_date": null,

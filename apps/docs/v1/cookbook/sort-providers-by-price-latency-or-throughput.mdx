@@ -1,0 +1,331 @@
+---
+title: "Sort providers by price, latency, or throughput"
+description: "Use request-level provider sorting to prefer the cheapest, fastest, or highest-throughput route for one model."
+---
+
+Use this recipe when the model stays the same but you want the gateway to rank provider offers differently for one request.
+
+## Goal
+
+- Prefer the cheapest provider for one request.
+- Prefer the lowest-latency provider for interactive paths.
+- Prefer the highest-throughput provider for bulk generation.
+
+## 1. Add `provider.sort` to the request
+
+For text requests, set the sort you want directly on the `provider` object.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Give me one release-note bullet for the last deploy.",
+    "provider": {
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Give me one release-note bullet for the last deploy.",
+  provider: {
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Give me one release-note bullet for the last deploy.",
+        "provider": {
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+    Model: "google/gemini-3.1-flash-lite",
+    Input: "Give me one release-note bullet for the last deploy.",
+    Provider: map[string]interface{}{
+      "sort": "price",
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using AiStatsSdk;
+using System.Collections.Generic;
+
+var client = new AIStats("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemini-3.1-flash-lite",
+    ["input"] = "Give me one release-note bullet for the last deploy.",
+    ["provider"] = new Dictionary<string, object>
+    {
+        ["sort"] = "price"
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemini-3.1-flash-lite',
+    'input' => 'Give me one release-note bullet for the last deploy.',
+    'provider' => [
+        'sort' => 'price',
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'ai_stats_sdk'
+
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemini-3.1-flash-lite',
+  input: 'Give me one release-note bullet for the last deploy.',
+  provider: {
+    sort: 'price'
+  }
+)
+
+puts response
+```
+</CodeGroup>
+
+Supported routing sorts for this flow:
+
+- `price`
+- `latency`
+- `throughput`
+
+## 2. Pick the sort that matches the workload
+
+Use:
+
+- `price` when cost matters more than tail latency
+- `latency` for chat, copilots, and human-in-the-loop tools
+- `throughput` for high-volume generation or backfills
+
+## 3. Understand what the gateway compares
+
+When you send an explicit request-level sort, the gateway ranks candidates deterministically instead of using the normal balanced weighted shuffle.
+
+For text models:
+
+- `price` compares a common price basis across the eligible providers
+- if shared text meters exist, the gateway prefers matching `input_text_tokens` and `output_text_tokens`
+- `latency` uses the latest provider latency data
+- `throughput` uses the latest throughput measurements
+
+## 4. Keep the provider pool realistic
+
+Sorting works best after you narrow the candidate pool when needed.
+
+For example, sort only among one approved set of providers:
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the incident in one sentence.",
+    "provider": {
+      "only": ["google-vertex", "google-vertex-eu"],
+      "sort": "latency"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the incident in one sentence.",
+  provider: {
+    only: ["google-vertex", "google-vertex-eu"],
+    sort: "latency",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the incident in one sentence.",
+        "provider": {
+            "only": ["google-vertex", "google-vertex-eu"],
+            "sort": "latency",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+    Model: "google/gemini-3.1-flash-lite",
+    Input: "Summarize the incident in one sentence.",
+    Provider: map[string]interface{}{
+      "only": []string{"google-vertex", "google-vertex-eu"},
+      "sort": "latency",
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using AiStatsSdk;
+using System.Collections.Generic;
+
+var client = new AIStats("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemini-3.1-flash-lite",
+    ["input"] = "Summarize the incident in one sentence.",
+    ["provider"] = new Dictionary<string, object>
+    {
+        ["only"] = new[] { "google-vertex", "google-vertex-eu" },
+        ["sort"] = "latency"
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemini-3.1-flash-lite',
+    'input' => 'Summarize the incident in one sentence.',
+    'provider' => [
+        'only' => ['google-vertex', 'google-vertex-eu'],
+        'sort' => 'latency',
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'ai_stats_sdk'
+
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemini-3.1-flash-lite',
+  input: 'Summarize the incident in one sentence.',
+  provider: {
+    only: ['google-vertex', 'google-vertex-eu'],
+    sort: 'latency'
+  }
+)
+
+puts response
+```
+</CodeGroup>
+
+## 5. Verify the ranked outcome
+
+When debugging, inspect the request in **Gateway -> Usage** and look for:
+
+- providers considered
+- ranked providers
+- the routing score factors for price, latency, or throughput
+
+That makes it easy to confirm whether the gateway sorted the way you expected.
+
+## Related guides
+
+- [Routing and Fallbacks](../guides/routing-and-fallbacks)
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug)

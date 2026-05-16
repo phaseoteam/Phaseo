@@ -176,7 +176,9 @@ export function getExplicitModelDescription(
 	return normalizeText(model.description) ?? getDetailValue(model, "description");
 }
 
-export function buildGeneratedModelDescription(model: ModelDescriptionSource): string {
+export function buildGeneratedModelDescription(
+	model: ModelDescriptionSource,
+): string {
 	const modelName = normalizeText(model.name) ?? model.model_id;
 	const organisationName =
 		normalizeText(model.organisation?.name) ??
@@ -194,7 +196,9 @@ export function buildGeneratedModelDescription(model: ModelDescriptionSource): s
 	return sentences.join(" ");
 }
 
-export function resolveModelDescription(model: ModelDescriptionSource): string {
+export function resolveModelDescription(
+	model: ModelDescriptionSource,
+): string {
 	return getExplicitModelDescription(model) ?? buildGeneratedModelDescription(model);
 }
 

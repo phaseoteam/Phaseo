@@ -4,6 +4,7 @@
   "name": "Claude 3 Haiku",
   "status": "Retired",
   "previous_model_id": "anthropic/claude-2-1-2023-11-22",
+  "description": "Claude 3 Haiku is Anthropic's fastest and most compact model for near-instant responsiveness. Quick and accurate targeted performance. See the launch announcement and benchmark results [here](https://www.anthropic.com/news/claude-3-haiku) #multimodal.",
   "announced_date": "2024-03-04T00:00:00",
   "release_date": "2024-03-13T00:00:00",
   "deprecation_date": "2026-02-19T00:00:00",

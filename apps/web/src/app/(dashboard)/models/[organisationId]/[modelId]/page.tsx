@@ -13,17 +13,27 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 import { permanentRedirect } from "next/navigation";
 import { Suspense } from "react";
+import { isFreeRouterModelId } from "@/lib/models/freeRouter";
+import FreeRouterOverview from "@/components/(data)/model/free-router/FreeRouterOverview";
+import {
+	resolveQuickstartRequestContext,
+	type QuickstartRequestContext,
+	type QuickstartSearchParams,
+} from "@/components/(data)/model/quickstart/requestContext";
 
 async function ModelOverviewSectionsContent({
 	modelId,
 	includeHidden,
 	modelPromise,
+	quickstartRequestContext,
 }: {
 	modelId: string;
 	includeHidden: boolean;
 	modelPromise: ReturnType<typeof getModelOverviewCached>;
+	quickstartRequestContext?: QuickstartRequestContext;
 }) {
 	const model = await modelPromise;
 
@@ -32,6 +42,7 @@ async function ModelOverviewSectionsContent({
 			modelId={modelId}
 			model={model}
 			includeHidden={includeHidden}
+			quickstartRequestContext={quickstartRequestContext}
 		/>
 	);
 }
@@ -63,7 +74,7 @@ export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
@@ -72,8 +83,12 @@ export async function generateMetadata(props: {
 
 	return buildMetadata({
 		title: `${modelName} - Benchmarks, Pricing & API Access`,
-		description:
-			`Browse benchmarks, providers, pricing, deployment options, and compatibility details for ${modelName} on AI Stats.`,
+		description: buildModelPageMetadataDescription({
+			modelDescription,
+			suffix:
+				"Browse benchmarks, providers, pricing, deployment options, and compatibility details on AI Stats.",
+			fallback: `Browse benchmarks, providers, pricing, deployment options, and compatibility details for ${modelName} on AI Stats.`,
+		}),
 		path,
 		keywords: [
 			modelName,
@@ -89,11 +104,18 @@ export async function generateMetadata(props: {
 
 export default async function Page({
 	params,
+	searchParams,
 }: {
 	params: Promise<ModelRouteParams>;
+	searchParams: Promise<QuickstartSearchParams>;
 }) {
-	const routeParams = await params;
+	const [routeParams, routeSearchParams] = await Promise.all([
+		params,
+		searchParams,
+	]);
 	const includeHidden = false;
+	const quickstartRequestContext =
+		resolveQuickstartRequestContext(routeSearchParams);
 	const { requestedModelId, canonicalModelId } = await resolveModelRouteIds(
 		routeParams,
 		includeHidden,
@@ -102,6 +124,13 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId));
 	}
 	const modelId = canonicalModelId;
+	if (isFreeRouterModelId(modelId)) {
+		return (
+			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
+				<FreeRouterOverview />
+			</ModelDetailShell>
+		);
+	}
 	const modelPromise = getModelOverviewCached(modelId, includeHidden);
 
 	return (
@@ -111,6 +140,7 @@ export default async function Page({
 					modelId={modelId}
 					includeHidden={includeHidden}
 					modelPromise={modelPromise}
+					quickstartRequestContext={quickstartRequestContext}
 				/>
 			</Suspense>
 			<Suspense fallback={<ModelCreatorModelsSkeleton />}>

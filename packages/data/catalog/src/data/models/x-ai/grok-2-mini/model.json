@@ -4,6 +4,7 @@
   "name": "Grok 2 Mini",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "A lightweight model that thinks before responding. Fast, smart, and great for logic-based tasks that do not require deep domain knowledge. The raw thinking traces are accessible.",
   "announced_date": "2024-08-13T00:00:00",
   "release_date": "2024-08-13T00:00:00",
   "deprecation_date": null,

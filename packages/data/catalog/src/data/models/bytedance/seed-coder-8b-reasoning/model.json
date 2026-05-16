@@ -4,6 +4,7 @@
   "name": "Seed Coder 8B Reasoning",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seed Coder 8B Reasoning is a reasoning-oriented coding model from ByteDance for debugging, code generation, and agent workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

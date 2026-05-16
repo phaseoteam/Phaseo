@@ -1,0 +1,125 @@
+---
+title: "Route only to EU or ZDR-capable providers"
+description: "Apply request-level residency and zero-data-retention requirements so a model only routes to compliant provider offers."
+---
+
+Use this recipe when one request needs provider filtering for compliance or data-handling reasons without changing the whole workspace policy.
+
+## Goal
+
+- Require EU execution.
+- Require EU data residency.
+- Require zero-data-retention-capable providers.
+
+## 1. Add the residency requirements to the request
+
+Set the provider requirements directly on the request body.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Supported request-level filters for this flow:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. Use the smallest rule set that matches the policy
+
+Only require what the workload actually needs.
+
+Examples:
+
+- execution locality only:
+  - `required_execution_region: "eu"`
+- data locality only:
+  - `required_data_region: "eu"`
+- ZDR-capable providers only:
+  - `require_zero_data_retention: true`
+
+## 3. Expect the candidate pool to shrink
+
+These filters are applied before provider ranking, so they can remove providers entirely.
+
+That means:
+
+- the request may route to a more expensive regional offer
+- the provider list may become much smaller
+- the request may fail if no provider for that model satisfies the requirements
+
+## 4. Preflight on the model page when possible
+
+Before shipping the request, use the model page provider cards to inspect:
+
+- regional offers such as `OpenAI EU` or `Google Vertex EU`
+- ZDR support
+- provider data-policy notes and sources
+
+That helps you confirm there is at least one eligible provider before you enforce the requirement in production traffic.
+
+## 5. Use workspace privacy settings for defaults
+
+If the policy should apply to all requests from a workspace, set it in **Settings -> Privacy** instead of copying the same request-level filters everywhere.
+
+Use the request fields when the rule is:
+
+- per workflow
+- per customer
+- per request
+
+## Related guides
+
+- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Presets](../guides/presets.mdx)

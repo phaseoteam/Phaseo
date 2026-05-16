@@ -4,6 +4,7 @@
   "name": "MiniMax M2.5",
   "status": "Available",
   "previous_model_id": "minimax/minimax-m2-1-2025-12-23",
+  "description": "MiniMax M2.5 is a SOTA large language model designed for real-world productivity. It supports up to 204.8K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2026-02-12T00:00:00",
   "release_date": "2026-02-12T00:00:00",
   "deprecation_date": null,

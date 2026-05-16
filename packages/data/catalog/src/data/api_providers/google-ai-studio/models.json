@@ -2660,5 +2660,28 @@
                                             ]
                              }
                          ]
+    },
+    {
+        "api_model_id":  "google/veo-2",
+        "provider_api_model_id":  "google-ai-studio:google/veo-2",
+        "provider_model_slug":  "veo-2.0-generate-001",
+        "internal_model_id":  "google/veo-2",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image",
+        "output_modalities":  "video",
+        "context_length":  null,
+        "max_output_tokens":  null,
+        "effective_from":  "2025-04-09T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "video.generate",
+                                 "status":  "coming_soon",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
     }
 ]

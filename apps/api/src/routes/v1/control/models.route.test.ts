@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const guardAuthMock = vi.fn();
 const fetchCatalogueMock = vi.fn();
+const fetchGatewayContextMock = vi.fn();
 
 vi.mock("@pipeline/before/guards", () => ({
 	guardAuth: (...args: any[]) => guardAuthMock(...args),
@@ -11,19 +12,30 @@ vi.mock("./models.catalogue", () => ({
 	fetchCatalogue: (...args: any[]) => fetchCatalogueMock(...args),
 }));
 
+vi.mock("@pipeline/before/context", () => ({
+	fetchGatewayContext: (...args: any[]) => fetchGatewayContextMock(...args),
+}));
+
 import { handleModels } from "./models";
 
 describe("handleModels", () => {
 	beforeEach(() => {
 		guardAuthMock.mockReset();
 		fetchCatalogueMock.mockReset();
+		fetchGatewayContextMock.mockReset();
 		guardAuthMock.mockResolvedValue({
 			ok: true,
 			value: {
 				workspaceId: "ws_test",
+				apiKeyId: "key_test",
 			},
 		});
 		fetchCatalogueMock.mockResolvedValue([]);
+		fetchGatewayContextMock.mockResolvedValue({
+			resolvedModel: "ai-stats/free",
+			providers: [],
+			pricing: {},
+		});
 	});
 
 	it("forwards documented model filters into fetchCatalogue", async () => {

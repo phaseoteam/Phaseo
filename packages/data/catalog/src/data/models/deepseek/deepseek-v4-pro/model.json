@@ -4,6 +4,7 @@
   "name": "DeepSeek V4 Pro",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek V4 Pro is a large-scale Mixture-of-Experts model from DeepSeek with 1.6T total parameters and 49B activated parameters, supporting a 1M-token context window.",
   "announced_date": "2026-04-24T00:00:00",
   "release_date": "2026-04-24T00:00:00",
   "deprecation_date": null,

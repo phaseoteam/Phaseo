@@ -2749,6 +2749,84 @@ components:
         include_alpha:
           type: boolean
           description: Include alpha providers in routing (off by default).
+        allow_fallbacks:
+          type: boolean
+          nullable: true
+          description: Allow fallback to another eligible provider after failure.
+        require_parameters:
+          type: boolean
+          nullable: true
+          description: Require provider support for requested parameters before routing.
+        required_execution_region:
+          type: string
+          nullable: true
+          description: Restrict routing to providers with the requested execution region.
+        required_data_region:
+          type: string
+          nullable: true
+          description: Restrict routing to providers with the requested data region.
+        require_zero_data_retention:
+          type: boolean
+          nullable: true
+          description: Restrict routing to providers that support zero data retention.
+        data_collection:
+          type: string
+          nullable: true
+          enum:
+            - allow
+            - deny
+        zdr:
+          type: boolean
+          nullable: true
+        enforce_distillable_text:
+          type: boolean
+          nullable: true
+        quantizations:
+          type: array
+          nullable: true
+          items:
+            type: string
+        sort:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+          description: Rank providers for this request, for example by price, latency, or throughput.
+        max_price:
+          type: object
+          properties:
+            prompt:
+              oneOf:
+                - type: number
+                - type: string
+            completion:
+              oneOf:
+                - type: number
+                - type: string
+            image:
+              oneOf:
+                - type: number
+                - type: string
+            audio:
+              oneOf:
+                - type: number
+                - type: string
+            request:
+              oneOf:
+                - type: number
+                - type: string
+        preferred_min_throughput:
+          oneOf:
+            - type: number
+            - type: object
+              additionalProperties:
+                type: number
+        preferred_max_latency:
+          oneOf:
+            - type: number
+            - type: object
+              additionalProperties:
+                type: number
     DebugOptions:
       type: object
       description: Gateway debug controls. These flags are never forwarded upstream.
@@ -3235,9 +3313,8 @@ components:
           type: array
           description: >
             Tool definitions for model function calls and gateway server tools.
-            The only built-in gateway server tool is `gateway:datetime`.
-            Web-search tool types (for example `web_search_preview`) are
-            temporarily disabled by the gateway.
+            Built-in gateway server tools are `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
@@ -3565,14 +3642,76 @@ components:
           type: string
           description: Legacy shortcut for default timezone (IANA).
       additionalProperties: false
+    GatewayWebSearchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway executes a web search and
+        injects normalized search results back into the model tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:web_search
+        parameters:
+          type: object
+          properties:
+            max_results:
+              type: integer
+              minimum: 1
+              maximum: 10
+            include_text:
+              type: boolean
+            include_highlights:
+              type: boolean
+          additionalProperties: false
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 10
+        include_text:
+          type: boolean
+        include_highlights:
+          type: boolean
+      additionalProperties: false
+    GatewayWebFetchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway fetches one HTTP(S) page,
+        reduces it to bounded text, and injects the result back into the model
+        tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:web_fetch
+        parameters:
+          type: object
+          properties:
+            max_chars:
+              type: integer
+              minimum: 1
+              maximum: 50000
+          additionalProperties: false
+        max_chars:
+          type: integer
+          minimum: 1
+          maximum: 50000
+      additionalProperties: false
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
         - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
+        - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
+        - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
     TextToolChoice:
       description: >
-        Tool selection strategy. `gateway:datetime` is accepted and rewritten by
-        the gateway into an upstream function/tool target.
+        Tool selection strategy. `gateway:datetime`, `gateway:web_search`, and
+        `gateway:web_fetch` are accepted and rewritten by the gateway into
+        upstream function/tool targets.
       oneOf:
         - type: string
           enum:
@@ -3580,11 +3719,19 @@ components:
             - none
             - required
             - gateway:datetime
+            - gateway:web_search
+            - gateway:web_fetch
         - type: object
     ServerToolUsage:
       type: object
       properties:
         datetime_requests:
+          type: integer
+          minimum: 0
+        web_search_requests:
+          type: integer
+          minimum: 0
+        web_fetch_requests:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -3741,17 +3888,19 @@ components:
           type: array
           description: >
             Anthropic-compatible tools plus gateway server tools. The only
-            built-in gateway server tool is `gateway:datetime`. Web-search tool
-            types are temporarily disabled by the gateway.
+            built-in gateway server tools are `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             oneOf:
               - $ref: '#/components/schemas/AnthropicTool'
               - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
+              - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
+              - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
         tool_choice:
           description: >
-            Anthropic tool choice object/string. `gateway:datetime` is also
-            accepted and rewritten by the gateway. Web-search tool choices are
-            temporarily disabled.
+            Anthropic tool choice object/string. `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch` are also accepted and
+            rewritten by the gateway.
           oneOf:
             - type: object
             - type: string
@@ -3943,9 +4092,8 @@ components:
           type: array
           description: >
             Tool definitions for model function calls and gateway server tools.
-            The only built-in gateway server tool is `gateway:datetime`.
-            Web-search tool types (for example `web_search_preview`) are
-            temporarily disabled by the gateway.
+            Built-in gateway server tools are `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         top_p:

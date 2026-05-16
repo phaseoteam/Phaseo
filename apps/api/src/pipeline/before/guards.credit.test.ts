@@ -12,6 +12,39 @@ function makeContext(args: {
 	model?: string;
 	creditOk?: boolean;
 	creditReason?: string | null;
+	keyLimit?: {
+		ok?: boolean;
+		reason?: string | null;
+		resetAt?: string | null;
+		now?: string | null;
+		limitWindow?: "daily" | "weekly" | "monthly" | null;
+		limitMetric?: "requests" | "cost" | "soft_blocked" | null;
+		currentValue?: number | null;
+		limitValue?: number | null;
+		buckets?: {
+			daily?: {
+				windowStart: string | null;
+				requestsUsed: number;
+				requestsLimit: number;
+				costUsedNanos: number;
+				costLimitNanos: number;
+			};
+			weekly?: {
+				windowStart: string | null;
+				requestsUsed: number;
+				requestsLimit: number;
+				costUsedNanos: number;
+				costLimitNanos: number;
+			};
+			monthly?: {
+				windowStart: string | null;
+				requestsUsed: number;
+				requestsLimit: number;
+				costUsedNanos: number;
+				costLimitNanos: number;
+			};
+		} | null;
+	};
 	providers?: Array<{
 		providerId: string;
 		supportsEndpoint?: boolean;
@@ -77,7 +110,17 @@ function makeContext(args: {
 		workspaceId: "team_123",
 		resolvedModel: args.model ?? "openai/gpt-4.1-mini",
 		key: { ok: true, reason: null, resetAt: null },
-		keyLimit: { ok: true, reason: null, resetAt: null },
+		keyLimit: {
+			ok: args.keyLimit?.ok ?? true,
+			reason: args.keyLimit?.reason ?? null,
+			resetAt: args.keyLimit?.resetAt ?? null,
+			now: args.keyLimit?.now ?? null,
+			limitWindow: args.keyLimit?.limitWindow ?? null,
+			limitMetric: args.keyLimit?.limitMetric ?? null,
+			currentValue: args.keyLimit?.currentValue ?? null,
+			limitValue: args.keyLimit?.limitValue ?? null,
+			buckets: args.keyLimit?.buckets ?? null,
+		},
 		credit: {
 			ok: args.creditOk ?? false,
 			reason: args.creditReason ?? "insufficient_funds",
@@ -287,6 +330,71 @@ describe("guardContext credit gating for free models", () => {
 		});
 
 		expect(result.ok).toBe(true);
+	});
+
+	it("returns structured key limit diagnostics when an API key limit is reached", async () => {
+		fetchGatewayContextMock.mockResolvedValue(
+			makeContext({
+				model: "openai/gpt-4.1-mini",
+				creditOk: true,
+				keyLimit: {
+					ok: false,
+					reason: "daily_request_limit_reached",
+					resetAt: "2026-05-09T23:59:59.000Z",
+					now: "2026-05-09T12:00:00.000Z",
+					limitWindow: "daily",
+					limitMetric: "requests",
+					currentValue: 100,
+					limitValue: 100,
+					buckets: {
+						daily: {
+							windowStart: "2026-05-09T00:00:00.000Z",
+							requestsUsed: 100,
+							requestsLimit: 100,
+							costUsedNanos: 0,
+							costLimitNanos: 0,
+						},
+					},
+				},
+			}) as any,
+		);
+
+		const result = await guardContext({
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "openai/gpt-4.1-mini",
+			requestId: "req_key_limit_1",
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(429);
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({
+			error: "key_limit_exceeded",
+			reason: "daily_request_limit_reached",
+			reset_at: "2026-05-09T23:59:59.000Z",
+			now: "2026-05-09T12:00:00.000Z",
+			limit_window: "daily",
+			limit_metric: "requests",
+			current_value: 100,
+			limit_value: 100,
+			buckets: {
+				daily: {
+					windowStart: "2026-05-09T00:00:00.000Z",
+					requestsUsed: 100,
+					requestsLimit: 100,
+					costUsedNanos: 0,
+					costLimitNanos: 0,
+				},
+			},
+			description:
+				"This API key has reached its daily request limit (100/100).",
+			request_id: "req_key_limit_1",
+			workspace_id: "team_123",
+		});
 	});
 });
 

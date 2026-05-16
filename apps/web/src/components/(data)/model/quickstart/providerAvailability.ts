@@ -2,6 +2,18 @@ import type {
 	GatewayProviderModel,
 	ModelGatewayMetadata,
 } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import type {
+	ResidencyMode,
+	ZeroDataRetentionMode,
+} from "@/lib/providers/providerResidency";
+import type { RegionalPricingMode } from "@/lib/providers/providerPricingPolicy";
+import {
+	formatProviderOfferVariantLabel,
+	inferProviderFamilyIdFromSiblings,
+	inferProviderFamilyName,
+	isGlobalProviderOffer,
+	resolveProviderLogoId,
+} from "@/lib/providers/providerOffers";
 
 export type ProviderStateKey =
 	| "active"
@@ -35,15 +47,56 @@ export type ProviderState = {
 
 export type GroupedProvider = {
 	providerId: string;
+	providerIds: Set<string>;
+	logoProviderId: string;
 	providerName: string;
+	offerLabels: Set<string>;
 	endpoints: Set<string>;
 	modelSlugs: Set<string>;
 	quantizationScheme: string | null;
+	executionRegions: Set<string>;
+	dataRegions: Set<string>;
+	zeroDataRetention: ZeroDataRetentionMode | "mixed" | null;
+	residencyMode: ResidencyMode | "mixed" | null;
+	residencyNotes: Set<string>;
+	residencySourceUrls: Set<string>;
+	residency: Array<{
+		residencyMode?: ResidencyMode | null;
+		executionRegions?: string[] | null;
+		dataRegions?: string[] | null;
+		zeroDataRetention?: ZeroDataRetentionMode | null;
+		notes?: string | null;
+		sourceUrl?: string | null;
+	}>;
+	promptTraining: Array<{
+		policy?: string | null;
+		notes?: string | null;
+		sourceUrl?: string | null;
+		userIdentifierPolicy?: string | null;
+		userIdentifierNotes?: string | null;
+		privacyPolicyUrl?: string | null;
+		termsOfServiceUrl?: string | null;
+		isOverride?: boolean;
+	}>;
+	regionalPricingMode: RegionalPricingMode | null;
+	regionalPricingUpliftPercent: number | null;
+	pricingSourceUrl: string | null;
+	regionalPricingNotes: string | null;
 	activeEndpointCount: number;
 	comingSoonEndpointCount: number;
 	inactiveEndpointCount: number;
 	state: ProviderState;
 };
+
+function mergeSingleResidencyValue<T extends string>(
+	current: T | "mixed" | null,
+	next: T | null | undefined,
+): T | "mixed" | null {
+	if (!next) return current;
+	if (!current) return next;
+	if (current === next) return current;
+	return "mixed";
+}
 
 function isFutureEffectiveWindow(
 	effectiveFrom?: string | null,
@@ -449,38 +502,186 @@ function chooseState(states: ProviderState[]): ProviderState {
 export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[] {
 	const grouped = new Map<string, GroupedProvider>();
 	const now = new Date();
-
+	const knownProviderIds = metadata.providers.map((item) => item.api_provider_id);
 	for (const item of metadata.providers) {
 		const providerId = item.api_provider_id;
 		if (!providerId) continue;
+		const providerFamilyId = String(
+			item.provider?.provider_family_id ?? "",
+		).trim();
+		const familyId =
+			(providerFamilyId && providerFamilyId !== providerId
+				? providerFamilyId
+				: inferProviderFamilyIdFromSiblings({
+						providerId,
+						knownProviderIds,
+				  })) || providerFamilyId || providerId;
 
 		const state = resolveProviderState(item, now);
-		const current = grouped.get(providerId);
+		const residencyMetadata = {
+			residencyMode: item.provider?.residency_mode ?? null,
+			executionRegions: item.provider?.default_execution_regions ?? null,
+			dataRegions: item.provider?.default_data_regions ?? null,
+			zeroDataRetention: item.provider?.zero_data_retention ?? null,
+			residencyNotes: item.provider?.residency_notes ?? null,
+			residencySourceUrl: item.provider?.residency_source_url ?? null,
+			regionalPricingMode: item.provider?.regional_pricing_mode ?? null,
+			regionalPricingUpliftPercent:
+				item.provider?.regional_pricing_uplift_percent ?? null,
+			pricingSourceUrl: item.provider?.pricing_source_url ?? null,
+			regionalPricingNotes: item.provider?.regional_pricing_notes ?? null,
+		};
+		const promptTrainingMetadata = {
+			policy: item.provider?.prompt_training_policy ?? null,
+			notes: item.provider?.prompt_training_notes ?? null,
+			sourceUrl: item.provider?.prompt_training_source_url ?? null,
+			userIdentifierPolicy: item.provider?.user_identifier_policy ?? null,
+			userIdentifierNotes: item.provider?.user_identifier_notes ?? null,
+			privacyPolicyUrl: item.provider?.privacy_policy_url ?? null,
+			termsOfServiceUrl: item.provider?.terms_of_service_url ?? null,
+			isOverride: false,
+		};
+		const current = grouped.get(familyId);
+		const offerLabel = formatProviderOfferVariantLabel({
+			offerLabel: item.provider?.offer_label ?? null,
+			offerScope: item.provider?.offer_scope ?? null,
+			providerId,
+		});
+		const isRepresentativeOffer =
+			providerId === familyId ||
+			isGlobalProviderOffer({
+				offerLabel: item.provider?.offer_label ?? null,
+				offerScope: item.provider?.offer_scope ?? null,
+			});
 
 		if (current) {
 			if (item.endpoint) current.endpoints.add(item.endpoint);
+			current.providerIds.add(providerId);
+			current.offerLabels.add(offerLabel);
 			if (item.provider_model_slug) current.modelSlugs.add(item.provider_model_slug);
 			if (!current.quantizationScheme && item.quantization_scheme) {
 				current.quantizationScheme = item.quantization_scheme;
 			}
+			if (isRepresentativeOffer && current.providerId !== providerId) {
+				current.providerId = providerId;
+				current.providerName =
+					item.provider?.api_provider_name ??
+					inferProviderFamilyName({
+						providerName: item.provider?.api_provider_name ?? providerId,
+						offerLabel: item.provider?.offer_label ?? null,
+						offerScope: item.provider?.offer_scope ?? null,
+					});
+			}
 			if (state.availability === "active") current.activeEndpointCount += 1;
 			else if (state.availability === "coming_soon") current.comingSoonEndpointCount += 1;
 			else current.inactiveEndpointCount += 1;
+			for (const region of residencyMetadata.executionRegions ?? []) {
+				current.executionRegions.add(region);
+			}
+			for (const region of residencyMetadata.dataRegions ?? []) {
+				current.dataRegions.add(region);
+			}
+			if (residencyMetadata.residencyNotes) {
+				current.residencyNotes.add(residencyMetadata.residencyNotes);
+			}
+			if (residencyMetadata.residencySourceUrl) {
+				current.residencySourceUrls.add(residencyMetadata.residencySourceUrl);
+			}
+			current.zeroDataRetention = mergeSingleResidencyValue(
+				current.zeroDataRetention,
+				residencyMetadata.zeroDataRetention,
+			);
+			current.residencyMode = mergeSingleResidencyValue(
+				current.residencyMode,
+				residencyMetadata.residencyMode,
+			);
+			current.residency.push({
+				residencyMode: residencyMetadata.residencyMode,
+				executionRegions: residencyMetadata.executionRegions,
+				dataRegions: residencyMetadata.dataRegions,
+				zeroDataRetention: residencyMetadata.zeroDataRetention,
+				notes: residencyMetadata.residencyNotes,
+				sourceUrl: residencyMetadata.residencySourceUrl,
+			});
+			current.promptTraining.push(promptTrainingMetadata);
+			if (!current.regionalPricingMode && residencyMetadata.regionalPricingMode) {
+				current.regionalPricingMode = residencyMetadata.regionalPricingMode;
+			}
+			if (
+				current.regionalPricingUpliftPercent == null &&
+				typeof residencyMetadata.regionalPricingUpliftPercent === "number"
+			) {
+				current.regionalPricingUpliftPercent =
+					residencyMetadata.regionalPricingUpliftPercent;
+			}
+			if (!current.pricingSourceUrl && residencyMetadata.pricingSourceUrl) {
+				current.pricingSourceUrl = residencyMetadata.pricingSourceUrl;
+			}
+			if (!current.regionalPricingNotes && residencyMetadata.regionalPricingNotes) {
+				current.regionalPricingNotes = residencyMetadata.regionalPricingNotes;
+			}
 			current.state = chooseState([current.state, state]);
 			continue;
 		}
 
 		const endpoints = new Set<string>();
 		const modelSlugs = new Set<string>();
+		const executionRegions = new Set<string>(residencyMetadata.executionRegions ?? []);
+		const dataRegions = new Set<string>(residencyMetadata.dataRegions ?? []);
+		const residencyNotes = new Set<string>();
+		const residencySourceUrls = new Set<string>();
 		if (item.endpoint) endpoints.add(item.endpoint);
 		if (item.provider_model_slug) modelSlugs.add(item.provider_model_slug);
+		if (residencyMetadata.residencyNotes) {
+			residencyNotes.add(residencyMetadata.residencyNotes);
+		}
+		if (residencyMetadata.residencySourceUrl) {
+			residencySourceUrls.add(residencyMetadata.residencySourceUrl);
+		}
 
-		grouped.set(providerId, {
+		grouped.set(familyId, {
 			providerId,
-			providerName: item.provider?.api_provider_name ?? item.api_provider_id,
+			providerIds: new Set([providerId]),
+			logoProviderId: resolveProviderLogoId({
+				providerId,
+				providerFamilyId: familyId,
+			}),
+			providerName:
+				(isRepresentativeOffer
+					? item.provider?.api_provider_name
+					: null) ??
+				inferProviderFamilyName({
+					providerName:
+						item.provider?.api_provider_name ?? item.api_provider_id,
+					offerLabel: item.provider?.offer_label ?? null,
+					offerScope: item.provider?.offer_scope ?? null,
+				}),
+			offerLabels: new Set([offerLabel]),
 			endpoints,
 			modelSlugs,
 			quantizationScheme: item.quantization_scheme ?? null,
+			executionRegions,
+			dataRegions,
+			zeroDataRetention: residencyMetadata.zeroDataRetention,
+			residencyMode: residencyMetadata.residencyMode,
+			residencyNotes,
+			residencySourceUrls,
+			residency: [
+				{
+					residencyMode: residencyMetadata.residencyMode,
+					executionRegions: residencyMetadata.executionRegions,
+					dataRegions: residencyMetadata.dataRegions,
+					zeroDataRetention: residencyMetadata.zeroDataRetention,
+					notes: residencyMetadata.residencyNotes,
+					sourceUrl: residencyMetadata.residencySourceUrl,
+				},
+			],
+			promptTraining: [promptTrainingMetadata],
+			regionalPricingMode: residencyMetadata.regionalPricingMode,
+			regionalPricingUpliftPercent:
+				residencyMetadata.regionalPricingUpliftPercent,
+			pricingSourceUrl: residencyMetadata.pricingSourceUrl,
+			regionalPricingNotes: residencyMetadata.regionalPricingNotes,
 			activeEndpointCount: state.availability === "active" ? 1 : 0,
 			comingSoonEndpointCount: state.availability === "coming_soon" ? 1 : 0,
 			inactiveEndpointCount: state.availability === "inactive" ? 1 : 0,

@@ -4,7 +4,8 @@
 
 // Transformation functions between IR and OpenAI Responses API format
 
-import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRChoice, IRUsage } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRChoice, IRUsage, IRTool } from "@core/ir";
+import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyResponsesRequestQuirks, applyResponsesResponseQuirks } from "./responses-quirks";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
@@ -62,15 +63,9 @@ export function irToOpenAIResponses(
 		if (ir.temperature !== undefined) request.temperature = ir.temperature;
 		if (ir.topP !== undefined) request.top_p = ir.topP;
 		if (ir.seed !== undefined) request.seed = ir.seed;
+		if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
 		if (ir.tools && ir.tools.length > 0) {
-			request.tools = ir.tools.map((t) => ({
-				type: "function",
-				function: {
-					name: t.name,
-					description: t.description,
-					parameters: t.parameters,
-				},
-			}));
+			request.tools = ir.tools.map((tool) => toOpenAIResponsesTool(tool, false));
 		}
 
 		// Apply reasoning params - Xiaomi not configured, so this won't add anything
@@ -163,21 +158,9 @@ export function irToOpenAIResponses(
 	// Add tool configuration
 	if (ir.tools && ir.tools.length > 0) {
 		if (providerId === "openai") {
-			request.tools = ir.tools.map((t) => ({
-				type: "function",
-				name: t.name,
-				description: t.description,
-				parameters: t.parameters,
-			}));
+			request.tools = ir.tools.map((tool) => toOpenAIResponsesTool(tool, true));
 		} else {
-			request.tools = ir.tools.map((t) => ({
-				type: "function",
-				function: {
-					name: t.name,
-					description: t.description,
-					parameters: t.parameters,
-				},
-			}));
+			request.tools = ir.tools.map((tool) => toOpenAIResponsesTool(tool, false));
 		}
 	}
 
@@ -185,15 +168,19 @@ export function irToOpenAIResponses(
 		if (typeof ir.toolChoice === "string") {
 			request.tool_choice = ir.toolChoice;
 		} else {
-			if (providerId === "openai") {
+			const selectedToolName = ir.toolChoice.name;
+			const selectedTool = ir.tools?.find((tool) => tool.name === selectedToolName);
+			if (isIRNativeToolDefinition(selectedTool)) {
+				request.tool_choice = selectedToolName;
+			} else if (providerId === "openai") {
 				request.tool_choice = {
 					type: "function",
-					name: ir.toolChoice.name,
+					name: selectedToolName,
 				};
 			} else {
 				request.tool_choice = {
 					type: "function",
-					function: { name: ir.toolChoice.name },
+					function: { name: selectedToolName },
 				};
 			}
 		}
@@ -273,6 +260,7 @@ export function irToOpenAIResponses(
 	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
+	if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
 	const openAIContextManagement = (ir.vendor as any)?.openai?.context_management;
 	if (providerId === "openai" && openAIContextManagement && typeof openAIContextManagement === "object") {
 		request.context_management = {
@@ -312,6 +300,33 @@ export function irToOpenAIResponses(
 	});
 
 	return request;
+}
+
+function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean): any {
+	if (isIRNativeToolDefinition(tool)) {
+		return {
+			...(tool.raw ?? {}),
+			type: tool.type,
+		};
+	}
+
+	if (useOpenAIShape) {
+		return {
+			type: "function",
+			name: tool.name,
+			description: tool.description,
+			parameters: tool.parameters,
+		};
+	}
+
+	return {
+		type: "function",
+		function: {
+			name: tool.name,
+			description: tool.description,
+			parameters: tool.parameters,
+		},
+	};
 }
 
 /**
@@ -743,6 +758,32 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 	const cachedInputTokens = inputDetails?.cached_tokens;
 	const reasoningTokens = outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
+	const serverToolUseRaw =
+		usage.server_tool_use && typeof usage.server_tool_use === "object"
+			? usage.server_tool_use
+			: usage.serverToolUse && typeof usage.serverToolUse === "object"
+				? usage.serverToolUse
+				: null;
+	const datetimeRequests =
+		typeof serverToolUseRaw?.datetime_requests === "number"
+			? serverToolUseRaw.datetime_requests
+			: undefined;
+	const webSearchRequests =
+		typeof serverToolUseRaw?.web_search_requests === "number"
+			? serverToolUseRaw.web_search_requests
+			: undefined;
+	const webFetchRequests =
+		typeof serverToolUseRaw?.web_fetch_requests === "number"
+			? serverToolUseRaw.web_fetch_requests
+			: undefined;
+	const serverToolUse =
+		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null
+			? {
+				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
+				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+			}
+			: undefined;
 
 	return {
 		inputTokens,
@@ -759,6 +800,7 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			outputAudioTokens: outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens: outputDetails?.cached_tokens,
+			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};
 }

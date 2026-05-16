@@ -4,6 +4,7 @@
   "name": "Morph WarpGrep V2.1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Morph WarpGrep V2.1 is a coding model from Morph for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

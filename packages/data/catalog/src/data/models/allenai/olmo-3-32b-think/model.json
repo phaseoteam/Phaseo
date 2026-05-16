@@ -4,6 +4,7 @@
   "name": "Olmo 3 32B Think",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Olmo 3 32B Think is a large-scale, 32-billion-parameter model purpose-built for deep reasoning, complex logic chains and advanced instruction-following scenarios.",
   "announced_date": "2025-11-20T00:00:00",
   "release_date": "2025-11-20T00:00:00",
   "deprecation_date": null,

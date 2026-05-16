@@ -4,6 +4,7 @@
   "name": "Grok 0",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Grok 0 is a text-to-speech model from xAI. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

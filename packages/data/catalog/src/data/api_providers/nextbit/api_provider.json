@@ -3,7 +3,11 @@
   "api_provider_name": "NextBit",
   "description": null,
   "link": "https://www.nextbit256.com/docs",
-  "country_code": "ES",
+  "country_code": "IT",
   "status": "NotReady",
-  "colour": "#0EA5E9"
+  "colour": "#0EA5E9",
+  "privacy_policy_url": "https://www.nextbit.it/legal/privacy-eng/",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Nextbit's privacy notice says customer-portal data is processed only to the extent strictly necessary to provide the service, except where another legal basis applies.",
+  "prompt_training_source_url": "https://www.nextbit.it/legal/privacy-eng/"
 }

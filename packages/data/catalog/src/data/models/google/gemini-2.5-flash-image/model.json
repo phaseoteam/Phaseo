@@ -4,6 +4,7 @@
   "name": "Gemini 2.5 Flash Image (Nano Banana)",
   "status": "Available",
   "previous_model_id": "google/gemini-2-5-flash-image-preview-2025-08-25",
+  "description": "Gemini 2.5 Flash Image (Nano Banana) is now generally available. It is a state of the art image generation model with contextual understanding. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2025-10-02T00:00:00",
   "release_date": "2025-10-02T00:00:00",
   "deprecation_date": null,

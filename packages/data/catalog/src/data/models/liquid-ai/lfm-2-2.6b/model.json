@@ -4,6 +4,7 @@
   "name": "LFM 2 2.6B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "LFM 2 2.6B is a language model from Liquid AI for chat, writing, analysis, and general-purpose automation.",
   "announced_date": "2025-09-23T00:00:00",
   "release_date": "2025-09-23T00:00:00",
   "deprecation_date": null,

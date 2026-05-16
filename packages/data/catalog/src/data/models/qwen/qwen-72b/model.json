@@ -4,6 +4,7 @@
   "name": "Qwen 72B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 72B is a language model from Qwen for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

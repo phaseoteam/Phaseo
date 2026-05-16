@@ -95,6 +95,27 @@
     "context_length": 256000,
     "max_output_tokens": 256000,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": "2026-05-11T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "xiaomi/mimo-v2.5",
+    "provider_api_model_id": "canopy-wave:xiaomi/mimo-v2.5",
+    "provider_model_slug": "xiaomimimo/mimo-v2.5",
+    "internal_model_id": "xiaomi/mimo-v2.5",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image,video,audio",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 1000000,
+    "effective_from": "2026-05-11T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -116,6 +137,27 @@
     "context_length": 200000,
     "max_output_tokens": 200000,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": "2026-05-11T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "canopy-wave:z-ai/glm-5.1",
+    "provider_model_slug": "zai/glm-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 200000,
+    "max_output_tokens": 200000,
+    "effective_from": "2026-05-11T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

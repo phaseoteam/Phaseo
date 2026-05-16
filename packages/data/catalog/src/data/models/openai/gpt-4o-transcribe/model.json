@@ -4,6 +4,7 @@
   "name": "GPT 4o Transcribe",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT 4o Transcribe is OpenAI's high-quality speech-to-text model built on GPT-4o audio capabilities. It's priced per token (input and output), making it suitable for workflows that benefit from token-level billing transparency.",
   "announced_date": "2025-03-20T00:00:00",
   "release_date": "2025-03-20T00:00:00",
   "deprecation_date": null,

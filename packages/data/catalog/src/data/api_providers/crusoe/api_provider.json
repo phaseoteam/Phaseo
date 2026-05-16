@@ -5,5 +5,10 @@
   "link": "https://docs.crusoecloud.com/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#0EA5E9"
+  "colour": "#0EA5E9",
+  "privacy_policy_url": "https://legal.crusoe.ai/",
+  "terms_of_service_url": "https://legal.crusoe.ai/",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Crusoe's legal terms say inputs and outputs are not used to train models or improve services unless the customer explicitly opts in.",
+  "prompt_training_source_url": "https://legal.crusoe.ai/open-router"
 }

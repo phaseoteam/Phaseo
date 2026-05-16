@@ -4,6 +4,7 @@
   "name": "Gemini 3 Pro Image Preview (Nano Banana Pro)",
   "status": "Available",
   "previous_model_id": "google/gemini-2-5-flash-image-preview-2025-08-25",
+  "description": "Gemini 3 Pro Image Preview (Nano Banana Pro) is Google's most advanced image-generation and editing model, built on Gemini 3 Pro. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-11-20T00:00:00",
   "release_date": "2025-11-20T00:00:00",
   "deprecation_date": null,

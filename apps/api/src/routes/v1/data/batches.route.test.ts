@@ -69,6 +69,43 @@ vi.mock("@core/async-notifications", () => ({
 		state.webhookEvents.push(payload);
 	}),
 	parseAsyncWebhookConfig: vi.fn((_kind: string, webhook: Record<string, unknown>) => webhook),
+	toAsyncLifecycleStatus: vi.fn((status: string) => {
+		switch (String(status ?? "").toLowerCase()) {
+			case "completed":
+				return "completed";
+			case "failed":
+			case "expired":
+				return "failed";
+			case "cancelled":
+			case "canceled":
+				return "cancelled";
+			case "processing":
+			case "in_progress":
+			case "running":
+				return "running";
+			default:
+				return "pending";
+		}
+	}),
+	buildPublicAsyncWebhook: vi.fn((_kind: string, meta: Record<string, unknown>) => ({
+		url: (meta.webhook as any)?.url ?? null,
+		events: Array.isArray((meta.webhook as any)?.events) ? (meta.webhook as any).events : [],
+		has_secret: typeof (meta.webhook as any)?.secret === "string" && (meta.webhook as any).secret.length > 0,
+		delivery: {
+			total_attempts: 0,
+			delivered_events: 0,
+			delivered_event_types: [],
+			pending_retries: 0,
+			next_retry_at: null,
+			last_attempt_at: null,
+			last_attempt_status: null,
+			last_response_status: null,
+			last_delivered_at: null,
+			last_failure_at: null,
+			last_error_message: null,
+		},
+		attempts: [],
+	})),
 }));
 
 vi.mock("@core/batch-jobs", () => ({
@@ -162,24 +199,31 @@ describe("batchRoutes", () => {
 				session_id: "session_123",
 				webhook: {
 					url: "https://example.com/hooks/batch",
+					secret: "whsec_batch_secret",
 					events: ["job.completed"],
 				},
 			}),
 		});
 
 		expect(createResponse.status).toBe(200);
-		expect(await createResponse.json()).toMatchObject({
+		const createPayload = await createResponse.json();
+		expect(createPayload).toMatchObject({
 			id: "batch_123",
 			status: "queued",
+			lifecycle_status: "pending",
+			polling_url: "https://example.com/batch_123",
+			cancel_url: "https://example.com/batch_123/cancel",
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_123",
 			webhook: {
 				url: "https://example.com/hooks/batch",
 				events: ["job.completed"],
+				has_secret: true,
 			},
 			pricing_lines: [],
 		});
+		expect(createPayload.webhook).not.toHaveProperty("secret");
 
 		expect(state.fetchCalls[0]?.url).toBe("https://api.openai.example/v1/batches");
 		expect(state.fetchCalls[0]?.bodyJson).toEqual({
@@ -195,6 +239,7 @@ describe("batchRoutes", () => {
 			outputFileId: "file_output_123",
 			webhook: {
 				url: "https://example.com/hooks/batch",
+				secret: "whsec_batch_secret",
 				events: ["job.completed"],
 			},
 		});
@@ -223,6 +268,9 @@ describe("batchRoutes", () => {
 		expect(await retrieveResponse.json()).toMatchObject({
 			id: "batch_123",
 			status: "completed",
+			lifecycle_status: "completed",
+			polling_url: "https://example.com/batch_123",
+			cancel_url: null,
 			error_file_id: "file_error_123",
 			request_id: expect.any(String),
 			provider: "openai",
@@ -312,6 +360,9 @@ describe("batchRoutes", () => {
 		expect(await createResponse.json()).toMatchObject({
 			id: "batch_fail_123",
 			status: "queued",
+			lifecycle_status: "pending",
+			polling_url: "https://example.com/batch_fail_123",
+			cancel_url: "https://example.com/batch_fail_123/cancel",
 		});
 
 		const retrieveResponse = await batchRoutes.request("https://example.com/batch_fail_123", {
@@ -322,6 +373,9 @@ describe("batchRoutes", () => {
 		expect(await retrieveResponse.json()).toMatchObject({
 			id: "batch_fail_123",
 			status: "failed",
+			lifecycle_status: "failed",
+			polling_url: "https://example.com/batch_fail_123",
+			cancel_url: null,
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_fail_123",
@@ -420,6 +474,9 @@ describe("batchRoutes", () => {
 		expect(await createResponse.json()).toMatchObject({
 			id: "batch_cancel_123",
 			status: "queued",
+			lifecycle_status: "pending",
+			polling_url: "https://example.com/batch_cancel_123",
+			cancel_url: "https://example.com/batch_cancel_123/cancel",
 		});
 
 		const cancelResponse = await batchRoutes.request("https://example.com/batch_cancel_123/cancel", {
@@ -430,6 +487,9 @@ describe("batchRoutes", () => {
 		expect(await cancelResponse.json()).toMatchObject({
 			id: "batch_cancel_123",
 			status: "cancelled",
+			lifecycle_status: "cancelled",
+			polling_url: "https://example.com/batch_cancel_123",
+			cancel_url: null,
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_cancel_123",

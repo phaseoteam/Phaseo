@@ -45,6 +45,28 @@ export interface MonitorModelData {
     weeklyLatencyModel?: number | null;
 }
 
+export type MonitorModelTableRow = Pick<
+    MonitorModelData,
+    | "id"
+    | "model"
+    | "modelId"
+    | "organisationId"
+    | "organisationName"
+    | "endpoint"
+    | "gatewayStatus"
+    | "inputModalities"
+    | "outputModalities"
+    | "context"
+    | "maxOutput"
+    | "quantization"
+    | "tier"
+    | "added"
+    | "retired"
+> & {
+    provider: Pick<MonitorModelData["provider"], "name" | "id" | "inputPrice" | "outputPrice" | "features">;
+    popularityTokensWeek?: number;
+};
+
 export interface MonitorModelFilters {
     search?: string;
     inputModalities?: string[];

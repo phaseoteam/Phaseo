@@ -36,6 +36,18 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	output_reasoning_tokens: { long: "Output reasoning tokens", short: "reasoning out" },
 	output_video: { long: "Output videos", short: "out video" },
 	bfl_credits: { long: "BFL credits", short: "bfl credits" },
+	datetime_requests: { long: "Datetime tool requests", short: "datetime" },
+	web_search_requests: { long: "Web search requests", short: "web search" },
+	web_fetch_requests: { long: "Web fetch requests", short: "web fetch" },
+	requested_native_web_search_tools: {
+		long: "Requested native web search tools",
+		short: "search tools",
+	},
+	output_web_search_result_count: {
+		long: "Web search results",
+		short: "search results",
+	},
+	output_citation_count: { long: "Citations", short: "citations" },
 };
 
 export type UsageMeter = {
@@ -127,6 +139,7 @@ export function extractUsageMeters(usage: any): UsageMeter[] {
 
 	const inputDetails = usage?.input_tokens_details ?? usage?.input_details ?? {};
 	const outputDetails = usage?.output_tokens_details ?? usage?.completion_tokens_details ?? {};
+	const serverToolUse = usage?.server_tool_use ?? usage?.serverToolUse ?? {};
 	const detailMeters: Array<[string, unknown]> = [
 		["cache_read_tokens", inputDetails?.cached_tokens],
 		["cache_write_tokens", outputDetails?.cached_tokens],
@@ -137,6 +150,9 @@ export function extractUsageMeters(usage: any): UsageMeter[] {
 		["output_images", outputDetails?.output_images],
 		["output_audio", outputDetails?.output_audio],
 		["output_videos", outputDetails?.output_videos],
+		["datetime_requests", serverToolUse?.datetime_requests],
+		["web_search_requests", serverToolUse?.web_search_requests],
+		["web_fetch_requests", serverToolUse?.web_fetch_requests],
 	];
 	for (const [key, rawValue] of detailMeters) {
 		const value = toNumber(rawValue);

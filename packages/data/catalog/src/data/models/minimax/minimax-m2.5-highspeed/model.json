@@ -4,6 +4,7 @@
   "name": "Minimax M2.5 Highspeed",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Minimax M2.5 Highspeed is a next-generation large language model designed for autonomous, real-world productivity and continuous improvement. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Gemini Embedding Exp 0307",
   "status": "Available",
   "previous_model_id": null,
+  "description": "gemini-embedding-001 provides a unified cutting edge experience across domains, including science, legal, finance, and coding. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-03-07T00:00:00",
   "release_date": "2025-03-07T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Nova Premier",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nova Premier is a fast, cost-effective reasoning model for everyday workloads that can process text, images, and videos to generate text. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2025-04-30T00:00:00",
   "release_date": "2025-04-30T00:00:00",
   "deprecation_date": null,

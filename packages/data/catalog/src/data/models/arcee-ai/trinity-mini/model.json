@@ -4,6 +4,7 @@
   "name": "Trinity Mini",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Trinity Mini is a 26B-parameter (3B active) sparse mixture-of-experts language model featuring 128 experts with 8 active per token. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2025-12-01T00:00:00",
   "release_date": "2025-12-01T00:00:00",
   "deprecation_date": null,

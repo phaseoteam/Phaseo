@@ -4,6 +4,7 @@
   "name": "Seed 2.0 Mini",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seed 2.0 Mini is a multimodal model from ByteDance that can work across text and visual inputs. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2026-02-14T00:00:00",
   "release_date": "2026-02-14T00:00:00",
   "deprecation_date": null,

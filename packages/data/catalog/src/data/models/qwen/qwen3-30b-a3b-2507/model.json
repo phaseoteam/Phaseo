@@ -4,6 +4,7 @@
   "name": "Qwen3 30b A3b 2507",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 30b A3b 2507 is an instruction-tuned chat model in the Qwen3-Next series optimized for fast, stable responses without \"thinking\" traces. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

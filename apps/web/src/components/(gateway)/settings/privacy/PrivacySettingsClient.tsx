@@ -483,8 +483,10 @@ export default function PrivacySettingsClient(props: {
 	const globalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const globalSaveSeqRef = useRef(0);
 	const globalFirstRunRef = useRef(true);
+	const globalResetRef = useRef(false);
 
 	useEffect(() => {
+		globalResetRef.current = true;
 		setGlobal(defaultGlobal);
 		setSavedGlobal(defaultGlobal);
 	}, [defaultGlobal]);
@@ -492,6 +494,20 @@ export default function PrivacySettingsClient(props: {
 	useEffect(() => {
 		if (globalFirstRunRef.current) {
 			globalFirstRunRef.current = false;
+			return;
+		}
+		if (globalResetRef.current) {
+			globalResetRef.current = false;
+			return;
+		}
+
+		const currentSnapshot = JSON.stringify(global);
+		const savedSnapshot = JSON.stringify(savedGlobal);
+		if (currentSnapshot === savedSnapshot) {
+			if (globalTimerRef.current) {
+				clearTimeout(globalTimerRef.current);
+				globalTimerRef.current = null;
+			}
 			return;
 		}
 
@@ -536,7 +552,7 @@ export default function PrivacySettingsClient(props: {
 				globalTimerRef.current = null;
 			}
 		};
-	}, [global]);
+	}, [global, savedGlobal]);
 
 	const globalDirty = JSON.stringify(global) !== JSON.stringify(savedGlobal);
 	const globalStateText = savingGlobal
@@ -556,6 +572,23 @@ export default function PrivacySettingsClient(props: {
 		global.providerRestrictionMode,
 		global.providerRestrictionProviderIds,
 	]);
+	const selectedProviderOptions = useMemo(
+		() =>
+			global.providerRestrictionProviderIds
+				.map((id) => ({
+					id,
+					name: providerLabelById.get(id) ?? id,
+				}))
+				.sort((a, b) => a.name.localeCompare(b.name)),
+		[global.providerRestrictionProviderIds, providerLabelById],
+	);
+	const activeModelCountByProvider = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const row of props.activeProviderModels) {
+			counts.set(row.providerId, (counts.get(row.providerId) ?? 0) + 1);
+		}
+		return counts;
+	}, [props.activeProviderModels]);
 
 	return (
 		<div className="space-y-6">
@@ -641,7 +674,43 @@ export default function PrivacySettingsClient(props: {
 					</p>
 				</div>
 
-				<div className="rounded-xl border bg-muted/10 p-4 space-y-4">
+				<div className="space-y-4 rounded-xl border bg-muted/10 p-4">
+					<div className="grid gap-3 md:grid-cols-3">
+						<div className="rounded-xl border bg-background/80 px-3 py-3">
+							<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+								Rule
+							</div>
+							<div className="mt-2 text-sm font-semibold">
+								{global.providerRestrictionMode === "none"
+									? "Allow all providers"
+									: global.providerRestrictionMode === "allowlist"
+										? "Allow only selected"
+										: "Block selected"}
+							</div>
+						</div>
+						<div className="rounded-xl border bg-background/80 px-3 py-3">
+							<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+								Selected providers
+							</div>
+							<div className="mt-2 text-sm font-semibold">
+								{global.providerRestrictionMode === "none"
+									? "Not used"
+									: `${selectedProviderOptions.length} selected`}
+							</div>
+						</div>
+						<div className="rounded-xl border bg-background/80 px-3 py-3">
+							<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+								Enforcement
+							</div>
+							<div className="mt-2 text-sm font-semibold">
+								{global.providerRestrictionMode === "allowlist" &&
+								global.providerRestrictionEnforceAllowed
+									? "Strict"
+									: "Flexible"}
+							</div>
+						</div>
+					</div>
+
 					<div className="grid gap-3 md:grid-cols-[220px_1fr] md:items-center">
 						<Label className="text-sm font-medium">Mode</Label>
 						<Select
@@ -672,10 +741,10 @@ export default function PrivacySettingsClient(props: {
 
 					<div className="grid gap-3 md:grid-cols-[220px_1fr] md:items-center">
 						<Label className="text-sm font-medium">Providers</Label>
-						<div className="flex flex-wrap items-center gap-2">
+						<div className="space-y-3">
 							<SelectionDialog
 								title="Select providers"
-								description="Choose providers to allow/block globally."
+								description="Choose providers to allow or block globally."
 								options={[...props.providers]
 									.sort((a, b) => a.name.localeCompare(b.name))
 									.map((p) => ({ value: p.id, label: p.name }))}
@@ -699,21 +768,71 @@ export default function PrivacySettingsClient(props: {
 									<Button
 										type="button"
 										variant="outline"
+										className="h-auto w-full justify-between rounded-xl px-4 py-3"
 										disabled={global.providerRestrictionMode === "none"}
 									>
-										{global.providerRestrictionMode === "none"
-											? "No provider list"
-											: `${global.providerRestrictionProviderIds.length || 0} selected`}
+										<div className="min-w-0 text-left">
+											<div className="text-sm font-medium">
+												{global.providerRestrictionMode === "none"
+													? "No provider list needed"
+													: "Choose providers"}
+											</div>
+											<div className="truncate text-xs text-muted-foreground">
+												{global.providerRestrictionMode === "none"
+													? "Turn on allowlist or blocklist to target providers."
+													: global.providerRestrictionMode === "allowlist"
+														? "Only the providers below will remain eligible."
+														: "The providers below will be excluded from routing."}
+											</div>
+										</div>
+										<Badge variant="secondary">
+											{global.providerRestrictionMode === "none"
+												? "All"
+												: `${global.providerRestrictionProviderIds.length}`}
+										</Badge>
 									</Button>
 								}
 							/>
-							<p className="text-xs text-muted-foreground">
-								{global.providerRestrictionMode === "none"
-									? "No provider restrictions are applied."
-									: global.providerRestrictionMode === "allowlist"
-										? "Only these providers will be eligible."
-										: "These providers will be excluded."}
-							</p>
+							{global.providerRestrictionMode !== "none" ? (
+								selectedProviderOptions.length ? (
+									<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+										{selectedProviderOptions.map((provider) => (
+											<div
+												key={provider.id}
+												className="flex items-center justify-between gap-3 rounded-xl border bg-background px-3 py-3"
+											>
+												<div className="flex min-w-0 items-center gap-2">
+													<Logo
+														id={getProviderLogoId(provider.id)}
+														alt={`${provider.name} logo`}
+														width={18}
+														height={18}
+														className="h-[18px] w-[18px]"
+													/>
+													<div className="min-w-0">
+														<div className="truncate text-sm font-medium">
+															{provider.name}
+														</div>
+														<div className="text-xs text-muted-foreground">
+															{activeModelCountByProvider.get(provider.id) ?? 0} active
+															models
+														</div>
+													</div>
+												</div>
+												<Badge variant="outline">
+													{global.providerRestrictionMode === "allowlist"
+														? "Allowed"
+														: "Blocked"}
+												</Badge>
+											</div>
+										))}
+									</div>
+								) : (
+									<div className="rounded-xl border border-dashed bg-background/60 px-4 py-4 text-sm text-muted-foreground">
+										No providers selected yet.
+									</div>
+								)
+							) : null}
 						</div>
 					</div>
 

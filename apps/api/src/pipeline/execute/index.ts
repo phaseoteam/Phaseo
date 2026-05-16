@@ -19,7 +19,14 @@ import { err } from "./http";
 import { getBaseModel, calculateMaxTries } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
-import { admitThroughBreaker, onCallEnd, onCallStart, maybeOpenOnRecentErrors, reportProbeResult } from "./health";
+import {
+	admitThroughBreaker,
+	classifyProviderHealthImpact,
+	onCallEnd,
+	onCallStart,
+	maybeOpenOnRecentErrors,
+	reportProbeResult,
+} from "./health";
 import { logDebugEvent, previewValue, parseJsonLoose } from "../debug";
 
 export type Bill = {
@@ -454,6 +461,10 @@ async function attemptProviderWithIR(
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
+	const candidateApiModelId =
+		typeof candidate.apiModelId === "string" && candidate.apiModelId.trim().length > 0
+			? candidate.apiModelId.trim()
+			: null;
 
 	const admission = await timing.timer.span(`${attemptPrefix}_breaker`, () =>
 		admitThroughBreaker(
@@ -477,6 +488,7 @@ async function attemptProviderWithIR(
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			model: baseModel,
+			api_model_id: candidateApiModelId,
 			provider_model_slug: null,
 			outcome: "blocked",
 			type: "blocked",
@@ -498,7 +510,11 @@ async function attemptProviderWithIR(
 	let pricingCard = candidate.pricingCard ?? null;
 	if (!pricingCard) {
 		pricingCard = await timing.timer.span(`${attemptPrefix}_load_pricecard`, () =>
-			loadPriceCard(candidate.providerId, baseModel, ctx.capability),
+			loadPriceCard(
+				candidate.providerId,
+				candidateApiModelId ?? baseModel,
+				ctx.capability,
+			),
 		);
 		if (pricingCard) {
 			candidate.pricingCard = pricingCard;
@@ -518,6 +534,7 @@ async function attemptProviderWithIR(
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			model: baseModel,
+			api_model_id: candidateApiModelId,
 			provider_model_slug: providerModelSlug ?? null,
 			outcome: "no_pricing",
 			type: "no_pricing",
@@ -559,6 +576,7 @@ async function attemptProviderWithIR(
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
 				model: baseModel,
+				api_model_id: candidateApiModelId,
 				provider_model_slug: providerModelSlug ?? null,
 				outcome: "unsupported_executor",
 				type: "unsupported_executor",
@@ -715,18 +733,22 @@ async function attemptProviderWithIR(
 			: 0;
 
 		if (executorResult.kind === "completed") {
+			const healthImpact = classifyProviderHealthImpact({
+				upstreamStatus: executorResult.upstream.status,
+			});
 			await onCallEnd(ctx.endpoint, {
 				provider: candidate.providerId,
 				model: baseModel,
 				ok: executorResult.upstream.ok,
+				healthImpact,
 				latency_ms: ctx.meta.latency_ms ?? attemptDurationMs,
 				generation_ms: ctx.meta.generation_ms ?? generationTimeMs,
 				tokens_in: tokensIn,
 				tokens_out: tokensOut,
 			});
-			if (isProbe) {
+			if (isProbe && healthImpact !== "neutral") {
 				await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, executorResult.upstream.ok);
-			} else {
+			} else if (healthImpact === "failure") {
 				await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
 			}
 		}
@@ -757,6 +779,7 @@ async function attemptProviderWithIR(
 				provider: candidate.providerId,
 				endpoint: ctx.endpoint,
 				model: baseModel,
+				api_model_id: candidateApiModelId,
 				provider_model_slug: providerModelSlug ?? null,
 				outcome: "upstream_non_2xx",
 				type: "upstream_non_2xx",
@@ -827,6 +850,7 @@ async function attemptProviderWithIR(
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			model: baseModel,
+			api_model_id: candidateApiModelId,
 			provider_model_slug: providerModelSlug ?? null,
 			outcome: "success",
 			type: "success",
@@ -870,6 +894,7 @@ async function attemptProviderWithIR(
 			provider: candidate.providerId,
 			endpoint: ctx.endpoint,
 			model: baseModel,
+			api_model_id: candidateApiModelId,
 			provider_model_slug: providerModelSlug ?? null,
 			outcome: (err as any)?.retryable === true ? "retryable_error" : "error",
 			type: (err as any)?.retryable === true ? "retryable_error" : "error",
@@ -884,12 +909,20 @@ async function attemptProviderWithIR(
 			provider: candidate.providerId,
 			model: baseModel,
 			ok: false,
+			healthImpact: classifyProviderHealthImpact({
+				errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
+				errorMessage: message,
+			}),
 			latency_ms: Math.round(performance.now() - attemptStartedAt),
 			generation_ms: ctx.meta.generation_ms ?? Math.round(performance.now() - t0),
 		});
-		if (isProbe) {
+		const errorHealthImpact = classifyProviderHealthImpact({
+			errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
+			errorMessage: message,
+		});
+		if (isProbe && errorHealthImpact !== "neutral") {
 			await reportProbeResult(ctx.endpoint, candidate.providerId, baseModel, false);
-		} else {
+		} else if (errorHealthImpact === "failure") {
 			await maybeOpenOnRecentErrors(ctx.endpoint, candidate.providerId, baseModel);
 		}
 		return { ok: false };

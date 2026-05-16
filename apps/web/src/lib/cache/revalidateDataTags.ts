@@ -1,4 +1,4 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const STALE_WHILE_REVALIDATE = "max" as const;
 const EXPIRE_IMMEDIATELY = { expire: 0 } as const;
@@ -40,7 +40,6 @@ const MODEL_DATA_GLOBAL_TAGS = [
 	"landing:db-stats",
 	"page:models",
 	"models:list-base",
-	"public-rankings",
 ] as const;
 
 const MODEL_API_GLOBAL_TAGS = [
@@ -67,10 +66,88 @@ const MODEL_CANONICAL_RESOLVER_TAGS = [
 	"data:data_api_models",
 ] as const;
 
+const PUBLIC_MODEL_CATALOGUE_GLOBAL_TAGS = [
+	...MODEL_DATA_GLOBAL_TAGS,
+	...MODEL_API_GLOBAL_TAGS,
+	...MODEL_CANONICAL_RESOLVER_TAGS,
+	"public-model-catalogue",
+	"data:data_api_provider_model_capabilities",
+	"data:subscription_plans",
+	"data:country_summaries",
+	"og:payload",
+] as const;
+
 function revalidateTagList(tags: readonly string[]) {
 	for (const tag of tags) {
 		revalidateTag(tag, STALE_WHILE_REVALIDATE);
 	}
+}
+
+function expireTagList(tags: readonly string[]) {
+	for (const tag of new Set(tags)) {
+		revalidateTag(tag, EXPIRE_IMMEDIATELY);
+	}
+}
+
+function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) {
+	revalidatePath("/");
+	revalidatePath("/models", "layout");
+	revalidatePath("/models/table");
+	revalidatePath("/models/collections");
+	revalidatePath("/compare");
+	revalidatePath("/pricing");
+	revalidatePath("/api-providers", "layout");
+	revalidatePath("/organisations", "layout");
+	revalidatePath("/updates");
+	revalidatePath("/updates/models");
+	revalidatePath("/api/frontend/search");
+	revalidatePath("/api/pricing/models");
+	revalidatePath("/sitemap.xml");
+
+	if (options.modelId) {
+		revalidatePath(`/models/${options.modelId}`);
+	}
+
+	for (const organisationId of options.organisationIds ?? []) {
+		if (!organisationId) continue;
+		revalidatePath(`/organisations/${organisationId}`);
+		revalidatePath(`/organisations/${organisationId}/models`);
+	}
+}
+
+export function expirePublicModelCatalogueCache(
+	options: RevalidateModelDataTagOptions = {}
+) {
+	expireTagList(PUBLIC_MODEL_CATALOGUE_GLOBAL_TAGS);
+
+	if (options.modelId) {
+		expireTagList([
+			`model:canonical:${options.modelId}`,
+			`model:api:${options.modelId}`,
+			`model:data:${options.modelId}`,
+			`model:header:${options.modelId}`,
+			`model:pricing-history:${options.modelId}`,
+			`model:performance:${options.modelId}`,
+			`data:models:${options.modelId}`,
+			`data:model_apps:${options.modelId}`,
+			`data:gateway_requests:model:${options.modelId}`,
+			`data:gateway_usage_rollups:model:${options.modelId}`,
+			`data:benchmarks:model:${options.modelId}`,
+			`model:benchmarks:highlights:${options.modelId}`,
+			`model:benchmarks:table:${options.modelId}`,
+			`model:benchmarks:comparisons:${options.modelId}`,
+		]);
+	}
+
+	for (const organisationId of options.organisationIds ?? []) {
+		if (!organisationId) continue;
+		expireTagList([
+			`organisation:header:${organisationId}`,
+			`data:organisations:${organisationId}`,
+		]);
+	}
+
+	revalidatePublicCataloguePaths(options);
 }
 
 export function revalidateModelDataOnlyTags(

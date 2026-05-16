@@ -1,8 +1,31 @@
 {
   "api_provider_id": "anthropic",
   "api_provider_name": "Anthropic",
+  "provider_family_id": "anthropic",
+  "offer_scope": "global",
   "description": null,
   "link": "https://docs.anthropic.com/en/home",
+  "residency_mode": "customer_selectable",
+  "default_execution_regions": [
+    "global",
+    "us"
+  ],
+  "default_data_regions": [
+    "us"
+  ],
+  "zero_data_retention": "optional",
+  "residency_source_url": "https://platform.claude.com/docs/en/manage-claude/data-residency",
+  "residency_notes": "Anthropic supports global or US-only inference via inference_geo on supported 4.6+ models. Workspace geo is currently US-only.",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Anthropic says customer API data is not used to train its models by default.",
+  "prompt_training_source_url": "https://docs.anthropic.com/en/docs/claude-code/data-usage",
+  "user_identifier_policy": "not_sent",
+  "user_identifier_notes": "AI Stats does not currently send this provider a provider-facing user identifier in the Anthropic chat adapter.",
+  "privacy_policy_url": "https://www.anthropic.com/legal/privacy",
+  "terms_of_service_url": "https://www.anthropic.com/legal/commercial-terms",
+  "regional_pricing_mode": "offer_specific",
+  "pricing_source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "regional_pricing_notes": "Default Anthropic pricing applies on the global endpoint. US-only inference is modeled as a separate Anthropic US offer with a 1.1x rate on supported 4.6+ models.",
   "country_code": "US",
   "status": "Active",
   "colour": "#CC785C"

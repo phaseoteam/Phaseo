@@ -9,12 +9,13 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
@@ -23,8 +24,12 @@ export async function generateMetadata(props: {
 
 	return buildMetadata({
 		title: `${modelName} Apps - Product and Plan Availability`,
-		description:
-			`See which public apps are actively sending gateway requests to ${modelName} on AI Stats.`,
+		description: buildModelPageMetadataDescription({
+			modelDescription,
+			suffix:
+				"See which public apps are actively sending gateway requests to this model on AI Stats.",
+			fallback: `See which public apps are actively sending gateway requests to ${modelName} on AI Stats.`,
+		}),
 		path,
 		keywords: [
 			modelName,

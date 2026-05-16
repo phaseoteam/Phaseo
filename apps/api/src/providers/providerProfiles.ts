@@ -86,6 +86,9 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	{
 		id: "anthropic",
 		text: {
+			paramPolicy: {
+				supportedParams: ["service_tier", "speed"],
+			},
 			normalize: {
 				maxTemperature: 1,
 				defaultMaxTokensWhenMissing: 4096,

@@ -179,10 +179,22 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		};
 	}
 
-	const datetimeRequests = usage._ext?.serverToolUse?.datetime_requests;
-	if (typeof datetimeRequests === "number") {
+	const serverToolUse = usage._ext?.serverToolUse;
+	if (
+		typeof serverToolUse?.datetime_requests === "number" ||
+		typeof serverToolUse?.web_search_requests === "number" ||
+		typeof serverToolUse?.web_fetch_requests === "number"
+	) {
 		(result as any).server_tool_use = {
-			datetime_requests: datetimeRequests,
+			...(typeof serverToolUse?.datetime_requests === "number"
+				? { datetime_requests: serverToolUse.datetime_requests }
+				: {}),
+			...(typeof serverToolUse?.web_search_requests === "number"
+				? { web_search_requests: serverToolUse.web_search_requests }
+				: {}),
+			...(typeof serverToolUse?.web_fetch_requests === "number"
+				? { web_fetch_requests: serverToolUse.web_fetch_requests }
+				: {}),
 		};
 	}
 

@@ -1,4 +1,8 @@
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
+import {
+    formatProviderOfferDisplayName,
+    resolveProviderLogoId,
+} from "@/lib/providers/providerOffers";
 
 /* ---------- shared types ---------- */
 export type Direction = "input" | "output" | "cached" | "cachewrite" | "other";
@@ -7,12 +11,17 @@ export type UnitClass = "token" | "pixel" | "image" | "video" | "minute" | "seco
 
 export type Condition = { op: string; path: string; value: any; or_group?: number; and_index?: number };
 
+export type PriceComparisonKind = "discount" | "vs-standard";
+export type PriceComparisonDirection = "cheaper" | "pricier" | "same" | null;
+
 export type TokenTier = {
     per1M: number;
     price: number;
     label: string; // range or condition label
     basePer1M?: number | null;
     basePrice?: number | null;
+    comparisonKind?: PriceComparisonKind | null;
+    comparisonDirection?: PriceComparisonDirection;
     discountEndsAt?: string | null;
     endpoint?: string | null;
     effFrom?: string | null;
@@ -34,6 +43,8 @@ export type QualityRow = {
         label: string;
         price: number;
         basePrice?: number | null;
+        comparisonKind?: PriceComparisonKind | null;
+        comparisonDirection?: PriceComparisonDirection;
         discountEndsAt?: string | null;
     }[];
 };
@@ -43,6 +54,8 @@ export type ResolutionRow = {
     price: number;
     audioMode?: "with-audio" | "without-audio" | null;
     basePrice?: number | null;
+    comparisonKind?: PriceComparisonKind | null;
+    comparisonDirection?: PriceComparisonDirection;
     discountEndsAt?: string | null;
 };
 export type UsageRow = {
@@ -51,6 +64,8 @@ export type UsageRow = {
     unitLabel: string;
     mod: "image" | "video";
     basePrice?: number | null;
+    comparisonKind?: PriceComparisonKind | null;
+    comparisonDirection?: PriceComparisonDirection;
     discountEndsAt?: string | null;
     endpoint?: string | null;
     ruleId?: string | null;
@@ -84,6 +99,7 @@ export type UpcomingPricingChange = {
 export type ProviderSections = {
     providerName: string;
     providerId: string;
+    logoProviderId: string;
     textTokens?: TokenTriple;
     imageTokens?: TokenTriple;
     audioTokens?: TokenTriple;
@@ -98,6 +114,8 @@ export type ProviderSections = {
         unitLabel: string;
         price: number;
         basePrice?: number | null;
+        comparisonKind?: PriceComparisonKind | null;
+        comparisonDirection?: PriceComparisonDirection;
         discountEndsAt?: string | null;
         endpoint?: string | null;
         ruleId?: string | null;
@@ -510,6 +528,108 @@ function normalizeConditionValues(value: any): string[] {
     return [];
 }
 
+function normalizeNumericConditionValues(value: any): number[] {
+    const rawValues = Array.isArray(value) ? value : [value];
+    return rawValues
+        .map((entry) => {
+            if (typeof entry === "number") return Number.isFinite(entry) ? entry : null;
+            if (typeof entry === "string") {
+                const trimmed = entry.trim();
+                if (!trimmed) return null;
+                const parsed = Number(trimmed);
+                return Number.isFinite(parsed) ? parsed : null;
+            }
+            return null;
+        })
+        .filter((entry): entry is number => entry !== null);
+}
+
+function isLowerBoundOp(op: string): boolean {
+    return op === "gt" || op === "gte";
+}
+
+function isUpperBoundOp(op: string): boolean {
+    return op === "lt" || op === "lte";
+}
+
+function coversNumericValue(candidate: Condition, value: number): boolean {
+    const op = String(candidate.op ?? "").toLowerCase();
+    const numericValues = normalizeNumericConditionValues(candidate.value);
+    if (!numericValues.length) return false;
+
+    if (op === "eq") return numericValues[0] === value;
+    if (op === "in") return numericValues.includes(value);
+    if (op === "gt") return value > numericValues[0]!;
+    if (op === "gte") return value >= numericValues[0]!;
+    if (op === "lt") return value < numericValues[0]!;
+    if (op === "lte") return value <= numericValues[0]!;
+    return false;
+}
+
+function lowerBoundCovers(candidateOp: string, candidateValue: number, targetOp: string, targetValue: number): boolean {
+    if (Number.isInteger(candidateValue) && Number.isInteger(targetValue)) {
+        const candidateMin = candidateOp === "gt" ? candidateValue + 1 : candidateValue;
+        const targetMin = targetOp === "gt" ? targetValue + 1 : targetValue;
+        return candidateMin <= targetMin;
+    }
+
+    if (candidateValue < targetValue) return true;
+    if (candidateValue > targetValue) return false;
+    const candidateInclusive = candidateOp === "gte";
+    const targetInclusive = targetOp === "gte";
+    return candidateInclusive || !targetInclusive;
+}
+
+function upperBoundCovers(candidateOp: string, candidateValue: number, targetOp: string, targetValue: number): boolean {
+    if (Number.isInteger(candidateValue) && Number.isInteger(targetValue)) {
+        const candidateMax = candidateOp === "lt" ? candidateValue - 1 : candidateValue;
+        const targetMax = targetOp === "lt" ? targetValue - 1 : targetValue;
+        return candidateMax >= targetMax;
+    }
+
+    if (candidateValue > targetValue) return true;
+    if (candidateValue < targetValue) return false;
+    const candidateInclusive = candidateOp === "lte";
+    const targetInclusive = targetOp === "lte";
+    return candidateInclusive || !targetInclusive;
+}
+
+function numericConditionCovers(candidate: Condition, target: Condition): boolean {
+    const cOp = String(candidate.op ?? "").toLowerCase();
+    const tOp = String(target.op ?? "").toLowerCase();
+    const cNums = normalizeNumericConditionValues(candidate.value);
+    const tNums = normalizeNumericConditionValues(target.value);
+
+    if (!cNums.length || !tNums.length) return false;
+
+    if (tOp === "eq") {
+        const targetValue = tNums[0];
+        return targetValue == null ? false : coversNumericValue(candidate, targetValue);
+    }
+
+    if (tOp === "in") {
+        return tNums.every((value) => coversNumericValue(candidate, value));
+    }
+
+    if (isLowerBoundOp(cOp) && isLowerBoundOp(tOp)) {
+        const candidateValue = cNums[0];
+        const targetValue = tNums[0];
+        return candidateValue == null || targetValue == null
+            ? false
+            : lowerBoundCovers(cOp, candidateValue, tOp, targetValue);
+    }
+
+    if (isUpperBoundOp(cOp) && isUpperBoundOp(tOp)) {
+        const candidateValue = cNums[0];
+        const targetValue = tNums[0];
+        return candidateValue == null || targetValue == null
+            ? false
+            : upperBoundCovers(cOp, candidateValue, tOp, targetValue);
+    }
+
+    return false;
+}
+
 function conditionCovers(candidate: Condition, target: Condition): boolean {
     if ((candidate.path ?? "").toLowerCase() !== (target.path ?? "").toLowerCase()) return false;
     const cOp = String(candidate.op ?? "").toLowerCase();
@@ -529,16 +649,16 @@ function conditionCovers(candidate: Condition, target: Condition): boolean {
         if (!tVals.length) return false;
         if (cOp === "in") return tVals.every((v) => cVals.includes(v));
         if (cOp === "eq") return tVals.length === 1 && cVals[0] === tVals[0];
-        return false;
+        return numericConditionCovers(candidate, target);
     }
 
-    return (
+    return numericConditionCovers(candidate, target) || (
         cOp === tOp &&
         JSON.stringify(candidate.value) === JSON.stringify(target.value)
     );
 }
 
-function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
+export function ruleMatchCovers(candidateRule: any, targetRule: any): boolean {
     const targetConds = ruleConditions(targetRule);
     if (!targetConds.length) return true;
     const candidateConds = ruleConditions(candidateRule);
@@ -554,6 +674,9 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     const nowMs = now.getTime();
     const normalizedPlan = normalizePricingPlan(plan);
     const allRules = p.pricing_rules;
+    const standardRules = allRules.filter(
+        (r) => normalizePricingPlan(r.pricing_plan) === "standard"
+    );
     const planRules = allRules.filter(
         (r) => normalizePricingPlan(r.pricing_plan) === normalizedPlan
     );
@@ -576,8 +699,16 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     }
 
     const out: ProviderSections = {
-        providerName: p.provider.api_provider_name || p.provider.api_provider_id,
+        providerName: formatProviderOfferDisplayName({
+            providerName: p.provider.api_provider_name || p.provider.api_provider_id,
+            offerLabel: p.provider.offer_label ?? null,
+            offerScope: p.provider.offer_scope ?? null,
+        }),
         providerId: p.provider.api_provider_id,
+        logoProviderId: resolveProviderLogoId({
+            providerId: p.provider.api_provider_id,
+            providerFamilyId: p.provider.provider_family_id ?? null,
+        }),
         otherRules: [],
     };
 
@@ -611,6 +742,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
         return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
     };
+    const ruleSignatureIgnoringEndpoint = (r: any) =>
+        `${r.meter}|${r.unit}|${r.unit_size}`;
     const currentRulesBySignature = new Map<string, any[]>();
     for (const r of rules as any[]) {
         if (!isCurrentRule(r)) continue;
@@ -619,6 +752,25 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         list.push(r);
         currentRulesBySignature.set(sig, list);
     }
+    const currentStandardRulesBySignature = new Map<string, any[]>();
+    const currentStandardRulesBySignatureIgnoringEndpoint = new Map<string, any[]>();
+    for (const r of standardRules as any[]) {
+        if (!isCurrentRule(r)) continue;
+        const sig = ruleSignature(r);
+        const list = currentStandardRulesBySignature.get(sig) ?? [];
+        list.push(r);
+        currentStandardRulesBySignature.set(sig, list);
+        const endpointAgnosticSig = ruleSignatureIgnoringEndpoint(r);
+        const endpointAgnosticList =
+            currentStandardRulesBySignatureIgnoringEndpoint.get(
+                endpointAgnosticSig,
+            ) ?? [];
+        endpointAgnosticList.push(r);
+        currentStandardRulesBySignatureIgnoringEndpoint.set(
+            endpointAgnosticSig,
+            endpointAgnosticList,
+        );
+    }
 
     for (const r of rules as any[]) {
         const endpoint = endpointByKey.get(r.model_key) ?? null;
@@ -626,6 +778,14 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
         if (!grouped.has(groupKey)) grouped.set(groupKey, []);
         grouped.get(groupKey)!.push(r);
+    }
+    const standardGrouped = new Map<string, any[]>();
+    for (const r of standardRules as any[]) {
+        const endpoint = endpointByKey.get(r.model_key) ?? null;
+        const matchKey = JSON.stringify(r.match ?? []);
+        const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
+        if (!standardGrouped.has(groupKey)) standardGrouped.set(groupKey, []);
+        standardGrouped.get(groupKey)!.push(r);
     }
 
     const entries: RuleEntry[] = [];
@@ -720,12 +880,22 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 }
                 return candidatePrice > currentPrice;
             });
+        const scheduledBase =
+            !base && nextUpcoming
+                ? (() => {
+                      const nextPrice = Number(nextUpcoming.price_per_unit ?? Number.NaN);
+                      if (!Number.isFinite(nextPrice) || !Number.isFinite(currentPrice)) {
+                          return null;
+                      }
+                      return nextPrice > currentPrice ? nextUpcoming : null;
+                  })()
+                : null;
         const endpoint = endpointByKey.get(current.model_key) ?? null;
         const matchKey = JSON.stringify(current.match ?? []);
         const dedupeKey = `${current.meter}|${current.unit}|${current.unit_size}|${matchKey}`;
         entries.push({
             rule: current,
-            base,
+            base: base ?? scheduledBase ?? null,
             endpoint,
             groupKey,
             dedupeKey,
@@ -786,13 +956,51 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             basePrice != null &&
             basePrice > price &&
             (hasFutureEnd || hasPriorityOverride);
-        const displayBasePrice = hasActiveDiscount ? basePrice : null;
+        let displayBasePrice = hasActiveDiscount ? basePrice : null;
+        let comparisonBaseUnitSize = base?.unit_size ?? unitSize;
+        let comparisonKind: PriceComparisonKind | null = hasActiveDiscount ? "discount" : null;
+        let comparisonDirection: PriceComparisonDirection =
+            hasActiveDiscount ? "cheaper" : null;
+        if (!hasActiveDiscount && normalizedPlan !== "standard") {
+            const standardCurrentGroup = (standardGrouped.get(entry.groupKey) ?? [])
+                .filter(isCurrentRule)
+                .sort(sortByPriorityAndFromDesc);
+            const exactStandard = standardCurrentGroup[0];
+            const signatureStandardPool =
+                currentStandardRulesBySignature.get(ruleSignature(r)) ?? [];
+            const coveringStandard = signatureStandardPool
+                .filter((candidate) => ruleMatchCovers(candidate, r))
+                .sort(sortByPriorityAndFromDesc)[0];
+            const endpointAgnosticStandardPool =
+                currentStandardRulesBySignatureIgnoringEndpoint.get(
+                    ruleSignatureIgnoringEndpoint(r),
+                ) ?? [];
+            const endpointAgnosticCoveringStandard = endpointAgnosticStandardPool
+                .filter((candidate) => ruleMatchCovers(candidate, r))
+                .sort(sortByPriorityAndFromDesc)[0];
+            const standardBaseRule =
+                exactStandard ??
+                coveringStandard ??
+                endpointAgnosticCoveringStandard;
+            const standardBasePriceRaw = standardBaseRule
+                ? Number(standardBaseRule.price_per_unit ?? Number.NaN)
+                : Number.NaN;
+            const standardBasePrice = Number.isFinite(standardBasePriceRaw)
+                ? standardBasePriceRaw
+                : null;
+            if (standardBasePrice != null && standardBasePrice !== price) {
+                displayBasePrice = standardBasePrice;
+                comparisonBaseUnitSize = standardBaseRule?.unit_size ?? unitSize;
+                comparisonKind = "vs-standard";
+                comparisonDirection = standardBasePrice > price ? "cheaper" : "pricier";
+            }
+        }
         const basePer1M =
             displayBasePrice != null && unit === "token"
                 ? perMillionIfTokens(
                     unit,
                     displayBasePrice,
-                    base.unit_size ?? unitSize
+                    comparisonBaseUnitSize
                 )
                 : null;
         const discountEndsAt = hasActiveDiscount && hasFutureEnd ? r.effective_to ?? null : null;
@@ -807,6 +1015,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 label,
                 basePer1M: basePer1M ?? null,
                 basePrice: displayBasePrice,
+                comparisonKind,
+                comparisonDirection,
                 discountEndsAt,
                 endpoint: entry.endpoint,
                 effFrom: r.effective_from ?? null,
@@ -857,6 +1067,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 label: String(resolution),
                 price,
                 basePrice: displayBasePrice,
+                comparisonKind,
+                comparisonDirection,
                 discountEndsAt,
             });
             continue;
@@ -894,6 +1106,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                     price,
                     audioMode,
                     basePrice: displayBasePrice,
+                    comparisonKind,
+                    comparisonDirection,
                     discountEndsAt,
                 });
             }
@@ -914,6 +1128,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 unitLabel: unitLabel(unit, unitSize),
                 mod: mod === "image" ? "image" : "video",
                 basePrice: displayBasePrice,
+                comparisonKind,
+                comparisonDirection,
                 discountEndsAt,
                 endpoint: entry.endpoint,
                 ruleId: r.id ?? null,
@@ -931,6 +1147,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
                 label,
                 basePer1M: null,
                 basePrice: displayBasePrice,
+                comparisonKind,
+                comparisonDirection,
                 discountEndsAt,
                 endpoint: entry.endpoint,
                 effFrom: r.effective_from ?? null,
@@ -948,6 +1166,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
             unitLabel: unitLabel(unit, unitSize),
             price,
             basePrice: displayBasePrice,
+            comparisonKind,
+            comparisonDirection,
             discountEndsAt,
             endpoint: entry.endpoint,
             ruleId: r.id ?? null,

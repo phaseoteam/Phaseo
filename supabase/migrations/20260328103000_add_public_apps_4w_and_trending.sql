@@ -41,7 +41,6 @@ begin
   limit p_limit;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_trending_apps(
   p_limit integer default 20,
   p_min_week_tokens bigint default 0
@@ -104,7 +103,6 @@ begin
   limit p_limit;
 end;
 $$ language plpgsql stable;
-
 comment on function public.get_public_top_apps(integer, text) is
   'Top applications by usage for a requested time window (supports today/week/4w/month).';
 comment on function public.get_public_trending_apps(integer, bigint) is

@@ -240,6 +240,43 @@ describe("decodeOpenAIChatRequest", () => {
 		});
 	});
 
+	it("should preserve native web search tools", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "Find the latest news." }],
+			tools: [
+				{
+					type: "web_search_preview",
+					search_context_size: "medium",
+					user_location: {
+						type: "approximate",
+						city: "London",
+					},
+				},
+			],
+			tool_choice: "web_search_preview",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+
+		expect(ir.tools).toHaveLength(1);
+		expect(ir.tools![0]).toEqual({
+			name: "web_search_preview",
+			type: "web_search_preview",
+			description: undefined,
+			parameters: {},
+			raw: {
+				type: "web_search_preview",
+				search_context_size: "medium",
+				user_location: {
+					type: "approximate",
+					city: "London",
+				},
+			},
+		});
+		expect(ir.toolChoice).toEqual({ name: "web_search_preview" });
+	});
+
 	it("should decode tool choice - auto", () => {
 		const request = {
 			model: "gpt-4",
@@ -486,6 +523,40 @@ describe("decodeOpenAIChatRequest", () => {
 			referenceImages: [{ referenceType: "REFERENCE_TYPE_RAW" }],
 			fontInputs: undefined,
 			superResolutionReferences: undefined,
+		});
+	});
+
+	it("should decode top-level web_search_options", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "Find the latest news." }],
+			web_search_options: {
+				search_context_size: "high",
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.webSearchOptions).toEqual({
+			search_context_size: "high",
+		});
+	});
+
+	it("should decode provider geo preferences into IR", () => {
+		const request = {
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "Hello" }],
+			provider: {
+				required_execution_region: "eu",
+				required_data_region: "de",
+				require_zero_data_retention: true,
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
+		expect(ir.geo).toEqual({
+			requiredExecutionRegion: "eu",
+			requiredDataRegion: "de",
+			requireZeroDataRetention: true,
 		});
 	});
 	it("should map speed fast to priority service tier", () => {

@@ -4,6 +4,7 @@
   "name": "Kimi Linear 48B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Kimi Linear 48B is the September update of [Kimi K2 0711](moonshotai/kimi-k2).",
   "announced_date": "2025-10-30T00:00:00",
   "release_date": "2025-10-30T00:00:00",
   "deprecation_date": null,

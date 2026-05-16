@@ -1,0 +1,118 @@
+---
+title: "Use response healing for structured JSON"
+description: "Recover near-valid structured JSON outputs without widening schemas or hand-retrying malformed responses."
+---
+
+Use this recipe when your app needs strict JSON and models occasionally return output that is almost valid, but still breaks your parser.
+
+## 1. Start with a structured response contract
+
+Response healing is only useful when the request already asks for structured output.
+
+Good triggers:
+
+- `response_format.type = "json_object"`
+- JSON schema style output
+- one stable object shape used by multiple callers
+
+Do not enable healing for open-ended prose requests.
+
+## 2. Enable the plugin at the right layer
+
+You can enable `response-healing` in three places:
+
+1. workspace default plugin policy
+2. preset plugin config
+3. per-request `plugins`
+
+Precedence is:
+
+1. workspace
+2. preset
+3. request
+
+Use preset defaults when one workflow consistently expects structured JSON.
+
+## 3. Keep the model output narrow
+
+Healing works best when the requested output shape is already constrained.
+
+Recommended:
+
+- one object, not multiple unrelated blobs
+- explicit required keys
+- deterministic temperature where possible
+- no extra explanatory text requested outside the JSON payload
+
+## 4. Know what response healing can and cannot do
+
+The current healing path is deterministic and non-streaming only. Streaming requests skip response healing entirely.
+
+It can repair:
+
+- markdown code fences around JSON
+- trailing commas
+- missing safe closers
+- bare object keys in otherwise recoverable objects
+
+When you need a narrower policy, use `strict` mode. Strict mode only unwraps already-valid JSON from fences or surrounding text and skips the broader syntactic repair transforms.
+
+When the request uses JSON Schema style output, healing also validates the recovered payload before rewriting it. The current validator covers common constraints such as:
+
+- required keys
+- basic scalar and container types
+- enums and const values
+- array bounds and `uniqueItems`
+- string length, regex, and common formats such as `email`, `uri`, `uuid`, and `date-time`
+- number bounds and `multipleOf`
+- object property limits and `additionalProperties: false`
+
+It does not:
+
+- invent missing semantic fields
+- guess business values
+- rewrite arbitrary prose into valid data
+
+## 5. Verify that the plugin actually ran
+
+When healing runs, the request details should show plugin execution information.
+
+Check:
+
+- plugin id
+- whether it attempted a transform
+- whether the payload changed
+- failure reason when the response was not recoverable
+- whether the request was non-streaming when you expected healing to run
+
+If the plugin never appears, verify the request, preset, or workspace policy actually enabled it.
+
+## 6. Separate parser problems from content problems
+
+If healing does not help, determine which class of failure you have:
+
+1. malformed JSON that is still structurally close
+2. schema-valid JSON with wrong fields
+3. prose instead of JSON
+4. truncated output because token limits are too low
+
+Only case 1 is a good fit for response healing.
+
+## 7. Roll it out gradually
+
+1. enable healing on one preset with stable structured output
+2. watch plugin execution metadata in logs
+3. confirm recovered payloads match the expected schema
+4. widen to similar presets only after the logs look clean
+
+## 8. Choose the right mode
+
+- Use `safe` when the workflow benefits from bounded syntactic cleanup such as trailing-comma removal or bare-key quoting.
+- Use `strict` when the workflow should only accept already-valid JSON once wrappers are removed.
+- Check the request details to confirm which mode actually ran.
+
+## Related
+
+- [Use response caching with presets](./response-caching-with-presets.mdx)
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)

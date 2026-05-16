@@ -4,6 +4,7 @@
   "name": "Granite 3.3 8B Instruct",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Granite 3.3 8B Instruct is a language model from IBM for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": "2025-04-16T00:00:00",
   "deprecation_date": null,

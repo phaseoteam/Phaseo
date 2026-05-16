@@ -4,6 +4,7 @@
   "name": "Tiny Aya Fire",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Tiny Aya Fire is a language model from Cohere for chat, writing, analysis, and general-purpose automation. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

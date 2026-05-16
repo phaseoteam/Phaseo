@@ -5,6 +5,7 @@
 // apps/api/src/runtime/env.ts
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
+import type { ResponseCacheStore } from "@/core/response-cache";
 
 import { BINDING_KEYS } from "./env.binding-keys";
 import type { GatewayBindings } from "./env.types";
@@ -27,6 +28,7 @@ type WaitUntilEntry = {
 const waitUntilEntries: WaitUntilEntry[] = [];
 let nextWaitUntilEntryId = 0;
 let waitUntilHandler: ((promise: Promise<unknown>) => void) | null = null;
+const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 function snapshotBindings(env: GatewayBindings): GatewayBindings {
     const snap: Partial<GatewayBindings> = {};
@@ -120,6 +122,13 @@ export function getBindings(): GatewayBindings {
     return ensureRuntime().bindings;
 }
 
+export function isLocalTestingModeEnabled(bindings?: Partial<GatewayBindings> | null): boolean {
+    const value = bindings?.GATEWAY_LOCAL_TESTING_MODE ?? ensureRuntime().bindings.GATEWAY_LOCAL_TESTING_MODE;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") return TRUTHY_VALUES.has(value.trim().toLowerCase());
+    return false;
+}
+
 export function dispatchBackground(promise: Promise<unknown>) {
     const handler = waitUntilHandler;
     if (handler) {
@@ -135,6 +144,10 @@ export function getCache(): KVNamespace {
 
 export function getSupabaseAdmin(): SupabaseClient {
     return ensureRuntime().supabase;
+}
+
+export function getResponseCache(): ResponseCacheStore | null {
+    return null;
 }
 
 export function getByokKey(version: number): string {

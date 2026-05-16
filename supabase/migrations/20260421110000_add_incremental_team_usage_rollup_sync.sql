@@ -16,10 +16,8 @@ create table if not exists public.gateway_usage_rollup_team_request_state (
   throughput_samples bigint not null,
   updated_at timestamptz not null default now()
 );
-
 create index if not exists gateway_usage_rollup_team_request_state_team_bucket_idx
   on public.gateway_usage_rollup_team_request_state (team_id, bucket_15m desc);
-
 create or replace function public.apply_team_usage_rollup_delta(
   p_bucket_15m timestamptz,
   p_workspace_id uuid,
@@ -117,7 +115,6 @@ begin
     and throughput_samples = 0;
 end;
 $$;
-
 create or replace function public.upsert_gateway_request_into_team_usage_rollup(
   p_request_row_id uuid,
   p_request_created_at timestamptz,
@@ -295,7 +292,6 @@ begin
   return true;
 end;
 $$;
-
 comment on function public.apply_team_usage_rollup_delta(
   timestamptz,
   uuid,
@@ -311,10 +307,8 @@ comment on function public.apply_team_usage_rollup_delta(
   numeric,
   bigint
 ) is 'Applies an additive delta to the team/key/provider/model 15-minute usage rollup.';
-
 comment on function public.upsert_gateway_request_into_team_usage_rollup(uuid, timestamptz, uuid) is
   'Projects a single gateway_requests row into the team usage rollup and reconciles prior projections for mutable request rows.';
-
 grant execute on function public.apply_team_usage_rollup_delta(
   timestamptz,
   uuid,
@@ -330,5 +324,4 @@ grant execute on function public.apply_team_usage_rollup_delta(
   numeric,
   bigint
 ) to service_role;
-
 grant execute on function public.upsert_gateway_request_into_team_usage_rollup(uuid, timestamptz, uuid) to service_role;

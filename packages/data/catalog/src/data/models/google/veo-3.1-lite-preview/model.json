@@ -4,6 +4,7 @@
   "name": "Veo 3.1 Lite Preview",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Google's most cost-effective video generation model, designed for high-volume applications and rapid iteration. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2026-03-31T00:00:00",
   "release_date": "2026-03-31T00:00:00",
   "deprecation_date": null,

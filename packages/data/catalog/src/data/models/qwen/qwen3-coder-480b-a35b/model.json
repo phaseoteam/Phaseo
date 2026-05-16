@@ -4,6 +4,7 @@
   "name": "Qwen 3 Coder 480B A35B Instruct",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 Coder 480B A35B Instruct is a 30.5B parameter Mixture-of-Experts (MoE) model with 128 experts (8 active per forward pass), designed for advanced code generation, repository-scale understanding, and agentic tool use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

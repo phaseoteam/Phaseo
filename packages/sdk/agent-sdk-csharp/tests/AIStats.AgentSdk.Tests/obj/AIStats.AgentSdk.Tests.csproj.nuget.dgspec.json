@@ -1,0 +1,210 @@
+{
+  "format": 1,
+  "restore": {
+    "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\tests\\AIStats.AgentSdk.Tests\\AIStats.AgentSdk.Tests.csproj": {}
+  },
+  "projects": {
+    "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\AIStats.AgentSdk.csproj": {
+      "version": "2.0.3",
+      "restore": {
+        "projectUniqueName": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\AIStats.AgentSdk.csproj",
+        "projectName": "AI.Stats.AgentSdk",
+        "projectPath": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\AIStats.AgentSdk.csproj",
+        "packagesPath": "C:\\Users\\danie\\.nuget\\packages\\",
+        "outputPath": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\danie\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "E:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\AIStats.Sdk.csproj": {
+                "projectPath": "E:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\AIStats.Sdk.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\tests\\AIStats.AgentSdk.Tests\\AIStats.AgentSdk.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\tests\\AIStats.AgentSdk.Tests\\AIStats.AgentSdk.Tests.csproj",
+        "projectName": "AIStats.AgentSdk.Tests",
+        "projectPath": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\tests\\AIStats.AgentSdk.Tests\\AIStats.AgentSdk.Tests.csproj",
+        "packagesPath": "C:\\Users\\danie\\.nuget\\packages\\",
+        "outputPath": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\tests\\AIStats.AgentSdk.Tests\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\danie\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\AIStats.AgentSdk.csproj": {
+                "projectPath": "E:\\ai-stats-public\\packages\\sdk\\agent-sdk-csharp\\AIStats.AgentSdk.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.11.1, )"
+            },
+            "coverlet.collector": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[6.0.2, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.9.2, )"
+            },
+            "xunit.runner.visualstudio": {
+              "target": "Package",
+              "version": "[2.8.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "E:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\AIStats.Sdk.csproj": {
+      "version": "2.0.3",
+      "restore": {
+        "projectUniqueName": "E:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\AIStats.Sdk.csproj",
+        "projectName": "AI.Stats.Sdk",
+        "projectPath": "E:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\AIStats.Sdk.csproj",
+        "packagesPath": "C:\\Users\\danie\\.nuget\\packages\\",
+        "outputPath": "E:\\ai-stats-public\\packages\\sdk\\sdk-csharp\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\danie\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

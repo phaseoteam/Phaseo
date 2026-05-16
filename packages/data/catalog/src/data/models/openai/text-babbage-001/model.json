@@ -4,6 +4,7 @@
   "name": "Text Babbage 001",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Text Babbage 001 is a language model from OpenAI for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": "2023-07-06T00:00:00",

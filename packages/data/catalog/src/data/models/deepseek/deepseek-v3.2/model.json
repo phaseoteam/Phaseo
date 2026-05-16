@@ -4,6 +4,7 @@
   "name": "DeepSeek V3.2",
   "status": "Available",
   "previous_model_id": "deepseek/deepseek-v3-2-exp-2025-09-29",
+  "description": "DeepSeek V3.2 is a large language model designed to harmonize high computational efficiency with strong reasoning and agentic tool-use performance.",
   "announced_date": "2025-12-01T00:00:00",
   "release_date": "2025-12-01T00:00:00",
   "deprecation_date": null,

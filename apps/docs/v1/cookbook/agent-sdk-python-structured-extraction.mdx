@@ -1,0 +1,81 @@
+---
+title: "Extract structured JSON with the Python Agent SDK"
+description: "Use the Python Agent SDK for a bounded local-tool loop that returns strict JSON through AI Stats Gateway."
+---
+
+Use this recipe when a Python workflow needs:
+
+- one local lookup tool
+- one bounded agent loop
+- one strict JSON output shape
+
+## 1. Install the SDKs
+
+```bash
+pip install ai-stats-py-sdk ai-stats-agent-sdk
+```
+
+## 2. Define one local tool
+
+```python
+from ai_stats_agent import AgentTool, define_tool
+
+lookup_policy = define_tool(
+    AgentTool(
+        id="lookup-policy",
+        description="Look up one internal policy by slug.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "slug": {"type": "string"},
+            },
+            "required": ["slug"],
+            "additionalProperties": False,
+        },
+        execute=lambda input, ctx: {
+            "slug": input["slug"],
+            "summary": "Presets centralize routing, prompts, and caching defaults.",
+        },
+    )
+)
+```
+
+## 3. Create the agent
+
+```python
+from ai_stats_agent import create_agent
+
+agent = create_agent(
+    {
+        "id": "policy-extractor",
+        "model": "openai/gpt-5.4-nano",
+        "instructions": "Use tools when needed and return concise JSON.",
+        "tools": [lookup_policy],
+        "parse_output": lambda text: text,
+    }
+)
+```
+
+## 4. Run through the gateway-backed client
+
+```python
+from ai_stats_agent import create_gateway_agent_client
+
+result = agent.run(
+    input="Look up presets and return JSON with keys summary and recommendation.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## 5. When this recipe fits
+
+- one Python worker owns the orchestration
+- the tool surface is local and deterministic
+- you want strict output without building a larger orchestration layer first
+
+## Related
+
+- [Python Agent SDK](../sdk-reference/python/agent-sdk.mdx)
+- [Ship structured JSON from Python](./sdk-python-presets-and-json.mdx)

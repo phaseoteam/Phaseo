@@ -27,6 +27,8 @@ import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDispl
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
+	router_requests_30d?: number | null;
+	router_spend_nanos_30d?: number | null;
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
@@ -275,6 +277,17 @@ function formatPrice(
 	return `$${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
+function formatCostNanos(value: number | null | undefined): string | null {
+	if (!Number.isFinite(value) || value === null || value === undefined || value < 0) {
+		return null;
+	}
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+		maximumFractionDigits: value / 1e9 >= 1 ? 2 : 5,
+	}).format(value / 1e9);
+}
+
 function normalizeFromPriceUnit(value: string | null | undefined): string | null {
 	const normalized = String(value ?? "")
 		.trim()
@@ -449,6 +462,12 @@ function ModelCardImpl({
 	const [copied, setCopied] = useState(false);
 	const providerCount = model.gateway_provider_count ?? 0;
 	const activeProviders = model.gateway_active_provider_count ?? 0;
+	const routerRequests30d =
+		Number.isFinite(Number(model.router_requests_30d)) &&
+		Number(model.router_requests_30d) > 0
+			? Number(model.router_requests_30d)
+			: null;
+	const routerSpend30d = formatCostNanos(model.router_spend_nanos_30d);
 	const providerDetails = (model.gateway_provider_details ?? [])
 		.map((provider) => ({
 			id: String(provider.id ?? "").trim(),
@@ -1176,6 +1195,22 @@ function ModelCardImpl({
 									<span className="font-medium text-foreground">{priceSummary}</span>
 								</div>
 							)
+						) : null}
+						{routerRequests30d !== null ? (
+							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+								<span className="text-muted-foreground">Requests (30d)</span>
+								<span className="font-medium tabular-nums text-foreground">
+									{routerRequests30d.toLocaleString()}
+								</span>
+							</div>
+						) : null}
+						{routerSpend30d ? (
+							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+								<span className="text-muted-foreground">Spend (30d)</span>
+								<span className="font-medium tabular-nums text-foreground">
+									{routerSpend30d}
+								</span>
+							</div>
 						) : null}
 					</div>
 

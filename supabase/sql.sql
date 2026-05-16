@@ -192,6 +192,7 @@ CREATE TABLE public.data_models (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   name text NOT NULL,
+  description text,
   organisation_id text NOT NULL,
   status text,
   announcement_date timestamp with time zone,

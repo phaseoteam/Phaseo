@@ -4,6 +4,7 @@
   "name": "Qwen Turbo 2024 11 01",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen Turbo 2024 11 01 is a language model from Qwen for chat, writing, analysis, and general-purpose automation. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

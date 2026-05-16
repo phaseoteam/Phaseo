@@ -4,6 +4,7 @@
   "name": "o1 preview",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "o1 preview is a language model from OpenAI for chat, writing, analysis, and general-purpose automation. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": "2024-09-12T00:00:00",
   "deprecation_date": "2025-04-28T00:00:00",

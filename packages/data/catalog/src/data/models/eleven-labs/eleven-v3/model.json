@@ -4,6 +4,7 @@
   "name": "Eleven V3",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Eleven V3 is a language model from ElevenLabs for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

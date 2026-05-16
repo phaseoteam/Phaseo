@@ -812,6 +812,14 @@ function AsyncJobDetailDialog({
 											value: <JobStatusBadge status={job.status} />,
 										},
 										{
+											label: "Lifecycle state",
+											value: job.lifecycle_status ? (
+												<span className="capitalize">{job.lifecycle_status}</span>
+											) : (
+												"-"
+											),
+										},
+										{
 											label: "Job type",
 											value: (
 												<span className="inline-flex items-center gap-2 capitalize">
@@ -1542,6 +1550,14 @@ function AsyncJobDetailDialog({
 														: "-",
 											},
 											{
+												label: "Signing",
+												value: job.webhook.configured
+													? job.webhook.has_secret
+														? "Enabled"
+														: "Disabled"
+													: "-",
+											},
+											{
 												label: "Last attempt",
 												value: job.webhook.last_attempt_at
 													? formatTimestamp(job.webhook.last_attempt_at)
@@ -1554,6 +1570,18 @@ function AsyncJobDetailDialog({
 												) : (
 													"-"
 												),
+											},
+											{
+												label: "Last response status",
+												value: job.webhook.last_response_status ?? "-",
+											},
+											{
+												label: "Last delivered",
+												value: formatTimestamp(job.webhook.last_delivered_at),
+											},
+											{
+												label: "Last failure",
+												value: formatTimestamp(job.webhook.last_failure_at),
 											},
 											{
 												label: "Last dispatched",
@@ -1580,6 +1608,13 @@ function AsyncJobDetailDialog({
 											{
 												label: "Delivered events",
 												value: job.webhook.delivered_events.toLocaleString(),
+											},
+											{
+												label: "Delivered event types",
+												value:
+													job.webhook.delivered_event_types.length > 0
+														? job.webhook.delivered_event_types.join(", ")
+														: "-",
 											},
 											{
 												label: "Pending retries",

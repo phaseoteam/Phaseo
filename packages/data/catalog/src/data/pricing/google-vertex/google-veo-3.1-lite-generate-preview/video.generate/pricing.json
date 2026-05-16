@@ -83,7 +83,8 @@
           "value": false
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-03-31T00:00:00"
     },
     {
       "meter": "output_video_seconds",
@@ -109,7 +110,8 @@
           "value": false
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-03-31T00:00:00"
     }
   ]
 }

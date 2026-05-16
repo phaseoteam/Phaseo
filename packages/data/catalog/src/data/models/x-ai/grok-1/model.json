@@ -4,6 +4,7 @@
   "name": "Grok 1",
   "status": "Retired",
   "previous_model_id": "x-ai/grok-0",
+  "description": "Grok 1 is a text-to-speech model from xAI. It accepts text inputs and produces text outputs.",
   "announced_date": "2023-11-03T00:00:00",
   "release_date": null,
   "deprecation_date": null,

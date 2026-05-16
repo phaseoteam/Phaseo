@@ -1,7 +1,6 @@
 -- Allow key rotation with scheduled sunset of previous keys.
 alter table if exists public.keys
   add column if not exists expires_at timestamptz null;
-
 do $$
 begin
   if to_regclass('public.keys') is not null then

@@ -4,6 +4,7 @@
   "name": "Aion 1.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Aion 1.0 is a multi-model system designed for high performance across various tasks, including reasoning and coding. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-01-29T00:00:00",
   "release_date": "2025-01-29T00:00:00",
   "deprecation_date": null,

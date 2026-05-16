@@ -4,6 +4,7 @@
   "name": "Solar Pro 2 Preview",
   "status": "Available",
   "previous_model_id": "upstage/solar-pro",
+  "description": "Solar Pro 2 Preview is Upstage's powerful Mixture-of-Experts (MoE) language model. With 102B total parameters and 12B active parameters per forward pass, it delivers exceptional performance while maintaining computational efficiency.",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-05-20T00:00:00",
   "deprecation_date": null,

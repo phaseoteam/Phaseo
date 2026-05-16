@@ -4,6 +4,7 @@
   "name": "Phi 3 Vision 128K Instruct",
   "status": null,
   "previous_model_id": null,
+  "description": "Phi 3 Vision 128K Instruct is a multimodal model from Microsoft that can work across text and visual inputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

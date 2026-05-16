@@ -1132,6 +1132,7 @@ function buildFreeRouterModelsPageEntry(
 		router_spend_nanos_30d: overview.summary.totalCostNanos30d,
 	};
 }
+
 async function ModelsPageDataSection() {
 	const includeHidden = false;
 	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
@@ -1140,11 +1141,11 @@ async function ModelsPageDataSection() {
 		getFreeRouterOverview(),
 	]);
 	const models = withGatewayMetadata(allModels, monitorResult.models);
-	const modelsWithFreeRouter = models.some(
-		(model) => model.model_id === FREE_ROUTER_MODEL_ID,
-	)
-		? models
-		: [buildFreeRouterModelsPageEntry(freeRouterOverview), ...models];
+	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
+	const modelsWithFreeRouter = [
+		freeRouterModel,
+		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
+	];
 	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
 
 	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;

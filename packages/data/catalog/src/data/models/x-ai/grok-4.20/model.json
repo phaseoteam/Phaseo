@@ -4,6 +4,7 @@
   "name": "Grok 4.20",
   "status": "Available",
   "previous_model_id": "x-ai/grok-4-1-non-thinking-2025-11-17",
+  "description": "Grok 4.20 is a reasoning model from xAI with industry-leading speed and agentic tool calling capabilities. It supports up to 2M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2026-02-17T00:00:00",
   "release_date": "2026-02-17T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "EXAONE 3.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "EXAONE 3.0 is a language model from LG for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2024-08-07T00:00:00",
   "release_date": "2024-08-07T00:00:00",
   "deprecation_date": null,

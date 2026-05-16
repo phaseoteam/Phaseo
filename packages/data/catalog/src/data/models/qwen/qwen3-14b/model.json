@@ -4,6 +4,7 @@
   "name": "Qwen 3 14B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 14B is a dense 14.8B parameter causal language model from the Qwen3 series, designed for both complex reasoning and efficient dialogue.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

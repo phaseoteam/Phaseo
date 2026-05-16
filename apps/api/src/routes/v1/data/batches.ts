@@ -11,7 +11,12 @@ import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
-import { dispatchAsyncWebhookEventInBackground, parseAsyncWebhookConfig } from "@core/async-notifications";
+import {
+	buildPublicAsyncWebhook,
+	dispatchAsyncWebhookEventInBackground,
+	parseAsyncWebhookConfig,
+	toAsyncLifecycleStatus,
+} from "@core/async-notifications";
 import {
 	getBatchJobMeta,
 	saveBatchFileMeta,
@@ -140,7 +145,40 @@ function buildBatchBilling(
 	};
 }
 
+function buildBatchPollingUrl(requestUrl: string, batchId: string): string {
+	const url = new URL(requestUrl);
+	const segments = url.pathname.split("/").filter(Boolean);
+	if (segments[segments.length - 1] === "cancel") {
+		segments.pop();
+	}
+	if (segments[segments.length - 1] !== batchId) {
+		segments.push(batchId);
+	}
+	url.pathname = `/${segments.join("/")}`;
+	url.search = "";
+	url.hash = "";
+	return url.toString();
+}
+
+function buildBatchCancelUrl(requestUrl: string, batchId: string): string {
+	return new URL(`${buildBatchPollingUrl(requestUrl, batchId).replace(/\/+$/, "")}/cancel`).toString();
+}
+
+function isCancellableBatchStatus(status: string): boolean {
+	switch (status.toLowerCase()) {
+		case "queued":
+		case "pending":
+		case "validating":
+		case "in_progress":
+		case "cancelling":
+			return true;
+		default:
+			return false;
+	}
+}
+
 function decorateBatchPayload(args: {
+	requestUrl: string;
 	payload: any;
 	meta: BatchJobMeta | null | undefined;
 	finalization?: FinalizeBatchJobResult | null;
@@ -153,7 +191,17 @@ function decorateBatchPayload(args: {
 	if (args.meta?.provider) out.provider = args.meta.provider;
 	if (args.meta?.sessionId) out.session_id = args.meta.sessionId;
 	if (args.meta?.webhook && typeof args.meta.webhook === "object" && !Array.isArray(args.meta.webhook)) {
-		out.webhook = args.meta.webhook;
+		const webhook = buildPublicAsyncWebhook("batch", args.meta);
+		if (webhook) out.webhook = webhook;
+	}
+	const status = toText(out.status) ?? args.meta?.status ?? null;
+	if (status) {
+		out.lifecycle_status = toAsyncLifecycleStatus(status);
+	}
+	const batchId = toText(out.id) ?? args.meta?.nativeBatchId ?? null;
+	if (batchId) {
+		out.polling_url = buildBatchPollingUrl(args.requestUrl, batchId);
+		out.cancel_url = status && isCancellableBatchStatus(status) ? buildBatchCancelUrl(args.requestUrl, batchId) : null;
 	}
 	out.pricing_lines = buildBatchPricingLines(args.meta);
 	const billing = buildBatchBilling(args.meta, args.finalization);
@@ -336,6 +384,7 @@ async function handleCreate(req: Request) {
 		}
 		if (upstreamJson) {
 			return toDecoratedJsonResponse(upstream, decorateBatchPayload({
+				requestUrl: req.url,
 				payload: upstreamJson,
 				meta: persistedMeta,
 			}));
@@ -445,6 +494,7 @@ async function handleRetrieve(req: Request, id: string) {
 		}
 		const persistedMeta = await getBatchJobMeta(auth.workspaceId, batchId).catch(() => refreshedMeta);
 		return toDecoratedJsonResponse(upstream, decorateBatchPayload({
+			requestUrl: req.url,
 			payload: upstreamJson,
 			meta: persistedMeta ?? refreshedMeta,
 			finalization,
@@ -525,6 +575,7 @@ async function handleCancel(req: Request, id: string) {
 		}
 		const persistedMeta = await getBatchJobMeta(auth.workspaceId, batchId).catch(() => refreshedMeta);
 		return toDecoratedJsonResponse(upstream, decorateBatchPayload({
+			requestUrl: req.url,
 			payload: upstreamJson,
 			meta: persistedMeta ?? refreshedMeta,
 			finalization,

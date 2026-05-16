@@ -4,6 +4,7 @@
   "name": "Qwen 3 30B A3B Thinking 2507",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 30B A3B Thinking 2507 is a 30B parameter Mixture-of-Experts reasoning model optimized for complex tasks requiring extended multi-step thinking.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

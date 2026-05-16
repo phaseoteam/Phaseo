@@ -4,6 +4,7 @@
   "name": "Lyria 3 Pro Preview",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Lyria 3 Pro Preview is Google's family of music generation models, available through the Gemini API. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

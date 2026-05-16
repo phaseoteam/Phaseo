@@ -1,0 +1,110 @@
+---
+title: "Roll out presets and debug routing"
+description: "Use presets to standardize prompt and routing defaults, then inspect request details to understand why AI Stats routed a request the way it did."
+---
+
+Use this recipe when you want one reusable preset for multiple services instead of copying the same prompt, model, and routing defaults everywhere.
+
+## Goal
+
+- Standardize prompt and parameter defaults.
+- Limit which providers can be used for a rollout or compliance boundary.
+- Keep enough request context to explain why a request routed the way it did.
+
+## 1. Create the preset
+
+In **Dashboard -> Settings -> Presets**, create a preset with:
+
+- a clear name and slug
+- a system prompt
+- approved models
+- provider preferences
+- default parameter values such as `temperature`
+
+Use the preset slug in your calling code so the same request policy can be reused across environments.
+
+## 2. Keep the request body small
+
+The main advantage of presets is that the caller no longer needs to repeat the same routing and prompt defaults in every request.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. Understand what the preset changes
+
+The preset is applied before provider routing:
+
+- missing request parameters are filled from the preset
+- the preset prompt is prepended to the system layer
+- provider preferences narrow the list of available providers before ranking
+- model restrictions are checked early instead of silently rerouting
+
+## 4. Debug the routing outcome
+
+When a request does not route the way you expected, open the request in **Gateway -> Usage** and inspect:
+
+- providers considered
+- ranked candidates
+- routing factors attached to each candidate
+- workspace-policy or guardrail blocks
+
+This is the fastest way to answer:
+
+- why a provider was skipped
+- why a request was blocked
+- why a lower-cost or lower-latency target won the ranking
+
+## 5. Operational pattern
+
+Use this rollout pattern when changing routing behavior:
+
+1. Create a new preset slug for the new policy.
+2. Move one low-risk caller to the new preset.
+3. Inspect request details and activity trends.
+4. Expand the rollout only after the routing outcomes match expectations.
+
+## Related guides
+
+- [Presets](../guides/presets.mdx)
+- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Error Handling](../developers/error-handling.mdx)

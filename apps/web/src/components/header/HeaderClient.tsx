@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
 	BarChart2,
 	Boxes,
+	BookOpenText,
 	Check,
 	CreditCard,
 	Key as KeyIcon,
@@ -17,6 +18,7 @@ import {
 	Moon,
 	FlaskConical,
 	ChevronDown,
+	Scale,
 	Settings,
 	Server,
 	AppWindow,
@@ -115,11 +117,13 @@ export default function HeaderClient({
 
 	const navLinks = [
 		{ href: "/models", label: "Models", icon: Boxes },
+		{ href: "/chat", label: "Playground", icon: MessageSquare },
+		{ href: "/compare", label: "Compare", icon: Scale },
 		{ href: "/api-providers", label: "Providers", icon: Server },
 		{ href: "/apps", label: "Apps", icon: AppWindow },
 		{ href: "/rankings", label: "Rankings", icon: Trophy },
-		{ href: "/chat", label: "Playground", icon: MessageSquare },
 	];
+	const docsHref = "https://docs.ai-stats.phaseo.app/v1";
 
 	if (variant === "mobile") {
 		return (
@@ -202,7 +206,7 @@ export default function HeaderClient({
 										})}
 										<DropdownMenuSeparator />
 										<Link
-											href="/settings/workspaces"
+											href="/settings/workspaces/settings"
 											prefetch={false}
 											className={cn(
 												"flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden transition-colors",
@@ -210,6 +214,7 @@ export default function HeaderClient({
 											)}
 											onClick={() => setIsMobileTeamDialogOpen(false)}
 										>
+											<Users className="h-4 w-4" />
 											<span>Manage Workspaces</span>
 										</Link>
 									</PopoverContent>
@@ -261,6 +266,13 @@ export default function HeaderClient({
 								</Link>
 							</DropdownMenuItem>
 
+							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+								<Link href="/settings/workspaces/settings" prefetch={false}>
+									<Users className="h-4 w-4" />
+									<span>Workspaces</span>
+								</Link>
+							</DropdownMenuItem>
+
 								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 									<Link href="/settings/account" prefetch={false}>
 										<Settings className="h-4 w-4" />
@@ -293,18 +305,16 @@ export default function HeaderClient({
 									<span>Keys</span>
 								</Link>
 							</DropdownMenuItem>
-							{teams.length === 0 && (
-								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-									<Link href="/settings/workspaces" prefetch={false}>
-										<Users className="h-4 w-4" />
-										<span>Workspaces</span>
-									</Link>
-								</DropdownMenuItem>
-							)}
 								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
 									<Link href="/contact" prefetch={false}>
 										<LifeBuoy className="h-4 w-4" />
 										<span>Support</span>
+									</Link>
+								</DropdownMenuItem>
+								<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
+									<Link href={docsHref} target="_blank" rel="noreferrer">
+										<BookOpenText className="h-4 w-4" />
+										<span>Docs</span>
 									</Link>
 								</DropdownMenuItem>
 
@@ -406,13 +416,15 @@ export default function HeaderClient({
 	return (
 		<div className="flex items-center gap-4">
 			{isLoggedIn ? (
-				<TeamSwitcher
-					user={user}
-					teams={teams}
-					userRole={userRole}
-					onSignOut={handleSignOut}
-					initialActiveTeamId={currentTeamId}
-				/>
+				<>
+					<TeamSwitcher
+						user={user}
+						teams={teams}
+						userRole={userRole}
+						onSignOut={handleSignOut}
+						initialActiveTeamId={currentTeamId}
+					/>
+				</>
 			) : (
 				<Link href="/sign-in" prefetch={false}>
 					<Button

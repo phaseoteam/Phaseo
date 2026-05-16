@@ -44,27 +44,36 @@ export function ThemeToggle() {
 
 type ThemeSelectorProps = {
 	className?: string;
+	labelSize?: "xs" | "sm";
 };
 
-export function ThemeSelector({ className }: ThemeSelectorProps = {}) {
+export function ThemeSelector({
+	className,
+	labelSize: _labelSize = "xs",
+}: ThemeSelectorProps = {}) {
 	const { theme, setTheme } = useTheme();
 	const reduceMotion = useReducedMotion();
 	const [mounted, setMounted] = React.useState(false);
-	const [showCurrent, setShowCurrent] = React.useState(false);
-	const [direction, setDirection] = React.useState<1 | -1>(1);
+	const [showLabel, setShowLabel] = React.useState(false);
+	const hideTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 	React.useEffect(() => {
 		setMounted(true);
+	}, []);
+	React.useEffect(() => {
+		return () => {
+			if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+		};
 	}, []);
 
 	const normalizedTheme =
 		mounted && (theme === "light" || theme === "dark" || theme === "system")
 			? theme
 			: "system";
-	const order = ["light", "dark", "system"] as const;
+	const order = ["system", "light", "dark"] as const;
 	const labels: Record<(typeof order)[number], string> = {
+		system: "System",
 		light: "Light",
 		dark: "Dark",
-		system: "System",
 	};
 	const iconByTheme: Record<
 		(typeof order)[number],
@@ -74,17 +83,6 @@ export function ThemeSelector({ className }: ThemeSelectorProps = {}) {
 		dark: Moon,
 		system: Monitor,
 	};
-	const currentIndex = order.indexOf(normalizedTheme);
-	const nextTheme = order[(currentIndex + 1) % order.length];
-	const CurrentIcon = iconByTheme[normalizedTheme];
-	const currentLabel = labels[normalizedTheme];
-	const displayLabel = showCurrent ? currentLabel : "Theme";
-	const labelWidthByTheme: Record<(typeof order)[number], number> = {
-		light: 40,
-		dark: 36,
-		system: 50,
-	};
-	const labelWidth = showCurrent ? labelWidthByTheme[normalizedTheme] : 48;
 	const springTransition = reduceMotion
 		? { duration: 0 }
 		: {
@@ -93,123 +91,97 @@ export function ThemeSelector({ className }: ThemeSelectorProps = {}) {
 				damping: 30,
 				mass: 0.8,
 			};
-	const widthTransition = reduceMotion ? { duration: 0 } : springTransition;
-	const exitTransition = reduceMotion
-		? { duration: 0 }
-		: { duration: 0.18, ease: "easeOut" as const };
 
-	const revealCurrent = () => {
-		setDirection(1);
-		setShowCurrent(true);
-	};
-
-	const hideCurrent = () => {
-		setDirection(-1);
-		setShowCurrent(false);
-	};
-
-	const handleClick = () => {
-		setDirection(1);
-		setShowCurrent(true);
-		setTheme(nextTheme);
+	const revealLabel = () => {
+		setShowLabel(true);
+		if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+		hideTimerRef.current = setTimeout(() => {
+			setShowLabel(false);
+		}, 3000);
 	};
 
 	return (
-		<Button
-			type="button"
-			variant="ghost"
-			className={cn("w-fit h-7 px-3 py-1", className)}
-			onMouseEnter={revealCurrent}
-			onMouseLeave={hideCurrent}
-			onFocus={revealCurrent}
-			onBlur={hideCurrent}
-			onClick={handleClick}
-			aria-label={`Current theme: ${currentLabel}. Click to switch to ${labels[nextTheme]}.`}
-		>
-			<motion.span
-				className="inline-flex items-center gap-2"
-				animate={
-					reduceMotion ? undefined : { y: showCurrent ? -0.5 : 0 }
-				}
-				transition={springTransition}
-				whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+		<div className={cn("inline-flex items-center gap-2", className)}>
+			<div
+				role="radiogroup"
+				aria-label="Theme"
+				className="inline-flex items-center gap-0.5 rounded-lg"
 			>
-				<span className="relative flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden">
-					<AnimatePresence mode="wait" initial={false}>
-						<motion.span
-							key={normalizedTheme}
-							initial={
-								reduceMotion
-									? undefined
-									: { opacity: 0, y: 6, filter: "blur(2px)" }
-							}
-							animate={
-								reduceMotion
-									? undefined
-									: { opacity: 1, y: 0, filter: "blur(0px)" }
-							}
-							exit={
-								reduceMotion
-									? undefined
-									: { opacity: 0, y: -6, filter: "blur(2px)" }
-							}
-							transition={springTransition}
-							className="absolute inset-0 flex items-center justify-center"
+				{order.map((themeOption) => {
+					const Icon = iconByTheme[themeOption];
+					const active = normalizedTheme === themeOption;
+
+					return (
+						<button
+							key={themeOption}
+							type="button"
+							role="radio"
+							aria-checked={active}
+							aria-label={`Use ${labels[themeOption]} theme`}
+							onClick={() => {
+								setTheme(themeOption);
+								revealLabel();
+							}}
+							className={cn(
+								"group/theme relative inline-flex h-8 w-8 items-center justify-center rounded-lg px-0.5 text-zinc-500 transition-colors hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 sm:h-7 sm:w-7 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:ring-zinc-700",
+								active && "text-zinc-900 dark:text-zinc-100",
+							)}
 						>
-							<CurrentIcon className="h-4 w-4" />
-						</motion.span>
-					</AnimatePresence>
-				</span>
-				<motion.span
-					className="relative -ml-[2px] h-4 overflow-hidden text-xs leading-4"
-					animate={reduceMotion ? undefined : { width: labelWidth }}
-					transition={widthTransition}
-					style={
-						reduceMotion ? { width: `${labelWidth}px` } : undefined
-					}
-				>
-					<AnimatePresence
-						mode="wait"
-						initial={false}
+							<motion.span
+								className={cn(
+									"flex h-6 w-6 items-center justify-center rounded-md bg-zinc-100 p-1 text-zinc-500 transition-colors group-hover/theme:bg-zinc-200 group-hover/theme:text-zinc-900 sm:h-[1.5rem] sm:w-[1.5rem] dark:bg-zinc-900 dark:text-zinc-400 dark:group-hover/theme:bg-zinc-800 dark:group-hover/theme:text-zinc-100",
+									active &&
+										"bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100",
+								)}
+								animate={
+									reduceMotion || !active ? undefined : { y: -0.5 }
+								}
+								whileHover={
+									reduceMotion ? undefined : { scale: 1.06, y: -0.5 }
+								}
+								transition={springTransition}
+							>
+								<Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+							</motion.span>
+						</button>
+					);
+				})}
+			</div>
+			<AnimatePresence initial={false} mode="wait">
+				{showLabel ? (
+					<motion.span
+						key={normalizedTheme}
+						initial={
+							reduceMotion
+								? undefined
+								: { opacity: 0, x: -6, filter: "blur(3px)" }
+						}
+						animate={
+							reduceMotion
+								? undefined
+								: {
+										opacity: 1,
+										x: 0,
+										filter: "blur(0px)",
+										transition: springTransition,
+									}
+						}
+						exit={
+							reduceMotion
+								? undefined
+								: {
+										opacity: 0,
+										x: -6,
+										filter: "blur(3px)",
+										transition: { duration: 0.18, ease: "easeOut" },
+									}
+						}
+						className="relative inline-flex min-w-[3.75rem] overflow-hidden text-sm font-medium text-zinc-600 dark:text-zinc-300"
 					>
-						<motion.span
-							key={displayLabel}
-							initial={
-								reduceMotion
-									? false
-									: {
-											opacity: 0,
-											y: direction > 0 ? 10 : -10,
-											filter: "blur(3px)",
-										}
-							}
-							animate={
-								reduceMotion
-									? undefined
-									: {
-											opacity: 1,
-											y: 0,
-											filter: "blur(0px)",
-											transition: springTransition,
-										}
-							}
-							exit={
-								reduceMotion
-									? undefined
-									: {
-											opacity: 0,
-											y: direction > 0 ? -8 : 8,
-											filter: "blur(3px)",
-											transition: exitTransition,
-										}
-							}
-							className="block"
-						>
-							{displayLabel}
-						</motion.span>
-					</AnimatePresence>
-				</motion.span>
-			</motion.span>
-		</Button>
+						{labels[normalizedTheme]}
+					</motion.span>
+				) : null}
+			</AnimatePresence>
+		</div>
 	);
 }

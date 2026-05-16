@@ -4,6 +4,7 @@
   "name": "Rerank Multilingual V3",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Rerank Multilingual V3 is designed to reorder search results for improved relevance. It supports multi-aspect and semi-structured data reranking over 100+ languages.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

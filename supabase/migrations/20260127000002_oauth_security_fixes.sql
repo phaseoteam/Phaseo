@@ -39,7 +39,7 @@ select
   oa.id as authorization_id,
   oa.user_id,
   oa.client_id,
-  oa.workspace_id,
+  oa.team_id,
   oa.scopes,
   oa.created_at as authorized_at,
   oa.last_used_at,
@@ -50,7 +50,7 @@ select
   t.name as team_name
 from public.oauth_authorizations oa
 join public.oauth_app_metadata oam on oam.client_id = oa.client_id
-join public.workspaces t on t.id = oa.workspace_id
+join public.teams t on t.id = oa.team_id
 where oa.revoked_at is null
   and oam.status = 'active'
 order by oa.last_used_at desc nulls last;
@@ -61,22 +61,22 @@ comment on view public.user_authorized_apps is 'Active OAuth authorizations for 
 -- =========================
 -- The teams table must have RLS enabled for the views to be secure
 
-alter table public.workspaces enable row level security;
+alter table public.teams enable row level security;
 -- Policy: Users can view teams they are members of
-drop policy if exists teams_select_member on public.workspaces;
+drop policy if exists teams_select_member on public.teams;
 create policy teams_select_member
-  on public.workspaces
+  on public.teams
   for select
   to authenticated
-  using (public.is_workspace_member(id));
+  using (public.is_team_member(id));
 -- Policy: Users can update teams they are members of (for team settings)
-drop policy if exists teams_update_member on public.workspaces;
+drop policy if exists teams_update_member on public.teams;
 create policy teams_update_member
-  on public.workspaces
+  on public.teams
   for update
   to authenticated
-  using (public.is_workspace_member(id))
-  with check (public.is_workspace_member(id));
+  using (public.is_team_member(id))
+  with check (public.is_team_member(id));
 -- =========================
 -- Ensure RLS on gateway_requests table
 -- =========================
@@ -89,7 +89,7 @@ create policy gateway_requests_select_own_team
   on public.gateway_requests
   for select
   to authenticated
-  using (public.is_workspace_member(workspace_id));
+  using (public.is_team_member(team_id));
 -- Policy: Service role can insert gateway requests (for audit logging from API)
 drop policy if exists gateway_requests_insert_service on public.gateway_requests;
 create policy gateway_requests_insert_service
@@ -112,10 +112,10 @@ grant usage on schema public to service_role;
 grant select, insert, update on public.gateway_requests to service_role;
 grant select, update on public.oauth_authorizations to service_role;
 grant select on public.oauth_app_metadata to service_role;
-grant select on public.workspaces to service_role;
+grant select on public.teams to service_role;
 -- =========================
 -- Verification
 -- =========================
 
-comment on table public.workspaces is 'Teams (organizations) with RLS enabled. Users can only access teams they are members of.';
+comment on table public.teams is 'Teams (organizations) with RLS enabled. Users can only access teams they are members of.';
 comment on table public.gateway_requests is 'API gateway audit logs with RLS enabled. Team members can view their team''s requests. Service role can insert for audit logging.';

@@ -4,6 +4,7 @@
   "name": "Granite Vision 3.3 2B Embedding",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Vision 3.3 2B Embedding is an embedding model from IBM for vector search and semantic retrieval workflows. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

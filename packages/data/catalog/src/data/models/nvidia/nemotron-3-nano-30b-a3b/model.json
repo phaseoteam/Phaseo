@@ -4,6 +4,7 @@
   "name": "Nemotron Nano 3 30B A3B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nemotron Nano 3 30B A3B is a small language MoE model with highest compute efficiency and accuracy for developers to build specialized agentic AI systems.",
   "announced_date": "2025-12-15T00:00:00",
   "release_date": "2025-12-15T00:00:00",
   "deprecation_date": null,

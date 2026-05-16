@@ -4,6 +4,7 @@
   "name": "Gemini 2.0 Flash Lite",
   "status": "Deprecated",
   "previous_model_id": "google/gemini-1-5-flash-8b-2024-03-15",
+  "description": "Gemini 2.0 Flash Lite is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It supports up to 1.0M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-02-05T00:00:00",
   "release_date": "2025-02-05T00:00:00",
   "deprecation_date": "2026-02-25T00:00:00",

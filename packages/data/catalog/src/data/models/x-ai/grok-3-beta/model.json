@@ -4,6 +4,7 @@
   "name": "Grok 3 Beta",
   "status": "Deprecated",
   "previous_model_id": "x-ai/grok-2-2024-08-13",
+  "description": "Grok 3 Beta is the latest model from xAI. It's their flagship model that excels at enterprise use cases like data extraction, coding, and text summarization.",
   "announced_date": "2025-02-19T00:00:00",
   "release_date": "2025-02-19T00:00:00",
   "deprecation_date": null,

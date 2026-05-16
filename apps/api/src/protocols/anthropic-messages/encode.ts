@@ -208,8 +208,20 @@ function encodeUsage(
 		input_tokens: inputTokens ?? 0,
 		output_tokens: outputTokens ?? 0,
 		server_tool_use:
-			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
-				? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
+			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
+				? {
+					...(typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
+						? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number"
+						? { web_search_requests: anyUsage._ext.serverToolUse.web_search_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
+						? { web_fetch_requests: anyUsage._ext.serverToolUse.web_fetch_requests }
+						: {}),
+				}
 				: null,
 		service_tier: tier,
 	};

@@ -25,7 +25,7 @@ create unique index if not exists credit_ledger_ref_type_ref_id_key
 create index if not exists wallets_stripe_customer_id_idx
     on public.wallets (stripe_customer_id);
 create or replace function public.wallet_apply_delta(
-    p_workspace_id uuid,
+    p_team_id uuid,
     p_delta_nanos bigint
 )
 returns table(before_balance_nanos bigint, after_balance_nanos bigint)
@@ -40,7 +40,7 @@ begin
     update public.wallets
     set balance_nanos = balance_nanos + p_delta_nanos,
         updated_at = now()
-    where workspace_id = p_workspace_id
+    where team_id = p_team_id
     returning balance_nanos - p_delta_nanos, balance_nanos
     into v_before, v_after;
 

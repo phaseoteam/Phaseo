@@ -4,6 +4,7 @@
   "name": "Qwen3 Coder Flash",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 Coder Flash is Alibaba's fast and cost efficient version of their proprietary Qwen3 Coder Plus. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

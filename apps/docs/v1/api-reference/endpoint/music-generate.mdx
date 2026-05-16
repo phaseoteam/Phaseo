@@ -6,6 +6,10 @@ openapi: "POST /music/generate"
 
 Creates an asynchronous music generation job.
 
+<Warning>
+The public music routes are currently mounted but temporarily disabled, so requests currently return `501 not_implemented`.
+</Warning>
+
 Poll completion with `GET /music/generate/{music_id}`.
 
 ## Request Shape

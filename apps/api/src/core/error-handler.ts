@@ -921,6 +921,11 @@ export async function handleError({
                     typeof replayRequestPayload === "object"
             ),
         },
+        requestedModel:
+            ctx?.requestedModel ??
+            (typeof body?.model === "string" ? body.model : null) ??
+            ctx?.model ??
+            null,
     };
     if (stage === "execute") {
         auditArgs.stream = ctx?.stream;

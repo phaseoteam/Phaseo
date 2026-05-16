@@ -20,7 +20,9 @@ describe("modelDescription", () => {
 	it("prefers a top-level description before model details", () => {
 		const description = getExplicitModelDescription({
 			description: " Flagship reasoning model for deep technical work. ",
-			model_details: [{ detail_name: "description", detail_value: "Older fallback." }],
+			model_details: [
+				{ detail_name: "description", detail_value: "Older fallback." },
+			],
 		});
 
 		expect(description).toBe("Flagship reasoning model for deep technical work.");
@@ -38,9 +40,7 @@ describe("modelDescription", () => {
 
 		expect(description).toContain("Alpha 1 is an AI model from Acme.");
 		expect(description).toContain("It accepts text and image inputs and produces text outputs.");
-		expect(description).not.toContain(
-			"compare providers, pricing, benchmarks, routing support, and availability",
-		);
+		expect(description).not.toContain("compare providers, pricing, benchmarks, routing support, and availability");
 	});
 
 	it("resolves to explicit descriptions before generated ones", () => {

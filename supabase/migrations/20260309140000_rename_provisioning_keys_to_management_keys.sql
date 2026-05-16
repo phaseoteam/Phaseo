@@ -9,9 +9,7 @@ begin
   end if;
 end
 $$;
-
 alter table if exists public.management_keys enable row level security;
-
 do $$
 declare
   management_keys_rel regclass := to_regclass('public.management_keys');
@@ -54,25 +52,24 @@ begin
     select 1
     from pg_constraint
     where conrelid = management_keys_rel
-      and conname = 'provisioning_keys_workspace_id_fkey'
+      and conname = 'provisioning_keys_team_id_fkey'
   ) and not exists (
     select 1
     from pg_constraint
     where conrelid = management_keys_rel
-      and conname = 'management_keys_workspace_id_fkey'
+      and conname = 'management_keys_team_id_fkey'
   ) then
     alter table public.management_keys
-      rename constraint provisioning_keys_workspace_id_fkey to management_keys_workspace_id_fkey;
+      rename constraint provisioning_keys_team_id_fkey to management_keys_team_id_fkey;
   end if;
 end
 $$;
-
 do $$
 begin
-  if to_regclass('public.provisioning_keys_workspace_id_idx') is not null
-     and to_regclass('public.management_keys_workspace_id_idx') is null then
-    alter index public.provisioning_keys_workspace_id_idx
-      rename to management_keys_workspace_id_idx;
+  if to_regclass('public.provisioning_keys_team_id_idx') is not null
+     and to_regclass('public.management_keys_team_id_idx') is null then
+    alter index public.provisioning_keys_team_id_idx
+      rename to management_keys_team_id_idx;
   end if;
 
   if to_regclass('public.provisioning_keys_hash_idx') is not null
@@ -88,7 +85,6 @@ begin
   end if;
 end
 $$;
-
 do $$
 begin
   if exists (

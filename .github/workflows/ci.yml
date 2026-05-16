@@ -444,7 +444,11 @@ jobs:
         name: Deploy Web (Preview)
         runs-on: ubuntu-latest
         needs: apps
-        if: github.event_name == 'pull_request' && !startsWith(github.head_ref, 'chore/auto-model-statuses')
+        if: >
+            github.event_name == 'pull_request' &&
+            !startsWith(github.head_ref, 'chore/auto-model-statuses') &&
+            github.event.pull_request.head.repo.full_name == github.repository &&
+            contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)
         permissions:
             contents: read
         steps:
@@ -475,7 +479,6 @@ jobs:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
               if: ${{ env.VERCEL_PROJECT_ID != '' }}
               run: |
@@ -624,6 +627,7 @@ jobs:
               with:
                   node-version: 24
                   registry-url: https://registry.npmjs.org
+                  package-manager-cache: false
 
             - name: Check runtime versions (trusted publishing)
               run: |

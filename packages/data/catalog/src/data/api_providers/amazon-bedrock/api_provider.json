@@ -1,9 +1,36 @@
 {
   "api_provider_id": "amazon-bedrock",
   "api_provider_name": "Amazon Bedrock",
+  "provider_family_id": "amazon-bedrock",
+  "offer_scope": "global",
   "description": null,
   "link": "https://aws.amazon.com/bedrock",
+  "residency_mode": "customer_selectable",
+  "default_execution_regions": [
+    "us",
+    "eu",
+    "apac",
+    "jp",
+    "au"
+  ],
+  "default_data_regions": [
+    "us",
+    "eu",
+    "apac",
+    "jp",
+    "au"
+  ],
+  "zero_data_retention": "unknown",
+  "residency_source_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html",
+  "regional_pricing_mode": "source_region_rates",
+  "pricing_source_url": "https://docs.aws.amazon.com/bedrock/latest/userguide/models-region-compatibility.html",
+  "regional_pricing_notes": "Geographic and Global cross-region inference are billed at source Region rates with no separate routing surcharge.",
   "country_code": "US",
   "status": "Alpha",
-  "colour": "#FF9900"
+  "colour": "#FF9900",
+  "privacy_policy_url": "https://aws.amazon.com/privacy/",
+  "terms_of_service_url": "https://aws.amazon.com/service-terms/",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "AWS says Amazon Bedrock inputs and outputs are never shared with model providers and are not used to train base models.",
+  "prompt_training_source_url": "https://aws.amazon.com/bedrock/security-privacy-responsible-ai/"
 }

@@ -23,32 +23,24 @@ export type ProviderRuntimeStats = {
 
 export type ProviderRuntimeStatsMap = Record<string, ProviderRuntimeStats>;
 
-type RuntimeRollupRow = {
-	bucket_15m: string;
-	provider: string;
-	requests: number | null;
-	success_requests: number | null;
-	input_tokens: number | null;
-	output_tokens: number | null;
-	latency_sum_ms: number | null;
-	latency_samples: number | null;
-	throughput_sum: number | null;
-	throughput_samples: number | null;
-};
-
-type GatewayRequestUsageRow = {
+type GatewayRequestStatsRow = {
 	provider: string | null;
+	success: boolean | null;
+	status_code: number | null;
+	error_code: string | null;
+	created_at: string | null;
+	latency_ms: number | null;
+	generation_ms: number | null;
+	throughput: number | null;
 	usage: unknown;
-};
-
-type CacheUsageAggregate = {
-	cachedTokens: number;
 };
 
 type Aggregate = {
 	requests30m: number;
 	requests3d: number;
 	successful3d: number;
+	healthRequests3d: number;
+	healthSuccessful3d: number;
 	latencySum30m: number;
 	latencySamples30m: number;
 	throughputSum30m: number;
@@ -59,8 +51,11 @@ type Aggregate = {
 	latencySamples3d: number;
 	throughputSum3d: number;
 	throughputSamples3d: number;
+	cachedReadTokens1h: number;
 	dayRequests: [number, number, number];
 	daySuccessful: [number, number, number];
+	dayHealthRequests: [number, number, number];
+	dayHealthSuccessful: [number, number, number];
 };
 
 const PAGE_SIZE = 5000;
@@ -77,6 +72,11 @@ function toNumber(value: unknown): number {
 function toInt(value: unknown): number {
 	const num = Number(value);
 	return Number.isFinite(num) ? Math.max(0, Math.trunc(num)) : 0;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
 }
 
 function average(sum: number, samples: number): number | null {
@@ -129,10 +129,75 @@ function extractCachedReadTokensFromUsage(usage: unknown): number | null {
 	return nestedFallback != null && nestedFallback > 0 ? nestedFallback : null;
 }
 
-function emptyCacheUsageAggregate(): CacheUsageAggregate {
-	return {
-		cachedTokens: 0,
-	};
+function extractInputTokensFromUsage(usage: unknown): number | null {
+	const record = toRecord(usage);
+	if (!record) return null;
+
+	const keysInPriorityOrder = [
+		"input_tokens",
+		"prompt_tokens",
+		"inputTokens",
+		"promptTokens",
+		"total_input_tokens",
+		"totalInputTokens",
+	] as const;
+
+	for (const key of keysInPriorityOrder) {
+		const value = toFiniteNumber(record[key]);
+		if (value != null && value > 0) return value;
+	}
+	return null;
+}
+
+function extractOutputTokensFromUsage(usage: unknown): number | null {
+	const record = toRecord(usage);
+	if (!record) return null;
+
+	const keysInPriorityOrder = [
+		"output_tokens",
+		"completion_tokens",
+		"generated_tokens",
+		"response_tokens",
+		"outputTokens",
+		"completionTokens",
+		"total_output_tokens",
+		"totalOutputTokens",
+		"total_tokens",
+		"totalTokens",
+	] as const;
+
+	for (const key of keysInPriorityOrder) {
+		const value = toFiniteNumber(record[key]);
+		if (value != null && value > 0) return value;
+	}
+	return null;
+}
+
+function normalizeHealthSignal(value: unknown): string {
+	return String(value ?? "").trim().toLowerCase();
+}
+
+function isRateLimitSignal(value: unknown): boolean {
+	const normalized = normalizeHealthSignal(value);
+	if (!normalized) return false;
+	return (
+		normalized.includes("rate limit") ||
+		normalized.includes("rate_limit") ||
+		normalized.includes("too many requests") ||
+		normalized.includes("ratelimit") ||
+		normalized.includes("quota exceeded")
+	);
+}
+
+function classifyRequestHealthImpact(row: GatewayRequestStatsRow):
+	| "success"
+	| "failure"
+	| "neutral" {
+	if (row.success === true) return "success";
+	const status = Number(row.status_code ?? 0);
+	if (status === 429) return "neutral";
+	if (isRateLimitSignal(row.error_code)) return "neutral";
+	return "failure";
 }
 
 function normaliseCacheTokenPct(numerator: number, denominator: number): number | null {
@@ -144,31 +209,13 @@ function normaliseCacheTokenPct(numerator: number, denominator: number): number 
 	return Math.min(100, Math.max(0, ratio));
 }
 
-function aggregateCacheUsageByProvider(
-	rows: GatewayRequestUsageRow[],
-): Map<string, CacheUsageAggregate> {
-	const aggregateByProvider = new Map<string, CacheUsageAggregate>();
-
-	for (const row of rows) {
-		const providerId = String(row.provider ?? "").trim();
-		if (!providerId) continue;
-
-		const cachedReadTokens = extractCachedReadTokensFromUsage(row.usage);
-		if (cachedReadTokens == null || cachedReadTokens <= 0) continue;
-
-		const current = aggregateByProvider.get(providerId) ?? emptyCacheUsageAggregate();
-		current.cachedTokens += cachedReadTokens;
-		aggregateByProvider.set(providerId, current);
-	}
-
-	return aggregateByProvider;
-}
-
 function emptyAggregate(): Aggregate {
 	return {
 		requests30m: 0,
 		requests3d: 0,
 		successful3d: 0,
+		healthRequests3d: 0,
+		healthSuccessful3d: 0,
 		latencySum30m: 0,
 		latencySamples30m: 0,
 		throughputSum30m: 0,
@@ -179,8 +226,11 @@ function emptyAggregate(): Aggregate {
 		latencySamples3d: 0,
 		throughputSum3d: 0,
 		throughputSamples3d: 0,
+		cachedReadTokens1h: 0,
 		dayRequests: [0, 0, 0],
 		daySuccessful: [0, 0, 0],
+		dayHealthRequests: [0, 0, 0],
+		dayHealthSuccessful: [0, 0, 0],
 	};
 }
 
@@ -195,52 +245,22 @@ function dayOffsetFromUtcMidnight(nowUtcMidnightMs: number, bucketDate: Date): 0
 	return offset as 0 | 1 | 2;
 }
 
-async function fetchRuntimeRollupRows(
-	client: ReturnType<typeof createAdminClient>,
-	modelIds: string[],
-	providerIds: string[],
-	fromIso: string,
-	toIso: string,
-): Promise<RuntimeRollupRow[]> {
-	const rows: RuntimeRollupRow[] = [];
-	for (let offset = 0; ; offset += PAGE_SIZE) {
-		const to = offset + PAGE_SIZE - 1;
-		const { data, error } = await client
-			.from("gateway_usage_rollup_15m_model_provider")
-			.select(
-				"bucket_15m, provider, requests, success_requests, input_tokens, output_tokens, latency_sum_ms, latency_samples, throughput_sum, throughput_samples",
-			)
-			.in("canonical_model_id", modelIds)
-			.in("provider", providerIds)
-			.gte("bucket_15m", fromIso)
-			.lte("bucket_15m", toIso)
-			.order("bucket_15m", { ascending: true })
-			.range(offset, to);
-
-		if (error) {
-			throw new Error(error.message ?? "Failed to fetch model provider runtime rollups");
-		}
-		if (!Array.isArray(data) || data.length === 0) break;
-		rows.push(...(data as RuntimeRollupRow[]));
-		if (data.length < PAGE_SIZE) break;
-	}
-	return rows;
-}
-
-async function fetchGatewayRequestRowsForHour(args: {
+async function fetchGatewayRequestStatsRows(args: {
 	client: ReturnType<typeof createAdminClient>;
 	modelIds: string[];
 	providerIds: string[];
 	fromIso: string;
 	toIso: string;
-}): Promise<GatewayRequestUsageRow[]> {
-	const rows: GatewayRequestUsageRow[] = [];
+}): Promise<GatewayRequestStatsRow[]> {
+	const rows: GatewayRequestStatsRow[] = [];
 
 	for (let offset = 0; ; offset += PAGE_SIZE) {
 		const to = offset + PAGE_SIZE - 1;
 		const { data, error } = await args.client
 			.from("gateway_requests")
-			.select("provider, usage")
+			.select(
+				"provider, success, status_code, error_code, created_at, latency_ms, generation_ms, throughput, usage",
+			)
 			.in("model_id", args.modelIds)
 			.in("provider", args.providerIds)
 			.gte("created_at", args.fromIso)
@@ -249,10 +269,10 @@ async function fetchGatewayRequestRowsForHour(args: {
 			.range(offset, to);
 
 		if (error) {
-			throw new Error(error.message ?? "Failed to fetch gateway request usage rows");
+			throw new Error(error.message ?? "Failed to fetch model provider request stats");
 		}
 		if (!Array.isArray(data) || data.length === 0) break;
-		rows.push(...(data as GatewayRequestUsageRow[]));
+		rows.push(...(data as GatewayRequestStatsRow[]));
 		if (data.length < PAGE_SIZE) break;
 	}
 
@@ -285,9 +305,15 @@ export async function getModelProviderRuntimeStats(args: {
 	);
 
 	const client = createAdminClient();
-	let rows: RuntimeRollupRow[];
+	let requestRows: GatewayRequestStatsRow[];
 	try {
-		rows = await fetchRuntimeRollupRows(client, modelIds, providerIds, fromIso, toIso);
+		requestRows = await fetchGatewayRequestStatsRows({
+			client,
+			modelIds,
+			providerIds,
+			fromIso,
+			toIso,
+		});
 	} catch (error) {
 		console.warn("Failed to fetch model provider runtime stats", {
 			modelId: args.modelId,
@@ -296,65 +322,80 @@ export async function getModelProviderRuntimeStats(args: {
 		return {};
 	}
 
-	let cacheUsageByProvider = new Map<string, CacheUsageAggregate>();
-	try {
-		const hourRows = await fetchGatewayRequestRowsForHour({
-			client,
-			modelIds,
-			providerIds,
-			fromIso: new Date(nowMs - ONE_HOUR_MS).toISOString(),
-			toIso,
-		});
-		cacheUsageByProvider = aggregateCacheUsageByProvider(hourRows);
-	} catch (error) {
-		console.warn("Failed to fetch model provider cache token stats", {
-			modelId: args.modelId,
-			error,
-		});
-	}
-
 	const aggregateByProvider = new Map<string, Aggregate>();
 
-	for (const row of rows) {
+	for (const row of requestRows) {
 		const providerId = String(row?.provider ?? "").trim();
 		if (!providerId) continue;
-
-		const bucketDate = new Date(String(row?.bucket_15m ?? ""));
-		if (!Number.isFinite(bucketDate.getTime())) continue;
+		const createdAt = new Date(String(row?.created_at ?? ""));
+		if (!Number.isFinite(createdAt.getTime())) continue;
+		const createdAtMs = createdAt.getTime();
 
 		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
-		const requests = toInt(row.requests);
-		const successful = toInt(row.success_requests);
-		const inputTokens = toInt(row.input_tokens);
-		const outputTokens = toInt(row.output_tokens);
-		const latencySum = toNumber(row.latency_sum_ms);
-		const latencySamples = toInt(row.latency_samples);
-		const throughputSum = toNumber(row.throughput_sum);
-		const throughputSamples = toInt(row.throughput_samples);
+		const latencyMs = toFiniteNumber(row.latency_ms);
+		const explicitThroughput = toFiniteNumber(row.throughput);
+		const generationMs = toFiniteNumber(row.generation_ms);
+		const inputTokens = extractInputTokensFromUsage(row.usage) ?? 0;
+		const outputTokens = extractOutputTokensFromUsage(row.usage) ?? 0;
+		const cachedReadTokens = extractCachedReadTokensFromUsage(row.usage) ?? 0;
+		const derivedThroughput =
+			explicitThroughput != null && explicitThroughput > 0
+				? explicitThroughput
+				: generationMs != null &&
+				  generationMs > 0 &&
+				  outputTokens > 0
+				? (outputTokens * 1000) / generationMs
+				: null;
+		const success = row.success === true ? 1 : 0;
 
-		aggregate.requests3d += requests;
-		aggregate.successful3d += successful;
-		aggregate.latencySum3d += latencySum;
-		aggregate.latencySamples3d += latencySamples;
-		aggregate.throughputSum3d += throughputSum;
-		aggregate.throughputSamples3d += throughputSamples;
+		aggregate.requests3d += 1;
+		aggregate.successful3d += success;
 
-		const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, bucketDate);
+		if (latencyMs != null && latencyMs > 0) {
+			aggregate.latencySum3d += latencyMs;
+			aggregate.latencySamples3d += 1;
+		}
+		if (derivedThroughput != null && derivedThroughput > 0) {
+			aggregate.throughputSum3d += derivedThroughput;
+			aggregate.throughputSamples3d += 1;
+		}
+
+		const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, createdAt);
 		if (dayOffset != null) {
-			aggregate.dayRequests[dayOffset] += requests;
-			aggregate.daySuccessful[dayOffset] += successful;
+			aggregate.dayRequests[dayOffset] += 1;
+			aggregate.daySuccessful[dayOffset] += success;
 		}
 
-		if (bucketDate.getTime() >= nowMs - THIRTY_MINUTES_MS) {
-			aggregate.requests30m += requests;
-			aggregate.latencySum30m += latencySum;
-			aggregate.latencySamples30m += latencySamples;
-			aggregate.throughputSum30m += throughputSum;
-			aggregate.throughputSamples30m += throughputSamples;
+		if (createdAtMs >= nowMs - THIRTY_MINUTES_MS) {
+			aggregate.requests30m += 1;
+			if (latencyMs != null && latencyMs > 0) {
+				aggregate.latencySum30m += latencyMs;
+				aggregate.latencySamples30m += 1;
+			}
+			if (derivedThroughput != null && derivedThroughput > 0) {
+				aggregate.throughputSum30m += derivedThroughput;
+				aggregate.throughputSamples30m += 1;
+			}
 		}
-		if (bucketDate.getTime() >= nowMs - ONE_HOUR_MS) {
+		if (createdAtMs >= nowMs - ONE_HOUR_MS) {
 			aggregate.inputTokens1h += inputTokens;
 			aggregate.outputTokens1h += outputTokens;
+			aggregate.cachedReadTokens1h += cachedReadTokens;
+		}
+		const healthImpact = classifyRequestHealthImpact(row);
+		if (healthImpact !== "neutral") {
+			aggregate.healthRequests3d += 1;
+			if (healthImpact === "success") {
+				aggregate.healthSuccessful3d += 1;
+			}
+
+			const dayOffset = dayOffsetFromUtcMidnight(nowUtcMidnightMs, createdAt);
+			if (dayOffset != null) {
+				aggregate.dayHealthRequests[dayOffset] += 1;
+				if (healthImpact === "success") {
+					aggregate.dayHealthSuccessful[dayOffset] += 1;
+				}
+			}
 		}
 
 		aggregateByProvider.set(providerId, aggregate);
@@ -364,8 +405,6 @@ export async function getModelProviderRuntimeStats(args: {
 
 	for (const providerId of providerIds) {
 		const aggregate = aggregateByProvider.get(providerId) ?? emptyAggregate();
-		const cacheAggregate =
-			cacheUsageByProvider.get(providerId) ?? emptyCacheUsageAggregate();
 		const latencyMs30m =
 			average(aggregate.latencySum30m, aggregate.latencySamples30m) ??
 			average(aggregate.latencySum3d, aggregate.latencySamples3d);
@@ -378,14 +417,14 @@ export async function getModelProviderRuntimeStats(args: {
 			latencyMs30m,
 			throughput30m,
 			uptimePct3d:
-				aggregate.requests3d > 0
-					? (aggregate.successful3d / aggregate.requests3d) * 100
+				aggregate.healthRequests3d > 0
+					? (aggregate.healthSuccessful3d / aggregate.healthRequests3d) * 100
 					: null,
 			inputTokens1h: aggregate.inputTokens1h,
 			outputTokens1h: aggregate.outputTokens1h,
-			cachedReadTokens1h: cacheAggregate.cachedTokens,
+			cachedReadTokens1h: aggregate.cachedReadTokens1h,
 			cacheTokenPct1h: normaliseCacheTokenPct(
-				cacheAggregate.cachedTokens,
+				aggregate.cachedReadTokens1h,
 				aggregate.inputTokens1h + aggregate.outputTokens1h,
 			),
 			uptimeDaily3d: [
@@ -394,8 +433,8 @@ export async function getModelProviderRuntimeStats(args: {
 					requests: aggregate.dayRequests[0],
 					successful: aggregate.daySuccessful[0],
 					uptimePct:
-						aggregate.dayRequests[0] > 0
-							? (aggregate.daySuccessful[0] / aggregate.dayRequests[0]) * 100
+						aggregate.dayHealthRequests[0] > 0
+							? (aggregate.dayHealthSuccessful[0] / aggregate.dayHealthRequests[0]) * 100
 							: null,
 				},
 				{
@@ -403,8 +442,8 @@ export async function getModelProviderRuntimeStats(args: {
 					requests: aggregate.dayRequests[1],
 					successful: aggregate.daySuccessful[1],
 					uptimePct:
-						aggregate.dayRequests[1] > 0
-							? (aggregate.daySuccessful[1] / aggregate.dayRequests[1]) * 100
+						aggregate.dayHealthRequests[1] > 0
+							? (aggregate.dayHealthSuccessful[1] / aggregate.dayHealthRequests[1]) * 100
 							: null,
 				},
 				{
@@ -412,8 +451,8 @@ export async function getModelProviderRuntimeStats(args: {
 					requests: aggregate.dayRequests[2],
 					successful: aggregate.daySuccessful[2],
 					uptimePct:
-						aggregate.dayRequests[2] > 0
-							? (aggregate.daySuccessful[2] / aggregate.dayRequests[2]) * 100
+						aggregate.dayHealthRequests[2] > 0
+							? (aggregate.dayHealthSuccessful[2] / aggregate.dayHealthRequests[2]) * 100
 							: null,
 				},
 			],

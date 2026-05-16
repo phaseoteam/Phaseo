@@ -4,6 +4,7 @@
   "name": "o1 mini",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "o1 mini is OpenAI's smaller, cost-efficient speech-to-text model built on GPT-4o Mini audio capabilities. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
   "release_date": "2024-09-12T00:00:00",
   "deprecation_date": "2025-04-28T00:00:00",

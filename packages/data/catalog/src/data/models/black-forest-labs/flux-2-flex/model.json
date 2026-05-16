@@ -4,6 +4,7 @@
   "name": "Flux 2 Flex",
   "status": "Available",
   "previous_model_id": null,
+  "description": "FLUX.2 [flex] excels at rendering complex text, typography, and fine details, and supports multi-reference editing in the same unified architecture. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2025-11-25T00:00:00",
   "release_date": "2025-11-25T00:00:00",
   "deprecation_date": null,

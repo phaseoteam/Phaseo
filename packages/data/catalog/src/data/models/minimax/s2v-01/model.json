@@ -4,6 +4,7 @@
   "name": "S2V 01",
   "status": null,
   "previous_model_id": null,
+  "description": "S2V 01 is a language model from MiniMax for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Granite Embedding 30M English",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Embedding 30M English is an embedding model from IBM for vector search and semantic retrieval workflows. It is aimed at English-language retrieval, clustering, and semantic search.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -65,6 +65,19 @@ function isWithinActivePricingWindow(
     const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
     return nowMs >= fromMs && nowMs < toMs;
 }
+
+function isWithinActiveOrUpcomingPricingWindow(
+    effectiveFrom: string | null | undefined,
+    effectiveTo: string | null | undefined,
+    nowMs: number
+): boolean {
+    const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
+    const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
+    const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
+    const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
+    if (toMs <= nowMs) return false;
+    return true;
+}
 export interface ProviderModel {
     id: string;                 // provider_api_model_id
     api_provider_id: string;
@@ -92,12 +105,45 @@ export interface ProviderModel {
 export interface ProviderInfo {
     api_provider_id: string;
     api_provider_name: string;
+    provider_family_id?: string | null;
+    offer_label?: string | null;
+    offer_scope?: "global" | "regional" | "specialized" | null;
     colour?: string | null;
     link?: string | null;
     country_code?: string | null;
+    residency_mode?:
+        | "unknown"
+        | "provider_managed"
+        | "customer_selectable"
+        | "account_selected"
+        | null;
+    default_execution_regions?: string[] | null;
+    default_data_regions?: string[] | null;
+    zero_data_retention?:
+        | "unknown"
+        | "unsupported"
+        | "optional"
+        | "default"
+        | null;
+    residency_source_url?: string | null;
+    residency_notes?: string | null;
+    regional_pricing_mode?:
+        | "unknown"
+        | "same_as_global"
+        | "uplift"
+        | "source_region_rates"
+        | "offer_specific"
+        | null;
+    regional_pricing_uplift_percent?: number | null;
+    pricing_source_url?: string | null;
+    regional_pricing_notes?: string | null;
     prompt_training_policy?: string | null;
     prompt_training_notes?: string | null;
     prompt_training_source_url?: string | null;
+    user_identifier_policy?: string | null;
+    user_identifier_notes?: string | null;
+    privacy_policy_url?: string | null;
+    terms_of_service_url?: string | null;
 }
 
 export interface ProviderPricing {
@@ -132,9 +178,23 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
         text.includes("prompt_training_policy") ||
         text.includes("prompt_training_notes") ||
         text.includes("prompt_training_source_url") ||
+        text.includes("residency_mode") ||
+        text.includes("default_execution_regions") ||
+        text.includes("default_data_regions") ||
+        text.includes("zero_data_retention") ||
+        text.includes("residency_source_url") ||
+        text.includes("residency_notes") ||
+        text.includes("regional_pricing_mode") ||
+        text.includes("regional_pricing_uplift_percent") ||
+        text.includes("pricing_source_url") ||
+        text.includes("regional_pricing_notes") ||
         text.includes("prompt_training_policy_override") ||
         text.includes("prompt_training_override_notes") ||
-        text.includes("prompt_training_override_source_url");
+        text.includes("prompt_training_override_source_url") ||
+        text.includes("user_identifier_policy") ||
+        text.includes("user_identifier_notes") ||
+        text.includes("privacy_policy_url") ||
+        text.includes("terms_of_service_url");
 
     if (!mentionsTargetColumn) return false;
     if (code === "PGRST204" || code === "42703") return true;
@@ -169,6 +229,8 @@ export default async function getModelPricing(
         `and(effective_from.is.null,effective_to.gt.${nowIso})`,
         `and(effective_from.lte.${nowIso},effective_to.is.null)`,
         `and(effective_from.lte.${nowIso},effective_to.gt.${nowIso})`,
+        `and(effective_from.gt.${nowIso},effective_to.is.null)`,
+        `and(effective_from.gt.${nowIso},effective_to.gt.${nowIso})`,
     ].join(",");
 
     const providerModelSelect = `
@@ -199,12 +261,29 @@ export default async function getModelPricing(
         ),
         data_api_providers (
             api_provider_name,
+            provider_family_id,
+            offer_label,
+            offer_scope,
             colour,
             link,
             country_code,
+            residency_mode,
+            default_execution_regions,
+            default_data_regions,
+            zero_data_retention,
+            residency_source_url,
+            residency_notes,
+            regional_pricing_mode,
+            regional_pricing_uplift_percent,
+            pricing_source_url,
+            regional_pricing_notes,
             prompt_training_policy,
             prompt_training_notes,
-            prompt_training_source_url
+            prompt_training_source_url,
+            user_identifier_policy,
+            user_identifier_notes,
+            privacy_policy_url,
+            terms_of_service_url
         )
     `;
 
@@ -233,10 +312,7 @@ export default async function getModelPricing(
             api_provider_name,
             colour,
             link,
-            country_code,
-            prompt_training_policy,
-            prompt_training_notes,
-            prompt_training_source_url
+            country_code
         )
     `;
 
@@ -315,15 +391,53 @@ export default async function getModelPricing(
                 provider: {
                     api_provider_id: pid,
                     api_provider_name: row.data_api_providers?.api_provider_name || pid,
+                    provider_family_id:
+                        row.data_api_providers?.provider_family_id ?? pid,
+                    offer_label: row.data_api_providers?.offer_label ?? null,
+                    offer_scope: row.data_api_providers?.offer_scope ?? "global",
                     colour: row.data_api_providers?.colour ?? null,
                     link: row.data_api_providers?.link || null,
                     country_code: row.data_api_providers?.country_code || null,
+                    residency_mode:
+                        row.data_api_providers?.residency_mode ?? null,
+                    default_execution_regions: Array.isArray(
+                        row.data_api_providers?.default_execution_regions
+                    )
+                        ? row.data_api_providers.default_execution_regions
+                        : null,
+                    default_data_regions: Array.isArray(
+                        row.data_api_providers?.default_data_regions
+                    )
+                        ? row.data_api_providers.default_data_regions
+                        : null,
+                    zero_data_retention:
+                        row.data_api_providers?.zero_data_retention ?? null,
+                    residency_source_url:
+                        row.data_api_providers?.residency_source_url ?? null,
+                    residency_notes:
+                        row.data_api_providers?.residency_notes ?? null,
+                    regional_pricing_mode:
+                        row.data_api_providers?.regional_pricing_mode ?? null,
+                    regional_pricing_uplift_percent:
+                        row.data_api_providers?.regional_pricing_uplift_percent ?? null,
+                    pricing_source_url:
+                        row.data_api_providers?.pricing_source_url ?? null,
+                    regional_pricing_notes:
+                        row.data_api_providers?.regional_pricing_notes ?? null,
                     prompt_training_policy:
                         row.data_api_providers?.prompt_training_policy ?? null,
                     prompt_training_notes:
                         row.data_api_providers?.prompt_training_notes ?? null,
                     prompt_training_source_url:
                         row.data_api_providers?.prompt_training_source_url ?? null,
+                    user_identifier_policy:
+                        row.data_api_providers?.user_identifier_policy ?? null,
+                    user_identifier_notes:
+                        row.data_api_providers?.user_identifier_notes ?? null,
+                    privacy_policy_url:
+                        row.data_api_providers?.privacy_policy_url ?? null,
+                    terms_of_service_url:
+                        row.data_api_providers?.terms_of_service_url ?? null,
                 },
                 provider_models: [],
                 pricing_rules: [],
@@ -465,7 +579,7 @@ export default async function getModelPricing(
 
         rules = (r || [])
             .filter((row) =>
-                isWithinActivePricingWindow(
+                isWithinActiveOrUpcomingPricingWindow(
                     row.effective_from ?? null,
                     row.effective_to ?? null,
                     nowMs
@@ -512,7 +626,7 @@ export default async function getModelPricing(
 
             for (const row of fallbackRows ?? []) {
                 if (
-                    !isWithinActivePricingWindow(
+                    !isWithinActiveOrUpcomingPricingWindow(
                         row.effective_from ?? null,
                         row.effective_to ?? null,
                         nowMs

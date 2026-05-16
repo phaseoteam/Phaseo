@@ -5,5 +5,10 @@
   "link": "https://chutes.ai/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#A855F7"
+  "colour": "#A855F7",
+  "privacy_policy_url": "https://chutes.ai/privacy",
+  "terms_of_service_url": "https://chutes.ai/terms",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Chutes says it does not log, store, or persist the content of API requests or responses.",
+  "prompt_training_source_url": "https://chutes.ai/privacy"
 }

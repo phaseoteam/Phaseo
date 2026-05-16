@@ -4,6 +4,7 @@
   "name": "Grok 4 Heavy",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok 4 Heavy is a text-to-speech model from xAI. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": "2025-07-10T00:00:00",
   "release_date": "2025-07-10T00:00:00",
   "deprecation_date": null,
