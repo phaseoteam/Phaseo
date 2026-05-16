@@ -27,6 +27,7 @@
     "build": "pnpm run prepare-sdk-dependency && pnpm run clean && node ../sdk-ts/node_modules/typescript/bin/tsc -p tsconfig.build.json",
     "typecheck": "pnpm run prepare-sdk-dependency && node ../sdk-ts/node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
     "test": "pnpm run prepare-sdk-dependency && pnpm exec vitest run",
+    "pack:dry": "pnpm publish --dry-run --no-git-checks",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
@@ -37,5 +38,13 @@
     "rimraf": "^6.0.0",
     "typescript": "^6.0.2",
     "vitest": "^4.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AI-Stats/AI-Stats",
+    "directory": "packages/sdk/agent-sdk-ts"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

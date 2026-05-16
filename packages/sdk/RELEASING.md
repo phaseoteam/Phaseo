@@ -2,11 +2,13 @@
 
 This repo uses a hybrid release model:
 
-- TypeScript + Python are auto-released from CI.
+- TypeScript, TypeScript Agent SDK, and Python are auto-released from CI.
 - Go/C#/Java/PHP/Ruby use explicit publish workflows per ecosystem.
 - C++/Rust remain excluded until functional end-to-end.
 - Manual SDK release readiness can be checked with `.github/workflows/sdk-publish-readiness.yml`.
 - First-publish npm bootstraps can be run with `.github/workflows/npm-bootstrap-publish.yml`.
+  - Supports `@ai-stats/agent-sdk`, `@ai-stats/ai-sdk-provider`, and `@ai-stats/devtools-viewer`
+  - Uses pnpm trusted publishing so workspace dependencies are rewritten to registry versions in the published tarball
 
 ## Canonical Distribution Targets
 

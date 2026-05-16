@@ -31,12 +31,13 @@ jobs:
       - name: Restore lockfile (guard setup-node cache mutation)
         run: git checkout -- pnpm-lock.yaml
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build and test
-        run: pnpm --filter @ai-stats/agent-sdk run test
-      - name: Dry-run package publish
+        run: corepack pnpm install --frozen-lockfile
+      - name: Build, test, and pack
         working-directory: packages/sdk/agent-sdk-ts
-        run: npm pack --dry-run
+        run: |
+          pnpm run build
+          pnpm run test
+          pnpm publish --dry-run --no-git-checks
 
   go:
     name: Go readiness

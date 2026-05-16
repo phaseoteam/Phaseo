@@ -93,7 +93,7 @@ jobs:
             echo "publishing ${pkg_name}@${pkg_version} from ${pkg_dir}"
             (
               cd "${pkg_dir}"
-              npm publish --access public
+              pnpm publish --access public --no-git-checks
             )
           }
 
