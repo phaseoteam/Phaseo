@@ -1134,14 +1134,20 @@ function buildFreeRouterModelsPageEntry(
 }
 async function ModelsPageDataSection() {
 	const includeHidden = false;
-	const [monitorResult, allModels] = await Promise.all([
+	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
 		getMonitorModels({}, includeHidden),
 		getAllModelsCached(includeHidden),
+		getFreeRouterOverview(),
 	]);
 	const models = withGatewayMetadata(allModels, monitorResult.models);
-	const facets = buildModelsFilterFacets(models);
+	const modelsWithFreeRouter = models.some(
+		(model) => model.model_id === FREE_ROUTER_MODEL_ID,
+	)
+		? models
+		: [buildFreeRouterModelsPageEntry(freeRouterOverview), ...models];
+	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
 
-	return <ModelsDisplay models={models} facets={facets} />;
+	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
 }
 
 export default function ModelsPage() {

@@ -4,6 +4,9 @@
 
 import { getBindings } from "@/runtime/env";
 import type { ProviderExecuteArgs } from "../types";
+import { GOOGLE_VERTEX_OPENAI_COMPAT_CONFIGS } from "../google-vertex/config";
+import { NEBIUS_TOKEN_FACTORY_OPENAI_COMPAT_CONFIGS } from "../nebius-token-factory/config";
+import { OPENAI_OPENAI_COMPAT_CONFIGS } from "../openai/config";
 import { resolveProviderKey, type ResolvedKey } from "../keys";
 
 function configError(code: string): Error & { code: string } {
@@ -50,14 +53,9 @@ const BYTEPLUS_API_KEY_ENVS = ["BYTEPLUS_API_KEY", "BYTEDANCE_SEED_API_KEY", "AR
 const BYTEPLUS_BASE_URL_ENVS = ["BYTEPLUS_BASE_URL", "BYTEDANCE_SEED_BASE_URL"] as const;
 
 export const OPENAI_COMPAT_CONFIG: Record<string, OpenAICompatConfig> = {
-    openai: {
-        providerId: "openai",
-        baseUrl: "https://api.openai.com",
-        pathPrefix: "/v1",
-        apiKeyEnv: "OPENAI_API_KEY",
-        baseUrlEnv: "OPENAI_BASE_URL",
-        supportsResponses: true,
-    },
+    ...OPENAI_OPENAI_COMPAT_CONFIGS,
+    ...GOOGLE_VERTEX_OPENAI_COMPAT_CONFIGS,
+    ...NEBIUS_TOKEN_FACTORY_OPENAI_COMPAT_CONFIGS,
     "alibaba-cloud": {
         providerId: "alibaba-cloud",
         baseUrl: "https://dashscope-intl.aliyuncs.com",

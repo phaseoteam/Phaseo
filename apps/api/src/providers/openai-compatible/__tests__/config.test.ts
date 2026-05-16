@@ -84,6 +84,17 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds the openai-eu chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			OPENAI_API_KEY: "test-openai-key",
+		} as any);
+
+		expect(openAICompatUrl("openai-eu", "/chat/completions")).toBe(
+			"https://api.openai.com/v1/chat/completions",
+		);
+	});
+
 	it("uses dashscope responses prefix for alibaba-cloud responses endpoint", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -461,6 +472,18 @@ describe("openAICompatUrl", () => {
 		);
 		expect(openAICompatUrl("nebius-token-factory-us-central-1", "/chat/completions")).toBe(
 			"https://us-central-1.api.nebius.example/v1/chat/completions",
+		);
+	});
+
+	it("builds the google-vertex-eu chat-completions endpoint without a path prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GOOGLE_VERTEX_API_KEY: "test-google-vertex-key",
+			GOOGLE_VERTEX_BASE_URL: "https://europe-west4-aiplatform.googleapis.com",
+		} as any);
+
+		expect(openAICompatUrl("google-vertex-eu", "/chat/completions")).toBe(
+			"https://europe-west4-aiplatform.googleapis.com/chat/completions",
 		);
 	});
 
