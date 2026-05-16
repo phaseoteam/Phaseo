@@ -1,6 +1,12 @@
-import { auth } from "@/lib/auth/server";
-import { oauthProviderOpenIdConfigMetadata } from "@better-auth/oauth-provider";
+import { NextResponse } from "next/server";
 
-const handler = oauthProviderOpenIdConfigMetadata(auth);
-
-export const GET = handler;
+export async function GET() {
+	return NextResponse.json(
+		{
+			error: "not_configured",
+			message:
+				"OpenID provider metadata is not configured in this deployment yet.",
+		},
+		{ status: 501 },
+	);
+}
