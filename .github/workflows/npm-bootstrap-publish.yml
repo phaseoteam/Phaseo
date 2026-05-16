@@ -3,6 +3,11 @@ name: npm bootstrap publish
 on:
   workflow_dispatch:
     inputs:
+      publish_agent_sdk:
+        description: "Publish @ai-stats/agent-sdk"
+        required: false
+        type: boolean
+        default: true
       publish_ai_sdk_provider:
         description: "Publish @ai-stats/ai-sdk-provider"
         required: false
@@ -49,12 +54,14 @@ jobs:
 
       - name: Build target packages
         run: |
+          pnpm --filter @ai-stats/agent-sdk run build
           pnpm --filter @ai-stats/ai-sdk-provider run build
           pnpm --filter @ai-stats/devtools-viewer run build
 
       - name: Publish selected packages (skip if version already exists)
         shell: bash
         env:
+          PUBLISH_AGENT_SDK: ${{ inputs.publish_agent_sdk }}
           PUBLISH_AI_SDK_PROVIDER: ${{ inputs.publish_ai_sdk_provider }}
           PUBLISH_DEVTOOLS_VIEWER: ${{ inputs.publish_devtools_viewer }}
         run: |
@@ -79,6 +86,10 @@ jobs:
               npm publish --access public
             )
           }
+
+          if [ "${PUBLISH_AGENT_SDK}" = "true" ]; then
+            publish_if_needed "@ai-stats/agent-sdk" "packages/sdk/agent-sdk-ts"
+          fi
 
           if [ "${PUBLISH_AI_SDK_PROVIDER}" = "true" ]; then
             publish_if_needed "@ai-stats/ai-sdk-provider" "packages/integrations/ai-sdk-ai-stats"

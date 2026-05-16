@@ -1,0 +1,24 @@
+{
+  "model_id": "inception/mercury-edit-2",
+  "organisation_id": "inception",
+  "name": "Mercury Edit 2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Mercury Edit 2 is Inception's edit-focused text model for instruction following and revision workflows.",
+  "announced_date": "2026-02-24T00:00:00",
+  "release_date": "2026-02-24T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "inception/mercury-edit-2",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.inceptionlabs.ai/blog/introducing-mercury-2"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

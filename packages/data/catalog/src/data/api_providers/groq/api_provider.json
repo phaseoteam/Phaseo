@@ -4,6 +4,11 @@
   "description": null,
   "link": "https://console.groq.com/docs/overview",
   "country_code": "US",
-  "status": "Beta",
-  "colour": "#F55036"
+  "status": "Active",
+  "colour": "#F55036",
+  "privacy_policy_url": "https://console.groq.com/docs/legal",
+  "terms_of_service_url": "https://console.groq.com/docs/legal/services-agreement",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Groq says it will not access customer data for training purposes and that inference customer data is not retained by default outside limited reliability, abuse-monitoring, or persistence-feature cases.",
+  "prompt_training_source_url": "https://console.groq.com/docs/legal/services-agreement"
 }

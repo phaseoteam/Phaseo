@@ -561,6 +561,20 @@
 								]
 							},
 							{
+								"item": "TypeScript Agent SDK",
+								"groups": [
+									{
+										"group": "Introduction",
+										"pages": [
+											"v1/sdk-reference/agent-sdk/overview",
+											"v1/sdk-reference/typescript/agent-sdk-overview",
+											"v1/sdk-reference/typescript/agent-sdk-installation",
+											"v1/sdk-reference/typescript/agent-sdk"
+										]
+									}
+								]
+							},
+							{
 								"item": "Python SDK",
 								"groups": [
 									{

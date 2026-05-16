@@ -234,6 +234,7 @@ export type CatalogueFilters = {
 
 const PRICING_METERS = [
     "input_tokens",
+    "input_characters",
     "input_text_tokens",
     "input_image_tokens",
     "input_image",

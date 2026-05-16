@@ -15,6 +15,7 @@ export type ModelsFilterFacets = {
 	featureOptions: OptionCount[];
 	supportedParameterOptions: OptionCount[];
 	providerOptions: OptionCount[];
+	regionOptions: OptionCount[];
 	creatorOptions: OptionCount[];
 	yearOptions: OptionCount[];
 };
@@ -38,6 +39,7 @@ export type ModelsPageModel = Omit<
 	| "gateway_output_modalities"
 	| "gateway_features"
 	| "gateway_provider_names"
+	| "gateway_execution_regions"
 	| "gateway_active_provider_names"
 	| "gateway_provider_details"
 	| "gateway_api_model_ids"
@@ -57,8 +59,11 @@ export type ModelsPageModel = Omit<
 	| "popularity_tokens_week"
 	| "throughput_week"
 	| "latency_week"
-	>,
+>,
 	"gateway_status"
 > & {
+	description?: string | null;
 	gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed" | null;
+	router_requests_30d?: number | null;
+	router_spend_nanos_30d?: number | null;
 };

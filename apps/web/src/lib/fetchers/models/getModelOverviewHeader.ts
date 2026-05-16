@@ -2,6 +2,12 @@
 import { createClient } from "@/utils/supabase/client";
 import { cacheLife, cacheTag } from "next/cache";
 import { applyHiddenFilter } from "./visibility";
+import {
+	FREE_ROUTER_MODEL_ID,
+	FREE_ROUTER_NAME,
+	FREE_ROUTER_ORGANISATION_ID,
+	isFreeRouterModelId,
+} from "@/lib/models/freeRouter";
 
 export interface ModelOverviewHeader {
 	model_id: string;
@@ -69,6 +75,21 @@ export async function fetchModelOverviewHeader(
 	modelId: string,
 	includeHidden: boolean
 ): Promise<ModelOverviewHeader> {
+	if (isFreeRouterModelId(modelId)) {
+		return {
+			model_id: FREE_ROUTER_MODEL_ID,
+			name: FREE_ROUTER_NAME,
+			organisation_id: FREE_ROUTER_ORGANISATION_ID,
+			organisation: {
+				name: "AI Stats",
+				country_code: "",
+			},
+			aliases: [],
+			status: "Available",
+			hidden: false,
+		};
+	}
+
 	const supabase = await createClient();
 
 	const query = applyHiddenFilter(

@@ -12,6 +12,7 @@ export interface MonitorModelData {
         id: string; // Add provider ID for logo lookup
         inputPrice: number;
         outputPrice: number;
+        executionRegions?: string[] | null;
         standardInputPrice?: number | null;
         standardOutputPrice?: number | null;
         standardInputPriceLabel?: string | null;

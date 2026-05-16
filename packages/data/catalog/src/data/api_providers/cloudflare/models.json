@@ -4,7 +4,7 @@
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3.2-1b-instruct",
     "provider_model_slug": "@cf/meta/llama-3.2-1b-instruct",
     "internal_model_id": "meta/llama-3.2-1b",
-    "is_active_gateway": false,
+      "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",

@@ -1,0 +1,41 @@
+{
+  "name": "@ai-stats/agent-sdk",
+  "description": "TypeScript SDK for building agentic applications on top of AI Stats Gateway",
+  "version": "0.1.0",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "SKILL.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "prepare-sdk-dependency": "pnpm --filter @ai-stats/sdk build",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "pnpm run prepare-sdk-dependency && pnpm run clean && node ../sdk-ts/node_modules/typescript/bin/tsc -p tsconfig.build.json",
+    "typecheck": "pnpm run prepare-sdk-dependency && node ../sdk-ts/node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "pnpm run prepare-sdk-dependency && pnpm exec vitest run",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@ai-stats/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "rimraf": "^6.0.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
+  }
+}

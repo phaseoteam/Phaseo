@@ -17,6 +17,7 @@ export type PriceBand = {
 
 export type PricingDimensionKey =
     | "input_tokens"
+    | "input_characters"
     | "input_text_tokens"
     | "input_image_tokens"
     | "input_audio_tokens"

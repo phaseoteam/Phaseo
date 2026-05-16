@@ -1,0 +1,24 @@
+# AI Stats Agent SDK
+
+- Use `@ai-stats/agent-sdk` as an installable TypeScript SDK for building agentic applications on top of AI Stats Gateway.
+- Prefer `createGatewayAgentClient()` when the repository already uses `@ai-stats/sdk`.
+- Read credentials from `AI_STATS_API_KEY`.
+- Use the Responses API path for new agent loops unless the project explicitly needs another surface.
+- Keep runtime tools small, deterministic, and idempotent when possible.
+- Treat returned run state as application-owned data. If the app needs resumability, serialize that returned state in the app itself.
+- Use `modelRetry` when transient model/provider failures should retry before the runtime marks the run as `failed`.
+- Expect persisted step records to carry `modelAttempts` when model retries occur.
+- Use `timeoutMs` on local tools when one dependency should fail fast instead of blocking the whole run indefinitely.
+- Use `toolExecution.toolConcurrency` when one model turn can safely fan out into multiple independent local tool calls without serializing them.
+- Define `parameters` on local runtime tools when the model should target a constrained JSON input contract instead of a generic free-form object payload.
+- Use `humanReview` plus `continueRun()` when the workflow needs explicit approval checkpoints.
+- Use `preset` on the agent, run, resume, or gateway adapter when routing, prompt, and parameter defaults should stay managed in the dashboard instead of being hard-coded in application code.
+- Use adapter-level defaults on `createGatewayAgentClient()` when one workflow always needs gateway-native controls such as `plugins`, `responseFormat`, `webSearchOptions`, `providerOptions`, or `promptCacheKey`.
+- Use adapter-level `gatewayTools` and `toolChoice` when one workflow should always expose managed upstream tools such as `gateway:web_search`.
+- For coding workflows, prefer a small set of local runtime tools plus `humanReview` over one broad upstream-managed tool surface.
+- Use `onEvent` when the repository needs to forward run lifecycle activity into logs, telemetry, or app-owned workflows.
+- Use `step.completed`, `step.failed`, `model.failed`, and `tool.failed` when one application needs exact lifecycle boundaries instead of inferring state from checkpoint writes.
+- Use persisted `requestId`, `nativeResponseId`, and `responseMeta` when the app needs a stable bridge back to gateway logs or upstream responses.
+- Catch `AgentGatewayError` around `run()` or `continueRun()` when application code needs to branch on gateway status, request ids, policy blocks, provider diagnostics, or routing diagnostics.
+- Expect thrown model or tool errors to persist the run as `failed`, and expect thrown model/tool/final-output failures to persist the active step as `failed`.
+- Expect concurrent local tool execution to preserve tool-result message order even when tool completion order differs.

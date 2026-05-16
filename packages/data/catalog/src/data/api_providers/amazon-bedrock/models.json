@@ -12,7 +12,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "ai21/jamba-1.5-mini",
@@ -27,7 +33,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "amazon/nova-2-lite",
@@ -42,7 +54,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-12-02T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "amazon/nova-lite-1.0",
@@ -57,7 +75,13 @@
     "max_output_tokens": null,
     "effective_from": "2024-12-04T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "amazon/nova-micro-1.0",
@@ -72,7 +96,13 @@
     "max_output_tokens": null,
     "effective_from": "2024-12-04T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "amazon/nova-premier",
@@ -87,7 +117,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-04-30T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "amazon/nova-pro-1.0",
@@ -102,7 +138,13 @@
     "max_output_tokens": null,
     "effective_from": "2024-12-04T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-3-haiku",
@@ -117,7 +159,13 @@
     "max_output_tokens": 4096,
     "effective_from": "2024-03-13T00:00:00",
     "effective_to": "2026-04-20T00:00:00",
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-3.5-haiku",
@@ -132,7 +180,13 @@
     "max_output_tokens": null,
     "effective_from": "2024-11-04T00:00:00",
     "effective_to": "2026-02-19T00:00:00",
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-3.7-sonnet",
@@ -147,7 +201,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-02-24T00:00:00",
     "effective_to": "2026-02-19T00:00:00",
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-haiku-4.5",
@@ -162,7 +222,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-10-15T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-opus-4",
@@ -177,7 +243,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-05-21T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-opus-4.1",
@@ -192,7 +264,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-08-05T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-opus-4.5",
@@ -207,7 +285,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-11-24T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-opus-4.6",
@@ -222,7 +306,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-opus-4.7",
@@ -237,7 +327,13 @@
     "max_output_tokens": null,
     "effective_from": "2026-04-16T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-sonnet-4",
@@ -252,7 +348,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-05-21T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-sonnet-4.5",
@@ -267,7 +369,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-09-29T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "anthropic/claude-sonnet-4.6",
@@ -282,7 +390,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-3-12b",
@@ -297,7 +411,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-3-27b",
@@ -312,7 +432,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "google/gemma-3-4b",
@@ -327,7 +453,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "meta/llama-4-maverick",
@@ -342,7 +474,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "meta/llama-4-scout",
@@ -357,7 +495,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "minimax/minimax-m2",
@@ -372,7 +516,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "minimax/minimax-m2.1",
@@ -387,7 +537,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "minimax/minimax-m2.5",
@@ -402,7 +558,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "moonshotai/kimi-k2.5",
@@ -417,7 +579,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "nvidia/nemotron-3-nano-30b-a3b",
@@ -432,7 +600,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "nvidia/nemotron-3-super-120b-a12b",
@@ -447,7 +621,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-120b",
@@ -462,7 +642,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-08-05T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-20b",
@@ -477,7 +663,13 @@
     "max_output_tokens": null,
     "effective_from": "2025-08-05T00:00:00",
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-safeguard-120b",
@@ -492,7 +684,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "openai/gpt-oss-safeguard-20b",
@@ -507,7 +705,139 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-30b-a3b",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-coder-30b-a3b",
+    "provider_model_slug": "qwen.qwen3-coder-30b-a3b",
+    "internal_model_id": "qwen/qwen3-coder-30b-a3b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-32b",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-32b",
+    "provider_model_slug": "qwen.qwen3-32b",
+    "internal_model_id": "qwen/qwen3-32b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-235b-a22b-2507",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-235b-a22b-2507",
+    "provider_model_slug": "qwen.qwen3-235b-a22b-2507",
+    "internal_model_id": "qwen/qwen3-235b-a22b-2507",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-next-80b-a3b-instruct",
+    "provider_model_slug": "qwen.qwen3-next-80b-a3b",
+    "internal_model_id": "qwen/qwen3-next-80b-a3b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-vl-235b-a22b-instruct",
+    "provider_model_slug": "qwen.qwen3-vl-235b-a22b",
+    "internal_model_id": "qwen/qwen3-vl-235b-a22b-instruct",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3-coder-next",
+    "provider_api_model_id": "amazon-bedrock:qwen/qwen3-coder-next",
+    "provider_model_slug": "qwen.qwen3-coder-next",
+    "internal_model_id": "qwen/qwen3-coder-next",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "z-ai/glm-4.7",
@@ -522,7 +852,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "z-ai/glm-4.7-flash",
@@ -537,7 +873,13 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   },
   {
     "api_model_id": "z-ai/glm-5",
@@ -552,6 +894,12 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": null,
-    "capabilities": []
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

@@ -639,6 +639,7 @@ jobs:
             - name: Preflight publishable npm packages
               run: |
                   pnpm --filter @ai-stats/sdk run build
+                  pnpm --filter @ai-stats/agent-sdk run build
                   pnpm --filter @ai-stats/ai-sdk-provider run build
                   pnpm --filter @ai-stats/devtools-viewer run build
 

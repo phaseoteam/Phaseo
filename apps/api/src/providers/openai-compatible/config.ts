@@ -668,15 +668,28 @@ function resolveNebiusBaseUrl(providerId: string): string | undefined {
     if (providerId === "nebius-token-factory") {
         return readFirstBinding(["NEBIUS_BASE_URL"]);
     }
-    return undefined;
+	if (providerId === "nebius-token-factory-eu-north-1") {
+		return readFirstBinding(NEBIUS_EU_NORTH_1_BASE_URL_ENVS);
+	}
+	if (providerId === "nebius-token-factory-us-central-1") {
+		return readFirstBinding(NEBIUS_US_CENTRAL_1_BASE_URL_ENVS);
+	}
+	if (providerId === "nebius-token-factory") {
+		return readFirstBinding(["NEBIUS_BASE_URL"]);
+	}
+	if (providerId === "nebius-token-factory-fast") {
+		return readFirstBinding(["NEBIUS_BASE_URL"]);
+	}
+	return undefined;
 }
 
 function isNebiusTokenFactoryProvider(providerId: string): boolean {
-    return (
-        providerId === "nebius-token-factory" ||
-        providerId === "nebius-token-factory-eu-north-1" ||
-        providerId === "nebius-token-factory-us-central-1"
-    );
+	return (
+		providerId === "nebius-token-factory" ||
+		providerId === "nebius-token-factory-fast" ||
+		providerId === "nebius-token-factory-eu-north-1" ||
+		providerId === "nebius-token-factory-us-central-1"
+	);
 }
 
 export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfig {

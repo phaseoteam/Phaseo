@@ -1,0 +1,31 @@
+{
+  "key": "ovhcloud:qwen/qwen3-32b:text.generate",
+  "api_provider_id": "ovhcloud",
+  "provider_slug": "ovhcloud",
+  "api_model_id": "qwen/qwen3-32b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.08,
+      "currency": "EUR",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.23,
+      "currency": "EUR",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

@@ -152,6 +152,13 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		rerank: openaiRerank,
 		"video.generate": openaiVideo,
 	},
+	"openai-eu": {
+		"text.generate": openaiText,
+		embeddings: openaiEmbeddings,
+		moderations: openaiModerations,
+		rerank: openaiRerank,
+		"video.generate": openaiVideo,
+	},
 	anthropic: {
 		"text.generate": anthropicText,
 	},
@@ -189,6 +196,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	aionlabs: { "text.generate": aionLabsText },
 	"amazon-bedrock": { "text.generate": amazonBedrockText },
 	"google-vertex": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
+	"google-vertex-eu": { "text.generate": googleVertexText, "video.generate": googleVertexVideo },
 	deepinfra: { "text.generate": deepinfraText },
 	together: { "text.generate": togetherText },
 	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage },

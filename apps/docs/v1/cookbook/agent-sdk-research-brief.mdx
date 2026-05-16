@@ -1,0 +1,160 @@
+---
+title: "Research with structured output and web search"
+description: "Build a search-backed TypeScript agent that returns strict JSON through the Agent SDK."
+---
+
+Use this recipe when one agent workflow should:
+
+- run through the TypeScript Agent SDK
+- rely on managed web search
+- return strict structured JSON
+- recover near-valid malformed JSON deterministically
+
+## 1. Install the SDKs
+
+<CodeGroup>
+```bash npm
+npm install @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+```bash pnpm
+pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+```bash yarn
+yarn add @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+```bash bun
+bun add @ai-stats/sdk @ai-stats/agent-sdk
+```
+</CodeGroup>
+
+## 2. Define one narrow output contract
+
+Keep the first research output small enough that operators can inspect it easily in logs.
+
+```ts
+type ResearchBrief = {
+  topic: string;
+  summary: string;
+  sources: Array<{
+    title: string;
+    url: string;
+  }>;
+};
+```
+
+## 3. Create the agent
+
+Use `parseOutput` so the runtime returns typed data instead of raw text.
+
+```ts
+import { createAgent } from "@ai-stats/agent-sdk";
+
+export const researchBriefAgent = createAgent<string, ResearchBrief>({
+  id: "research-brief-agent",
+  model: "ai-stats/free",
+  instructions:
+    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
+  parseOutput(text) {
+    return JSON.parse(text) as ResearchBrief;
+  },
+});
+```
+
+## 4. Configure the gateway-backed adapter once
+
+This is the important part:
+
+- `responseFormat` keeps the output schema explicit
+- `plugins` enables response healing for near-valid JSON
+- `gatewayTools` exposes managed web search to the model
+- `toolChoice` forces the search tool when this workflow should always ground itself
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@ai-stats/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.AI_STATS_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["title", "url"],
+            additionalProperties: false,
+          },
+          minItems: 1,
+        },
+      },
+      required: ["topic", "summary", "sources"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  gatewayTools: [
+    { type: "gateway:web_search", parameters: { max_results: 5 } },
+  ],
+  toolChoice: "gateway:web_search",
+  webSearchOptions: { search_context_size: "high" },
+});
+```
+
+## 5. Run the workflow
+
+```ts
+const result = await researchBriefAgent.run({
+  input: "Summarize the latest browser automation support patterns for coding agents.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+console.log(result.output);
+```
+
+## 6. What to verify in logs
+
+After one successful run, inspect the request detail view and confirm:
+
+- `requested native web search tools` or managed search activity is present
+- search results and citations were persisted
+- plugin execution shows `response-healing` only when recovery was needed
+- the final output matches the JSON schema you asked for
+
+## 7. When to use this pattern
+
+Use this recipe when:
+
+- the workflow is mostly one-shot research, not a deep local-tool loop
+- the model should ground itself before answering
+- downstream callers want typed JSON instead of prose
+
+Do not use this pattern when:
+
+- the workflow already knows the exact URLs and `gateway:web_fetch` is enough
+- the agent needs rich local tools more than upstream-native tools
+- the output contract is loose enough that strict JSON adds more overhead than value
+
+## Related guides
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Structured outputs](../guides/structured-outputs.mdx)
+- [Validate structured outputs](../guides/structured-outputs-validation.mdx)
