@@ -15,6 +15,7 @@ export type ModelsFilterFacets = {
 	featureOptions: OptionCount[];
 	supportedParameterOptions: OptionCount[];
 	providerOptions: OptionCount[];
+	regionOptions: OptionCount[];
 	creatorOptions: OptionCount[];
 	yearOptions: OptionCount[];
 };
@@ -39,6 +40,7 @@ export type ModelsPageModel = Omit<
 	| "gateway_output_modalities"
 	| "gateway_features"
 	| "gateway_provider_names"
+	| "gateway_execution_regions"
 	| "gateway_active_provider_names"
 	| "gateway_provider_details"
 	| "gateway_api_model_ids"

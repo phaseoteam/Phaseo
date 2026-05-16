@@ -8,4 +8,11 @@ export const GOOGLE_VERTEX_OPENAI_COMPAT_CONFIGS = {
 		pathPrefix: "",
 		supportsResponses: false,
 	},
+	"google-vertex-eu": {
+		providerId: "google-vertex-eu",
+		baseUrlEnv: "GOOGLE_VERTEX_BASE_URL",
+		apiKeyEnv: "GOOGLE_VERTEX_API_KEY",
+		pathPrefix: "",
+		supportsResponses: false,
+	},
 } satisfies Record<string, OpenAICompatConfig>;

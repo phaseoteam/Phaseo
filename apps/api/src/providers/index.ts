@@ -26,6 +26,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 // Adapter registry (default per-provider)
 const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
+    "openai-eu": createOpenAICompatibleAdapter("openai-eu"),
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
     "anthropic-us": AnthropicAdapter,
@@ -78,6 +79,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     morph: createOpenAICompatibleAdapter("morph"),
     morpheus: createOpenAICompatibleAdapter("morpheus"),
     "nebius-token-factory": createOpenAICompatibleAdapter("nebius-token-factory"),
+    "nebius-token-factory-fast": createOpenAICompatibleAdapter("nebius-token-factory-fast"),
     "nebius-token-factory-eu-north-1": createOpenAICompatibleAdapter("nebius-token-factory-eu-north-1"),
     "nebius-token-factory-us-central-1": createOpenAICompatibleAdapter("nebius-token-factory-us-central-1"),
     "z-ai": createOpenAICompatibleAdapter("z-ai"),
@@ -109,6 +111,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     // Native auth (SigV4/OAuth) is not implemented yet; route via OpenAI-compatible gateways/proxies.
     "amazon-bedrock": createOpenAICompatibleAdapter("amazon-bedrock"),
     "google-vertex": createOpenAICompatibleAdapter("google-vertex"),
+    "google-vertex-eu": createOpenAICompatibleAdapter("google-vertex-eu"),
 };
 
 // Capability-specific adapter overrides (e.g. Mistral OCR)

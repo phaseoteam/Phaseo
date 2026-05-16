@@ -122,7 +122,7 @@ export default async function FreeRouterOverview() {
 				<div className="space-y-1">
 					<h2 className="text-xl font-semibold tracking-tight">Eligible models</h2>
 					<p className="text-sm text-muted-foreground">
-						Usage is grouped by canonical model, not provider-specific free aliases.
+						Usage is grouped by canonical model and shows the active free API model ID when it is unambiguous.
 					</p>
 				</div>
 				{overview.models.length > 0 ? (
@@ -149,7 +149,7 @@ export default async function FreeRouterOverview() {
 											>
 												{model.organisationName}: {model.name}
 											</Link>
-											<p className="text-xs text-muted-foreground">{model.modelId}</p>
+											<p className="text-xs text-muted-foreground">{model.displayApiModelId}</p>
 										</div>
 									</TableCell>
 									<TableCell>

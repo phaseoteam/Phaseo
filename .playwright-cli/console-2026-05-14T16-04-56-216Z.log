@@ -7223,3 +7223,413 @@ https://nextjs.org/docs/messages/module-not-found @ http://localhost:3100/_next/
 [107542173ms] [LOG] [Fast Refresh] done in 154ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
 [107543861ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
 [107543885ms] [LOG] [Fast Refresh] done in 133ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[108471155ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[108471323ms] [LOG] [Fast Refresh] done in 279ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[108474282ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[108474316ms] [LOG] [Fast Refresh] done in 139ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[108678363ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[108679674ms] [LOG] [Fast Refresh] done in 1411ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109515965ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109515977ms] [LOG] [Fast Refresh] done in 122ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109596331ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109598942ms] [LOG] [Fast Refresh] done in 2716ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109599054ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109599426ms] [LOG] [Fast Refresh] done in 476ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109599854ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109600005ms] [LOG] [Fast Refresh] done in 256ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109601252ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109601254ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109605999ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109606416ms] [LOG] [Fast Refresh] done in 520ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109606524ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109607166ms] [LOG] [Fast Refresh] done in 749ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109608561ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109608563ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109608668ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109609105ms] [LOG] [Fast Refresh] done in 541ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109610388ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109611556ms] [LOG] [Fast Refresh] done in 1275ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109612446ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109613125ms] [LOG] [Fast Refresh] done in 786ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109615615ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109615616ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109621009ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109621498ms] [LOG] [Fast Refresh] done in 599ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109621606ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109622604ms] [LOG] [Fast Refresh] done in 1105ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109625698ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109625957ms] [LOG] [Fast Refresh] done in 363ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109629255ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109629357ms] [LOG] [Fast Refresh] done in 215ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109636237ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109636401ms] [LOG] [Fast Refresh] done in 278ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109644094ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109645779ms] [LOG] [Fast Refresh] done in 1525ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109650203ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109650204ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109654437ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109654681ms] [LOG] [Fast Refresh] done in 345ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109654785ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109655259ms] [LOG] [Fast Refresh] done in 577ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109658436ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109658988ms] [LOG] [Fast Refresh] done in 653ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109663802ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109664960ms] [LOG] [Fast Refresh] done in 1258ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109670271ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109670271ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109670376ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109671685ms] [LOG] [Fast Refresh] done in 1412ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109671793ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109673239ms] [LOG] [Fast Refresh] done in 1551ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109673344ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109674468ms] [LOG] [Fast Refresh] done in 1228ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109676046ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109677510ms] [LOG] [Fast Refresh] done in 1571ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109680142ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109680144ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109680151ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109680153ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109680769ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109680770ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109682686ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109682952ms] [LOG] [Fast Refresh] done in 375ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109888500ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109888736ms] [LOG] [Fast Refresh] done in 349ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109903080ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109903303ms] [LOG] [Fast Refresh] done in 329ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109903409ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109903721ms] [LOG] [Fast Refresh] done in 413ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109905129ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109905130ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109907860ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109908274ms] [LOG] [Fast Refresh] done in 517ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109908376ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109909141ms] [LOG] [Fast Refresh] done in 867ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109909246ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109909707ms] [LOG] [Fast Refresh] done in 563ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109910457ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109910634ms] [LOG] [Fast Refresh] done in 280ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109911107ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109911109ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109918172ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109918412ms] [LOG] [Fast Refresh] done in 344ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109918559ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109918888ms] [LOG] [Fast Refresh] done in 437ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109919993ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109919994ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109922928ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109923527ms] [LOG] [Fast Refresh] done in 703ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109923637ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109924644ms] [LOG] [Fast Refresh] done in 1115ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109924747ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109925366ms] [LOG] [Fast Refresh] done in 721ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109931853ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109931853ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109931956ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109932286ms] [LOG] [Fast Refresh] done in 431ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109932387ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109932494ms] [LOG] [Fast Refresh] done in 207ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109941272ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109941420ms] [LOG] [Fast Refresh] done in 251ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109941523ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109942154ms] [LOG] [Fast Refresh] done in 734ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109943820ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109943821ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109947988ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109948184ms] [LOG] [Fast Refresh] done in 301ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109948768ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109949274ms] [LOG] [Fast Refresh] done in 608ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109964294ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109964502ms] [LOG] [Fast Refresh] done in 318ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109964608ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109965116ms] [LOG] [Fast Refresh] done in 612ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109966490ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109966491ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109969058ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109969495ms] [LOG] [Fast Refresh] done in 539ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109969603ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109970290ms] [LOG] [Fast Refresh] done in 793ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109970396ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109970640ms] [LOG] [Fast Refresh] done in 344ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109970746ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109971396ms] [LOG] [Fast Refresh] done in 756ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109971503ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109972049ms] [LOG] [Fast Refresh] done in 652ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109973938ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109974163ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109974164ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109974165ms] [LOG] [Fast Refresh] done in 328ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109974266ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109975140ms] [LOG] [Fast Refresh] done in 972ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109976467ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109976642ms] [LOG] [Fast Refresh] done in 278ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109978022ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109979265ms] [LOG] [Fast Refresh] done in 1344ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109981427ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109981468ms] [LOG] [Fast Refresh] done in 135ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109986047ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109986049ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109986157ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109987953ms] [LOG] [Fast Refresh] done in 1900ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109989466ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109990523ms] [LOG] [Fast Refresh] done in 1161ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109993632ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109993634ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109994666ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109995381ms] [LOG] [Fast Refresh] done in 792ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109996097ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109996564ms] [LOG] [Fast Refresh] done in 569ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109998758ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109998759ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109998827ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[109999695ms] [LOG] [Fast Refresh] done in 968ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110001452ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110002614ms] [LOG] [Fast Refresh] done in 1267ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110003300ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110003301ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110004697ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110005136ms] [LOG] [Fast Refresh] done in 549ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110006783ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110007959ms] [LOG] [Fast Refresh] done in 1279ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110007968ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110007970ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110010742ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110011093ms] [LOG] [Fast Refresh] done in 452ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110011195ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110011559ms] [LOG] [Fast Refresh] done in 465ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110015971ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110015972ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110016436ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110017276ms] [LOG] [Fast Refresh] done in 944ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110018416ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110018837ms] [LOG] [Fast Refresh] done in 527ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110023766ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110023994ms] [LOG] [Fast Refresh] done in 332ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110027274ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110027275ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110029562ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110029884ms] [LOG] [Fast Refresh] done in 425ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110029987ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110030532ms] [LOG] [Fast Refresh] done in 647ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110030634ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110030833ms] [LOG] [Fast Refresh] done in 300ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110031663ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110033003ms] [LOG] [Fast Refresh] done in 1444ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110034027ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110034028ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110034946ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110035991ms] [LOG] [Fast Refresh] done in 1145ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110039236ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110041016ms] [LOG] [Fast Refresh] done in 1885ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110043119ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[110043121ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137854463ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137854672ms] [LOG] [Fast Refresh] done in 315ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137859890ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137860323ms] [LOG] [Fast Refresh] done in 538ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137862030ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137862127ms] [LOG] [Fast Refresh] done in 208ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137957165ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137957430ms] [LOG] [Fast Refresh] done in 366ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137959822ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137960064ms] [LOG] [Fast Refresh] done in 347ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137964475ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[137964476ms] [LOG] [Fast Refresh] done in 109ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[138017834ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[138018500ms] [LOG] [Fast Refresh] done in 774ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[138028504ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[138028521ms] [LOG] [Fast Refresh] done in 128ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[138265009ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[138265194ms] [LOG] [Fast Refresh] done in 295ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139457674ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139458237ms] [LOG] [Fast Refresh] done in 676ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139458348ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139458973ms] [LOG] [Fast Refresh] done in 725ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139459331ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139459357ms] [LOG] [Fast Refresh] done in 136ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139460822ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139460827ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139462037ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139462476ms] [LOG] [Fast Refresh] done in 539ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139463691ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139463969ms] [LOG] [Fast Refresh] done in 378ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139465061ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139465237ms] [LOG] [Fast Refresh] done in 276ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139465340ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139465382ms] [LOG] [Fast Refresh] done in 144ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139467820ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139468476ms] [LOG] [Fast Refresh] done in 761ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139468579ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139471443ms] [LOG] [Fast Refresh] done in 2965ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139478921ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139478922ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139480700ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139482009ms] [LOG] [Fast Refresh] done in 1416ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139482115ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139484109ms] [LOG] [Fast Refresh] done in 2099ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139484219ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139486097ms] [LOG] [Fast Refresh] done in 1986ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139486199ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139486588ms] [LOG] [Fast Refresh] done in 489ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139486693ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139487224ms] [LOG] [Fast Refresh] done in 635ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139488210ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139489311ms] [LOG] [Fast Refresh] done in 1203ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139489419ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139490370ms] [LOG] [Fast Refresh] done in 1058ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139490475ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139490661ms] [LOG] [Fast Refresh] done in 289ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139491579ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139491580ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139492100ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139492111ms] [LOG] [Fast Refresh] done in 120ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139492458ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139492459ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139492948ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139492968ms] [LOG] [Fast Refresh] done in 122ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139494459ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139494461ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139494570ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139494753ms] [LOG] [Fast Refresh] done in 290ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139496224ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139496335ms] [LOG] [Fast Refresh] done in 212ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139496439ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139496585ms] [LOG] [Fast Refresh] done in 249ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139497000ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139497001ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139506508ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139506817ms] [LOG] [Fast Refresh] done in 421ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139506929ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139507295ms] [LOG] [Fast Refresh] done in 471ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139507639ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139507744ms] [LOG] [Fast Refresh] done in 209ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139508733ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139508734ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139509520ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139510151ms] [LOG] [Fast Refresh] done in 732ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139511609ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139512125ms] [LOG] [Fast Refresh] done in 619ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139514879ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139515218ms] [LOG] [Fast Refresh] done in 443ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139515328ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139516597ms] [LOG] [Fast Refresh] done in 1377ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139518249ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139518251ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139518359ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139518434ms] [LOG] [Fast Refresh] done in 183ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139523599ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139523964ms] [LOG] [Fast Refresh] done in 472ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139524067ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139524265ms] [LOG] [Fast Refresh] done in 300ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139524809ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139525217ms] [LOG] [Fast Refresh] done in 515ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139525778ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139525779ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139526429ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139526745ms] [LOG] [Fast Refresh] done in 420ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139526848ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139526940ms] [LOG] [Fast Refresh] done in 194ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139527048ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139527080ms] [LOG] [Fast Refresh] done in 140ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139527575ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139527576ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139530275ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139530408ms] [LOG] [Fast Refresh] done in 241ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139537333ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139537436ms] [LOG] [Fast Refresh] done in 209ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139945639ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139945822ms] [LOG] [Fast Refresh] done in 288ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139948229ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139948408ms] [LOG] [Fast Refresh] done in 285ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139950105ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139950559ms] [LOG] [Fast Refresh] done in 561ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139951230ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139951481ms] [LOG] [Fast Refresh] done in 358ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139951583ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139951823ms] [LOG] [Fast Refresh] done in 341ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139954286ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139954501ms] [LOG] [Fast Refresh] done in 325ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139963839ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[139964015ms] [LOG] [Fast Refresh] done in 284ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140221141ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140221547ms] [LOG] [Fast Refresh] done in 508ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140221657ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140222249ms] [LOG] [Fast Refresh] done in 694ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140223262ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140223263ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140223781ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140223818ms] [LOG] [Fast Refresh] done in 139ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140224167ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140224168ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140224771ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140224791ms] [LOG] [Fast Refresh] done in 129ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140225112ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140225113ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140225600ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140225619ms] [LOG] [Fast Refresh] done in 125ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140228998ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140228999ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140230006ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140230317ms] [LOG] [Fast Refresh] done in 416ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140237641ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140238158ms] [LOG] [Fast Refresh] done in 620ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140253061ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140253852ms] [LOG] [Fast Refresh] done in 904ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140285715ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140286128ms] [LOG] [Fast Refresh] done in 522ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140286245ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140286682ms] [LOG] [Fast Refresh] done in 541ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140288022ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140288023ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140288671ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140288731ms] [LOG] [Fast Refresh] done in 163ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140289132ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140289133ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140289729ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140289786ms] [LOG] [Fast Refresh] done in 159ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140290140ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140290141ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140290699ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140290721ms] [LOG] [Fast Refresh] done in 131ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140291241ms] [LOG] %c%s%c [getModelOverviewCached] Cache-aware fetch for model overview background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140291242ms] [LOG] %c%s%c [fetch] HIT DB for model gateway metadata background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Cache   google/gemini-3.1-flash-lite @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140295479ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140295797ms] [LOG] [Fast Refresh] done in 431ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140296299ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140296436ms] [LOG] [Fast Refresh] done in 241ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140297800ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140297981ms] [LOG] [Fast Refresh] done in 282ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140298093ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140298266ms] [LOG] [Fast Refresh] done in 284ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140303163ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140305590ms] [LOG] [Fast Refresh] done in 2529ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140309322ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140309760ms] [LOG] [Fast Refresh] done in 538ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140313431ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140313545ms] [LOG] [Fast Refresh] done in 218ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140313653ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140313766ms] [LOG] [Fast Refresh] done in 221ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140313874ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140313971ms] [LOG] [Fast Refresh] done in 205ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140314079ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140314168ms] [LOG] [Fast Refresh] done in 196ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140316869ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140317016ms] [LOG] [Fast Refresh] done in 258ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140317123ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140317306ms] [LOG] [Fast Refresh] done in 289ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140317408ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140317572ms] [LOG] [Fast Refresh] done in 265ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140445993ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140445999ms] [LOG] [Fast Refresh] done in 112ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140536629ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[140536865ms] [LOG] [Fast Refresh] done in 349ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141213518ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141213674ms] [LOG] [Fast Refresh] done in 268ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141826336ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141826541ms] [LOG] [Fast Refresh] done in 313ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141863625ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141863811ms] [LOG] [Fast Refresh] done in 293ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141993779ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[141993785ms] [LOG] [Fast Refresh] done in 114ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[142002352ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976
+[142002359ms] [LOG] [Fast Refresh] done in 114ms @ http://localhost:3100/_next/static/chunks/0imt_next_dist_0oz.mh0._.js:2976

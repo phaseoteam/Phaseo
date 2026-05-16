@@ -39,6 +39,7 @@ import {
 	ImageIcon,
 	Video,
 	CalendarDays,
+	Globe2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -107,6 +108,7 @@ type PreparedModel = {
 	outputModalitiesSet: ReadonlySet<string>;
 	featuresSet: ReadonlySet<string>;
 	providerNamesSet: ReadonlySet<string>;
+	executionRegionsSet: ReadonlySet<string>;
 	supportedParametersSet: ReadonlySet<string>;
 	maxContextLength: number | null;
 	creator: string;
@@ -128,6 +130,7 @@ type FilterDimension =
 	| "contextMin"
 	| "supportedParameters"
 	| "providers"
+	| "regions"
 	| "creators"
 	| "years";
 
@@ -169,6 +172,7 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"rerank",
 	"audio_music",
 ] as const;
+const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
 
 function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
@@ -188,6 +192,16 @@ function parseCsvParam(value: string | null): string[] {
 		.split(",")
 		.map((part) => part.trim())
 		.filter(Boolean);
+}
+
+function parseRegionParam(value: string | null): string[] {
+	return Array.from(
+		new Set(
+			parseCsvParam(value)
+				.map((part) => String(part ?? "").trim().toLowerCase())
+				.filter(Boolean),
+		),
+	);
 }
 
 function normalizeModalityFilterValue(value: string): string {
@@ -386,6 +400,16 @@ function toTitleCase(value: string): string {
 				: word,
 		)
 		.join(" ");
+}
+
+function formatRegionLabel(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "us") return "US";
+	if (normalized === "eu") return "EU";
+	if (normalized === "apac") return "APAC";
+	if (normalized === "jp") return "Japan";
+	if (normalized === "au") return "Australia";
+	return normalized ? normalized.toUpperCase() : value;
 }
 
 function getModalityIcon(modality: string): LucideIcon {
@@ -743,6 +767,13 @@ export default function ModelsDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedRegions, setSelectedRegions] = useQueryState("regions", {
+		defaultValue: [] as string[],
+		parse: parseRegionParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
 	const [selectedCreators, setSelectedCreators] = useQueryState("creators", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -849,6 +880,7 @@ export default function ModelsDisplay({
 		featureOptions: baseFeatureOptions,
 		supportedParameterOptions: baseSupportedParameterOptions,
 		providerOptions: baseProviderOptions,
+		regionOptions: baseRegionOptions,
 		creatorOptions: baseCreatorOptions,
 		yearOptions: baseYearOptions,
 	} = facets;
@@ -862,6 +894,7 @@ export default function ModelsDisplay({
 		(selectedContextMin > 0 ? 1 : 0) +
 		selectedSupportedParameters.length +
 		selectedProviders.length +
+		selectedRegions.length +
 		selectedCreators.length +
 		selectedYears.length;
 
@@ -880,6 +913,9 @@ export default function ModelsDisplay({
 				const features = Array.from(normalizedSet(model.gateway_features));
 				const providerNames = Array.from(
 					normalizedSet(model.gateway_provider_names),
+				);
+				const executionRegions = Array.from(
+					normalizedSet(model.gateway_execution_regions),
 				);
 				const apiModelIds = Array.from(
 					normalizedSet(model.gateway_api_model_ids),
@@ -901,6 +937,7 @@ export default function ModelsDisplay({
 					outputModalitiesSet: new Set(outputModalities),
 					featuresSet: new Set(features),
 					providerNamesSet: new Set(providerNames),
+					executionRegionsSet: new Set(executionRegions),
 					supportedParametersSet: new Set(supportedParameters),
 					maxContextLength:
 						Number.isFinite(maxContextLength) && maxContextLength > 0
@@ -1014,6 +1051,15 @@ export default function ModelsDisplay({
 				return false;
 			}
 			if (
+				exclude !== "regions" &&
+				selectedRegions.length > 0 &&
+				!selectedRegions.every((value) =>
+					prepared.executionRegionsSet.has(value),
+				)
+			) {
+				return false;
+			}
+			if (
 				exclude !== "creators" &&
 				selectedCreators.length > 0 &&
 				!selectedCreators.includes(prepared.creator)
@@ -1040,6 +1086,7 @@ export default function ModelsDisplay({
 			selectedInputModalities,
 			selectedOutputModalities,
 			selectedProviders,
+			selectedRegions,
 			selectedSupportedParameters,
 			selectedYears,
 		],
@@ -1151,6 +1198,13 @@ export default function ModelsDisplay({
 				),
 				selectedProviders,
 			),
+			regionOptions: mergeOptionCounts(
+				baseRegionOptions,
+				countPreparedValues(withAllExcept("regions"), (prepared) =>
+					prepared.executionRegionsSet.values(),
+				),
+				selectedRegions,
+			),
 			creatorOptions: mergeOptionCounts(
 				baseCreatorOptions,
 				countPreparedValues(withAllExcept("creators"), (prepared) =>
@@ -1173,6 +1227,7 @@ export default function ModelsDisplay({
 		baseInputModalityOptions,
 		baseOutputModalityOptions,
 		baseProviderOptions,
+		baseRegionOptions,
 		baseSupportedParameterOptions,
 		baseYearOptions,
 		matchesPreparedModel,
@@ -1183,6 +1238,7 @@ export default function ModelsDisplay({
 		selectedInputModalities,
 		selectedOutputModalities,
 		selectedProviders,
+		selectedRegions,
 		selectedSupportedParameters,
 		selectedYears,
 	]);
@@ -1197,6 +1253,7 @@ export default function ModelsDisplay({
 		setSelectedContextMin(0);
 		setSelectedSupportedParameters([]);
 		setSelectedProviders([]);
+		setSelectedRegions([]);
 		setSelectedCreators([]);
 		setSelectedYears([]);
 	};
@@ -1249,6 +1306,21 @@ export default function ModelsDisplay({
 	const supportedParameterOptions =
 		dynamicSidebarCounts.supportedParameterOptions;
 	const providerOptions = dynamicSidebarCounts.providerOptions;
+	const regionOptions = useMemo(() => {
+		const order = new Map(
+			REGION_DISPLAY_ORDER.map((value, index) => [value, index]),
+		);
+		return [...dynamicSidebarCounts.regionOptions].sort((a, b) => {
+			const aKey = String(a.value ?? "").trim().toLowerCase();
+			const bKey = String(b.value ?? "").trim().toLowerCase();
+			const aIndex = order.get(aKey);
+			const bIndex = order.get(bKey);
+			if (aIndex !== undefined && bIndex !== undefined) return aIndex - bIndex;
+			if (aIndex !== undefined) return -1;
+			if (bIndex !== undefined) return 1;
+			return formatRegionLabel(a.value).localeCompare(formatRegionLabel(b.value));
+		});
+	}, [dynamicSidebarCounts.regionOptions]);
 	const creatorOptions = dynamicSidebarCounts.creatorOptions;
 	const yearOptions = dynamicSidebarCounts.yearOptions;
 
@@ -1501,6 +1573,25 @@ export default function ModelsDisplay({
 						}
 						labelForValue={(value) => value}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="regionRouting" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Globe2 className="h-4 w-4 text-muted-foreground" />
+						Region Routing
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={regionOptions}
+						selected={selectedRegions}
+						onToggle={(value) =>
+							setSelectedRegions(toggleInList(selectedRegions, value))
+						}
+						labelForValue={formatRegionLabel}
 					/>
 				</AccordionContent>
 			</AccordionItem>

@@ -1209,15 +1209,11 @@
 			"view",
 			"chatgpt",
 			"claude",
-			"devin",
 			"grok",
-			"aistudio",
 			"perplexity",
 			"mcp",
-			"add-mcp",
 			"cursor",
-			"vscode",
-			"windsurf"
+			"vscode"
 		]
 	},
 	"footer": {

@@ -19,7 +19,7 @@
   "pricing_source_url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
   "regional_pricing_notes": "Europe multi-region Vertex endpoint. For generally available Gemini 3 and later model families, non-global endpoint pricing starts on July 1, 2026. Before July 1, 2026, Google states that Global endpoint pricing applies to non-global endpoints.",
   "country_code": "US",
-  "status": "Alpha",
+  "status": "Active",
   "colour": "#4285F4",
   "prompt_training_policy": "no_train",
   "prompt_training_notes": "Google Cloud says Vertex AI customer data is not used to train or fine-tune AI/ML models without prior permission or instruction, though some abuse-monitoring and short-lived caching scenarios can still apply.",

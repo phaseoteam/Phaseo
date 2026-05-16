@@ -4,7 +4,7 @@
     "provider_api_model_id": "google-vertex-eu:google/gemini-3.1-flash-lite",
     "provider_model_slug": "gemini-3.1-flash-lite",
     "internal_model_id": "google/gemini-3.1-flash-lite",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image,audio,video",
     "output_modalities": "text",
@@ -16,15 +16,69 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": [
-          { "param_id": "structured_outputs", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "response_format", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "max_tokens", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "temperature", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "top_p", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "seed", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "stop", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tools", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null },
-          { "param_id": "tool_choice", "provider_min": null, "provider_max": null, "provider_default": null, "notes": null }
+          {
+            "param_id": "structured_outputs",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "seed",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "stop",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
         ]
       }
     ]

@@ -13,6 +13,14 @@ export const NEBIUS_TOKEN_FACTORY_OPENAI_COMPAT_CONFIGS = {
 		baseUrlEnv: "NEBIUS_BASE_URL",
 		supportsResponses: false,
 	},
+	"nebius-token-factory-fast": {
+		providerId: "nebius-token-factory-fast",
+		baseUrl: "https://api.tokenfactory.nebius.com",
+		pathPrefix: "/v1",
+		apiKeyEnv: "NEBIUS_API_KEY",
+		baseUrlEnv: "NEBIUS_BASE_URL",
+		supportsResponses: false,
+	},
 	"nebius-token-factory-eu-north-1": {
 		providerId: "nebius-token-factory-eu-north-1",
 		baseUrl: "https://api.tokenfactory.nebius.com",

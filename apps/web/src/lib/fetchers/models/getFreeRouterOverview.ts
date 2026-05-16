@@ -4,7 +4,7 @@ import { FREE_ROUTER_MODEL_ID } from "@/lib/models/freeRouter";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-const PAGE_SIZE = 5000;
+const PAGE_SIZE = 1000;
 
 type PricingRuleRow = {
 	model_key?: string | null;
@@ -64,6 +64,7 @@ export type FreeRouterOverview = {
 	};
 	models: Array<{
 		modelId: string;
+		displayApiModelId: string;
 		name: string;
 		organisationId: string;
 		organisationName: string;
@@ -127,6 +128,42 @@ function uniqueSorted(values: Iterable<string>): string[] {
 function toSafeNumber(value: unknown): number {
 	const parsed = Number(value ?? 0);
 	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function fetchAllPricingRules(
+	client: ReturnType<typeof createAdminClient>,
+): Promise<PricingRuleRow[]> {
+	const rows: PricingRuleRow[] = [];
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await client
+			.from("data_api_pricing_rules")
+			.select("model_key,effective_from,effective_to")
+			.range(offset, offset + PAGE_SIZE - 1);
+		if (error) throw new Error(error.message);
+		const page = (data ?? []) as PricingRuleRow[];
+		rows.push(...page);
+		if (page.length < PAGE_SIZE) break;
+	}
+	return rows;
+}
+
+async function fetchAllProviderModels(
+	client: ReturnType<typeof createAdminClient>,
+): Promise<ProviderModelRow[]> {
+	const rows: ProviderModelRow[] = [];
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await client
+			.from("data_api_provider_models")
+			.select(
+				"provider_id,api_model_id,model_id,input_modalities,output_modalities,is_active_gateway,effective_from,effective_to",
+			)
+			.range(offset, offset + PAGE_SIZE - 1);
+		if (error) throw new Error(error.message);
+		const page = (data ?? []) as ProviderModelRow[];
+		rows.push(...page);
+		if (page.length < PAGE_SIZE) break;
+	}
+	return rows;
 }
 
 async function fetchUsageByModel(args: {
@@ -218,26 +255,13 @@ export async function getFreeRouterOverview(): Promise<FreeRouterOverview> {
 
 	const nowMs = Date.now();
 
-	const [pricingRulesRes, providerModelsRes] = await Promise.all([
-		supabase
-			.from("data_api_pricing_rules")
-			.select("model_key,effective_from,effective_to"),
-		supabase
-			.from("data_api_provider_models")
-			.select(
-				"provider_id,api_model_id,model_id,input_modalities,output_modalities,is_active_gateway,effective_from,effective_to",
-			),
+	const [pricingRules, providerModels] = await Promise.all([
+		fetchAllPricingRules(supabase),
+		fetchAllProviderModels(supabase),
 	]);
 
-	if (pricingRulesRes.error) {
-		throw new Error(pricingRulesRes.error.message);
-	}
-	if (providerModelsRes.error) {
-		throw new Error(providerModelsRes.error.message);
-	}
-
 	const freeApiModelsByProvider = new Map<string, Set<string>>();
-	for (const rule of (pricingRulesRes.data ?? []) as PricingRuleRow[]) {
+	for (const rule of pricingRules) {
 		if (!isFreePricingRule(rule)) continue;
 		if (!isWithinWindow(rule.effective_from, rule.effective_to, nowMs)) continue;
 		const parsed = parseModelKey(rule.model_key ?? null);
@@ -251,13 +275,14 @@ export async function getFreeRouterOverview(): Promise<FreeRouterOverview> {
 		string,
 		{
 			modelId: string;
+			apiModelIds: Set<string>;
 			providerIds: Set<string>;
 			inputModalities: Set<string>;
 			outputModalities: Set<string>;
 		}
 	>();
 
-	for (const row of (providerModelsRes.data ?? []) as ProviderModelRow[]) {
+	for (const row of providerModels) {
 		const providerId = String(row.provider_id ?? "").trim();
 		const apiModelId = String(row.api_model_id ?? "").trim();
 		const modelId = String(row.model_id ?? apiModelId).trim();
@@ -268,10 +293,12 @@ export async function getFreeRouterOverview(): Promise<FreeRouterOverview> {
 
 		const current = eligible.get(modelId) ?? {
 			modelId,
+			apiModelIds: new Set<string>(),
 			providerIds: new Set<string>(),
 			inputModalities: new Set<string>(),
 			outputModalities: new Set<string>(),
 		};
+		current.apiModelIds.add(apiModelId);
 		current.providerIds.add(providerId);
 		for (const value of parseModalities(row.input_modalities)) {
 			current.inputModalities.add(value);
@@ -334,12 +361,19 @@ export async function getFreeRouterOverview(): Promise<FreeRouterOverview> {
 
 			return {
 				modelId,
+				displayApiModelId:
+					meta.apiModelIds.size === 1
+						? Array.from(meta.apiModelIds)[0] ?? modelId
+						: modelId,
 				name: String(row?.name ?? modelId).trim() || modelId,
 				organisationId,
-				organisationName: normalizeOrganisationDisplayName(
-					organisationValue?.name ?? null,
-					organisationId,
-				),
+				organisationName:
+					normalizeOrganisationDisplayName(
+						organisationValue?.name ?? null,
+						organisationId,
+					) ??
+					organisationId ??
+					"Unknown",
 				providerCount: meta.providerIds.size,
 				inputModalities:
 					uniqueSorted(meta.inputModalities).length > 0

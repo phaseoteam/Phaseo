@@ -27,6 +27,7 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	output_audio: { long: "Output audio", short: "out audio" },
 	output_videos: { long: "Output videos", short: "out video" },
 	requests: { long: "Requests", short: "req" },
+	input_characters: { long: "Input characters", short: "in chars" },
 	output_image: { long: "Images", short: "images" },
 	image_pixels: { long: "Image pixels", short: "img px" },
 	video_pixels: { long: "Video pixels", short: "vid px" },

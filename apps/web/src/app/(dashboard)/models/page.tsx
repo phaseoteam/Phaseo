@@ -316,6 +316,7 @@ function buildOptionCounts(
 		| "gateway_output_modalities"
 		| "gateway_features"
 		| "gateway_provider_names"
+		| "gateway_execution_regions"
 		| "supported_parameters",
 ): OptionCount[] {
 	const counts = new Map<string, number>();
@@ -426,6 +427,7 @@ function buildModelsFilterFacets(models: ModelsPageModel[]): ModelsFilterFacets 
 			"supported_parameters",
 		),
 		providerOptions: buildOptionCounts(models, "gateway_provider_names"),
+		regionOptions: buildOptionCounts(models, "gateway_execution_regions"),
 		creatorOptions: buildCreatorOptions(models),
 		yearOptions: buildYearOptions(models),
 	};
@@ -437,6 +439,7 @@ type GatewaySignals = {
 	providerIds: Set<string>;
 	providerNames: Set<string>;
 	activeProviderNames: Set<string>;
+	executionRegions: Set<string>;
 	providerDetails: Map<
 		string,
 		{ id: string; name: string; isActive: boolean; status: string }
@@ -474,6 +477,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		providerIds: new Set<string>(),
 		providerNames: new Set<string>(),
 		activeProviderNames: new Set<string>(),
+		executionRegions: new Set<string>(),
 		providerDetails: new Map<
 			string,
 			{ id: string; name: string; isActive: boolean; status: string }
@@ -534,6 +538,12 @@ function aggregateGatewaySignals(
 			existing.providerNames.add(providerName);
 			if (isActiveProviderStatus(rowGatewayStatus)) {
 				existing.activeProviderNames.add(providerName);
+			}
+		}
+		if (isActiveProviderStatus(rowGatewayStatus)) {
+			for (const region of row.provider.executionRegions ?? []) {
+				const normalized = String(region ?? "").trim().toLowerCase();
+				if (normalized) existing.executionRegions.add(normalized);
 			}
 		}
 		if (providerDetailKey) {
@@ -910,6 +920,9 @@ function withGatewayMetadata(
 			gateway_active_provider_names: Array.from(
 				signals?.activeProviderNames ?? [],
 			).sort(),
+			gateway_execution_regions: Array.from(
+				signals?.executionRegions ?? [],
+			).sort(),
 			gateway_provider_details: Array.from(
 				signals?.providerDetails?.values() ?? [],
 			)
@@ -1026,6 +1039,7 @@ function withGatewayMetadata(
 				gateway_features: [],
 				gateway_provider_names: [],
 				gateway_active_provider_names: [],
+				gateway_execution_regions: [],
 				gateway_provider_details: [],
 				gateway_api_model_ids: [],
 				context_lengths: [],
@@ -1092,6 +1106,7 @@ function buildFreeRouterModelsPageEntry(
 		gateway_features: ["routing", "free"],
 		gateway_provider_names: [],
 		gateway_active_provider_names: [],
+		gateway_execution_regions: [],
 		gateway_provider_details: [],
 		gateway_api_model_ids: ["ai-stats/free:text.generate:free"],
 		context_lengths: [],

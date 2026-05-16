@@ -14,7 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
-import { isFreeRouterModelId } from "@/lib/models/freeRouter";
+import {
+	FREE_ROUTER_DESCRIPTION,
+	FREE_ROUTER_MODEL_ID,
+	FREE_ROUTER_NAME,
+	FREE_ROUTER_ORGANISATION_ID,
+	isFreeRouterModelId,
+} from "@/lib/models/freeRouter";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -57,25 +63,44 @@ export default async function ModelDetailShell({
 	tab,
 	includeHidden = false,
 }: ModelDetailShellProps) {
-	const [header, modelOverview] = await Promise.all([
-		getModelOverviewHeader(modelId, includeHidden).catch((error) => {
-			if (isModelNotFoundError(error)) {
-				return null;
-			}
-			throw error;
-		}),
-		getModelOverviewCached(modelId, includeHidden).catch(() => null),
-	]);
+	const isFreeRouter = isFreeRouterModelId(modelId);
+	const [header, modelOverview] = isFreeRouter
+		? [
+				{
+					model_id: FREE_ROUTER_MODEL_ID,
+					name: FREE_ROUTER_NAME,
+					organisation_id: FREE_ROUTER_ORGANISATION_ID,
+					organisation: {
+						name: "AI Stats",
+						country_code: "",
+					},
+					aliases: [],
+					status: "Available",
+					hidden: false,
+				},
+				null,
+			]
+		: await Promise.all([
+				getModelOverviewHeader(modelId, includeHidden).catch((error) => {
+					if (isModelNotFoundError(error)) {
+						return null;
+					}
+					throw error;
+				}),
+				getModelOverviewCached(modelId, includeHidden).catch(() => null),
+			]);
 
 	if (!header) {
 		return <ModelNotFoundState modelId={modelId} />;
 	}
-	const modelDescription = modelOverview
+	const modelDescription = isFreeRouter
+		? FREE_ROUTER_DESCRIPTION
+		: modelOverview
 		? resolveModelDescription(modelOverview)
 		: null;
 
 	const visibleTabKeys = getVisibleTabKeys(header.status);
-	const scopedVisibleTabKeys = isFreeRouterModelId(modelId)
+	const scopedVisibleTabKeys = isFreeRouter
 		? ["overview"]
 		: visibleTabKeys;
 	if (tab && !scopedVisibleTabKeys.includes(tab)) {
