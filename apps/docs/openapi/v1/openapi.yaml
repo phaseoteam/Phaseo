@@ -2791,7 +2791,9 @@ components:
             - type: string
             - type: object
               additionalProperties: true
-          description: Rank providers for this request, for example by price, latency, or throughput.
+          description: >-
+            Rank providers for this request, for example by price, latency, or
+            throughput.
         max_price:
           type: object
           properties:
@@ -7376,6 +7378,7 @@ components:
         - anthropic/claude-opus-4.5
         - anthropic/claude-opus-4.6
         - anthropic/claude-opus-4.7
+        - anthropic/claude-opus-4.7-fast
         - anthropic/claude-sonnet-4
         - anthropic/claude-sonnet-4.5
         - anthropic/claude-sonnet-4.6
@@ -7405,6 +7408,7 @@ components:
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
         - cogito/cogito-671b-v2.1
+        - crofai/greg
         - deepseek/deepseek-ocr
         - deepseek/deepseek-ocr-2
         - deepseek/deepseek-prover-v2-671b
@@ -7423,6 +7427,7 @@ components:
         - deepseek/deepseek-v3.2-thinking
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
+        - deepseek/deepseek-v4-pro-precision
         - essential-ai/rnj-1
         - google/gemini-2.0-flash
         - google/gemini-2.0-flash-lite
@@ -7452,6 +7457,7 @@ components:
         - google/gemma-4-26b-a4b
         - google/gemma-4-26b-a4b:free
         - google/gemma-4-31b
+        - google/gemma-4-31b-it
         - google/gemma-4-31b:free
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
@@ -7512,7 +7518,6 @@ components:
         - mistral/ministral-3-14b
         - mistral/ministral-3-3b
         - mistral/ministral-3-8b
-        - mistral/mistral-3.1-24b
         - mistral/mistral-embed
         - mistral/mistral-large-2.1
         - mistral/mistral-large-3
@@ -7536,7 +7541,9 @@ components:
         - moonshotai/kimi-k2-instruct-0905
         - moonshotai/kimi-k2-thinking
         - moonshotai/kimi-k2.5
+        - moonshotai/kimi-k2.5-lightning
         - moonshotai/kimi-k2.6
+        - moonshotai/kimi-k2.6-precision
         - morph/morph-v3-fast
         - morph/morph-v3-large
         - nex-agi/deepseek-v3.1-nex-n1
@@ -7656,6 +7663,7 @@ components:
         - qwen/qwen2.5-72b
         - qwen/qwen2.5-7b
         - qwen/qwen2.5-7b-1m
+        - qwen/qwen2.5-coder-7b
         - qwen/qwen2.5-vl-32b
         - qwen/qwen2.5-vl-32b-instruct
         - qwen/qwen2.5-vl-72b
@@ -7716,6 +7724,7 @@ components:
         - qwen/qwen3.5-397b-a17b
         - qwen/qwen3.5-4b
         - qwen/qwen3.5-9b
+        - qwen/qwen3.5-9b-chat
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
         - qwen/qwen3.5-plus-2026-04-20
@@ -7763,7 +7772,6 @@ components:
         - voyage/voyage-multimodal-3.5
         - x-ai/grok-2-vision
         - x-ai/grok-3-mini
-        - x-ai/grok-4.1-fast
         - x-ai/grok-4.20-beta-0309
         - x-ai/grok-4.20-multi-agent-beta-0309
         - x-ai/grok-4.3
@@ -7778,6 +7786,7 @@ components:
         - xiaomi/mimo-v2-tts:free
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro
+        - xiaomi/mimo-v2.5-pro-precision
         - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
@@ -7795,6 +7804,7 @@ components:
         - z-ai/glm-5-code
         - z-ai/glm-5-turbo
         - z-ai/glm-5.1
+        - z-ai/glm-5.1-precision
         - z-ai/glm-5v-turbo
         - zai-org/glm-4.5-air
         - zai/glm-5
