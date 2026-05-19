@@ -2,6 +2,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 export type PublicGatewayRequestRow = {
 	created_at: string | null;
+	app_id?: string | null;
 	provider: string | null;
 	success: boolean | null;
 	usage: Record<string, unknown> | null;
@@ -24,7 +25,7 @@ export async function fetchPublicGatewayRequestRows(
 	for (let offset = 0; ; offset += PAGE_SIZE) {
 		let query = supabase
 			.from("gateway_requests")
-			.select("created_at, provider, success, usage, latency_ms, model_id")
+			.select("created_at, app_id, provider, success, usage, latency_ms, model_id")
 			.gte("created_at", sinceIso)
 			.order("created_at", { ascending: true })
 			.range(offset, offset + PAGE_SIZE - 1);

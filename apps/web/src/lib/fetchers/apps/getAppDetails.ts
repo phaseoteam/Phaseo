@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { sumTokens } from "@/lib/utils/sumTokens";
 
 export type AppDetails = {
 	id: string;
@@ -15,6 +16,15 @@ export type AppDetails = {
 	total_tokens: number;
 	total_requests: number;
 };
+
+function isMissingAppRollupRelation(error: unknown): boolean {
+	const message =
+		typeof error === "object" && error && "message" in error
+			? String((error as { message?: unknown }).message ?? "")
+			: String(error ?? "");
+
+	return message.includes('relation "public.gateway_usage_rollup_daily_app" does not exist');
+}
 
 export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 	try {
@@ -39,6 +49,38 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 			.eq("app_id", appId);
 
 		if (statsError) {
+			if (isMissingAppRollupRelation(statsError)) {
+				const { data: requestRows, error: requestsError } = await supabase
+					.from("gateway_requests")
+					.select("usage, success")
+					.eq("app_id", appId);
+
+				if (requestsError) {
+					console.error("Error fetching app stats fallback:", requestsError);
+					return {
+						...app,
+						total_tokens: 0,
+						total_requests: 0,
+					};
+				}
+
+				let totalTokens = 0;
+				let totalSuccessfulRequests = 0;
+
+				for (const row of requestRows ?? []) {
+					totalTokens += Math.max(0, Math.round(sumTokens((row as any)?.usage)));
+					if ((row as any)?.success) {
+						totalSuccessfulRequests += 1;
+					}
+				}
+
+				return {
+					...app,
+					total_tokens: totalTokens,
+					total_requests: totalSuccessfulRequests,
+				};
+			}
+
 			console.error("Error fetching app stats:", statsError);
 			return null;
 		}
