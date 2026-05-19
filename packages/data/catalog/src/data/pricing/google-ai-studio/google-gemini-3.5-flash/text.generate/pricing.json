@@ -30,13 +30,13 @@
       "effective_from": "2026-05-19T00:00:00"
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.15,
+      "price_per_unit": 0.375,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Cache storage is also billed at $1.00 per 1,000,000 tokens per hour.",
+      "note": "Implicit caching effective pricing; no separate cache write or storage line item is modeled.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-19T00:00:00"
@@ -66,13 +66,13 @@
       "effective_from": "2026-05-19T00:00:00"
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.075,
+      "price_per_unit": 0.1875,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Cache storage is also billed at $1.00 per 1,000,000 tokens per hour.",
+      "note": "Implicit caching effective pricing; no separate cache write or storage line item is modeled.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-19T00:00:00"
@@ -102,13 +102,13 @@
       "effective_from": "2026-05-19T00:00:00"
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.08,
+      "price_per_unit": 0.1875,
       "currency": "USD",
       "pricing_plan": "flex",
-      "note": "Cache storage is also billed at $1.00 per 1,000,000 tokens per hour.",
+      "note": "Implicit caching effective pricing; no separate cache write or storage line item is modeled.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-19T00:00:00"
@@ -138,13 +138,13 @@
       "effective_from": "2026-05-19T00:00:00"
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.27,
+      "price_per_unit": 0.675,
       "currency": "USD",
       "pricing_plan": "priority",
-      "note": "Cache storage is also billed at $1.00 per 1,000,000 tokens per hour.",
+      "note": "Implicit caching effective pricing; no separate cache write or storage line item is modeled.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-19T00:00:00"
