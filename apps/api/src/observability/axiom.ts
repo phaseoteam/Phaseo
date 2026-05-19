@@ -2,12 +2,18 @@
 // Why: Keeps telemetry non-blocking and centralized.
 // How: Sends structured events to Axiom with safe timeouts.
 
-import { getBindings } from "@/runtime/env";
+import { getBindings, isLocalTestingModeEnabled } from "@/runtime/env";
 
 export type WideEvent = Record<string, unknown>;
 let warnedMissingWideDataset = false;
+let localTestingAxiomWideIngestDisabled = false;
+let warnedLocalTestingAxiomWideIngestDisabled = false;
 
 export async function sendAxiomWideEvent(event: WideEvent) {
+    if (localTestingAxiomWideIngestDisabled) {
+        return;
+    }
+
     const bindings = getBindings();
     const dataset = bindings.AXIOM_DATASET ?? bindings.AXIOM_WIDE_DATASET;
     const token = bindings.AXIOM_API_KEY;
@@ -38,6 +44,20 @@ export async function sendAxiomWideEvent(event: WideEvent) {
 
         if (!res.ok) {
             const body = await res.text().catch(() => "");
+            if (
+                isLocalTestingModeEnabled(bindings) &&
+                (res.status === 401 || res.status === 403)
+            ) {
+                localTestingAxiomWideIngestDisabled = true;
+                if (!warnedLocalTestingAxiomWideIngestDisabled) {
+                    warnedLocalTestingAxiomWideIngestDisabled = true;
+                    console.warn(
+                        "[observability] Axiom wide event ingestion disabled in local testing mode after auth failure.",
+                        { status: res.status }
+                    );
+                }
+                return;
+            }
             console.error("[observability] Axiom wide event ingest failed", {
                 status: res.status,
                 response: body.slice(0, 300),

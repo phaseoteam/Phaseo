@@ -5,5 +5,10 @@
   "link": "https://docs.clarifai.com/getting-started/quickstart/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#6D28D9"
+  "colour": "#6D28D9",
+  "privacy_policy_url": "https://www.clarifai.com/company/privacy-policy",
+  "terms_of_service_url": "https://www.clarifai.com/company/terms",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Clarifai says private customer data is not used to train its models or other models on the platform unless the customer explicitly shares data with the Community.",
+  "prompt_training_source_url": "https://docs.clarifai.com/resources/privacy-security/"
 }

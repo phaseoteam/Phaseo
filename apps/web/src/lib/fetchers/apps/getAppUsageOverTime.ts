@@ -7,6 +7,18 @@ const MAX_SHORT_RANGE_PAGES = 8;
 const MAX_LONG_RANGE_PAGES = 6;
 const USAGE_FETCH_DEBUG_ENABLED = process.env.DEBUG_GATEWAY_USAGE_FETCHERS === "1";
 
+function isMissingUsageRollupRelation(error: unknown): boolean {
+	const message =
+		typeof error === "object" && error && "message" in error
+			? String((error as { message?: unknown }).message ?? "")
+			: String(error ?? "");
+
+	return (
+		message.includes('relation "public.gateway_usage_rollup_daily_app_model" does not exist') ||
+		message.includes('relation "public.gateway_usage_rollup_15m_app_model" does not exist')
+	);
+}
+
 function fromForRange(key: RangeKey): Date {
 	const now = new Date();
 	const d = new Date(now);
@@ -97,6 +109,9 @@ export async function getAppUsageOverTime(
 		const { data, error } = await query;
 
 		if (error) {
+			if (isMissingUsageRollupRelation(error)) {
+				return getAppUsageFromGatewayRequests(supabase, appId, from, nowIso);
+			}
 			hadError = true;
 			hitPageCap = false;
 			console.error(
@@ -160,6 +175,40 @@ export async function getAppUsageOverTime(
 		fromIso: useDaily ? fromDayIso : from,
 		toIso: useDaily ? nowDay : nowIso,
 	});
+
+	return rows;
+}
+
+async function getAppUsageFromGatewayRequests(
+	supabase: Awaited<ReturnType<typeof createAdminClient>>,
+	appId: string,
+	from: string,
+	to: string,
+): Promise<AppUsageRow[]> {
+	const rows: AppUsageRow[] = [];
+
+	for (let offset = 0; ; offset += PAGE_SIZE) {
+		const { data, error } = await supabase
+			.from("gateway_requests")
+			.select("created_at, usage, cost_nanos, model_id, provider, success")
+			.eq("app_id", appId)
+			.gte("created_at", from)
+			.lte("created_at", to)
+			.order("created_at", { ascending: true })
+			.range(offset, offset + PAGE_SIZE - 1);
+
+		if (error) {
+			console.error("Error fetching app usage from gateway_requests:", error);
+			return [];
+		}
+
+		const page = (data ?? []) as AppUsageRow[];
+		rows.push(...page);
+
+		if (page.length < PAGE_SIZE) {
+			break;
+		}
+	}
 
 	return rows;
 }

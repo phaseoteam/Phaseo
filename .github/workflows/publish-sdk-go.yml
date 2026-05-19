@@ -15,6 +15,15 @@ jobs:
   publish-go:
     runs-on: ubuntu-latest
     steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from refs/heads/main only."
+            exit 1
+          fi
+
       - name: Create GitHub App token (AI Stats Bot)
         id: app-token
         uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3
@@ -31,6 +40,7 @@ jobs:
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: "22"
+          package-manager-cache: false
 
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
@@ -39,11 +49,13 @@ jobs:
 
       - name: Resolve version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "${{ inputs.version }}" ]; then
-            version="${{ inputs.version }}"
+          if [ -n "${INPUT_VERSION:-}" ]; then
+            version="${INPUT_VERSION}"
           else
             version="$(node -p "require('./packages/sdk/sdk-go/package.json').version")"
           fi

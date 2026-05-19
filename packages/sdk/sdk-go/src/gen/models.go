@@ -1132,6 +1132,20 @@ type GatewayModelsResponse struct {
 	Total int `json:"total"`
 }
 
+type GatewayWebFetchToolDefinition struct {
+	MaxChars *int `json:"max_chars,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
+type GatewayWebSearchToolDefinition struct {
+	IncludeHighlights *bool `json:"include_highlights,omitempty"`
+	IncludeText *bool `json:"include_text,omitempty"`
+	MaxResults *int `json:"max_results,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
 type GenerationResponse struct {
 	AppId *string `json:"app_id,omitempty"`
 	Byok *bool `json:"byok,omitempty"`
@@ -1251,6 +1265,7 @@ const (
 	KnownModelIdAnthropicClaudeOpus45 KnownModelId = "anthropic/claude-opus-4.5"
 	KnownModelIdAnthropicClaudeOpus46 KnownModelId = "anthropic/claude-opus-4.6"
 	KnownModelIdAnthropicClaudeOpus47 KnownModelId = "anthropic/claude-opus-4.7"
+	KnownModelIdAnthropicClaudeOpus47Fast KnownModelId = "anthropic/claude-opus-4.7-fast"
 	KnownModelIdAnthropicClaudeSonnet4 KnownModelId = "anthropic/claude-sonnet-4"
 	KnownModelIdAnthropicClaudeSonnet45 KnownModelId = "anthropic/claude-sonnet-4.5"
 	KnownModelIdAnthropicClaudeSonnet46 KnownModelId = "anthropic/claude-sonnet-4.6"
@@ -1275,13 +1290,16 @@ const (
 	KnownModelIdBytedanceSeed20Lite KnownModelId = "bytedance/seed-2.0-lite"
 	KnownModelIdBytedanceSeed20Mini KnownModelId = "bytedance/seed-2.0-mini"
 	KnownModelIdBytedanceSeed20Pro KnownModelId = "bytedance/seed-2.0-pro"
+	KnownModelIdBytedanceSeedOss36bInstruct KnownModelId = "bytedance/seed-oss-36b-instruct"
 	KnownModelIdBytedanceSeedTranslation KnownModelId = "bytedance/seed-translation"
 	KnownModelIdBytedanceSeedance20 KnownModelId = "bytedance/seedance-2.0"
 	KnownModelIdBytedanceSeedance20Fast KnownModelId = "bytedance/seedance-2.0-fast"
 	KnownModelIdCogitoCogito671bV21 KnownModelId = "cogito/cogito-671b-v2.1"
+	KnownModelIdCrofaiGreg KnownModelId = "crofai/greg"
 	KnownModelIdDeepseekDeepseekOcr KnownModelId = "deepseek/deepseek-ocr"
 	KnownModelIdDeepseekDeepseekOcr2 KnownModelId = "deepseek/deepseek-ocr-2"
 	KnownModelIdDeepseekDeepseekProverV2671b KnownModelId = "deepseek/deepseek-prover-v2-671b"
+	KnownModelIdDeepseekDeepseekR1 KnownModelId = "deepseek/deepseek-r1"
 	KnownModelIdDeepseekDeepseekR10528 KnownModelId = "deepseek/deepseek-r1-0528"
 	KnownModelIdDeepseekDeepseekR120250528 KnownModelId = "deepseek/deepseek-r1-2025-05-28"
 	KnownModelIdDeepseekDeepseekR1Turbo KnownModelId = "deepseek/deepseek-r1-turbo"
@@ -1296,6 +1314,8 @@ const (
 	KnownModelIdDeepseekDeepseekV32Thinking KnownModelId = "deepseek/deepseek-v3.2-thinking"
 	KnownModelIdDeepseekDeepseekV4Flash KnownModelId = "deepseek/deepseek-v4-flash"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
+	KnownModelIdDeepseekDeepseekV4ProPrecision KnownModelId = "deepseek/deepseek-v4-pro-precision"
+	KnownModelIdEssentialAiRnj1 KnownModelId = "essential-ai/rnj-1"
 	KnownModelIdGoogleGemini20Flash KnownModelId = "google/gemini-2.0-flash"
 	KnownModelIdGoogleGemini20FlashLite KnownModelId = "google/gemini-2.0-flash-lite"
 	KnownModelIdGoogleGemini25FlashImage KnownModelId = "google/gemini-2.5-flash-image"
@@ -1319,10 +1339,12 @@ const (
 	KnownModelIdGoogleGemma327bFree KnownModelId = "google/gemma-3-27b:free"
 	KnownModelIdGoogleGemma34bFree KnownModelId = "google/gemma-3-4b:free"
 	KnownModelIdGoogleGemma3nE2bFree KnownModelId = "google/gemma-3n-e2b:free"
+	KnownModelIdGoogleGemma3nE4b KnownModelId = "google/gemma-3n-e4b"
 	KnownModelIdGoogleGemma3nE4bFree KnownModelId = "google/gemma-3n-e4b:free"
 	KnownModelIdGoogleGemma426bA4b KnownModelId = "google/gemma-4-26b-a4b"
 	KnownModelIdGoogleGemma426bA4bFree KnownModelId = "google/gemma-4-26b-a4b:free"
 	KnownModelIdGoogleGemma431b KnownModelId = "google/gemma-4-31b"
+	KnownModelIdGoogleGemma431bIt KnownModelId = "google/gemma-4-31b-it"
 	KnownModelIdGoogleGemma431bFree KnownModelId = "google/gemma-4-31b:free"
 	KnownModelIdGoogleLyria3ClipPreview KnownModelId = "google/lyria-3-clip-preview"
 	KnownModelIdGoogleLyria3ProPreview KnownModelId = "google/lyria-3-pro-preview"
@@ -1331,17 +1353,26 @@ const (
 	KnownModelIdGoogleVeo31LiteGeneratePreview KnownModelId = "google/veo-3.1-lite-generate-preview"
 	KnownModelIdGoogleVeo31Preview KnownModelId = "google/veo-3.1-preview"
 	KnownModelIdIbmGranite418b KnownModelId = "ibm/granite-4.1-8b"
+	KnownModelIdInceptionMercury2 KnownModelId = "inception/mercury-2"
+	KnownModelIdInceptionMercuryEdit2 KnownModelId = "inception/mercury-edit-2"
 	KnownModelIdInclusionaiLing261t KnownModelId = "inclusionai/ling-2.6-1t"
+	KnownModelIdInclusionaiLingFlash20 KnownModelId = "inclusionai/ling-flash-2.0"
+	KnownModelIdInclusionaiRingFlash20 KnownModelId = "inclusionai/ring-flash-2.0"
+	KnownModelIdInflectionInflection3Pi KnownModelId = "inflection/inflection-3-pi"
+	KnownModelIdInflectionInflection3Productivity KnownModelId = "inflection/inflection-3-productivity"
 	KnownModelIdKwaipilotKatCoderExp72b1010 KnownModelId = "kwaipilot/kat-coder-exp-72b-1010"
 	KnownModelIdKwaipilotKatCoderPro KnownModelId = "kwaipilot/kat-coder-pro"
 	KnownModelIdKwaipilotKatCoderProV1 KnownModelId = "kwaipilot/kat-coder-pro-v1"
 	KnownModelIdKwaipilotKatCoderProV2 KnownModelId = "kwaipilot/kat-coder-pro-v2"
+	KnownModelIdLiquidAiLfm224bA2b KnownModelId = "liquid-ai/lfm-2-24b-a2b"
 	KnownModelIdMeituanLongcatFlashCat KnownModelId = "meituan/longcat-flash-cat"
 	KnownModelIdMetaLlama370b KnownModelId = "meta/llama-3-70b"
 	KnownModelIdMetaLlama38b KnownModelId = "meta/llama-3-8b"
+	KnownModelIdMetaLlama38bLite KnownModelId = "meta/llama-3-8b-lite"
 	KnownModelIdMetaLlama3170b KnownModelId = "meta/llama-3.1-70b"
 	KnownModelIdMetaLlama318b KnownModelId = "meta/llama-3.1-8b"
 	KnownModelIdMetaLlama3211bVision KnownModelId = "meta/llama-3.2-11b-vision"
+	KnownModelIdMetaLlama321bInstruct KnownModelId = "meta/llama-3.2-1b-instruct"
 	KnownModelIdMetaLlama323b KnownModelId = "meta/llama-3.2-3b"
 	KnownModelIdMetaLlama3370b KnownModelId = "meta/llama-3.3-70b"
 	KnownModelIdMetaLlama4Maverick KnownModelId = "meta/llama-4-maverick"
@@ -1374,7 +1405,6 @@ const (
 	KnownModelIdMistralMinistral314b KnownModelId = "mistral/ministral-3-14b"
 	KnownModelIdMistralMinistral33b KnownModelId = "mistral/ministral-3-3b"
 	KnownModelIdMistralMinistral38b KnownModelId = "mistral/ministral-3-8b"
-	KnownModelIdMistralMistral3124b KnownModelId = "mistral/mistral-3.1-24b"
 	KnownModelIdMistralMistralEmbed KnownModelId = "mistral/mistral-embed"
 	KnownModelIdMistralMistralLarge21 KnownModelId = "mistral/mistral-large-2.1"
 	KnownModelIdMistralMistralLarge3 KnownModelId = "mistral/mistral-large-3"
@@ -1398,7 +1428,12 @@ const (
 	KnownModelIdMoonshotaiKimiK2Instruct0905 KnownModelId = "moonshotai/kimi-k2-instruct-0905"
 	KnownModelIdMoonshotaiKimiK2Thinking KnownModelId = "moonshotai/kimi-k2-thinking"
 	KnownModelIdMoonshotaiKimiK25 KnownModelId = "moonshotai/kimi-k2.5"
+	KnownModelIdMoonshotaiKimiK25Lightning KnownModelId = "moonshotai/kimi-k2.5-lightning"
 	KnownModelIdMoonshotaiKimiK26 KnownModelId = "moonshotai/kimi-k2.6"
+	KnownModelIdMoonshotaiKimiK26Precision KnownModelId = "moonshotai/kimi-k2.6-precision"
+	KnownModelIdMorphMorphV3Fast KnownModelId = "morph/morph-v3-fast"
+	KnownModelIdMorphMorphV3Large KnownModelId = "morph/morph-v3-large"
+	KnownModelIdNexAgiDeepseekV31NexN1 KnownModelId = "nex-agi/deepseek-v3.1-nex-n1"
 	KnownModelIdNousHermes3Llama31405b KnownModelId = "nous/hermes-3-llama-3.1-405b"
 	KnownModelIdNousresearchHermes3Llama31405b KnownModelId = "nousresearch/hermes-3-llama-3.1-405b"
 	KnownModelIdNousresearchHermes3Llama3170b KnownModelId = "nousresearch/hermes-3-llama-3.1-70b"
@@ -1494,6 +1529,7 @@ const (
 	KnownModelIdQwenQwenMtLite KnownModelId = "qwen/qwen-mt-lite"
 	KnownModelIdQwenQwenMtPlus KnownModelId = "qwen/qwen-mt-plus"
 	KnownModelIdQwenQwenMtTurbo KnownModelId = "qwen/qwen-mt-turbo"
+	KnownModelIdQwenQwenOmniTurbo KnownModelId = "qwen/qwen-omni-turbo"
 	KnownModelIdQwenQwenPlus20250125 KnownModelId = "qwen/qwen-plus-2025-01-25"
 	KnownModelIdQwenQwenPlus20250428 KnownModelId = "qwen/qwen-plus-2025-04-28"
 	KnownModelIdQwenQwenPlus20250714 KnownModelId = "qwen/qwen-plus-2025-07-14"
@@ -1514,8 +1550,11 @@ const (
 	KnownModelIdQwenQwen2572b KnownModelId = "qwen/qwen2.5-72b"
 	KnownModelIdQwenQwen257b KnownModelId = "qwen/qwen2.5-7b"
 	KnownModelIdQwenQwen257b1m KnownModelId = "qwen/qwen2.5-7b-1m"
+	KnownModelIdQwenQwen25Coder7b KnownModelId = "qwen/qwen2.5-coder-7b"
 	KnownModelIdQwenQwen25Vl32b KnownModelId = "qwen/qwen2.5-vl-32b"
+	KnownModelIdQwenQwen25Vl32bInstruct KnownModelId = "qwen/qwen2.5-vl-32b-instruct"
 	KnownModelIdQwenQwen25Vl72b KnownModelId = "qwen/qwen2.5-vl-72b"
+	KnownModelIdQwenQwen25Vl72bInstruct KnownModelId = "qwen/qwen2.5-vl-72b-instruct"
 	KnownModelIdQwenQwen25Vl7b KnownModelId = "qwen/qwen2.5-vl-7b"
 	KnownModelIdQwenQwen306b KnownModelId = "qwen/qwen3-0.6b"
 	KnownModelIdQwenQwen317b KnownModelId = "qwen/qwen3-1.7b"
@@ -1547,6 +1586,8 @@ const (
 	KnownModelIdQwenQwen3Next80bA3bInstruct KnownModelId = "qwen/qwen3-next-80b-a3b-instruct"
 	KnownModelIdQwenQwen3Next80bA3bThinking KnownModelId = "qwen/qwen3-next-80b-a3b-thinking"
 	KnownModelIdQwenQwen3Omni30bA3bThinking KnownModelId = "qwen/qwen3-omni-30b-a3b-thinking"
+	KnownModelIdQwenQwen3OmniFlash20250915 KnownModelId = "qwen/qwen3-omni-flash-2025-09-15"
+	KnownModelIdQwenQwen3OmniFlash20251201 KnownModelId = "qwen/qwen3-omni-flash-2025-12-01"
 	KnownModelIdQwenQwen3Reranker KnownModelId = "qwen/qwen3-reranker"
 	KnownModelIdQwenQwen3Vl235bA22b KnownModelId = "qwen/qwen3-vl-235b-a22b"
 	KnownModelIdQwenQwen3Vl235bA22bInstruct KnownModelId = "qwen/qwen3-vl-235b-a22b-instruct"
@@ -1554,6 +1595,8 @@ const (
 	KnownModelIdQwenQwen3Vl30bA3b KnownModelId = "qwen/qwen3-vl-30b-a3b"
 	KnownModelIdQwenQwen3Vl30bA3bInstruct KnownModelId = "qwen/qwen3-vl-30b-a3b-instruct"
 	KnownModelIdQwenQwen3Vl30bA3bThinking KnownModelId = "qwen/qwen3-vl-30b-a3b-thinking"
+	KnownModelIdQwenQwen3Vl32bInstruct KnownModelId = "qwen/qwen3-vl-32b-instruct"
+	KnownModelIdQwenQwen3Vl32bThinking KnownModelId = "qwen/qwen3-vl-32b-thinking"
 	KnownModelIdQwenQwen3Vl8b KnownModelId = "qwen/qwen3-vl-8b"
 	KnownModelIdQwenQwen3Vl8bInstruct KnownModelId = "qwen/qwen3-vl-8b-instruct"
 	KnownModelIdQwenQwen3VlFlash20251015 KnownModelId = "qwen/qwen3-vl-flash-2025-10-15"
@@ -1568,6 +1611,7 @@ const (
 	KnownModelIdQwenQwen35397bA17b KnownModelId = "qwen/qwen3.5-397b-a17b"
 	KnownModelIdQwenQwen354b KnownModelId = "qwen/qwen3.5-4b"
 	KnownModelIdQwenQwen359b KnownModelId = "qwen/qwen3.5-9b"
+	KnownModelIdQwenQwen359bChat KnownModelId = "qwen/qwen3.5-9b-chat"
 	KnownModelIdQwenQwen35Flash KnownModelId = "qwen/qwen3.5-flash"
 	KnownModelIdQwenQwen35Plus KnownModelId = "qwen/qwen3.5-plus"
 	KnownModelIdQwenQwen35Plus20260420 KnownModelId = "qwen/qwen3.5-plus-2026-04-20"
@@ -1575,11 +1619,14 @@ const (
 	KnownModelIdQwenQwen3635bA3b KnownModelId = "qwen/qwen3.6-35b-a3b"
 	KnownModelIdQwenQwen36MaxPreview KnownModelId = "qwen/qwen3.6-max-preview"
 	KnownModelIdQwenQwen36Plus2 KnownModelId = "qwen/qwen3.6-plus"
+	KnownModelIdQwenQwq32b KnownModelId = "qwen/qwq-32b"
 	KnownModelIdQwenQwqPlus KnownModelId = "qwen/qwq-plus"
 	KnownModelIdQwenTextEmbeddingV3 KnownModelId = "qwen/text-embedding-v3"
 	KnownModelIdQwenTextEmbeddingV4 KnownModelId = "qwen/text-embedding-v4"
 	KnownModelIdQwenWan27T2v KnownModelId = "qwen/wan2.7-t2v"
 	KnownModelIdStepfunStep35Flash KnownModelId = "stepfun/step-3.5-flash"
+	KnownModelIdTencentHunyuanA13bInstruct KnownModelId = "tencent/hunyuan-a13b-instruct"
+	KnownModelIdTencentHy3Preview KnownModelId = "tencent/hy3-preview"
 	KnownModelIdVeniceVeniceUncensored KnownModelId = "venice/venice-uncensored"
 	KnownModelIdVeniceVeniceUncensored11 KnownModelId = "venice/venice-uncensored-1.1"
 	KnownModelIdVoyageRerank1 KnownModelId = "voyage/rerank-1"
@@ -1611,12 +1658,7 @@ const (
 	KnownModelIdVoyageVoyageMultimodal3 KnownModelId = "voyage/voyage-multimodal-3"
 	KnownModelIdVoyageVoyageMultimodal35 KnownModelId = "voyage/voyage-multimodal-3.5"
 	KnownModelIdXAiGrok2Vision KnownModelId = "x-ai/grok-2-vision"
-	KnownModelIdXAiGrok3 KnownModelId = "x-ai/grok-3"
 	KnownModelIdXAiGrok3Mini KnownModelId = "x-ai/grok-3-mini"
-	KnownModelIdXAiGrok4 KnownModelId = "x-ai/grok-4"
-	KnownModelIdXAiGrok41 KnownModelId = "x-ai/grok-4.1"
-	KnownModelIdXAiGrok41Fast KnownModelId = "x-ai/grok-4.1-fast"
-	KnownModelIdXAiGrok41Thinking KnownModelId = "x-ai/grok-4.1-thinking"
 	KnownModelIdXAiGrok420Beta0309 KnownModelId = "x-ai/grok-4.20-beta-0309"
 	KnownModelIdXAiGrok420MultiAgentBeta0309 KnownModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
 	KnownModelIdXAiGrok43 KnownModelId = "x-ai/grok-4.3"
@@ -1624,12 +1666,14 @@ const (
 	KnownModelIdXAiGrokImagineImage KnownModelId = "x-ai/grok-imagine-image"
 	KnownModelIdXAiGrokImagineImageQuality KnownModelId = "x-ai/grok-imagine-image-quality"
 	KnownModelIdXAiGrokImagineVideo KnownModelId = "x-ai/grok-imagine-video"
+	KnownModelIdXAiGrokTts KnownModelId = "x-ai/grok-tts"
 	KnownModelIdXiaomiMimoV2Flash KnownModelId = "xiaomi/mimo-v2-flash"
 	KnownModelIdXiaomiMimoV2Omni KnownModelId = "xiaomi/mimo-v2-omni"
 	KnownModelIdXiaomiMimoV2Pro KnownModelId = "xiaomi/mimo-v2-pro"
 	KnownModelIdXiaomiMimoV2TtsFree KnownModelId = "xiaomi/mimo-v2-tts:free"
 	KnownModelIdXiaomiMimoV25 KnownModelId = "xiaomi/mimo-v2.5"
 	KnownModelIdXiaomiMimoV25Pro KnownModelId = "xiaomi/mimo-v2.5-pro"
+	KnownModelIdXiaomiMimoV25ProPrecision KnownModelId = "xiaomi/mimo-v2.5-pro-precision"
 	KnownModelIdXiaomiMimoV25TtsFree KnownModelId = "xiaomi/mimo-v2.5-tts:free"
 	KnownModelIdZAiGlm432b KnownModelId = "z-ai/glm-4-32b"
 	KnownModelIdZAiGlm47FlashFree KnownModelId = "z-ai/glm-4-7-flash:free"
@@ -1647,6 +1691,7 @@ const (
 	KnownModelIdZAiGlm5Code KnownModelId = "z-ai/glm-5-code"
 	KnownModelIdZAiGlm5Turbo KnownModelId = "z-ai/glm-5-turbo"
 	KnownModelIdZAiGlm51 KnownModelId = "z-ai/glm-5.1"
+	KnownModelIdZAiGlm51Precision KnownModelId = "z-ai/glm-5.1-precision"
 	KnownModelIdZAiGlm5vTurbo KnownModelId = "z-ai/glm-5v-turbo"
 	KnownModelIdZaiOrgGlm45Air KnownModelId = "zai-org/glm-4.5-air"
 	KnownModelIdZaiGlm5 KnownModelId = "zai/glm-5"
@@ -1923,10 +1968,23 @@ type ProviderOptions struct {
 }
 
 type ProviderRoutingOptions struct {
+	AllowFallbacks *bool `json:"allow_fallbacks,omitempty"`
+	DataCollection *string `json:"data_collection,omitempty"`
+	EnforceDistillableText *bool `json:"enforce_distillable_text,omitempty"`
 	Ignore *[]string `json:"ignore,omitempty"`
 	IncludeAlpha *bool `json:"include_alpha,omitempty"`
+	MaxPrice *map[string]interface{} `json:"max_price,omitempty"`
 	Only *[]string `json:"only,omitempty"`
 	Order *[]string `json:"order,omitempty"`
+	PreferredMaxLatency interface{} `json:"preferred_max_latency,omitempty"`
+	PreferredMinThroughput interface{} `json:"preferred_min_throughput,omitempty"`
+	Quantizations *[]string `json:"quantizations,omitempty"`
+	RequireParameters *bool `json:"require_parameters,omitempty"`
+	RequireZeroDataRetention *bool `json:"require_zero_data_retention,omitempty"`
+	RequiredDataRegion *string `json:"required_data_region,omitempty"`
+	RequiredExecutionRegion *string `json:"required_execution_region,omitempty"`
+	Sort interface{} `json:"sort,omitempty"`
+	Zdr *bool `json:"zdr,omitempty"`
 }
 
 type ProvisioningKey struct {
@@ -2115,6 +2173,8 @@ type ResponsesWebSocketUpgradeRequiredResponse struct {
 
 type ServerToolUsage struct {
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
+	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
+	WebSearchRequests *int `json:"web_search_requests,omitempty"`
 }
 
 type TextContentPart struct {

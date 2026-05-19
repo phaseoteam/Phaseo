@@ -4,6 +4,7 @@
   "name": "Mistral Large 3.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Mistral Large 3.0 is a multimodal model from Mistral that can work across text and visual inputs. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": "2025-12-02T00:00:00",
   "release_date": "2025-12-02T00:00:00",
   "deprecation_date": null,

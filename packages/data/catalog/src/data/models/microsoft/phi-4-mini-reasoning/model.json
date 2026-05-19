@@ -4,6 +4,7 @@
   "name": "Phi 4 Mini Reasoning",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Phi 4 Mini Reasoning is a reasoning model from Microsoft for multi-step analysis, math, and tool-driven tasks. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
   "release_date": "2025-04-30T00:00:00",
   "deprecation_date": null,

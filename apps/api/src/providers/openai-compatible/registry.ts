@@ -1,0 +1,126 @@
+import type { OpenAICompatConfig } from "./types";
+import { OPENAI_OPENAI_COMPAT_CONFIGS } from "../openai/config";
+import { ALIBABA_OPENAI_COMPAT_CONFIGS } from "../alibaba/config";
+import { ATLAS_CLOUD_OPENAI_COMPAT_CONFIGS } from "../atlas-cloud/config";
+import { ARCEE_OPENAI_COMPAT_CONFIGS } from "../arcee/config";
+import { AI21_OPENAI_COMPAT_CONFIGS } from "../ai21/config";
+import { AKASHML_OPENAI_COMPAT_CONFIGS } from "../akashml/config";
+import { AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS } from "../amazon-bedrock/config";
+import { BASETEN_OPENAI_COMPAT_CONFIGS } from "../baseten/config";
+import { BYTEPLUS_OPENAI_COMPAT_CONFIGS } from "../byteplus/config";
+import { CEREBRAS_OPENAI_COMPAT_CONFIGS } from "../cerebras/config";
+import { CLARIFAI_OPENAI_COMPAT_CONFIGS } from "../clarifai/config";
+import { CHUTES_OPENAI_COMPAT_CONFIGS } from "../chutes/config";
+import { COHERE_OPENAI_COMPAT_CONFIGS } from "../cohere/config";
+import { CROFAI_OPENAI_COMPAT_CONFIGS } from "../crofai/config";
+import { VOYAGE_OPENAI_COMPAT_CONFIGS } from "../voyage/config";
+import { DEEPINFRA_OPENAI_COMPAT_CONFIGS } from "../deepinfra/config";
+import { DEEPSEEK_OPENAI_COMPAT_CONFIGS } from "../deepseek/config";
+import { FEATHERLESS_OPENAI_COMPAT_CONFIGS } from "../featherless/config";
+import { FRIENDLI_OPENAI_COMPAT_CONFIGS } from "../friendli/config";
+import { GMI_CLOUD_OPENAI_COMPAT_CONFIGS } from "../gmicloud/config";
+import { GOOGLE_VERTEX_OPENAI_COMPAT_CONFIGS } from "../google-vertex/config";
+import { GROQ_OPENAI_COMPAT_CONFIGS } from "../groq/config";
+import { HYPERBOLIC_OPENAI_COMPAT_CONFIGS } from "../hyperbolic/config";
+import { INCEPTION_OPENAI_COMPAT_CONFIGS } from "../inception/config";
+import { INFERMATIC_OPENAI_COMPAT_CONFIGS } from "../infermatic/config";
+import { INFLECTION_OPENAI_COMPAT_CONFIGS } from "../inflection/config";
+import { IONROUTER_OPENAI_COMPAT_CONFIGS } from "../ionrouter/config";
+import { MANCER_OPENAI_COMPAT_CONFIGS } from "../mancer/config";
+import { MINIMAX_OPENAI_COMPAT_CONFIGS } from "../minimax/config";
+import { MISTRAL_OPENAI_COMPAT_CONFIGS } from "../mistral/config";
+import { MOONSHOT_OPENAI_COMPAT_CONFIGS } from "../moonshotai/config";
+import { MORPH_OPENAI_COMPAT_CONFIGS } from "../morph/config";
+import { MORPHEUS_OPENAI_COMPAT_CONFIGS } from "../morpheus/config";
+import { NOVITA_OPENAI_COMPAT_CONFIGS } from "../novita/config";
+import { NVIDIA_OPENAI_COMPAT_CONFIGS } from "../nvidia/config";
+import { STEPFUN_OPENAI_COMPAT_CONFIGS } from "../stepfun/config";
+import { VENICE_OPENAI_COMPAT_CONFIGS } from "../venice/config";
+import { CRUSOE_OPENAI_COMPAT_CONFIGS } from "../crusoe/config";
+import { PARASAIL_OPENAI_COMPAT_CONFIGS } from "../parasail/config";
+import { PHALA_OPENAI_COMPAT_CONFIGS } from "../phala/config";
+import { SAMBANOVA_OPENAI_COMPAT_CONFIGS } from "../sambanova/config";
+import { SCALEWAY_OPENAI_COMPAT_CONFIGS } from "../scaleway/config";
+import { SILICONFLOW_OPENAI_COMPAT_CONFIGS } from "../siliconflow/config";
+import { WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS } from "../weights-and-biases/config";
+import { TOGETHER_OPENAI_COMPAT_CONFIGS } from "../together/config";
+import { XIAOMI_OPENAI_COMPAT_CONFIGS } from "../xiaomi/config";
+import { GOOGLE_AI_STUDIO_OPENAI_COMPAT_CONFIGS } from "../google-ai-studio/config";
+import { X_AI_OPENAI_COMPAT_CONFIGS } from "../x-ai/config";
+import { FIREWORKS_OPENAI_COMPAT_CONFIGS } from "../fireworks/config";
+import { PERPLEXITY_OPENAI_COMPAT_CONFIGS } from "../perplexity/config";
+import { POOLSIDE_OPENAI_COMPAT_CONFIGS } from "../poolside/config";
+import { NEBIUS_TOKEN_FACTORY_OPENAI_COMPAT_CONFIGS } from "../nebius-token-factory/config";
+import { SOURCEFUL_OPENAI_COMPAT_CONFIGS } from "../sourceful/config";
+import { RELACE_OPENAI_COMPAT_CONFIGS } from "../relace/config";
+import { AION_OPENAI_COMPAT_CONFIGS } from "../aion/config";
+import { Z_AI_OPENAI_COMPAT_CONFIGS } from "../z-ai/config";
+import { LONGCAT_OPENAI_COMPAT_CONFIGS } from "../longcat/config";
+import { CLOUDFLARE_OPENAI_COMPAT_CONFIGS } from "../cloudflare/config";
+import { LIQUID_AI_OPENAI_COMPAT_CONFIGS } from "../liquid-ai/config";
+import { TENSORIX_OPENAI_COMPAT_CONFIGS } from "../tensorix/config";
+import { OVHCLOUD_OPENAI_COMPAT_CONFIGS } from "../ovhcloud/config";
+
+export const OPENAI_COMPAT_CONFIG = {
+	...OPENAI_OPENAI_COMPAT_CONFIGS,
+	...ALIBABA_OPENAI_COMPAT_CONFIGS,
+	...ATLAS_CLOUD_OPENAI_COMPAT_CONFIGS,
+	...ARCEE_OPENAI_COMPAT_CONFIGS,
+	...AI21_OPENAI_COMPAT_CONFIGS,
+	...AKASHML_OPENAI_COMPAT_CONFIGS,
+	...AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS,
+	...BASETEN_OPENAI_COMPAT_CONFIGS,
+	...BYTEPLUS_OPENAI_COMPAT_CONFIGS,
+	...CEREBRAS_OPENAI_COMPAT_CONFIGS,
+	...CLARIFAI_OPENAI_COMPAT_CONFIGS,
+	...CHUTES_OPENAI_COMPAT_CONFIGS,
+	...COHERE_OPENAI_COMPAT_CONFIGS,
+	...CROFAI_OPENAI_COMPAT_CONFIGS,
+	...VOYAGE_OPENAI_COMPAT_CONFIGS,
+	...DEEPINFRA_OPENAI_COMPAT_CONFIGS,
+	...DEEPSEEK_OPENAI_COMPAT_CONFIGS,
+	...FEATHERLESS_OPENAI_COMPAT_CONFIGS,
+	...FRIENDLI_OPENAI_COMPAT_CONFIGS,
+	...GMI_CLOUD_OPENAI_COMPAT_CONFIGS,
+	...GOOGLE_VERTEX_OPENAI_COMPAT_CONFIGS,
+	...GROQ_OPENAI_COMPAT_CONFIGS,
+	...HYPERBOLIC_OPENAI_COMPAT_CONFIGS,
+	...INCEPTION_OPENAI_COMPAT_CONFIGS,
+	...INFERMATIC_OPENAI_COMPAT_CONFIGS,
+	...INFLECTION_OPENAI_COMPAT_CONFIGS,
+	...IONROUTER_OPENAI_COMPAT_CONFIGS,
+	...MANCER_OPENAI_COMPAT_CONFIGS,
+	...MINIMAX_OPENAI_COMPAT_CONFIGS,
+	...MISTRAL_OPENAI_COMPAT_CONFIGS,
+	...MOONSHOT_OPENAI_COMPAT_CONFIGS,
+	...MORPH_OPENAI_COMPAT_CONFIGS,
+	...MORPHEUS_OPENAI_COMPAT_CONFIGS,
+	...NOVITA_OPENAI_COMPAT_CONFIGS,
+	...NVIDIA_OPENAI_COMPAT_CONFIGS,
+	...STEPFUN_OPENAI_COMPAT_CONFIGS,
+	...VENICE_OPENAI_COMPAT_CONFIGS,
+	...CRUSOE_OPENAI_COMPAT_CONFIGS,
+	...PARASAIL_OPENAI_COMPAT_CONFIGS,
+	...PHALA_OPENAI_COMPAT_CONFIGS,
+	...SAMBANOVA_OPENAI_COMPAT_CONFIGS,
+	...SCALEWAY_OPENAI_COMPAT_CONFIGS,
+	...SILICONFLOW_OPENAI_COMPAT_CONFIGS,
+	...WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS,
+	...TOGETHER_OPENAI_COMPAT_CONFIGS,
+	...XIAOMI_OPENAI_COMPAT_CONFIGS,
+	...GOOGLE_AI_STUDIO_OPENAI_COMPAT_CONFIGS,
+	...X_AI_OPENAI_COMPAT_CONFIGS,
+	...FIREWORKS_OPENAI_COMPAT_CONFIGS,
+	...PERPLEXITY_OPENAI_COMPAT_CONFIGS,
+	...POOLSIDE_OPENAI_COMPAT_CONFIGS,
+	...NEBIUS_TOKEN_FACTORY_OPENAI_COMPAT_CONFIGS,
+	...SOURCEFUL_OPENAI_COMPAT_CONFIGS,
+	...RELACE_OPENAI_COMPAT_CONFIGS,
+	...AION_OPENAI_COMPAT_CONFIGS,
+	...Z_AI_OPENAI_COMPAT_CONFIGS,
+	...LONGCAT_OPENAI_COMPAT_CONFIGS,
+	...CLOUDFLARE_OPENAI_COMPAT_CONFIGS,
+	...LIQUID_AI_OPENAI_COMPAT_CONFIGS,
+	...TENSORIX_OPENAI_COMPAT_CONFIGS,
+	...OVHCLOUD_OPENAI_COMPAT_CONFIGS,
+} satisfies Record<string, OpenAICompatConfig>;

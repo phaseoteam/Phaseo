@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +35,7 @@ export default function TabBar({
 }) {
 	// With layouts removed, derive the active tab from the pathname.
 	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const pathnameSegments = pathname
 		? pathname.split("/").filter(Boolean)
 		: [];
@@ -50,8 +51,12 @@ export default function TabBar({
 	const activeKey = tabs.some((t) => t.key === lastSegment)
 		? (lastSegment as string)
 		: (visibleTabs[0]?.key ?? "overview");
-	const hrefFor = (key: string) =>
-		key === "overview" ? `/models/${modelId}` : `/models/${modelId}/${key}`;
+	const hrefFor = (key: string) => {
+		const base =
+			key === "overview" ? `/models/${modelId}` : `/models/${modelId}/${key}`;
+		const query = searchParams.toString();
+		return query ? `${base}?${query}` : base;
+	};
 
 	return (
 		<div className="mb-4">

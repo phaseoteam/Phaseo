@@ -4,6 +4,7 @@
   "name": "DeepSeek Coder V2 (2024-06-14)",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "DeepSeek Coder V2 (2024-06-14) is a coding model from DeepSeek for code generation, edits, and software tasks.",
   "announced_date": "2024-06-14T00:00:00",
   "release_date": "2024-06-14T00:00:00",
   "deprecation_date": null,

@@ -57,6 +57,12 @@ export interface PaginatedRequestsParams {
 	timeRange: { from: string; to: string };
 	modelFilter?: string | null;
 	providerFilter?: string | null;
+	appFilter?: string | null;
+	endpointFilter?: string | null;
+	finishReasonFilter?: string | null;
+	streamFilter?: "all" | "streaming" | "non_streaming";
+	errorCodeFilter?: string | null;
+	statusCodeFilter?: number | null;
 	keyFilter?: string | null;
 	statusFilter?: "all" | "success" | "error";
 	requestFilter?: string | null;
@@ -66,11 +72,20 @@ export interface PaginatedRequestsParams {
 	sortDirection: "asc" | "desc";
 }
 
+export interface RequestDetailMetadata {
+	provider_candidate_diagnostics?: unknown;
+	provider_enablement_diagnostics?: unknown;
+	routing_diagnostics?: unknown;
+	[key: string]: unknown;
+}
+
 export interface RequestRow {
 	request_id: string;
 	created_at: string;
 	endpoint: string | null;
 	model_id: string | null;
+	requested_model_id: string | null;
+	routed_model_id: string | null;
 	provider: string | null;
 	native_response_id: string | null;
 	stream: boolean;
@@ -91,11 +106,14 @@ export interface RequestRow {
 	error_code: string | null;
 	error_message: string | null;
 	error_payload: Record<string, unknown> | null;
+	detail_metadata: RequestDetailMetadata | null;
 	key_id: string | null;
 	pricing_lines: AsyncJobRequestPricingLine[];
 	provider_attempts: Array<{
 		attempt_number: number | null;
 		provider: string | null;
+		api_model_id: string | null;
+		provider_model_slug: string | null;
 		outcome: string | null;
 		status: number | null;
 		status_text: string | null;
@@ -141,6 +159,12 @@ function normalizeProviderAttempts(
 					: null,
 		provider:
 			typeof attempt?.provider === "string" ? attempt.provider : null,
+		api_model_id:
+			typeof attempt?.api_model_id === "string" ? attempt.api_model_id : null,
+		provider_model_slug:
+			typeof attempt?.provider_model_slug === "string"
+				? attempt.provider_model_slug
+				: null,
 		outcome:
 			typeof attempt?.outcome === "string" ? attempt.outcome : null,
 		status:
@@ -203,6 +227,16 @@ function toRequestRow(row: any): RequestRow {
 			typeof row?.endpoint === "string" && row.endpoint.trim().length > 0
 				? row.endpoint.trim()
 				: null,
+		requested_model_id:
+			typeof row?.requested_model_id === "string" &&
+			row.requested_model_id.trim().length > 0
+				? row.requested_model_id.trim()
+				: null,
+		routed_model_id:
+			typeof row?.routed_model_id === "string" &&
+			row.routed_model_id.trim().length > 0
+				? row.routed_model_id.trim()
+				: null,
 		native_response_id:
 			typeof row?.native_response_id === "string" &&
 			row.native_response_id.trim().length > 0
@@ -218,6 +252,7 @@ function toRequestRow(row: any): RequestRow {
 		app_image_url: appImageUrl,
 		pricing_lines: normalizePricingLines(row?.pricing_lines),
 		error_payload: normalizePlainObject(row?.error_payload),
+		detail_metadata: normalizePlainObject(row?.detail_metadata) as RequestDetailMetadata | null,
 		provider_attempts: normalizeProviderAttempts(row?.provider_attempts),
 	} as RequestRow;
 }
@@ -253,7 +288,10 @@ export async function fetchPaginatedRequests(
                         created_at,
                         endpoint,
                         model_id,
+                        requested_model_id,
+                        routed_model_id,
                         provider,
+                        native_response_id,
                         stream,
                         session_id,
                         app_id,
@@ -268,11 +306,14 @@ export async function fetchPaginatedRequests(
 			generation_ms,
 			latency_ms,
 			finish_reason,
+			pricing_lines,
 			provider_attempts,
                         success,
                         status_code,
                         error_code,
                         error_message,
+                        error_payload,
+                        detail_metadata,
                         key_id,
                         throughput
                 `,
@@ -289,6 +330,26 @@ export async function fetchPaginatedRequests(
 	}
 	if (params.providerFilter) {
 		query = query.eq("provider", params.providerFilter);
+	}
+	if (params.appFilter) {
+		query = query.eq("app_id", params.appFilter);
+	}
+	if (params.endpointFilter) {
+		query = query.eq("endpoint", params.endpointFilter);
+	}
+	if (params.finishReasonFilter) {
+		query = query.eq("finish_reason", params.finishReasonFilter);
+	}
+	if (params.streamFilter === "streaming") {
+		query = query.eq("stream", true);
+	} else if (params.streamFilter === "non_streaming") {
+		query = query.eq("stream", false);
+	}
+	if (params.errorCodeFilter) {
+		query = query.eq("error_code", params.errorCodeFilter);
+	}
+	if (typeof params.statusCodeFilter === "number") {
+		query = query.eq("status_code", params.statusCodeFilter);
 	}
 	if (params.keyFilter) {
 		query = query.eq("key_id", params.keyFilter);
@@ -326,7 +387,10 @@ export async function fetchPaginatedRequests(
                                 created_at,
                                 endpoint,
                                 model_id,
+                                requested_model_id,
+                                routed_model_id,
                                 provider,
+                                native_response_id,
                                 stream,
                                 session_id,
                                 app_id,
@@ -335,11 +399,14 @@ export async function fetchPaginatedRequests(
 				generation_ms,
 				latency_ms,
 				finish_reason,
+				pricing_lines,
 				provider_attempts,
                                 success,
                                 status_code,
                                 error_code,
                                 error_message,
+                                error_payload,
+                                detail_metadata,
                                 key_id,
                                 throughput
                         `,
@@ -352,6 +419,17 @@ export async function fetchPaginatedRequests(
 
 		if (params.modelFilter) fallback = fallback.eq("model_id", params.modelFilter);
 		if (params.providerFilter) fallback = fallback.eq("provider", params.providerFilter);
+		if (params.appFilter) fallback = fallback.eq("app_id", params.appFilter);
+		if (params.endpointFilter) fallback = fallback.eq("endpoint", params.endpointFilter);
+		if (params.finishReasonFilter) {
+			fallback = fallback.eq("finish_reason", params.finishReasonFilter);
+		}
+		if (params.streamFilter === "streaming") fallback = fallback.eq("stream", true);
+		else if (params.streamFilter === "non_streaming") fallback = fallback.eq("stream", false);
+		if (params.errorCodeFilter) fallback = fallback.eq("error_code", params.errorCodeFilter);
+		if (typeof params.statusCodeFilter === "number") {
+			fallback = fallback.eq("status_code", params.statusCodeFilter);
+		}
 		if (params.keyFilter) fallback = fallback.eq("key_id", params.keyFilter);
 		if (params.requestFilter) fallback = fallback.eq("request_id", params.requestFilter);
 		if (params.sessionFilter) fallback = fallback.eq("session_id", params.sessionFilter);
@@ -377,7 +455,10 @@ export async function fetchPaginatedRequests(
                                         created_at,
                                         endpoint,
                                         model_id,
+                                        requested_model_id,
+                                        routed_model_id,
                                         provider,
+                                        native_response_id,
                                         stream,
                                         session_id,
                                         app_id,
@@ -386,11 +467,14 @@ export async function fetchPaginatedRequests(
 					generation_ms,
 					latency_ms,
 					finish_reason,
+					pricing_lines,
 					provider_attempts,
                                         success,
                                         status_code,
                                         error_code,
                                         error_message,
+                                        error_payload,
+                                        detail_metadata,
                                         key_id,
                                         throughput
                                 `,
@@ -402,6 +486,22 @@ export async function fetchPaginatedRequests(
 				.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
 			if (params.modelFilter) legacyFallback = legacyFallback.eq("model_id", params.modelFilter);
 			if (params.providerFilter) legacyFallback = legacyFallback.eq("provider", params.providerFilter);
+			if (params.appFilter) legacyFallback = legacyFallback.eq("app_id", params.appFilter);
+			if (params.endpointFilter) legacyFallback = legacyFallback.eq("endpoint", params.endpointFilter);
+			if (params.finishReasonFilter) {
+				legacyFallback = legacyFallback.eq("finish_reason", params.finishReasonFilter);
+			}
+			if (params.streamFilter === "streaming") {
+				legacyFallback = legacyFallback.eq("stream", true);
+			} else if (params.streamFilter === "non_streaming") {
+				legacyFallback = legacyFallback.eq("stream", false);
+			}
+			if (params.errorCodeFilter) {
+				legacyFallback = legacyFallback.eq("error_code", params.errorCodeFilter);
+			}
+			if (typeof params.statusCodeFilter === "number") {
+				legacyFallback = legacyFallback.eq("status_code", params.statusCodeFilter);
+			}
 			if (params.keyFilter) legacyFallback = legacyFallback.eq("key_id", params.keyFilter);
 			if (params.requestFilter) legacyFallback = legacyFallback.eq("request_id", params.requestFilter);
 			if (params.sessionFilter) legacyFallback = legacyFallback.eq("session_id", params.sessionFilter);
@@ -2578,12 +2678,17 @@ export interface AsyncJobWebhookSummaryRow {
 	url: string | null;
 	events: string[];
 	delivered_events: number;
+	delivered_event_types: string[];
 	attempt_count: number;
 	pending_retries: number;
 	next_retry_at: string | null;
 	last_attempt_at: string | null;
 	last_attempt_status: AsyncWebhookAttemptStatus | null;
+	last_response_status: number | null;
+	last_delivered_at: string | null;
+	last_failure_at: string | null;
 	last_error_message: string | null;
+	has_secret: boolean;
 }
 
 export interface AsyncJobRequestCounts {
@@ -2617,6 +2722,7 @@ export interface AsyncJobRow {
 	provider: string | null;
 	model: string | null;
 	status: string | null;
+	lifecycle_status: string | null;
 	billed_at: string | null;
 	created_at: string;
 	updated_at: string;
@@ -2819,22 +2925,37 @@ function buildWebhookSummary(meta: Record<string, unknown> | null | undefined): 
 		.map((entry) => entry.next_retry_at)
 		.filter((entry): entry is string => Boolean(entry))
 		.sort((a, b) => a.localeCompare(b))[0] ?? null;
+	const deliveredAttempts = attempts.filter((attempt) => attempt.status === "delivered");
+	const failureAttempts = attempts.filter((attempt) => attempt.status !== "delivered");
 	const events = Array.isArray(webhook?.events)
 		? webhook.events
 				.map((event) => normalizeText(event))
 				.filter((event): event is string => Boolean(event))
 		: [];
+	const deliveredEventTypes = Array.from(
+		new Set(deliveredAttempts.map((attempt) => attempt.event_type).filter(Boolean)),
+	).sort((a, b) => a.localeCompare(b));
 	return {
 		configured: Boolean(webhook),
 		url: normalizeText(webhook?.url),
 		events,
 		delivered_events: deliveredEvents,
+		delivered_event_types: deliveredEventTypes,
 		attempt_count: attempts.length,
 		pending_retries: retryQueue.length,
 		next_retry_at: nextRetryAt,
 		last_attempt_at: lastAttempt?.tried_at ?? null,
 		last_attempt_status: lastAttempt?.status ?? null,
+		last_response_status: lastAttempt?.response_status ?? null,
+		last_delivered_at: deliveredAttempts[0]?.delivered_at ?? null,
+		last_failure_at: failureAttempts[0]?.tried_at ?? null,
 		last_error_message: lastAttempt?.error_message ?? null,
+		has_secret: Boolean(
+			webhook?.secret ??
+				webhook?.has_secret ??
+				webhook?.signing_secret ??
+				webhook?.secret_present,
+		),
 	};
 }
 
@@ -2870,6 +2991,7 @@ function toAsyncJobRow(
 		provider: normalizeText(row.provider),
 		model: normalizeText(row.model),
 		status: normalizeText(row.status),
+		lifecycle_status: normalizeText(meta?.lifecycleStatus ?? meta?.lifecycle_status),
 		billed_at: normalizeIsoDate(row.billed_at),
 		created_at: createdAt,
 		updated_at: updatedAt,
@@ -3069,7 +3191,7 @@ export async function fetchAsyncJobDetail(input: {
 	if (base.request_id) {
 		const { data: requestData } = await admin
 			.from("gateway_requests")
-			.select("created_at,cost_nanos,native_response_id,endpoint,model_id,success,status_code,error_code,error_message,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
+			.select("created_at,cost_nanos,native_response_id,endpoint,model_id,success,status_code,error_code,error_message,error_payload,finish_reason,latency_ms,generation_ms,provider_attempts,pricing_lines")
 			.eq("workspace_id", workspaceId)
 			.eq("request_id", base.request_id)
 			.order("created_at", { ascending: false })
@@ -3084,6 +3206,7 @@ export async function fetchAsyncJobDetail(input: {
 		requestStatusCode = normalizeFiniteNumber(requestData?.status_code);
 		requestErrorCode = normalizeText(requestData?.error_code);
 		requestErrorMessage = normalizeText(requestData?.error_message);
+		requestErrorPayload = normalizePlainObject(requestData?.error_payload);
 		requestFinishReason = normalizeText(requestData?.finish_reason);
 		requestLatencyMs = normalizeFiniteNumber(requestData?.latency_ms);
 		requestGenerationMs = normalizeFiniteNumber(requestData?.generation_ms);

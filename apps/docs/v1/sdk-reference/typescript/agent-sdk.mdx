@@ -1,0 +1,358 @@
+---
+title: "Usage"
+description: "Build your own agentic applications on top of AI Stats Gateway with the TypeScript Agent SDK."
+---
+
+Use `@ai-stats/agent-sdk` when your application needs more than one-shot text generation:
+
+- multi-step tool loops
+- local runtime tools
+- resumable runs from SDK-returned state
+- explicit human approval pauses
+- typed final outputs
+- gateway-backed model turns through the existing TypeScript SDK
+
+The package is an installable SDK, not a hosted agent platform. You bring the application, deployment model, and any persistence strategy you want around returned run state.
+
+## State model
+
+The Agent SDK does not persist runs into any AI Stats-hosted service.
+
+- `run()` returns the full state needed to continue later.
+- If your application wants resumability across requests or process restarts, persist that returned state in your own application store.
+- `continueRun()` accepts that prior run state directly.
+
+Nothing is persisted by AI Stats outside your application.
+
+## Install
+
+```bash
+pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+## What the SDK ships
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `continueRun()` for continuing from previously returned run state
+
+## First agent
+
+```typescript
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@ai-stats/agent-sdk";
+
+const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up an internal docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+    },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://docs.ai-stats.phaseo.app/v1/${input.slug}`,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "support-docs-agent",
+  model: "ai-stats/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+
+const result = await agent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.AI_STATS_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## Mental model
+
+The runtime loop does four things:
+
+1. sends the current message state to the model client
+2. executes any returned local tool calls
+3. appends tool results into the next turn
+4. returns the updated run state after each completed step boundary
+
+That gives your application a resumable loop without forcing you into a hosted orchestration product.
+
+## Core primitives
+
+### `createAgent()`
+
+Use `createAgent()` to define:
+
+- one stable `id`
+- instructions
+- one model or preset
+- one small tool list
+- optional output parsing
+- optional human review rules
+- optional retry and tool-execution controls
+
+Keep the first agent narrow. One workflow and one or two tools is usually enough.
+
+### `defineTool()`
+
+Define local runtime tools with:
+
+- `id`
+- `description`
+- optional JSON `parameters`
+- optional `timeoutMs`
+- `execute()`
+
+```typescript
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(`https://internal.example/tickets/${input.ticketId}`, {
+      signal: context.signal,
+    });
+
+    return await response.json();
+  },
+});
+```
+
+If a timeout fires, the runtime aborts `context.signal`, marks the run as `failed`, and rethrows the timeout error.
+
+### `createGatewayAgentClient()`
+
+Use the gateway-backed adapter when model turns should execute through AI Stats Gateway.
+
+It can carry gateway-native controls such as:
+
+- `responseFormat`
+- `plugins`
+- `gatewayTools`
+- `toolChoice`
+- `webSearchOptions`
+- `providerOptions`
+- `promptCacheKey`
+- `includeMeta`
+
+That lets your app keep routing, search, structured outputs, and plugin defaults close to the model client instead of rebuilding raw request payloads on every run.
+
+## Application-owned persistence
+
+If your application needs resumability, persist the returned `AgentRunResult` in your own database, cache, or workflow record.
+
+The SDK intentionally does not ship persistence adapters or a hosted state backend.
+
+That means you can:
+
+- keep one-shot runs entirely in-process
+- serialize paused or incomplete runs into your own application records
+- reload that saved run state and pass it back to `continueRun()` later
+
+## Human review and continuation
+
+Use `humanReview` when a run should checkpoint and wait for approval:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+Continue with explicit human input:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## Typed outputs
+
+Use `parseOutput` when your app wants a typed final value:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+For stricter model behavior, combine that with structured outputs on the gateway adapter:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.AI_STATS_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## Runtime controls
+
+### Model retries
+
+Use `modelRetry` when transient model failures should retry before the run is persisted as `failed`:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` counts extra attempts after the first model request.
+The persisted step record stores the final retry count as `modelAttempts`.
+
+### Concurrent local tools
+
+If one model turn can safely call several independent tools, set `toolExecution.toolConcurrency`:
+
+```typescript
+const agent = createAgent({
+  id: "research-agent",
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+});
+```
+
+The runtime still preserves tool-result message order.
+
+### Preset-driven routing
+
+Use `preset` when routing, prompt, or parameter defaults should stay managed in the dashboard instead of being hard-coded in app code:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+## Event hooks
+
+Use `onEvent` when your application wants lifecycle hooks for logs, telemetry, or internal workflows.
+
+Current events include:
+
+- `run.started`
+- `run.resumed`
+- `step.started`
+- `step.completed`
+- `step.failed`
+- `step.cancelled`
+- `model.requested`
+- `model.completed`
+- `model.failed`
+- `tool.started`
+- `tool.completed`
+- `tool.failed`
+- `checkpoint.saved`
+- `run.waiting_for_human`
+- `run.cancelled`
+- `run.completed`
+- `run.failed`
+
+If one step succeeds, the runtime emits `step.completed` after the checkpointed step has been persisted.
+
+## Error handling
+
+Gateway failures are rethrown as `AgentGatewayError`:
+
+```typescript
+import { AgentGatewayError } from "@ai-stats/agent-sdk";
+
+try {
+  await agent.run({ input, client, store });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+If the failure came from the gateway, failed runs and steps also persist `errorDetails`.
+
+## Included examples
+
+The package currently ships these examples:
+
+- `examples/research-brief-agent.ts`
+- `examples/support-triage-agent.ts`
+- `examples/coding-review-agent.ts`
+- `examples/parallel-tool-agent.ts`
+
+## Current scope
+
+The SDK is intentionally focused on application-building primitives:
+
+- local or app-owned checkpoint persistence
+- gateway-backed model turns
+- local tools
+- resumable agent loops
+
+It does not try to be a hosted orchestration platform or ship one opinionated remote persistence backend.
+
+## Related guides
+
+- [Build a durable agent loop in TypeScript](../../cookbook/agent-sdk-durable-loop.mdx)
+- [Research with agent-backed web search](../../cookbook/agent-sdk-research-brief.mdx)
+- [Triage support with preset-driven agents](../../cookbook/agent-sdk-support-triage.mdx)
+- [Review code with local runtime tools](../../cookbook/agent-sdk-coding-review.mdx)
+- [Fan out local tools concurrently](../../cookbook/agent-sdk-parallel-tools.mdx)

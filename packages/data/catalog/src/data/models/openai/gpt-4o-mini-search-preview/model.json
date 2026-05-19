@@ -4,6 +4,7 @@
   "name": "GPT 4o Mini Search Preview",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT 4o Mini Search Preview is a specialized model for web search in Chat Completions. It is trained to understand and execute web search queries. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-03-11T00:00:00",
   "release_date": "2025-03-11T00:00:00",
   "deprecation_date": null,

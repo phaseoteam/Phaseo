@@ -4,6 +4,7 @@
   "name": "Granite 4.0 H Micro",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Granite 4.0 H Micro is a 3B parameter from the Granite 4 family of models. These models are the latest in a series of models released by IBM. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

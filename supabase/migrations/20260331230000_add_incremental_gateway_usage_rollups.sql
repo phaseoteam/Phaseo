@@ -3,11 +3,9 @@
 
 alter table public.gateway_requests
   add column if not exists canonical_model_id text;
-
 create index if not exists gateway_requests_canonical_model_created_provider_idx
   on public.gateway_requests (canonical_model_id, created_at desc, provider)
   where canonical_model_id is not null;
-
 create table if not exists public.gateway_usage_rollup_15m_model_provider (
   bucket_15m timestamptz not null,
   canonical_model_id text not null,
@@ -25,14 +23,12 @@ create table if not exists public.gateway_usage_rollup_15m_model_provider (
   throughput_samples bigint not null,
   primary key (bucket_15m, canonical_model_id, provider)
 );
-
 create index if not exists gateway_usage_rollup_15m_bucket_idx
   on public.gateway_usage_rollup_15m_model_provider (bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_model_provider_idx
   on public.gateway_usage_rollup_15m_model_provider (canonical_model_id, provider, bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_provider_bucket_idx
   on public.gateway_usage_rollup_15m_model_provider (provider, bucket_15m desc);
-
 create table if not exists public.gateway_usage_rollup_15m_app_model (
   bucket_15m timestamptz not null,
   app_id uuid not null references public.api_apps (id) on delete cascade,
@@ -43,14 +39,12 @@ create table if not exists public.gateway_usage_rollup_15m_app_model (
   total_cost_nanos bigint not null,
   primary key (bucket_15m, app_id, canonical_model_id)
 );
-
 create index if not exists gateway_usage_rollup_15m_app_model_bucket_idx
   on public.gateway_usage_rollup_15m_app_model (bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_app_model_app_bucket_idx
   on public.gateway_usage_rollup_15m_app_model (app_id, bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_app_model_model_bucket_idx
   on public.gateway_usage_rollup_15m_app_model (canonical_model_id, bucket_15m desc);
-
 create table if not exists public.gateway_usage_rollup_15m_provider_app (
   bucket_15m timestamptz not null,
   provider text not null,
@@ -65,14 +59,12 @@ create table if not exists public.gateway_usage_rollup_15m_provider_app (
   throughput_samples bigint not null,
   primary key (bucket_15m, provider, app_id)
 );
-
 create index if not exists gateway_usage_rollup_15m_provider_app_bucket_idx
   on public.gateway_usage_rollup_15m_provider_app (bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_provider_app_provider_bucket_idx
   on public.gateway_usage_rollup_15m_provider_app (provider, bucket_15m desc);
 create index if not exists gateway_usage_rollup_15m_provider_app_app_bucket_idx
   on public.gateway_usage_rollup_15m_provider_app (app_id, bucket_15m desc);
-
 create table if not exists public.gateway_usage_rollup_daily_app_model (
   day_bucket timestamptz not null,
   app_id uuid not null references public.api_apps (id) on delete cascade,
@@ -83,14 +75,12 @@ create table if not exists public.gateway_usage_rollup_daily_app_model (
   total_cost_nanos bigint not null,
   primary key (day_bucket, app_id, canonical_model_id)
 );
-
 create index if not exists gateway_usage_rollup_daily_app_model_day_idx
   on public.gateway_usage_rollup_daily_app_model (day_bucket desc);
 create index if not exists gateway_usage_rollup_daily_app_model_app_day_idx
   on public.gateway_usage_rollup_daily_app_model (app_id, day_bucket desc);
 create index if not exists gateway_usage_rollup_daily_app_model_model_day_idx
   on public.gateway_usage_rollup_daily_app_model (canonical_model_id, day_bucket desc);
-
 create table if not exists public.gateway_usage_rollup_daily_app (
   day_bucket timestamptz not null,
   app_id uuid not null references public.api_apps (id) on delete cascade,
@@ -101,12 +91,10 @@ create table if not exists public.gateway_usage_rollup_daily_app (
   unique_models integer not null,
   primary key (day_bucket, app_id)
 );
-
 create index if not exists gateway_usage_rollup_daily_app_day_idx
   on public.gateway_usage_rollup_daily_app (day_bucket desc);
 create index if not exists gateway_usage_rollup_daily_app_app_day_idx
   on public.gateway_usage_rollup_daily_app (app_id, day_bucket desc);
-
 create or replace function public.refresh_gateway_usage_rollups(
   p_since timestamptz default now() - interval '3 hours'
 )
@@ -369,15 +357,11 @@ begin
   group by d.day_bucket, d.app_id;
 end;
 $$;
-
 comment on function public.refresh_gateway_usage_rollups(timestamptz) is
   'Incrementally refreshes 15-minute model/provider and app/model rollups from gateway_requests, then derives daily app aggregates.';
-
 -- Backfill recent history once.
 select public.refresh_gateway_usage_rollups(now() - interval '90 days');
-
 create extension if not exists pg_cron with schema extensions;
-
 -- Replace older rollup schedule (hourly) with 15-minute incremental refresh.
 do $$
 declare
@@ -410,19 +394,16 @@ exception
   when others then
     null;
 end $$;
-
 select cron.schedule(
   'refresh-gateway-usage-rollups-15m',
   '*/15 * * * *',
   $$select public.refresh_gateway_usage_rollups(now() - interval '3 hours');$$
 );
-
 select cron.schedule(
   'refresh-gateway-usage-rollups-nightly-catchup',
   '12 3 * * *',
   $$select public.refresh_gateway_usage_rollups(now() - interval '2 days');$$
 );
-
 create or replace function public.get_public_model_rankings(
   p_time_range text default 'week',
   p_metric text default 'tokens',
@@ -580,7 +561,6 @@ begin
   order by rc.rk;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_model_performance(
   p_hours integer default 24,
   p_min_requests integer default 0
@@ -660,7 +640,6 @@ begin
   order by g.req_count desc;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_trending_models(
   p_limit integer default 20,
   p_min_requests integer default 0
@@ -713,7 +692,6 @@ begin
   limit p_limit;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_market_share(
   p_dimension text default 'organization',
   p_time_range text default 'week'
@@ -799,7 +777,6 @@ begin
   end if;
 end;
 $$ language plpgsql stable;
-
 drop function if exists public.get_public_top_apps(integer, text);
 create or replace function public.get_public_top_apps(
   p_limit integer default 20,
@@ -854,7 +831,6 @@ begin
   limit p_limit;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_trending_apps(
   p_limit integer default 20,
   p_min_week_tokens bigint default 0
@@ -906,7 +882,6 @@ begin
   limit p_limit;
 end;
 $$;
-
 create or replace function public.get_public_summary_stats()
 returns table (
   total_requests_24h bigint,
@@ -952,7 +927,6 @@ as $$
     ) as success_rate_24h
   from grouped g;
 $$;
-
 create or replace function public.get_usage_tokens_weekly_model_provider(
   p_since timestamptz default now() - interval '8 weeks'
 )
@@ -998,7 +972,6 @@ as $$
   from grouped g
   order by g.week_bucket desc, g.tok_count desc;
 $$;
-
 create or replace function public.get_usage_daily_app(
   p_since timestamptz default now() - interval '30 days'
 )
@@ -1032,7 +1005,6 @@ as $$
   where d.day_bucket >= (date_trunc('day', p_since at time zone 'utc') at time zone 'utc')
   order by d.day_bucket desc, d.requests desc;
 $$;
-
 create or replace function public.get_gateway_marketing_rollup(
   p_hours integer default 24
 )
@@ -1059,7 +1031,6 @@ as $$
   group by date_trunc('hour', r.bucket_15m)
   order by date_trunc('hour', r.bucket_15m);
 $$;
-
 grant execute on function public.refresh_gateway_usage_rollups(timestamptz) to service_role;
 grant execute on function public.get_usage_tokens_weekly_model_provider(timestamptz) to authenticated, service_role;
 grant execute on function public.get_usage_daily_app(timestamptz) to authenticated, service_role;

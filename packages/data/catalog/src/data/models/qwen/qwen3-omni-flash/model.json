@@ -4,6 +4,7 @@
   "name": "Qwen 3 Omni Flash (2025-12-01)",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 Omni Flash (2025-12-01) is a large-scale multimodal vision-language model designed for high-precision understanding and reasoning across text, images, and video.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -10,6 +10,15 @@ jobs:
   sync-php-split:
     runs-on: ubuntu-latest
     steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from refs/heads/main only."
+            exit 1
+          fi
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0

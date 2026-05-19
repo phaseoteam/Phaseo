@@ -4,6 +4,7 @@
   "name": "Qwen 2.5 Omni 7B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 2.5 Omni 7B is proficient in recognizing common objects such as flowers, birds, fish, and insects. It is also highly capable of analyzing texts, charts, icons, graphics, and layouts within images.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Music",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Music is a music generation model from ElevenLabs for creating songs, instrumentals, and audio clips from prompts. It is aimed at prompt-driven soundtrack, jingle, and creative audio workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "o3 mini",
   "status": "Available",
   "previous_model_id": "openai/o1-mini-2024-09-12",
+  "description": "o3 mini is a cost-efficient language model optimized for STEM reasoning tasks, particularly excelling in science, mathematics, and coding. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": null,
   "release_date": "2025-01-30T00:00:00",
   "deprecation_date": null,

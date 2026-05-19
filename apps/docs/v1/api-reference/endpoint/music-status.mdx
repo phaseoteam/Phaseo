@@ -5,7 +5,11 @@ openapi: "GET /music/generate/{music_id}"
 description: "Check the status of an asynchronous music generation job."
 ---
 
-Use this endpoint to poll a music job created by `POST /music/generate`.
+Poll a music job created by `POST /music/generate`.
+
+<Warning>
+The public music routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
 
 ## Response Shape
 
@@ -40,4 +44,4 @@ Use this endpoint to poll a music job created by `POST /music/generate`.
 
 - `status` can be: `queued`, `in_progress`, `completed`, `failed`.
 - `usage` is included when generation is complete.
-- Status polling supports provider-specific backends (Suno, ElevenLabs, MiniMax) behind one endpoint.
+- Status polling supports provider-specific backends behind one endpoint.

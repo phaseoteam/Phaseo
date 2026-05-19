@@ -1,0 +1,341 @@
+- generic:
+  - generic:
+    - paragraph: Cookie Preferences
+    - paragraph:
+      - text: We use analytics cookies to measure traffic and improve AI Stats. You can change your mind anytime in Settings, and read more in our
+      - link:
+        - /url: /privacy
+        - text: Privacy Policy
+      - text: .
+    - generic:
+      - button: Decline
+      - button: Accept
+  - generic:
+    - banner:
+      - generic:
+        - generic:
+          - generic:
+            - link:
+              - /url: /
+              - img
+            - generic:
+              - navigation:
+                - link:
+                  - /url: /models
+                  - text: Models
+                - link:
+                  - /url: /api-providers
+                  - text: Providers
+                - link:
+                  - /url: /apps
+                  - text: Apps
+                - link:
+                  - /url: /rankings
+                  - text: Rankings
+                - link:
+                  - /url: /chat
+                  - text: Playground
+          - generic:
+            - generic:
+              - button:
+                - img
+                - generic: Search...
+                - generic: Ctrl K
+            - generic:
+              - link:
+                - /url: /sign-in
+                - button: Sign In
+    - main:
+      - generic:
+        - generic:
+          - main:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                    - generic:
+                      - generic:
+                        - heading [level=1]:
+                          - link:
+                            - /url: /organisations/google
+                            - text: "Google:"
+                          - text: Gemini 3.1 Flash-Lite
+                      - generic:
+                        - button:
+                          - generic: google/gemini-3.1-flash-lite
+                          - generic:
+                            - img
+                  - generic:
+                    - link:
+                      - /url: /chat?model=google/gemini-3.1-flash-lite
+                      - img
+                      - text: Chat
+                    - link:
+                      - /url: /compare?models=google/gemini-3.1-flash-lite
+                      - img
+                      - text: Compare
+                - generic:
+                  - generic:
+                    - paragraph: Gemini 3.1 Flash-Lite is an AI model from Google. It accepts text, image, video, and audio inputs and produces text outputs. On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite?sort=pricing&dir=asc
+                          - text: Overview
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/playground?sort=pricing&dir=asc
+                          - text: Playground
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/providers?sort=pricing&dir=asc
+                          - text: Providers
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/pricing?sort=pricing&dir=asc
+                          - text: Pricing
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/performance?sort=pricing&dir=asc
+                          - text: Performance
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/apps?sort=pricing&dir=asc
+                          - text: Apps
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/activity?sort=pricing&dir=asc
+                          - text: Activity
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/quickstart?sort=pricing&dir=asc
+                          - text: Quickstart
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/benchmarks?sort=pricing&dir=asc
+                          - text: Benchmarks
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/family?sort=pricing&dir=asc
+                          - text: Family
+                        - link:
+                          - /url: /models/google/gemini-3.1-flash-lite/timeline?sort=pricing&dir=asc
+                          - text: Timeline
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading [level=2]:
+                        - img
+                        - text: Quickstart
+                      - paragraph: Use one of the accepted identifiers below for the selected endpoint.
+                    - generic:
+                      - alert:
+                        - img
+                        - generic: Model identifiers
+                        - generic:
+                          - generic:
+                            - code: google/gemini-3.1-flash-lite
+                            - code: google/gemini-flash-lite-latest
+                      - generic:
+                        - heading [level=3]: 1) Get an API key
+                        - paragraph:
+                          - text: Create a key in
+                          - link:
+                            - /url: /settings/keys
+                            - generic: Dashboard
+                            - img
+                            - generic: API Keys
+                          - text: ", then set it as"
+                          - code: AI_STATS_API_KEY
+                          - text: in your environment variables.
+                        - alert:
+                          - img
+                          - generic: Keep your API key secret
+                          - generic: This key grants access to all models and your credits. Treat it like a password, do not share it, commit it to source control, or expose it in client-side code. Rotate keys immediately if you suspect compromise.
+                      - generic:
+                        - heading [level=3]: 2) Choose endpoint, language, and streaming
+                        - generic:
+                          - generic:
+                            - text: Endpoint
+                            - combobox:
+                              - generic: Responses
+                              - img
+                          - generic:
+                            - text: Language
+                            - button:
+                              - generic: cURL
+                              - img
+                          - generic:
+                            - text: Provider
+                            - button [expanded]:
+                              - generic: Price
+                              - img
+                          - generic:
+                            - text: Streaming
+                            - generic:
+                              - generic:
+                                - switch
+                                - generic: Enable SSE
+                            - paragraph: "Add \"stream\": true to receive token events."
+                      - generic:
+                        - heading [level=3]: 3) Send your first request
+                        - generic:
+                          - heading [level=4]: Code
+                          - generic:
+                            - generic:
+                              - generic: bash
+                              - button:
+                                - generic:
+                                  - img
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - code:
+                                    - generic: "# 1) Set your key"
+                                    - generic: export AI_STATS_API_KEY="aistats_***"
+                                    - generic: "# 2) Send a request"
+                                    - generic: curl -s https://api.phaseo.app/v1/responses \
+                                    - generic: "-H \"Authorization: Bearer $AI_STATS_API_KEY\" \\"
+                                    - generic: "-H \"Content-Type: application/json\" \\"
+                                    - generic: "-d '{"
+                                    - generic: "\"model\": \"google/gemini-3.1-flash-lite\","
+                                    - generic: "\"input\": \"Give me one fun fact about cURL.\","
+                                    - generic: "\"provider\": {"
+                                    - generic: "\"sort\": \"price\""
+                                    - generic: "}"
+                                    - generic: "}'"
+    - contentinfo:
+      - generic:
+        - generic:
+          - generic:
+            - generic: Community
+            - generic:
+              - link:
+                - /url: https://discord.gg/zDw73wamdX
+                - img
+                - generic: Discord
+              - link:
+                - /url: https://github.com/AI-Stats/AI-Stats
+                - img
+                - generic: GitHub
+              - link:
+                - /url: https://instagram.com/ai__stats
+                - img
+                - generic: Instagram
+              - link:
+                - /url: https://reddit.com/r/AIStats/
+                - img
+                - generic: Reddit
+              - link:
+                - /url: https://www.linkedin.com/company/phaseoapp/
+                - img
+                - generic: LinkedIn
+              - link:
+                - /url: https://x.com/ai_stats_team
+                - img
+                - generic: X
+          - generic:
+            - generic: Platform
+            - generic:
+              - link:
+                - /url: https://docs.ai-stats.phaseo.app
+                - img
+                - generic: Docs
+              - link:
+                - /url: /roadmap
+                - img
+                - generic: Roadmap
+              - link:
+                - /url: /tools
+                - img
+                - generic: Tools
+              - link:
+                - /url: /migrate
+                - img
+                - generic: Migrate
+              - link:
+                - /url: /pricing
+                - img
+                - generic: Pricing
+              - link:
+                - /url: /tools/pricing-calculator
+                - img
+                - generic: Model Pricing Calculator
+              - link:
+                - /url: /works-with
+                - img
+                - generic: Works With
+          - generic:
+            - generic: Support
+            - generic:
+              - link:
+                - /url: /contribute
+                - img
+                - generic: Contribute
+              - link:
+                - /url: /monitor
+                - img
+                - generic: Database monitor
+              - link:
+                - /url: https://ai-stats.instatus.com/
+                - img
+                - generic: Status
+              - link:
+                - /url: /faq
+                - img
+                - generic: FAQ
+              - link:
+                - /url: /contact
+                - img
+                - generic: Contact
+              - button:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                  - generic:
+                    - generic: Theme
+          - generic:
+            - generic: Company
+            - generic:
+              - link:
+                - /url: /about
+                - img
+                - generic: About
+              - link:
+                - /url: /announcements
+                - img
+                - generic: Announcements
+              - link:
+                - /url: https://docs.ai-stats.phaseo.app/v1/changelog
+                - img
+                - generic: Changelog
+              - link:
+                - /url: /terms
+                - img
+                - generic: Terms
+              - link:
+                - /url: /privacy
+                - img
+                - generic: Privacy
+        - separator
+        - generic:
+          - generic:
+            - text: © 2025 - 2026 AI Stats
+            - generic: If you run into any issues or notice any data errors, please visit our GitHub and report an issue.
+  - generic:
+    - generic: xl
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e146] [cursor=pointer]:
+    - img [ref=e147]
+  - alert
+  - menu "Price" [active] [ref=e245]:
+    - generic [ref=e246]: Provider options
+    - separator [ref=e247]
+    - menuitem "Sort" [ref=e248]:
+      - img
+      - generic [ref=e249]: Sort
+      - img
+    - menuitem "Order" [ref=e250]:
+      - img
+      - generic [ref=e251]: Order
+      - img

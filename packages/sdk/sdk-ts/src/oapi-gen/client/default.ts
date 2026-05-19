@@ -204,10 +204,41 @@ export type CreateAnthropicMessageParams = {
     };
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_options?: {
       anthropic?: {
@@ -271,6 +302,24 @@ export type CreateAnthropicMessageParams = {
           };
           timezone?: string;
           type: "gateway:datetime";
+        }
+      | {
+          include_highlights?: boolean;
+          include_text?: boolean;
+          max_results?: number;
+          parameters?: {
+            include_highlights?: boolean;
+            include_text?: boolean;
+            max_results?: number;
+          };
+          type: "gateway:web_search";
+        }
+      | {
+          max_chars?: number;
+          parameters?: {
+            max_chars?: number;
+          };
+          type: "gateway:web_fetch";
         }[];
     top_k?: number;
     top_p?: number;
@@ -452,10 +501,41 @@ export type CreateBatchParams = {
       [key: string]: unknown;
     };
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     session_id?: string;
     webhook?: {
@@ -597,10 +677,41 @@ export type CreateBatchAliasParams = {
       [key: string]: unknown;
     };
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     session_id?: string;
     webhook?: {
@@ -836,10 +947,41 @@ export type CreateChatCompletionParams = {
     presence_penalty?: number;
     prompt_cache_key?: string | null;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_options?: {
       anthropic?: {
@@ -889,7 +1031,14 @@ export type CreateChatCompletionParams = {
     stream?: boolean;
     stream_options?: {};
     temperature?: number;
-    tool_choice?: "auto" | "none" | "required" | "gateway:datetime" | {};
+    tool_choice?:
+      | "auto"
+      | "none"
+      | "required"
+      | "gateway:datetime"
+      | "gateway:web_search"
+      | "gateway:web_fetch"
+      | {};
     tools?:
       | {
           function: {
@@ -906,6 +1055,24 @@ export type CreateChatCompletionParams = {
           };
           timezone?: string;
           type: "gateway:datetime";
+        }
+      | {
+          include_highlights?: boolean;
+          include_text?: boolean;
+          max_results?: number;
+          parameters?: {
+            include_highlights?: boolean;
+            include_text?: boolean;
+            max_results?: number;
+          };
+          type: "gateway:web_search";
+        }
+      | {
+          max_chars?: number;
+          parameters?: {
+            max_chars?: number;
+          };
+          type: "gateway:web_fetch";
         }[];
     top_logprobs?: number;
     top_p?: number;
@@ -1005,6 +1172,8 @@ export async function createChatCompletion(
     prompt_tokens?: number;
     server_tool_use?: {
       datetime_requests?: number;
+      web_fetch_requests?: number;
+      web_search_requests?: number;
     };
     total_tokens?: number;
   };
@@ -1095,6 +1264,8 @@ export async function createChatCompletion(
       prompt_tokens?: number;
       server_tool_use?: {
         datetime_requests?: number;
+        web_fetch_requests?: number;
+        web_search_requests?: number;
       };
       total_tokens?: number;
     };
@@ -1210,10 +1381,41 @@ export type CreateEmbeddingParams = {
         }[];
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_options?: {
       google?: {
@@ -1247,6 +1449,8 @@ export async function createEmbedding(
     prompt_tokens?: number;
     server_tool_use?: {
       datetime_requests?: number;
+      web_fetch_requests?: number;
+      web_search_requests?: number;
     };
     total_tokens?: number;
   };
@@ -1266,6 +1470,8 @@ export async function createEmbedding(
       prompt_tokens?: number;
       server_tool_use?: {
         datetime_requests?: number;
+        web_fetch_requests?: number;
+        web_search_requests?: number;
       };
       total_tokens?: number;
     };
@@ -1287,10 +1493,41 @@ export type CreateImageParams = {
     n?: number;
     prompt: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     quality?: string;
     response_format?: string;
@@ -1344,10 +1581,41 @@ export type CreateImageEditParams = {
     n?: number;
     prompt: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     size?: string;
     usage?: boolean;
@@ -1414,10 +1682,41 @@ export type CreateModerationParams = {
     meta?: boolean;
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
   };
 };
@@ -1521,10 +1820,41 @@ export type CreateOcrParams = {
     language?: string;
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
   };
 };
@@ -1574,10 +1904,41 @@ export type CreateRerankParams = {
     };
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_options?: {
       [key: string]: unknown;
@@ -1616,6 +1977,8 @@ export async function createRerank(
     prompt_tokens?: number;
     server_tool_use?: {
       datetime_requests?: number;
+      web_fetch_requests?: number;
+      web_search_requests?: number;
     };
     total_tokens?: number;
   };
@@ -1641,6 +2004,8 @@ export async function createRerank(
       prompt_tokens?: number;
       server_tool_use?: {
         datetime_requests?: number;
+        web_fetch_requests?: number;
+        web_search_requests?: number;
       };
       total_tokens?: number;
     };
@@ -1702,10 +2067,41 @@ export type CreateResponseParams = {
     previous_response_id?: string;
     prompt_cache_key?: string | null;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_options?: {
       anthropic?: {
@@ -1747,7 +2143,14 @@ export type CreateResponseParams = {
     stream?: boolean;
     temperature?: number;
     text?: {};
-    tool_choice?: "auto" | "none" | "required" | "gateway:datetime" | {};
+    tool_choice?:
+      | "auto"
+      | "none"
+      | "required"
+      | "gateway:datetime"
+      | "gateway:web_search"
+      | "gateway:web_fetch"
+      | {};
     tools?:
       | {
           function: {
@@ -1764,6 +2167,24 @@ export type CreateResponseParams = {
           };
           timezone?: string;
           type: "gateway:datetime";
+        }
+      | {
+          include_highlights?: boolean;
+          include_text?: boolean;
+          max_results?: number;
+          parameters?: {
+            include_highlights?: boolean;
+            include_text?: boolean;
+            max_results?: number;
+          };
+          type: "gateway:web_search";
+        }
+      | {
+          max_chars?: number;
+          parameters?: {
+            max_chars?: number;
+          };
+          type: "gateway:web_fetch";
         }[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -1852,6 +2273,8 @@ export async function createResponse(
     prompt_tokens?: number;
     server_tool_use?: {
       datetime_requests?: number;
+      web_fetch_requests?: number;
+      web_search_requests?: number;
     };
     total_tokens?: number;
   };
@@ -1932,6 +2355,8 @@ export async function createResponse(
       prompt_tokens?: number;
       server_tool_use?: {
         datetime_requests?: number;
+        web_fetch_requests?: number;
+        web_search_requests?: number;
       };
       total_tokens?: number;
     };
@@ -1953,10 +2378,41 @@ export type CreateSpeechParams = {
     input: string;
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     voice?: string;
   };
@@ -1990,10 +2446,41 @@ export type CreateTranscriptionParams = {
     language?: string;
     model: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
   };
 };
@@ -2031,10 +2518,41 @@ export type CreateTranslationParams = {
     model: string;
     prompt?: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     temperature?: number;
   };
@@ -2088,10 +2606,41 @@ export type CreateVideoParams = {
     person_generation?: string;
     prompt: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_params?: {
       [key: string]: unknown;
@@ -2263,10 +2812,41 @@ export type CreateVideoAliasParams = {
     person_generation?: string;
     prompt: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     provider_params?: {
       [key: string]: unknown;
@@ -2693,10 +3273,41 @@ export type GenerateMusicParams = {
     model: string;
     prompt?: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     suno?: {
       audioWeight?: number;
@@ -2767,10 +3378,41 @@ export type GenerateMusicAliasParams = {
     model: string;
     prompt?: string;
     provider?: {
+      allow_fallbacks?: boolean | null;
+      data_collection?: "allow" | "deny" | null;
+      enforce_distillable_text?: boolean | null;
       ignore?: string[];
       include_alpha?: boolean;
+      max_price?: {
+        audio?: number | string;
+        completion?: number | string;
+        image?: number | string;
+        prompt?: number | string;
+        request?: number | string;
+      };
       only?: string[];
       order?: string[];
+      preferred_max_latency?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      preferred_min_throughput?:
+        | number
+        | {
+            [key: string]: number;
+          };
+      quantizations?: string[] | null;
+      require_parameters?: boolean | null;
+      require_zero_data_retention?: boolean | null;
+      required_data_region?: string | null;
+      required_execution_region?: string | null;
+      sort?:
+        | string
+        | {
+            [key: string]: unknown;
+          };
+      zdr?: boolean | null;
     };
     suno?: {
       audioWeight?: number;

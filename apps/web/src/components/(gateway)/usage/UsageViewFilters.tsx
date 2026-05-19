@@ -119,6 +119,11 @@ export default function UsageViewFilters({
 	view,
 	models = [],
 	providers = [],
+	logAppIds = [],
+	logEndpoints = [],
+	logFinishReasons = [],
+	logErrorCodes = [],
+	logStatusCodes = [],
 	modelProviders = new Map(),
 	providerNames = new Map(),
 	apiKeys = [],
@@ -132,6 +137,11 @@ export default function UsageViewFilters({
 	view: UsageLogsViewKey;
 	models?: string[];
 	providers?: string[];
+	logAppIds?: string[];
+	logEndpoints?: string[];
+	logFinishReasons?: string[];
+	logErrorCodes?: string[];
+	logStatusCodes?: number[];
 	modelProviders?: Map<string, string[]>;
 	providerNames?: Map<string, string>;
 	apiKeys?: { id: string; name: string | null; prefix: string | null }[];
@@ -144,6 +154,12 @@ export default function UsageViewFilters({
 }) {
 	const [modelFilter, setModelFilter] = useQueryState("model", { defaultValue: "" });
 	const [providerFilter, setProviderFilter] = useQueryState("provider", { defaultValue: "" });
+	const [appFilter, setAppFilter] = useQueryState("app", { defaultValue: "" });
+	const [endpointFilter, setEndpointFilter] = useQueryState("endpoint", { defaultValue: "" });
+	const [finishReasonFilter, setFinishReasonFilter] = useQueryState("finish_reason", { defaultValue: "" });
+	const [streamFilter, setStreamFilter] = useQueryState("stream", { defaultValue: "all" });
+	const [errorCodeFilter, setErrorCodeFilter] = useQueryState("error_code", { defaultValue: "" });
+	const [statusCodeFilter, setStatusCodeFilter] = useQueryState("http_status", { defaultValue: "" });
 	const [keyFilter, setKeyFilter] = useQueryState("key", { defaultValue: "" });
 	const [statusFilter, setStatusFilter] = useQueryState("status", { defaultValue: "all" });
 	const [requestFilter, setRequestFilter] = useQueryState("req", { defaultValue: "" });
@@ -187,6 +203,43 @@ export default function UsageViewFilters({
 		}));
 	}, [apiKeys]);
 
+	const logAppOptions = React.useMemo(() => {
+		return logAppIds
+			.map((appId) => ({
+				value: appId,
+				label: appMetadata.get(appId)?.title?.trim() || appId,
+			}))
+			.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+	}, [appMetadata, logAppIds]);
+
+	const endpointOptions = React.useMemo(() => {
+		return logEndpoints.map((endpoint) => ({
+			value: endpoint,
+			label: endpoint,
+		}));
+	}, [logEndpoints]);
+
+	const finishReasonOptions = React.useMemo(() => {
+		return logFinishReasons.map((finishReason) => ({
+			value: finishReason,
+			label: finishReason,
+		}));
+	}, [logFinishReasons]);
+
+	const errorCodeOptions = React.useMemo(() => {
+		return logErrorCodes.map((errorCode) => ({
+			value: errorCode,
+			label: errorCode,
+		}));
+	}, [logErrorCodes]);
+
+	const statusCodeOptions = React.useMemo(() => {
+		return logStatusCodes.map((statusCode) => ({
+			value: String(statusCode),
+			label: String(statusCode),
+		}));
+	}, [logStatusCodes]);
+
 	const sessionAppOptions = React.useMemo(() => {
 		return sessionAppIds
 			.map((appId) => ({
@@ -222,6 +275,11 @@ export default function UsageViewFilters({
 	const statusOptions: FilterOption[] = [
 		{ value: "success", label: "Successful only" },
 		{ value: "error", label: "Errors only" },
+	];
+
+	const streamOptions: FilterOption[] = [
+		{ value: "streaming", label: "Streaming only" },
+		{ value: "non_streaming", label: "Non-streaming only" },
 	];
 
 	const jobKindOptions: FilterOption[] = [
@@ -262,6 +320,70 @@ export default function UsageViewFilters({
 						providerFilter
 					}
 					onClear={() => setProviderFilter("")}
+				/>,
+			);
+		}
+		if (appFilter) {
+			activeChips.push(
+				<FilterChip
+					key="app"
+					label="App"
+					value={appMetadata.get(appFilter)?.title?.trim() || appFilter}
+					onClear={() => setAppFilter("")}
+				/>,
+			);
+		}
+		if (endpointFilter) {
+			activeChips.push(
+				<FilterChip
+					key="endpoint"
+					label="Endpoint"
+					value={<code className="font-mono text-[11px]">{endpointFilter}</code>}
+					onClear={() => setEndpointFilter("")}
+				/>,
+			);
+		}
+		if (finishReasonFilter) {
+			activeChips.push(
+				<FilterChip
+					key="finish-reason"
+					label="Finish"
+					value={finishReasonFilter}
+					onClear={() => setFinishReasonFilter("")}
+				/>,
+			);
+		}
+		if (streamFilter !== "all") {
+			activeChips.push(
+				<FilterChip
+					key="stream"
+					label="Stream"
+					value={
+						streamFilter === "streaming"
+							? "Streaming only"
+							: "Non-streaming only"
+					}
+					onClear={() => setStreamFilter("all")}
+				/>,
+			);
+		}
+		if (errorCodeFilter) {
+			activeChips.push(
+				<FilterChip
+					key="error-code"
+					label="Error"
+					value={<code className="font-mono text-[11px]">{errorCodeFilter}</code>}
+					onClear={() => setErrorCodeFilter("")}
+				/>,
+			);
+		}
+		if (statusCodeFilter) {
+			activeChips.push(
+				<FilterChip
+					key="status-code"
+					label="HTTP"
+					value={<code className="font-mono text-[11px]">{statusCodeFilter}</code>}
+					onClear={() => setStatusCodeFilter("")}
 				/>,
 			);
 		}
@@ -422,6 +544,48 @@ export default function UsageViewFilters({
 								activeValue={providerFilter}
 								allLabel="All providers"
 								onSelect={setProviderFilter}
+							/>
+							<FilterSubmenu
+								label="App"
+								options={logAppOptions}
+								activeValue={appFilter}
+								allLabel="All apps"
+								onSelect={setAppFilter}
+							/>
+							<FilterSubmenu
+								label="Endpoint"
+								options={endpointOptions}
+								activeValue={endpointFilter}
+								allLabel="All endpoints"
+								onSelect={setEndpointFilter}
+							/>
+							<FilterSubmenu
+								label="Finish reason"
+								options={finishReasonOptions}
+								activeValue={finishReasonFilter}
+								allLabel="All finish reasons"
+								onSelect={setFinishReasonFilter}
+							/>
+							<FilterSubmenu
+								label="Stream"
+								options={streamOptions}
+								activeValue={streamFilter === "all" ? "" : streamFilter}
+								allLabel="All request modes"
+								onSelect={(value) => setStreamFilter(value || "all")}
+							/>
+							<FilterSubmenu
+								label="Error code"
+								options={errorCodeOptions}
+								activeValue={errorCodeFilter}
+								allLabel="All error codes"
+								onSelect={setErrorCodeFilter}
+							/>
+							<FilterSubmenu
+								label="HTTP status"
+								options={statusCodeOptions}
+								activeValue={statusCodeFilter}
+								allLabel="All status codes"
+								onSelect={setStatusCodeFilter}
 							/>
 							<FilterSubmenu
 								label="Key"

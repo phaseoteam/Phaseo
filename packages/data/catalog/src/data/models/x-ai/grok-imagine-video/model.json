@@ -4,6 +4,7 @@
   "name": "Grok Imagine Video",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok Imagine Video is a video generation model from xAI for prompt-driven clip and scene creation. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2026-01-29T00:00:00",
   "release_date": "2026-01-29T00:00:00",
   "deprecation_date": null,

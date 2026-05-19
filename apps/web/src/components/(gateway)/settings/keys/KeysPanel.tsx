@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -29,6 +30,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import UsageItem from "./UsageItem";
+import KeyDetailsItem from "./KeyDetailsItem";
 import EditKeyItem from "./EditKeyItem";
 import DeleteKeyItem from "./DeleteKeyItem";
 import KeyLimitsItem from "./KeyLimitsItem";
@@ -104,6 +106,39 @@ function fmtUsdFromNanos(v: number) {
 function formatKeyReference(v?: string | null) {
 	const ref = typeof v === "string" ? v.trim() : "";
 	return ref ? `aistats_v1_sk_...${ref}` : "aistats_v1_sk_...";
+}
+
+function GuardrailSummary({ guardrails }: { guardrails?: any[] }) {
+	const items = Array.isArray(guardrails) ? guardrails : [];
+	if (items.length === 0) {
+		return (
+			<div className="mt-1 text-[11px] text-muted-foreground">No guardrails</div>
+		);
+	}
+
+	return (
+		<div className="mt-1 flex flex-wrap gap-1.5">
+			{items.slice(0, 2).map((guardrail, index) => (
+				<Badge
+					key={guardrail.id ?? guardrail.name ?? `guardrail-${index}`}
+					variant="outline"
+					className="max-w-full gap-1 text-[10px]"
+				>
+					<span className="truncate">
+						{guardrail.name ?? guardrail.id ?? "Guardrail"}
+					</span>
+					{guardrail.enabled === false ? (
+						<span className="text-muted-foreground">(Off)</span>
+					) : null}
+				</Badge>
+			))}
+			{items.length > 2 ? (
+				<Badge variant="secondary" className="text-[10px]">
+					+{items.length - 2}
+				</Badge>
+			) : null}
+		</div>
+	);
 }
 
 function getKeyUsageVisuals(k: any, state: KeyState) {
@@ -325,19 +360,20 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 									return (
 										<div key={k.id} className="space-y-3 p-3">
 											<div className="flex items-start justify-between gap-2">
-												<div className="min-w-0">
-													<div className="flex items-center gap-2 min-w-0">
-														<meta.Icon
+											<div className="min-w-0">
+												<div className="flex items-center gap-2 min-w-0">
+													<meta.Icon
 															aria-label={meta.label}
 															className={`h-4 w-4 shrink-0 ${meta.className}`}
 														/>
 														<div className="font-medium truncate">{k.name}</div>
-													</div>
-													<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
-														{formatKeyReference(k.prefix)}
-													</div>
 												</div>
-												<DropdownMenu>
+												<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
+													{formatKeyReference(k.prefix)}
+												</div>
+												<GuardrailSummary guardrails={k.guardrails} />
+											</div>
+											<DropdownMenu>
 													<DropdownMenuTrigger asChild>
 														<Button
 															variant="ghost"
@@ -349,6 +385,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 														</Button>
 													</DropdownMenuTrigger>
 													<DropdownMenuContent side="bottom" align="end">
+														<KeyDetailsItem k={k} />
 														<UsageItem k={k} />
 														<EditKeyItem k={k} />
 														<RotateKeyItem k={k} />
@@ -464,15 +501,16 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 															</TooltipContent>
 														</Tooltip>
 														<div className="min-w-0">
-															<div className="font-medium truncate">
-																{k.name}
-															</div>
-															<div className="font-mono text-xs text-muted-foreground truncate md:hidden">
-																{formatKeyReference(k.prefix)}
-															</div>
+														<div className="font-medium truncate">
+															{k.name}
 														</div>
+														<div className="font-mono text-xs text-muted-foreground truncate md:hidden">
+															{formatKeyReference(k.prefix)}
+														</div>
+														<GuardrailSummary guardrails={k.guardrails} />
 													</div>
-												</TableCell>
+												</div>
+											</TableCell>
 												<TableCell className="hidden lg:table-cell font-mono text-xs text-muted-foreground">
 													{formatKeyReference(k.prefix)}
 												</TableCell>
@@ -565,6 +603,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 															side="bottom"
 															align="end"
 														>
+															<KeyDetailsItem k={k} />
 															<UsageItem k={k} />
 															<EditKeyItem k={k} />
 															<RotateKeyItem k={k} />

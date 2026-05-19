@@ -4,6 +4,7 @@
   "name": "Devstral Small 1.1",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Devstral Small 1.1 is a coding model from Mistral for code generation, edits, and software tasks. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2025-07-10T00:00:00",
   "release_date": "2025-07-10T00:00:00",
   "deprecation_date": "2026-02-27T00:00:00",

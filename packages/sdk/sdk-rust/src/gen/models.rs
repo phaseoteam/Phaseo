@@ -518,6 +518,20 @@ pub struct GatewayModelsResponse {
 	pub total: i64,
 }
 
+pub struct GatewayWebFetchToolDefinition {
+	pub max_chars: Option<i64>,
+	pub parameters: Option<HashMap<String, String>>,
+	pub r#type: String,
+}
+
+pub struct GatewayWebSearchToolDefinition {
+	pub include_highlights: Option<bool>,
+	pub include_text: Option<bool>,
+	pub max_results: Option<i64>,
+	pub parameters: Option<HashMap<String, String>>,
+	pub r#type: String,
+}
+
 pub struct GenerationResponse {
 	pub app_id: Option<Option<String>>,
 	pub byok: Option<bool>,
@@ -843,10 +857,23 @@ pub struct ProviderOptions {
 }
 
 pub struct ProviderRoutingOptions {
+	pub allow_fallbacks: Option<Option<bool>>,
+	pub data_collection: Option<Option<String>>,
+	pub enforce_distillable_text: Option<Option<bool>>,
 	pub ignore: Option<Vec<String>>,
 	pub include_alpha: Option<bool>,
+	pub max_price: Option<HashMap<String, String>>,
 	pub only: Option<Vec<String>>,
 	pub order: Option<Vec<String>>,
+	pub preferred_max_latency: Option<String>,
+	pub preferred_min_throughput: Option<String>,
+	pub quantizations: Option<Option<Vec<String>>>,
+	pub require_parameters: Option<Option<bool>>,
+	pub require_zero_data_retention: Option<Option<bool>>,
+	pub required_data_region: Option<Option<String>>,
+	pub required_execution_region: Option<Option<String>>,
+	pub sort: Option<String>,
+	pub zdr: Option<Option<bool>>,
 }
 
 pub struct ProvisioningKey {
@@ -1035,6 +1062,8 @@ pub struct ResponsesWebSocketUpgradeRequiredResponse {
 
 pub struct ServerToolUsage {
 	pub datetime_requests: Option<i64>,
+	pub web_fetch_requests: Option<i64>,
+	pub web_search_requests: Option<i64>,
 }
 
 pub struct TextContentPart {

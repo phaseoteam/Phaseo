@@ -566,5 +566,47 @@
         ]
       }
     ]
+  },
+  {
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "friendli:google/gemma-4-31B-it",
+    "provider_model_slug": "google/gemma-4-31B-it",
+    "internal_model_id": "google/gemma-4-31b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v3.1",
+    "provider_api_model_id": "friendli:deepseek-ai/DeepSeek-V3.1",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V3.1",
+    "internal_model_id": "deepseek/deepseek-v3.1",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2025-12-01T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

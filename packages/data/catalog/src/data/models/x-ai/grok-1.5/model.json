@@ -4,6 +4,7 @@
   "name": "Grok 1.5",
   "status": "Deprecated",
   "previous_model_id": "x-ai/grok-1",
+  "description": "Grok 1.5 is a text-to-speech model from xAI.",
   "announced_date": null,
   "release_date": "2024-03-28T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "LFM 2.5 1.2B Thinking",
   "status": "Available",
   "previous_model_id": null,
+  "description": "LFM 2.5 1.2B Thinking is a reasoning model from Liquid AI for multi-step analysis, math, and tool-driven tasks. It accepts text inputs and produces text outputs.",
   "announced_date": "2026-01-20T00:00:00",
   "release_date": "2026-01-20T00:00:00",
   "deprecation_date": null,

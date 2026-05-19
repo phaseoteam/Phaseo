@@ -4,6 +4,7 @@
   "name": "Mercury 2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Mercury 2 is an extremely fast reasoning LLM, and the first reasoning diffusion LLM (dLLM). It accepts text inputs and produces text outputs.",
   "announced_date": "2026-02-24T00:00:00",
   "release_date": "2026-02-24T00:00:00",
   "deprecation_date": null,

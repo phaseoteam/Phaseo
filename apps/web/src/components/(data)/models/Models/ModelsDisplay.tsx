@@ -21,7 +21,6 @@ import {
 	SlidersHorizontal,
 	Activity,
 	ArrowDownCircle,
-	ArrowUpCircle,
 	ArrowUpDown,
 	BadgeAlert,
 	ChevronUp,
@@ -40,6 +39,7 @@ import {
 	ImageIcon,
 	Video,
 	CalendarDays,
+	Globe2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -108,6 +108,7 @@ type PreparedModel = {
 	outputModalitiesSet: ReadonlySet<string>;
 	featuresSet: ReadonlySet<string>;
 	providerNamesSet: ReadonlySet<string>;
+	executionRegionsSet: ReadonlySet<string>;
 	supportedParametersSet: ReadonlySet<string>;
 	maxContextLength: number | null;
 	creator: string;
@@ -129,6 +130,7 @@ type FilterDimension =
 	| "contextMin"
 	| "supportedParameters"
 	| "providers"
+	| "regions"
 	| "creators"
 	| "years";
 
@@ -158,6 +160,19 @@ const CONTEXT_LENGTH_STOPS = [
 const SCROLL_TOP_VISIBILITY_THRESHOLD = 320;
 const SCROLL_TOP_ANIMATION_DURATION_MS = 700;
 const MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD = 240;
+const OUTPUT_MODALITY_DISPLAY_ORDER = [
+	"text",
+	"image",
+	"video",
+	"audio",
+	"audio_tts",
+	"audio_stt",
+	"embeddings",
+	"moderations",
+	"rerank",
+	"audio_music",
+] as const;
+const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
 
 function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
@@ -177,6 +192,16 @@ function parseCsvParam(value: string | null): string[] {
 		.split(",")
 		.map((part) => part.trim())
 		.filter(Boolean);
+}
+
+function parseRegionParam(value: string | null): string[] {
+	return Array.from(
+		new Set(
+			parseCsvParam(value)
+				.map((part) => String(part ?? "").trim().toLowerCase())
+				.filter(Boolean),
+		),
+	);
 }
 
 function normalizeModalityFilterValue(value: string): string {
@@ -377,6 +402,16 @@ function toTitleCase(value: string): string {
 		.join(" ");
 }
 
+function formatRegionLabel(value: string): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "us") return "US";
+	if (normalized === "eu") return "EU";
+	if (normalized === "apac") return "APAC";
+	if (normalized === "jp") return "Japan";
+	if (normalized === "au") return "Australia";
+	return normalized ? normalized.toUpperCase() : value;
+}
+
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
@@ -551,6 +586,98 @@ function mergeOptionCounts(
 	}));
 }
 
+function filterOutFileModality(options: OptionCount[]): OptionCount[] {
+	return options.filter(
+		(option) => normalizeModalityFilterValue(option.value) !== "file",
+	);
+}
+
+function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
+	const order = new Map<string, number>(
+		OUTPUT_MODALITY_DISPLAY_ORDER.map((value, index) => [value, index] as const),
+	);
+	return [...options].sort((a, b) => {
+		const aKey = normalizeModalityFilterValue(a.value);
+		const bKey = normalizeModalityFilterValue(b.value);
+		const aIndex = order.get(aKey);
+		const bIndex = order.get(bKey);
+		if (aIndex !== undefined && bIndex !== undefined) return aIndex - bIndex;
+		if (aIndex !== undefined) return -1;
+		if (bIndex !== undefined) return 1;
+		return toTitleCase(a.value).localeCompare(toTitleCase(b.value));
+	});
+}
+
+function OutputModalityButtonRow({
+	options,
+	selected,
+	onToggle,
+}: {
+	options: OptionCount[];
+	selected: string[];
+	onToggle: (value: string) => void;
+}) {
+	if (options.length === 0) return null;
+
+	return (
+		<ScrollArea
+			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
+			scrollBarOrientation="horizontal"
+			viewportClassName="pb-3"
+		>
+			<div className="flex min-w-max items-center gap-1.5 pr-4">
+				{sortOutputModalityOptions(options).map((option) => {
+					const checked = selected.includes(option.value);
+					const Icon = getModalityIcon(option.value);
+					const tone = getModalityTone(option.value);
+
+					return (
+						<Button
+							key={option.value}
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => onToggle(option.value)}
+							aria-pressed={checked}
+							className={cn(
+								"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
+								checked
+									? cn("bg-muted text-foreground hover:bg-muted", tone.badgeClassName)
+									: "text-muted-foreground hover:text-foreground",
+							)}
+						>
+							<span
+								className={cn(
+									"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
+									checked
+										? tone.iconClassName
+										: cn(
+											"bg-transparent text-muted-foreground transition-colors",
+											tone.ghostIconHoverClassName,
+										),
+								)}
+							>
+								<Icon className="h-3.5 w-3.5" />
+							</span>
+							<span>{toTitleCase(option.value)}</span>
+							<span
+								className={cn(
+									"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
+									checked
+										? "text-current"
+										: "text-muted-foreground",
+								)}
+							>
+								{option.count}
+							</span>
+						</Button>
+					);
+				})}
+			</div>
+		</ScrollArea>
+	);
+}
+
 export default function ModelsDisplay({
 	models,
 	facets,
@@ -562,7 +689,6 @@ export default function ModelsDisplay({
 	const DEFAULT_OPEN_SECTIONS = [
 		"gatewayStatus",
 		"inputModalities",
-		"outputModalities",
 	];
 	const [openFilterSections, setOpenFilterSections] = useState<string[]>([
 		...DEFAULT_OPEN_SECTIONS,
@@ -637,6 +763,13 @@ export default function ModelsDisplay({
 	const [selectedProviders, setSelectedProviders] = useQueryState("providers", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [selectedRegions, setSelectedRegions] = useQueryState("regions", {
+		defaultValue: [] as string[],
+		parse: parseRegionParam,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,
@@ -747,6 +880,7 @@ export default function ModelsDisplay({
 		featureOptions: baseFeatureOptions,
 		supportedParameterOptions: baseSupportedParameterOptions,
 		providerOptions: baseProviderOptions,
+		regionOptions: baseRegionOptions,
 		creatorOptions: baseCreatorOptions,
 		yearOptions: baseYearOptions,
 	} = facets;
@@ -760,6 +894,7 @@ export default function ModelsDisplay({
 		(selectedContextMin > 0 ? 1 : 0) +
 		selectedSupportedParameters.length +
 		selectedProviders.length +
+		selectedRegions.length +
 		selectedCreators.length +
 		selectedYears.length;
 
@@ -778,6 +913,9 @@ export default function ModelsDisplay({
 				const features = Array.from(normalizedSet(model.gateway_features));
 				const providerNames = Array.from(
 					normalizedSet(model.gateway_provider_names),
+				);
+				const executionRegions = Array.from(
+					normalizedSet(model.gateway_execution_regions),
 				);
 				const apiModelIds = Array.from(
 					normalizedSet(model.gateway_api_model_ids),
@@ -799,6 +937,7 @@ export default function ModelsDisplay({
 					outputModalitiesSet: new Set(outputModalities),
 					featuresSet: new Set(features),
 					providerNamesSet: new Set(providerNames),
+					executionRegionsSet: new Set(executionRegions),
 					supportedParametersSet: new Set(supportedParameters),
 					maxContextLength:
 						Number.isFinite(maxContextLength) && maxContextLength > 0
@@ -912,6 +1051,15 @@ export default function ModelsDisplay({
 				return false;
 			}
 			if (
+				exclude !== "regions" &&
+				selectedRegions.length > 0 &&
+				!selectedRegions.every((value) =>
+					prepared.executionRegionsSet.has(value),
+				)
+			) {
+				return false;
+			}
+			if (
 				exclude !== "creators" &&
 				selectedCreators.length > 0 &&
 				!selectedCreators.includes(prepared.creator)
@@ -938,6 +1086,7 @@ export default function ModelsDisplay({
 			selectedInputModalities,
 			selectedOutputModalities,
 			selectedProviders,
+			selectedRegions,
 			selectedSupportedParameters,
 			selectedYears,
 		],
@@ -1049,6 +1198,13 @@ export default function ModelsDisplay({
 				),
 				selectedProviders,
 			),
+			regionOptions: mergeOptionCounts(
+				baseRegionOptions,
+				countPreparedValues(withAllExcept("regions"), (prepared) =>
+					prepared.executionRegionsSet.values(),
+				),
+				selectedRegions,
+			),
 			creatorOptions: mergeOptionCounts(
 				baseCreatorOptions,
 				countPreparedValues(withAllExcept("creators"), (prepared) =>
@@ -1071,6 +1227,7 @@ export default function ModelsDisplay({
 		baseInputModalityOptions,
 		baseOutputModalityOptions,
 		baseProviderOptions,
+		baseRegionOptions,
 		baseSupportedParameterOptions,
 		baseYearOptions,
 		matchesPreparedModel,
@@ -1081,6 +1238,7 @@ export default function ModelsDisplay({
 		selectedInputModalities,
 		selectedOutputModalities,
 		selectedProviders,
+		selectedRegions,
 		selectedSupportedParameters,
 		selectedYears,
 	]);
@@ -1095,6 +1253,7 @@ export default function ModelsDisplay({
 		setSelectedContextMin(0);
 		setSelectedSupportedParameters([]);
 		setSelectedProviders([]);
+		setSelectedRegions([]);
 		setSelectedCreators([]);
 		setSelectedYears([]);
 	};
@@ -1139,12 +1298,29 @@ export default function ModelsDisplay({
 		},
 	];
 	const endpointOptions = dynamicSidebarCounts.endpointOptions;
-	const inputModalityOptions = dynamicSidebarCounts.inputModalityOptions;
+	const inputModalityOptions = filterOutFileModality(
+		dynamicSidebarCounts.inputModalityOptions,
+	);
 	const outputModalityOptions = dynamicSidebarCounts.outputModalityOptions;
 	const featureOptions = dynamicSidebarCounts.featureOptions;
 	const supportedParameterOptions =
 		dynamicSidebarCounts.supportedParameterOptions;
 	const providerOptions = dynamicSidebarCounts.providerOptions;
+	const regionOptions = useMemo(() => {
+		const order = new Map<string, number>(
+			REGION_DISPLAY_ORDER.map((value, index) => [value, index] as const),
+		);
+		return [...dynamicSidebarCounts.regionOptions].sort((a, b) => {
+			const aKey = String(a.value ?? "").trim().toLowerCase();
+			const bKey = String(b.value ?? "").trim().toLowerCase();
+			const aIndex = order.get(aKey);
+			const bIndex = order.get(bKey);
+			if (aIndex !== undefined && bIndex !== undefined) return aIndex - bIndex;
+			if (aIndex !== undefined) return -1;
+			if (bIndex !== undefined) return 1;
+			return formatRegionLabel(a.value).localeCompare(formatRegionLabel(b.value));
+		});
+	}, [dynamicSidebarCounts.regionOptions]);
 	const creatorOptions = dynamicSidebarCounts.creatorOptions;
 	const yearOptions = dynamicSidebarCounts.yearOptions;
 
@@ -1305,29 +1481,6 @@ export default function ModelsDisplay({
 				</AccordionContent>
 			</AccordionItem>
 
-			<AccordionItem value="outputModalities" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
-					<span className="flex items-center gap-2">
-						<ArrowUpCircle className="h-4 w-4 text-muted-foreground" />
-						Output Modalities
-					</span>
-				</AccordionTrigger>
-				<AccordionContent className="pt-1" disableAnimation>
-					<FilterCheckboxList
-						options={outputModalityOptions}
-						selected={selectedOutputModalities}
-						onToggle={(value) =>
-							setSelectedOutputModalities(
-								toggleInList(selectedOutputModalities, value),
-							)
-						}
-						iconForValue={getModalityIcon}
-						labelForValue={toTitleCase}
-						toneForValue={getModalityTone}
-					/>
-				</AccordionContent>
-			</AccordionItem>
-
 			<AccordionItem value="contextLength" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
@@ -1424,6 +1577,25 @@ export default function ModelsDisplay({
 				</AccordionContent>
 			</AccordionItem>
 
+			<AccordionItem value="regionRouting" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<Globe2 className="h-4 w-4 text-muted-foreground" />
+						Region Routing
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={regionOptions}
+						selected={selectedRegions}
+						onToggle={(value) =>
+							setSelectedRegions(toggleInList(selectedRegions, value))
+						}
+						labelForValue={formatRegionLabel}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
 			<AccordionItem value="modelCreators" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
@@ -1515,7 +1687,7 @@ export default function ModelsDisplay({
 
 			<section className="min-w-0 flex flex-1 flex-col">
 				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
-					<div className="sm:hidden space-y-2">
+					<div className="md:hidden space-y-2">
 						<div className="flex items-center justify-between gap-2">
 							{showPrimaryHeader ? (
 								<h1 className="font-bold text-xl leading-8">Models</h1>
@@ -1523,9 +1695,6 @@ export default function ModelsDisplay({
 								<div />
 							)}
 							<div className="flex items-center justify-end gap-2 min-w-0">
-								<span className="text-sm text-muted-foreground tabular-nums whitespace-nowrap">
-									{shownCountLabel}
-								</span>
 								{showPrimaryHeader ? viewSwitcher : null}
 							</div>
 						</div>
@@ -1569,15 +1738,15 @@ export default function ModelsDisplay({
 						</div>
 					</div>
 
-					<div className="hidden sm:block">
-						<div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_minmax(260px,460px)_auto] lg:grid-cols-[minmax(0,1fr)_minmax(260px,460px)_auto] sm:items-center sm:gap-3">
-							<div className="min-w-0 sm:flex sm:h-8 sm:items-center">
+					<div className="hidden md:block">
+						<div className="grid grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(260px,460px)_minmax(0,1fr)] md:items-center md:gap-3">
+							<div className="min-w-0 md:flex md:h-8 md:items-center">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
 								) : null}
 							</div>
 
-							<div className="relative w-full sm:justify-self-center">
+							<div className="relative w-full md:justify-self-center">
 								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 								<Input
 									placeholder="Search"
@@ -1592,7 +1761,7 @@ export default function ModelsDisplay({
 								/>
 							</div>
 
-							<div className="flex items-center justify-end gap-2 sm:justify-self-end">
+							<div className="flex items-center justify-end gap-2 md:justify-self-end">
 								<div className="hidden lg:flex items-center gap-2">
 									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
 										<ArrowUpDown className="h-3.5 w-3.5" />
@@ -1608,9 +1777,6 @@ export default function ModelsDisplay({
 
 						<div className="mt-1 flex flex-wrap items-center justify-between gap-2">
 							<div className="flex items-center gap-2">
-								<div className="text-sm text-muted-foreground">
-									{shownCountWithSearchLabel}
-								</div>
 								<Button
 									type="button"
 									size="sm"
@@ -1634,6 +1800,18 @@ export default function ModelsDisplay({
 								{sortSelect("h-8 w-[170px] rounded-md bg-background text-sm sm:w-[200px]")}
 							</div>
 						</div>
+					</div>
+
+					<div className="mt-3">
+						<OutputModalityButtonRow
+							options={outputModalityOptions}
+							selected={selectedOutputModalities}
+							onToggle={(value) =>
+								setSelectedOutputModalities(
+									toggleInList(selectedOutputModalities, value),
+								)
+							}
+						/>
 					</div>
 				</div>
 

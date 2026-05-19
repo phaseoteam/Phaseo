@@ -5,6 +5,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
+import { fetchGatewayContext } from "@pipeline/before/context";
 import { json, withRuntime, cacheHeaders } from "@/routes/utils";
 import {
     fetchCatalogue,
@@ -45,6 +46,9 @@ type CompatibilityTopProvider = {
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
 const MAX_OFFSET = 5000;
+const FREE_ROUTER_MODEL_ID = "ai-stats/free";
+const FREE_ROUTER_NAME = "AI Stats Free Router";
+const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as const;
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
@@ -233,11 +237,155 @@ function toCompatibilityTopProvider(model: CatalogueModel): CompatibilityTopProv
 }
 
 function buildDescription(model: CatalogueModel): string {
+    if (model.model_id === FREE_ROUTER_MODEL_ID) {
+        return "Routes each request to an eligible free model pool with provider-aware balancing.";
+    }
+    const explicitDescription = typeof model.description === "string" ? model.description.trim() : "";
+    if (explicitDescription) {
+        return explicitDescription;
+    }
     const displayName = model.name?.trim() || model.model_id;
     if (!model.endpoints.length) {
         return `${displayName} via AI Stats Gateway.`;
     }
     return `${displayName} via AI Stats Gateway. Supports ${model.endpoints.join(", ")}.`;
+}
+
+function canIncludeFreeRouter(endpoints: string[]): boolean {
+    if (!endpoints.length) return true;
+    const allowed = new Set(FREE_ROUTER_ENDPOINTS.map((endpoint) => endpoint.toLowerCase()));
+    return endpoints.some((endpoint) => allowed.has(endpoint.trim().toLowerCase()));
+}
+
+function buildFreeRouterPricingMeters(args: {
+    pricing: Record<string, any>;
+    providers: Array<{ providerId: string; pricingKey: string }>;
+}): PricingSummary["meters"] {
+    const meters: PricingSummary["meters"] = {};
+    for (const provider of args.providers) {
+        const pricingCard = args.pricing?.[provider.pricingKey];
+        const rules = Array.isArray(pricingCard?.rules) ? pricingCard.rules : [];
+        for (const rule of rules) {
+            const meter = typeof rule?.meter === "string" ? rule.meter.trim() : "";
+            if (!meter || meter in meters) continue;
+            const unitSize = Number(rule?.unit_size);
+            meters[meter] = {
+                provider_id: provider.providerId,
+                unit: typeof rule?.unit === "string" ? rule.unit : "token",
+                unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
+                price_per_unit: String(rule?.price_per_unit ?? "0"),
+                currency: typeof rule?.currency === "string" ? rule.currency : null,
+            };
+        }
+    }
+    return meters;
+}
+
+async function buildFreeRouterCatalogueModel(args: {
+    workspaceId: string;
+    apiKeyId: string;
+    endpoints: string[];
+    catalogue: CatalogueModel[];
+}): Promise<CatalogueModel | null> {
+    if (!canIncludeFreeRouter(args.endpoints)) return null;
+
+    try {
+        const freeContext = await fetchGatewayContext({
+            workspaceId: args.workspaceId,
+            apiKeyId: args.apiKeyId,
+            model: FREE_ROUTER_MODEL_ID,
+            endpoint: "text.generate",
+        });
+        if (!Array.isArray(freeContext.providers) || freeContext.providers.length === 0) {
+            return null;
+        }
+
+        const matchedConcreteModels: CatalogueModel[] = [];
+        const providers: CatalogueModel["providers"] = [];
+        const providerKeySet = new Set<string>();
+        for (const snapshot of freeContext.providers) {
+            const providerId = String(snapshot.providerId ?? "").trim();
+            const apiModelId = String(snapshot.apiModelId ?? "").trim();
+            if (!providerId || !apiModelId || providerKeySet.has(providerId)) continue;
+
+            const concreteModel = args.catalogue.find((model) => model.model_id === apiModelId);
+            if (!concreteModel) continue;
+
+            const concreteProvider = concreteModel.providers.find((provider) => provider.api_provider_id === providerId);
+            if (!concreteProvider) continue;
+
+            providerKeySet.add(providerId);
+            matchedConcreteModels.push(concreteModel);
+            providers.push({
+                ...concreteProvider,
+                params: Array.from(
+                    new Set([
+                        ...concreteProvider.params,
+                        ...Object.keys(snapshot.capabilityParams ?? {}),
+                    ])
+                ).sort(),
+            });
+        }
+
+        if (!providers.length || !matchedConcreteModels.length) {
+            return null;
+        }
+
+        const endpoints = Array.from(
+            new Set(
+                matchedConcreteModels
+                    .flatMap((model) => model.endpoints)
+                    .filter((endpoint) => FREE_ROUTER_ENDPOINTS.includes(endpoint as (typeof FREE_ROUTER_ENDPOINTS)[number]))
+            )
+        );
+        const inputTypes = Array.from(new Set(matchedConcreteModels.flatMap((model) => model.input_types))).sort();
+        const outputTypes = Array.from(new Set(matchedConcreteModels.flatMap((model) => model.output_types))).sort();
+        const supportedParams = Array.from(
+            new Set([
+                ...matchedConcreteModels.flatMap((model) => model.supported_params),
+                ...providers.flatMap((provider) => provider.params),
+            ])
+        ).sort();
+
+        return {
+            model_id: FREE_ROUTER_MODEL_ID,
+            previous_model_id: null,
+            name: FREE_ROUTER_NAME,
+            description: null,
+            release_date: null,
+            deprecation_date: null,
+            retirement_date: null,
+            status: "active",
+            organisation_id: "ai-stats",
+            organisation_name: "AI Stats",
+            organisation_colour: null,
+            aliases: [],
+            endpoints,
+            input_types: inputTypes,
+            output_types: outputTypes,
+            providers,
+            supported_params: supportedParams,
+            top_provider: providers[0]?.api_provider_id ?? null,
+            pricing: {
+                pricing_plan: "standard",
+                meters: buildFreeRouterPricingMeters({
+                    pricing: freeContext.pricing ?? {},
+                    providers: freeContext.providers.map((provider) => ({
+                        providerId: provider.providerId,
+                        pricingKey: provider.pricingKey,
+                    })),
+                }),
+            },
+            availability: {
+                status: "active",
+                provider_count: providers.length,
+                active_provider_count: providers.length,
+                inactive_provider_count: 0,
+            },
+        };
+    } catch {
+        return null;
+    }
 }
 
 function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
@@ -383,8 +531,18 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
             params,
             availability: availabilityMode,
         });
-        const replacementByPreviousModel = buildReplacementByPreviousModel(catalogue);
-        const models = catalogue.map((model) =>
+        const freeRouterModel = await buildFreeRouterCatalogueModel({
+            workspaceId: auth.value.workspaceId,
+            apiKeyId: auth.value.apiKeyId,
+            endpoints,
+            catalogue,
+        });
+        const enrichedCatalogue =
+            freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
+                ? [freeRouterModel, ...catalogue]
+                : catalogue;
+        const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
+        const models = enrichedCatalogue.map((model) =>
             toRichModel(model, replacementByPreviousModel.get(model.model_id) ?? null)
         );
         const paged = models.slice(offset, offset + limit);

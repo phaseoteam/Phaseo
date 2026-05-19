@@ -4,7 +4,60 @@ description: "SDK updates and developer experience improvements across supported
 rss: true
 ---
 
-<Update label="5th April 2026">
+<Update label="16th May 2026">
+# TypeScript Agent SDK Launch
+
+This release introduces the first public TypeScript Agent SDK package: `@ai-stats/agent-sdk`.
+
+This release includes:
+
+- A local runtime for multi-step agent loops with `createAgent()`, resumable run state, structured output parsing, and explicit human-review checkpoints.
+- A gateway-backed adapter with support for presets, managed gateway tools, response-format controls, provider options, response healing, and request-level metadata.
+- Runtime tool definitions with optional JSON parameter contracts, bounded tool concurrency, timeout controls, and event hooks for application-owned telemetry.
+- New TypeScript-first examples and documentation covering durable loops, research briefs, support triage, coding review flows, and parallel local tool execution.
+
+</Update>
+
+<Update label="1st May 2026">
+# SDKs 2.0.3 Release
+
+This release tracks the `2.0.3` SDK line across TypeScript, Python, Go, C#, Java, PHP, and Ruby.
+
+This release includes:
+
+- Auto-release wiring for functional SDK packages after OpenAPI or model-surface changes, so published clients stay closer to current gateway behavior.
+- Regenerated types and model enums for the latest API and catalog updates.
+- Continued support for the same functional SDK set, while C++ and Rust remain outside this auto-release line for now.
+
+</Update>
+
+<Update label="29th April 2026">
+# SDKs 2.0.2 Release
+
+This release tracks the `2.0.2` SDK line across TypeScript, Python, Go, C#, Java, PHP, and Ruby.
+
+This release includes:
+
+- Request-side model identifiers are now treated as runtime strings, so newly released models can be used without waiting for a fresh SDK release.
+- Generated helper constants now follow the callable-on-gateway snapshot instead of the full catalog.
+- Model-helper churn is treated as patch-level data change instead of forcing larger version jumps.
+
+</Update>
+
+<Update label="22nd April 2026">
+# SDKs 2.0.0 Release
+
+This release starts the `2.0.0` major SDK line across TypeScript, Python, Go, C#, Java, PHP, and Ruby.
+
+This release includes:
+
+- Regenerated clients aligned with the latest gateway API and current cross-language endpoint behavior.
+- Broader parity work across models, pricing, workspaces, migration guides, and video or batch flows.
+- Breaking SDK surface updates tied to the current gateway contract and generated model surfaces.
+
+</Update>
+
+<Update label="18th April 2026">
 # SDKs 1.2.0 Release
 
 This release tracks the `1.2.0` SDK line across TypeScript, Python, Go, C#, Java, PHP, and Ruby.

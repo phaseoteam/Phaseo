@@ -4,6 +4,7 @@
   "name": "Nova Sonic",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nova Sonic is a text-only model that delivers the lowest latency responses in the Amazon Nova family of models at a very low cost. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-04-08T00:00:00",
   "release_date": "2025-04-08T00:00:00",
   "deprecation_date": null,

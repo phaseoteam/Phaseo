@@ -1,0 +1,32 @@
+{
+  "api_provider_id": "openai-eu",
+  "api_provider_name": "OpenAI",
+  "provider_family_id": "openai",
+  "offer_label": "EU",
+  "offer_scope": "regional",
+  "description": null,
+  "link": "https://platform.openai.com/docs/overview",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "eu"
+  ],
+  "default_data_regions": [
+    "eu"
+  ],
+  "zero_data_retention": "optional",
+  "residency_source_url": "https://developers.openai.com/api/docs/guides/your-data",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "OpenAI says API and other business data is not used to train or improve its models by default.",
+  "prompt_training_source_url": "https://openai.com/business-data/",
+  "user_identifier_policy": "sent",
+  "user_identifier_notes": "AI Stats may send this provider a provider-facing pseudonymous user identifier when the upstream API supports it.",
+  "privacy_policy_url": "https://openai.com/policies/privacy-policy/",
+  "terms_of_service_url": "https://openai.com/policies/services-agreement/",
+  "regional_pricing_mode": "offer_specific",
+  "regional_pricing_uplift_percent": null,
+  "pricing_source_url": "https://developers.openai.com/api/docs/pricing",
+  "regional_pricing_notes": "OpenAI EU regional processing offer. Supported GPT-5.4 and GPT-5.5 family models use explicit EU pricing with a 10% uplift over the global endpoint.",
+  "country_code": "US",
+  "status": "Active",
+  "colour": "#333333"
+}

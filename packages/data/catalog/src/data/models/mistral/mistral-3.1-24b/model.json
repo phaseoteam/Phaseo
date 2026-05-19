@@ -4,6 +4,7 @@
   "name": "Mistral 3.1 24b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Mistral 3.1 24b is a multimodal model from Mistral that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

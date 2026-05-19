@@ -4,6 +4,7 @@
   "name": "Multimodal Embedding 001",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Multimodal Embedding 001 is Google's first multimodal embedding model. We currently support mapping text and images into a unified vector space for semantic search and retrieval-augmented generation (RAG).",
   "announced_date": null,
   "release_date": "2024-02-12T00:00:00",
   "deprecation_date": null,

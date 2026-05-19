@@ -4,6 +4,7 @@
   "name": "Rnj-1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Rnj-1 is a language model from Essential AI for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-12-06T00:00:00",
   "release_date": "2025-12-06T00:00:00",
   "deprecation_date": null,

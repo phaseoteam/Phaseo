@@ -1,0 +1,121 @@
+---
+title: "Build a durable agent loop in TypeScript"
+description: "Run a resumable agent loop on top of AI Stats Gateway with the TypeScript Agent SDK."
+---
+
+Use this recipe when you want more than a one-shot text request:
+
+- multi-step tool loops
+- local runtime tools
+- resumable runs
+- a single gateway-backed entrypoint for agent work
+
+## 1. Install the SDKs
+
+<CodeGroup>
+```bash npm
+npm install @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+```bash pnpm
+pnpm add @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+```bash yarn
+yarn add @ai-stats/sdk @ai-stats/agent-sdk
+```
+
+```bash bun
+bun add @ai-stats/sdk @ai-stats/agent-sdk
+```
+</CodeGroup>
+
+## 2. Define one small runtime tool
+
+Keep the first tool deterministic and easy to inspect.
+
+```ts
+import { defineTool } from "@ai-stats/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://docs.ai-stats.phaseo.app/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. Create the agent
+
+```ts
+import { createAgent } from "@ai-stats/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "ai-stats/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. Use the gateway-backed adapter
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@ai-stats/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.AI_STATS_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. What persists between steps
+
+Each completed step updates returned run state with:
+
+- the run id
+- the message history
+- any returned tool calls
+- any local tool results
+- the final output when the run completes
+
+If you want resumability across requests or processes, persist that returned value in your own application and pass it back into `continueRun()` later.
+
+## 6. When to keep the first version simple
+
+- one agent per workflow
+- application-owned serialization before any cross-request resume flow
+- a small tool list before generic tool registries
+- one log line per run with the run id and gateway request id
+
+## 7. When to move beyond this recipe
+
+Move past the first durable loop when you need:
+
+- approval pauses
+- application-owned persistence for returned run state
+- multiple agent definitions with shared runtime tools
+
+At that point, keep the same gateway-backed adapter and evolve the store and orchestration around it.
+
+## Related guides
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Presets](../guides/presets.mdx)
+- [Routing and fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Set up coding agents with SKILL.md](./coding-agents-skill-md.mdx)
+- [Launch on the free router](./free-router-first-deploy.mdx)

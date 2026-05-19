@@ -4,6 +4,7 @@
   "name": "Text Embedding 3 Small",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Text Embedding 3 Small is OpenAI's improved, more performant version of the ada embedding model. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2024-01-25T00:00:00",
   "release_date": "2024-01-25T00:00:00",
   "deprecation_date": null,

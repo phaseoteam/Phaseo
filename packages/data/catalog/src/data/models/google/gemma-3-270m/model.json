@@ -4,6 +4,7 @@
   "name": "Gemma 3 270m",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemma 3 270m is optimized for efficient execution on mobile and low-resource devices, such as phones, laptops, and tablets.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

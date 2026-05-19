@@ -4,6 +4,7 @@
   "name": "MiniMax M2 Her",
   "status": "Available",
   "previous_model_id": null,
+  "description": "MiniMax M2 Her is a dialogue-first large language model built for immersive roleplay, character-driven chat, and expressive multi-turn conversations. It accepts text inputs and produces text outputs.",
   "announced_date": "2026-01-24T00:00:00",
   "release_date": "2026-01-24T00:00:00",
   "deprecation_date": null,

@@ -53,6 +53,7 @@ export default function CreateTeamInviteDialog({
 	teams: { id: string; name: string }[];
 	defaultWorkspaceId?: string;
 }) {
+	const isWorkspaceLocked = teams.length === 1;
 	const preferredTeamId = useMemo(() => {
 		if (!teams?.length) return undefined;
 		if (defaultWorkspaceId && teams.some((team) => team.id === defaultWorkspaceId)) {
@@ -138,30 +139,36 @@ export default function CreateTeamInviteDialog({
 				{!generatedCode ? (
 					<form onSubmit={onCreate} className="space-y-2">
 						<label className="block text-sm">Workspace</label>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									variant="outline"
-									className="w-full justify-between"
-								>
-									{selectedTeam
-										? teams.find(
-												(x) => x.id === selectedTeam
-										  )?.name
-										: "Select a workspace"}
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent>
-								{teams.map((t) => (
-									<DropdownMenuItem
-										key={t.id}
-										onClick={() => setSelectedTeam(t.id)}
+						{isWorkspaceLocked ? (
+							<div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+								{teams[0]?.name ?? "Selected workspace"}
+							</div>
+						) : (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										className="w-full justify-between"
 									>
-										{t.name}
-									</DropdownMenuItem>
-								))}
-							</DropdownMenuContent>
-						</DropdownMenu>
+										{selectedTeam
+											? teams.find(
+													(x) => x.id === selectedTeam
+											  )?.name
+											: "Select a workspace"}
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent>
+									{teams.map((t) => (
+										<DropdownMenuItem
+											key={t.id}
+											onClick={() => setSelectedTeam(t.id)}
+										>
+											{t.name}
+										</DropdownMenuItem>
+									))}
+								</DropdownMenuContent>
+							</DropdownMenu>
+						)}
 
 						<label className="block text-sm">
 							Role for invitees

@@ -198,6 +198,5 @@ exception when others then
   return new;
 end;
 $$;
-
 drop function if exists public.log_auth_signup_trigger_event(uuid, text, text, text, text, text, jsonb);
 drop table if exists public.auth_signup_trigger_log;

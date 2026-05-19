@@ -4,6 +4,7 @@
   "name": "Laguna XS.2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Laguna XS.2 is the second-generation model in the XS size class from [Poolside](https://poolside.ai), their efficient coding agent series. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

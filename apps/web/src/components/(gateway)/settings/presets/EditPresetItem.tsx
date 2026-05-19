@@ -50,6 +50,8 @@ interface APIProviderCard {
 
 type ReasoningEffort = "low" | "medium" | "high";
 type PresetVisibility = "private" | "team" | "public";
+type PresetRoutingMode = "balanced" | "price" | "latency" | "throughput";
+type ResponseHealingMode = "safe" | "strict";
 
 interface EditPresetItemProps {
 	p: any;
@@ -88,6 +90,35 @@ function getProviderLogoId(name: string): string {
 	return PROVIDER_TO_LOGO_MAP[normalized] || normalized;
 }
 
+function buildPresetSlugPreview(value: string): string {
+	return value
+		.trim()
+		.toLowerCase()
+		.replace(/^@+/, "")
+		.replace(/[^a-z0-9._-]+/g, "-")
+		.replace(/-{2,}/g, "-")
+		.replace(/^[-._]+|[-._]+$/g, "");
+}
+
+function parseProviderPreferencesInput(value: string): Record<string, number> {
+	return Object.fromEntries(
+		value
+			.split("\n")
+			.map((line) => line.trim())
+			.filter(Boolean)
+			.map((line) => line.split(/[=:]/, 2).map((part) => part.trim()))
+			.map(([providerId, weight]) => {
+				const numericWeight = Number.parseFloat(weight ?? "");
+				return [providerId.toLowerCase(), numericWeight] as const;
+			})
+			.filter((entry) => {
+				const providerId = entry[0];
+				const weight = entry[1];
+				return providerId && Number.isFinite(weight) && weight > 0;
+			}),
+	);
+}
+
 export default function EditPresetItem({ p, providers = [] }: EditPresetItemProps) {
 	const [open, setOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
@@ -96,10 +127,18 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 	const [name, setName] = useState(
 		typeof p.name === "string" ? p.name.replace(/^@+/, "") : ""
 	);
+	const [slug, setSlug] = useState(
+		typeof p.slug === "string" && p.slug
+			? p.slug
+			: buildPresetSlugPreview(typeof p.name === "string" ? p.name : "")
+	);
 	const [description, setDescription] = useState(p.description || "");
 	const [systemPrompt, setSystemPrompt] = useState(p.config?.system_prompt || "");
 	const [visibility, setVisibility] = useState<PresetVisibility>(
 		(p.visibility as PresetVisibility) || "team"
+	);
+	const [routingMode, setRoutingMode] = useState<PresetRoutingMode>(
+		(p.config?.routing_mode as PresetRoutingMode) || "balanced"
 	);
 
 	const [selectedModels, setSelectedModels] = useState<string[]>(
@@ -110,6 +149,11 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 	);
 	const [providerIgnore, setProviderIgnore] = useState<string[]>(
 		p.config?.ignore_providers || []
+	);
+	const [providerPreferencesText, setProviderPreferencesText] = useState(
+		Object.entries(p.config?.provider_preferences || {})
+			.map(([providerId, weight]) => `${providerId}=${weight}`)
+			.join("\n"),
 	);
 
 	const [temperature, setTemperature] = useState(
@@ -144,6 +188,35 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 	);
 	const [excludeReasoningTokens, setExcludeReasoningTokens] = useState(
 		p.config?.reasoning?.exclude_from_output || false
+	);
+	const [responseHealingEnabled, setResponseHealingEnabled] = useState(
+		Array.isArray(p.config?.plugins) &&
+			p.config.plugins.some(
+				(plugin: any) =>
+					plugin &&
+					typeof plugin === "object" &&
+					plugin.id === "response-healing" &&
+					plugin.enabled !== false,
+			),
+	);
+	const [responseHealingMode, setResponseHealingMode] =
+		useState<ResponseHealingMode>(() => {
+			const plugin =
+				Array.isArray(p.config?.plugins)
+					? p.config.plugins.find(
+							(plugin: any) =>
+								plugin &&
+								typeof plugin === "object" &&
+								plugin.id === "response-healing",
+					  )
+					: null;
+			return plugin?.mode === "strict" ? "strict" : "safe";
+		});
+	const [responseCachingEnabled, setResponseCachingEnabled] = useState(
+		p.config?.response_caching?.enabled || false
+	);
+	const [responseCachingTtl, setResponseCachingTtl] = useState(
+		p.config?.response_caching?.ttl_seconds?.toString() || "300"
 	);
 
 	const providerNames = useMemo(() => {
@@ -189,8 +262,13 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 	async function onSave(e?: React.FormEvent) {
 		e?.preventDefault();
 		const trimmedName = name.trim();
+		const slugPreview = buildPresetSlugPreview(slug || trimmedName);
 		if (!trimmedName) {
 			toast.error("Preset name is required");
+			return;
+		}
+		if (!slugPreview) {
+			toast.error("Preset slug is required");
 			return;
 		}
 		setLoading(true);
@@ -212,6 +290,26 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 		if (providerIgnore.length > 0) {
 			config.ignore_providers = providerIgnore;
 		}
+
+		const providerPreferences = parseProviderPreferencesInput(
+			providerPreferencesText,
+		);
+		if (Object.keys(providerPreferences).length > 0) {
+			config.provider_preferences = providerPreferences;
+		}
+
+		config.plugins = responseHealingEnabled
+			? [{ id: "response-healing", enabled: true, mode: responseHealingMode }]
+			: [];
+
+		config.routing_mode = routingMode;
+		const ttlSeconds = Number.parseInt(responseCachingTtl, 10);
+		config.response_caching = {
+			enabled: responseCachingEnabled,
+			...(responseCachingEnabled && Number.isFinite(ttlSeconds) && ttlSeconds > 0
+				? { ttl_seconds: ttlSeconds }
+				: {}),
+		};
 
 		const params: Record<string, unknown> = {};
 		if (temperature) params.temperature = parseFloat(temperature);
@@ -239,6 +337,7 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 		const updates = {
 			id: p.id,
 			name: `@${trimmedName.replace(/^@+/, "")}`,
+			slug: slugPreview,
 			description,
 			visibility,
 			config,
@@ -304,6 +403,18 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 								</div>
 
 								<div className="space-y-2">
+									<Label>Invocation Slug *</Label>
+									<Input
+										value={slug}
+										onChange={(e) => setSlug(e.target.value)}
+										placeholder={buildPresetSlugPreview(name) || "my-preset-name"}
+									/>
+									<p className="text-xs text-muted-foreground">
+										Requests will reference <span className="font-mono">@{buildPresetSlugPreview(slug || name) || "my-preset-name"}</span>.
+									</p>
+								</div>
+
+								<div className="space-y-2">
 									<Label>Description</Label>
 									<Textarea
 										value={description}
@@ -337,6 +448,62 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 								</div>
 
 								<div className="space-y-2">
+									<Label>Preferred Routing Profile</Label>
+									<Select
+										value={routingMode}
+										onValueChange={(value: PresetRoutingMode) =>
+											setRoutingMode(value)
+										}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Select routing profile" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="balanced">Balanced</SelectItem>
+											<SelectItem value="price">Lowest cost</SelectItem>
+											<SelectItem value="latency">Lowest latency</SelectItem>
+											<SelectItem value="throughput">Highest throughput</SelectItem>
+										</SelectContent>
+									</Select>
+									<p className="text-xs text-muted-foreground">
+										This overrides the workspace routing mode when requests use this preset.
+									</p>
+								</div>
+
+								<div className="space-y-3 rounded-lg border p-4">
+									<div className="flex items-center justify-between">
+										<div className="space-y-0.5">
+											<Label>Enable Response Caching</Label>
+											<p className="text-xs text-muted-foreground">
+												Cache exact-match non-stream text responses for requests using this preset.
+											</p>
+										</div>
+										<Switch
+											checked={responseCachingEnabled}
+											onCheckedChange={setResponseCachingEnabled}
+										/>
+									</div>
+									{responseCachingEnabled && (
+										<div className="space-y-2">
+											<Label>Cache TTL (seconds)</Label>
+											<Input
+												type="number"
+												min="30"
+												max="86400"
+												value={responseCachingTtl}
+												onChange={(e) =>
+													setResponseCachingTtl(e.target.value)
+												}
+												placeholder="300"
+											/>
+											<p className="text-xs text-muted-foreground">
+												Controls how long cached responses remain reusable for exact request matches.
+											</p>
+										</div>
+									)}
+								</div>
+
+								<div className="space-y-2">
 									<Label>System Prompt</Label>
 									<Textarea
 										value={systemPrompt}
@@ -345,6 +512,60 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 										rows={4}
 									/>
 								</div>
+							</CardContent>
+						</Card>
+
+						<Separator />
+
+						<Card>
+							<CardHeader>
+								<CardTitle className="flex items-center gap-2 text-base">
+									<Settings2 className="h-4 w-4" />
+									Plugins
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="space-y-4">
+								<div className="flex items-center justify-between">
+									<div className="space-y-0.5">
+										<Label>Response Healing</Label>
+										<p className="text-xs text-muted-foreground">
+											Repair near-valid structured JSON responses before they reach the client.
+										</p>
+									</div>
+									<Switch
+										checked={responseHealingEnabled}
+										onCheckedChange={setResponseHealingEnabled}
+									/>
+								</div>
+								{responseHealingEnabled && (
+									<div className="space-y-3">
+										<div className="space-y-2">
+											<Label>Healing Mode</Label>
+											<Select
+												value={responseHealingMode}
+												onValueChange={(value: ResponseHealingMode) =>
+													setResponseHealingMode(value)
+												}
+											>
+												<SelectTrigger>
+													<SelectValue placeholder="Select healing mode" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="safe">Safe</SelectItem>
+													<SelectItem value="strict">Strict</SelectItem>
+												</SelectContent>
+											</Select>
+											<p className="text-xs text-muted-foreground">
+												{responseHealingMode === "strict"
+													? "Strict mode only unwraps already-valid JSON from fences or surrounding text."
+													: "Safe mode enables the full bounded JSON repair path for structured-output workflows."}
+											</p>
+										</div>
+										<p className="text-xs text-muted-foreground">
+											Request-level plugin settings can still override this default by plugin ID.
+										</p>
+									</div>
+								)}
 							</CardContent>
 						</Card>
 
@@ -441,6 +662,21 @@ export default function EditPresetItem({ p, providers = [] }: EditPresetItemProp
 											</label>
 										))}
 									</div>
+								</div>
+
+								<div className="space-y-3">
+									<Label>Provider Weight Overrides</Label>
+									<Textarea
+										value={providerPreferencesText}
+										onChange={(e) =>
+											setProviderPreferencesText(e.target.value)
+										}
+										placeholder={"openai=1.5\nanthropic=0.8"}
+										rows={4}
+									/>
+									<p className="text-xs text-muted-foreground">
+										One provider per line as <span className="font-mono">provider=multiplier</span>. Values above 1 increase preference; values below 1 decrease it.
+									</p>
 								</div>
 							</CardContent>
 						</Card>

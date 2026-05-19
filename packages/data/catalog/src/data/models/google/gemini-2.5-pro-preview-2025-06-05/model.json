@@ -4,6 +4,7 @@
   "name": "Gemini 2.5 Pro Preview (2025-06-05)",
   "status": "Retired",
   "previous_model_id": "google/gemini-2-5-pro-preview-2025-05-06",
+  "description": "Gemini 2.5 Pro Preview (2025-06-05) is Google's state-of-the-art AI model designed for advanced reasoning, coding, mathematics, and scientific tasks. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-06-05T00:00:00",
   "release_date": "2025-06-05T00:00:00",
   "deprecation_date": "2025-06-15T00:00:00",

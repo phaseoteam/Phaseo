@@ -1079,6 +1079,27 @@
     ]
   },
   {
+    "api_model_id": "x-ai/grok-tts",
+    "provider_api_model_id": "x-ai:x-ai/grok-tts",
+    "provider_model_slug": "grok-tts",
+    "internal_model_id": "x-ai/grok-tts",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "audio_tts",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "audio.speech",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "x-ai/grok-imagine-image-pro",
     "provider_api_model_id": "x-ai:x-ai/grok-imagine-image-pro",
     "provider_model_slug": "grok-imagine-image-pro",

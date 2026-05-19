@@ -62,7 +62,7 @@ Query the AI Stats model catalog and verify every model used in production.
 
 If your current setup uses unprefixed aliases such as `gpt-4o`, normalize them at one boundary layer instead of changing every caller.
 
-If your current gateway layer also centralizes request defaults or provider restrictions, map that behavior into [Presets](../guides/presets.mdx) and [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) during the migration instead of re-implementing it per caller.
+If your current gateway layer also centralizes request defaults or provider restrictions, map that behavior into [Presets](../guides/presets) and [Routing and Fallbacks](../guides/routing-and-fallbacks) during the migration instead of re-implementing it per caller.
 
 ```bash
 curl -s "https://api.phaseo.app/v1/models" \
@@ -101,6 +101,6 @@ Then:
 
 ## Next steps
 
-- [Migration from OpenRouter](./from-openrouter.mdx)
-- [Migrating from Vercel AI Gateway](./from-vercel.mdx)
-- [Quickstart](../quickstart.mdx)
+- [Migration from OpenRouter](./from-openrouter)
+- [Migrating from Vercel AI Gateway](./from-vercel)
+- [Quickstart](../quickstart)

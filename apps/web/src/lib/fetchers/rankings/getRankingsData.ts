@@ -6,7 +6,9 @@
 "use cache";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { fetchPublicGatewayRequestRows } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
+import {
+	fetchPublicGatewayRequestRows,
+} from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
 import { sumTokens } from "@/lib/utils/sumTokens";
 
 
@@ -232,6 +234,186 @@ function deriveTitleFromUrl(value: unknown): string | null {
     } catch {
         return null;
     }
+}
+
+function getRangeStart(timeRange: string): Date {
+	const now = new Date();
+	switch (timeRange) {
+		case "today":
+			return new Date(Date.UTC(
+				now.getUTCFullYear(),
+				now.getUTCMonth(),
+				now.getUTCDate(),
+			));
+		case "week":
+			return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+		case "4w":
+			return new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+		case "month":
+			return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+		default:
+			return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+	}
+}
+
+function getFetchWindowDays(timeRange: string): number {
+	switch (timeRange) {
+		case "today":
+			return 1;
+		case "week":
+			return 7;
+		case "4w":
+			return 28;
+		case "month":
+			return 30;
+		default:
+			return 7;
+	}
+}
+
+function isMissingRollupRelationError(error: unknown): boolean {
+	const message =
+		typeof error === "object" && error && "message" in error
+			? String((error as { message?: unknown }).message ?? "")
+			: String(error ?? "");
+
+	return (
+		message.includes('relation "public.gateway_usage_rollup_daily_app" does not exist') ||
+		message.includes('relation "public.gateway_usage_rollup_daily_app_model" does not exist')
+	);
+}
+
+async function fetchTopAppsFromGatewayRequests(
+	timeRange: string,
+	limit: number,
+): Promise<TopAppData[]> {
+	const rangeStart = getRangeStart(timeRange);
+	const rows = await fetchPublicGatewayRequestRows(getFetchWindowDays(timeRange), {
+		successOnly: false,
+	});
+	const aggregate = new Map<
+		string,
+		{ requests: number; tokens: number; modelIds: Set<string> }
+	>();
+
+	for (const row of rows) {
+		const appId = String(row.app_id ?? "").trim();
+		if (!hasValidAppId(appId)) continue;
+
+		const createdAt = row.created_at ? new Date(row.created_at) : null;
+		if (!createdAt || Number.isNaN(createdAt.getTime()) || createdAt < rangeStart) {
+			continue;
+		}
+
+		const current = aggregate.get(appId) ?? {
+			requests: 0,
+			tokens: 0,
+			modelIds: new Set<string>(),
+		};
+		current.requests += 1;
+		current.tokens += roundTokens(row.usage);
+
+		const modelId = String(row.model_id ?? "").trim();
+		if (modelId) {
+			current.modelIds.add(modelId);
+		}
+
+		aggregate.set(appId, current);
+	}
+
+	const appIds = Array.from(aggregate.keys());
+	const fallbackTitlesById = await resolveFallbackAppTitlesById(appIds);
+
+	return appIds
+		.map((appId) => {
+			const metrics = aggregate.get(appId);
+			if (!metrics) return null;
+
+			return {
+				app_id: appId,
+				app_name: fallbackTitlesById.get(appId) ?? appId,
+				requests: metrics.requests,
+				tokens: metrics.tokens,
+				unique_models: metrics.modelIds.size,
+			};
+		})
+		.filter((row): row is TopAppData => Boolean(row))
+		.sort((a, b) => {
+			if (b.requests !== a.requests) return b.requests - a.requests;
+			return b.tokens - a.tokens;
+		})
+		.slice(0, limit);
+}
+
+async function fetchTrendingAppsFromGatewayRequests(
+	limit: number,
+	minWeekTokens: number,
+): Promise<TrendingAppData[]> {
+	const rows = await fetchPublicGatewayRequestRows(14, { successOnly: false });
+	const now = Date.now();
+	const currentWeekStart = now - 7 * 24 * 60 * 60 * 1000;
+	const previousWeekStart = now - 14 * 24 * 60 * 60 * 1000;
+	const aggregate = new Map<
+		string,
+		{ currentWeekTokens: number; previousWeekTokens: number }
+	>();
+
+	for (const row of rows) {
+		const appId = String(row.app_id ?? "").trim();
+		if (!hasValidAppId(appId)) continue;
+
+		const createdAtMs = row.created_at ? Date.parse(row.created_at) : Number.NaN;
+		if (!Number.isFinite(createdAtMs) || createdAtMs < previousWeekStart) continue;
+
+		const current = aggregate.get(appId) ?? {
+			currentWeekTokens: 0,
+			previousWeekTokens: 0,
+		};
+		const tokens = roundTokens(row.usage);
+
+		if (createdAtMs >= currentWeekStart) {
+			current.currentWeekTokens += tokens;
+		} else {
+			current.previousWeekTokens += tokens;
+		}
+
+		aggregate.set(appId, current);
+	}
+
+	const appIds = Array.from(aggregate.keys());
+	const fallbackTitlesById = await resolveFallbackAppTitlesById(appIds);
+
+	return appIds
+		.map((appId) => {
+			const metrics = aggregate.get(appId);
+			if (!metrics) return null;
+
+			const growthTokens = metrics.currentWeekTokens - metrics.previousWeekTokens;
+			if (metrics.currentWeekTokens < minWeekTokens || growthTokens <= 0) {
+				return null;
+			}
+
+			return {
+				app_id: appId,
+				app_name: fallbackTitlesById.get(appId) ?? appId,
+				current_week_tokens: metrics.currentWeekTokens,
+				previous_week_tokens: metrics.previousWeekTokens,
+				growth_tokens: growthTokens,
+				growth_pct:
+					metrics.previousWeekTokens > 0
+						? Number(
+								(
+									((metrics.currentWeekTokens - metrics.previousWeekTokens) /
+										metrics.previousWeekTokens) *
+									100
+								).toFixed(2),
+						  )
+						: null,
+			};
+		})
+		.filter((row): row is TrendingAppData => Boolean(row))
+		.sort((a, b) => b.growth_tokens - a.growth_tokens)
+		.slice(0, limit);
 }
 
 async function resolveFallbackAppTitlesById(
@@ -777,6 +959,15 @@ export async function getTopApps(
 
     if (error) {
         console.error("[getTopApps] Error:", error);
+        if (isMissingRollupRelationError(error)) {
+			try {
+				return {
+					data: await fetchTopAppsFromGatewayRequests(timeRange, limit),
+				};
+			} catch (fallbackError) {
+				console.error("[getTopApps] raw fallback failed:", fallbackError);
+			}
+		}
         return { data: [] };
     }
 
@@ -856,6 +1047,15 @@ export async function getTrendingApps(
 
     if (error) {
         console.error("[getTrendingApps] Error:", error);
+        if (isMissingRollupRelationError(error)) {
+			try {
+				return {
+					data: await fetchTrendingAppsFromGatewayRequests(limit, minWeekTokens),
+				};
+			} catch (fallbackError) {
+				console.error("[getTrendingApps] raw fallback failed:", fallbackError);
+			}
+		}
         return { data: [] };
     }
 

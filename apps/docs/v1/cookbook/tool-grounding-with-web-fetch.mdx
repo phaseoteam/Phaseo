@@ -1,0 +1,90 @@
+---
+title: "Ground follow-up extraction with web fetch"
+description: "Use `gateway:web_fetch` to pull bounded page text into the tool loop for deterministic follow-up extraction and review."
+---
+
+Use this recipe when a workflow needs one page fetched and turned into bounded text before the model performs extraction, summarization, or classification.
+
+## 1. Use `gateway:web_fetch` for one-page grounding
+
+`gateway:web_fetch` is a gateway-managed server tool.
+
+Use it when you need:
+
+- one URL fetched directly by the gateway
+- bounded text returned to the tool loop
+- request-level usage tracking
+- fetched-page visibility in request logs
+
+This is a better fit than broad search when you already know the URL.
+
+## 2. Keep the request explicit
+
+Typical pattern:
+
+1. ask the model to call `gateway:web_fetch`
+2. let the gateway fetch and normalize the page
+3. let the model continue with extraction against the returned text
+
+Keep the prompt explicit about the final task after fetch:
+
+- extract fields
+- summarize one section
+- classify the document
+- validate one claim
+
+## 3. Bound fetch size intentionally
+
+Use `max_chars` when the default bound is too large or too small for the task.
+
+Recommended pattern:
+
+- smaller bounds for title/summary extraction
+- larger bounds for structured field extraction
+
+If the page is very large, prefer a narrower extraction task instead of unbounded fetch size.
+
+## 4. Validate logs, not just the final answer
+
+The request details should show:
+
+- fetched URL
+- final URL after redirects
+- page title when available
+- HTTP status
+- content type
+- returned character count
+- truncation flag
+
+Use that view to confirm the model grounded on the page you expected.
+
+## 5. Know the tool limits
+
+`gateway:web_fetch` is intentionally bounded.
+
+It is good for:
+
+- HTML pages
+- plain text
+- light JSON or XML responses
+
+It is not the right tool for:
+
+- binary files
+- large crawls
+- JavaScript-only rendering checks
+
+For browser-rendered verification, use a browser workflow instead of relying on fetched text alone.
+
+## 6. Recommended rollout pattern
+
+1. start with one preset or one endpoint path
+2. inspect request logs for fetch metadata and truncation
+3. tighten prompt scope if the fetched content is too broad
+4. widen only after the grounded extraction path is stable
+
+## Related
+
+- [Debug web search requests](./web-search-debugging.mdx)
+- [Tool calling](../guides/tool-calling.mdx)
+- [Use response healing for structured JSON](./response-healing-for-structured-json.mdx)

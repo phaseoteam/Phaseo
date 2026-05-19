@@ -5,5 +5,10 @@
   "link": "https://friendli.ai/docs/openapi/serverless/overview",
   "country_code": "US",
   "status": "Active",
-  "colour": "#10B981"
+  "colour": "#10B981",
+  "privacy_policy_url": "https://friendli.ai/privacypolicy",
+  "terms_of_service_url": "https://friendli.ai/terms-of-service",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Friendli says it does not use the contents of inference requests and responses for any purpose other than providing its dedicated and serverless endpoints service to customers.",
+  "prompt_training_source_url": "https://friendli.ai/docs/guides/data-handling"
 }

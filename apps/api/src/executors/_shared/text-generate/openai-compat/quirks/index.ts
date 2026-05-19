@@ -25,6 +25,7 @@ import { basetenQuirks } from "../providers/baseten/quirks";
 import { cohereQuirks } from "../providers/cohere/quirks";
 import { togetherQuirks } from "../providers/together/quirks";
 import { inceptionQuirks } from "../providers/inception/quirks";
+import { crofAIQuirks } from "../providers/crofai/quirks";
 import { defaultQuirks } from "./default";
 
 /**
@@ -59,6 +60,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	openai: openAIQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
+	crofai: crofAIQuirks,
 	together: togetherQuirks,
 	inception: inceptionQuirks,
 	// Note: Google quirks removed - Google now uses native implementation, not OpenAI-compat

@@ -4,6 +4,7 @@
   "name": "Command A",
   "status": "Available",
   "previous_model_id": "cohere/command-r-2024-08-30",
+  "description": "Command A is an open-weights 111B parameter model with a 256k context window focused on delivering great performance across agentic, multilingual, and coding use cases.",
   "announced_date": "2025-03-13T00:00:00",
   "release_date": "2025-03-13T00:00:00",
   "deprecation_date": null,

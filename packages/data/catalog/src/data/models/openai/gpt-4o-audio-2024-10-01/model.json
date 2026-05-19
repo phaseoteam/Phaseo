@@ -4,6 +4,7 @@
   "name": "GPT 4o Audio (2024-10-01)",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "The gpt-4o-audio-preview model adds support for audio inputs as prompts. This enhancement allows the model to detect nuances within audio recordings and add depth to generated user experiences.",
   "announced_date": null,
   "release_date": "2024-10-01T00:00:00",
   "deprecation_date": "2025-06-10T00:00:00",

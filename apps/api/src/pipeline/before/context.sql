@@ -34,6 +34,11 @@ declare
 
   within_limits       boolean := true;
   limit_reason        text := null;
+  limit_window        text := null;
+  limit_metric        text := null;
+  current_value       bigint := null;
+  limit_value         bigint := null;
+  limit_reset_at      timestamptz := null;
 
   -- Preset handling
   is_preset           boolean := false;
@@ -81,13 +86,14 @@ begin
       jsonb_build_object(
         'id', p.id,
         'name', p.name,
+        'slug', coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', '')),
         'description', p.description,
         'config', p.config,
         'visibility', p.visibility
       )
     into preset_data
     from public.presets p
-    where p.name = preset_name
+    where coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', '')) = preset_name
       and p.workspace_id = gateway_fetch_request_context.workspace_id
       and (
         p.visibility = 'public'
@@ -107,10 +113,14 @@ begin
         detail = format('Preset "%s" not found or not accessible', preset_name);
     end if;
 
-    -- Extract model from preset config (fallback to preset's default model)
+    -- Extract model from preset config (fallback to default/default_model/model/first models entry)
     base_model := coalesce(
       preset_data->'config'->>'defaultModel',
-      preset_data->'config'->>'model'
+      preset_data->'config'->>'default_model',
+      preset_data->'config'->>'model',
+      preset_data->'config'->'models'->>0,
+      preset_data->'config'->'allowedModels'->>0,
+      preset_data->'config'->'allowed_models'->>0
     );
 
     if base_model is null then
@@ -220,18 +230,75 @@ begin
     and gr.workspace_id = gateway_fetch_request_context.workspace_id
     and gr.success is true;
 
-  if v_soft_blocked then within_limits := false; limit_reason := 'key_limit_soft_blocked'; end if;
-  if within_limits and v_day_req_limit > 0 and used_day_reqs >= v_day_req_limit then within_limits := false; limit_reason := 'daily_request_limit_reached'; end if;
-  if within_limits and v_wk_req_limit  > 0 and used_wk_reqs  >= v_wk_req_limit  then within_limits := false; limit_reason := 'weekly_request_limit_reached'; end if;
-  if within_limits and v_mo_req_limit  > 0 and used_mo_reqs  >= v_mo_req_limit  then within_limits := false; limit_reason := 'monthly_request_limit_reached'; end if;
-  if within_limits and v_day_cost_limit > 0 and used_day_cost >= v_day_cost_limit then within_limits := false; limit_reason := 'daily_cost_limit_reached'; end if;
-  if within_limits and v_wk_cost_limit  > 0 and used_wk_cost  >= v_wk_cost_limit  then within_limits := false; limit_reason := 'weekly_cost_limit_reached'; end if;
-  if within_limits and v_mo_cost_limit  > 0 and used_mo_cost  >= v_mo_cost_limit  then within_limits := false; limit_reason := 'monthly_cost_limit_reached'; end if;
+  if v_soft_blocked then
+    within_limits := false;
+    limit_reason := 'key_limit_soft_blocked';
+    limit_metric := 'soft_blocked';
+  end if;
+  if within_limits and v_day_req_limit > 0 and used_day_reqs >= v_day_req_limit then
+    within_limits := false;
+    limit_reason := 'daily_request_limit_reached';
+    limit_window := 'daily';
+    limit_metric := 'requests';
+    current_value := used_day_reqs;
+    limit_value := v_day_req_limit;
+    limit_reset_at := day_start + interval '1 day';
+  end if;
+  if within_limits and v_wk_req_limit > 0 and used_wk_reqs >= v_wk_req_limit then
+    within_limits := false;
+    limit_reason := 'weekly_request_limit_reached';
+    limit_window := 'weekly';
+    limit_metric := 'requests';
+    current_value := used_wk_reqs;
+    limit_value := v_wk_req_limit;
+    limit_reset_at := week_start + interval '1 week';
+  end if;
+  if within_limits and v_mo_req_limit > 0 and used_mo_reqs >= v_mo_req_limit then
+    within_limits := false;
+    limit_reason := 'monthly_request_limit_reached';
+    limit_window := 'monthly';
+    limit_metric := 'requests';
+    current_value := used_mo_reqs;
+    limit_value := v_mo_req_limit;
+    limit_reset_at := month_start + interval '1 month';
+  end if;
+  if within_limits and v_day_cost_limit > 0 and used_day_cost >= v_day_cost_limit then
+    within_limits := false;
+    limit_reason := 'daily_cost_limit_reached';
+    limit_window := 'daily';
+    limit_metric := 'cost';
+    current_value := used_day_cost;
+    limit_value := v_day_cost_limit;
+    limit_reset_at := day_start + interval '1 day';
+  end if;
+  if within_limits and v_wk_cost_limit > 0 and used_wk_cost >= v_wk_cost_limit then
+    within_limits := false;
+    limit_reason := 'weekly_cost_limit_reached';
+    limit_window := 'weekly';
+    limit_metric := 'cost';
+    current_value := used_wk_cost;
+    limit_value := v_wk_cost_limit;
+    limit_reset_at := week_start + interval '1 week';
+  end if;
+  if within_limits and v_mo_cost_limit > 0 and used_mo_cost >= v_mo_cost_limit then
+    within_limits := false;
+    limit_reason := 'monthly_cost_limit_reached';
+    limit_window := 'monthly';
+    limit_metric := 'cost';
+    current_value := used_mo_cost;
+    limit_value := v_mo_cost_limit;
+    limit_reset_at := month_start + interval '1 month';
+  end if;
 
   key_limit_status :=
     jsonb_build_object(
       'ok', within_limits,
       'reason', limit_reason,
+      'limit_window', limit_window,
+      'limit_metric', limit_metric,
+      'current_value', current_value,
+      'limit_value', limit_value,
+      'reset_at', to_jsonb(limit_reset_at),
       'now', to_jsonb(now_utc),
       'buckets', jsonb_build_object(
         'daily', jsonb_build_object(

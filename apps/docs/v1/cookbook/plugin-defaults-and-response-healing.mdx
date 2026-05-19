@@ -1,0 +1,172 @@
+---
+title: "Set plugin defaults for structured JSON workflows"
+description: "Use workspace, preset, and request-level plugin policy to keep response healing consistent."
+---
+
+Use this recipe when structured-output callers need one stable plugin policy instead of ad hoc request-by-request settings.
+
+## 1. Understand precedence
+
+Gateway plugin policy resolves in this order:
+
+1. workspace defaults
+2. preset defaults
+3. request-level plugins
+
+Lower-precedence layers can override higher layers unless the workspace default is explicitly locked.
+
+## 2. Set the workspace default
+
+Use the routing settings surface when one workspace should enable response healing by default for structured JSON callers.
+
+That is the right place for:
+
+- broad operational defaults
+- shared API key behavior
+- preventing per-service drift
+
+## 3. Lock it when the policy is non-negotiable
+
+If one workspace must always keep response healing enabled, lock that default.
+
+With a locked workspace default:
+
+- presets cannot disable it
+- request payloads cannot disable it
+- logs still show whether the plugin applied, skipped, or failed
+
+## 4. Use presets for workflow-specific defaults
+
+Presets are the right layer when one family of requests should carry both:
+
+- structured output settings
+- response-healing plugin defaults
+
+That layer can also choose the response-healing mode:
+
+- `safe` for bounded syntactic cleanup
+- `strict` for unwrap-only behavior
+
+That keeps the request body smaller and makes routing plus output behavior easier to reuse across services.
+
+## 5. Override at request level only when the workspace allows it
+
+If the workspace default is not locked, one request can still override plugin config directly:
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ai-stats/free",
+    "input": "Return valid JSON",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" }
+          },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [
+      { "id": "response-healing", "enabled": true }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "ai-stats/free",
+  input: "Return valid JSON",
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "answer",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+        },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", enabled: true }],
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "ai-stats/free",
+        "input": "Return valid JSON",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"}
+                    },
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "plugins": [
+            {"id": "response-healing", "enabled": True}
+        ],
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 6. Verify the behavior in logs
+
+After one request, inspect the request detail view and confirm:
+
+- `plugin_executions` includes `response-healing`
+- the status is one of:
+  - `applied`
+  - `skipped`
+  - `failed`
+- the effective plugin mode is visible
+- validation errors are visible when schema enforcement rejects a candidate healed payload
+
+## 7. What to do when behavior differs across services
+
+If two services behave differently, compare:
+
+- workspace routing settings
+- preset plugin defaults
+- request-level `plugins`
+- whether the workspace default is locked
+
+Do not debug that as a model-quality issue until those policy layers match.
+
+## Related
+
+- [Recover malformed structured JSON](./response-healing-for-structured-json.mdx)
+- [Use response caching with presets](./response-caching-with-presets.mdx)
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)

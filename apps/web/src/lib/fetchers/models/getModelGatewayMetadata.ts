@@ -5,8 +5,44 @@ import { normalizeQuantizationScheme } from "@/lib/quantization";
 export interface GatewayProviderDetails {
     api_provider_id: string;
     api_provider_name: string;
+    provider_family_id?: string | null;
+    offer_label?: string | null;
+    offer_scope?: "global" | "regional" | "specialized" | null;
     link?: string | null;
     country_code?: string | null;
+	residency_mode?:
+		| "unknown"
+		| "provider_managed"
+		| "customer_selectable"
+		| "account_selected"
+		| null;
+	default_execution_regions?: string[] | null;
+	default_data_regions?: string[] | null;
+	zero_data_retention?:
+		| "unknown"
+		| "unsupported"
+		| "optional"
+		| "default"
+		| null;
+	residency_source_url?: string | null;
+	residency_notes?: string | null;
+	regional_pricing_mode?:
+		| "unknown"
+		| "same_as_global"
+		| "uplift"
+		| "source_region_rates"
+		| "offer_specific"
+		| null;
+	regional_pricing_uplift_percent?: number | null;
+	pricing_source_url?: string | null;
+	regional_pricing_notes?: string | null;
+	prompt_training_policy?: string | null;
+	prompt_training_notes?: string | null;
+	prompt_training_source_url?: string | null;
+	user_identifier_policy?: string | null;
+	user_identifier_notes?: string | null;
+	privacy_policy_url?: string | null;
+	terms_of_service_url?: string | null;
 }
 
 export interface GatewayProviderModel {
@@ -336,10 +372,40 @@ export default async function getModelGatewayMetadata(
     const providerIds = Array.from(
         new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean))
     );
-    const { data: providersData } = await supabase
-        .from("data_api_providers")
-        .select("api_provider_id, api_provider_name, link, country_code, status, routing_status")
-        .in("api_provider_id", providerIds);
+	const providerSelect =
+		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url";
+	const providerSelectLegacy =
+		"api_provider_id, api_provider_name, link, country_code, status, routing_status";
+	let providersData: any[] | null = null;
+	{
+		const res = await supabase
+			.from("data_api_providers")
+			.select(providerSelect)
+			.in("api_provider_id", providerIds);
+		if (
+			res.error &&
+			(String(res.error.code ?? "").toUpperCase() === "PGRST204" ||
+				String(res.error.code ?? "").toUpperCase() === "42703" ||
+				/could not find.*column|does not exist|schema cache/i.test(
+					String(res.error.message ?? ""),
+				))
+		) {
+			const legacyRes = await supabase
+				.from("data_api_providers")
+				.select(providerSelectLegacy)
+				.in("api_provider_id", providerIds);
+			if (legacyRes.error) {
+				throw new Error(
+					legacyRes.error.message ?? "Failed to load gateway providers",
+				);
+			}
+			providersData = legacyRes.data ?? [];
+		} else if (res.error) {
+			throw new Error(res.error.message ?? "Failed to load gateway providers");
+		} else {
+			providersData = res.data ?? [];
+		}
+	}
 
     const providerMap = new Map<string, GatewayProviderDetails & {
 		status?: string | null;
@@ -350,8 +416,34 @@ export default async function getModelGatewayMetadata(
         providerMap.set(provider.api_provider_id, {
             api_provider_id: provider.api_provider_id,
             api_provider_name: provider.api_provider_name ?? provider.api_provider_id,
+            provider_family_id: provider.provider_family_id ?? provider.api_provider_id,
+            offer_label: provider.offer_label ?? null,
+            offer_scope: provider.offer_scope ?? "global",
             link: provider.link ?? null,
             country_code: provider.country_code ?? null,
+			residency_mode: provider.residency_mode ?? null,
+			default_execution_regions: Array.isArray(provider.default_execution_regions)
+				? provider.default_execution_regions
+				: null,
+			default_data_regions: Array.isArray(provider.default_data_regions)
+				? provider.default_data_regions
+				: null,
+			zero_data_retention: provider.zero_data_retention ?? null,
+			residency_source_url: provider.residency_source_url ?? null,
+			residency_notes: provider.residency_notes ?? null,
+			regional_pricing_mode: provider.regional_pricing_mode ?? null,
+			regional_pricing_uplift_percent:
+				provider.regional_pricing_uplift_percent ?? null,
+			pricing_source_url: provider.pricing_source_url ?? null,
+			regional_pricing_notes: provider.regional_pricing_notes ?? null,
+			prompt_training_policy: provider.prompt_training_policy ?? null,
+			prompt_training_notes: provider.prompt_training_notes ?? null,
+			prompt_training_source_url:
+				provider.prompt_training_source_url ?? null,
+			user_identifier_policy: provider.user_identifier_policy ?? null,
+			user_identifier_notes: provider.user_identifier_notes ?? null,
+			privacy_policy_url: provider.privacy_policy_url ?? null,
+			terms_of_service_url: provider.terms_of_service_url ?? null,
 			status: provider.status ?? null,
 			routing_status: provider.routing_status ?? null,
         });

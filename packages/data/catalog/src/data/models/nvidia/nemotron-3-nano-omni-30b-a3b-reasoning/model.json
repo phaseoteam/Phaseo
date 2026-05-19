@@ -4,6 +4,7 @@
   "name": "Nemotron 3 Nano Omni 30B A3B Reasoning",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nemotron 3 Nano Omni 30B A3B Reasoning is a 30B-A3B open multimodal model designed to function as a perception and context sub-agent in enterprise agent systems.",
   "announced_date": "2026-04-28T00:00:00",
   "release_date": "2026-04-28T00:00:00",
   "deprecation_date": null,

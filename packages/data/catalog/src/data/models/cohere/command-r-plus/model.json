@@ -4,6 +4,7 @@
   "name": "Command R Plus",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Command R Plus is an update of the [Command R+](/models/cohere/command-r-plus) with roughly 50% higher throughput and 25% lower latencies as compared to the previous Command R+ version, while keeping the hardware footprint.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

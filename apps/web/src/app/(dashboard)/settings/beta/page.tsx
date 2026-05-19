@@ -45,15 +45,21 @@ export default async function BetaSettingsPage() {
 				description="Preview and experiment controls for the web UI."
 				meta={<Badge variant="outline">Beta</Badge>}
 			/>
-			<BetaSettingsClient
-				initialProfile={{
-					betaOptIn: Boolean(profileRow?.beta_opt_in),
-					betaFeatures: normalizeBetaFeatures(
-						profileRow?.beta_features ?? EMPTY_STATSIG_PROFILE.betaFeatures
-					),
-				}}
-				features={WEB_BETA_FEATURES}
-			/>
+			{WEB_BETA_FEATURES.length === 0 ? (
+				<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+					There are currently no web beta features to opt into.
+				</div>
+			) : (
+				<BetaSettingsClient
+					initialProfile={{
+						betaOptIn: Boolean(profileRow?.beta_opt_in),
+						betaFeatures: normalizeBetaFeatures(
+							profileRow?.beta_features ?? EMPTY_STATSIG_PROFILE.betaFeatures
+						),
+					}}
+					features={WEB_BETA_FEATURES}
+				/>
+			)}
 		</div>
 	);
 }

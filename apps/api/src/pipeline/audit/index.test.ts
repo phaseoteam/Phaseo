@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseAdminMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn();
+const isLocalTestingModeEnabledMock = vi.fn();
 const ensureAppIdMock = vi.fn();
 const syncWorkspaceUsageRollupForRequestMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: (...args: any[]) => getSupabaseAdminMock(...args),
 	ensureRuntimeForBackground: (...args: any[]) => ensureRuntimeForBackgroundMock(...args),
+	isLocalTestingModeEnabled: (...args: any[]) => isLocalTestingModeEnabledMock(...args),
 }));
 
 vi.mock("../after/apps", () => ({
@@ -25,9 +27,11 @@ describe("audit request detail persistence", () => {
 	beforeEach(() => {
 		getSupabaseAdminMock.mockReset();
 		ensureRuntimeForBackgroundMock.mockReset();
+		isLocalTestingModeEnabledMock.mockReset();
 		ensureAppIdMock.mockReset();
 		syncWorkspaceUsageRollupForRequestMock.mockReset();
 		ensureRuntimeForBackgroundMock.mockReturnValue(() => {});
+		isLocalTestingModeEnabledMock.mockReturnValue(false);
 		ensureAppIdMock.mockResolvedValue("app_resolved");
 		syncWorkspaceUsageRollupForRequestMock.mockResolvedValue(undefined);
 	});
@@ -75,7 +79,8 @@ describe("audit request detail persistence", () => {
 			requestId: "req_success_1",
 			workspaceId: "ws_1",
 			provider: "openai",
-			model: "openai/gpt-5-nano",
+			model: "ai-stats/free",
+			requestedModel: "ai-stats/free",
 			endpoint: "chat.completions",
 			stream: false,
 			byok: false,
@@ -92,9 +97,29 @@ describe("audit request detail persistence", () => {
 			providerRequest: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello" }] },
 			providerResponse: { id: "chatcmpl_1" },
 			detailMetadata: { replay_supported: true },
+			providerAttempts: [
+				{
+					attempt_number: 1,
+					provider: "openai",
+					api_model_id: "openai/gpt-5-nano",
+					outcome: "success",
+					status: 200,
+				},
+			],
 		});
 
 		expect(gatewayRequestRows).toHaveLength(1);
+		expect(gatewayRequestRows[0]).toEqual(
+			expect.objectContaining({
+				model_id: "ai-stats/free",
+				provider: "openai",
+				provider_attempts: [
+					expect.objectContaining({
+						api_model_id: "openai/gpt-5-nano",
+					}),
+				],
+			}),
+		);
 		expect(detailRows).toHaveLength(1);
 		expect(detailRows[0]).toEqual(
 			expect.objectContaining({
@@ -105,30 +130,34 @@ describe("audit request detail persistence", () => {
 					messages: [{ role: "user", content: "hello" }],
 				},
 				request_content: [{ role: "user", content: "hello" }],
-				metadata: { replay_supported: true },
+				metadata: expect.objectContaining({ replay_supported: true }),
 			}),
 		);
 	});
 
 	it("stores replay-ready details for execute-stage failures", async () => {
+		const gatewayRequestRows: any[] = [];
 		const detailRows: any[] = [];
 
 		getSupabaseAdminMock.mockReturnValue({
 			from: vi.fn((table: string) => {
 				if (table === "gateway_requests") {
 					return {
-						insert: vi.fn(() => ({
-							select: vi.fn(() => ({
-								single: vi.fn(async () => ({
-									data: {
-										id: "row_2",
-										created_at: "2026-05-05T12:05:00.000Z",
-										workspace_id: "ws_2",
-									},
-									error: null,
+						insert: vi.fn((row: any) => {
+							gatewayRequestRows.push(row);
+							return {
+								select: vi.fn(() => ({
+									single: vi.fn(async () => ({
+										data: {
+											id: "row_2",
+											created_at: "2026-05-05T12:05:00.000Z",
+											workspace_id: "ws_2",
+										},
+										error: null,
+									})),
 								})),
-							})),
-						})),
+							};
+						}),
 					};
 				}
 
@@ -150,7 +179,8 @@ describe("audit request detail persistence", () => {
 			requestId: "req_failure_1",
 			workspaceId: "ws_2",
 			endpoint: "responses",
-			model: "openai/gpt-5.4-nano",
+			model: "ai-stats/free",
+			requestedModel: "ai-stats/free",
 			provider: "openai",
 			stream: false,
 			statusCode: 500,
@@ -164,8 +194,29 @@ describe("audit request detail persistence", () => {
 			providerRequest: { model: "openai/gpt-5.4-nano" },
 			providerResponse: { error: { message: "bad gateway" } },
 			detailMetadata: { replay_supported: true, stage: "execute" },
+			providerAttempts: [
+				{
+					attempt_number: 1,
+					provider: "openai",
+					api_model_id: "openai/gpt-5.4-nano",
+					outcome: "error",
+					status: 500,
+				},
+			],
 		});
 
+		expect(gatewayRequestRows).toHaveLength(1);
+		expect(gatewayRequestRows[0]).toEqual(
+			expect.objectContaining({
+				model_id: "ai-stats/free",
+				provider: "openai",
+				provider_attempts: [
+					expect.objectContaining({
+						api_model_id: "openai/gpt-5.4-nano",
+					}),
+				],
+			}),
+		);
 		expect(detailRows).toHaveLength(1);
 		expect(detailRows[0]).toEqual(
 			expect.objectContaining({
@@ -177,7 +228,10 @@ describe("audit request detail persistence", () => {
 					input: [{ role: "user", content: "retry me" }],
 				},
 				request_content: [{ role: "user", content: "retry me" }],
-				metadata: { replay_supported: true, stage: "execute" },
+				metadata: expect.objectContaining({
+					replay_supported: true,
+					stage: "execute",
+				}),
 			}),
 		);
 	});
@@ -245,5 +299,95 @@ describe("audit request detail persistence", () => {
 			workspaceId: "ws_3",
 			context: "audit_success",
 		});
+	});
+
+	it("disables request detail persistence in local testing mode when the detail table is missing", async () => {
+		isLocalTestingModeEnabledMock.mockReturnValue(true);
+		const detailInsertMock = vi
+			.fn()
+			.mockResolvedValueOnce({
+				error: {
+					code: "PGRST205",
+					message:
+						"Could not find the table 'public.gateway_request_details' in the schema cache",
+				},
+			})
+			.mockResolvedValue({ error: null });
+
+		getSupabaseAdminMock.mockReturnValue({
+			from: vi.fn((table: string) => {
+				if (table === "gateway_requests") {
+					return {
+						insert: vi.fn(() => ({
+							select: vi.fn(() => ({
+								single: vi.fn(async () => ({
+									data: {
+										id: "row_4",
+										created_at: "2026-05-05T12:15:00.000Z",
+										workspace_id: "ws_4",
+									},
+									error: null,
+								})),
+							})),
+						})),
+					};
+				}
+
+				if (table === "gateway_request_details") {
+					return {
+						insert: detailInsertMock,
+					};
+				}
+
+				throw new Error(`unexpected table ${table}`);
+			}),
+		});
+
+		const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+		await auditSuccess({
+			requestId: "req_success_local_missing_details_1",
+			workspaceId: "ws_4",
+			provider: "openai",
+			model: "openai/gpt-5-nano",
+			endpoint: "chat.completions",
+			stream: false,
+			byok: false,
+			usagePriced: { prompt_tokens: 2, completion_tokens: 1, pricing: { lines: [] } },
+			totalCents: 0.001,
+			totalNanos: 1000000,
+			currency: "USD",
+			statusCode: 200,
+			requestPayload: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello" }] },
+			gatewayResponse: { id: "resp_3", output_text: "hi" },
+			providerRequest: { model: "openai/gpt-5-nano" },
+			providerResponse: { id: "chatcmpl_3" },
+		});
+
+		await auditSuccess({
+			requestId: "req_success_local_missing_details_2",
+			workspaceId: "ws_4",
+			provider: "openai",
+			model: "openai/gpt-5-nano",
+			endpoint: "chat.completions",
+			stream: false,
+			byok: false,
+			usagePriced: { prompt_tokens: 2, completion_tokens: 1, pricing: { lines: [] } },
+			totalCents: 0.001,
+			totalNanos: 1000000,
+			currency: "USD",
+			statusCode: 200,
+			requestPayload: { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hello again" }] },
+			gatewayResponse: { id: "resp_4", output_text: "hi again" },
+			providerRequest: { model: "openai/gpt-5-nano" },
+			providerResponse: { id: "chatcmpl_4" },
+		});
+
+		expect(detailInsertMock).toHaveBeenCalledTimes(1);
+		expect(warnSpy).toHaveBeenCalledWith(
+			"[audit] gateway_request_details not available in local testing mode; skipping request detail persistence."
+		);
+
+		warnSpy.mockRestore();
 	});
 });

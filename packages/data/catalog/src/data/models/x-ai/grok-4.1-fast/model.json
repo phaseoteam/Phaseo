@@ -4,6 +4,7 @@
   "name": "Grok 4.1 Fast",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok 4.1 Fast is xAI's best agentic tool calling model that shines in real-world use cases like customer support and deep research. 2M context window.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

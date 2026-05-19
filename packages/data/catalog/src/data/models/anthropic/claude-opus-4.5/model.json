@@ -4,6 +4,7 @@
   "name": "Claude Opus 4.5",
   "status": "Available",
   "previous_model_id": "anthropic/claude-opus-4-1-2025-08-05",
+  "description": "Claude Opus 4.5 is Anthropic's frontier reasoning model optimized for complex software engineering, agentic workflows, and long-horizon computer use. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-11-24T00:00:00",
   "release_date": "2025-11-24T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Nova 2 Pro",
   "status": "Available",
   "previous_model_id": "amazon/nova-pro-1-0-2024-12-04",
+  "description": "Nova 2 Pro is a speech-to-text model from Amazon for transcription and spoken-language understanding workflows. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2025-12-02T00:00:00",
   "release_date": "2025-12-02T00:00:00",
   "deprecation_date": null,

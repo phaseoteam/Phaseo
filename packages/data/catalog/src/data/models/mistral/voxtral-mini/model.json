@@ -4,6 +4,7 @@
   "name": "Voxtral Mini",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Voxtral Mini is a speech-to-text model from Mistral for transcription and spoken-language understanding workflows. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2025-07-15T00:00:00",
   "release_date": "2025-07-15T00:00:00",
   "deprecation_date": "2026-02-27T00:00:00",

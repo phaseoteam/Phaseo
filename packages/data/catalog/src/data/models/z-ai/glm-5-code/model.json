@@ -4,6 +4,7 @@
   "name": "GLM 5 Code",
   "status": "Rumoured",
   "previous_model_id": null,
+  "description": "GLM 5 Code is a coding model from z.AI for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -55,6 +55,8 @@ export type { FileUploadRequest } from "./FileUploadRequest.js";
 export type { FunctionToolDefinition } from "./FunctionToolDefinition.js";
 export type { GatewayDatetimeToolDefinition } from "./GatewayDatetimeToolDefinition.js";
 export type { GatewayModelsResponse } from "./GatewayModelsResponse.js";
+export type { GatewayWebFetchToolDefinition } from "./GatewayWebFetchToolDefinition.js";
+export type { GatewayWebSearchToolDefinition } from "./GatewayWebSearchToolDefinition.js";
 export type { GenerationResponse } from "./GenerationResponse.js";
 export type { Image } from "./Image.js";
 export type { ImageConfig } from "./ImageConfig.js";

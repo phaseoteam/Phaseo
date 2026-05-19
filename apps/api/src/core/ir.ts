@@ -61,8 +61,10 @@ export type IRContentPart =
  */
 export type IRTool = {
 	name: string;
+	type?: string; // Provider-native tool type (for example web_search_preview)
 	description?: string;
 	parameters: Record<string, any>; // JSON Schema
+	raw?: Record<string, any>; // Original provider-native tool payload for passthrough
 };
 
 /**
@@ -155,6 +157,13 @@ export type IRCacheControl = {
 	[key: string]: any;
 };
 
+export type IRGeoPreferences = {
+	requiredExecutionRegion?: string;
+	requiredDataRegion?: string;
+	requireZeroDataRetention?: boolean;
+	inferenceGeo?: "global" | "us" | string;
+};
+
 /**
  * Response format configuration
  */
@@ -217,6 +226,7 @@ export type IRChatRequest = {
 	// Tool calling
 	tools?: IRTool[];
 	toolChoice?: IRToolChoice;
+	webSearchOptions?: Record<string, any>;
 	parallelToolCalls?: boolean;
 	maxToolCalls?: number;
 
@@ -252,6 +262,7 @@ export type IRChatRequest = {
 	background?: boolean;
 	serviceTier?: string;
 	speed?: string;
+	geo?: IRGeoPreferences;
 	promptCacheKey?: string;
 	promptCacheRetention?: string;
 	anthropicCacheControl?: IRCacheControl & {
@@ -718,6 +729,8 @@ export type IRUsage = {
 		cachedWriteTokens?: number;
 		serverToolUse?: {
 			datetime_requests?: number;
+			web_search_requests?: number;
+			web_fetch_requests?: number;
 		};
 	};
 };

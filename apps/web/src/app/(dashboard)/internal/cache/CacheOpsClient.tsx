@@ -17,6 +17,7 @@ import {
 	revalidateOrganisationScopeAction,
 	revalidateProviderScopeAction,
 	revalidateProvidersGlobalApiAction,
+	revalidatePublicModelCatalogueAction,
 	revalidateRankingsAction,
 	revalidateSearchDataAction,
 	revalidateSignInCatalogAction,
@@ -138,6 +139,13 @@ export default function CacheOpsClient() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+					<Button
+						type="button"
+						disabled={isPending}
+						onClick={() => runAction(revalidatePublicModelCatalogueAction)}
+					>
+						Refresh Public Catalogue
+					</Button>
 					<Button
 						type="button"
 						variant="outline"

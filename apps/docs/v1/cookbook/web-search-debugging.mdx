@@ -1,0 +1,80 @@
+---
+title: "Debug web search requests"
+description: "Verify web-search requests, confirm provider support, and inspect returned search results and citations."
+---
+
+Use this recipe when a web-search request is not behaving the way you expected and you want to see whether AI Stats accepted it, routed it correctly, and returned search results cleanly.
+
+## 1. Make the search intent explicit
+
+Do not rely on prompt wording alone. Include the search settings directly in the request so AI Stats knows you want web search.
+
+Check for:
+
+- native search tools in `tools`
+- `web_search_options` when the endpoint supports them
+
+## 2. Confirm that a compatible provider was available
+
+If the request is blocked or routed differently than you expected, inspect the request details for:
+
+- provider candidate details
+- provider enablement details
+- routing explanation
+
+This tells you whether the provider list was narrowed because search support was missing.
+
+## 3. Inspect usage counters
+
+Successful search-backed requests should show search-related usage meters such as:
+
+- requested native web search tools
+- web search results
+- citations
+
+These are the fastest signal that the request actually used search.
+
+## 4. Inspect the search results section
+
+For successful requests, open the request detail dialog and look for the Web search observability section.
+
+That section shows:
+
+- whether native search was used
+- normalized result count
+- normalized citation count
+- the extracted result records
+- the extracted citation records
+
+Use this to compare provider behavior without reading raw payloads.
+
+## 5. Keep these cases separate
+
+Today, native search and provider capability gating are live. Search fallback planning exists separately.
+
+When debugging, keep these cases separate:
+
+1. native search request accepted and routed
+2. native search request accepted but no compatible provider remained
+3. native search request succeeded but returned weak or sparse citations
+
+These are different problems and should not be debugged the same way.
+
+## 6. What to compare when results look wrong
+
+Compare across requests:
+
+- model ID
+- provider actually selected
+- request search options
+- result count
+- citation count
+- routing details
+
+If result quality differs by provider, the normalized logs should still make that visible.
+
+## Related
+
+- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Examples](../guides/examples.mdx)
+- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)

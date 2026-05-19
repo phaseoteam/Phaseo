@@ -4,6 +4,7 @@
   "name": "Jamba Mini 1.7",
   "status": "Retired",
   "previous_model_id": "ai21/jamba-mini-1-6-2025-03-06",
+  "description": "Jamba Mini 1.7 is a language model from ai21 for chat, writing, analysis, and general-purpose automation. It supports up to 256K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-07-03T00:00:00",
   "release_date": "2025-07-03T00:00:00",
   "deprecation_date": "2026-02-01T00:00:00",

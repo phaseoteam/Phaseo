@@ -14,12 +14,18 @@ type UpdateRoutingSettingsInput = {
 	mode: RoutingMode;
 	betaChannelEnabled?: boolean;
 	alphaChannelEnabled?: boolean;
+	responseHealingEnabled?: boolean;
+	responseHealingLocked?: boolean;
+	responseHealingMode?: "safe" | "strict";
 };
 
 export async function updateRoutingSettings({
 	mode,
 	betaChannelEnabled,
 	alphaChannelEnabled,
+	responseHealingEnabled,
+	responseHealingLocked,
+	responseHealingMode,
 }: UpdateRoutingSettingsInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
 	const workspaceId = await getWorkspaceIdFromCookie();
@@ -39,6 +45,15 @@ export async function updateRoutingSettings({
 					alpha_channel_enabled:
 						betaChannelEnabled === false ? false : alphaChannelEnabled,
 			  }
+			: {}),
+		...(typeof responseHealingEnabled === "boolean"
+			? { response_healing_enabled: responseHealingEnabled }
+			: {}),
+		...(typeof responseHealingLocked === "boolean"
+			? { response_healing_locked: responseHealingLocked }
+			: {}),
+		...(responseHealingMode === "safe" || responseHealingMode === "strict"
+			? { response_healing_mode: responseHealingMode }
 			: {}),
 		updated_at: new Date().toISOString(),
 	};

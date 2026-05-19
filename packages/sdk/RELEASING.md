@@ -2,7 +2,7 @@
 
 This repo uses a hybrid release model:
 
-- TypeScript + Python are auto-released from CI.
+- TypeScript, TypeScript Agent SDK, and Python are auto-released from CI.
 - Go/C#/Java/PHP/Ruby use explicit publish workflows per ecosystem.
 - C++/Rust remain excluded until functional end-to-end.
 - Manual SDK release readiness can be checked with `.github/workflows/sdk-publish-readiness.yml`.
@@ -10,6 +10,7 @@ This repo uses a hybrid release model:
 ## Canonical Distribution Targets
 
 - TypeScript (`@ai-stats/sdk`) -> npm
+- TypeScript Agent SDK (`@ai-stats/agent-sdk`) -> npm
 - Python (`ai-stats-py-sdk`) -> PyPI
 - Go (`github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go`) -> Go proxy (`pkg.go.dev`) via git tags
 - C# (`AI.Stats.Sdk`) -> NuGet
@@ -71,6 +72,10 @@ General policy:
 - `major`: breaking changes (removed/renamed params, signature/shape breaks).
 
 ## Manual Publish Workflows (Other SDKs)
+
+- First npm publish / bootstrap: `.github/workflows/npm-bootstrap-publish.yml`
+  - Supports `@ai-stats/agent-sdk`, `@ai-stats/ai-sdk-provider`, and `@ai-stats/devtools-viewer`
+  - Uses pnpm trusted publishing so workspace dependencies are rewritten to registry versions in the published tarball
 
 - Go: `.github/workflows/publish-sdk-go.yml`
   - Publishes by creating/pushing tag `packages/sdk/sdk-go/vX.Y.Z`

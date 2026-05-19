@@ -5,5 +5,10 @@
   "link": "https://docs.z.ai/guides/overview/quick-start",
   "country_code": "CN",
   "status": "Active",
-  "colour": "#141618"
+  "colour": "#141618",
+  "privacy_policy_url": "https://docs.z.ai/legal-agreement/privacy-policy",
+  "terms_of_service_url": "https://docs.z.ai/legal-agreement/terms-of-use",
+  "prompt_training_policy": "enterprise_no_train",
+  "prompt_training_notes": "z.AI's developer terms distinguish enterprise and developer API services from individual users, and say API-service user content will not be used to develop or improve the services unless the customer explicitly agrees.",
+  "prompt_training_source_url": "https://docs.z.ai/legal-agreement/terms-of-use"
 }

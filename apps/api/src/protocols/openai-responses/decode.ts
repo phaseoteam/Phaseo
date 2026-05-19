@@ -13,11 +13,13 @@ import type {
 	IRReasoning,
 } from "@core/ir";
 import type { ResponsesRequest } from "@core/schemas";
+import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
 import { normalizeOpenAIContent } from "../shared/normalizeContent";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
 	normalizeOpenAIToolChoice,
+	normalizeProviderGeoPreferences,
 	normalizeResponseFormat,
 	resolveServiceTierFromSpeedAndTier,
 	normalizeProviderCacheOptions,
@@ -202,11 +204,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 	}
 
 	// Transform tools
-	const tools: IRTool[] | undefined = req.tools?.map((t: any) => ({
-		name: t.name || t.function?.name,
-		description: t.description || t.function?.description,
-		parameters: t.parameters || t.function?.parameters || {},
-	}));
+	const tools: IRTool[] | undefined = req.tools?.map(decodeOpenAITool);
 
 	// Transform tool choice
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
@@ -239,6 +237,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		// Tool calling
 		tools,
 		toolChoice,
+		webSearchOptions: (req as any).web_search_options ?? (req as any).webSearchOptions,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls ?? (req as any).max_tools_calls,
 
@@ -268,6 +267,7 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 			service_tier: (req as any).service_tier,
 			speed: (req as any).speed,
 		}),
+		geo: normalizeProviderGeoPreferences(req as any),
 		userId: (req as any).user,
 		promptCacheKey: (req as any).prompt_cache_key,
 		promptCacheRetention: providerCacheOptions.promptCacheRetention,
@@ -283,6 +283,24 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 				},
 			}
 			: undefined,
+	};
+}
+
+function decodeOpenAITool(tool: any): IRTool {
+	if (isOpenAINativeWebSearchTool(tool)) {
+		return {
+			name: tool.type,
+			type: tool.type,
+			description: typeof tool.description === "string" ? tool.description : undefined,
+			parameters: {},
+			raw: { ...tool },
+		};
+	}
+
+	return {
+		name: extractToolNameOrType(tool) ?? "tool",
+		description: tool.description || tool.function?.description,
+		parameters: tool.parameters || tool.function?.parameters || {},
 	};
 }
 

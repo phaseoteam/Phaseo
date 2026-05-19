@@ -41,7 +41,9 @@ async function RoutingSettingsContent() {
 		supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
 		supabase
 			.from("workspace_settings")
-			.select("routing_mode, beta_channel_enabled, alpha_channel_enabled")
+			.select(
+				"routing_mode, beta_channel_enabled, alpha_channel_enabled, response_healing_enabled, response_healing_locked, response_healing_mode",
+			)
 			.eq("workspace_id", workspaceId)
 			.maybeSingle(),
 	]);
@@ -51,6 +53,11 @@ async function RoutingSettingsContent() {
 			initialMode={(settingsRow?.routing_mode as any) ?? "balanced"}
 			initialBetaChannelEnabled={Boolean(settingsRow?.beta_channel_enabled)}
 			initialAlphaChannelEnabled={Boolean(settingsRow?.alpha_channel_enabled)}
+			initialResponseHealingEnabled={Boolean(settingsRow?.response_healing_enabled)}
+			initialResponseHealingLocked={Boolean(settingsRow?.response_healing_locked)}
+			initialResponseHealingMode={
+				settingsRow?.response_healing_mode === "strict" ? "strict" : "safe"
+			}
 			teamName={teamRow?.name ?? null}
 		/>
 	);

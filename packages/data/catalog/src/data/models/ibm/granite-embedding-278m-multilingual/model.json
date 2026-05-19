@@ -4,6 +4,7 @@
   "name": "Granite Embedding 278M Multilingual",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Embedding 278M Multilingual is an embedding model from IBM for vector search and semantic retrieval workflows. It is aimed at multilingual retrieval and semantic similarity tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

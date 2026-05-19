@@ -4,6 +4,7 @@
   "name": "Gemini 1.0 Pro Vision 001",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini 1.0 Pro Vision 001 is a multimodal model from Google that can work across text and visual inputs. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": null,
   "release_date": "2024-02-15T00:00:00",
   "deprecation_date": null,

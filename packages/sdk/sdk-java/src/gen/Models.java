@@ -522,6 +522,20 @@ public final class Models {
 		public Integer total;
 	}
 
+	public static class GatewayWebFetchToolDefinition {
+		public Integer max_chars;
+		public Object parameters;
+		public Object type;
+	}
+
+	public static class GatewayWebSearchToolDefinition {
+		public Boolean include_highlights;
+		public Boolean include_text;
+		public Integer max_results;
+		public Object parameters;
+		public Object type;
+	}
+
 	public static class GenerationResponse {
 		public String app_id;
 		public Boolean byok;
@@ -852,10 +866,23 @@ public final class Models {
 	}
 
 	public static class ProviderRoutingOptions {
+		public Boolean allow_fallbacks;
+		public Object data_collection;
+		public Boolean enforce_distillable_text;
 		public java.util.List<String> ignore;
 		public Boolean include_alpha;
+		public Object max_price;
 		public java.util.List<String> only;
 		public java.util.List<String> order;
+		public Object preferred_max_latency;
+		public Object preferred_min_throughput;
+		public java.util.List<String> quantizations;
+		public Boolean require_parameters;
+		public Boolean require_zero_data_retention;
+		public String required_data_region;
+		public String required_execution_region;
+		public Object sort;
+		public Boolean zdr;
 	}
 
 	public static class ProvisioningKey {
@@ -1046,6 +1073,8 @@ public final class Models {
 
 	public static class ServerToolUsage {
 		public Integer datetime_requests;
+		public Integer web_fetch_requests;
+		public Integer web_search_requests;
 	}
 
 	public static class TextContentPart {

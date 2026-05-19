@@ -14,8 +14,12 @@ export const RESEND_ONBOARDING_TEMPLATE_ALIASES = {
 } as const;
 
 export const RESEND_ONBOARDING_AUTOMATION_NAMES = {
-	WELCOME_7_DAY_BRANCH: "Onboarding: Welcome + 7 day purchase branch",
+	WELCOME_7_DAY_BRANCH: "Onboarding: Welcome + 3 day purchase branch",
 	CHECKOUT_ABANDONMENT: "Onboarding: Checkout started but no purchase",
 	PURCHASED_CONTACT_STATE: "Onboarding: Contact state from credits purchased",
 	LOW_BALANCE_ALERT: "Billing: Low balance alert",
+} as const;
+
+export const RESEND_ONBOARDING_AUTOMATION_LEGACY_NAMES = {
+	WELCOME_7_DAY_BRANCH: ["Onboarding: Welcome + 7 day purchase branch"],
 } as const;

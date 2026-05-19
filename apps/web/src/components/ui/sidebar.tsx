@@ -178,6 +178,7 @@ function Sidebar({
 	variant = "sidebar",
 	collapsible = "offcanvas",
 	layout = "fixed",
+	desktopClassName = "hidden md:block",
 	className,
 	children,
 	...props
@@ -186,6 +187,7 @@ function Sidebar({
 	variant?: "sidebar" | "floating" | "inset";
 	collapsible?: "offcanvas" | "icon" | "none";
 	layout?: "fixed" | "inline";
+	desktopClassName?: string;
 }) {
 	const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
 
@@ -235,7 +237,7 @@ function Sidebar({
 
 	return (
 		<div
-			className="group peer text-sidebar-foreground hidden md:block"
+			className={cn("group peer text-sidebar-foreground", desktopClassName)}
 			data-state={state}
 			data-collapsible={state === "collapsed" ? collapsible : ""}
 			data-variant={variant}

@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
 import CreateTeamDialog from "@/components/(gateway)/settings/CreateTeamDialog";
 import CreateTeamInviteDialog from "@/components/(gateway)/settings/CreateTeamInviteDialog";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { Badge } from "@/components/ui/badge";
 import TeamSettingsPanel from "./TeamSettingsPanel";
-import TeamsPanel from "./TeamsPanel";
+import TeamsMembers from "./members/TeamsMembers";
+import TeamsAccessPanel from "./TeamsAccessPanel";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
 type Team = { id: string; name: string };
@@ -22,7 +23,7 @@ type Props = {
 	walletBalances?: Record<string, number>;
 	teamSsoSettingsByTeam?: Record<string, TeamSsoSettingsRow>;
 	hideTitle?: boolean;
-	tab?: "members" | "settings";
+	tab?: "members" | "access" | "settings";
 };
 
 export default function TeamsSettingsContainer({
@@ -39,45 +40,15 @@ export default function TeamsSettingsContainer({
 	hideTitle = false,
 	tab = "members",
 }: Props) {
-	// Controlled active team id state shared between child panels
-	const getInitial = () =>
-		initialTeamId && teams.some((t) => t.id === initialTeamId)
+	const activeWorkspaceId =
+		initialTeamId && teams.some((team) => team.id === initialTeamId)
 			? initialTeamId
 			: teams[0]?.id;
-
-	const [activeWorkspaceId, setActiveTeamId] = React.useState<string | undefined>(
-		getInitial()
-	);
-
-	const manageableTeams = React.useMemo(() => {
-		if (!manageableTeamIds?.length) return [] as Team[];
-		const allowed = new Set(manageableTeamIds);
-		return teams.filter((team) => allowed.has(team.id));
-	}, [teams, manageableTeamIds]);
+	const activeTeam = teams.find((team) => team.id === activeWorkspaceId);
 
 	const canManageActiveTeam = Boolean(
 		activeWorkspaceId && manageableTeamIds?.includes(activeWorkspaceId)
 	);
-
-	const inviteableTeams = React.useMemo(() => {
-		if (!manageableTeams.length) return [];
-		if (!activeWorkspaceId) return manageableTeams;
-		const idx = manageableTeams.findIndex(
-			(team) => team.id === activeWorkspaceId
-		);
-		if (idx <= 0) return manageableTeams;
-		const ordered = manageableTeams.slice();
-		const [active] = ordered.splice(idx, 1);
-		ordered.unshift(active);
-		return ordered;
-	}, [manageableTeams, activeWorkspaceId]);
-
-	// Keep client state in sync with server-provided initialTeamId when it changes
-	React.useEffect(() => {
-		const next = getInitial();
-		if (next !== activeWorkspaceId) setActiveTeamId(next);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [initialTeamId, teams?.length]);
 
 	return (
 		<div className="space-y-6">
@@ -85,19 +56,26 @@ export default function TeamsSettingsContainer({
 				<SettingsPageHeader
 					title="Workspaces"
 					description="Manage workspaces, members, and workspace-level access controls."
+					meta={
+						activeTeam ? (
+							<Badge variant="outline" className="h-6 px-2 text-xs font-medium">
+								{activeTeam.name}
+							</Badge>
+						) : null
+					}
 					actions={
-						<>
+						<div className="flex flex-wrap items-center gap-2">
 							<CreateTeamDialog
 								currentUserId={currentUserId ?? undefined}
 							/>
-							{canManageActiveTeam && inviteableTeams.length ? (
+							{canManageActiveTeam && activeTeam ? (
 								<CreateTeamInviteDialog
 									currentUserId={currentUserId ?? undefined}
-									teams={inviteableTeams}
+									teams={[activeTeam]}
 									defaultWorkspaceId={activeWorkspaceId}
 								/>
 							) : null}
-						</>
+						</div>
 					}
 				/>
 			)}
@@ -107,23 +85,28 @@ export default function TeamsSettingsContainer({
 					teams={teams}
 					membersByTeam={membersByTeam}
 					workspaceId={activeWorkspaceId}
-					onTeamChange={(id) => setActiveTeamId(id)}
 					currentUserId={currentUserId}
 					personalTeamId={personalTeamId}
 					walletBalances={walletBalances}
 					teamSsoSettingsByTeam={teamSsoSettingsByTeam}
 				/>
-			) : (
-				<TeamsPanel
-					teams={teams}
-					membersByTeam={membersByTeam}
+			) : tab === "access" ? (
+				<TeamsAccessPanel
 					requestsByTeam={requestsByTeam}
 					invitesByTeam={invitesByTeam}
+					membersByTeam={membersByTeam}
 					activeWorkspaceId={activeWorkspaceId}
-					onTeamChange={(id) => setActiveTeamId(id)}
+					activeWorkspaceName={activeTeam?.name}
+					currentUserId={currentUserId}
+					canManageWorkspace={canManageActiveTeam}
+				/>
+			) : (
+				<TeamsMembers
+					membersByTeam={membersByTeam}
+					activeWorkspaceId={activeWorkspaceId}
+					activeWorkspaceName={activeTeam?.name}
 					currentUserId={currentUserId}
 					personalTeamId={personalTeamId}
-					manageableTeamIds={manageableTeamIds}
 				/>
 			)}
 		</div>

@@ -4,6 +4,7 @@
   "name": "Morph V3 Large",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Morph's high-accuracy apply model for complex code edits. ~4,500 tokens/sec with 98% accuracy for precise code transformations. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

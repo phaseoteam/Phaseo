@@ -11,6 +11,8 @@ import { XiaomiAdapter } from "./xiaomi/index";
 import { AzureAdapter } from "./azure/index";
 import { AI21Adapter } from "./ai21/index";
 import { MistralAdapter } from "./mistral/index";
+import { CrofAIAdapter } from "./crofai/index";
+import { TensorixAdapter } from "./tensorix/index";
 import { ElevenLabsAdapter } from "./elevenlabs/index";
 import { SunoAdapter } from "./suno/index";
 import { createOpenAICompatibleAdapter } from "./openai-compatible/index";
@@ -24,8 +26,10 @@ import { getSupabaseAdmin } from "@/runtime/env";
 // Adapter registry (default per-provider)
 const ADAPTERS: Record<string, ProviderAdapter> = {
     openai: OpenAIAdapter,
+    "openai-eu": createOpenAICompatibleAdapter("openai-eu"),
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
+    "anthropic-us": AnthropicAdapter,
     "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat executor
     xai: createOpenAICompatibleAdapter("xai"),
     xiaomi: XiaomiAdapter,
@@ -49,6 +53,8 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     cerebras: createOpenAICompatibleAdapter("cerebras"),
     chutes: createOpenAICompatibleAdapter("chutes"),
     cohere: createOpenAICompatibleAdapter("cohere"),
+    crofai: CrofAIAdapter,
+    tensorix: TensorixAdapter,
     voyage: createOpenAICompatibleAdapter("voyage"),
     voyageai: createOpenAICompatibleAdapter("voyageai"),
     crusoe: createOpenAICompatibleAdapter("crusoe"),
@@ -73,6 +79,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     morph: createOpenAICompatibleAdapter("morph"),
     morpheus: createOpenAICompatibleAdapter("morpheus"),
     "nebius-token-factory": createOpenAICompatibleAdapter("nebius-token-factory"),
+    "nebius-token-factory-fast": createOpenAICompatibleAdapter("nebius-token-factory-fast"),
     "nebius-token-factory-eu-north-1": createOpenAICompatibleAdapter("nebius-token-factory-eu-north-1"),
     "nebius-token-factory-us-central-1": createOpenAICompatibleAdapter("nebius-token-factory-us-central-1"),
     "z-ai": createOpenAICompatibleAdapter("z-ai"),
@@ -84,7 +91,9 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     phala: createOpenAICompatibleAdapter("phala"),
     poolside: createOpenAICompatibleAdapter("poolside"),
     qwen: createOpenAICompatibleAdapter("qwen"),
+    ovhcloud: createOpenAICompatibleAdapter("ovhcloud"),
     sambanova: createOpenAICompatibleAdapter("sambanova"),
+    scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
     together: createOpenAICompatibleAdapter("together"),
     "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),
@@ -102,6 +111,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     // Native auth (SigV4/OAuth) is not implemented yet; route via OpenAI-compatible gateways/proxies.
     "amazon-bedrock": createOpenAICompatibleAdapter("amazon-bedrock"),
     "google-vertex": createOpenAICompatibleAdapter("google-vertex"),
+    "google-vertex-eu": createOpenAICompatibleAdapter("google-vertex-eu"),
 };
 
 // Capability-specific adapter overrides (e.g. Mistral OCR)

@@ -4,6 +4,7 @@
   "name": "TTS 1 HD",
   "status": "Available",
   "previous_model_id": null,
+  "description": "TTS 1 HD is a text-to-speech model from OpenAI for turning text into spoken audio. It is suited to narration, assistants, and spoken user interfaces.",
   "announced_date": "2023-11-06T00:00:00",
   "release_date": "2023-11-06T00:00:00",
   "deprecation_date": null,

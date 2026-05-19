@@ -1,0 +1,86 @@
+---
+title: "Choose a video generation model"
+description: "Use the public video model catalogue to choose a model based on inputs, outputs, parameters, providers, and pricing."
+---
+
+Use this recipe when you have not picked a video model yet and want a repeatable way to choose one before you submit paid jobs.
+
+## Goal
+
+- Find active public video models.
+- Filter by the input and output shape you need.
+- Check provider coverage and pricing before submitting a job.
+
+## 1. Fetch the video model catalogue
+
+Use the dedicated video models endpoint instead of hard-coding a provider-specific list.
+
+```bash
+curl https://api.phaseo.app/v1/videos/models \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Each item can include capability metadata such as:
+
+- `model`
+- `name`
+- `status`
+- `input_types`
+- `output_types`
+- `supported_params`
+- `providers`
+- `pricing`
+
+## 2. Narrow the list by workflow shape
+
+Before choosing the model, write down the minimum requirements for the workflow.
+
+Examples:
+
+- text-to-video only
+- image-to-video or first-frame input
+- audio generation required
+- duration and aspect-ratio controls
+- one specific provider or region
+
+That makes it easier to reject models that technically work but do not match the product path you are building.
+
+## 3. Check the parameters you actually need
+
+Do not select the model only on brand or leaderboard familiarity. Check whether the model surface exposes the controls your request will rely on.
+
+Common examples:
+
+- `duration`
+- `aspect_ratio`
+- `resolution`
+- `seed`
+- `generate_audio`
+- `input_references`
+- provider-specific settings through `provider_params`
+
+## 4. Check provider and pricing coverage
+
+For production use, also check:
+
+- which providers expose the model
+- whether the model is active publicly
+- whether pricing is fixed, per-second, or provider-dependent
+
+That matters because operationally you are selecting both a model and the provider routes that can actually serve it.
+
+## 5. Save the chosen model in one config layer
+
+After you decide, store the chosen model in one place:
+
+- a preset
+- one config file
+- one environment-owned mapping
+
+Avoid copying model ids across multiple workers or route handlers unless the workflow genuinely needs per-caller variation.
+
+## Related guides
+
+- [API Reference: Video models](../api-reference/endpoint/video-models.mdx)
+- [Generate and download a video from text](./generate-and-download-a-video-from-text.mdx)
+- [Use image inputs for video generation](./use-image-inputs-for-video-generation.mdx)

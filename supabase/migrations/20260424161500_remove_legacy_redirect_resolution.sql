@@ -47,8 +47,6 @@ where canonical_model_id is not null
 order by ord
 limit 1;
 $$;
-
 comment on function public.resolve_public_model_id(text, text)
   is 'Resolves canonical public model ids from canonical ids, aliases, and provider-facing model identifiers only.';
-
 drop table if exists public.data_model_id_redirects;

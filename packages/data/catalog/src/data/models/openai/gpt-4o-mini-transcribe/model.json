@@ -4,6 +4,7 @@
   "name": "GPT 4o Mini Transcribe (2025-12-15)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT 4o Mini Transcribe (2025-12-15) is OpenAI's smaller, cost-efficient speech-to-text model built on GPT-4o Mini audio capabilities. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2025-12-15T00:00:00",
   "release_date": "2025-12-15T00:00:00",
   "deprecation_date": null,

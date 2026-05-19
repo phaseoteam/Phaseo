@@ -271,7 +271,7 @@ async function getFreeModels(args: {
         api_model_id,
         provider_model_slug,
         is_active_gateway,
-        model: data_models (
+        model: data_models!data_api_provider_models_model_id_fkey (
           model_id,
           name,
           status,
@@ -377,7 +377,7 @@ async function getFeatureModels(args: {
         provider_id,
         api_model_id,
         is_active_gateway,
-        model: data_models (
+        model: data_models!data_api_provider_models_model_id_fkey (
           model_id,
           name,
           status,

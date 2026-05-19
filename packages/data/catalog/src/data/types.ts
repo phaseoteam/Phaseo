@@ -60,6 +60,34 @@ export interface APIProvider {
     api_provider_name: string;
     description: string | null;
     link: string | null;
+    provider_family_id?: string | null;
+    offer_label?: string | null;
+    offer_scope?: "global" | "regional" | "specialized" | null;
+    residency_mode?:
+        | "unknown"
+        | "provider_managed"
+        | "customer_selectable"
+        | "account_selected"
+        | null;
+    default_execution_regions?: string[] | null;
+    default_data_regions?: string[] | null;
+    zero_data_retention?:
+        | "unknown"
+        | "unsupported"
+        | "optional"
+        | "default"
+        | null;
+    residency_source_url?: string | null;
+    regional_pricing_mode?:
+        | "unknown"
+        | "same_as_global"
+        | "uplift"
+        | "source_region_rates"
+        | "offer_specific"
+        | null;
+    regional_pricing_uplift_percent?: number | null;
+    pricing_source_url?: string | null;
+    regional_pricing_notes?: string | null;
     prompt_training_policy?:
         | "unknown"
         | "may_train"
@@ -69,6 +97,15 @@ export interface APIProvider {
         | null;
     prompt_training_notes?: string | null;
     prompt_training_source_url?: string | null;
+    user_identifier_policy?:
+        | "unknown"
+        | "sent"
+        | "not_sent"
+        | "varies"
+        | null;
+    user_identifier_notes?: string | null;
+    privacy_policy_url?: string | null;
+    terms_of_service_url?: string | null;
 }
 
 export interface Price {

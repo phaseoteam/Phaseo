@@ -4,6 +4,7 @@
   "name": "QvQ 72B Preview",
   "status": null,
   "previous_model_id": null,
+  "description": "QvQ 72B Preview is a language model from Qwen for chat, writing, analysis, and general-purpose automation. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -3,7 +3,7 @@
 // Why: Ensures observability for every request.
 // How: Builds audit rows and ships them to Supabase with retries.
 
-import { getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
+import { getSupabaseAdmin, ensureRuntimeForBackground, isLocalTestingModeEnabled } from "@/runtime/env";
 import { ensureAppId } from "../after/apps";
 import type { Endpoint } from "@core/types";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
@@ -15,6 +15,8 @@ function supaAdmin() {
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
+let gatewayRequestDetailsTableAvailable: boolean | null = null;
+let warnedMissingGatewayRequestDetailsTable = false;
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -52,6 +54,23 @@ function isMissingColumnError(
     if (!message.toLowerCase().includes(column.toLowerCase())) return false;
     if (!table) return true;
     return message.toLowerCase().includes(table.toLowerCase());
+}
+
+function isMissingTableError(error: unknown, table: string): boolean {
+    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
+    const cause = candidate?.cause && typeof candidate.cause === "object"
+        ? candidate.cause as Record<string, unknown>
+        : null;
+    const code = String(cause?.code ?? candidate?.code ?? "");
+    const message = String(cause?.message ?? candidate?.message ?? "");
+    if (code !== "PGRST205" && code !== "42P01") return false;
+    const normalizedTable = table.toLowerCase();
+    const normalizedMessage = message.toLowerCase();
+    return (
+        normalizedMessage.includes(normalizedTable) ||
+        normalizedMessage.includes(`'${normalizedTable}'`) ||
+        normalizedMessage.includes(`"${normalizedTable}"`)
+    );
 }
 
 async function insertGatewayRequest(row: any) {
@@ -126,14 +145,33 @@ function extractReplayContent(value: unknown): unknown {
 }
 
 async function insertGatewayRequestDetails(row: any) {
+    if (gatewayRequestDetailsTableAvailable === false) {
+        return;
+    }
     const client = supaAdmin();
     const { error } = await client
         .from("gateway_request_details")
         .insert(row);
     if (error) {
+        if (
+            isLocalTestingModeEnabled() &&
+            isMissingTableError(error, "gateway_request_details")
+        ) {
+            gatewayRequestDetailsTableAvailable = false;
+            if (!warnedMissingGatewayRequestDetailsTable) {
+                warnedMissingGatewayRequestDetailsTable = true;
+                console.warn(
+                    "[audit] gateway_request_details not available in local testing mode; skipping request detail persistence."
+                );
+            }
+            return;
+        }
         const err = new Error(`[audit] insert gateway_request_details error: ${error?.message ?? "unknown"}`);
         (err as any).cause = error;
         throw err;
+    }
+    if (gatewayRequestDetailsTableAvailable === null) {
+        gatewayRequestDetailsTableAvailable = true;
     }
 }
 
@@ -253,7 +291,7 @@ function stripPricingFromUsage(usage: any): any {
 
 export async function auditSuccess(args: {
     requestId: string; workspaceId: string;
-    provider: string; model: string; endpoint: Endpoint;
+    provider: string; model: string; requestedModel?: string; endpoint: Endpoint;
     stream: boolean; byok: boolean;
     nativeResponseId?: string | null;
     appTitle?: string | null; referer?: string | null;
@@ -320,7 +358,7 @@ export async function auditSuccess(args: {
             workspaceId: args.workspaceId,
             endpoint: args.endpoint,
             model: args.model,
-            canonicalModel: args.model,
+            canonicalModel: args.requestedModel ?? args.model,
             provider: args.provider,
             stream: args.stream,
             byok: args.byok,
@@ -442,6 +480,7 @@ type AuditFailureExecute = {
     workspaceId: string;
     endpoint: Endpoint;
     model: string;
+    requestedModel?: string;
     provider?: string | null;
     stream: boolean;
     statusCode: number;
@@ -585,7 +624,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
             workspaceId: args.workspaceId,
             endpoint: args.endpoint,
             model: args.model,
-            canonicalModel: args.model,
+            canonicalModel: args.requestedModel ?? args.model,
             provider: args.provider ?? null,
             stream: !!args.stream,
             byok: !!args.byok,

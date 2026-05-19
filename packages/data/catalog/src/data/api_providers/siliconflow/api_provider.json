@@ -4,6 +4,11 @@
   "description": null,
   "link": "https://docs.siliconflow.com/en/",
   "country_code": "CN",
-  "status": "NotReady",
-  "colour": "#0284C7"
+  "status": "Active",
+  "colour": "#0284C7",
+  "privacy_policy_url": "https://docs.siliconflow.com/en/legals/privacy-policy",
+  "terms_of_service_url": "https://docs.siliconflow.com/en/legals/terms-of-service",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "SiliconFlow describes interaction data as the customer's business data and says it will only process interaction data strictly in accordance with customer instructions as a neutral technology service provider.",
+  "prompt_training_source_url": "https://docs.siliconflow.com/en/legals/privacy-policy"
 }

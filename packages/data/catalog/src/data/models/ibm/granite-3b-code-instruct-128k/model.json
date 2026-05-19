@@ -4,6 +4,7 @@
   "name": "Granite 3B Code Instruct 128K",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite 3B Code Instruct 128K is a coding model from IBM for code generation, edits, and software tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

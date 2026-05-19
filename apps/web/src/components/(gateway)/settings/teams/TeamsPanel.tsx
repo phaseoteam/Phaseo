@@ -60,11 +60,10 @@ export default function TeamsPanel({
 	return (
 		<div className="grid w-full gap-4">
 			<TeamsMembers
-				teams={teams}
 				membersByTeam={membersByTeam}
 				currentUserId={currentUserId}
 				activeWorkspaceId={fallbackActiveTeamId}
-				onTeamChange={onTeamChange}
+				activeWorkspaceName={null}
 				personalTeamId={personalTeamId}
 			/>
 			{canManageActiveTeam ? (

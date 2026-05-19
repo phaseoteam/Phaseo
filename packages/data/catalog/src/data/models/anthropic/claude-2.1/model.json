@@ -4,6 +4,7 @@
   "name": "Claude 2.1",
   "status": "Retired",
   "previous_model_id": "anthropic/claude-2-0-2023-07-12",
+  "description": "Claude 2.1 is a language model from Anthropic for chat, writing, analysis, and general-purpose automation. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2023-11-21T00:00:00",
   "release_date": "2023-11-22T00:00:00",
   "deprecation_date": "2025-01-21T00:00:00",

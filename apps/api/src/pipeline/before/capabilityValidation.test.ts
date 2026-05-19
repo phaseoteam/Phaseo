@@ -371,6 +371,138 @@ describe("validateCapabilities", () => {
 		}
 	});
 
+	it("treats native web search tools as a web_search_options capability request", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "openai/gpt-4.1",
+				input: "Find the latest news.",
+				tools: [{ type: "web_search_preview" }],
+				tool_choice: "web_search_preview",
+			},
+			body: {
+				model: "openai/gpt-4.1",
+				input: "Find the latest news.",
+				tools: [{ type: "web_search_preview" }],
+				tool_choice: "web_search_preview",
+			},
+			requestId: "req_native_web_search",
+			workspaceId: "team_test",
+			providers: [
+				provider("openai", { web_search_options: {}, tools: {} }, 4096),
+				provider("provider-without-web-search", { tools: {} }, 4096),
+			],
+			model: "openai/gpt-4.1",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toContain("web_search_options");
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("accepts explicit web_search_options and routes by that capability", () => {
+		const result = validateCapabilities({
+			endpoint: "responses",
+			rawBody: {
+				model: "openai/gpt-4.1",
+				input: "Find the latest news.",
+				web_search_options: {
+					search_context_size: "high",
+				},
+			},
+			body: {
+				model: "openai/gpt-4.1",
+				input: "Find the latest news.",
+				web_search_options: {
+					search_context_size: "high",
+				},
+			},
+			requestId: "req_explicit_web_search_options",
+			workspaceId: "team_test",
+			providers: [
+				provider("openai", { web_search_options: {} }, 4096),
+				provider("provider-without-web-search", { tools: {} }, 4096),
+			],
+			model: "openai/gpt-4.1",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toContain("web_search_options");
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("accepts explicit web_search_options on the messages surface", () => {
+		const result = validateCapabilities({
+			endpoint: "messages",
+			rawBody: {
+				model: "anthropic/claude-3-5-sonnet",
+				messages: [{ role: "user", content: "Find the latest news." }],
+				max_tokens: 1024,
+				web_search_options: {
+					search_context_size: "high",
+				},
+			},
+			body: {
+				model: "anthropic/claude-3-5-sonnet",
+				messages: [{ role: "user", content: "Find the latest news." }],
+				max_tokens: 1024,
+				web_search_options: {
+					search_context_size: "high",
+				},
+			},
+			requestId: "req_messages_web_search_options",
+			workspaceId: "team_test",
+			providers: [
+				provider("anthropic", { web_search_options: {} }, 4096),
+				provider("provider-without-web-search", { tools: {} }, 4096),
+			],
+			model: "anthropic/claude-3-5-sonnet",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toContain("web_search_options");
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["anthropic"]);
+		}
+	});
+
+	it("treats native anthropic web search tools as a web_search_options capability request", () => {
+		const result = validateCapabilities({
+			endpoint: "messages",
+			rawBody: {
+				model: "anthropic/claude-3-5-sonnet",
+				messages: [{ role: "user", content: "Find the latest news." }],
+				max_tokens: 1024,
+				tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+				tool_choice: { type: "tool", name: "web_search" },
+			},
+			body: {
+				model: "anthropic/claude-3-5-sonnet",
+				messages: [{ role: "user", content: "Find the latest news." }],
+				max_tokens: 1024,
+				tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+				tool_choice: { type: "tool", name: "web_search" },
+			},
+			requestId: "req_messages_native_web_search",
+			workspaceId: "team_test",
+			providers: [
+				provider("anthropic", { web_search_options: {}, tools: {} }, 4096),
+				provider("provider-without-web-search", { tools: {} }, 4096),
+			],
+			model: "anthropic/claude-3-5-sonnet",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.requestedParams).toContain("web_search_options");
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["anthropic"]);
+		}
+	});
+
 	it("tracks reasoning object children and supports flattened provider keys", () => {
 		const result = validateCapabilities({
 			endpoint: "responses",
@@ -479,6 +611,33 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai"]);
+		}
+	});
+
+	it("accepts messages plugins as a gateway field", () => {
+		const result = validateCapabilities({
+			endpoint: "messages",
+			rawBody: {
+				model: "anthropic/claude-sonnet-4.5",
+				max_tokens: 512,
+				messages: [{ role: "user", content: "hello" }],
+				plugins: [{ id: "response-healing" }],
+			},
+			body: {
+				model: "anthropic/claude-sonnet-4.5",
+				max_tokens: 512,
+				messages: [{ role: "user", content: "hello" }],
+				plugins: [{ id: "response-healing" }],
+			},
+			requestId: "req_messages_plugins_passthrough",
+			workspaceId: "team_test",
+			providers: [provider("anthropic", { max_tokens: {} }, 4096)],
+			model: "anthropic/claude-sonnet-4.5",
+		});
+
+		expect(result.ok).toBe(true);
+		if (result.ok) {
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["anthropic"]);
 		}
 	});
 

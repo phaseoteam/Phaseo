@@ -7,16 +7,41 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import Link from "next/link";
-import { TerminalSquare, ArrowRight, Shield, Info } from "lucide-react";
+import {
+	ArrowRight,
+	Bot,
+	Braces,
+	Check,
+	ChevronDown,
+	Globe,
+	Info,
+	Package,
+	Shield,
+	TerminalSquare,
+	type LucideIcon,
+} from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";     
 import { resolveGatewayPath } from "./endpoint-paths";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useMemo, useState } from "react";
+import type { QuickstartRequestContext } from "./requestContext";
 
 interface QuickstartProps {
         modelId?: string;
@@ -29,6 +54,7 @@ interface QuickstartProps {
         endpoint?: string | null;
         supportedEndpoints?: string[];
         showHeader?: boolean;
+	requestContext?: QuickstartRequestContext;
 }
 
 const normalizeEndpointValue = (value: string | null | undefined) =>
@@ -158,6 +184,58 @@ function buildExamplePayload(
 	}
 }
 
+type RoutingMode = "price" | "latency" | "throughput";
+
+type QuickstartRoutingPreference = {
+	routingMode: RoutingMode | null;
+};
+
+const SORT_TO_ROUTING_MODE: Record<string, RoutingMode | null> = {
+	default: null,
+	pricing: "price",
+	latency: "latency",
+	throughput: "throughput",
+	uptime: null,
+};
+
+function resolveRoutingPreference(
+	requestContext?: QuickstartRequestContext,
+): QuickstartRoutingPreference | null {
+	const sortKey = String(requestContext?.sort ?? "").trim().toLowerCase();
+	if (!sortKey || !(sortKey in SORT_TO_ROUTING_MODE)) return null;
+
+	const routingMode = SORT_TO_ROUTING_MODE[sortKey];
+
+	if (routingMode) {
+		return {
+			routingMode,
+		};
+	}
+
+	if (sortKey === "uptime") {
+		return {
+			routingMode: null,
+		};
+	}
+
+	return null;
+}
+
+function applyRoutingPreferenceToPayload(
+	payload: Record<string, unknown>,
+	preference: QuickstartRoutingPreference | null,
+) {
+	const effectiveSort = preference?.routingMode ?? null;
+	if (!effectiveSort) return payload;
+
+	return {
+		...payload,
+		provider: {
+			sort: effectiveSort,
+		},
+	};
+}
+
 const jsonToPythonLiteral = (json: string) =>
         json
                 .replace(/true/g, "True")
@@ -203,26 +281,84 @@ const ENDPOINT_OPTIONS: EndpointOption[] = [
 type LanguageOption = {
         value: string;
         label: string;
+	group: LanguageGroupId;
+	placement?: "direct" | "grouped";
+	icon?: LucideIcon;
         disabled: boolean;
 };
 
+type LanguageGroupId =
+	| "raw"
+	| "ai-stats-client"
+	| "ai-stats-agent"
+	| "openai"
+	| "anthropic";
+
+const LANGUAGE_GROUP_META: Record<
+	LanguageGroupId,
+	{ label: string; icon: LucideIcon }
+> = {
+	raw: { label: "Raw HTTP", icon: TerminalSquare },
+	"ai-stats-client": { label: "AI Stats Client SDKs", icon: Braces },
+	"ai-stats-agent": { label: "AI Stats Agent SDK", icon: Bot },
+	openai: { label: "OpenAI SDK", icon: Package },
+	anthropic: { label: "Anthropic SDK", icon: Package },
+};
+
 const LANGUAGE_OPTIONS: LanguageOption[] = [
-        { value: "curl", label: "cURL", disabled: false },
-        { value: "node-fetch", label: "Node.js fetch", disabled: false },       
-        { value: "python-requests", label: "Python requests", disabled: false },
-        { value: "ai-sdk", label: "AI SDK", disabled: false },
-        { value: "typescript-sdk", label: "TypeScript SDK", disabled: false },  
-        { value: "python-sdk", label: "Python SDK", disabled: false },
-        { value: "go-sdk", label: "Go SDK", disabled: false },     
-        { value: "csharp-sdk", label: "C# SDK", disabled: false }, 
-        { value: "php-sdk", label: "PHP SDK", disabled: false },   
-        { value: "ruby-sdk", label: "Ruby SDK", disabled: false }, 
-        { value: "openai-python", label: "OpenAI Python Client", disabled: false },
-        { value: "openai-node", label: "OpenAI Node.js Client", disabled: false },
+        { value: "curl", label: "cURL", group: "raw", placement: "direct", icon: TerminalSquare, disabled: false },
+        { value: "ai-sdk", label: "AI SDK", group: "ai-stats-client", placement: "direct", icon: Bot, disabled: false },
+        { value: "node-fetch", label: "Node.js fetch", group: "raw", disabled: false },
+        { value: "python-requests", label: "Python requests", group: "raw", disabled: false },
+        { value: "typescript-sdk", label: "TypeScript SDK", group: "ai-stats-client", disabled: false },
+        { value: "python-sdk", label: "Python SDK", group: "ai-stats-client", disabled: false },
+        { value: "go-sdk", label: "Go SDK", group: "ai-stats-client", disabled: false },
+        { value: "csharp-sdk", label: "C# SDK", group: "ai-stats-client", disabled: false },
+        { value: "php-sdk", label: "PHP SDK", group: "ai-stats-client", disabled: false },
+        { value: "ruby-sdk", label: "Ruby SDK", group: "ai-stats-client", disabled: false },
+        { value: "agent-sdk-ts", label: "TypeScript Agent SDK", group: "ai-stats-agent", disabled: false },
+        { value: "agent-sdk-python", label: "Python Agent SDK", group: "ai-stats-agent", disabled: false },
+        { value: "agent-sdk-go", label: "Go Agent SDK", group: "ai-stats-agent", disabled: false },
+        { value: "agent-sdk-csharp", label: "C# Agent SDK", group: "ai-stats-agent", disabled: false },
+        { value: "agent-sdk-php", label: "PHP Agent SDK", group: "ai-stats-agent", disabled: false },
+        { value: "agent-sdk-ruby", label: "Ruby Agent SDK", group: "ai-stats-agent", disabled: false },
+        { value: "openai-python", label: "OpenAI Python Client", group: "openai", disabled: false },
+        { value: "openai-node", label: "OpenAI Node.js Client", group: "openai", disabled: false },
+        { value: "anthropic-python", label: "Anthropic Python Client", group: "anthropic", disabled: false },
+        { value: "anthropic-node", label: "Anthropic TypeScript Client", group: "anthropic", disabled: false },
 ];
+
+const LANGUAGE_GROUP_ORDER: LanguageGroupId[] = [
+	"raw",
+	"ai-stats-client",
+	"ai-stats-agent",
+	"openai",
+	"anthropic",
+];
+
+const DIRECT_LANGUAGE_ORDER = ["curl", "ai-sdk"] as const;
 
 const STREAMING_PATHS = new Set(["/chat/completions", "/responses", "/messages"]);
 const AI_SDK_ENDPOINTS = new Set(["chat.completions", "messages", "responses"]);
+const INSTALLABLE_LANGUAGES = new Set([
+	"ai-sdk",
+	"agent-sdk-ts",
+	"agent-sdk-python",
+	"agent-sdk-go",
+	"agent-sdk-csharp",
+	"agent-sdk-php",
+	"agent-sdk-ruby",
+	"typescript-sdk",
+	"python-sdk",
+	"go-sdk",
+	"csharp-sdk",
+	"php-sdk",
+	"ruby-sdk",
+	"openai-python",
+	"openai-node",
+	"anthropic-python",
+	"anthropic-node",
+]);
 
 const AI_STATS_METHODS: Record<string, { ts: string; py: string }> = {
         "chat.completions": { ts: "generateText", py: "generate_text" },
@@ -255,6 +391,7 @@ export default function Quickstart({
 	endpoint,
 	supportedEndpoints = [],
 	showHeader = true,
+	requestContext,
 }: QuickstartProps) {
         const supportedEndpointValues = useMemo(() => {
                 const normalized = new Set(
@@ -322,6 +459,12 @@ export default function Quickstart({
                 ]);
                 if (AI_SDK_ENDPOINTS.has(normalizedEndpoint)) {
                         supported.add("ai-sdk");
+                        supported.add("agent-sdk-ts");
+                        supported.add("agent-sdk-python");
+                        supported.add("agent-sdk-go");
+                        supported.add("agent-sdk-csharp");
+                        supported.add("agent-sdk-php");
+                        supported.add("agent-sdk-ruby");
                 }
                 if (AI_STATS_METHODS[normalizedEndpoint]) {
                         supported.add("typescript-sdk");
@@ -331,6 +474,10 @@ export default function Quickstart({
                         supported.add("openai-python");
                         supported.add("openai-node");
                 }
+		if (normalizedEndpoint === "messages") {
+			supported.add("anthropic-python");
+			supported.add("anthropic-node");
+		}
                 return supported;
         }, [selectedEndpoint]);
 
@@ -341,6 +488,68 @@ export default function Quickstart({
                         ),
                 [supportedLanguageSet]
         );
+
+	const directLanguageOptions = useMemo(() => {
+		return DIRECT_LANGUAGE_ORDER.map((value) =>
+			availableLanguages.find((option) => option.value === value),
+		).filter((option): option is LanguageOption => Boolean(option));
+	}, [availableLanguages]);
+
+	const availableLanguageGroups = useMemo(() => {
+		const groupedLanguages = availableLanguages.filter(
+			(option) => option.placement !== "direct",
+		);
+		return LANGUAGE_GROUP_ORDER.map((groupId) => ({
+			...LANGUAGE_GROUP_META[groupId],
+			id: groupId,
+			options: groupedLanguages.filter((option) => option.group === groupId),
+		})).filter((group) => group.options.length > 0);
+	}, [availableLanguages]);
+
+	const selectedLanguageOption = useMemo(
+		() =>
+			availableLanguages.find((option) => option.value === selectedLanguage) ??
+			LANGUAGE_OPTIONS.find((option) => option.value === selectedLanguage) ??
+			null,
+		[availableLanguages, selectedLanguage],
+	);
+
+	/* const providerMenuSummary = useMemo(() => {
+		const activeSort =
+			selectedProviderSort !== "default"
+				? selectedProviderSort
+				: resolveRoutingPreference(requestContext)?.routingMode ?? null;
+		const parts: string[] = [];
+		if (activeSort) {
+			parts.push(
+				activeSort.charAt(0).toUpperCase() + activeSort.slice(1),
+			);
+		}
+		if (selectedProviderOrder.length > 0) {
+			parts.push(
+				selectedProviderOrder.length === 1
+					? availableProviderOptions.find(
+						(provider) => provider.id === selectedProviderOrder[0],
+					)?.label ?? "1 provider"
+					: `${selectedProviderOrder.length} providers`,
+			);
+		}
+		return parts.join(" · ") || "Default routing";
+	}, [
+		availableProviderOptions,
+		requestContext,
+		selectedProviderOrder,
+		selectedProviderSort,
+	]);
+
+	const toggleProviderOrder = (providerId: string, checked: boolean) => {
+		setSelectedProviderOrder((current) => {
+			const exists = current.includes(providerId);
+			if (checked && !exists) return [...current, providerId];
+			if (!checked && exists) return current.filter((id) => id !== providerId);
+			return current;
+		});
+	}; */
 
         useEffect(() => {
                 if (!supportedLanguageSet.has(selectedLanguage)) {
@@ -410,7 +619,11 @@ export default function Quickstart({
                 "model_id_here";
         const endpointPath = resolveGatewayPath(selectedEndpoint);
         const endpointUrl = `${BASE_URL}${endpointPath}`;
-        const payload = buildExamplePayload(selectedEndpoint, model);
+        const routingPreference = resolveRoutingPreference(requestContext);
+        const payload = applyRoutingPreferenceToPayload(
+		buildExamplePayload(selectedEndpoint, model),
+		routingPreference,
+	);
         const payloadJson = JSON.stringify(payload, null, 2);
         const rawSdkPayloadJson = payloadJson;
         const payloadJsonStream = supportsStreaming
@@ -442,6 +655,18 @@ export default function Quickstart({
                         switch (language) {
                         case "ai-sdk":
                                 return "npm install ai @ai-stats/ai-sdk-provider";
+			case "agent-sdk-ts":
+				return "pnpm add @ai-stats/sdk @ai-stats/agent-sdk";
+			case "agent-sdk-python":
+				return "pip install ai-stats-py-sdk ai-stats-agent-sdk";
+			case "agent-sdk-go":
+				return "go get github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go@latest";
+			case "agent-sdk-csharp":
+				return "dotnet add package AI.Stats.Sdk\ndotnet add package AI.Stats.AgentSdk";
+			case "agent-sdk-php":
+				return "composer require ai-stats/php-sdk ai-stats/agent-sdk-php";
+			case "agent-sdk-ruby":
+				return "gem install ai_stats_sdk ai_stats_agent_sdk";
                         case "typescript-sdk":
                                 return "npm install @ai-stats/sdk";
 			case "python-sdk":
@@ -458,6 +683,10 @@ export default function Quickstart({
 				return "pip install openai";
 			case "openai-node":
 				return "npm install openai";
+			case "anthropic-python":
+				return "pip install anthropic";
+			case "anthropic-node":
+				return "npm install @anthropic-ai/sdk";
 			default:
 				return "";
 		}
@@ -577,6 +806,140 @@ const { text } = await generateText({
 
 console.log(text);`
                 : null;
+
+	const agentSdkTsUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? `import {
+  createAgent,
+  createGatewayAgentClient,
+} from "@ai-stats/agent-sdk";
+
+const agent = createAgent({
+  id: "quickstart-agent",
+  model: "${model}",
+  instructions: "Answer concisely and helpfully.",
+});
+
+const result = await agent.run({
+  input: ${aiSdkPromptLiteral},
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.AI_STATS_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);`
+		: null;
+
+	const agentSdkPythonUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? `from ai_stats_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "${model}",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input=${aiSdkPromptLiteral},
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)`
+		: null;
+
+	const agentSdkGoUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? `package main
+
+import (
+  "context"
+  "fmt"
+
+  aistatsagent "github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  client, err := aistatsagent.CreateGatewayAgentClient(aistatsagent.GatewayAgentClientOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+  agent := aistatsagent.CreateAgent(aistatsagent.AgentDefinition{
+    ID:           "quickstart-agent",
+    Model:        "${model}",
+    Instructions: "Answer concisely and helpfully.",
+  })
+
+  result, err := agent.Run(context.Background(), aistatsagent.RunOptions{
+    Input:  ${aiSdkPromptLiteral},
+    Client: client,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(result.Output)
+}`
+		: null;
+
+	const agentSdkCsharpUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? `using AiStatsAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "${model}",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = ${aiSdkPromptLiteral},
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);`
+		: null;
+
+	const agentSdkPhpUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? `<?php
+require "vendor/autoload.php";
+
+use AIStats\\AgentSdk\\AgentDefinition;
+use AIStats\\AgentSdk\\AgentSdk;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "quickstart-agent",
+    model: "${model}",
+    instructions: "Answer concisely and helpfully."
+));
+
+$result = $agent->run(
+    input: ${aiSdkPromptLiteral},
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;`
+		: null;
+
+	const agentSdkRubyUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
+		? `require "ai_stats_agent_sdk"
+
+agent = AIStatsAgentSdk.create_agent(
+  id: "quickstart-agent",
+  model: "${model}",
+  instructions: "Answer concisely and helpfully."
+)
+
+client = AIStatsAgentSdk.create_gateway_agent_client
+
+result = agent.run(
+  input: ${aiSdkPromptLiteral},
+  client: client
+)
+
+puts result.output`
+		: null;
 
         const pythonSdkUsage = aiStatsMethod
                 ? `import os
@@ -791,6 +1154,38 @@ ${payloadJsonNode}
 console.log(response);`
 		: null;
 
+	const anthropicPythonUsage =
+		normalizedEndpoint === "messages"
+			? `import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ.get("AI_STATS_API_KEY"),
+    base_url="${BASE_URL}",
+)
+
+payload = ${payloadJsonPython}
+response = client.messages.create(**payload)
+
+print(response)`
+			: null;
+
+	const anthropicNodeUsage =
+		normalizedEndpoint === "messages"
+			? `import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "${BASE_URL}",
+});
+
+const response = await client.messages.create({
+${payloadJsonNode}
+});
+
+console.log(response);`
+			: null;
+
 	const compactMode = !showHeader;
 
 	return (
@@ -891,25 +1286,74 @@ console.log(response);`
 						</div>
 						<div className="space-y-1">
 							<label className="text-sm font-medium">Language</label>
-							<Select
-								value={selectedLanguage}
-								onValueChange={setSelectedLanguage}
-							>
-								<SelectTrigger>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{availableLanguages.map((option) => (
-										<SelectItem
-											key={option.value}
-											value={option.value}
-											disabled={option.disabled}
-										>
-											{option.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										className="h-9 w-full justify-between border-zinc-200 bg-transparent px-3 text-sm font-normal shadow-xs dark:border-zinc-800"
+									>
+										<span className="truncate">
+											{selectedLanguageOption?.label ?? "Choose language"}
+										</span>
+										<ChevronDown className="h-4 w-4 opacity-50" />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent
+									align="start"
+									className="min-w-[var(--radix-dropdown-menu-trigger-width)]"
+								>
+									<DropdownMenuLabel>Language</DropdownMenuLabel>
+									<DropdownMenuSeparator />
+									{directLanguageOptions.map((option) => {
+										const Icon = option.icon ?? Globe;
+										return (
+											<DropdownMenuItem
+												key={option.value}
+												onClick={() => setSelectedLanguage(option.value)}
+											>
+												<Icon className="h-4 w-4" />
+												<span>{option.label}</span>
+												{selectedLanguage === option.value ? (
+													<Check className="ml-auto h-4 w-4" />
+												) : null}
+											</DropdownMenuItem>
+										);
+									})}
+									{directLanguageOptions.length > 0 &&
+									availableLanguageGroups.length > 0 ? (
+										<DropdownMenuSeparator />
+									) : null}
+									{availableLanguageGroups.map((group, index) => {
+										const Icon = group.icon;
+										return (
+											<div key={group.id}>
+												<DropdownMenuSub>
+													<DropdownMenuSubTrigger>
+														<Icon className="h-4 w-4" />
+														<span>{group.label}</span>
+													</DropdownMenuSubTrigger>
+													<DropdownMenuSubContent>
+														{group.options.map((option) => (
+															<DropdownMenuItem
+																key={option.value}
+																onClick={() => setSelectedLanguage(option.value)}
+															>
+																<span>{option.label}</span>
+																{selectedLanguage === option.value ? (
+																	<Check className="ml-auto h-4 w-4" />
+																) : null}
+															</DropdownMenuItem>
+														))}
+													</DropdownMenuSubContent>
+												</DropdownMenuSub>
+												{index < availableLanguageGroups.length - 1 ? (
+													<DropdownMenuSeparator />
+												) : null}
+											</div>
+										);
+									})}
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
 						<div className="space-y-2">
 							<label className="text-sm font-medium">Streaming</label>
@@ -939,8 +1383,7 @@ console.log(response);`
 						<h3 className="text-base font-semibold">3) Send your first request</h3>
 					)}
 					{/* Installation step for SDKs */}
-					{(selectedLanguage.includes("sdk") ||
-						selectedLanguage.includes("openai")) && (
+					{INSTALLABLE_LANGUAGES.has(selectedLanguage) && (
 						<div className="space-y-2">
 							{compactMode ? null : (
 							<h4 className="text-sm font-medium">
@@ -966,8 +1409,7 @@ console.log(response);`
 					<div className="space-y-2">
 						{compactMode ? null : (
 							<h4 className="text-sm font-medium">
-								{selectedLanguage.includes("sdk") ||
-								selectedLanguage.includes("openai")
+								{INSTALLABLE_LANGUAGES.has(selectedLanguage)
 								? "Usage"
 								: "Code"}
 							</h4>
@@ -985,6 +1427,24 @@ console.log(response);`
 						)}
 						{selectedLanguage === "ai-sdk" && aiSdkUsage && (
 							<CodeBlock code={aiSdkUsage} lang="ts" label="ts" />
+						)}
+						{selectedLanguage === "agent-sdk-ts" && agentSdkTsUsage && (
+							<CodeBlock code={agentSdkTsUsage} lang="ts" label="ts" />
+						)}
+						{selectedLanguage === "agent-sdk-python" && agentSdkPythonUsage && (
+							<CodeBlock code={agentSdkPythonUsage} lang="python" label="python" />
+						)}
+						{selectedLanguage === "agent-sdk-go" && agentSdkGoUsage && (
+							<CodeBlock code={agentSdkGoUsage} lang="go" label="go" />
+						)}
+						{selectedLanguage === "agent-sdk-csharp" && agentSdkCsharpUsage && (
+							<CodeBlock code={agentSdkCsharpUsage} lang="csharp" label="csharp" />
+						)}
+						{selectedLanguage === "agent-sdk-php" && agentSdkPhpUsage && (
+							<CodeBlock code={agentSdkPhpUsage} lang="php" label="php" />
+						)}
+						{selectedLanguage === "agent-sdk-ruby" && agentSdkRubyUsage && (
+							<CodeBlock code={agentSdkRubyUsage} lang="ruby" label="ruby" />
 						)}
 						{selectedLanguage === "python-sdk" && pythonSdkUsage && (
 							<CodeBlock code={pythonSdkUsage} lang="python" label="python" />
@@ -1047,6 +1507,22 @@ console.log(response);`
 						openaiNodeUsage && (
 							<CodeBlock
 								code={openaiNodeUsage}
+								lang="ts"
+								label="ts"
+							/>
+						)}
+						{selectedLanguage === "anthropic-python" &&
+						anthropicPythonUsage && (
+							<CodeBlock
+								code={anthropicPythonUsage}
+								lang="python"
+								label="python"
+							/>
+						)}
+						{selectedLanguage === "anthropic-node" &&
+						anthropicNodeUsage && (
+							<CodeBlock
+								code={anthropicNodeUsage}
 								lang="ts"
 								label="ts"
 							/>

@@ -46,6 +46,7 @@ describe("resolveOpenAICompatRoute", () => {
 			expect(resolveOpenAICompatRoute("friendli", "meta-llama-3.1-8b-instruct")).toBe("chat");
 			expect(resolveOpenAICompatRoute("gmicloud", "Qwen/Qwen3-235B-A22B-Thinking-2507")).toBe("chat");
 			expect(resolveOpenAICompatRoute("deepseek", "deepseek-chat")).toBe("chat");
+			expect(resolveOpenAICompatRoute("tensorix", "z-ai/glm-5")).toBe("chat");
 				expect(resolveOpenAICompatRoute("ionrouter", "qwen3.5-122b-a10b")).toBe("chat");
 				expect(resolveOpenAICompatRoute("longcat", "LongCat-Flash-Chat")).toBe("chat");
 				expect(resolveOpenAICompatRoute("nebius-token-factory", "nvidia/nemotron-3-super-120b-a12b")).toBe("chat");
@@ -59,8 +60,10 @@ describe("resolveOpenAICompatRoute", () => {
 		expect(resolveOpenAICompatRoute("mistral", "mistral-large-latest")).toBe("chat");
 		expect(resolveOpenAICompatRoute("moonshot-ai", "kimi-k2")).toBe("chat");
 		expect(resolveOpenAICompatRoute("novitaai", "deepseek/deepseek-r1-turbo")).toBe("chat");
+		expect(resolveOpenAICompatRoute("ovhcloud", "Qwen3-32B")).toBe("chat");
 		expect(resolveOpenAICompatRoute("perplexity", "sonar")).toBe("chat");
 		expect(resolveOpenAICompatRoute("poolside", "poolside/laguna-m.1")).toBe("chat");
+		expect(resolveOpenAICompatRoute("scaleway", "llama-3.3-70b-instruct")).toBe("chat");
 		expect(resolveOpenAICompatRoute("together", "meta-llama/Llama-3.3-70B-Instruct-Turbo")).toBe("chat");
 		expect(resolveOpenAICompatRoute("venice", "venice-uncensored")).toBe("responses");
 		expect(resolveOpenAICompatRoute("cerebras", "llama3.1-70b")).toBe("chat");
@@ -80,6 +83,17 @@ describe("openAICompatUrl", () => {
 		} as any);
 
 		expect(openAICompatUrl("openai", "/chat/completions")).toBe(
+			"https://api.openai.com/v1/chat/completions",
+		);
+	});
+
+	it("builds the openai-eu chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			OPENAI_API_KEY: "test-openai-key",
+		} as any);
+
+		expect(openAICompatUrl("openai-eu", "/chat/completions")).toBe(
 			"https://api.openai.com/v1/chat/completions",
 		);
 	});
@@ -394,6 +408,34 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
+	it("builds ovhcloud chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			OVH_AI_ENDPOINTS_ACCESS_TOKEN: "test-ovh-key",
+		} as any);
+
+		expect(openAICompatUrl("ovhcloud", "/chat/completions")).toBe(
+			"https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/chat/completions",
+		);
+		expect(openAICompatUrl("ovhcloud", "/embeddings")).toBe(
+			"https://oai.endpoints.kepler.ai.cloud.ovh.net/v1/embeddings",
+		);
+	});
+
+	it("builds scaleway chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			SCW_SECRET_KEY: "test-scaleway-key",
+		} as any);
+
+		expect(openAICompatUrl("scaleway", "/chat/completions")).toBe(
+			"https://api.scaleway.ai/v1/chat/completions",
+		);
+		expect(openAICompatUrl("scaleway", "/embeddings")).toBe(
+			"https://api.scaleway.ai/v1/embeddings",
+		);
+	});
+
 	it("builds together chat endpoint with /v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
@@ -461,6 +503,18 @@ describe("openAICompatUrl", () => {
 		);
 		expect(openAICompatUrl("nebius-token-factory-us-central-1", "/chat/completions")).toBe(
 			"https://us-central-1.api.nebius.example/v1/chat/completions",
+		);
+	});
+
+	it("builds the google-vertex-eu chat-completions endpoint without a path prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			GOOGLE_VERTEX_API_KEY: "test-google-vertex-key",
+			GOOGLE_VERTEX_BASE_URL: "https://europe-west4-aiplatform.googleapis.com",
+		} as any);
+
+		expect(openAICompatUrl("google-vertex-eu", "/chat/completions")).toBe(
+			"https://europe-west4-aiplatform.googleapis.com/chat/completions",
 		);
 	});
 
@@ -674,6 +728,48 @@ describe("resolveOpenAICompatKey", () => {
 		} as any);
 
 		expect(resolved.key).toBe("test-ionrouter-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("builds tensorix chat-completions endpoint with /v1 prefix", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			TENSORIX_API_KEY: "test-tensorix-key",
+		} as any);
+
+		expect(openAICompatUrl("tensorix", "/chat/completions")).toBe(
+			"https://api.tensorix.ai/v1/chat/completions",
+		);
+	});
+
+	it("accepts CROF_AI_API_KEY fallback for crofai", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			CROF_AI_API_KEY: "test-crof-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "crofai",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-crof-key-fallback");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers CROFAI_API_KEY over CROF_AI_API_KEY for crofai", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			CROFAI_API_KEY: "test-crof-key-primary",
+			CROF_AI_API_KEY: "test-crof-key-fallback",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "crofai",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-crof-key-primary");
 		expect(resolved.source).toBe("gateway");
 	});
 

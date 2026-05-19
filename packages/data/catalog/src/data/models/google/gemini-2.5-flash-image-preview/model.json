@@ -4,6 +4,7 @@
   "name": "Gemini 2.5 Flash Image Preview (Nano Banana)",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini 2.5 Flash Image Preview (Nano Banana) is Google's latest state of the art image generation and editing model, delivering Pro-level visual quality at Flash speed.",
   "announced_date": "2025-08-25T00:00:00",
   "release_date": "2025-08-25T00:00:00",
   "deprecation_date": "2026-01-15T00:00:00",

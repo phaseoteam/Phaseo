@@ -4,6 +4,7 @@
   "name": "Granite Guardian 3.3 8B",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Guardian 3.3 8B is a safety model from IBM for moderation, prompt filtering, and policy enforcement. It is suited to input filtering, safety checks, and policy enforcement in LLM applications.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Nomos 1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nomos 1 is a language model from Nous for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-12-09T00:00:00",
   "release_date": "2025-12-09T00:00:00",
   "deprecation_date": null,

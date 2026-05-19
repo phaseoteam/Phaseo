@@ -4,6 +4,11 @@
   "description": null,
   "link": "https://docs.fireworks.ai/getting-started/introduction",
   "country_code": "US",
-  "status": "Beta",
-  "colour": "#EF4444"
+  "status": "Active",
+  "colour": "#EF4444",
+  "privacy_policy_url": "https://fireworks.ai/privacy-policy",
+  "terms_of_service_url": "https://fireworks.ai/terms-of-service",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Fireworks says prompt and generation data for open-model inference is not logged or stored in persistent storage without explicit user opt-in.",
+  "prompt_training_source_url": "https://docs.fireworks.ai/guides/security_compliance/data_handling"
 }

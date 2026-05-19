@@ -49,6 +49,7 @@ import ExportDropdown from "./ExportDropdown";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { formatRelativeToNow } from "@/lib/formatRelative";
+import UsageEntityHoverCard from "./UsageEntityHoverCard";
 import {
 	formatDateTime,
 	formatWordyDateTime,
@@ -57,6 +58,10 @@ import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { buildUsageDisplay, extractUsageMeters, formatUsageNumber } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
+import {
+	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
+	normalizeProviderPromptTrainingPolicy,
+} from "@/lib/providers/promptTrainingPolicy";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -92,6 +97,14 @@ function normalizeNonEmpty(value: string | null | undefined): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
+}
+
+function getRequestedModelId(row: RequestRow): string | null {
+	return normalizeNonEmpty(row.requested_model_id) ?? normalizeNonEmpty(row.model_id);
+}
+
+function getRoutedModelId(row: RequestRow): string | null {
+	return normalizeNonEmpty(row.routed_model_id) ?? normalizeNonEmpty(row.model_id);
 }
 
 function isAiStatsChatApp(row: RequestRow): boolean {
@@ -150,6 +163,12 @@ export default function UnifiedRequestsTable({
 	// Filters from URL
 	const [modelFilter] = useQueryState("model");
 	const [providerFilter] = useQueryState("provider");
+	const [appFilter] = useQueryState("app");
+	const [endpointFilter] = useQueryState("endpoint");
+	const [finishReasonFilter] = useQueryState("finish_reason");
+	const [streamFilter] = useQueryState("stream");
+	const [errorCodeFilter] = useQueryState("error_code");
+	const [statusCodeFilter] = useQueryState("http_status");
 	const [keyFilter] = useQueryState("key");
 	const [statusFilter] = useQueryState("status");
 	const [requestFilter] = useQueryState("req");
@@ -177,11 +196,17 @@ export default function UnifiedRequestsTable({
 
 	// Build cache key from filters
 	const getCacheKey = useCallback(() => {
-		return `${timeRange.from}-${timeRange.to}-${modelFilter}-${providerFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sortField}-${sortDir}`;
+		return `${timeRange.from}-${timeRange.to}-${modelFilter}-${providerFilter}-${appFilter}-${endpointFilter}-${finishReasonFilter}-${streamFilter}-${errorCodeFilter}-${statusCodeFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sortField}-${sortDir}`;
 	}, [
 		timeRange,
 		modelFilter,
 		providerFilter,
+		appFilter,
+		endpointFilter,
+		finishReasonFilter,
+		streamFilter,
+		errorCodeFilter,
+		statusCodeFilter,
 		keyFilter,
 		statusFilter,
 		requestFilter,
@@ -206,6 +231,19 @@ export default function UnifiedRequestsTable({
 					timeRange,
 					modelFilter: modelFilter || null,
 					providerFilter: providerFilter || null,
+					appFilter: appFilter || null,
+					endpointFilter: endpointFilter || null,
+					finishReasonFilter: finishReasonFilter || null,
+					streamFilter:
+						streamFilter === "streaming" || streamFilter === "non_streaming"
+							? streamFilter
+							: "all",
+					errorCodeFilter: errorCodeFilter || null,
+					statusCodeFilter:
+						typeof statusCodeFilter === "string" &&
+						/^[1-5]\d{2}$/.test(statusCodeFilter)
+							? Number.parseInt(statusCodeFilter, 10)
+							: null,
 					keyFilter: keyFilter || null,
 					statusFilter: (statusFilter as any) || "all",
 					requestFilter: requestFilter || null,
@@ -219,7 +257,10 @@ export default function UnifiedRequestsTable({
 				const pageModelIds = Array.from(
 					new Set(
 						(result.data ?? [])
-							.map((row) => row.model_id)
+							.flatMap((row) => [
+								getRequestedModelId(row),
+								getRoutedModelId(row),
+							])
 							.filter(
 								(id): id is string =>
 									typeof id === "string" && id.trim().length > 0,
@@ -272,6 +313,12 @@ export default function UnifiedRequestsTable({
 			timeRange,
 			modelFilter,
 			providerFilter,
+			appFilter,
+			endpointFilter,
+			finishReasonFilter,
+			streamFilter,
+			errorCodeFilter,
+			statusCodeFilter,
 			keyFilter,
 			statusFilter,
 			requestFilter,
@@ -379,10 +426,20 @@ export default function UnifiedRequestsTable({
 					row.app_id ? appNames.get(row.app_id) : null,
 				);
 				const appLabel = appTitle ?? mappedAppName ?? "-";
+				const requestedModelId = getRequestedModelId(row);
+				const routedModelId = getRoutedModelId(row);
 				return {
 					Timestamp: new Date(row.created_at).toLocaleString(),
-					Model: getModelDisplayName(row.model_id, resolvedModelMetadata),
-					"Model ID": row.model_id || "-",
+					"Requested Model": getModelDisplayName(
+						requestedModelId,
+						resolvedModelMetadata,
+					),
+					"Requested Model ID": requestedModelId || "-",
+					"Routed Model": getModelDisplayName(
+						routedModelId,
+						resolvedModelMetadata,
+					),
+					"Routed Model ID": routedModelId || "-",
 					Provider: providerLabel,
 					App: appLabel,
 					Usage: usageSummary,
@@ -427,12 +484,6 @@ export default function UnifiedRequestsTable({
 
 	return (
 		<div className="space-y-3">
-			{data.length === 0 && !loading ? (
-				<div className="rounded-md border py-8 text-center text-muted-foreground">
-					No requests found
-				</div>
-			) : null}
-
 			{loading && data.length === 0 ? (
 				<div className="space-y-3 md:hidden">
 					{Array.from({ length: 8 }).map((_, i) => (
@@ -457,10 +508,22 @@ export default function UnifiedRequestsTable({
 					{data.map((row, index) => {
 						const usageDisplay = buildUsageDisplay(row.usage);
 						const errorSummary = row.success ? null : formatErrorListSummary(row);
-						const rowKey = `mobile-${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
+						const requestedModelId = getRequestedModelId(row);
+						const routedModelId = getRoutedModelId(row);
+						const routedModelMeta = routedModelId
+							? resolvedModelMetadata.get(routedModelId)
+							: undefined;
+						const routedModelLabel = getModelDisplayName(
+							routedModelId,
+							resolvedModelMetadata,
+						);
+						const rowKey = `mobile-${row.request_id}-${row.created_at}-${requestedModelId ?? "no-requested-model"}-${routedModelId ?? "no-routed-model"}-${row.provider ?? "no-provider"}-${index}`;
 						const modelHref = getModelDetailsHref(row.model_id);
 						const modelMeta = row.model_id
 							? resolvedModelMetadata.get(row.model_id)
+							: undefined;
+						const providerMeta = row.provider
+							? resolvedProviderMetadata.get(row.provider)
 							: undefined;
 						const providerLabel = row.provider
 							? providerNames.get(row.provider) || row.provider
@@ -479,6 +542,13 @@ export default function UnifiedRequestsTable({
 							row.model_id,
 							resolvedModelMetadata,
 						);
+						const providerPolicyLabel = providerMeta?.promptTrainingPolicy
+							? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
+									normalizeProviderPromptTrainingPolicy(
+										providerMeta.promptTrainingPolicy,
+									)
+							  ]
+							: null;
 
 						return (
 							<button
@@ -508,16 +578,99 @@ export default function UnifiedRequestsTable({
 											) : null}
 											<div className="min-w-0 text-sm font-medium text-foreground">
 												{modelHref ? (
-													<Link
+													<UsageEntityHoverCard
+														title={modelLabel}
+														subtitle={modelMeta?.organisationName ?? null}
 														href={modelHref}
-														className="truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
-														onClick={stopRowClick}
+														visual={
+															modelMeta ? (
+																<Logo
+																	id={modelMeta.organisationId}
+																	width={16}
+																	height={16}
+																/>
+															) : null
+														}
+														rows={[
+															{
+																label: "Model ID",
+																value: (
+																	<code className="font-mono text-[11px]">
+																		{row.model_id}
+																	</code>
+																),
+															},
+															...(modelMeta?.organisationName
+																? [
+																		{
+																			label: "Organisation",
+																			value: modelMeta.organisationName,
+																		},
+																  ]
+																: []),
+														]}
 													>
-														{modelLabel}
-													</Link>
+														<Link
+															href={modelHref}
+															className="truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+															onClick={stopRowClick}
+														>
+															{modelLabel}
+														</Link>
+													</UsageEntityHoverCard>
 												) : (
-													<span className="truncate">{modelLabel}</span>
+													<UsageEntityHoverCard
+														title={modelLabel}
+														subtitle={modelMeta?.organisationName ?? null}
+														visual={
+															modelMeta ? (
+																<Logo
+																	id={modelMeta.organisationId}
+																	width={16}
+																	height={16}
+																/>
+															) : null
+														}
+														rows={[
+															{
+																label: "Model ID",
+																value: (
+																	<code className="font-mono text-[11px]">
+																		{row.model_id}
+																	</code>
+																),
+															},
+															...(modelMeta?.organisationName
+																? [
+																		{
+																			label: "Organisation",
+																			value: modelMeta.organisationName,
+																		},
+																  ]
+																: []),
+														]}
+													>
+														<span className="truncate">{modelLabel}</span>
+													</UsageEntityHoverCard>
 												)}
+												{routedModelId &&
+												routedModelId !== row.model_id &&
+												routedModelLabel ? (
+													<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+														<span>Routed to</span>
+														{routedModelMeta ? (
+															<Logo
+																id={routedModelMeta.organisationId}
+																width={12}
+																height={12}
+																className="flex-shrink-0"
+															/>
+														) : null}
+														<span className="truncate font-medium text-foreground">
+															{routedModelLabel}
+														</span>
+													</div>
+												) : null}
 											</div>
 										</div>
 									</div>
@@ -554,43 +707,63 @@ export default function UnifiedRequestsTable({
 
 								<div className="mt-3 flex flex-wrap items-center gap-2">
 									{row.provider ? (
-										<Link
+										<UsageEntityHoverCard
+											title={providerLabel ?? row.provider}
 											href={`/api-providers/${encodeURIComponent(row.provider)}`}
-											className="underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
-											onClick={stopRowClick}
-										>
-											<Badge
-												variant="outline"
-												className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
-											>
+											visual={
 												<Logo
 													id={row.provider}
-													width={14}
-													height={14}
-													className="flex-shrink-0"
+													width={16}
+													height={16}
 												/>
-												<span className="truncate">{providerLabel}</span>
-											</Badge>
-										</Link>
-									) : null}
-
-									{row.app_id && appLabel ? (
-										<Link
-											href={appHref!}
-											className="underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
-											onClick={stopRowClick}
+											}
+											rows={[
+												{
+													label: "Provider ID",
+													value: (
+														<code className="font-mono text-[11px]">
+															{row.provider}
+														</code>
+													),
+												},
+												...(providerPolicyLabel
+													? [
+															{
+																label: "Data policy",
+																value: providerPolicyLabel,
+															},
+													  ]
+													: []),
+											]}
 										>
-											<Badge
-												variant="outline"
-												className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+											<Link
+												href={`/api-providers/${encodeURIComponent(row.provider)}`}
+												className="underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+												onClick={stopRowClick}
 											>
-												{isAiStatsChatApp(row) ? (
+												<Badge
+													variant="outline"
+													className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+												>
 													<Logo
-														id="ai-stats"
+														id={row.provider}
 														width={14}
 														height={14}
 														className="flex-shrink-0"
 													/>
+													<span className="truncate">{providerLabel}</span>
+												</Badge>
+											</Link>
+										</UsageEntityHoverCard>
+									) : null}
+
+									{row.app_id && appLabel ? (
+										<UsageEntityHoverCard
+											title={appLabel}
+											href={appHref}
+											visual={
+												isAiStatsChatApp(row) ? (
+													<Logo id="ai-stats" width={16} height={16} />
 												) : (
 													<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
 														{row.app_image_url ? (
@@ -604,10 +777,57 @@ export default function UnifiedRequestsTable({
 															<AppWindow className="h-3 w-3" />
 														</AvatarFallback>
 													</Avatar>
-												)}
-												<span className="truncate">{appLabel}</span>
-											</Badge>
-										</Link>
+												)
+											}
+											rows={[
+												{
+													label: "App ID",
+													value: (
+														<code className="font-mono text-[11px]">
+															{row.app_id}
+														</code>
+													),
+												},
+												{
+													label: "Type",
+													value: isAiStatsChatApp(row) ? "AI Stats Chat" : "Workspace app",
+												},
+											]}
+										>
+											<Link
+												href={appHref!}
+												className="underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+												onClick={stopRowClick}
+											>
+												<Badge
+													variant="outline"
+													className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+												>
+													{isAiStatsChatApp(row) ? (
+														<Logo
+															id="ai-stats"
+															width={14}
+															height={14}
+															className="flex-shrink-0"
+														/>
+													) : (
+														<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
+															{row.app_image_url ? (
+																<AvatarImage
+																	src={row.app_image_url}
+																	alt={appLabel}
+																	className="object-cover"
+																/>
+															) : null}
+															<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
+																<AppWindow className="h-3 w-3" />
+															</AvatarFallback>
+														</Avatar>
+													)}
+													<span className="truncate">{appLabel}</span>
+												</Badge>
+											</Link>
+										</UsageEntityHoverCard>
 									) : null}
 								</div>
 
@@ -649,11 +869,22 @@ export default function UnifiedRequestsTable({
 								<Button
 									variant="ghost"
 									size="sm"
-									onClick={() => handleSort("model_id")}
+									onClick={() => handleSort("requested_model_id")}
 									className="h-7 px-2 text-xs"
 								>
-									Model
-									<SortIcon field="model_id" />
+									Requested model
+									<SortIcon field="requested_model_id" />
+								</Button>
+							</TableHead>
+							<TableHead>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => handleSort("routed_model_id")}
+									className="h-7 px-2 text-xs"
+								>
+									Routed model
+									<SortIcon field="routed_model_id" />
 								</Button>
 							</TableHead>
 							<TableHead>
@@ -720,12 +951,15 @@ export default function UnifiedRequestsTable({
 											<TableCell className="font-mono text-xs">
 												<div className="h-4 bg-muted rounded w-32" />
 											</TableCell>
-											<TableCell>
-												<div className="h-4 bg-muted rounded w-40" />
-											</TableCell>
-											<TableCell>
-												<div className="h-5 bg-muted rounded w-20" />
-											</TableCell>
+										<TableCell>
+											<div className="h-4 bg-muted rounded w-40" />
+										</TableCell>
+										<TableCell>
+											<div className="h-4 bg-muted rounded w-40" />
+										</TableCell>
+										<TableCell>
+											<div className="h-5 bg-muted rounded w-20" />
+										</TableCell>
 											<TableCell>
 												<div className="h-5 bg-muted rounded w-24" />
 											</TableCell>
@@ -745,6 +979,15 @@ export default function UnifiedRequestsTable({
 									),
 								)}
 							</>
+						) : data.length === 0 ? (
+							<TableRow>
+								<TableCell
+									colSpan={9}
+									className="py-10 text-center text-muted-foreground"
+								>
+									No requests found
+								</TableCell>
+							</TableRow>
 						) : (
 							<>
 
@@ -752,10 +995,19 @@ export default function UnifiedRequestsTable({
 								{data.map((row, index) => {
 									const usageDisplay = buildUsageDisplay(row.usage);
 									const errorSummary = row.success ? null : formatErrorListSummary(row);
-									const rowKey = `${row.request_id}-${row.created_at}-${row.model_id ?? "no-model"}-${row.provider ?? "no-provider"}-${index}`;
-									const modelHref = getModelDetailsHref(row.model_id);
-									const modelMeta = row.model_id
-										? resolvedModelMetadata.get(row.model_id)
+									const requestedModelId = getRequestedModelId(row);
+									const routedModelId = getRoutedModelId(row);
+									const rowKey = `${row.request_id}-${row.created_at}-${requestedModelId ?? "no-requested-model"}-${routedModelId ?? "no-routed-model"}-${row.provider ?? "no-provider"}-${index}`;
+									const requestedModelHref = getModelDetailsHref(requestedModelId);
+									const routedModelHref = getModelDetailsHref(routedModelId);
+									const requestedModelMeta = requestedModelId
+										? resolvedModelMetadata.get(requestedModelId)
+										: undefined;
+									const routedModelMeta = routedModelId
+										? resolvedModelMetadata.get(routedModelId)
+										: undefined;
+									const providerMeta = row.provider
+										? resolvedProviderMetadata.get(row.provider)
 										: undefined;
 									const providerLabel = row.provider
 										? providerNames.get(row.provider) || row.provider
@@ -770,10 +1022,21 @@ export default function UnifiedRequestsTable({
 									const appHref = row.app_id
 										? `/apps/${encodeURIComponent(row.app_id)}`
 										: null;
-									const modelLabel = getModelDisplayName(
-										row.model_id,
+									const requestedModelLabel = getModelDisplayName(
+										requestedModelId,
 										resolvedModelMetadata,
 									);
+									const routedModelLabel = getModelDisplayName(
+										routedModelId,
+										resolvedModelMetadata,
+									);
+									const providerPolicyLabel = providerMeta?.promptTrainingPolicy
+										? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
+												normalizeProviderPromptTrainingPolicy(
+													providerMeta.promptTrainingPolicy,
+												)
+										  ]
+										: null;
 
 									return (
 										<TableRow
@@ -859,28 +1122,187 @@ export default function UnifiedRequestsTable({
 												</HoverCard>
 											</TableCell>
 											<TableCell className="py-2 font-medium truncate max-w-[200px]">
-												{row.model_id ? (
+												{requestedModelId ? (
 													<div className="flex items-center gap-2">
-														{modelMeta ? (
+														{requestedModelMeta ? (
 															<Logo
-																id={modelMeta.organisationId}
+																id={requestedModelMeta.organisationId}
+																width={16}
+																height={16}
+															className="flex-shrink-0"
+														/>
+													) : null}
+														{requestedModelHref ? (
+															<UsageEntityHoverCard
+																title={requestedModelLabel}
+																subtitle={requestedModelMeta?.organisationName ?? null}
+																href={requestedModelHref}
+																visual={
+																	requestedModelMeta ? (
+																		<Logo
+																			id={requestedModelMeta.organisationId}
+																			width={16}
+																			height={16}
+																		/>
+																	) : null
+																}
+																rows={[
+																	{
+																		label: "Model ID",
+																		value: (
+																			<code className="font-mono text-[11px]">
+																				{requestedModelId}
+																			</code>
+																		),
+																	},
+																	...(requestedModelMeta?.organisationName
+																		? [
+																				{
+																					label: "Organisation",
+																					value: requestedModelMeta.organisationName,
+																				},
+																		  ]
+																		: []),
+																]}
+															>
+																<Link
+																	href={requestedModelHref}
+																	className="truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+																	onClick={stopRowClick}
+																>
+																	{requestedModelLabel}
+																</Link>
+															</UsageEntityHoverCard>
+														) : (
+															<UsageEntityHoverCard
+																title={requestedModelLabel}
+																subtitle={requestedModelMeta?.organisationName ?? null}
+																visual={
+																	requestedModelMeta ? (
+																		<Logo
+																			id={requestedModelMeta.organisationId}
+																			width={16}
+																			height={16}
+																		/>
+																	) : null
+																}
+																rows={[
+																	{
+																		label: "Model ID",
+																		value: (
+																			<code className="font-mono text-[11px]">
+																				{requestedModelId}
+																			</code>
+																		),
+																	},
+																	...(requestedModelMeta?.organisationName
+																		? [
+																				{
+																					label: "Organisation",
+																					value: requestedModelMeta.organisationName,
+																				},
+																		  ]
+																		: []),
+																]}
+															>
+																<span className="truncate" title={requestedModelId ?? undefined}>
+																	{requestedModelLabel}
+																</span>
+															</UsageEntityHoverCard>
+														)}
+													</div>
+												) : (
+													"-"
+												)}
+											</TableCell>
+											<TableCell className="py-2 font-medium truncate max-w-[200px]">
+												{routedModelId ? (
+													<div className="flex items-center gap-2">
+														{routedModelMeta ? (
+															<Logo
+																id={routedModelMeta.organisationId}
 																width={16}
 																height={16}
 																className="flex-shrink-0"
 															/>
 														) : null}
-														{modelHref ? (
-															<Link
-																href={modelHref}
-																className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary truncate"
-																onClick={stopRowClick}
+														{routedModelHref ? (
+															<UsageEntityHoverCard
+																title={routedModelLabel}
+																subtitle={routedModelMeta?.organisationName ?? null}
+																href={routedModelHref}
+																visual={
+																	routedModelMeta ? (
+																		<Logo
+																			id={routedModelMeta.organisationId}
+																			width={16}
+																			height={16}
+																		/>
+																	) : null
+																}
+																rows={[
+																	{
+																		label: "Model ID",
+																		value: (
+																			<code className="font-mono text-[11px]">
+																				{routedModelId}
+																			</code>
+																		),
+																	},
+																	...(routedModelMeta?.organisationName
+																		? [
+																				{
+																					label: "Organisation",
+																					value: routedModelMeta.organisationName,
+																				},
+																		  ]
+																		: []),
+																]}
 															>
-																{modelLabel}
-															</Link>
+																<Link
+																	href={routedModelHref}
+																	className="truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+																	onClick={stopRowClick}
+																>
+																	{routedModelLabel}
+																</Link>
+															</UsageEntityHoverCard>
 														) : (
-															<span className="truncate" title={row.model_id ?? undefined}>
-																{modelLabel}
-															</span>
+															<UsageEntityHoverCard
+																title={routedModelLabel}
+																subtitle={routedModelMeta?.organisationName ?? null}
+																visual={
+																	routedModelMeta ? (
+																		<Logo
+																			id={routedModelMeta.organisationId}
+																			width={16}
+																			height={16}
+																		/>
+																	) : null
+																}
+																rows={[
+																	{
+																		label: "Model ID",
+																		value: (
+																			<code className="font-mono text-[11px]">
+																				{routedModelId}
+																			</code>
+																		),
+																	},
+																	...(routedModelMeta?.organisationName
+																		? [
+																				{
+																					label: "Organisation",
+																					value: routedModelMeta.organisationName,
+																				},
+																		  ]
+																		: []),
+																]}
+															>
+																<span className="truncate" title={routedModelId ?? undefined}>
+																	{routedModelLabel}
+																</span>
+															</UsageEntityHoverCard>
 														)}
 													</div>
 												) : (
@@ -889,24 +1311,48 @@ export default function UnifiedRequestsTable({
 											</TableCell>
 											<TableCell className="py-2">
 												{row.provider ? (
-													<Link
+													<UsageEntityHoverCard
+														title={providerLabel ?? row.provider}
 														href={`/api-providers/${encodeURIComponent(row.provider)}`}
-														className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary"
-														onClick={stopRowClick}
+														visual={<Logo id={row.provider} width={16} height={16} />}
+														rows={[
+															{
+																label: "Provider ID",
+																value: (
+																	<code className="font-mono text-[11px]">
+																		{row.provider}
+																	</code>
+																),
+															},
+															...(providerPolicyLabel
+																? [
+																		{
+																			label: "Data policy",
+																			value: providerPolicyLabel,
+																		},
+																  ]
+																: []),
+														]}
 													>
-														<Badge
-															variant="outline"
-															className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+														<Link
+															href={`/api-providers/${encodeURIComponent(row.provider)}`}
+															className="underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+															onClick={stopRowClick}
 														>
-															<Logo
-																id={row.provider}
-																width={14}
-																height={14}
-																className="flex-shrink-0"
-															/>
-															<span className="truncate">{providerLabel}</span>
-														</Badge>
-													</Link>
+															<Badge
+																variant="outline"
+																className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+															>
+																<Logo
+																	id={row.provider}
+																	width={14}
+																	height={14}
+																	className="flex-shrink-0"
+																/>
+																<span className="truncate">{providerLabel}</span>
+															</Badge>
+														</Link>
+													</UsageEntityHoverCard>
 												) : (
 													<Badge variant="outline">
 														-
@@ -915,22 +1361,12 @@ export default function UnifiedRequestsTable({
 											</TableCell>
 											<TableCell className="py-2">
 												{row.app_id ? (
-													<Link
-														href={appHref!}
-														className="underline decoration-transparent hover:decoration-current transition-colors duration-200 hover:text-primary"
-														onClick={stopRowClick}
-													>
-														<Badge
-															variant="outline"
-															className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
-														>
-															{isAiStatsChatApp(row) ? (
-																<Logo
-																	id="ai-stats"
-																	width={14}
-																	height={14}
-																	className="flex-shrink-0"
-																/>
+													<UsageEntityHoverCard
+														title={appLabel ?? "Unknown app"}
+														href={appHref}
+														visual={
+															isAiStatsChatApp(row) ? (
+																<Logo id="ai-stats" width={16} height={16} />
 															) : (
 																<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
 																	{row.app_image_url ? (
@@ -944,12 +1380,59 @@ export default function UnifiedRequestsTable({
 																		<AppWindow className="h-3 w-3" />
 																	</AvatarFallback>
 																</Avatar>
-															)}
-															<span className="truncate">
-																{appLabel}
-															</span>
-														</Badge>
-													</Link>
+															)
+														}
+														rows={[
+															{
+																label: "App ID",
+																value: (
+																	<code className="font-mono text-[11px]">
+																		{row.app_id}
+																	</code>
+																),
+															},
+															{
+																label: "Type",
+																value: isAiStatsChatApp(row) ? "AI Stats Chat" : "Workspace app",
+															},
+														]}
+													>
+														<Link
+															href={appHref!}
+															className="underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
+															onClick={stopRowClick}
+														>
+															<Badge
+																variant="outline"
+																className="hover:bg-muted cursor-pointer inline-flex items-center gap-2"
+															>
+																{isAiStatsChatApp(row) ? (
+																	<Logo
+																		id="ai-stats"
+																		width={14}
+																		height={14}
+																		className="flex-shrink-0"
+																	/>
+																) : (
+																	<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
+																		{row.app_image_url ? (
+																			<AvatarImage
+																				src={row.app_image_url}
+																				alt={appLabel ?? "App"}
+																				className="object-cover"
+																			/>
+																		) : null}
+																		<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
+																			<AppWindow className="h-3 w-3" />
+																		</AvatarFallback>
+																	</Avatar>
+																)}
+																<span className="truncate">
+																	{appLabel}
+																</span>
+															</Badge>
+														</Link>
+													</UsageEntityHoverCard>
 												) : (
 													<Badge variant="outline">
 														-
@@ -1014,8 +1497,9 @@ export default function UnifiedRequestsTable({
 			</div>
 
 			{/* Pagination */}
-			<div className="flex items-center justify-center">
-				<div className="flex items-center gap-1">
+			{totalPages > 1 ? (
+				<div className="flex items-center justify-center">
+					<div className="flex items-center gap-1">
 					{/* Quick back to page 1 - only show when page 1 is not visible */}
 					{page > 3 && (
 						<Button
@@ -1065,8 +1549,9 @@ export default function UnifiedRequestsTable({
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>
+					</div>
 				</div>
-			</div>
+			) : null}
 
 			{/* Detail Dialog */}
                         <RequestDetailDialog

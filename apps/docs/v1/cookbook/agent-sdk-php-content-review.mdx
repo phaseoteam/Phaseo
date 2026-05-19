@@ -1,0 +1,68 @@
+---
+title: "Review CMS content with the PHP Agent SDK"
+description: "Use the PHP Agent SDK to wrap one local content lookup tool in a bounded review loop."
+---
+
+Use this recipe when a PHP app or admin backend needs quick content review help without offloading orchestration elsewhere.
+
+## 1. Install the SDKs
+
+```bash
+composer require ai-stats/php-sdk ai-stats/agent-sdk-php
+```
+
+## 2. Define one content lookup tool
+
+```php
+<?php
+use AIStats\AgentSdk\AgentSdk;
+use AIStats\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "AI Stats makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. Create and run the agent
+
+```php
+<?php
+use AIStats\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## When this recipe fits
+
+- the PHP app already owns the content source
+- one or two local tools are enough
+- you want a bounded loop rather than a broader orchestration platform
+
+## Related
+
+- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
+- [Recover malformed structured JSON](./response-healing-for-structured-json.mdx)

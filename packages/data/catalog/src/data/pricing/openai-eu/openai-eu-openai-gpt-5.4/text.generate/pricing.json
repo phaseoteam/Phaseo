@@ -1,0 +1,369 @@
+{
+  "key": "openai-eu:openai/gpt-5.4:text.generate",
+  "api_provider_id": "openai-eu",
+  "provider_slug": "openai-eu",
+  "api_model_id": "openai/gpt-5.4",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.275,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 16.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.55,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 24.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.375,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.143,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 8.25,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.75,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.286,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12.375,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5.5,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.55,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 33,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 11,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.1,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 49.5,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "High Context; EU regional processing price (+10%).",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 272000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-03-05T00:00:00"
+    }
+  ]
+}

@@ -4,6 +4,7 @@
   "name": "WorldPM 72B RLHFLow",
   "status": null,
   "previous_model_id": null,
+  "description": "WorldPM 72B RLHFLow is a language model from Qwen for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

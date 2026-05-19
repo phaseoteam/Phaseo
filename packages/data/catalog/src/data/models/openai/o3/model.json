@@ -4,6 +4,7 @@
   "name": "o3",
   "status": "Available",
   "previous_model_id": "openai/o1-2024-12-17",
+  "description": "o3 is a well-rounded and powerful model across domains. It sets a new standard for math, science, coding, and visual reasoning tasks. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-04-16T00:00:00",
   "release_date": "2025-04-16T00:00:00",
   "deprecation_date": null,

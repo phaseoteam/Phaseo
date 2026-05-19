@@ -4,6 +4,7 @@
   "name": "GPT 4o (2024-08-06)",
   "status": "Available",
   "previous_model_id": "openai/gpt-4o-2024-11-20",
+  "description": "The 2024-08-06 version of GPT-4o offers improved performance in structured outputs, with the ability to supply a JSON schema in the respone_format. Read more [here](https://openai.com/index/introducing-structured-outputs-in-the-api/).",
   "announced_date": null,
   "release_date": "2024-08-06T00:00:00",
   "deprecation_date": null,

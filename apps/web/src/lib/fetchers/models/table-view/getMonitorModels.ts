@@ -72,6 +72,11 @@ type MonitorModelRpcRow = {
 	weekly_latency_model: number | null;
 };
 
+type ProviderRegionRow = {
+	api_provider_id: string | null;
+	default_execution_regions: string[] | null;
+};
+
 const MONITOR_RPC_PAGE_SIZE = 1000;
 const PRICING_RULE_PAGE_SIZE = 1000;
 
@@ -130,6 +135,34 @@ async function fetchAllMonitorModelRows(
 	}
 
 	return rows;
+}
+
+async function fetchProviderExecutionRegions(
+	providerIds: string[],
+): Promise<Map<string, string[]>> {
+	if (providerIds.length === 0) return new Map();
+
+	const supabase = createAdminClient();
+	const { data, error } = await supabase
+		.from("data_api_providers")
+		.select("api_provider_id, default_execution_regions")
+		.in("api_provider_id", providerIds);
+
+	if (error) throw error;
+
+	const regionsByProvider = new Map<string, string[]>();
+	for (const row of (data ?? []) as ProviderRegionRow[]) {
+		const providerId = String(row.api_provider_id ?? "").trim();
+		if (!providerId) continue;
+		const regions = Array.isArray(row.default_execution_regions)
+			? row.default_execution_regions
+					.map((value) => String(value ?? "").trim().toLowerCase())
+					.filter(Boolean)
+			: [];
+		regionsByProvider.set(providerId, Array.from(new Set(regions)));
+	}
+
+	return regionsByProvider;
 }
 
 function isRuleActive(
@@ -652,6 +685,15 @@ async function getMonitorModelsCached(
 	cacheTag("data:api_providers");
 
 	const rpcRows = await fetchAllMonitorModelRows(includeHidden);
+	const providerRegionMap = await fetchProviderExecutionRegions(
+		Array.from(
+			new Set(
+				rpcRows
+					.map((row) => String(row.provider_id ?? "").trim())
+					.filter(Boolean),
+			),
+		),
+	);
 	const pricingSupplements = await fetchPricingSupplements(rpcRows);
 
 	const featureOrderIndexForRow = new Map(
@@ -762,6 +804,8 @@ async function getMonitorModelsCached(
 				id: gatewayModel.api_provider_id,
 				inputPrice: Number(row.input_price ?? 0) || 0,
 				outputPrice: Number(row.output_price ?? 0) || 0,
+				executionRegions:
+					providerRegionMap.get(gatewayModel.api_provider_id) ?? null,
 				standardInputPrice:
 					!useSupplementInputStandard &&
 					row.standard_input_price !== null &&

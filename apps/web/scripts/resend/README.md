@@ -13,9 +13,9 @@ pnpm --filter @ai-stats/web resend:provision:onboarding
 ## Optional
 
 - `RESEND_FROM_EMAIL` (default: `AI Stats <noreply@phaseo.app>`)
-- `RESEND_ONBOARDING_REPLY_TO_EMAIL` (default: `support@aistats.com`)
+- `RESEND_ONBOARDING_REPLY_TO_EMAIL` (default: `daniel@phaseo.app`)
 - `RESEND_ONBOARDING_DASHBOARD_URL` (default: `NEXT_PUBLIC_WEBSITE_URL` then `https://www.aistats.com`)
-- `RESEND_ONBOARDING_PURCHASE_WINDOW` (default: `7 days`)
+- `RESEND_ONBOARDING_PURCHASE_WINDOW` (default: `3 days`)
 - `RESEND_CHECKOUT_ABANDONED_TIMEOUT` (default: `24 hours`)
 - `RESEND_ONBOARDING_AUTOMATION_STATUS` (`enabled` or `disabled`, default: `enabled`)
 - `RESEND_CUSTOMERS_SEGMENT_ID` (optional; if set, purchased users are added to this segment)

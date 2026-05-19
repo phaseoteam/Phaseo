@@ -4,6 +4,7 @@
   "name": "Text Search Curie Doc 001",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Text Search Curie Doc 001 is trained to understand and execute web search queries. It is aimed at retrieval-heavy assistants, browsing, and research synthesis.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": "2023-07-06T00:00:00",

@@ -4,6 +4,7 @@
   "name": "Embed V4",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Embed V4 is an embedding model from Cohere for vector search and semantic retrieval workflows. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2025-04-15T00:00:00",
   "release_date": "2025-04-15T00:00:00",
   "deprecation_date": null,

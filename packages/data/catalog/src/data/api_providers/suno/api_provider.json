@@ -5,5 +5,10 @@
   "link": "https://suno.com/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#FF4B23"
+  "colour": "#FF4B23",
+  "privacy_policy_url": "https://suno.com/privacy",
+  "terms_of_service_url": "https://suno.com/terms/",
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "Suno says it may use user activity information, submissions, interactive chat information, and other content to improve its services, including to train and enhance the models that power them.",
+  "prompt_training_source_url": "https://suno.com/privacy"
 }

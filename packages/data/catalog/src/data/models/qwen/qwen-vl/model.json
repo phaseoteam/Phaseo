@@ -4,6 +4,7 @@
   "name": "Qwen VL",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen VL is a large-scale multimodal vision-language model designed for high-precision understanding and reasoning across text, images, and video.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Ernie 4.5 300B A47B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Ernie 4.5 300B A47B is a 300B parameter Mixture-of-Experts (MoE) language model developed by Baidu as part of the ERNIE 4.5 series. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Qwen3 VL 32b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 VL 32b is a large-scale multimodal vision-language model designed for high-precision understanding and reasoning across text, images, and video.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

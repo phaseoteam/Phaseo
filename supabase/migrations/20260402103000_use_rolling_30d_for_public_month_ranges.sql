@@ -159,7 +159,6 @@ begin
   order by rc.rk;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_market_share(
   p_dimension text default 'organization',
   p_time_range text default 'week'
@@ -245,7 +244,6 @@ begin
   end if;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_top_apps(
   p_limit integer default 20,
   p_time_range text default 'week'

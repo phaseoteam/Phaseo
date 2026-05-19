@@ -4,6 +4,7 @@
   "name": "Text Multilingual Embedding 002",
   "status": "Available",
   "previous_model_id": null,
+  "description": "gemini-embedding-001 provides a unified cutting edge experience across domains, including science, legal, finance, and coding. It is aimed at multilingual retrieval and semantic similarity tasks.",
   "announced_date": null,
   "release_date": "2024-05-14T00:00:00",
   "deprecation_date": null,

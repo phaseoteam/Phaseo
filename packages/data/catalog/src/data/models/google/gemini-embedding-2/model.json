@@ -1,1 +1,33 @@
-{   "model_id": "google/gemini-embedding-2",   "organisation_id": "google",   "name": "Gemini Embedding 2",   "status": "Available",   "previous_model_id": "google/gemini-embedding-2-preview",   "announced_date": "2026-04-22T00:00:00",   "release_date": "2026-04-22T00:00:00",   "deprecation_date": null,   "retirement_date": null,   "license": "Proprietary",   "input_types": "text,image,audio,video",   "output_types": "embeddings",   "api_model_id": "google/gemini-embedding-2",   "links": [     {       "platform": "announcement",       "url": "https://ai.google.dev/gemini-api/docs/changelog"     },     {       "platform": "api_reference",       "url": "https://ai.google.dev/gemini-api/docs/embeddings"     }   ],   "details": [     {       "name": "input_context_length",       "value": 8192     }   ],   "benchmarks": [] }
+{
+  "model_id": "google/gemini-embedding-2",
+  "organisation_id": "google",
+  "name": "Gemini Embedding 2",
+  "status": "Available",
+  "previous_model_id": "google/gemini-embedding-2-preview",
+  "description": "Gemini Embedding 2 is Google's first multimodal embedding model. We currently support mapping text and images into a unified vector space for semantic search and retrieval-augmented generation (RAG).",
+  "announced_date": "2026-04-22T00:00:00",
+  "release_date": "2026-04-22T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio,video",
+  "output_types": "embeddings",
+  "api_model_id": "google/gemini-embedding-2",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://ai.google.dev/gemini-api/docs/changelog"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/embeddings"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 8192
+    }
+  ],
+  "benchmarks": []
+}

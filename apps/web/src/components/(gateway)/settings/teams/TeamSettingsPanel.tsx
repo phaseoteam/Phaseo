@@ -16,14 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import {
-	Select,
-	SelectTrigger,
-	SelectValue,
-	SelectContent,
-	SelectItem,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
 	AlertDialog,
@@ -40,8 +32,6 @@ import { Loader2, Trash2 } from "lucide-react";
 import {
 	updateTeamAction,
 	deleteTeamAction,
-	updateTeamSsoSettingsAction,
-	type TeamSsoMode,
 } from "@/app/(dashboard)/settings/teams/actions";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 
@@ -55,7 +45,6 @@ type Props = {
 	teams: Team[];
 	membersByTeam: MembersByTeam;
 	workspaceId?: string | undefined | null;
-	onTeamChange?: (id?: string) => void;
 	currentUserId?: string | null;
 	personalTeamId?: string | null;
 	walletBalances?: Record<string, number>;
@@ -64,57 +53,20 @@ type Props = {
 
 type Settings = {
 	teamName: string;
-	ssoEnabled: boolean;
-	ssoEnforced: boolean;
-	ssoMode: TeamSsoMode;
-	ssoProviderIdentifier: string;
-	ssoDomains: string;
 };
 
 const DEFAULTS: Settings = {
 	teamName: "",
-	ssoEnabled: false,
-	ssoEnforced: false,
-	ssoMode: "none",
-	ssoProviderIdentifier: "",
-	ssoDomains: "",
 };
 
 const schema = z.object({
 	teamName: z.string().trim().min(1, "Workspace name is required").max(60),
 });
 
-function normalizeMode(value: unknown): TeamSsoMode {
-	const raw = String(value ?? "").trim().toLowerCase();
-	if (raw === "saml") return "saml";
-	if (raw === "custom_oidc") return "custom_oidc";
-	return "none";
-}
-
-function parseDomains(raw: string): string[] {
-	return raw
-		.split(/[,\n]/)
-		.map((domain) => domain.trim())
-		.filter(Boolean);
-}
-
-function normalizeSettings(settings: Settings): Settings {
-	const domains = parseDomains(settings.ssoDomains);
-	return {
-		...settings,
-		teamName: settings.teamName.trim(),
-		ssoEnforced: settings.ssoEnabled ? settings.ssoEnforced : false,
-		ssoMode: normalizeMode(settings.ssoMode),
-		ssoProviderIdentifier: settings.ssoProviderIdentifier.trim(),
-		ssoDomains: domains.join(", "),
-	};
-}
-
 export default function TeamSettingsPanel({
 	teams,
 	membersByTeam,
 	workspaceId,
-	onTeamChange,
 	currentUserId,
 	personalTeamId,
 	walletBalances,
@@ -151,30 +103,18 @@ export default function TeamSettingsPanel({
 	const [settings, setSettings] = React.useState<Settings>(DEFAULTS);
 	const [initial, setInitial] = React.useState<Settings>(DEFAULTS);
 
-	const hasChanges =
-		JSON.stringify(normalizeSettings(initial)) !==
-		JSON.stringify(normalizeSettings(settings));
+	const hasChanges = initial.teamName.trim() !== settings.teamName.trim();
 
 	React.useEffect(() => {
 		if (!workspaceId) return;
 		const team = teams.find((entry) => entry.id === workspaceId);
-		const ssoRow = teamSsoSettingsByTeam?.[workspaceId];
 		const next: Settings = {
-			teamName: team?.name ?? DEFAULTS.teamName,
-			ssoEnabled: Boolean(ssoRow?.sso_enabled),
-			ssoEnforced: Boolean(ssoRow?.sso_enforced),
-			ssoMode: normalizeMode(ssoRow?.sso_mode),
-			ssoProviderIdentifier: String(
-				ssoRow?.sso_provider_identifier ?? "",
-			),
-			ssoDomains: Array.isArray(ssoRow?.sso_domains)
-				? ssoRow!.sso_domains.join(", ")
-				: "",
+		teamName: team?.name ?? DEFAULTS.teamName,
 		};
 		setSettings(next);
 		setInitial(next);
 		setLoading(false);
-	}, [workspaceId, teams, teamSsoSettingsByTeam]);
+	}, [workspaceId, teams]);
 
 	function update<K extends keyof Settings>(key: K, value: Settings[K]) {
 		setSettings((prev) => ({ ...prev, [key]: value }));
@@ -202,22 +142,13 @@ export default function TeamSettingsPanel({
 		try {
 			await toast.promise(
 				(async () => {
-					const normalized = normalizeSettings(settings);
-					const initialNormalized = normalizeSettings(initial);
+					const normalizedName = settings.teamName.trim();
+					const initialName = initial.teamName.trim();
 
-					if (normalized.teamName !== initialNormalized.teamName) {
-						await updateTeamAction(workspaceId, normalized.teamName);
+					if (normalizedName !== initialName) {
+						await updateTeamAction(workspaceId, normalizedName);
 					}
-
-					await updateTeamSsoSettingsAction(workspaceId, {
-						ssoEnabled: normalized.ssoEnabled,
-						ssoEnforced: normalized.ssoEnforced,
-						ssoMode: normalized.ssoMode,
-						ssoProviderIdentifier:
-							normalized.ssoProviderIdentifier || null,
-						ssoDomains: parseDomains(normalized.ssoDomains),
-					});
-
+					const normalized = { teamName: normalizedName };
 					setSettings(normalized);
 					setInitial(normalized);
 				})(),
@@ -275,7 +206,7 @@ export default function TeamSettingsPanel({
 							) : null}
 						</CardTitle>
 						<CardDescription>
-							Configure your workspace basics and enterprise SSO scaffold.
+							Configure your workspace basics.
 							{isPersonalTeam ? (
 								<span className="mt-1 block text-xs text-muted-foreground">
 									Your personal workspace is immutable and always serves as your
@@ -284,21 +215,10 @@ export default function TeamSettingsPanel({
 							) : null}
 						</CardDescription>
 					</div>
-					<Select
-						value={fallbackTeamId}
-						onValueChange={(value) => onTeamChange?.(value)}
-					>
-						<SelectTrigger className="w-full sm:w-[240px]">
-							<SelectValue placeholder="Select workspace..." />
-						</SelectTrigger>
-						<SelectContent>
-							{teams.map((team) => (
-								<SelectItem key={team.id} value={team.id}>
-									{team.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+					<Badge variant="outline" className="w-fit">
+						{teams.find((team) => team.id === fallbackTeamId)?.name ??
+							"Selected workspace"}
+					</Badge>
 				</CardHeader>
 
 				<Separator />
@@ -314,120 +234,6 @@ export default function TeamSettingsPanel({
 							placeholder="e.g. Personal, Engineering, Growth"
 							maxLength={60}
 						/>
-					</div>
-
-					<Separator />
-
-					<div className="space-y-4">
-						<div className="space-y-1">
-							<div className="flex items-center gap-2">
-								<h3 className="text-sm font-semibold">Enterprise SSO</h3>
-								<Badge variant="outline">Scaffold</Badge>
-							</div>
-							<p className="text-xs text-muted-foreground">
-								Configuration is saved now, but sign-in enforcement remains
-								disabled until rollout is enabled.
-							</p>
-						</div>
-
-						<div className="rounded-md border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
-							Status: Coming soon. This section prepares workspace-level SSO settings
-							for future enforcement.
-						</div>
-
-						<div className="grid gap-3">
-							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
-								<div className="min-w-0">
-									<p className="text-sm font-medium">Enable SSO configuration</p>
-									<p className="text-xs text-muted-foreground">
-										Turn on workspace SSO settings storage.
-									</p>
-								</div>
-								<Switch
-									checked={settings.ssoEnabled}
-									onCheckedChange={(checked) =>
-										update("ssoEnabled", Boolean(checked))
-									}
-									disabled={!canEdit || loading}
-								/>
-							</div>
-
-							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/10 px-3 py-2">
-								<div className="min-w-0">
-									<p className="text-sm font-medium">Require SSO for members</p>
-									<p className="text-xs text-muted-foreground">
-										Future policy target: SSO-required by workspace.
-									</p>
-								</div>
-								<Switch
-									checked={settings.ssoEnforced}
-									onCheckedChange={(checked) =>
-										update("ssoEnforced", Boolean(checked))
-									}
-									disabled={!canEdit || loading || !settings.ssoEnabled}
-								/>
-							</div>
-						</div>
-
-						<div className="grid gap-2">
-							<Label htmlFor="ssoMode">SSO mode</Label>
-							<Select
-								value={settings.ssoMode}
-								onValueChange={(value) =>
-									update("ssoMode", normalizeMode(value))
-								}
-								disabled={!canEdit || loading}
-							>
-								<SelectTrigger id="ssoMode">
-									<SelectValue placeholder="Select SSO mode..." />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="none">None</SelectItem>
-									<SelectItem value="saml">SAML (Enterprise SSO)</SelectItem>
-									<SelectItem value="custom_oidc">
-										Custom OIDC Provider
-									</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-
-						<div className="grid gap-2">
-							<Label htmlFor="ssoProviderIdentifier">
-								Provider identifier (optional)
-							</Label>
-							<Input
-								id="ssoProviderIdentifier"
-								value={settings.ssoProviderIdentifier}
-								onChange={(event) =>
-									update("ssoProviderIdentifier", event.target.value)
-								}
-								disabled={!canEdit || loading}
-								placeholder={
-									settings.ssoMode === "custom_oidc"
-										? "custom:your-oidc-provider"
-										: "Supabase SSO provider UUID (optional)"
-								}
-							/>
-							<p className="text-xs text-muted-foreground">
-								Use a provider UUID for SAML or a `custom:*` provider for OIDC.
-							</p>
-						</div>
-
-						<div className="grid gap-2">
-							<Label htmlFor="ssoDomains">Allowed work domains</Label>
-							<Input
-								id="ssoDomains"
-								value={settings.ssoDomains}
-								onChange={(event) =>
-									update("ssoDomains", event.target.value)
-								}
-								disabled={!canEdit || loading}
-								placeholder="company.com, example.org"
-							/>
-							<p className="text-xs text-muted-foreground">
-								Comma-separated domains used for domain-based SSO lookup.
-							</p>
-						</div>
 					</div>
 				</CardContent>
 

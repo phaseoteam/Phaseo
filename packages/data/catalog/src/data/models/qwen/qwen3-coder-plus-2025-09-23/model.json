@@ -4,6 +4,7 @@
   "name": "Qwen3 Coder Plus 2025 09 23",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 Coder Plus 2025 09 23 is Alibaba's proprietary version of the Open Source Qwen3 Coder 480B A35B. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

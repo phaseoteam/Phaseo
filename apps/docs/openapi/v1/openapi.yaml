@@ -2749,6 +2749,86 @@ components:
         include_alpha:
           type: boolean
           description: Include alpha providers in routing (off by default).
+        allow_fallbacks:
+          type: boolean
+          nullable: true
+          description: Allow fallback to another eligible provider after failure.
+        require_parameters:
+          type: boolean
+          nullable: true
+          description: Require provider support for requested parameters before routing.
+        required_execution_region:
+          type: string
+          nullable: true
+          description: Restrict routing to providers with the requested execution region.
+        required_data_region:
+          type: string
+          nullable: true
+          description: Restrict routing to providers with the requested data region.
+        require_zero_data_retention:
+          type: boolean
+          nullable: true
+          description: Restrict routing to providers that support zero data retention.
+        data_collection:
+          type: string
+          nullable: true
+          enum:
+            - allow
+            - deny
+        zdr:
+          type: boolean
+          nullable: true
+        enforce_distillable_text:
+          type: boolean
+          nullable: true
+        quantizations:
+          type: array
+          nullable: true
+          items:
+            type: string
+        sort:
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+          description: >-
+            Rank providers for this request, for example by price, latency, or
+            throughput.
+        max_price:
+          type: object
+          properties:
+            prompt:
+              oneOf:
+                - type: number
+                - type: string
+            completion:
+              oneOf:
+                - type: number
+                - type: string
+            image:
+              oneOf:
+                - type: number
+                - type: string
+            audio:
+              oneOf:
+                - type: number
+                - type: string
+            request:
+              oneOf:
+                - type: number
+                - type: string
+        preferred_min_throughput:
+          oneOf:
+            - type: number
+            - type: object
+              additionalProperties:
+                type: number
+        preferred_max_latency:
+          oneOf:
+            - type: number
+            - type: object
+              additionalProperties:
+                type: number
     DebugOptions:
       type: object
       description: Gateway debug controls. These flags are never forwarded upstream.
@@ -3235,9 +3315,8 @@ components:
           type: array
           description: >
             Tool definitions for model function calls and gateway server tools.
-            The only built-in gateway server tool is `gateway:datetime`.
-            Web-search tool types (for example `web_search_preview`) are
-            temporarily disabled by the gateway.
+            Built-in gateway server tools are `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
@@ -3565,14 +3644,76 @@ components:
           type: string
           description: Legacy shortcut for default timezone (IANA).
       additionalProperties: false
+    GatewayWebSearchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway executes a web search and
+        injects normalized search results back into the model tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:web_search
+        parameters:
+          type: object
+          properties:
+            max_results:
+              type: integer
+              minimum: 1
+              maximum: 10
+            include_text:
+              type: boolean
+            include_highlights:
+              type: boolean
+          additionalProperties: false
+        max_results:
+          type: integer
+          minimum: 1
+          maximum: 10
+        include_text:
+          type: boolean
+        include_highlights:
+          type: boolean
+      additionalProperties: false
+    GatewayWebFetchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway fetches one HTTP(S) page,
+        reduces it to bounded text, and injects the result back into the model
+        tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:web_fetch
+        parameters:
+          type: object
+          properties:
+            max_chars:
+              type: integer
+              minimum: 1
+              maximum: 50000
+          additionalProperties: false
+        max_chars:
+          type: integer
+          minimum: 1
+          maximum: 50000
+      additionalProperties: false
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
         - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
+        - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
+        - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
     TextToolChoice:
       description: >
-        Tool selection strategy. `gateway:datetime` is accepted and rewritten by
-        the gateway into an upstream function/tool target.
+        Tool selection strategy. `gateway:datetime`, `gateway:web_search`, and
+        `gateway:web_fetch` are accepted and rewritten by the gateway into
+        upstream function/tool targets.
       oneOf:
         - type: string
           enum:
@@ -3580,11 +3721,19 @@ components:
             - none
             - required
             - gateway:datetime
+            - gateway:web_search
+            - gateway:web_fetch
         - type: object
     ServerToolUsage:
       type: object
       properties:
         datetime_requests:
+          type: integer
+          minimum: 0
+        web_search_requests:
+          type: integer
+          minimum: 0
+        web_fetch_requests:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -3741,17 +3890,19 @@ components:
           type: array
           description: >
             Anthropic-compatible tools plus gateway server tools. The only
-            built-in gateway server tool is `gateway:datetime`. Web-search tool
-            types are temporarily disabled by the gateway.
+            built-in gateway server tools are `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             oneOf:
               - $ref: '#/components/schemas/AnthropicTool'
               - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
+              - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
+              - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
         tool_choice:
           description: >
-            Anthropic tool choice object/string. `gateway:datetime` is also
-            accepted and rewritten by the gateway. Web-search tool choices are
-            temporarily disabled.
+            Anthropic tool choice object/string. `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch` are also accepted and
+            rewritten by the gateway.
           oneOf:
             - type: object
             - type: string
@@ -3943,9 +4094,8 @@ components:
           type: array
           description: >
             Tool definitions for model function calls and gateway server tools.
-            The only built-in gateway server tool is `gateway:datetime`.
-            Web-search tool types (for example `web_search_preview`) are
-            temporarily disabled by the gateway.
+            Built-in gateway server tools are `gateway:datetime`,
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         top_p:
@@ -7228,6 +7378,7 @@ components:
         - anthropic/claude-opus-4.5
         - anthropic/claude-opus-4.6
         - anthropic/claude-opus-4.7
+        - anthropic/claude-opus-4.7-fast
         - anthropic/claude-sonnet-4
         - anthropic/claude-sonnet-4.5
         - anthropic/claude-sonnet-4.6
@@ -7252,13 +7403,16 @@ components:
         - bytedance/seed-2.0-lite
         - bytedance/seed-2.0-mini
         - bytedance/seed-2.0-pro
+        - bytedance/seed-oss-36b-instruct
         - bytedance/seed-translation
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
         - cogito/cogito-671b-v2.1
+        - crofai/greg
         - deepseek/deepseek-ocr
         - deepseek/deepseek-ocr-2
         - deepseek/deepseek-prover-v2-671b
+        - deepseek/deepseek-r1
         - deepseek/deepseek-r1-0528
         - deepseek/deepseek-r1-2025-05-28
         - deepseek/deepseek-r1-turbo
@@ -7273,6 +7427,8 @@ components:
         - deepseek/deepseek-v3.2-thinking
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
+        - deepseek/deepseek-v4-pro-precision
+        - essential-ai/rnj-1
         - google/gemini-2.0-flash
         - google/gemini-2.0-flash-lite
         - google/gemini-2.5-flash-image
@@ -7296,10 +7452,12 @@ components:
         - google/gemma-3-27b:free
         - google/gemma-3-4b:free
         - google/gemma-3n-e2b:free
+        - google/gemma-3n-e4b
         - google/gemma-3n-e4b:free
         - google/gemma-4-26b-a4b
         - google/gemma-4-26b-a4b:free
         - google/gemma-4-31b
+        - google/gemma-4-31b-it
         - google/gemma-4-31b:free
         - google/lyria-3-clip-preview
         - google/lyria-3-pro-preview
@@ -7308,17 +7466,26 @@ components:
         - google/veo-3.1-lite-generate-preview
         - google/veo-3.1-preview
         - ibm/granite-4.1-8b
+        - inception/mercury-2
+        - inception/mercury-edit-2
         - inclusionai/ling-2.6-1t
+        - inclusionai/ling-flash-2.0
+        - inclusionai/ring-flash-2.0
+        - inflection/inflection-3-pi
+        - inflection/inflection-3-productivity
         - kwaipilot/kat-coder-exp-72b-1010
         - kwaipilot/kat-coder-pro
         - kwaipilot/kat-coder-pro-v1
         - kwaipilot/kat-coder-pro-v2
+        - liquid-ai/lfm-2-24b-a2b
         - meituan/longcat-flash-cat
         - meta/llama-3-70b
         - meta/llama-3-8b
+        - meta/llama-3-8b-lite
         - meta/llama-3.1-70b
         - meta/llama-3.1-8b
         - meta/llama-3.2-11b-vision
+        - meta/llama-3.2-1b-instruct
         - meta/llama-3.2-3b
         - meta/llama-3.3-70b
         - meta/llama-4-maverick
@@ -7351,7 +7518,6 @@ components:
         - mistral/ministral-3-14b
         - mistral/ministral-3-3b
         - mistral/ministral-3-8b
-        - mistral/mistral-3.1-24b
         - mistral/mistral-embed
         - mistral/mistral-large-2.1
         - mistral/mistral-large-3
@@ -7375,7 +7541,12 @@ components:
         - moonshotai/kimi-k2-instruct-0905
         - moonshotai/kimi-k2-thinking
         - moonshotai/kimi-k2.5
+        - moonshotai/kimi-k2.5-lightning
         - moonshotai/kimi-k2.6
+        - moonshotai/kimi-k2.6-precision
+        - morph/morph-v3-fast
+        - morph/morph-v3-large
+        - nex-agi/deepseek-v3.1-nex-n1
         - nous/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-70b
@@ -7471,6 +7642,7 @@ components:
         - qwen/qwen-mt-lite
         - qwen/qwen-mt-plus
         - qwen/qwen-mt-turbo
+        - qwen/qwen-omni-turbo
         - qwen/qwen-plus-2025-01-25
         - qwen/qwen-plus-2025-04-28
         - qwen/qwen-plus-2025-07-14
@@ -7491,8 +7663,11 @@ components:
         - qwen/qwen2.5-72b
         - qwen/qwen2.5-7b
         - qwen/qwen2.5-7b-1m
+        - qwen/qwen2.5-coder-7b
         - qwen/qwen2.5-vl-32b
+        - qwen/qwen2.5-vl-32b-instruct
         - qwen/qwen2.5-vl-72b
+        - qwen/qwen2.5-vl-72b-instruct
         - qwen/qwen2.5-vl-7b
         - qwen/qwen3-0.6b
         - qwen/qwen3-1.7b
@@ -7524,6 +7699,8 @@ components:
         - qwen/qwen3-next-80b-a3b-instruct
         - qwen/qwen3-next-80b-a3b-thinking
         - qwen/qwen3-omni-30b-a3b-thinking
+        - qwen/qwen3-omni-flash-2025-09-15
+        - qwen/qwen3-omni-flash-2025-12-01
         - qwen/qwen3-reranker
         - qwen/qwen3-vl-235b-a22b
         - qwen/qwen3-vl-235b-a22b-instruct
@@ -7531,6 +7708,8 @@ components:
         - qwen/qwen3-vl-30b-a3b
         - qwen/qwen3-vl-30b-a3b-instruct
         - qwen/qwen3-vl-30b-a3b-thinking
+        - qwen/qwen3-vl-32b-instruct
+        - qwen/qwen3-vl-32b-thinking
         - qwen/qwen3-vl-8b
         - qwen/qwen3-vl-8b-instruct
         - qwen/qwen3-vl-flash-2025-10-15
@@ -7545,6 +7724,7 @@ components:
         - qwen/qwen3.5-397b-a17b
         - qwen/qwen3.5-4b
         - qwen/qwen3.5-9b
+        - qwen/qwen3.5-9b-chat
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-plus
         - qwen/qwen3.5-plus-2026-04-20
@@ -7552,11 +7732,14 @@ components:
         - qwen/qwen3.6-35b-a3b
         - qwen/qwen3.6-max-preview
         - qwen/qwen3.6-plus
+        - qwen/qwq-32b
         - qwen/qwq-plus
         - qwen/text-embedding-v3
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
         - stepfun/step-3.5-flash
+        - tencent/hunyuan-a13b-instruct
+        - tencent/hy3-preview
         - venice/venice-uncensored
         - venice/venice-uncensored-1.1
         - voyage/rerank-1
@@ -7588,12 +7771,7 @@ components:
         - voyage/voyage-multimodal-3
         - voyage/voyage-multimodal-3.5
         - x-ai/grok-2-vision
-        - x-ai/grok-3
         - x-ai/grok-3-mini
-        - x-ai/grok-4
-        - x-ai/grok-4.1
-        - x-ai/grok-4.1-fast
-        - x-ai/grok-4.1-thinking
         - x-ai/grok-4.20-beta-0309
         - x-ai/grok-4.20-multi-agent-beta-0309
         - x-ai/grok-4.3
@@ -7601,12 +7779,14 @@ components:
         - x-ai/grok-imagine-image
         - x-ai/grok-imagine-image-quality
         - x-ai/grok-imagine-video
+        - x-ai/grok-tts
         - xiaomi/mimo-v2-flash
         - xiaomi/mimo-v2-omni
         - xiaomi/mimo-v2-pro
         - xiaomi/mimo-v2-tts:free
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro
+        - xiaomi/mimo-v2.5-pro-precision
         - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
@@ -7624,6 +7804,7 @@ components:
         - z-ai/glm-5-code
         - z-ai/glm-5-turbo
         - z-ai/glm-5.1
+        - z-ai/glm-5.1-precision
         - z-ai/glm-5v-turbo
         - zai-org/glm-4.5-air
         - zai/glm-5

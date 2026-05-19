@@ -4,6 +4,7 @@
   "name": "Granite 8B Code Instruct 4K",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite 8B Code Instruct 4K is a coding model from IBM for code generation, edits, and software tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Rerank V4.0 Pro",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Cohere's AI search foundation model for enhancing the relevance of information surfaced within search and RAG systems. Use it to rescore retrieved passages, products, or documents before final ranking or generation.",
   "announced_date": "2025-12-11T00:00:00",
   "release_date": "2025-12-11T00:00:00",
   "deprecation_date": null,

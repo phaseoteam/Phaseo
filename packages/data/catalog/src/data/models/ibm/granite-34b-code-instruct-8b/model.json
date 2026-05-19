@@ -4,6 +4,7 @@
   "name": "Granite 34B Code Instruct 8B",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite 34B Code Instruct 8B is a coding model from IBM for code generation, edits, and software tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

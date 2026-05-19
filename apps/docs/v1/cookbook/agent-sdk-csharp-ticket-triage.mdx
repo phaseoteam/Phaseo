@@ -1,0 +1,68 @@
+---
+title: "Triage tickets with the C# Agent SDK"
+description: "Use the C# Agent SDK for a local-tool ticket triage loop that stays inside one .NET service."
+---
+
+Use this recipe when one .NET service should classify or summarize incoming support tickets.
+
+## 1. Install the SDKs
+
+```bash
+dotnet add package AI.Stats.Sdk
+dotnet add package AI.Stats.AgentSdk
+```
+
+## 2. Define one internal lookup tool
+
+```csharp
+var loadTicket = AgentSdk.DefineTool(new Tool(
+    Id: "load-ticket",
+    Description: "Load one support ticket by id.",
+    Parameters: new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?>
+        {
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+        },
+        ["required"] = new[] { "ticketId" },
+    },
+    Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
+    {
+        ["ticketId"] = "T-1042",
+        ["severity"] = "medium",
+        ["summary"] = "Customer cannot find preset routing settings.",
+    })
+));
+```
+
+## 3. Create and run the agent
+
+```csharp
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "ticket-triage-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Use tools when helpful and answer with a short triage summary.",
+    Tools = new[] { loadTicket },
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Review ticket T-1042 and summarize the next action.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## When this recipe fits
+
+- the workflow sits inside one ASP.NET or worker service
+- your local runtime already knows how to fetch internal ticket state
+- you want a narrow agent loop before adding queues or approvals
+
+## Related
+
+- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
+- [Triage support with preset-driven agents](./agent-sdk-support-triage.mdx)

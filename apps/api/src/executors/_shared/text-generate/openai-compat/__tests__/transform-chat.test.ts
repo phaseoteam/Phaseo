@@ -224,6 +224,42 @@ describe("openAIChatToIR", () => {
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
 		});
 
+		it("maps server-side web search usage into IR usage", () => {
+			const response = {
+				id: "chatcmpl_search_usage",
+				object: "chat.completion",
+				created: 1234567890,
+				model: "gpt-4.1-mini",
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "ok",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 120,
+					completion_tokens: 30,
+					total_tokens: 150,
+					server_tool_use: {
+						datetime_requests: 1,
+						web_search_requests: 2,
+						web_fetch_requests: 3,
+					},
+				},
+			};
+
+			const ir = openAIChatToIR(response, "req_search_usage", "gpt-4.1-mini", "openai");
+			expect(ir.usage?._ext?.serverToolUse).toEqual({
+				datetime_requests: 1,
+				web_search_requests: 2,
+				web_fetch_requests: 3,
+			});
+		});
+
 		it("maps input_tokens/output_tokens usage aliases into IR usage", () => {
 			const response = {
 				id: "chatcmpl_usage_alias",
@@ -552,6 +588,51 @@ describe("openAIChatToIR", () => {
 });
 
 describe("irToOpenAIChat", () => {
+	it("preserves native web search tools and tool choice", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-4.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			tools: [{
+				name: "web_search_preview",
+				type: "web_search_preview",
+				parameters: {},
+				raw: {
+					type: "web_search_preview",
+					search_context_size: "medium",
+				},
+			}],
+			toolChoice: { name: "web_search_preview" },
+		} as any, "gpt-4.1", "openai");
+
+		expect(request.tools).toEqual([{
+			type: "web_search_preview",
+			search_context_size: "medium",
+		}]);
+		expect(request.tool_choice).toBe("web_search_preview");
+	});
+
+	it("passes web_search_options through to upstream chat requests", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-4.1",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "Find the latest news." }],
+			}],
+			stream: false,
+			webSearchOptions: {
+				search_context_size: "high",
+			},
+		} as any, "gpt-4.1", "openai");
+
+		expect(request.web_search_options).toEqual({
+			search_context_size: "high",
+		});
+	});
+
 	it("maps parallel tool call control for chat providers", () => {
 		const request = irToOpenAIChat({
 			model: "mistral/mistral-large-2-1-2024-11-18",

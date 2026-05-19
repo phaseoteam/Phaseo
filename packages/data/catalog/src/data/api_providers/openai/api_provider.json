@@ -1,8 +1,30 @@
 {
   "api_provider_id": "openai",
   "api_provider_name": "OpenAI",
+  "provider_family_id": "openai",
+  "offer_scope": "global",
   "description": null,
   "link": "https://platform.openai.com/docs/overview",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "global"
+  ],
+  "default_data_regions": [
+    "global"
+  ],
+  "zero_data_retention": "optional",
+  "residency_source_url": "https://developers.openai.com/api/docs/guides/your-data",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "OpenAI says API and other business data is not used to train or improve its models by default.",
+  "prompt_training_source_url": "https://openai.com/business-data/",
+  "user_identifier_policy": "sent",
+  "user_identifier_notes": "AI Stats may send this provider a provider-facing pseudonymous user identifier when the upstream API supports it.",
+  "privacy_policy_url": "https://openai.com/policies/privacy-policy/",
+  "terms_of_service_url": "https://openai.com/policies/services-agreement/",
+  "regional_pricing_mode": "same_as_global",
+  "regional_pricing_uplift_percent": null,
+  "pricing_source_url": "https://developers.openai.com/api/docs/pricing",
+  "regional_pricing_notes": "Default global OpenAI endpoint pricing. Regional processing offers such as OpenAI EU can carry different pricing for supported models.",
   "country_code": "US",
   "status": "Active",
   "colour": "#333333"

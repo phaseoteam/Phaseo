@@ -4,6 +4,7 @@
   "name": "Code Gecko",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Code Gecko is a coding model from Google for code generation, edits, and software tasks.",
   "announced_date": null,
   "release_date": "2023-05-01T00:00:00",
   "deprecation_date": null,

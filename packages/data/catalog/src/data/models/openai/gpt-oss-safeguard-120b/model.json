@@ -4,6 +4,7 @@
   "name": "GPT OSS Safeguard 120b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT OSS Safeguard 120b is a safety reasoning model from OpenAI built upon gpt-oss-20b. It is suited to input filtering, safety checks, and policy enforcement in LLM applications.",
   "announced_date": "2025-10-29T00:00:00",
   "release_date": "2025-10-29T00:00:00",
   "deprecation_date": null,

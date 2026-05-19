@@ -4,6 +4,7 @@
   "name": "Claude Opus 4.6",
   "status": "Available",
   "previous_model_id": "anthropic/claude-opus-4-5-2025-11-24",
+  "description": "Claude Opus 4.6 is Anthropic's strongest model for coding and long-running professional tasks. It supports up to 1M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2026-02-05T00:00:00",
   "release_date": "2026-02-05T00:00:00",
   "deprecation_date": null,

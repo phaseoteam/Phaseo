@@ -1,0 +1,131 @@
+---
+title: "Ship preset-driven structured JSON with the Python SDK"
+description: "Use the official Python SDK with presets, structured outputs, and request-level debugging without dropping to raw HTTP calls."
+---
+
+Use this recipe when a Python service should rely on dashboard-managed defaults instead of repeating prompt, routing, and parameter config in every request.
+
+## Goal
+
+- keep the Python caller small
+- route through a preset slug instead of one hard-coded model
+- request strict structured output
+- retain enough response metadata to debug routing or plugin behavior
+
+## 1. Start with one shared client
+
+```python
+import os
+
+from ai_stats import AIStats
+
+gateway = AIStats(api_key=os.environ["AI_STATS_API_KEY"])
+```
+
+Keep the client shared instead of creating one per request.
+
+## 2. Move stable defaults into a preset
+
+Create a preset in **Dashboard -> Settings -> Presets** when these should stay stable across multiple callers:
+
+- system prompt
+- model or model allowlist
+- provider preferences
+- reasoning config
+- temperature and related generation parameters
+- response caching policy when deterministic replay matters
+
+Once the preset exists, the Python caller can stay narrow.
+
+## 3. Request one strict JSON shape
+
+```python
+response = gateway.generate_response(
+    {
+        "preset": "release-summary",
+        "input": "Summarize the last 24 hours of deployment activity.",
+        "response_format": {
+            "type": "json_schema",
+            "name": "release_summary",
+            "schema": {
+                "type": "object",
+                "required": ["summary", "risk_level"],
+                "properties": {
+                    "summary": {"type": "string"},
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "plugins": [{"id": "response-healing"}],
+        "meta": True,
+    }
+)
+```
+
+Why this shape works well:
+
+- `preset` keeps routing and prompt defaults outside application code
+- `response_format` keeps the contract explicit
+- `plugins` can recover near-valid malformed JSON when that workflow allows it
+- `meta` preserves routing and plugin execution detail for debugging
+
+## 4. Parse the JSON, then log the operational identifiers
+
+```python
+import json
+
+message_text = ""
+for item in response.get("output", []):
+    if item.get("type") != "message":
+        continue
+    for part in item.get("content", []):
+        if part.get("type") == "output_text":
+            message_text = part.get("text", "")
+            break
+
+payload = json.loads(message_text)
+
+print("response_id:", response.get("id"))
+print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
+print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print(payload)
+```
+
+For Python workers, this is usually enough to correlate one application log line back to:
+
+- the request detail dialog in the dashboard
+- routing diagnostics
+- plugin execution metadata
+
+## 5. Debug before you override
+
+If one request routes differently from what you expected:
+
+1. open the request in **Gateway -> Usage**
+2. inspect routing diagnostics and provider candidates
+3. inspect plugin execution metadata if structured JSON was involved
+4. change the preset only after the logs show what actually happened
+
+Avoid the temptation to fix one bad request by adding many inline request overrides. That usually defeats the point of using presets.
+
+## 6. Keep caching compatible when you want reuse
+
+If the preset enables response caching:
+
+- keep the prompt wording stable
+- keep the response schema stable
+- avoid unnecessary per-request provider overrides
+- avoid volatile tool lists
+
+If one caller genuinely needs different behavior, move it to a different preset instead of degrading cache reuse for the shared workflow.
+
+## Related
+
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
+- [Use response caching with presets](./response-caching-with-presets.mdx)
+- [Use response healing for structured JSON](./response-healing-for-structured-json.mdx)
+- [Python SDK Overview](../sdk-reference/python/overview.mdx)

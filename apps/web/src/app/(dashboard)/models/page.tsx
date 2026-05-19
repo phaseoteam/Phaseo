@@ -5,10 +5,19 @@ import {
 	getAllModelsCached,
 	type ModelCard,
 } from "@/lib/fetchers/models/getAllModels";
+import { getFreeRouterOverview } from "@/lib/fetchers/models/getFreeRouterOverview";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
+import {
+	FREE_ROUTER_DESCRIPTION,
+	FREE_ROUTER_MODEL_ID,
+	FREE_ROUTER_NAME,
+	FREE_ROUTER_ORGANISATION_ID,
+	FREE_ROUTER_PRIMARY_DATE,
+	FREE_ROUTER_PRIMARY_TIMESTAMP,
+} from "@/lib/models/freeRouter";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
@@ -307,6 +316,7 @@ function buildOptionCounts(
 		| "gateway_output_modalities"
 		| "gateway_features"
 		| "gateway_provider_names"
+		| "gateway_execution_regions"
 		| "supported_parameters",
 ): OptionCount[] {
 	const counts = new Map<string, number>();
@@ -417,6 +427,7 @@ function buildModelsFilterFacets(models: ModelsPageModel[]): ModelsFilterFacets 
 			"supported_parameters",
 		),
 		providerOptions: buildOptionCounts(models, "gateway_provider_names"),
+		regionOptions: buildOptionCounts(models, "gateway_execution_regions"),
 		creatorOptions: buildCreatorOptions(models),
 		yearOptions: buildYearOptions(models),
 	};
@@ -428,6 +439,7 @@ type GatewaySignals = {
 	providerIds: Set<string>;
 	providerNames: Set<string>;
 	activeProviderNames: Set<string>;
+	executionRegions: Set<string>;
 	providerDetails: Map<
 		string,
 		{ id: string; name: string; isActive: boolean; status: string }
@@ -465,6 +477,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 		providerIds: new Set<string>(),
 		providerNames: new Set<string>(),
 		activeProviderNames: new Set<string>(),
+		executionRegions: new Set<string>(),
 		providerDetails: new Map<
 			string,
 			{ id: string; name: string; isActive: boolean; status: string }
@@ -525,6 +538,12 @@ function aggregateGatewaySignals(
 			existing.providerNames.add(providerName);
 			if (isActiveProviderStatus(rowGatewayStatus)) {
 				existing.activeProviderNames.add(providerName);
+			}
+		}
+		if (isActiveProviderStatus(rowGatewayStatus)) {
+			for (const region of row.provider.executionRegions ?? []) {
+				const normalized = String(region ?? "").trim().toLowerCase();
+				if (normalized) existing.executionRegions.add(normalized);
 			}
 		}
 		if (providerDetailKey) {
@@ -901,6 +920,9 @@ function withGatewayMetadata(
 			gateway_active_provider_names: Array.from(
 				signals?.activeProviderNames ?? [],
 			).sort(),
+			gateway_execution_regions: Array.from(
+				signals?.executionRegions ?? [],
+			).sort(),
 			gateway_provider_details: Array.from(
 				signals?.providerDetails?.values() ?? [],
 			)
@@ -1017,6 +1039,7 @@ function withGatewayMetadata(
 				gateway_features: [],
 				gateway_provider_names: [],
 				gateway_active_provider_names: [],
+				gateway_execution_regions: [],
 				gateway_provider_details: [],
 				gateway_api_model_ids: [],
 				context_lengths: [],
@@ -1051,16 +1074,81 @@ function withGatewayMetadata(
 	});
 }
 
+function buildFreeRouterModelsPageEntry(
+	overview: Awaited<ReturnType<typeof getFreeRouterOverview>>,
+): ModelsPageModel {
+	const inputModalities = Array.from(
+		new Set(overview.models.flatMap((model) => model.inputModalities ?? [])),
+	).sort((a, b) => a.localeCompare(b));
+	const outputModalities = Array.from(
+		new Set(overview.models.flatMap((model) => model.outputModalities ?? [])),
+	).sort((a, b) => a.localeCompare(b));
+
+	return {
+		model_id: FREE_ROUTER_MODEL_ID,
+		name: FREE_ROUTER_NAME,
+		organisation_id: FREE_ROUTER_ORGANISATION_ID,
+		organisation_name: "AI Stats",
+		organisation_colour: null,
+		description: FREE_ROUTER_DESCRIPTION,
+		primary_date: FREE_ROUTER_PRIMARY_DATE,
+		primary_timestamp: FREE_ROUTER_PRIMARY_TIMESTAMP,
+		primary_group_key: FREE_ROUTER_PRIMARY_DATE.slice(0, 7),
+		gateway_status:
+			overview.summary.eligibleProviders > 0 ? "active" : "inactive",
+		gateway_provider_count: overview.summary.eligibleProviders,
+		gateway_active_provider_count: overview.summary.eligibleProviders,
+		gateway_endpoints: ["chat/completions", "responses", "messages"],
+		gateway_input_modalities:
+			inputModalities.length > 0 ? inputModalities : ["text"],
+		gateway_output_modalities:
+			outputModalities.length > 0 ? outputModalities : ["text"],
+		gateway_features: ["routing", "free"],
+		gateway_provider_names: [],
+		gateway_active_provider_names: [],
+		gateway_execution_regions: [],
+		gateway_provider_details: [],
+		gateway_api_model_ids: ["ai-stats/free:text.generate:free"],
+		context_lengths: [],
+		supported_parameters: [],
+		lowest_input_price: 0,
+		lowest_output_price: 0,
+		lowest_standard_input_price: 0,
+		lowest_standard_output_price: 0,
+		lowest_standard_input_price_label: "Input",
+		lowest_standard_input_price_unit: "1M tokens",
+		lowest_standard_output_price_label: "Output",
+		lowest_standard_output_price_unit: "1M tokens",
+		lowest_from_price: 0,
+		lowest_from_price_unit: "1M tokens",
+		pricing_detail_rows: [
+			{ label: "Input", value: "$0 / 1M tokens" },
+			{ label: "Output", value: "$0 / 1M tokens" },
+		],
+		popularity_tokens_week: null,
+		throughput_week: null,
+		latency_week: null,
+		router_requests_30d: overview.summary.routedRequests30d,
+		router_spend_nanos_30d: overview.summary.totalCostNanos30d,
+	};
+}
+
 async function ModelsPageDataSection() {
 	const includeHidden = false;
-	const [monitorResult, allModels] = await Promise.all([
+	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
 		getMonitorModels({}, includeHidden),
 		getAllModelsCached(includeHidden),
+		getFreeRouterOverview(),
 	]);
 	const models = withGatewayMetadata(allModels, monitorResult.models);
-	const facets = buildModelsFilterFacets(models);
+	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
+	const modelsWithFreeRouter = [
+		freeRouterModel,
+		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
+	];
+	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
 
-	return <ModelsDisplay models={models} facets={facets} />;
+	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
 }
 
 export default function ModelsPage() {

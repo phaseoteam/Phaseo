@@ -60,6 +60,8 @@
     "models/FunctionToolDefinition.ts",
     "models/GatewayDatetimeToolDefinition.ts",
     "models/GatewayModelsResponse.ts",
+    "models/GatewayWebFetchToolDefinition.ts",
+    "models/GatewayWebSearchToolDefinition.ts",
     "models/GenerationResponse.ts",
     "models/Image.ts",
     "models/ImageConfig.ts",

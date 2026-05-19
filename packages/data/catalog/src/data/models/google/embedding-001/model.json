@@ -4,6 +4,7 @@
   "name": "Embedding 001",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "gemini-embedding-001 provides a unified cutting edge experience across domains, including science, legal, finance, and coding. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": null,
   "release_date": "2023-12-13T00:00:00",
   "deprecation_date": "2025-10-30T00:00:00",

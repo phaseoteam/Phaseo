@@ -4,6 +4,7 @@
   "name": "Kimi K2.5",
   "status": "Available",
   "previous_model_id": "moonshotai/kimi-k2-thinking-2025-11-06",
+  "description": "Kimi K2.5 is Moonshot AI's native multimodal model, delivering state-of-the-art visual coding capability and a self-directed agent swarm paradigm. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2026-01-27T00:00:00",
   "release_date": "2026-01-27T00:00:00",
   "deprecation_date": null,

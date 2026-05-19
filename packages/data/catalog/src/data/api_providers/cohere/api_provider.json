@@ -5,5 +5,10 @@
   "link": "https://docs.cohere.com/v2/cohere-documentation",
   "country_code": "CA",
   "status": "NotReady",
-  "colour": "#41584F"
+  "colour": "#41584F",
+  "privacy_policy_url": "https://cohere.com/privacy",
+  "terms_of_service_url": "https://cohere.com/terms-of-use",
+  "prompt_training_policy": "opt_out_available",
+  "prompt_training_notes": "Cohere says enterprise SaaS customers can opt out of prompts and generations being used to train Cohere models, and private/VPC partner deployments keep customer inputs and outputs outside Cohere-managed training flows.",
+  "prompt_training_source_url": "https://cohere.com/enterprise-data-commitments"
 }

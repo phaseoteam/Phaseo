@@ -4,6 +4,7 @@
   "name": "Seed Coder 8B Instruct",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seed Coder 8B Instruct is a coding model from ByteDance for code generation, edits, and software tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

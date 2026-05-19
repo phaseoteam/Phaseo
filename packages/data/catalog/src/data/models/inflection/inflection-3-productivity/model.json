@@ -4,6 +4,7 @@
   "name": "Productivity Pi",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Productivity Pi is optimized for following instructions. It is better for tasks requiring JSON output or precise adherence to provided guidelines. It has access to recent news.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

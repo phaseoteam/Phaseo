@@ -4,6 +4,7 @@
   "name": "Qwen 3 Reranker 8B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 Reranker 8B is a reranking model from Qwen for improving retrieval quality by rescoring candidate results against a query. Use it to rescore retrieved passages, products, or documents before final ranking or generation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

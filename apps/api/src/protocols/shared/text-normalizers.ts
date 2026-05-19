@@ -2,7 +2,12 @@
 // Why: Avoid drift across chat/responses decoders for common field mappings.
 // How: Centralizes conversion of request surface fields to IR-compatible values.
 
-import type { IRCacheControl, IRChatRequest, IRReasoning } from "@core/ir";
+import type {
+	IRCacheControl,
+	IRChatRequest,
+	IRGeoPreferences,
+	IRReasoning,
+} from "@core/ir";
 
 export function normalizeResponseFormat(
 	format: unknown,
@@ -160,14 +165,20 @@ export function normalizeOpenAIToolChoice(
 	if (!choice) return undefined;
 
 	if (typeof choice === "string") {
-		if (choice === "auto") return "auto";
-		if (choice === "none") return "none";
-		if (choice === "required" || choice === "any") return "required";
-		return options?.unknownStringFallback;
+		const normalized = choice.trim();
+		if (!normalized) return undefined;
+		if (normalized === "auto") return "auto";
+		if (normalized === "none") return "none";
+		if (normalized === "required" || normalized === "any") return "required";
+		return options?.unknownStringFallback ?? { name: normalized };
 	}
 
 	if (typeof choice === "object") {
 		const value = choice as Record<string, any>;
+		const typeName =
+			typeof value.type === "string" && value.type !== "function" && value.type !== "tool"
+				? value.type
+				: undefined;
 		const functionName =
 			typeof value.name === "string"
 				? value.name
@@ -179,6 +190,9 @@ export function normalizeOpenAIToolChoice(
 			functionName
 		) {
 			return { name: functionName };
+		}
+		if (typeName) {
+			return { name: typeName };
 		}
 		if (functionName) {
 			return { name: functionName };
@@ -200,12 +214,59 @@ export function resolveServiceTierFromSpeedAndTier(input: {
 	return undefined;
 }
 
+function normalizeNonEmptyString(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const trimmed = value.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function normalizeBoolean(value: unknown): boolean | undefined {
+	return typeof value === "boolean" ? value : undefined;
+}
+
+export function normalizeProviderGeoPreferences(
+	rawRequest: any,
+): IRGeoPreferences | undefined {
+	const provider = rawRequest?.provider;
+	if (!provider || typeof provider !== "object" || Array.isArray(provider)) {
+		return undefined;
+	}
+
+	const requiredExecutionRegion = normalizeNonEmptyString(
+		provider.required_execution_region ?? provider.requiredExecutionRegion,
+	);
+	const requiredDataRegion = normalizeNonEmptyString(
+		provider.required_data_region ?? provider.requiredDataRegion,
+	);
+	const requireZeroDataRetention = normalizeBoolean(
+		provider.require_zero_data_retention ?? provider.requireZeroDataRetention,
+	);
+	const inferenceGeo = normalizeNonEmptyString(
+		provider.inference_geo ?? provider.inferenceGeo,
+	);
+
+	if (
+		requiredExecutionRegion === undefined &&
+		requiredDataRegion === undefined &&
+		requireZeroDataRetention === undefined &&
+		inferenceGeo === undefined
+	) {
+		return undefined;
+	}
+
+	return {
+		requiredExecutionRegion,
+		requiredDataRegion,
+		requireZeroDataRetention,
+		inferenceGeo,
+	};
+}
+
 function pickFirstNonEmptyString(...values: unknown[]): string | undefined {
 	for (const value of values) {
-		if (typeof value !== "string") continue;
-		const trimmed = value.trim();
-		if (!trimmed) continue;
-		return trimmed;
+		const normalized = normalizeNonEmptyString(value);
+		if (!normalized) continue;
+		return normalized;
 	}
 	return undefined;
 }

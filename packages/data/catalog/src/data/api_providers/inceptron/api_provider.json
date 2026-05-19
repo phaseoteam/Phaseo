@@ -5,5 +5,10 @@
   "link": "https://docs.inceptron.io/",
   "country_code": "SE",
   "status": "NotReady",
-  "colour": "#7C3AED"
+  "colour": "#7C3AED",
+  "privacy_policy_url": "https://www.inceptron.io/privacy",
+  "terms_of_service_url": "https://www.inceptron.io/termsofservice",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Inceptron says customer prompts and outputs are not stored by default and are not used to train its foundation or fine-tuned models unless the customer explicitly opts in or signs a separate agreement.",
+  "prompt_training_source_url": "https://www.inceptron.io/termsofservice"
 }

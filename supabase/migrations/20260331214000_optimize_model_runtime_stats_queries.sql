@@ -3,11 +3,9 @@
 create index if not exists gateway_requests_model_created_provider_idx
   on public.gateway_requests (model_id, created_at desc, provider)
   where model_id is not null;
-
 create index if not exists gateway_requests_provider_model_created_idx
   on public.gateway_requests (provider, model_id, created_at desc)
   where provider is not null and model_id is not null;
-
 create or replace function public.get_model_provider_runtime_stats(
   p_model_ids text[],
   p_provider_ids text[] default null
@@ -178,9 +176,7 @@ as $$
   where p_provider_ids is null or pf.provider is not null
   order by coalesce(pf.provider, ag.provider);
 $$;
-
 grant execute on function public.get_model_provider_runtime_stats(text[], text[])
   to authenticated, service_role;
-
 comment on function public.get_model_provider_runtime_stats(text[], text[])
   is 'Aggregated provider runtime stats for model pages (30m latency/throughput + 3d uptime windows) without returning raw gateway_requests rows.';

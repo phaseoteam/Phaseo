@@ -4,6 +4,7 @@
   "name": "DeepSeek OCR 2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek OCR 2 is a document understanding model from DeepSeek for OCR, extraction, and page-level visual reasoning. It is suited to extracting text, structure, and answers from PDFs, scans, and screenshots.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

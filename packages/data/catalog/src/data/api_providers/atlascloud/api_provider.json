@@ -4,6 +4,11 @@
   "description": null,
   "link": "https://docs.atlascloud.ai/",
   "country_code": "US",
-  "status": "Beta",
-  "colour": "#2563EB"
+  "status": "Active",
+  "colour": "#2563EB",
+  "privacy_policy_url": "https://www.atlascloud.ai/privacy",
+  "terms_of_service_url": "https://www.atlascloud.ai/privacy",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Atlas Cloud says it forwards prompts to underlying model providers and does not store API request content beyond what is needed for billing and troubleshooting.",
+  "prompt_training_source_url": "https://www.atlascloud.ai/docs/en/privacy"
 }

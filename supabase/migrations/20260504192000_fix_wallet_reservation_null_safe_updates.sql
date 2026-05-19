@@ -1,5 +1,9 @@
 -- Make wallet reservation arithmetic null-safe for legacy rows.
 
+drop function if exists public.gateway_wallet_reserve_once(uuid, text, bigint, text);
+drop function if exists public.gateway_wallet_capture_once(uuid, text, text);
+drop function if exists public.gateway_wallet_release_once(uuid, text, text);
+
 create or replace function public.gateway_wallet_reserve_once(
   p_workspace_id uuid,
   p_reservation_id text,

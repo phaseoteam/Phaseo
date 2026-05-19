@@ -4,6 +4,7 @@
   "name": "Gemini 2.5 Flash Preview (2025-04-17)",
   "status": "Retired",
   "previous_model_id": "google/gemini-2-0-flash-2025-02-05",
+  "description": "Gemini 2.5 Flash Preview (2025-04-17) is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-04-17T00:00:00",
   "release_date": "2025-04-17T00:00:00",
   "deprecation_date": "2025-06-15T00:00:00",

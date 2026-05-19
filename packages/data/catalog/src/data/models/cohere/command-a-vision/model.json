@@ -4,6 +4,7 @@
   "name": "Command A Vision",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Command A Vision is a multimodal model from Cohere that can work across text and visual inputs.",
   "announced_date": "2025-07-31T00:00:00",
   "release_date": "2025-07-31T00:00:00",
   "deprecation_date": null,

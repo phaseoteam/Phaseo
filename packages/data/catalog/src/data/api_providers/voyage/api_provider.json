@@ -5,5 +5,10 @@
   "link": "https://docs.voyageai.com",
   "country_code": "US",
   "status": "Active",
-  "colour": "#809641"
+  "colour": "#809641",
+  "privacy_policy_url": "https://www.voyageai.com/privacy",
+  "terms_of_service_url": "https://www.voyageai.com/tos",
+  "prompt_training_policy": "opt_out_available",
+  "prompt_training_notes": "Voyage says hosted API customers can opt out of Voyage storing and using API data for future model training, resulting in zero-day retention.",
+  "prompt_training_source_url": "https://docs.voyageai.com/docs/faq"
 }

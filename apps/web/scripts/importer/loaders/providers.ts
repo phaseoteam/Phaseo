@@ -6,6 +6,23 @@ import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa
 import { ChangeTracker } from "../state";
 
 type ProviderStatus = "Active" | "Beta" | "Alpha" | "NotReady";
+type ProviderResidencyMode =
+    | "unknown"
+    | "provider_managed"
+    | "customer_selectable"
+    | "account_selected";
+type ProviderOfferScope = "global" | "regional" | "specialized";
+type ProviderRegionalPricingMode =
+    | "unknown"
+    | "same_as_global"
+    | "uplift"
+    | "source_region_rates"
+    | "offer_specific";
+type ProviderZeroDataRetentionMode =
+    | "unknown"
+    | "unsupported"
+    | "optional"
+    | "default";
 
 const PROVIDER_ORG_ALIASES: Record<string, string> = {
     "amazon-bedrock": "amazon",
@@ -135,6 +152,69 @@ const toTextArray = (value?: string[] | string | null): string[] | null => {
         return parts.length ? parts : null;
     }
     return null;
+};
+
+const normalizeLowercaseTextArray = (value: unknown): string[] | null => {
+    const items = toTextArray(value as string[] | string | null);
+    if (!items?.length) return null;
+    const normalized = Array.from(
+        new Set(items.map((item) => item.trim().toLowerCase()).filter(Boolean))
+    );
+    return normalized.length ? normalized : null;
+};
+
+const parseProviderResidencyMode = (value: unknown): ProviderResidencyMode => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (raw === "provider_managed" || raw === "provider-managed") return "provider_managed";
+    if (
+        raw === "customer_selectable" ||
+        raw === "customer-selectable" ||
+        raw === "customer selectable"
+    ) return "customer_selectable";
+    if (raw === "account_selected" || raw === "account-selected" || raw === "account selected") {
+        return "account_selected";
+    }
+    return "unknown";
+};
+
+const parseZeroDataRetentionMode = (value: unknown): ProviderZeroDataRetentionMode => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (raw === "unsupported") return "unsupported";
+    if (raw === "optional") return "optional";
+    if (raw === "default") return "default";
+    return "unknown";
+};
+
+const parseProviderOfferScope = (value: unknown): ProviderOfferScope => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (raw === "regional") return "regional";
+    if (raw === "specialized") return "specialized";
+    return "global";
+};
+
+const parseProviderRegionalPricingMode = (
+    value: unknown
+): ProviderRegionalPricingMode => {
+    const raw = String(value ?? "").trim().toLowerCase();
+    if (raw === "same_as_global" || raw === "same-as-global" || raw === "same as global") {
+        return "same_as_global";
+    }
+    if (raw === "uplift") return "uplift";
+    if (
+        raw === "source_region_rates" ||
+        raw === "source-region-rates" ||
+        raw === "source region rates"
+    ) {
+        return "source_region_rates";
+    }
+    if (
+        raw === "offer_specific" ||
+        raw === "offer-specific" ||
+        raw === "offer specific"
+    ) {
+        return "offer_specific";
+    }
+    return "unknown";
 };
 
 const toNullableInt = (value: unknown): number | null => {
@@ -515,6 +595,79 @@ export async function loadProviders(
             country_code: j.country_code ?? null,
             colour: resolveProviderColour(j.api_provider_id, j.colour ?? j.color ?? null, organisationColours),
             status,
+            provider_family_id:
+                typeof j.provider_family_id === "string" && j.provider_family_id.trim()
+                    ? j.provider_family_id.trim()
+                    : j.api_provider_id,
+            offer_label:
+                typeof j.offer_label === "string" && j.offer_label.trim()
+                    ? j.offer_label.trim()
+                    : null,
+            offer_scope: parseProviderOfferScope(j.offer_scope),
+            residency_mode: parseProviderResidencyMode(j.residency_mode),
+            default_execution_regions: normalizeLowercaseTextArray(j.default_execution_regions),
+            default_data_regions: normalizeLowercaseTextArray(j.default_data_regions),
+            zero_data_retention: parseZeroDataRetentionMode(j.zero_data_retention),
+            residency_source_url:
+                typeof j.residency_source_url === "string" && j.residency_source_url.trim()
+                    ? j.residency_source_url.trim()
+                    : null,
+            residency_notes:
+                typeof j.residency_notes === "string" && j.residency_notes.trim()
+                    ? j.residency_notes.trim()
+                    : null,
+            regional_pricing_mode: parseProviderRegionalPricingMode(
+                j.regional_pricing_mode
+            ),
+            regional_pricing_uplift_percent:
+                typeof j.regional_pricing_uplift_percent === "number" &&
+                Number.isFinite(j.regional_pricing_uplift_percent)
+                    ? j.regional_pricing_uplift_percent
+                    : null,
+            pricing_source_url:
+                typeof j.pricing_source_url === "string" && j.pricing_source_url.trim()
+                    ? j.pricing_source_url.trim()
+                    : null,
+            regional_pricing_notes:
+                typeof j.regional_pricing_notes === "string" &&
+                j.regional_pricing_notes.trim()
+                    ? j.regional_pricing_notes.trim()
+                    : null,
+            prompt_training_policy:
+                typeof j.prompt_training_policy === "string" &&
+                j.prompt_training_policy.trim()
+                    ? j.prompt_training_policy.trim()
+                    : "unknown",
+            prompt_training_notes:
+                typeof j.prompt_training_notes === "string" &&
+                j.prompt_training_notes.trim()
+                    ? j.prompt_training_notes.trim()
+                    : null,
+            prompt_training_source_url:
+                typeof j.prompt_training_source_url === "string" &&
+                j.prompt_training_source_url.trim()
+                    ? j.prompt_training_source_url.trim()
+                    : null,
+            user_identifier_policy:
+                typeof j.user_identifier_policy === "string" &&
+                j.user_identifier_policy.trim()
+                    ? j.user_identifier_policy.trim()
+                    : "unknown",
+            user_identifier_notes:
+                typeof j.user_identifier_notes === "string" &&
+                j.user_identifier_notes.trim()
+                    ? j.user_identifier_notes.trim()
+                    : null,
+            privacy_policy_url:
+                typeof j.privacy_policy_url === "string" &&
+                j.privacy_policy_url.trim()
+                    ? j.privacy_policy_url.trim()
+                    : null,
+            terms_of_service_url:
+                typeof j.terms_of_service_url === "string" &&
+                j.terms_of_service_url.trim()
+                    ? j.terms_of_service_url.trim()
+                    : null,
         };
         providerIds.add(row.api_provider_id);
         if (change.status !== "unchanged") {

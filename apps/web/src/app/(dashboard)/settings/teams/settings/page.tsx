@@ -5,6 +5,6 @@ export const metadata = {
 };
 
 export default function TeamSettingsPage() {
-	redirect("/settings/workspaces/general");
+	redirect("/settings/workspaces/settings");
 }
 

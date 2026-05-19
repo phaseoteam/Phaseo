@@ -36,6 +36,7 @@ include = [
 	"src/ai_stats",
 	"src/ai_stats_devtools",
 	"src/gen",
+	"SKILL.md",
 	"README.md",
 	"LICENSE",
 ]
@@ -46,6 +47,9 @@ packages = [
 	"src/ai_stats_devtools",
 	"src/gen",
 ]
+
+[tool.hatch.build.targets.wheel.force-include]
+"SKILL.md" = "ai_stats/SKILL.md"
 
 [tool.hatch.version]
 path = "src/ai_stats/__init__.py"

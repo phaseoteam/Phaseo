@@ -4,6 +4,7 @@
   "name": "Gemini 2.0 Flash",
   "status": "Deprecated",
   "previous_model_id": "google/gemini-1-5-flash-002-2024-09-24",
+  "description": "Gemini 2.0 Flash is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It supports up to 1.0M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-02-05T00:00:00",
   "release_date": "2025-02-05T00:00:00",
   "deprecation_date": "2026-02-05T00:00:00",

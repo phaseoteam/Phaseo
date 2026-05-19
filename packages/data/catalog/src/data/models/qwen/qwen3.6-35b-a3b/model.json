@@ -4,6 +4,7 @@
   "name": "Qwen 3.6 35B A3B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.6 35B A3B is an open-weight multimodal model from Alibaba Cloud with 35 billion total parameters and 3 billion active parameters per token. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2026-04-17T00:00:00",
   "release_date": "2026-04-17T00:00:00",
   "deprecation_date": null,

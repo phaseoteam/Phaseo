@@ -4,6 +4,7 @@
   "name": "Granite Speech 3.2 8B",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Speech 3.2 8B is a language model from IBM for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

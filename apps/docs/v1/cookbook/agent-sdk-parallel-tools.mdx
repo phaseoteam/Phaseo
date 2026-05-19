@@ -1,0 +1,103 @@
+---
+title: "Fan out local agent tools concurrently"
+description: "Use bounded local tool concurrency in the TypeScript Agent SDK so one model turn can gather independent context without serializing every tool call."
+---
+
+Use this recipe when one agent turn can safely call several independent local tools and you want the runtime to execute them concurrently while still preserving deterministic tool-result ordering.
+
+## When to use this
+
+Use `toolExecution.toolConcurrency` when:
+
+- the model can emit multiple local tool calls in one turn
+- those tools do not depend on each other’s output
+- serial execution would waste worker time
+- you still want persisted tool-result messages to stay in the original tool-call order
+
+Do not use high concurrency when one tool mutates shared state or when later tools depend on earlier results.
+
+## Example
+
+```ts
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@ai-stats/agent-sdk";
+
+const fetchDocs = defineTool({
+  id: "fetch-docs",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      summary: `Docs summary for ${input.slug}`,
+    };
+  },
+});
+
+const fetchStatus = defineTool({
+  id: "fetch-status",
+  async execute(input: { component: string }) {
+    return {
+      component: input.component,
+      status: "operational",
+    };
+  },
+});
+
+const fetchIncidents = defineTool({
+  id: "fetch-incidents",
+  async execute(input: { service: string }) {
+    return {
+      service: input.service,
+      openIncidents: 0,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "parallel-tool-agent",
+  model: "ai-stats/free",
+  instructions:
+    "Use the available tools to gather context, then return one concise operational summary.",
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+});
+
+const result = await agent.run({
+  input:
+    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.AI_STATS_API_KEY!,
+    },
+  }),
+});
+```
+
+See the packaged version in `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+
+## What the runtime guarantees
+
+- local tools can execute concurrently up to the configured `toolConcurrency`
+- `tool.started` and `tool.completed` events still emit per tool
+- persisted tool-result messages stay in the original tool-call order
+- checkpointing still happens after the tool phase completes
+- tool timeouts still apply per tool through `timeoutMs`
+
+## Operational guidance
+
+- start with a small concurrency value such as `2` or `3`
+- keep local tools idempotent and side-effect light
+- use `timeoutMs` so one stuck dependency does not waste all worker slots
+- only add `store` when your application actually needs resumability or remote coordination
+
+## Validation
+
+After enabling this pattern:
+
+- run the exact agent loop tests that cover multi-tool turns
+- confirm the workflow still produces ordered tool-result messages
+- confirm operator logs still show the expected `tool.started` and `tool.completed` events

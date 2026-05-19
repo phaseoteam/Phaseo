@@ -4,6 +4,7 @@
   "name": "Nvidia Nemotron Nano 12B V2",
   "status": null,
   "previous_model_id": null,
+  "description": "Nvidia Nemotron Nano 12B V2 is a large language model (LLM) trained from scratch by NVIDIA, and designed as a unified model for both reasoning and non-reasoning tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

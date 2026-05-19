@@ -4,6 +4,7 @@
   "name": "GPT OSS 20b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT OSS 20b is an open-weight 21B parameter model released by OpenAI under the Apache 2.0 license. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-08-05T00:00:00",
   "release_date": "2025-08-05T00:00:00",
   "deprecation_date": null,

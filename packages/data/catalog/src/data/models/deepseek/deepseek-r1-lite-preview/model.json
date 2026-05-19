@@ -4,6 +4,7 @@
   "name": "DeepSeek R1 Lite Preview",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "May 28th update to the [original DeepSeek R1](/deepseek/deepseek-r1) Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2024-11-20T00:00:00",
   "release_date": "2024-11-20T00:00:00",
   "deprecation_date": null,

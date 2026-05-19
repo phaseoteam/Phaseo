@@ -4,6 +4,7 @@
   "name": "Qwen 3 A235 A22B Instruct 2507",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 A235 A22B Instruct 2507 is a multilingual, instruction-tuned mixture-of-experts language model based on the Qwen3-235B architecture, with 22B active parameters per forward pass.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

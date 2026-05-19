@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 122B A10B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.5 122B A10B is built on a hybrid architecture that integrates a linear attention mechanism with a sparse mixture-of-experts model, achieving higher inference efficiency.",
   "announced_date": "2026-02-24T00:00:00",
   "release_date": "2026-02-24T00:00:00",
   "deprecation_date": null,

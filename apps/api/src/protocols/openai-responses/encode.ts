@@ -29,6 +29,8 @@ export type OpenAIResponsesResponse = {
 		reasoning_tokens?: number;
 		server_tool_use?: {
 			datetime_requests?: number;
+			web_search_requests?: number;
+			web_fetch_requests?: number;
 		};
 	};
 	status: "completed" | "failed" | "incomplete";
@@ -215,8 +217,20 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 		total_tokens: totalTokens ?? 0,
 		reasoning_tokens: usage.reasoningTokens,
 		server_tool_use:
-			typeof usage._ext?.serverToolUse?.datetime_requests === "number"
-				? { datetime_requests: usage._ext?.serverToolUse?.datetime_requests }
+			typeof usage._ext?.serverToolUse?.datetime_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.web_search_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.web_fetch_requests === "number"
+				? {
+					...(typeof usage._ext?.serverToolUse?.datetime_requests === "number"
+						? { datetime_requests: usage._ext?.serverToolUse?.datetime_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.web_search_requests === "number"
+						? { web_search_requests: usage._ext?.serverToolUse?.web_search_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.web_fetch_requests === "number"
+						? { web_fetch_requests: usage._ext?.serverToolUse?.web_fetch_requests }
+						: {}),
+				}
 				: undefined,
 	};
 }

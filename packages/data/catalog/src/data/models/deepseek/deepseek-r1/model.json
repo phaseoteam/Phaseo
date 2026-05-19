@@ -4,6 +4,7 @@
   "name": "DeepSeek R1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek R1 is here: Performance on par with [OpenAI o1](/openai/o1), but open-sourced and with fully open reasoning tokens. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

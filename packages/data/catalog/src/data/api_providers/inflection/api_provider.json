@@ -5,5 +5,10 @@
   "link": "https://developers.inflection.ai/docs/authentication",
   "country_code": "US",
   "status": "Active",
-  "colour": "#22C55E"
+  "colour": "#22C55E",
+  "privacy_policy_url": "https://inflection.ai/privacy-policy",
+  "terms_of_service_url": "https://developers.inflection.ai/tos",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Inflection's API terms say customer content is used only to provide output, comply with law, and enforce rights, and is not used to develop, train, or fine-tune AI models.",
+  "prompt_training_source_url": "https://developers.inflection.ai/tos"
 }

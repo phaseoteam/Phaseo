@@ -4,6 +4,7 @@
   "name": "Qwen 3 30B A3B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen3, the latest generation in the Qwen large language model series, features both dense and mixture-of-experts (MoE) architectures to excel in reasoning, multilingual support, and advanced agent tasks.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

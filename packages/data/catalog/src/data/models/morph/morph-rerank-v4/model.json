@@ -4,6 +4,7 @@
   "name": "Morph Rerank V4",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Morph Rerank V4 is a reranking model from Morph for improving retrieval quality by rescoring candidate results against a query. Use it to rescore retrieved passages, products, or documents before final ranking or generation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
