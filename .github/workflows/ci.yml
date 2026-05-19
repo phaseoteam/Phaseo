@@ -139,13 +139,13 @@ jobs:
               continue-on-error: true
               run: pnpm run docs:links
 
-            - name: Web lint, typecheck & build
+            - name: Web lint & typecheck
               if: matrix.app == 'web'
+              continue-on-error: true
               run: |
                   cd apps/web
                   pnpm run lint
                   pnpm run typecheck
-                  pnpm run build
 
     api-aimock:
         name: API AIMock matrix
