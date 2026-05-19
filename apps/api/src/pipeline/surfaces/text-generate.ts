@@ -41,6 +41,7 @@ import {
 	ensureRuntimeForBackground,
 	getResponseCache,
 } from "@/runtime/env";
+import { safeJsonStringify, sanitizeErrorMessage, sanitizeJsonValue } from "@/lib/safe-json";
 import {
 	buildManagedSearchObservabilityFromToolResults,
 	mergeSearchObservability,
@@ -50,41 +51,19 @@ import {
 	mergeWebFetchObservability,
 } from "../after/fetch-observability";
 
-function looksLikeStackTrace(value: string): boolean {
-	return /\n\s*at\s+[^\n]+/i.test(value) || /Error:\s*[^\n]+/i.test(value);
-}
-
-function sanitizeErrorExtra(extra?: Record<string, unknown>): Record<string, unknown> | undefined {
-	if (!extra) return undefined;
-	const sanitized: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(extra)) {
-		if (key === "stack" || key === "stackTrace" || key === "stacktrace") continue;
-		if (value instanceof Error) {
-			sanitized[key] = { name: value.name };
-			continue;
-		}
-		if (typeof value === "string" && looksLikeStackTrace(value)) {
-			sanitized[key] = "[redacted]";
-			continue;
-		}
-		sanitized[key] = value;
-	}
-	return sanitized;
-}
-
 function createJsonErrorResponse(
 	status: number,
 	error: string,
 	message: string,
 	extra?: Record<string, unknown>,
 ): Response {
-	const safeMessage = looksLikeStackTrace(message) ? "Internal error" : message;
-	const safeExtra = sanitizeErrorExtra(extra);
+	const safeMessage = sanitizeErrorMessage(message);
+	const safeExtra = extra ? sanitizeJsonValue(extra) : undefined;
 	return new Response(
-		JSON.stringify({
+		safeJsonStringify({
 			error,
 			message: safeMessage,
-			...(safeExtra ?? {}),
+			...(safeExtra && typeof safeExtra === "object" ? safeExtra : {}),
 		}),
 		{
 			status,

@@ -611,10 +611,10 @@ function extractHtmlTitle(value: string): string | null {
 
 function htmlToText(value: string): string {
 	const stripped = value
-		.replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, " ")
-		.replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, " ")
-		.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript\s*>/gi, " ")
-		.replace(/<svg\b[^>]*>[\s\S]*?<\/svg\s*>/gi, " ")
+		.replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi, " ")
+		.replace(/<style\b[^>]*>[\s\S]*?<\/style\b[^>]*>/gi, " ")
+		.replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript\b[^>]*>/gi, " ")
+		.replace(/<svg\b[^>]*>[\s\S]*?<\/svg\b[^>]*>/gi, " ")
 		.replace(/<[^>]+>/g, " ");
 	return collapseWhitespace(decodeHtmlEntities(stripped));
 }

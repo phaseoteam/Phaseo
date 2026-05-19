@@ -186,6 +186,20 @@ async function buildValidators(): Promise<ValidatorMap> {
 	};
 }
 
+function getValidatorForTarget(
+	validators: ValidatorMap,
+	target: CompatibilityTarget,
+): ValidateFunction {
+	switch (target) {
+		case "openai.responses":
+			return validators["openai.responses"];
+		case "openai.chat.completions":
+			return validators["openai.chat.completions"];
+		case "anthropic.messages":
+			return validators["anthropic.messages"];
+	}
+}
+
 export async function validateCompatibility(
 	target: CompatibilityTarget,
 	payload: unknown,
@@ -194,7 +208,7 @@ export async function validateCompatibility(
 		cachedValidators = await buildValidators();
 	}
 
-	const validate = cachedValidators[target];
+	const validate = getValidatorForTarget(cachedValidators, target);
 	const valid = Boolean(validate(payload));
 	return {
 		valid,
