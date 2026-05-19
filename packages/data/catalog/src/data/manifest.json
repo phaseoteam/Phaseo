@@ -193,7 +193,8 @@
     ],
     "cursor": [
       "cursor/composer-1",
-      "cursor/composer-1.5"
+      "cursor/composer-1.5",
+      "cursor/composer-2.5"
     ],
     "deepseek": [
       "deepseek/deepseek-coder-v2-2024-06-14",
@@ -293,6 +294,7 @@
       "google/gemini-3.1-flash-tts-preview",
       "google/gemini-3.1-pro-preview",
       "google/gemini-3.1-pro-preview-customtools",
+      "google/gemini-3.5-flash-preview",
       "google/gemini-diffusion",
       "google/gemini-embedding-001",
       "google/gemini-embedding-2-preview",
@@ -908,10 +910,13 @@
       "qwen/qwen3.5-4b",
       "qwen/qwen3.5-9b",
       "qwen/qwen3.5-flash",
+      "qwen/qwen3-livetranslate-flash-realtime",
       "qwen/qwen3.5-plus",
       "qwen/qwen3.6-35b-a3b",
       "qwen/qwen3.6-max-preview",
       "qwen/qwen3.6-plus",
+      "qwen/qwen3.7-max-preview",
+      "qwen/qwen3.7-plus-preview",
       "qwen/qwq-32b",
       "qwen/qwq-32b-preview",
       "qwen/worldpm-72b",
@@ -2098,6 +2103,7 @@
     "google-ai-studio:text.generate:google-gemini-3.1-flash-lite-preview",
     "google-ai-studio:text.generate:google-gemini-3.1-pro-preview",
     "google-ai-studio:text.generate:google-gemini-3.1-pro-preview-customtools",
+    "google-ai-studio:text.generate:google-gemini-3.5-flash-preview",
     "google-ai-studio:text.generate:google-gemma-3-12b-free",
     "google-ai-studio:text.generate:google-gemma-3-1b-free",
     "google-ai-studio:text.generate:google-gemma-3-27b-free",
@@ -2464,6 +2470,7 @@
     "voyage:text.rerank:voyage-rerank-2.5-lite",
     "voyage:text.rerank:voyage-rerank-lite-1",
     "weights-and-biases:text.generate:deepseek-deepseek-v3.1",
+    "weights-and-biases:text.generate:deepseek-deepseek-v4-pro",
     "weights-and-biases:text.generate:meta-llama-3.1-70b",
     "weights-and-biases:text.generate:meta-llama-3.1-8b",
     "weights-and-biases:text.generate:meta-llama-3.3-70b",

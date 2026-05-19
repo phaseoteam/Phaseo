@@ -1,0 +1,24 @@
+{
+  "model_id": "cursor/composer-2.5",
+  "organisation_id": "cursor",
+  "name": "Composer 2.5",
+  "status": "Available",
+  "previous_model_id": "cursor/composer-1.5",
+  "description": "Composer 2.5 is a language model from Cursor optimized for long-horizon coding and agentic software tasks. It accepts text inputs and produces text outputs.",
+  "announced_date": "2026-05-18T00:00:00",
+  "release_date": "2026-05-18T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "cursor/composer-2.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://cursor.com/blog/composer-2-5"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}
