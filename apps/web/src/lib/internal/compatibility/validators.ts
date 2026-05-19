@@ -26,7 +26,7 @@ async function resolveRepoRoot(): Promise<string> {
 	if (cachedRepoRoot) {
 		return cachedRepoRoot;
 	}
-	const cwd = process.cwd();
+	const cwd = /* turbopackIgnore: true */ process.cwd();
 	const candidates = [cwd, path.resolve(cwd, ".."), path.resolve(cwd, "../..")];
 	for (const candidate of candidates) {
 		const openaiSpec = path.join(candidate, OPENAI_SPEC_PATH);
@@ -43,13 +43,23 @@ async function resolveRepoRoot(): Promise<string> {
 
 async function readOpenAiSpecFromRepo(): Promise<string> {
 	const repoRoot = await resolveRepoRoot();
-	const filePath = path.join(repoRoot, "apps", "api", "openapi.openai.yml");
+	const filePath = path.join(
+		/* turbopackIgnore: true */ repoRoot,
+		"apps",
+		"api",
+		"openapi.openai.yml",
+	);
 	return fs.readFile(filePath, "utf8");
 }
 
 async function readAnthropicSpecFromRepo(): Promise<string> {
 	const repoRoot = await resolveRepoRoot();
-	const filePath = path.join(repoRoot, "apps", "api", "openapi.anthropic.json");
+	const filePath = path.join(
+		/* turbopackIgnore: true */ repoRoot,
+		"apps",
+		"api",
+		"openapi.anthropic.json",
+	);
 	return fs.readFile(filePath, "utf8");
 }
 
