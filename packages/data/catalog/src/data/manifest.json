@@ -2104,6 +2104,7 @@
     "google-ai-studio:text.generate:google-gemini-3.1-pro-preview",
     "google-ai-studio:text.generate:google-gemini-3.1-pro-preview-customtools",
     "google-ai-studio:text.generate:google-gemini-3.5-flash",
+    "google-vertex:text.generate:google-gemini-3.5-flash",
     "google-ai-studio:text.generate:google-gemma-3-12b-free",
     "google-ai-studio:text.generate:google-gemma-3-1b-free",
     "google-ai-studio:text.generate:google-gemma-3-27b-free",
