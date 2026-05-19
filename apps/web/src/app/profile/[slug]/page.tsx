@@ -45,11 +45,12 @@ function PublicProfileShell({
 }
 
 async function PublicProfileContent({
-	slug,
+	params,
 }: {
-	slug: string
+	params: Promise<{ slug: string }>
 }) {
 	await connection()
+	const { slug } = await params
 	const profile = await getPublicProfileSnapshot(slug)
 
 	if (!profile || !profile.publicProfileEnabled) {
@@ -73,12 +74,10 @@ function PublicProfileFallback() {
 	)
 }
 
-export default async function PublicProfilePage({ params }: PageProps) {
-	const { slug } = await params
-
+export default function PublicProfilePage({ params }: PageProps) {
 	return (
 		<Suspense fallback={<PublicProfileFallback />}>
-			<PublicProfileContent slug={slug} />
+			<PublicProfileContent params={params} />
 		</Suspense>
 	)
 }
