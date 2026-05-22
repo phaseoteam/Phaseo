@@ -7,6 +7,7 @@ import {
 	type CreateTemplateOptions,
 } from "resend";
 import {
+	RESEND_ONBOARDING_AUTOMATION_LEGACY_NAMES,
 	RESEND_ONBOARDING_AUTOMATION_NAMES,
 	RESEND_ONBOARDING_EVENT_NAMES,
 	RESEND_ONBOARDING_TEMPLATE_ALIASES,
@@ -205,6 +206,7 @@ function buildTemplates(args: {
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_INITIAL,
 			name: "Onboarding - Welcome",
 			subject: "Welcome to AI Stats",
+			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
 				kicker: "AI Stats onboarding",
 				title: "Welcome. Your control layer is ready.",
@@ -231,15 +233,16 @@ function buildTemplates(args: {
 						href: creditsUrl,
 					},
 				],
-				replyNote: "Reply directly if you want help shipping your first request this week.",
+				replyNote: `Replies go straight to ${args.replyToEmail} if you want help shipping your first request this week.`,
 				includeUnsubscribe: false,
 			}),
-			text: `Hi {{{user_name}}},\n\nWelcome to AI Stats.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply if you want help with setup.`,
+			text: `Hi {{{user_name}}},\n\nWelcome to AI Stats.\n\n1) Add your first key: ${keysUrl}\n2) Explore models: ${modelsUrl}\n3) Top up credits: ${creditsUrl}\n\nReply to ${args.replyToEmail} if you want help with setup.`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_PURCHASED_7D,
-			name: "Onboarding - Purchased Within 7 Days",
+			name: "Onboarding - Purchased Within 3 Days",
 			subject: "You're ready to ship with AI Stats",
+			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
 				kicker: "Momentum unlocked",
 				title: "Credits are live. Let's get you moving.",
@@ -266,14 +269,14 @@ function buildTemplates(args: {
 						href: dashboardUrl,
 					},
 				],
-				replyNote: "Reply if you want a quick architecture review before scaling up traffic.",
+				replyNote: `Replies go straight to ${args.replyToEmail} if you want a quick architecture review before scaling up traffic.`,
 				includeUnsubscribe: true,
 			}),
-			text: `Hi {{{user_name}}},\n\nThanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nReply for implementation help.\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+			text: `Hi {{{user_name}}},\n\nThanks for purchasing credits.\n\nNext: add an API key (${keysUrl}), review model IDs (${modelsUrl}), and monitor usage (${dashboardUrl}).\n\nReply to ${args.replyToEmail} for implementation help.\n\nUnsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`,
 		},
 		{
 			alias: RESEND_ONBOARDING_TEMPLATE_ALIASES.WELCOME_NOT_PURCHASED_7D,
-			name: "Onboarding - No Purchase In 7 Days",
+			name: "Onboarding - No Purchase In 3 Days",
 			subject: "Anything blocking you from getting started?",
 			replyTo: args.replyToEmail,
 			html: renderEmailHtml({
@@ -720,7 +723,14 @@ async function upsertAutomation(
 	definition: AutomationDefinition,
 	status: "enabled" | "disabled",
 ): Promise<void> {
-	const current = existing.find((automation) => automation.name === definition.name);
+	const legacyNames: string[] =
+		definition.name === RESEND_ONBOARDING_AUTOMATION_NAMES.WELCOME_7_DAY_BRANCH
+			? [...RESEND_ONBOARDING_AUTOMATION_LEGACY_NAMES.WELCOME_7_DAY_BRANCH]
+			: [];
+	const current = existing.find(
+		(automation) =>
+			automation.name === definition.name || legacyNames.includes(automation.name),
+	);
 	if (!current) {
 		await callResend(`automations.create:${definition.name}`, () =>
 			resend.automations.create({
@@ -748,12 +758,12 @@ async function upsertAutomation(
 async function main(): Promise<void> {
 	const apiKey = requiredEnv("RESEND_API_KEY");
 	const fromEmail = env("RESEND_FROM_EMAIL", "AI Stats <noreply@phaseo.app>");
-	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "support@aistats.com");
+	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "daniel@phaseo.app");
 	const dashboardUrl = env(
 		"RESEND_ONBOARDING_DASHBOARD_URL",
 		env("NEXT_PUBLIC_WEBSITE_URL", "https://www.aistats.com"),
 	);
-	const purchaseWindow = env("RESEND_ONBOARDING_PURCHASE_WINDOW", "7 days");
+	const purchaseWindow = env("RESEND_ONBOARDING_PURCHASE_WINDOW", "3 days");
 	const checkoutTimeout = env("RESEND_CHECKOUT_ABANDONED_TIMEOUT", "24 hours");
 	const segmentId = env("RESEND_CUSTOMERS_SEGMENT_ID");
 	const automationStatusRaw = env("RESEND_ONBOARDING_AUTOMATION_STATUS", "enabled");

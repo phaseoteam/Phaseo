@@ -5,7 +5,7 @@ create or replace function public.get_due_enterprise_invoice_runs(
   p_run_at timestamptz default (now() at time zone 'utc')
 )
 returns table (
-  workspace_id uuid,
+  team_id uuid,
   stripe_customer_id text,
   billing_day integer,
   payment_terms_days integer,
@@ -22,16 +22,16 @@ with params as (
 ),
 due_profiles as (
   select
-    p.workspace_id,
+    p.team_id,
     p.billing_day,
     p.payment_terms_days,
     p.invoice_limit_nanos,
     w.stripe_customer_id
-  from public.workspace_invoice_profiles p
-  join public.workspaces t
-    on t.id = p.workspace_id
+  from public.team_invoice_profiles p
+  join public.teams t
+    on t.id = p.team_id
   left join public.wallets w
-    on w.workspace_id = p.workspace_id
+    on w.team_id = p.team_id
   cross join params pa
   where p.enabled = true
     and p.billing_day = extract(day from pa.run_at)::int
@@ -55,7 +55,7 @@ windows as (
 ),
 periods as (
   select
-    w.workspace_id,
+    w.team_id,
     w.stripe_customer_id,
     w.billing_day,
     w.payment_terms_days,
@@ -74,7 +74,7 @@ periods as (
 ),
 aggregated as (
   select
-    p.workspace_id,
+    p.team_id,
     p.stripe_customer_id,
     p.billing_day,
     p.payment_terms_days,
@@ -84,12 +84,12 @@ aggregated as (
     coalesce(sum(gr.cost_nanos), 0)::bigint as amount_nanos
   from periods p
   left join public.gateway_requests gr
-    on gr.workspace_id = p.workspace_id
+    on gr.team_id = p.team_id
    and gr.success is true
    and gr.created_at >= p.period_start
    and gr.created_at < p.period_end
   group by
-    p.workspace_id,
+    p.team_id,
     p.stripe_customer_id,
     p.billing_day,
     p.payment_terms_days,
@@ -98,7 +98,7 @@ aggregated as (
     p.invoice_limit_nanos
 )
 select
-  a.workspace_id,
+  a.team_id,
   a.stripe_customer_id,
   a.billing_day,
   a.payment_terms_days,
@@ -112,13 +112,11 @@ select
 from aggregated a
 where not exists (
   select 1
-  from public.workspace_invoices i
-  where i.workspace_id = a.workspace_id
+  from public.team_invoices i
+  where i.team_id = a.team_id
     and i.period_start = a.period_start
     and i.period_end = a.period_end
 );
 $$;
-
 revoke all on function public.get_due_enterprise_invoice_runs(timestamptz) from public;
 grant execute on function public.get_due_enterprise_invoice_runs(timestamptz) to service_role;
-

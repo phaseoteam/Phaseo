@@ -4,6 +4,7 @@
   "name": "GPT 5 Codex",
   "status": "Available",
   "previous_model_id": "openai/codex-mini-2025-05-16",
+  "description": "GPT 5 Codex is a specialized version of GPT-5 optimized for software engineering and coding workflows. It accepts text and image inputs and produces text outputs.",
   "announced_date": "2025-09-15T00:00:00",
   "release_date": "2025-09-15T00:00:00",
   "deprecation_date": null,

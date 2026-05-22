@@ -12,16 +12,12 @@ create table if not exists public.auth_signup_trigger_log (
   error_sqlstate text null,
   metadata jsonb not null default '{}'::jsonb
 );
-
 create index if not exists auth_signup_trigger_log_user_created_idx
   on public.auth_signup_trigger_log (user_id, created_at desc);
-
 create index if not exists auth_signup_trigger_log_created_idx
   on public.auth_signup_trigger_log (created_at desc);
-
 revoke all on public.auth_signup_trigger_log from anon, authenticated;
 grant select on public.auth_signup_trigger_log to service_role;
-
 create or replace function public.log_auth_signup_trigger_event(
   p_user_id uuid,
   p_email text,
@@ -60,7 +56,6 @@ exception when others then
   null;
 end;
 $$;
-
 create or replace function public.enqueue_welcome_email()
 returns trigger
 language plpgsql

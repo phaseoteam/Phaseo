@@ -38,8 +38,15 @@ import {
 import { Plus, Shield } from "lucide-react";
 
 import {
+	type PromptInjectionAction,
 	type ProviderRestrictionMode,
+	type SensitiveInfoRulePayload,
 } from "@/app/(dashboard)/settings/guardrails/actions";
+import { describeProviderRestrictionMode } from "./guardrailPreview";
+import {
+	getDefaultSensitiveInfoRules,
+	getSensitiveInfoRuleDefinitions,
+} from "./sensitiveInfoPreview";
 
 const NANOS_PER_USD = 1_000_000_000;
 
@@ -64,7 +71,13 @@ type GuardrailRow = {
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
+	model_restriction_mode?: string | null;
 	allowed_api_model_ids?: string[] | null;
+	prompt_injection_enabled?: boolean | null;
+	prompt_injection_action?: string | null;
+	sensitive_info_enabled?: boolean | null;
+	sensitive_info_default_action?: string | null;
+	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
 	daily_limit_requests?: number | null;
 	weekly_limit_requests?: number | null;
 	monthly_limit_requests?: number | null;
@@ -98,6 +111,22 @@ function getProviderLogoId(providerId: string): string {
 		return "amazon-bedrock";
 	}
 	return normalized;
+}
+
+function normalizePromptInjectionAction(value: unknown): PromptInjectionAction {
+	const raw = String(value ?? "flag").toLowerCase();
+	if (raw === "redact") return "redact";
+	if (raw === "block") return "block";
+	return "flag";
+}
+
+function countEnabledSensitiveInfoRules(
+	rules: SensitiveInfoRulePayload[] | null | undefined,
+): number {
+	if (!Array.isArray(rules) || rules.length === 0) {
+		return getDefaultSensitiveInfoRules("redact").filter((rule) => rule.enabled).length;
+	}
+	return rules.filter((rule) => rule.enabled).length;
 }
 
 type Props = {
@@ -356,13 +385,12 @@ function GuardrailCard(props: {
 	const allowedModels = uniqStrings(
 		(props.guardrail.allowed_api_model_ids ?? []) as string[],
 	);
+	const modelMode = normalizeMode(props.guardrail.model_restriction_mode);
 
 	const providerRuleText =
 		mode === "none"
-			? "Any provider"
-			: mode === "allowlist"
-				? "Allowlist"
-				: "Blocklist";
+			? "Allow all"
+			: describeProviderRestrictionMode(mode);
 	const providerRuleDetail =
 		mode === "none"
 			? "No restrictions"
@@ -389,6 +417,23 @@ function GuardrailCard(props: {
 						)}
 						{props.guardrail.privacy_zdr_only ? (
 							<Badge variant="outline">ZDR</Badge>
+						) : null}
+						{props.guardrail.prompt_injection_enabled ? (
+							<Badge variant="outline">
+								Prompt injection:{" "}
+								{normalizePromptInjectionAction(
+									props.guardrail.prompt_injection_action,
+								)}
+							</Badge>
+						) : null}
+						{props.guardrail.sensitive_info_enabled ? (
+							<Badge variant="outline">
+								Sensitive info:{" "}
+								{countEnabledSensitiveInfoRules(
+									props.guardrail.sensitive_info_rules,
+								)}{" "}
+								rules
+							</Badge>
 						) : null}
 					</div>
 					{props.guardrail.description ? (
@@ -439,7 +484,17 @@ function GuardrailCard(props: {
 							<span className="font-medium text-foreground">
 								Models
 							</span>
-							<span>{allowedModels.length ? `${allowedModels.length} allowed` : "Any"}</span>
+							<span>
+								{modelMode === "none"
+									? "Allow all"
+									: modelMode === "allowlist"
+										? allowedModels.length
+											? `${allowedModels.length} allowed`
+											: "Allowlist"
+										: allowedModels.length
+											? `${allowedModels.length} blocked`
+											: "Blocklist"}
+							</span>
 						</span>
 					</div>
 

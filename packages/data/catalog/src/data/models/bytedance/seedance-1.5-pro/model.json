@@ -4,6 +4,7 @@
   "name": "Seedance 1.5 Pro",
   "status": "Available",
   "previous_model_id": null,
+  "description": "ByteDance's next-generation audio-visual generation model with a 4.5B parameter Dual-Branch Diffusion Transformer architecture. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -13,8 +13,12 @@ import type {
 	IRToolResult,
 	IRTool,
 } from "@core/ir";
+import { extractToolNameOrType, isNativeWebSearchTool } from "@core/nativeTools";
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
-import { resolveServiceTierFromSpeedAndTier } from "../shared/text-normalizers";
+import {
+	normalizeProviderGeoPreferences,
+	resolveServiceTierFromSpeedAndTier,
+} from "../shared/text-normalizers";
 
 /**
  * Anthropic Messages request type
@@ -29,11 +33,14 @@ export type AnthropicMessagesRequest = {
 	top_p?: number;
 	top_k?: number;
 	stream?: boolean;
-	tools?: AnthropicTool[];
+	tools?: Array<AnthropicTool | AnthropicNativeWebSearchTool>;
 	tool_choice?: AnthropicToolChoice;
 	metadata?: Record<string, any>;
 	service_tier?: string;
 	speed?: string;
+	inference_geo?: "global" | "us" | string;
+	web_search_options?: Record<string, any>;
+	webSearchOptions?: Record<string, any>;
 	stop_sequences?: string[];
 	reasoning?: {
 		effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
@@ -71,6 +78,13 @@ export type AnthropicTool = {
 	name: string;
 	description?: string;
 	input_schema: Record<string, any>;
+};
+
+export type AnthropicNativeWebSearchTool = {
+	type: string;
+	name?: string;
+	description?: string;
+	[key: string]: any;
 };
 
 export type AnthropicToolChoice =
@@ -184,14 +198,24 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 	}
 
 	// Transform tools
-	const tools: IRTool[] | undefined = req.tools?.map((t) => ({
-		name: t.name,
-		description: t.description,
-		parameters: t.input_schema,
-	}));
+	const tools: IRTool[] | undefined = req.tools?.map((tool) =>
+		decodeAnthropicTool(tool),
+	);
 
 	// Transform tool choice
 	const toolChoice = normalizeAnthropicToolChoice(req.tool_choice);
+	const providerGeo = normalizeProviderGeoPreferences(req as any);
+	const explicitInferenceGeo =
+		typeof req.inference_geo === "string" && req.inference_geo.trim().length > 0
+			? req.inference_geo.trim()
+			: undefined;
+	const geo =
+		providerGeo || explicitInferenceGeo
+			? {
+				...(providerGeo ?? {}),
+				...(explicitInferenceGeo ? { inferenceGeo: explicitInferenceGeo } : {}),
+			}
+			: undefined;
 
 	return {
 		messages,
@@ -207,6 +231,12 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Tool calling
 		tools,
 		toolChoice,
+		webSearchOptions:
+			req.web_search_options && typeof req.web_search_options === "object"
+				? req.web_search_options
+				: req.webSearchOptions && typeof req.webSearchOptions === "object"
+					? req.webSearchOptions
+					: undefined,
 
 		// Reasoning
 		reasoning: resolveRequestedReasoning(req),
@@ -219,6 +249,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 			service_tier: req.service_tier,
 			speed: req.speed,
 		}),
+		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
 			? {
@@ -372,5 +403,26 @@ function normalizeAnthropicToolChoice(choice: any): IRChatRequest["toolChoice"] 
 	}
 
 	return undefined;
+}
+
+function decodeAnthropicTool(
+	tool: AnthropicTool | AnthropicNativeWebSearchTool,
+): IRTool {
+	if (isNativeWebSearchTool(tool)) {
+		const nativeTool = tool as AnthropicNativeWebSearchTool;
+		return {
+			name: extractToolNameOrType(nativeTool) ?? "web_search",
+			type: nativeTool.type,
+			description: nativeTool.description,
+			parameters: {},
+			raw: { ...(nativeTool as Record<string, any>) },
+		};
+	}
+
+	return {
+		name: (tool as AnthropicTool).name,
+		description: (tool as AnthropicTool).description,
+		parameters: (tool as AnthropicTool).input_schema,
+	};
 }
 

@@ -4,6 +4,7 @@
   "name": "o3 Deep Research",
   "status": "Available",
   "previous_model_id": null,
+  "description": "o3 Deep Research is OpenAI's advanced model for deep research, designed to tackle complex, multi-step research tasks. Note: This model always uses the 'web_search' tool which adds additional cost.",
   "announced_date": "2025-06-26T00:00:00",
   "release_date": "2025-06-26T00:00:00",
   "deprecation_date": null,

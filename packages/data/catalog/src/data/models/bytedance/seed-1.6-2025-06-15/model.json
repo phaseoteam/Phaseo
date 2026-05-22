@@ -4,6 +4,7 @@
   "name": "Seed 1.6 (2025-06-15)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seed 1.6 (2025-06-15) is a language model from ByteDance for chat, writing, analysis, and general-purpose automation.",
   "announced_date": "2025-06-25T00:00:00",
   "release_date": "2025-06-25T00:00:00",
   "deprecation_date": null,

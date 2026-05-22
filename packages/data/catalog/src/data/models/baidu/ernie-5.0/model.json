@@ -4,6 +4,7 @@
   "name": "Ernie 5.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Ernie 5.0 is a speech-to-text model from Baidu for transcription and spoken-language understanding workflows. It is suited to captioning, meeting notes, transcription, and speech analytics pipelines.",
   "announced_date": "2026-01-22T00:00:00",
   "release_date": "2026-01-22T00:00:00",
   "deprecation_date": null,

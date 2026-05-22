@@ -4,6 +4,7 @@
   "name": "Pi 3.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Inflection 3 Pi powers Inflection's [Pi](https://pi.ai) chatbot, including backstory, emotional intelligence, productivity, and safety. It has access to recent news, and excels in scenarios like customer support and roleplay.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

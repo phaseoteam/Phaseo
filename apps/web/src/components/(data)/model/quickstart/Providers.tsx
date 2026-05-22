@@ -78,20 +78,20 @@ function renderAvailabilitySummary(group: GroupedProvider): string {
 	const parts: string[] = [];
 	if (group.activeEndpointCount > 0) {
 		parts.push(
-			`${group.activeEndpointCount} active endpoint${group.activeEndpointCount === 1 ? "" : "s"}`
+			`${group.activeEndpointCount} active endpoint${group.activeEndpointCount === 1 ? "" : "s"}`,
 		);
 	}
 	if (group.comingSoonEndpointCount > 0) {
 		parts.push(
-			`${group.comingSoonEndpointCount} preview endpoint${group.comingSoonEndpointCount === 1 ? "" : "s"}`
+			`${group.comingSoonEndpointCount} preview endpoint${group.comingSoonEndpointCount === 1 ? "" : "s"}`,
 		);
 	}
 	if (group.inactiveEndpointCount > 0) {
 		parts.push(
-			`${group.inactiveEndpointCount} unavailable endpoint${group.inactiveEndpointCount === 1 ? "" : "s"}`
+			`${group.inactiveEndpointCount} unavailable endpoint${group.inactiveEndpointCount === 1 ? "" : "s"}`,
 		);
 	}
-	return parts.join(" • ");
+	return parts.join(" | ");
 }
 
 export default function Providers({ metadata }: { metadata: ModelGatewayMetadata }) {
@@ -105,77 +105,88 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 			<CardContent>
 				{providers.length > 0 ? (
 					<div className="grid gap-3 md:grid-cols-2">
-						{providers.map((provider) => (
-							<div
-								key={provider.providerId}
-								className="rounded-lg border border-slate-200/80 p-3 dark:border-slate-800/90"
-							>
-								<div className="flex items-center justify-between gap-3">
-									<div className="flex min-w-0 items-center gap-2.5">
-										<Link
-											href={`/api-providers/${provider.providerId}`}
-											className="group"
-										>
-											<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border">
-												<div className="relative h-5 w-5">
-													<Logo
-														id={provider.providerId}
-														alt={`${provider.providerName} logo`}
-														fill
-														className="object-contain group-hover:opacity-80 transition"
-													/>
+						{providers.map((provider) => {
+							return (
+								<div
+									key={provider.providerId}
+									className="rounded-lg border border-slate-200/80 p-3 dark:border-slate-800/90"
+								>
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex min-w-0 items-center gap-2.5">
+											<Link
+												href={`/api-providers/${provider.providerId}`}
+												className="group"
+											>
+												<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border">
+													<div className="relative h-5 w-5">
+														<Logo
+															id={provider.logoProviderId}
+															alt={`${provider.providerName} logo`}
+															fill
+															className="object-contain transition group-hover:opacity-80"
+														/>
+													</div>
 												</div>
-											</div>
-										</Link>
+											</Link>
 										<div className="min-w-0">
 											<Link
 												href={`/api-providers/${provider.providerId}`}
-												className="truncate text-sm font-medium hover:text-primary transition-colors"
+												className="truncate text-sm font-medium transition-colors hover:text-primary"
 											>
-												{provider.providerName}
-											</Link>
-											<p className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">
+													{provider.providerName}
+												</Link>
+											<p className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
 												{provider.providerId}
 											</p>
 										</div>
 									</div>
 
-									<Badge
-										variant="outline"
-										className={getStatusUi(provider.state.key).badgeClassName}
-									>
-										<span className="inline-flex items-center gap-1">
-											{(() => {
-												const StatusIcon = getStatusUi(provider.state.key).icon;
-												return <StatusIcon className="h-3 w-3" />;
-											})()}
-											{provider.state.label}
-										</span>
-									</Badge>
-								</div>
-
-								<div className="mt-3 space-y-2">
-									<p className="text-[11px] text-muted-foreground">
-										{provider.state.description}
-									</p>
-									<div className="flex items-center justify-between gap-2">
-										<p className="text-[11px] text-muted-foreground">
-											{renderAvailabilitySummary(provider) ||
-												`${provider.endpoints.size} endpoint${provider.endpoints.size === 1 ? "" : "s"}`}
-										</p>
-										<ProviderInfoHoverIcons
-											providerId={provider.providerId}
-											providerModelSlugs={Array.from(provider.modelSlugs)}
-											quantizationScheme={provider.quantizationScheme}
-										/>
+										<Badge
+											variant="outline"
+											className={getStatusUi(provider.state.key).badgeClassName}
+										>
+											<span className="inline-flex items-center gap-1">
+												{(() => {
+													const StatusIcon = getStatusUi(provider.state.key).icon;
+													return <StatusIcon className="h-3 w-3" />;
+												})()}
+												{provider.state.label}
+											</span>
+										</Badge>
 									</div>
-									<p className="text-[11px] text-muted-foreground">
-										{provider.endpoints.size} endpoint
-										{provider.endpoints.size === 1 ? "" : "s"} in catalog
-									</p>
+
+									<div className="mt-3 space-y-2">
+										<p className="text-[11px] text-muted-foreground">
+											{provider.state.description}
+										</p>
+										<div className="flex items-center justify-between gap-2">
+											<p className="text-[11px] text-muted-foreground">
+												{renderAvailabilitySummary(provider) ||
+													`${provider.endpoints.size} endpoint${provider.endpoints.size === 1 ? "" : "s"}`}
+											</p>
+											<ProviderInfoHoverIcons
+												providerId={provider.providerId}
+												providerModelSlugs={Array.from(provider.modelSlugs)}
+												quantizationScheme={provider.quantizationScheme}
+												promptTraining={provider.promptTraining}
+												residency={provider.residency}
+												pricingPolicy={{
+													regionalPricingMode: provider.regionalPricingMode,
+													regionalPricingUpliftPercent:
+														provider.regionalPricingUpliftPercent,
+													notes: provider.regionalPricingNotes,
+													sourceUrl: provider.pricingSourceUrl,
+												}}
+											/>
+										</div>
+										<p className="text-[11px] text-muted-foreground">
+											{provider.endpoints.size} endpoint
+											{provider.endpoints.size === 1 ? "" : "s"} in catalog
+										</p>
+									</div>
 								</div>
-							</div>
-						))}
+							);
+						})}
 					</div>
 				) : (
 					<p className="text-sm text-muted-foreground">

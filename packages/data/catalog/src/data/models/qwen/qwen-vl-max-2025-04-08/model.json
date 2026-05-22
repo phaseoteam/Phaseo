@@ -4,6 +4,7 @@
   "name": "Qwen VL Max 2025 04 08",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen VL Max 2025 04 08 is a video generation model from Qwen for prompt-driven clip and scene creation. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

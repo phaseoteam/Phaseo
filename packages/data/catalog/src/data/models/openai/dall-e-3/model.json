@@ -4,6 +4,7 @@
   "name": "Dall-E 3",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Dall-E 3 is an image generation model from OpenAI for visual creation workflows. It is aimed at illustration, design exploration, and marketing creative.",
   "announced_date": "2023-09-20T00:00:00",
   "release_date": "2023-10-19T00:00:00",
   "deprecation_date": "2025-11-14T00:00:00",

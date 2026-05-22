@@ -362,6 +362,35 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.tools![0].name).toBe("get_weather");
 	});
 
+	it("should preserve native web search tools", () => {
+		const request = {
+			model: "gpt-4.1",
+			input: "Find the latest news.",
+			tools: [
+				{
+					type: "web_search_preview",
+					search_context_size: "medium",
+				},
+			],
+			tool_choice: "web_search_preview",
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+
+		expect(ir.tools).toHaveLength(1);
+		expect(ir.tools![0]).toEqual({
+			name: "web_search_preview",
+			type: "web_search_preview",
+			description: undefined,
+			parameters: {},
+			raw: {
+				type: "web_search_preview",
+				search_context_size: "medium",
+			},
+		});
+		expect(ir.toolChoice).toEqual({ name: "web_search_preview" });
+	});
+
 	it("should decode tool_choice - auto", () => {
 		const request = {
 			model: "gpt-4",
@@ -576,6 +605,21 @@ describe("decodeOpenAIResponsesRequest", () => {
 		});
 	});
 
+	it("should decode top-level web_search_options", () => {
+		const request = {
+			model: "gpt-4.1",
+			input: "Find the latest news.",
+			web_search_options: {
+				search_context_size: "high",
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.webSearchOptions).toEqual({
+			search_context_size: "high",
+		});
+	});
+
 
 	it("should handle empty input array", () => {
 		const request = {
@@ -701,6 +745,25 @@ describe("decodeOpenAIResponsesRequest", () => {
 		expect(ir.conversation).toBe("conv_123");
 		expect(ir.previousResponseId).toBe("resp_123");
 		expect(ir.streamOptions).toEqual({ include_usage: true });
+	});
+
+	it("should decode provider geo preferences into IR", () => {
+		const request = {
+			model: "gpt-4.1",
+			input: "Hello",
+			provider: {
+				requiredExecutionRegion: "eu",
+				requiredDataRegion: "de",
+				requireZeroDataRetention: true,
+			},
+		};
+
+		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
+		expect(ir.geo).toEqual({
+			requiredExecutionRegion: "eu",
+			requiredDataRegion: "de",
+			requireZeroDataRetention: true,
+		});
 	});
 });
 

@@ -5,5 +5,9 @@ openapi: "GET /files"
 description: "Lists files when the underlying provider key supports it. On the shared gateway key this currently returns `file_list_not_supported_with_shared_gateway_key`."
 ---
 
+<Warning>
+The public files routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
+
 Use file ids captured at upload time instead of depending on this endpoint when you are using the shared gateway key.
 

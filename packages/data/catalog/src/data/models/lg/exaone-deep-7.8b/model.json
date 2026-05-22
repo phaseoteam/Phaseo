@@ -4,6 +4,7 @@
   "name": "EXAONE Deep 7.8B",
   "status": "Available",
   "previous_model_id": "lg/exaone-3-5-7-8b-2024-12-09",
+  "description": "EXAONE Deep 7.8B is a language model from LG for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-03-18T00:00:00",
   "release_date": "2025-03-18T00:00:00",
   "deprecation_date": null,

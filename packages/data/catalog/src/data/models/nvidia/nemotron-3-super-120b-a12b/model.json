@@ -4,6 +4,7 @@
   "name": "Nemotron 3 Super",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nemotron 3 Super is a 120B-parameter open hybrid MoE model, activating just 12B parameters for maximum compute efficiency and accuracy in complex multi-agent applications.",
   "announced_date": "2026-03-11T00:00:00",
   "release_date": "2026-03-11T00:00:00",
   "deprecation_date": null,

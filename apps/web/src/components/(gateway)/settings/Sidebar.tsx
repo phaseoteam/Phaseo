@@ -175,7 +175,7 @@ export default function SettingsSidebar({
 					<Button
 						variant="ghost"
 						size="icon"
-						className="ml-auto md:hidden"
+						className="ml-auto lg:hidden"
 						onClick={toggleSidebar}
 						aria-label="Close sidebar"
 					>

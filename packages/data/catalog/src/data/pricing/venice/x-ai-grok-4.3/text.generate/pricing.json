@@ -12,7 +12,7 @@
       "price_per_unit": 1.42,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -22,7 +22,8 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -31,7 +32,7 @@
       "price_per_unit": 0.23,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -41,7 +42,8 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -50,7 +52,7 @@
       "price_per_unit": 2.83,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -60,7 +62,8 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -69,7 +72,7 @@
       "price_per_unit": 2.83,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -79,7 +82,8 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -88,7 +92,7 @@
       "price_per_unit": 0.45,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -98,7 +102,8 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -107,7 +112,7 @@
       "price_per_unit": 5.67,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -117,7 +122,8 @@
           "value": 200000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     }
   ]
 }

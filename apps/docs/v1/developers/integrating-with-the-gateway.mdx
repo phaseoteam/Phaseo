@@ -3,7 +3,13 @@ title: "Integrating with the Gateway"
 description: "Connect your application to AI Stats Gateway, start on free models, then scale to paid models."
 ---
 
-The AI Stats Gateway gives you a single, unified API surface for accessing multiple model providers. Follow this guide to create an API key, send your first request, and adopt the conventions that keep integrations production ready.
+Use this guide when you are ready to move from a first successful request to a real application integration.
+
+By the end, you should have:
+- a safely stored API key
+- a clear endpoint choice
+- one working request in your app
+- the right next pages for routing, SDKs, and production rollout
 
 ---
 
@@ -13,8 +19,8 @@ Make sure you have the following in place:
 
 -   An AI Stats account with Gateway access.
 -   At least one API key generated from your [dashboard](https://ai-stats.phaseo.app/gateway/keys).
--   An HTTP client such as `curl`, `fetch`, or `axios`.
--   A model ID supported by the Gateway (for example `google/gemma-3-27b:free` for zero-deposit start).
+-   An HTTP client or SDK.
+-   A model ID supported by the Gateway, such as `google/gemma-3-27b:free` for a zero-deposit start.
 
 ---
 
@@ -37,17 +43,17 @@ AI_STATS_API_KEY="aistats_v1_sk_<kid>_<secret>"
 
 ## 2. Choose an endpoint and model
 
-Pick the endpoint that matches your use case. The Gateway normalizes payloads across providers, so request shapes are consistent:
+Choose the endpoint that best matches the job you are doing:
 
 | Endpoint                 | When to use it                                     |
 | ------------------------ | -------------------------------------------------- |
-| `/v1/chat/completions`   | Conversational interfaces, agents, and assistants. |
-| `/v1/responses`          | Multi-step reasoning and structured responses.     |
-| `/v1/messages`           | Anthropic-compatible messages API.                 |
+| `/v1/chat/completions`   | Chat interfaces, assistants, and OpenAI-style integrations. |
+| `/v1/responses`          | New builds, structured outputs, and multi-step text workflows. |
+| `/v1/messages`           | Anthropic-compatible integrations. |
 | `/v1/moderations`        | Safety and content policy checks.                  |
 | `/v1/images/generations` | Image generation from text prompts.                |
 
-Refer to the [API Reference](../api-reference/introduction.mdx) for the complete list of supported parameters and responses.
+Refer to the [API Reference](../api-reference/introduction) for the complete list of supported parameters and responses.
 
 <Note>
 Free-model IDs end with `:free` and can be called without depositing credits. Paid-model calls require available wallet balance.
@@ -57,20 +63,142 @@ Free-model IDs end with `:free` and can be called without depositing credits. Pa
 
 ## 3. Send a request
 
-Here is a minimal `curl` example using the chat completions endpoint:
+Start with one successful chat request through the integration path you plan to keep.
 
-```bash
+<CodeGroup>
+```bash cURL
 curl https://api.phaseo.app/v1/chat/completions \
-    -H "Authorization: Bearer $AI_STATS_API_KEY" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "model": "google/gemma-3-27b:free",
-        "messages": [
-            { "role": "system", "content": "You are a helpful assistant." },
-            { "role": "user", "content": "Explain the benefits of AI." }
-        ]
-    }'
+  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemma-3-27b:free",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Explain the benefits of AI." }
+    ]
+  }'
 ```
+
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.AI_STATS_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "google/gemma-3-27b:free",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "Explain the benefits of AI." },
+  ],
+});
+
+console.log(response.choices[0]?.message?.content);
+```
+
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="google/gemma-3-27b:free",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain the benefits of AI."},
+    ],
+)
+
+print(response.choices[0].message.content)
+```
+
+```go Go
+package main
+
+import (
+  "context"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
+    "model": "google/gemma-3-27b:free",
+    "messages": []map[string]string{
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Explain the benefits of AI."},
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C#
+using AiStatsSdk;
+using System.Collections.Generic;
+
+var client = new AIStats("YOUR_API_KEY");
+
+var response = await client.ChatCompletions(new Dictionary<string, object>
+{
+    ["model"] = "google/gemma-3-27b:free",
+    ["messages"] = new object[]
+    {
+        new Dictionary<string, object> { ["role"] = "system", ["content"] = "You are a helpful assistant." },
+        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Explain the benefits of AI." }
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->chatCompletions([
+    'model' => 'google/gemma-3-27b:free',
+    'messages' => [
+        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+        ['role' => 'user', 'content' => 'Explain the benefits of AI.'],
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby
+require 'ai_stats_sdk'
+
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+
+response = client.chat_completions(
+  model: 'google/gemma-3-27b:free',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Explain the benefits of AI.' }
+  ]
+)
+
+puts response
+```
+</CodeGroup>
 
 ---
 
@@ -94,7 +222,7 @@ Authorization: Bearer $AI_STATS_API_KEY
 
 ## 5. Next steps
 
--   Review [Authentication](./authentication.mdx) to learn about header formats and workspace tokens.
--   Learn how [Routing and fallbacks](../guides/routing-and-fallbacks.mdx) work in production.
--   Browse [Examples](../guides/examples.mdx) to see complete integrations in popular frameworks.
--   Explore the [SDK Reference](../sdk-reference/typescript/overview.mdx) for language-specific usage.
+-   Review [Authentication](./authentication) to learn about header formats and workspace tokens.
+-   Learn how [Routing and fallbacks](../guides/routing-and-fallbacks) work in production.
+-   Browse [Examples](../guides/examples) to see complete integrations in popular frameworks.
+-   Explore the [SDK Reference](../sdk-reference/typescript/overview) for language-specific usage.

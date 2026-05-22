@@ -2,11 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 function resolveDataRoot(): string {
+	const cwd = /* turbopackIgnore: true */ process.cwd();
 	const candidates = [
-		path.join(process.cwd(), "..", "..", "packages", "data", "catalog", "src", "data"),
-		path.join(process.cwd(), "packages", "data", "catalog", "src", "data"),
-		path.join(process.cwd(), "src", "data"),
-		path.join(process.cwd(), "apps", "web", "src", "data"),
+		path.join(cwd, "..", "..", "packages", "data", "catalog", "src", "data"),
+		path.join(cwd, "packages", "data", "catalog", "src", "data"),
+		path.join(cwd, "src", "data"),
+		path.join(cwd, "apps", "web", "src", "data"),
 	];
 	for (const candidate of candidates) {
 		if (fs.existsSync(candidate)) return candidate;
@@ -174,7 +175,10 @@ function extractSupportedParams(capabilities: RawCapability[]): string[] {
 function getPricingModelSlugsByProvider(): Map<string, Set<string>> {
 	const result = new Map<string, Set<string>>();
 	for (const providerId of listDirectories(PRICING_ROOT)) {
-		const providerRoot = path.join(PRICING_ROOT, providerId);
+		const providerRoot = path.join(
+			/* turbopackIgnore: true */ PRICING_ROOT,
+			providerId,
+		);
 		result.set(providerId, new Set(listDirectories(providerRoot)));
 	}
 	return result;
@@ -186,7 +190,7 @@ function hasPricingFile(
 	capabilityId: string,
 ): boolean {
 	const pricingPath = path.join(
-		PRICING_ROOT,
+		/* turbopackIgnore: true */ PRICING_ROOT,
 		providerId,
 		modelSlug,
 		capabilityId,
@@ -201,7 +205,11 @@ export function buildApiModelConflictsSnapshot(): ApiModelConflictsSnapshot {
 	const entries: ApiModelConflictEntry[] = [];
 
 	for (const providerId of listDirectories(API_PROVIDERS_ROOT)) {
-		const modelsPath = path.join(API_PROVIDERS_ROOT, providerId, "models.json");
+		const modelsPath = path.join(
+			/* turbopackIgnore: true */ API_PROVIDERS_ROOT,
+			providerId,
+			"models.json",
+		);
 		const rawModels = parseJsonArray<RawProviderModel>(modelsPath);
 		if (rawModels.length === 0) continue;
 

@@ -36,6 +36,12 @@ const PACKAGES: PackageConfig[] = [
         changelogPath: "packages/sdk/sdk-ts/CHANGELOG.md",
     },
     {
+        name: "@ai-stats/agent-sdk",
+        manifestPath: "packages/sdk/agent-sdk-ts/package.json",
+        manifestType: "npm",
+        changelogPath: "packages/sdk/agent-sdk-ts/CHANGELOG.md",
+    },
+    {
         name: "@ai-stats/devtools-viewer",
         manifestPath: "packages/devtools/devtools-viewer/package.json",
         manifestType: "npm",

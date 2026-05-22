@@ -2,10 +2,8 @@
 -- This is a safety net if gateway-side attribution code fails.
 
 begin;
-
-create unique index if not exists api_apps_workspace_id_app_key_key
-  on public.api_apps (workspace_id, app_key);
-
+create unique index if not exists api_apps_team_id_app_key_key
+  on public.api_apps (team_id, app_key);
 create or replace function public.gateway_requests_attach_chat_app_id()
 returns trigger
 language plpgsql
@@ -21,7 +19,7 @@ begin
     return new;
   end if;
 
-  if new.workspace_id is null or new.key_id is null then
+  if new.team_id is null or new.key_id is null then
     return new;
   end if;
 
@@ -35,7 +33,7 @@ begin
   end if;
 
   insert into public.api_apps (
-    workspace_id,
+    team_id,
     app_key,
     title,
     url,
@@ -45,7 +43,7 @@ begin
     meta
   )
   values (
-    new.workspace_id,
+    new.team_id,
     v_chat_app_key,
     'AI Stats Chat',
     v_chat_app_key,
@@ -57,7 +55,7 @@ begin
       'managed', true
     )
   )
-  on conflict (workspace_id, app_key) do update
+  on conflict (team_id, app_key) do update
     set title = excluded.title,
         url = excluded.url,
         is_active = true,
@@ -70,15 +68,12 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists trg_gateway_requests_attach_chat_app_id on public.gateway_requests;
-
 create trigger trg_gateway_requests_attach_chat_app_id
-before insert or update of workspace_id, key_id, app_id
+before insert or update of team_id, key_id, app_id
 on public.gateway_requests
 for each row
 execute function public.gateway_requests_attach_chat_app_id();
-
 -- Safety backfill for any current null app_id chat rows.
 update public.gateway_requests gr
 set app_id = aa.id
@@ -86,8 +81,7 @@ from public.keys k,
      public.api_apps aa
 where gr.key_id = k.id
   and k.name = '__chat_route_managed_key__'
-  and aa.workspace_id = gr.workspace_id
+  and aa.team_id = gr.team_id
   and aa.app_key = 'https://ai-stats.phaseo.app/chat'
   and (gr.app_id is null or gr.app_id <> aa.id);
-
 commit;

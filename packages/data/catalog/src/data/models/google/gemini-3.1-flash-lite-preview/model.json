@@ -4,6 +4,7 @@
   "name": "Gemini 3.1 Flash Lite Preview",
   "status": "Deprecated",
   "previous_model_id": "google/gemini-2-5-flash-lite-preview-2025-09-25",
+  "description": "Gemini 3.1 Flash Lite Preview is Google's high-efficiency model optimized for high-volume use cases. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2026-03-03T00:00:00",
   "release_date": "2026-03-03T00:00:00",
   "deprecation_date": "2026-05-11T00:00:00",

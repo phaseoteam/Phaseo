@@ -1,0 +1,91 @@
+---
+title: "Use response caching with presets"
+description: "Combine preset defaults with deterministic response caching so repeated requests return fast and predictably."
+---
+
+Use this recipe when you have repeated requests with stable prompts and want lower latency plus lower repeated inference cost.
+
+## 1. Start with a preset, not ad-hoc requests
+
+Create a preset when the following should stay stable:
+
+- target model
+- provider preferences
+- temperature and other generation parameters
+- reasoning settings
+- system prompt
+
+This keeps the cache key stable because the request stays stable.
+
+## 2. Turn on response caching at the preset level
+
+Configure:
+
+- `response_caching.enabled = true`
+- a practical `ttl_seconds`
+
+Good defaults:
+
+- short TTL for rapidly changing factual prompts
+- longer TTL for stable structured outputs
+
+## 3. Keep the request deterministic
+
+Response caching is strongest when you avoid unnecessary request drift.
+
+Avoid changing:
+
+- system prompt wording
+- temperature
+- provider overrides
+- reasoning config
+- tool lists
+
+If one caller changes these constantly, move that caller to a different preset instead of defeating cache reuse for everyone else.
+
+## 4. Check cache behavior in request details
+
+The request details should show cache information for requests that pass through the cache path.
+
+Verify:
+
+- cache hit vs miss
+- TTL behavior
+- provider context when a cached response is served
+
+## 5. Pair caching with routing intentionally
+
+Recommended patterns:
+
+1. use one preset for deterministic structured outputs with caching on
+2. use a second preset for exploratory or higher-temperature requests with caching off
+
+This keeps the cache high-signal instead of mixing incompatible traffic.
+
+## 6. Debug misses before widening the TTL
+
+If you expect hits but keep getting misses, compare:
+
+- prompt text
+- model id
+- provider options
+- response format
+- tools and tool choice
+- preset slug/config
+
+Widening TTL will not fix a fingerprint mismatch.
+
+## 7. When to avoid caching
+
+Do not enable response caching by default for:
+
+- prompts that depend on live external state
+- user-specific answers with rapidly changing context
+- requests with volatile tool outputs
+- highly stochastic generations where exact replay is undesirable
+
+## Related
+
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
+- [Examples](../guides/examples.mdx)
+- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)

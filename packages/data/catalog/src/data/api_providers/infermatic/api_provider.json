@@ -5,5 +5,10 @@
   "link": "https://infermatic.ai/models/",
   "country_code": "US",
   "status": "Active",
-  "colour": "#DC2626"
+  "colour": "#DC2626",
+  "privacy_policy_url": "https://infermatic.ai/privacy-policy/",
+  "terms_of_service_url": "https://infermatic.ai/terms-and-conditions/",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Infermatic publicly states that it does not log prompts or results, indicating prompt and completion data are not retained for model improvement.",
+  "prompt_training_source_url": "https://infermatic.ai/"
 }

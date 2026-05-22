@@ -4,6 +4,7 @@
   "name": "C4AI Aya Vision 8B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "C4AI Aya Vision 8B is a multimodal model from Cohere that can work across text and visual inputs.",
   "announced_date": "2025-03-04T00:00:00",
   "release_date": "2025-03-04T00:00:00",
   "deprecation_date": null,

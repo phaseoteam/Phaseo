@@ -4,6 +4,7 @@
   "name": "GPT 4o Mini TTS (2025-12-15)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT 4o Mini TTS (2025-12-15) is OpenAI's cost-efficient text-to-speech model. It converts text input into natural-sounding audio output, supporting a variety of voices and tones.",
   "announced_date": "2025-12-15T00:00:00",
   "release_date": "2025-12-15T00:00:00",
   "deprecation_date": null,

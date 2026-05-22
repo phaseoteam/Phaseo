@@ -15,6 +15,7 @@ import type {
     TeamEnrichment,
     KeyEnrichment,
 } from "./types";
+import { normalizeGatewayPlugins } from "@/plugins/normalize";
 
 const bucketSchema = z
     .object({
@@ -41,6 +42,10 @@ const gateCheckSchema = z
             reset_at: z.string().nullable().optional(),
             now: z.string().nullable().optional(),
             balance_nanos: z.coerce.number().nullable().optional(),
+            limit_window: z.enum(["daily", "weekly", "monthly"]).nullable().optional(),
+            limit_metric: z.enum(["requests", "cost", "soft_blocked"]).nullable().optional(),
+            current_value: z.coerce.number().nullable().optional(),
+            limit_value: z.coerce.number().nullable().optional(),
             buckets: z
                 .object({
                     daily: bucketSchema.optional(),
@@ -61,6 +66,10 @@ const gateCheckSchema = z
             resetAt: value.reset_at ?? null,
             now: value.now ?? null,
             balanceNanos: value.balance_nanos ?? null,
+            limitWindow: value.limit_window ?? null,
+            limitMetric: value.limit_metric ?? null,
+            currentValue: value.current_value ?? null,
+            limitValue: value.limit_value ?? null,
             buckets: value.buckets ?? null,
         };
     });
@@ -154,10 +163,25 @@ function toModalityList(value: unknown): string[] | null {
 const providerSchema = z
     .object({
         provider_id: z.string(),
+        provider_family_id: z.string().nullable().optional(),
+        offer_scope: z.enum(["global", "regional", "specialized"]).nullable().optional(),
+        offer_label: z.string().nullable().optional(),
+        api_model_id: z.string().nullable().optional(),
+        pricing_key: z.string().nullable().optional(),
         provider_status: z.string().nullable().optional(),
         provider_routing_status: z.string().nullable().optional(),
         model_status: z.string().nullable().optional(),
         capability_status: z.string().nullable().optional(),
+        residency_mode: z
+            .enum(["unknown", "provider_managed", "customer_selectable", "account_selected"])
+            .nullable()
+            .optional(),
+        execution_regions: z.array(z.string()).nullable().optional(),
+        data_regions: z.array(z.string()).nullable().optional(),
+        zero_data_retention: z
+            .enum(["unknown", "unsupported", "optional", "default"])
+            .nullable()
+            .optional(),
         provider_model_slug: z.string().nullable().optional(),
         input_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
         output_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
@@ -170,10 +194,20 @@ const providerSchema = z
     })
     .transform<GatewayProviderSnapshot>((provider) => ({
         providerId: provider.provider_id,
+        providerFamilyId: provider.provider_family_id ?? null,
+        offerScope: provider.offer_scope ?? null,
+        offerLabel: provider.offer_label ?? null,
+        apiModelId: provider.api_model_id ?? null,
+        pricingKey: provider.pricing_key ?? null,
         providerStatus: (provider.provider_status ?? null) as GatewayProviderSnapshot["providerStatus"],
         providerRoutingStatus: (provider.provider_routing_status ?? null) as GatewayProviderSnapshot["providerRoutingStatus"],
         modelRoutingStatus: (provider.model_status ?? null) as GatewayProviderSnapshot["modelRoutingStatus"],
         capabilityStatus: (provider.capability_status ?? null) as GatewayProviderSnapshot["capabilityStatus"],
+        residencyMode: (provider.residency_mode ?? null) as GatewayProviderSnapshot["residencyMode"],
+        executionRegions: provider.execution_regions ?? null,
+        dataRegions: provider.data_regions ?? null,
+        zeroDataRetention:
+            (provider.zero_data_retention ?? null) as GatewayProviderSnapshot["zeroDataRetention"],
         providerModelSlug: provider.provider_model_slug ?? null,
         supportsEndpoint: provider.supports_endpoint ?? true,
         baseWeight: Number.isFinite(provider.base_weight) ? provider.base_weight : 1,
@@ -198,13 +232,93 @@ const presetConfigSchema = z
         only_providers: z.array(z.string()).nullable().optional(),
         deniedProviders: z.array(z.string()).nullable().optional(),
         ignore_providers: z.array(z.string()).nullable().optional(),
+        provider: z.object({
+            order: z.array(z.string()).nullable().optional(),
+            only: z.array(z.string()).nullable().optional(),
+            ignore: z.array(z.string()).nullable().optional(),
+            required_execution_region: z.string().nullable().optional(),
+            requiredExecutionRegion: z.string().nullable().optional(),
+            required_data_region: z.string().nullable().optional(),
+            requiredDataRegion: z.string().nullable().optional(),
+            require_zero_data_retention: z.boolean().nullable().optional(),
+            requireZeroDataRetention: z.boolean().nullable().optional(),
+            max_price: z.object({
+                prompt: z.union([z.number(), z.string()]).nullable().optional(),
+                completion: z.union([z.number(), z.string()]).nullable().optional(),
+                image: z.union([z.number(), z.string()]).nullable().optional(),
+                audio: z.union([z.number(), z.string()]).nullable().optional(),
+                request: z.union([z.number(), z.string()]).nullable().optional(),
+            }).nullable().optional(),
+            maxPrice: z.object({
+                prompt: z.union([z.number(), z.string()]).nullable().optional(),
+                completion: z.union([z.number(), z.string()]).nullable().optional(),
+                image: z.union([z.number(), z.string()]).nullable().optional(),
+                audio: z.union([z.number(), z.string()]).nullable().optional(),
+                request: z.union([z.number(), z.string()]).nullable().optional(),
+            }).nullable().optional(),
+            preferred_min_throughput: z.union([z.number(), z.record(z.string(), z.number())]).nullable().optional(),
+            preferredMinThroughput: z.union([z.number(), z.record(z.string(), z.number())]).nullable().optional(),
+            preferred_max_latency: z.union([z.number(), z.record(z.string(), z.number())]).nullable().optional(),
+            preferredMaxLatency: z.union([z.number(), z.record(z.string(), z.number())]).nullable().optional(),
+        }).nullable().optional(),
         defaultParams: z.record(z.string(), z.any()).nullable().optional(),
         parameters: z.record(z.string(), z.any()).nullable().optional(),
         providerPreferences: z.record(z.string(), z.number()).nullable().optional(),
         provider_preferences: z.record(z.string(), z.number()).nullable().optional(),
+        routingMode: z.enum(["balanced", "price", "latency", "throughput"]).nullable().optional(),
+        routing_mode: z.enum(["balanced", "price", "latency", "throughput"]).nullable().optional(),
+        preferred_performance: z.enum(["balanced", "price", "latency", "throughput"]).nullable().optional(),
+        plugins: z.array(z.any()).nullable().optional(),
+        responseCaching: z
+            .object({
+                enabled: z.boolean().nullable().optional(),
+                ttlSeconds: z.coerce.number().nullable().optional(),
+            })
+            .nullable()
+            .optional(),
+        response_caching: z
+            .object({
+                enabled: z.boolean().nullable().optional(),
+                ttl_seconds: z.coerce.number().nullable().optional(),
+            })
+            .nullable()
+            .optional(),
         reasoning: z.record(z.string(), z.any()).nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
+        ...(() => {
+            const provider = config.provider;
+            const maxPrice = provider?.maxPrice ?? provider?.max_price ?? null;
+            const normalizedProvider = provider
+                ? {
+                    order: provider.order ?? null,
+                    only: provider.only ?? provider.order ?? null,
+                    ignore: provider.ignore ?? null,
+                    requiredExecutionRegion:
+                        provider.requiredExecutionRegion ??
+                        provider.required_execution_region ??
+                        null,
+                    requiredDataRegion:
+                        provider.requiredDataRegion ??
+                        provider.required_data_region ??
+                        null,
+                    requireZeroDataRetention:
+                        provider.requireZeroDataRetention ??
+                        provider.require_zero_data_retention ??
+                        null,
+                    maxPrice,
+                    preferredMinThroughput:
+                        provider.preferredMinThroughput ??
+                        provider.preferred_min_throughput ??
+                        null,
+                    preferredMaxLatency:
+                        provider.preferredMaxLatency ??
+                        provider.preferred_max_latency ??
+                        null,
+                }
+                : null;
+            return { provider: normalizedProvider };
+        })(),
         systemPrompt: config.systemPrompt ?? config.system_prompt ?? null,
         allowedModels: config.allowedModels ?? config.models ?? null,
         defaultModel:
@@ -214,8 +328,17 @@ const presetConfigSchema = z
             config.models?.[0] ??
             null,
         model: config.model ?? null,
-        allowedProviders: config.allowedProviders ?? config.only_providers ?? null,
-        deniedProviders: config.deniedProviders ?? config.ignore_providers ?? null,
+        allowedProviders:
+            config.allowedProviders ??
+            config.only_providers ??
+            config.provider?.only ??
+            config.provider?.order ??
+            null,
+        deniedProviders:
+            config.deniedProviders ??
+            config.ignore_providers ??
+            config.provider?.ignore ??
+            null,
         defaultParams:
             config.defaultParams ??
             (
@@ -230,12 +353,34 @@ const presetConfigSchema = z
             config.providerPreferences ??
             config.provider_preferences ??
             null,
+        routingMode:
+            config.routingMode ??
+            config.routing_mode ??
+            config.preferred_performance ??
+            null,
+        plugins:
+            config.plugins !== undefined
+                ? normalizeGatewayPlugins(config.plugins)
+                : null,
+        responseCaching:
+            config.responseCaching
+                ? {
+                    enabled: config.responseCaching.enabled ?? null,
+                    ttlSeconds: config.responseCaching.ttlSeconds ?? null,
+                }
+                : config.response_caching
+                    ? {
+                        enabled: config.response_caching.enabled ?? null,
+                        ttlSeconds: config.response_caching.ttl_seconds ?? null,
+                    }
+                    : null,
     }));
 
 const presetDataSchema = z
     .object({
         id: z.string(),
         name: z.string(),
+        slug: z.string().nullable().optional(),
         description: z.string().nullable().optional(),
         config: presetConfigSchema,
         visibility: z.enum(["private", "team", "public"]),
@@ -243,6 +388,7 @@ const presetDataSchema = z
     .transform<PresetData>((preset) => ({
         id: preset.id,
         name: preset.name,
+        slug: preset.slug ?? null,
         description: preset.description ?? null,
         config: preset.config,
         visibility: preset.visibility,

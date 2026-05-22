@@ -4,6 +4,7 @@
   "name": "GLM 5V Turbo",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM 5V Turbo is Z.ai's first native multimodal agent foundation model, built for vision-based coding and agent-driven tasks. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2026-04-01T00:00:00",
   "release_date": "2026-04-01T00:00:00",
   "deprecation_date": null,

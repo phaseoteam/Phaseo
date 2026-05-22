@@ -56,6 +56,9 @@ type Props = {
 	initialMode?: RoutingMode | null;
 	initialBetaChannelEnabled?: boolean;
 	initialAlphaChannelEnabled?: boolean;
+	initialResponseHealingEnabled?: boolean;
+	initialResponseHealingLocked?: boolean;
+	initialResponseHealingMode?: "safe" | "strict";
 	teamName?: string | null;
 };
 
@@ -114,17 +117,42 @@ export default function RoutingSettingsClient({
 	initialMode,
 	initialBetaChannelEnabled,
 	initialAlphaChannelEnabled,
+	initialResponseHealingEnabled,
+	initialResponseHealingLocked,
+	initialResponseHealingMode,
 	teamName,
 }: Props) {
 	const defaultMode = initialMode ?? "balanced";
 	const defaultBeta = Boolean(initialBetaChannelEnabled);
 	const defaultAlpha = defaultBeta && Boolean(initialAlphaChannelEnabled);
+	const defaultResponseHealing = Boolean(initialResponseHealingEnabled);
+	const defaultResponseHealingLocked = Boolean(initialResponseHealingLocked);
+	const defaultResponseHealingMode =
+		initialResponseHealingMode === "strict" ? "strict" : "safe";
 	const [mode, setMode] = useState<RoutingMode>(defaultMode);
 	const [betaChannelEnabled, setBetaChannelEnabled] = useState(defaultBeta);
 	const [alphaChannelEnabled, setAlphaChannelEnabled] = useState(defaultAlpha);
+	const [responseHealingEnabled, setResponseHealingEnabled] = useState(
+		defaultResponseHealing,
+	);
+	const [responseHealingLocked, setResponseHealingLocked] = useState(
+		defaultResponseHealingLocked,
+	);
+	const [responseHealingMode, setResponseHealingMode] = useState<"safe" | "strict">(
+		defaultResponseHealingMode,
+	);
 	const [savedMode, setSavedMode] = useState<RoutingMode>(defaultMode);
 	const [savedBeta, setSavedBeta] = useState(defaultBeta);
 	const [savedAlpha, setSavedAlpha] = useState(defaultAlpha);
+	const [savedResponseHealing, setSavedResponseHealing] = useState(
+		defaultResponseHealing,
+	);
+	const [savedResponseHealingLocked, setSavedResponseHealingLocked] = useState(
+		defaultResponseHealingLocked,
+	);
+	const [savedResponseHealingMode, setSavedResponseHealingMode] = useState(
+		defaultResponseHealingMode,
+	);
 	const [saving, setSaving] = useState(false);
 	const isFirstRun = useRef(true);
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -169,6 +197,9 @@ export default function RoutingSettingsClient({
 						mode,
 						betaChannelEnabled,
 						alphaChannelEnabled,
+						responseHealingEnabled,
+						responseHealingLocked,
+						responseHealingMode,
 					}),
 					{
 						loading: "Updating routing policy...",
@@ -180,6 +211,9 @@ export default function RoutingSettingsClient({
 					setSavedMode(mode);
 					setSavedBeta(betaChannelEnabled);
 					setSavedAlpha(alphaChannelEnabled);
+					setSavedResponseHealing(responseHealingEnabled);
+					setSavedResponseHealingLocked(responseHealingLocked);
+					setSavedResponseHealingMode(responseHealingMode);
 				}
 			} finally {
 				if (saveSequence === saveSequenceRef.current) {
@@ -194,12 +228,22 @@ export default function RoutingSettingsClient({
 				timerRef.current = null;
 			}
 		};
-	}, [mode, betaChannelEnabled, alphaChannelEnabled]);
+	}, [
+		mode,
+		betaChannelEnabled,
+		alphaChannelEnabled,
+		responseHealingEnabled,
+		responseHealingLocked,
+		responseHealingMode,
+	]);
 
 	const isDirty =
 		mode !== savedMode ||
 		betaChannelEnabled !== savedBeta ||
-		alphaChannelEnabled !== savedAlpha;
+		alphaChannelEnabled !== savedAlpha ||
+		responseHealingEnabled !== savedResponseHealing ||
+		responseHealingLocked !== savedResponseHealingLocked ||
+		responseHealingMode !== savedResponseHealingMode;
 	const stateText = saving
 		? "Saving..."
 		: isDirty
@@ -302,6 +346,80 @@ export default function RoutingSettingsClient({
 						</div>
 					</div>
 				) : null}
+
+				<div className="grid gap-3 md:grid-cols-[240px_1fr] md:items-center">
+					<label htmlFor="response-healing" className="text-sm font-medium">
+						Default plugins
+					</label>
+					<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
+						<div>
+							<p className="text-sm text-muted-foreground">
+								Enable response healing by default for this workspace.
+							</p>
+							<p className="text-xs text-muted-foreground">
+								Requests and presets can still override the plugin by id unless
+								you lock this policy below.
+							</p>
+						</div>
+						<Switch
+							id="response-healing"
+							checked={responseHealingEnabled}
+							onCheckedChange={setResponseHealingEnabled}
+							aria-label="Enable default response healing"
+						/>
+					</div>
+				</div>
+
+				<div className="grid gap-3 md:grid-cols-[240px_1fr] md:items-center">
+					<label htmlFor="response-healing-mode" className="text-sm font-medium">
+						Response healing mode
+					</label>
+					<div className="space-y-2 rounded-lg border bg-muted/20 px-3 py-2">
+						<Select
+							value={responseHealingMode}
+							onValueChange={(value) =>
+								setResponseHealingMode(value as "safe" | "strict")
+							}
+						>
+							<SelectTrigger id="response-healing-mode" className="max-w-sm">
+								<SelectValue placeholder="Select a healing mode" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="safe">Safe</SelectItem>
+								<SelectItem value="strict">Strict</SelectItem>
+							</SelectContent>
+						</Select>
+						<p className="text-xs text-muted-foreground">
+							{responseHealingMode === "strict"
+								? "Strict mode only unwraps already-valid JSON from fences or surrounding text. It does not apply broader syntactic repair transforms."
+								: "Safe mode applies the full bounded JSON repair path, including trailing-comma cleanup, bare-key quoting, and safe closer recovery."}
+						</p>
+					</div>
+				</div>
+
+				<div className="grid gap-3 md:grid-cols-[240px_1fr] md:items-center">
+					<label htmlFor="response-healing-lock" className="text-sm font-medium">
+						Plugin override lock
+					</label>
+					<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
+						<div>
+							<p className="text-sm text-muted-foreground">
+								Prevent presets or request-level plugin config from changing the
+								workspace response healing default.
+							</p>
+							<p className="text-xs text-muted-foreground">
+								Use this when you want one workspace-wide structured-output
+								policy.
+							</p>
+						</div>
+						<Switch
+							id="response-healing-lock"
+							checked={responseHealingLocked}
+							onCheckedChange={setResponseHealingLocked}
+							aria-label="Lock default response healing policy"
+						/>
+					</div>
+				</div>
 
 				<div className="rounded-lg border bg-muted/30 p-4">
 					<p className="text-sm font-medium">{activeOption?.label}</p>

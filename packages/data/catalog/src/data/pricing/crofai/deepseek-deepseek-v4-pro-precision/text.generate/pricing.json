@@ -27,7 +27,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00"
+      "effective_from": "2026-04-28T00:00:00",
+      "effective_to": "2026-05-11T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -40,6 +41,18 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-04-28T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     }
   ]
 }

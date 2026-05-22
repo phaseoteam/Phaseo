@@ -5,6 +5,7 @@
 import type { Context } from "hono";
 import type { GatewayBindings } from "@/runtime/env";
 import { configureRuntime, setWaitUntil, clearRuntime, getBindings, dispatchBackground } from "@/runtime/env";
+import { safeJsonStringify } from "@/lib/safe-json";
 import { sanitizeRequestHeaders } from "@pipeline/http/sanitize-headers";
 
 type Handler = (req: Request) => Promise<Response>;
@@ -22,34 +23,8 @@ const CACHE_CREATED_AT_HEADER = "x-aistats-cache-created-at";
 const REVALIDATION_DEDUPE_WINDOW_MS = 15_000;
 const revalidationLocks = new Map<string, number>();
 
-function looksLikeStackTrace(value: string): boolean {
-    return /\n\s*at\s+[^\n]+/i.test(value) || /Error:\s*[^\n]+/i.test(value);
-}
-
 function stringifyJsonBody(body: unknown): string {
-    const seen = new WeakSet<object>();
-    return JSON.stringify(
-        body,
-        (key, value) => {
-            if (key === "stack" || key === "stackTrace" || key === "stacktrace") {
-                return undefined;
-            }
-            if (value instanceof Error) {
-                return {
-                    name: value.name,
-                };
-            }
-            if (typeof value === "string" && looksLikeStackTrace(value)) {
-                return "[redacted]";
-            }
-            if (typeof value === "object" && value !== null) {
-                if (seen.has(value)) return "[Circular]";
-                seen.add(value);
-            }
-            return value;
-        },
-        2
-    );
+    return safeJsonStringify(body);
 }
 
 export function withRuntime(handler: Handler) {
@@ -130,9 +105,6 @@ export function withRuntime(handler: Handler) {
 }
 
 export function json(body: any, status = 200, headers: Record<string, string> = {}) {
-    // lgtm[js/stack-trace-exposure]
-    // codeql[js/stack-trace-exposure]
-    // Stack-like content is stripped in stringifyJsonBody before response serialization.
     return new Response(stringifyJsonBody(body), {
         status,
         headers: {
@@ -424,4 +396,3 @@ export function withCors(
         });
     };
 }
-

@@ -4,6 +4,7 @@
   "name": "Qwq Plus",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwq Plus is a 1 million context hybrid reasoning model with a balanced performance, speed, and cost combination. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

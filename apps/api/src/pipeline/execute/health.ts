@@ -7,6 +7,7 @@ import { HEALTH_CONSTANTS, HEALTH_KEYS } from "./health.config";
 import type { Endpoint } from "@core/types";
 
 export type BreakerState = "closed" | "open" | "half_open";
+export type HealthImpact = "success" | "failure" | "neutral";
 
 export type ProviderHealth = {
     endpoint: Endpoint;
@@ -40,6 +41,43 @@ export type ProviderHealth = {
     last_ts_300s: number;
     last_updated: number;
 };
+
+function normalizeHealthSignal(value: unknown): string {
+    return String(value ?? "").trim().toLowerCase();
+}
+
+function isRateLimitSignal(value: unknown): boolean {
+    const normalized = normalizeHealthSignal(value);
+    if (!normalized) return false;
+    return (
+        normalized.includes("rate limit") ||
+        normalized.includes("rate_limit") ||
+        normalized.includes("too many requests") ||
+        normalized.includes("ratelimit") ||
+        normalized.includes("quota exceeded")
+    );
+}
+
+export function classifyProviderHealthImpact(args: {
+    upstreamStatus?: number | null;
+    aborted?: boolean;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+}): HealthImpact {
+    if (args.aborted) return "neutral";
+
+    const status = Number(args.upstreamStatus ?? 0);
+    if (Number.isFinite(status) && status >= 200 && status < 400) {
+        return "success";
+    }
+    if (status === 429) {
+        return "neutral";
+    }
+    if (isRateLimitSignal(args.errorCode) || isRateLimitSignal(args.errorMessage)) {
+        return "neutral";
+    }
+    return "failure";
+}
 
 type ProviderConfigField = "err_open_th" | "base_open_secs" | "max_open_secs" | "load_soft_cap";
 
@@ -757,6 +795,7 @@ export async function onCallEnd(
         provider: string;
         model: string;
         ok: boolean;
+        healthImpact?: HealthImpact;
         latency_ms: number;
         generation_ms?: number;
         tokens_in?: number;
@@ -768,6 +807,24 @@ export async function onCallEnd(
     const key = HEALTH_KEYS.health(endpoint, model);
     await updateMap(key, (map) => {
         const now = Date.now();
+        const impact = params.healthImpact ?? (ok ? "success" : "failure");
+        const softCap = readConfig(map, provider, "load_soft_cap");
+        const inflightField = field(provider, "inflight");
+        const inflight = Math.max(asNum(map[inflightField], 0) - 1, 0);
+        const load = Math.min(1, inflight / Math.max(softCap, 1));
+
+        map[inflightField] = String(inflight);
+        map[field(provider, "current_load")] = String(load);
+        map[field(provider, "last_updated")] = String(now);
+        map[field(provider, "load_soft_cap")] = String(softCap);
+        map[field(provider, "err_open_th")] = String(readConfig(map, provider, "err_open_th"));
+        map[field(provider, "base_open_secs")] = String(readConfig(map, provider, "base_open_secs"));
+        map[field(provider, "max_open_secs")] = String(readConfig(map, provider, "max_open_secs"));
+
+        if (impact === "neutral") {
+            return map;
+        }
+
         const tau10 = HEALTH_CONSTANTS.TAU_10S_MS;
         const tau60 = HEALTH_CONSTANTS.TAU_60S_MS;
         const tau300 = HEALTH_CONSTANTS.TAU_300S_MS;
@@ -802,13 +859,6 @@ export async function onCallEnd(
 
         const recOk = decay(readNumber(map, provider, "rec_ok_ew_60s"), ok ? 1 : 0, decay60);
         const recTot = decay(readNumber(map, provider, "rec_tot_ew_60s"), 1, decay60);
-
-        const softCap = readConfig(map, provider, "load_soft_cap");
-        const inflightField = field(provider, "inflight");
-        const inflight = Math.max(asNum(map[inflightField], 0) - 1, 0);
-        const load = Math.min(1, inflight / Math.max(softCap, 1));
-
-        map[inflightField] = String(inflight);
         map[field(provider, "lat_ewma_10s")] = String(lat10);
         map[field(provider, "lat_ewma_60s")] = String(lat60);
         map[field(provider, "lat_ewma_300s")] = String(lat300);
@@ -823,12 +873,6 @@ export async function onCallEnd(
         map[field(provider, "last_ts_10s")] = String(now);
         map[field(provider, "last_ts_60s")] = String(now);
         map[field(provider, "last_ts_300s")] = String(now);
-        map[field(provider, "current_load")] = String(load);
-        map[field(provider, "last_updated")] = String(now);
-        map[field(provider, "load_soft_cap")] = String(softCap);
-        map[field(provider, "err_open_th")] = String(readConfig(map, provider, "err_open_th"));
-        map[field(provider, "base_open_secs")] = String(readConfig(map, provider, "base_open_secs"));
-        map[field(provider, "max_open_secs")] = String(readConfig(map, provider, "max_open_secs"));
         return map;
     }, HEALTH_STATE_TTL_SECONDS, "background");
 }

@@ -4,6 +4,7 @@
   "name": "Gemini 2.0 Pro Exp (2025-02-05)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemini 2.0 Pro Exp (2025-02-05) is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2025-02-05T00:00:00",
   "release_date": "2025-02-05T00:00:00",
   "deprecation_date": null,

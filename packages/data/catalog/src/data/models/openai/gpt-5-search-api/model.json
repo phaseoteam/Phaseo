@@ -4,6 +4,7 @@
   "name": "GPT 5 Search API",
   "status": "Available",
   "previous_model_id": "openai/gpt-4o-search-preview",
+  "description": "GPT 5 Search API is trained to understand and execute web search queries. It is aimed at retrieval-heavy assistants, browsing, and research synthesis.",
   "announced_date": "2025-10-14T00:00:00",
   "release_date": "2025-10-14T00:00:00",
   "deprecation_date": null,

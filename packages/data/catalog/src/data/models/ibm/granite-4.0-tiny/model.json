@@ -4,6 +4,7 @@
   "name": "Granite 4.0 Tiny",
   "status": "Available",
   "previous_model_id": "ibm/granite-4-0-tiny-preview-2025-05-02",
+  "description": "Granite 4.0 Tiny is a language model from IBM for chat, writing, analysis, and general-purpose automation. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2025-10-02T00:00:00",
   "release_date": "2025-10-02T00:00:00",
   "deprecation_date": null,

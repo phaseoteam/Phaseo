@@ -4,6 +4,7 @@
   "name": "TranslateGemma 12B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "TranslateGemma 12B is an image generation model from Google for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2026-01-15T00:00:00",
   "release_date": "2026-01-15T00:00:00",
   "deprecation_date": null,

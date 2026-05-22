@@ -1,6 +1,7 @@
 import { ReactNode, Suspense } from "react";
 import Link from "next/link";
 import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
+import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import TabBar from "@/components/(data)/model/ModelTabs";
 import { Logo } from "@/components/Logo";
 import ModelEditButton from "./edit/ModelEditButton";
@@ -11,6 +12,15 @@ import { MessageSquare, Scale } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
+import ModelDescriptionPanel from "./ModelDescriptionPanel";
+import { resolveModelDescription } from "@/lib/models/modelDescription";
+import {
+	FREE_ROUTER_DESCRIPTION,
+	FREE_ROUTER_MODEL_ID,
+	FREE_ROUTER_NAME,
+	FREE_ROUTER_ORGANISATION_ID,
+	isFreeRouterModelId,
+} from "@/lib/models/freeRouter";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -53,19 +63,47 @@ export default async function ModelDetailShell({
 	tab,
 	includeHidden = false,
 }: ModelDetailShellProps) {
-	const header = await getModelOverviewHeader(modelId, includeHidden).catch((error) => {
-		if (isModelNotFoundError(error)) {
-			return null;
-		}
-		throw error;
-	});
+	const isFreeRouter = isFreeRouterModelId(modelId);
+	const [header, modelOverview] = isFreeRouter
+		? [
+				{
+					model_id: FREE_ROUTER_MODEL_ID,
+					name: FREE_ROUTER_NAME,
+					organisation_id: FREE_ROUTER_ORGANISATION_ID,
+					organisation: {
+						name: "AI Stats",
+						country_code: "",
+					},
+					aliases: [],
+					status: "Available",
+					hidden: false,
+				},
+				null,
+			]
+		: await Promise.all([
+				getModelOverviewHeader(modelId, includeHidden).catch((error) => {
+					if (isModelNotFoundError(error)) {
+						return null;
+					}
+					throw error;
+				}),
+				getModelOverviewCached(modelId, includeHidden).catch(() => null),
+			]);
 
 	if (!header) {
 		return <ModelNotFoundState modelId={modelId} />;
 	}
+	const modelDescription = isFreeRouter
+		? FREE_ROUTER_DESCRIPTION
+		: modelOverview
+		? resolveModelDescription(modelOverview)
+		: null;
 
 	const visibleTabKeys = getVisibleTabKeys(header.status);
-	if (tab && !visibleTabKeys.includes(tab)) {
+	const scopedVisibleTabKeys = isFreeRouter
+		? ["overview"]
+		: visibleTabKeys;
+	if (tab && !scopedVisibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
 
@@ -129,7 +167,13 @@ export default async function ModelDetailShell({
 					</div>
 				</div>
 
-				<TabBar modelId={modelId} visibleTabKeys={visibleTabKeys} />
+				{modelDescription ? (
+					<div className="w-full">
+						<ModelDescriptionPanel description={modelDescription} />
+					</div>
+				) : null}
+
+				<TabBar modelId={modelId} visibleTabKeys={scopedVisibleTabKeys} />
 
 				<div className="mt-6 min-h-full">{children}</div>
 			</div>

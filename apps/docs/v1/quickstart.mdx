@@ -3,7 +3,13 @@ title: "Quickstart (5 minutes)"
 description: "From signup to first successful request in under 5 minutes, starting on a free model."
 ---
 
-This guide is intentionally short. Follow it in order and you should have a working integration in a few minutes.
+Use this guide to make your first successful AI Stats request in a few minutes.
+
+You will:
+- create an API key
+- send one free text request
+- confirm where to read the model output
+- know what to check if the request fails
 
 ---
 
@@ -25,7 +31,7 @@ Treat your API key like a password. Do not expose it in client-side code.
 
 ---
 
-## 2. Start with a free model (no deposit required)
+## 2. Send your first free request
 
 Use `POST /v1/responses` for the fastest first success.
 
@@ -33,7 +39,7 @@ Use `POST /v1/responses` for the fastest first success.
 Requests to `:free` models do not require deposited credits. Paid models still require available wallet balance.
 </Note>
 
-### Request (request format)
+### Example request
 
 <CodeGroup>
 ```bash cURL
@@ -116,6 +122,111 @@ assistant_text = next(
 print(assistant_text)
 ```
 
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  input := map[string]interface{}{
+    "role": "user",
+    "content": []map[string]interface{}{
+      {
+        "type": "input_text",
+        "text": "Reply with: quickstart works",
+      },
+    },
+  }
+
+  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+    Model: "google/gemma-3-27b:free",
+    Input: &input,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using AiStatsSdk;
+using System.Collections.Generic;
+
+var client = new AIStats("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemma-3-27b:free",
+    ["input"] = "Reply with: quickstart works",
+    ["temperature"] = 0
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemma-3-27b:free',
+    'input' => 'Reply with: quickstart works',
+    'temperature' => 0,
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'ai_stats_sdk'
+
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemma-3-27b:free',
+  input: 'Reply with: quickstart works',
+  temperature: 0
+)
+
+puts response
+```
+
+```java Java SDK
+import ai.stats.sdk.AIStats;
+
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
+
+String body = """
+{
+  "model": "google/gemma-3-27b:free",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "input_text", "text": "Reply with: quickstart works" }
+      ]
+    }
+  ],
+  "temperature": 0
+}
+""";
+
+Object response = client.createResponse(body);
+System.out.println(String.valueOf(response));
+```
+
 ```typescript Vercel AI SDK
 import { aiStats } from "@ai-stats/ai-sdk-provider";
 import { generateText } from "ai";
@@ -129,7 +240,7 @@ console.log(result.text);
 ```
 </CodeGroup>
 
-### Response (response format)
+### Example response
 
 ```json
 {
@@ -158,25 +269,26 @@ console.log(result.text);
 }
 ```
 
-For Responses API calls, read assistant text from `output[].content[]` where `type` is `output_text`.  
-For Vercel AI SDK calls, use `result.text`.
+If you use the Responses API directly, read the assistant reply from `output[].content[]` where `type` is `output_text`.
+
+If you use the Vercel AI SDK, read the reply from `result.text`.
 
 ---
 
-## 3. If it fails, check these first
+## 3. If it does not work, check these first
 
-- `401`: key format or header issue.
-- `400`: request body shape or unsupported parameter.
+- `401`: the API key or auth header is wrong.
+- `400`: the request body is invalid or includes an unsupported field.
 - `402`: paid model without sufficient balance. Use a `:free` model or top up credits.
 - `429/5xx`: retry with backoff.
 
-Use the [Error Handling reference](./api-reference/errors.mdx) to debug quickly.
+Use the [Error Handling reference](./api-reference/errors) to debug quickly.
 
 ---
 
-## 4. Video jobs are asynchronous
+## 4. Video requests work differently
 
-Video creation is long-running by design.
+Video generation is async by design, so you create a job first and then check for the result.
 
 1. Create a job with `POST /v1/videos`.
 2. Poll status with `GET /v1/videos/{video_id}` until completed.
@@ -202,16 +314,16 @@ curl https://api.phaseo.app/v1/videos/VIDEO_ID \
 ## 5. Next steps
 
 <Columns cols={2}>
-	<Card title="Integrating with the Gateway" icon="plug" href="./developers/integrating-with-the-gateway.mdx">
+	<Card title="Integrating with the Gateway" icon="plug" href="./developers/integrating-with-the-gateway">
 		Production integration patterns and endpoint selection.
 	</Card>
-	<Card title="API Reference" icon="book" href="./api-reference/introduction.mdx">
+	<Card title="API Reference" icon="book" href="./api-reference/introduction">
 		Full request and response docs for every endpoint.
 	</Card>
-	<Card title="Examples" icon="code" href="./guides/examples.mdx">
+	<Card title="Examples" icon="code" href="./guides/examples">
 		More complete request samples for common workflows.
 	</Card>
-	<Card title="Support" icon="message-circle" href="./community/contact-and-support.mdx">
+	<Card title="Support" icon="message-circle" href="./community/contact-and-support">
 		Get help with debugging, routing, and model behavior.
 	</Card>
 </Columns>

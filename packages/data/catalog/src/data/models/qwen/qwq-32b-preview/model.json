@@ -4,6 +4,7 @@
   "name": "QwQ 32B Preview",
   "status": null,
   "previous_model_id": null,
+  "description": "QwQ 32B Preview is a reasoning model from Qwen for multi-step analysis, math, and tool-driven tasks. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

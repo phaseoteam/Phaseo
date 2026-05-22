@@ -365,9 +365,17 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	const datetimeRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.datetime_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.datetime_requests);
-	if (datetimeRequests != null) {
+	const webSearchRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.web_search_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.web_search_requests);
+	const webFetchRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.web_fetch_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.web_fetch_requests);
+	if (datetimeRequests != null || webSearchRequests != null || webFetchRequests != null) {
 		ext.serverToolUse = {
-			datetime_requests: datetimeRequests,
+			...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
+			...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+			...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
 		};
 	}
 

@@ -4,6 +4,7 @@
   "name": "Devstral 2.0",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Devstral 2.0 is a coding model from Mistral for code generation, edits, and software tasks. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-12-09T00:00:00",
   "release_date": "2025-12-09T00:00:00",
   "deprecation_date": null,

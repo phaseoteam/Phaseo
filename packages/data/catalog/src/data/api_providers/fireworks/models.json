@@ -388,6 +388,27 @@
     ]
   },
   {
+    "api_model_id": "minimax/minimax-m2.7",
+    "provider_api_model_id": "fireworks:minimax/minimax-m2.7",
+    "provider_model_slug": "accounts/fireworks/models/minimax-m2p7",
+    "internal_model_id": "minimax/minimax-m2.7",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 196608,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-11T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/gpt-oss-120b",
     "provider_api_model_id": "fireworks:openai/gpt-oss-120b",
     "provider_model_slug": "accounts/fireworks/models/gpt-oss-120b",
@@ -609,6 +630,27 @@
     "context_length": 202752,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "fireworks:z-ai/glm-5.1",
+    "provider_model_slug": "accounts/fireworks/models/glm-5p1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": null,
+    "effective_from": "2026-03-27T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

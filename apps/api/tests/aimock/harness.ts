@@ -119,6 +119,96 @@ function createOpenAIRerankMount(): Mountable {
     };
 }
 
+function mimeTypeForSpeechCodec(codec: unknown): string {
+    switch (String(codec ?? "").trim().toLowerCase()) {
+        case "wav":
+            return "audio/wav";
+        case "pcm":
+            return "audio/pcm";
+        case "mulaw":
+        case "alaw":
+            return "audio/basic";
+        case "mp3":
+        default:
+            return "audio/mpeg";
+    }
+}
+
+function createXAiTtsMount(): Mountable {
+    let journal: Journal | null = null;
+
+    return {
+        setJournal(nextJournal) {
+            journal = nextJournal;
+        },
+        async handleRequest(req: IncomingMessage, res: ServerResponse, pathname: string) {
+            if (pathname !== "/") return false;
+
+            const raw = await readIncomingBody(req);
+            const headers = flattenHeaders(req.headers as Record<string, string | string[] | undefined>);
+
+            let body: Record<string, unknown>;
+            try {
+                body = JSON.parse(raw) as Record<string, unknown>;
+            } catch {
+                journal?.add({
+                    method: req.method ?? "POST",
+                    path: req.url ?? pathname,
+                    headers,
+                    body: null,
+                    service: "speech",
+                    response: {
+                        status: 400,
+                        fixture: null,
+                    },
+                });
+                res.writeHead(400, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({
+                    error: {
+                        message: "Malformed JSON",
+                        type: "invalid_request_error",
+                        code: "invalid_json",
+                    },
+                }));
+                return true;
+            }
+
+            const text = typeof body.text === "string" ? body.text : "";
+            const codec = (body.output_format as Record<string, unknown> | undefined)?.codec;
+            const mimeType = mimeTypeForSpeechCodec(codec);
+            const matched = text.includes("[aimock-speech]");
+
+            journal?.add({
+                method: req.method ?? "POST",
+                path: req.url ?? pathname,
+                headers,
+                body: null,
+                service: "speech",
+                response: {
+                    status: matched ? 200 : 404,
+                    fixture: null,
+                },
+            });
+
+            if (!matched) {
+                res.writeHead(404, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({
+                    error: {
+                        message: "No AIMock TTS fixture matched request.",
+                        type: "not_found_error",
+                        code: "aimock_tts_not_found",
+                    },
+                }));
+                return true;
+            }
+
+            res.writeHead(200, { "Content-Type": mimeType });
+            res.end(Buffer.from("AIMOCK_TTS_AUDIO"));
+            return true;
+        },
+    };
+}
+
 function envValue(name: string, fallback: string): string {
     const value = process.env[name];
     if (!value) return fallback;
@@ -303,6 +393,7 @@ export async function startAimock(): Promise<LLMock> {
         { index: 0, relevance_score: 0.41 },
     ]);
     aimock.mount("/v1/rerank", createOpenAIRerankMount());
+    aimock.mount("/v1/tts", createXAiTtsMount());
 
     await aimock.start();
     return aimock;

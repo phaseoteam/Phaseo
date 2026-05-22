@@ -1,0 +1,153 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - paragraph [ref=e3]: Cookie Preferences
+    - paragraph [ref=e4]:
+      - text: We use analytics cookies to measure traffic and improve AI Stats. You can change your mind anytime in Settings, and read more in our
+      - link "Privacy Policy" [ref=e5] [cursor=pointer]:
+        - /url: /privacy
+      - text: .
+    - generic [ref=e6]:
+      - button "Decline" [ref=e7] [cursor=pointer]
+      - button "Accept" [ref=e8] [cursor=pointer]
+  - generic [ref=e9]:
+    - banner [ref=e10]:
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - link "AI Stats" [ref=e14] [cursor=pointer]:
+            - /url: /
+            - img "AI Stats" [ref=e15]
+          - navigation [ref=e18]:
+            - link "Models" [ref=e19] [cursor=pointer]:
+              - /url: /models
+            - link "Providers" [ref=e20] [cursor=pointer]:
+              - /url: /api-providers
+            - link "Apps" [ref=e21] [cursor=pointer]:
+              - /url: /apps
+            - link "Rankings" [ref=e22] [cursor=pointer]:
+              - /url: /rankings
+            - link "Playground" [ref=e23] [cursor=pointer]:
+              - /url: /chat
+        - generic [ref=e24]:
+          - button "Open search" [ref=e26] [cursor=pointer]:
+            - img
+            - generic [ref=e27]: Search...
+            - generic: Ctrl K
+          - link "Sign In" [ref=e29] [cursor=pointer]:
+            - /url: /sign-in
+            - button "Sign In" [ref=e30]
+    - main [ref=e31]:
+      - main [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - generic [ref=e37]:
+              - generic [ref=e38]:
+                - img "Gemini 3.1 Flash-Lite" [ref=e42]
+                - generic [ref=e43]:
+                  - 'heading "Google: Gemini 3.1 Flash-Lite" [level=1] [ref=e45]':
+                    - link "Google:" [ref=e46] [cursor=pointer]:
+                      - /url: /organisations/google
+                    - text: Gemini 3.1 Flash-Lite
+                  - button "Model identifiers" [ref=e48] [cursor=pointer]:
+                    - generic [ref=e49]: google/gemini-3.1-flash-lite
+                    - img [ref=e51]
+              - generic [ref=e53]:
+                - link "Chat" [ref=e54] [cursor=pointer]:
+                  - /url: /chat?model=google/gemini-3.1-flash-lite
+                  - img
+                  - text: Chat
+                - link "Compare" [ref=e55] [cursor=pointer]:
+                  - /url: /compare?models=google/gemini-3.1-flash-lite
+                  - img
+                  - text: Compare
+            - paragraph [ref=e58]: Gemini 3.1 Flash-Lite is an AI model from Google. It accepts text, image, video, and audio inputs and produces text outputs. On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.
+          - generic [ref=e63]:
+            - link "Overview" [ref=e64] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite?sort=pricing&dir=asc
+            - link "Playground" [ref=e65] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/playground?sort=pricing&dir=asc
+            - link "Providers" [ref=e66] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/providers?sort=pricing&dir=asc
+            - link "Pricing" [ref=e67] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/pricing?sort=pricing&dir=asc
+            - link "Performance" [ref=e68] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/performance?sort=pricing&dir=asc
+            - link "Apps" [ref=e69] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/apps?sort=pricing&dir=asc
+            - link "Activity" [ref=e70] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/activity?sort=pricing&dir=asc
+            - link "Quickstart" [ref=e71] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/quickstart?sort=pricing&dir=asc
+            - link "Benchmarks" [ref=e72] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/benchmarks?sort=pricing&dir=asc
+            - link "Family" [ref=e73] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/family?sort=pricing&dir=asc
+            - link "Timeline" [ref=e74] [cursor=pointer]:
+              - /url: /models/google/gemini-3.1-flash-lite/timeline?sort=pricing&dir=asc
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - heading "Quickstart" [level=2] [ref=e80]:
+                - img [ref=e81]
+                - text: Quickstart
+              - paragraph [ref=e84]: Use one of the accepted identifiers below for the selected endpoint.
+            - generic [ref=e85]:
+              - alert [ref=e86]:
+                - img [ref=e87]
+                - generic [ref=e89]: Model identifiers
+                - generic [ref=e91]:
+                  - code [ref=e92]: google/gemini-3.1-flash-lite
+                  - code [ref=e93]: google/gemini-flash-lite-latest
+              - generic [ref=e94]:
+                - heading "1) Get an API key" [level=3] [ref=e95]
+                - paragraph [ref=e96]:
+                  - text: Create a key in
+                  - link "Dashboard API Keys" [ref=e97] [cursor=pointer]:
+                    - /url: /settings/keys
+                    - generic [ref=e98]: Dashboard
+                    - img [ref=e99]
+                    - generic [ref=e101]: API Keys
+                  - text: ", then set it as"
+                  - code [ref=e102]: AI_STATS_API_KEY
+                  - text: in your environment variables.
+                - alert [ref=e103]:
+                  - img [ref=e104]
+                  - generic [ref=e106]: Keep your API key secret
+                  - generic [ref=e107]: This key grants access to all models and your credits. Treat it like a password, do not share it, commit it to source control, or expose it in client-side code. Rotate keys immediately if you suspect compromise.
+              - generic [ref=e108]:
+                - heading "2) Choose endpoint, language, and streaming" [level=3] [ref=e109]
+                - generic [ref=e110]:
+                  - generic [ref=e111]:
+                    - text: Endpoint
+                    - combobox [ref=e112] [cursor=pointer]:
+                      - img [ref=e113]
+                    - combobox [ref=e115]
+                  - generic [ref=e116]:
+                    - text: Language
+                    - button "cURL" [ref=e117] [cursor=pointer]:
+                      - generic [ref=e118]: cURL
+                      - img
+                  - generic [ref=e119]:
+                    - text: Provider
+                    - button "Price" [ref=e120] [cursor=pointer]:
+                      - generic [ref=e121]: Price
+                      - img
+                  - generic [ref=e122]:
+                    - text: Streaming
+                    - generic [ref=e124]:
+                      - switch [ref=e125] [cursor=pointer]
+                      - checkbox
+                      - generic [ref=e126]: Enable SSE
+                    - paragraph [ref=e127]: "Add \"stream\": true to receive token events."
+              - generic [ref=e128]:
+                - heading "3) Send your first request" [level=3] [ref=e129]
+                - generic [ref=e130]:
+                  - heading "Code" [level=4] [ref=e131]
+                  - generic [ref=e132]:
+                    - generic [ref=e133]:
+                      - generic [ref=e134]: bash
+                      - button [ref=e135] [cursor=pointer]
+                    - code [ref=e138]: "# 1) Set your key export AI_STATS_API_KEY=\"aistats_***\" # 2) Send a request curl -s https://api.phaseo.app/v1/responses \\ -H \"Authorization: Bearer $AI_STATS_API_KEY\" \\ -H \"Content-Type: application/json\" \\ -d '{ \"model\": \"google/gemini-3.1-flash-lite\", \"input\": \"Give me one fun fact about cURL.\", \"provider\": { \"sort\": \"price\" } }'"
+  - generic [ref=e140]: xl
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e146] [cursor=pointer]:
+    - img [ref=e147]
+  - alert [ref=e150]

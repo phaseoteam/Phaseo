@@ -7,12 +7,18 @@ export default [
 	...next,
 	...tseslint.configs.recommended,
 	{
+		settings: {
+			react: {
+				version: "19.2",
+			},
+		},
 		ignores: [
 			".next/**",
 			"dist/**",
 			"build/**",
 			"node_modules/**",
 			"coverage/**",
+			"eslint.config.mjs",
 			"playwright.config.ts",
 		],
 	},
@@ -36,6 +42,7 @@ export default [
 				"warn",
 				{ argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
 			],
+			"react/display-name": "off",
 			"react/no-unescaped-entities": "warn",
 			"no-case-declarations": "off",
 			"no-console": "warn",

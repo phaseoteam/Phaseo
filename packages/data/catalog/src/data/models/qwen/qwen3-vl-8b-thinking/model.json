@@ -4,6 +4,7 @@
   "name": "Qwen 3 VL 8B Thinking",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 VL 8B Thinking is the reasoning-optimized variant of the Qwen3-VL-8B multimodal model, designed for advanced visual and textual reasoning across complex scenes, documents, and temporal sequences.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

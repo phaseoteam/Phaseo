@@ -17,6 +17,16 @@ type Benefit = {
 
 type QuickstartVariant = "default" | "beta";
 
+export type LandingOpenModelIntelEntry = {
+	providerId: string;
+	name: string;
+	model: string;
+	latencyMs: number;
+	throughputTps: number;
+	inputPrice: number;
+	outputPrice: number;
+};
+
 const BENEFITS_DEFAULT: Benefit[] = [
 	{
 		title: "Open Model Intelligence",
@@ -554,15 +564,15 @@ function ObservabilityVisual() {
 	);
 }
 
-const BETA_OPEN_MODEL_INTEL = [
+const BETA_OPEN_MODEL_INTEL: LandingOpenModelIntelEntry[] = [
 	{
 		providerId: "openai",
 		name: "GPT-5.5",
 		model: "openai/gpt-5.5",
 		latencyMs: 472,
 		throughputTps: 92,
-		inputPrice: 1.25,
-		outputPrice: 10.0,
+		inputPrice: 5.0,
+		outputPrice: 30.0,
 	},
 	{
 		providerId: "anthropic",
@@ -570,26 +580,44 @@ const BETA_OPEN_MODEL_INTEL = [
 		model: "anthropic/claude-opus-4.7",
 		latencyMs: 534,
 		throughputTps: 84,
-		inputPrice: 3.0,
-		outputPrice: 15.0,
+		inputPrice: 5.0,
+		outputPrice: 25.0,
 	},
 	{
 		providerId: "google",
 		name: "Gemini 3.1 Pro",
-		model: "google/gemini-3.1-pro",
+		model: "google/gemini-3.1-pro-preview",
 		latencyMs: 441,
 		throughputTps: 101,
-		inputPrice: 1.0,
-		outputPrice: 8.0,
+		inputPrice: 2.0,
+		outputPrice: 12.0,
+	},
+	{
+		providerId: "minimax",
+		name: "MiniMax M2.7",
+		model: "minimax/minimax-m2.7",
+		latencyMs: 388,
+		throughputTps: 108,
+		inputPrice: 0.3,
+		outputPrice: 1.2,
 	},
 	{
 		providerId: "deepseek",
-		name: "DeepSeek V4 Flash",
-		model: "deepseek/deepseek-v4-flash",
-		latencyMs: 356,
-		throughputTps: 117,
-		inputPrice: 0.14,
-		outputPrice: 0.28,
+		name: "DeepSeek V4 Pro",
+		model: "deepseek/deepseek-v4-pro",
+		latencyMs: 405,
+		throughputTps: 94,
+		inputPrice: 1.68,
+		outputPrice: 3.38,
+	},
+	{
+		providerId: "moonshotai",
+		name: "Kimi K2.6",
+		model: "moonshotai/kimi-k2.6",
+		latencyMs: 423,
+		throughputTps: 89,
+		inputPrice: 1.0,
+		outputPrice: 4.0,
 	},
 ] as const;
 
@@ -640,16 +668,17 @@ function BetaDatabaseVisual() {
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [nextIndex, setNextIndex] = useState<number | null>(null);
 	const [isSliding, setIsSliding] = useState(false);
+	const modelPool = BETA_OPEN_MODEL_INTEL;
 
 	useEffect(() => {
 		if (isSliding) return;
 
 		const timer = window.setTimeout(() => {
-			setNextIndex((activeIndex + 1) % BETA_OPEN_MODEL_INTEL.length);
+			setNextIndex((activeIndex + 1) % modelPool.length);
 			setIsSliding(true);
 		}, 2600);
 		return () => window.clearTimeout(timer);
-	}, [activeIndex, isSliding]);
+	}, [activeIndex, isSliding, modelPool.length]);
 
 	useEffect(() => {
 		if (!isSliding || nextIndex === null) return;
@@ -663,9 +692,9 @@ function BetaDatabaseVisual() {
 		return () => window.clearTimeout(timer);
 	}, [isSliding, nextIndex]);
 
-	const currentModel = BETA_OPEN_MODEL_INTEL[activeIndex];
+	const currentModel = modelPool[activeIndex] ?? modelPool[0];
 	const incomingModel =
-		nextIndex === null ? currentModel : BETA_OPEN_MODEL_INTEL[nextIndex];
+		nextIndex === null ? currentModel : modelPool[nextIndex] ?? currentModel;
 
 	return (
 		<div className="w-full px-4">
@@ -746,7 +775,11 @@ function BetaDatabaseVisual() {
 	);
 }
 
-function DatabaseVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
+function DatabaseVisual({
+	variant = "default",
+}: {
+	variant?: QuickstartVariant;
+}) {
 	if (variant === "beta") {
 		return (
 			<VisualStage>
@@ -829,7 +862,10 @@ export default function HomeQuickstartSection({
 								variant === "beta" ? "h-40" : "h-48"
 							}`}
 						>
-							<BenefitVisual visual={benefit.visual} variant={variant} />
+							<BenefitVisual
+								visual={benefit.visual}
+								variant={variant}
+							/>
 						</div>
 						<div className="space-y-4 px-6 py-5 text-left">
 							<div className="space-y-2">

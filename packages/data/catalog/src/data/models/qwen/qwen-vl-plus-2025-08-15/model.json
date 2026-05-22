@@ -4,6 +4,7 @@
   "name": "Qwen VL Plus 2025 08 15",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen VL Plus 2025 08 15 is a large-scale multimodal language model from Alibaba. It accepts text, image, and video input and produces text output, with a 1M token context window.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

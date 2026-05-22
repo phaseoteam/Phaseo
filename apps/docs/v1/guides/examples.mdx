@@ -1,9 +1,13 @@
 ---
 title: "Examples"
-description: "Copy-paste examples for common Gateway workflows, starting with free-model requests."
+description: "Copy-paste requests plus full sample projects and cookbook walkthroughs for common AI Stats integrations."
 ---
 
-Use these examples as a starting point for your own integrations.
+Use this page when you want one of three things:
+
+- a small copy-paste request example
+- a full sample project you can run locally
+- a walkthrough that shows how the sample is put together
 
 <Note>
 Examples marked with `:free` do not require deposited credits.
@@ -11,15 +15,146 @@ Examples marked with `:free` do not require deposited credits.
 
 ## 1. Free-model text generation with `/responses`
 
-```bash
+<CodeGroup>
+```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer $AI_STATS_API_KEY" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "google/gemma-3-27b:free",
     "input": "Summarize this article in 3 bullet points."
   }'
 ```
+
+```typescript TypeScript SDK
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({ apiKey: process.env.AI_STATS_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemma-3-27b:free",
+  input: "Summarize this article in 3 bullet points.",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from ai_stats import AIStats
+
+client = AIStats(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemma-3-27b:free",
+        "input": "Summarize this article in 3 bullet points.",
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  aistats "github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go"
+)
+
+func main() {
+  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  input := map[string]interface{}{
+    "role": "user",
+    "content": []map[string]interface{}{
+      {
+        "type": "input_text",
+        "text": "Summarize this article in 3 bullet points.",
+      },
+    },
+  }
+
+  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+    Model: "google/gemma-3-27b:free",
+    Input: &input,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using AiStatsSdk;
+using System.Collections.Generic;
+
+var client = new AIStats("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemma-3-27b:free",
+    ["input"] = "Summarize this article in 3 bullet points."
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use AIStats\Sdk\AIStats;
+
+$client = new AIStats(getenv('AI_STATS_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemma-3-27b:free',
+    'input' => 'Summarize this article in 3 bullet points.',
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'ai_stats_sdk'
+
+client = AIStatsSdk::AIStats.new(api_key: ENV.fetch('AI_STATS_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemma-3-27b:free',
+  input: 'Summarize this article in 3 bullet points.'
+)
+
+puts response
+```
+
+```java Java SDK
+import ai.stats.sdk.AIStats;
+
+AIStats client = new AIStats(System.getenv("AI_STATS_API_KEY"));
+
+String body = """
+{
+  "model": "google/gemma-3-27b:free",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        { "type": "input_text", "text": "Summarize this article in 3 bullet points." }
+      ]
+    }
+  ]
+}
+""";
+
+Object response = client.createResponse(body);
+System.out.println(String.valueOf(response));
+```
+</CodeGroup>
 
 ## 2. Paid-model chat completion
 
@@ -45,6 +180,30 @@ curl https://api.phaseo.app/v1/images/generations \
   }'
 ```
 
-## More examples
+## Full sample projects
 
-Explore the [SDK Reference](../sdk-reference/typescript/overview.mdx) for language-specific examples.
+These projects live in this repository under `examples/`. Each one also has a matching cookbook walkthrough.
+
+### Browser apps
+
+- [Next.js web chat app](../cookbook/build-a-nextjs-web-chat-app)
+  Repo: [examples/web-chat-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/web-chat-nextjs)
+- [OAuth Next.js workbench](../cookbook/build-an-oauth-nextjs-workbench)
+  Repo: [examples/oauth-client-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/oauth-client-nextjs)
+
+### Script and backend starters
+
+- [Node REST smoke app](../cookbook/build-a-node-rest-smoke-app)
+  Repo: [examples/gateway-node-quickstart](https://github.com/AI-Stats/AI-Stats/tree/main/examples/gateway-node-quickstart)
+- [Python gateway CLI](../cookbook/build-a-python-gateway-cli)
+  Repo: [examples/gateway-python-quickstart](https://github.com/AI-Stats/AI-Stats/tree/main/examples/gateway-python-quickstart)
+
+## Prompt-first project starters
+
+If you want a coding agent to generate the first version for you, start here:
+
+- [Mini app starter prompts](../cookbook/mini-app-starter-prompts)
+
+## More SDK examples
+
+Explore the [SDK Reference](../sdk-reference/typescript/overview) for language-specific examples.

@@ -4,6 +4,7 @@
   "name": "GLM 4.7",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM 4.7 is Z.ai's latest flagship model, featuring upgrades in two key areas: enhanced programming capabilities and more stable multi-step reasoning/execution.",
   "announced_date": "2025-12-22T00:00:00",
   "release_date": "2025-12-22T00:00:00",
   "deprecation_date": null,

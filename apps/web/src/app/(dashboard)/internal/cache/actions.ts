@@ -114,6 +114,16 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 	});
 }
 
+export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
+	return runAdminAction("Public catalogue", async () => {
+		revalidateModelDataTags();
+		revalidateTag("collections", EXPIRE_NOW);
+		revalidatePath("/models");
+		revalidatePath("/models/collections");
+		revalidatePath("/api-providers");
+	});
+}
+
 export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {
 	return runAdminAction("Providers (global API info)", async () => {
 		revalidateProviderDataTags();

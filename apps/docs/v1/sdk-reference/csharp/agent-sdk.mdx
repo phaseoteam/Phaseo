@@ -1,0 +1,44 @@
+---
+title: "Usage"
+description: "Run a minimal local agent loop on top of AI Stats Gateway with the C# Agent SDK."
+---
+
+## Install
+
+```bash
+dotnet add package AI.Stats.Sdk
+dotnet add package AI.Stats.AgentSdk
+```
+
+## Quickstart
+
+```csharp
+using AiStatsAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## What it ships
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- a bounded tool loop over the AI Stats `responses` API
+
+## Related
+
+- [Agent SDK overview](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

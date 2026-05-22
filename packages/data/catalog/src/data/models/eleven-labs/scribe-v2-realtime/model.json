@@ -4,6 +4,7 @@
   "name": "Scribe V2 Realtime",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Scribe V2 Realtime is a language model from ElevenLabs for chat, writing, analysis, and general-purpose automation.",
   "announced_date": "2025-11-11T00:00:00",
   "release_date": "2025-11-11T00:00:00",
   "deprecation_date": null,

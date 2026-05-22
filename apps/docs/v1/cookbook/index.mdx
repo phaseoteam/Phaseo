@@ -1,0 +1,195 @@
+---
+title: "Cookbook"
+description: "Scenario-driven recipes for shipping with AI Stats faster."
+---
+
+Use the cookbook when you want the shortest path from idea to working implementation.
+
+## Start here
+
+<Columns cols={2}>
+	<Card title="Launch on the free router" icon="sparkles" href="./free-router-first-deploy">
+		Start on `ai-stats/free` and let AI Stats choose an available free model for you.
+	</Card>
+	<Card title="Use mini app starter prompts" icon="wand-sparkles" href="./mini-app-starter-prompts">
+		Copy one outcome-focused prompt into a coding agent to build a small app with raw HTTP, an SDK, or an agent runtime.
+	</Card>
+	<Card title="Build a Next.js web chat app" icon="message-square" href="./build-a-nextjs-web-chat-app">
+		Follow the existing sample project to build a small browser chat app with server-side gateway calls.
+	</Card>
+	<Card title="Build an OAuth Next.js workbench" icon="shield-user" href="./build-an-oauth-nextjs-workbench">
+		Use the full signed-in sample when you need OAuth, session-backed access, and a unified gateway proxy.
+	</Card>
+	<Card title="Build a Node REST smoke app" icon="terminal" href="./build-a-node-rest-smoke-app">
+		Start from the raw HTTP Node sample when you want a simple script or backend smoke test.
+	</Card>
+	<Card title="Build a Python gateway CLI" icon="terminal-square" href="./build-a-python-gateway-cli">
+		Use the Python sample as a full walkthrough for a CLI, worker, or backend integration.
+	</Card>
+</Columns>
+
+## Routing and policy
+
+<Columns cols={2}>
+	<Card title="Roll out presets and debug routing" icon="git-branch" href="./preset-rollout-and-routing-debug">
+		Ship reusable defaults, limit which providers can be used, and understand routing decisions from logs.
+	</Card>
+	<Card title="Sort providers by price, latency, or throughput" icon="arrow-up-narrow-wide" href="./sort-providers-by-price-latency-or-throughput">
+		Keep one model ID and choose whether AI Stats should prefer lower cost, faster responses, or higher throughput.
+	</Card>
+	<Card title="Pin or ignore providers per request" icon="route" href="./pin-or-ignore-providers-per-request">
+		Prefer one provider order, constrain the pool, or skip one provider without editing workspace defaults.
+	</Card>
+	<Card title="Route only to EU or ZDR providers" icon="shield" href="./route-only-to-eu-or-zdr-providers">
+		Filter routing to provider offers that satisfy execution region, data region, or zero-data-retention requirements.
+	</Card>
+	<Card title="Roll out guardrails on API keys" icon="shield-check" href="./guardrails-for-api-keys">
+		Apply budget limits, routing restrictions, and content enforcement to the keys that need them.
+	</Card>
+	<Card title="Use response caching with presets" icon="database-zap" href="./response-caching-with-presets">
+		Make repeated requests easier to cache so repeated calls return faster and cost less.
+	</Card>
+</Columns>
+
+## Video and async jobs
+
+<Columns cols={2}>
+	<Card title="Choose a video generation model" icon="clapperboard" href="./choose-a-video-generation-model">
+		Use the video model catalogue to choose a model based on inputs, outputs, providers, and pricing.
+	</Card>
+	<Card title="Generate and download a video from text" icon="film" href="./generate-and-download-a-video-from-text">
+		Submit one text-to-video job, poll safely, and fetch the final output.
+	</Card>
+	<Card title="Use image inputs for video generation" icon="image-plus" href="./use-image-inputs-for-video-generation">
+		Guide a video job with a first frame or reference image.
+	</Card>
+	<Card title="Send provider-specific video options" icon="sliders" href="./send-provider-specific-video-options">
+		Add provider-specific video settings without rewriting the rest of the integration.
+	</Card>
+	<Card title="Run async video with webhooks" icon="video" href="./async-video-webhooks">
+		Create long-running video jobs, track status, and consume standardized webhook deliveries.
+	</Card>
+	<Card title="Run async batches with webhooks" icon="blocks" href="./async-batch-webhooks">
+		Create batch jobs, recover with polling, and reconcile standardized webhook deliveries.
+	</Card>
+</Columns>
+
+## Search, grounding, and structured outputs
+
+<Columns cols={2}>
+	<Card title="Ship structured JSON from Python" icon="braces" href="./sdk-python-presets-and-json">
+		Use the official Python SDK with presets, structured output, and response metadata instead of raw HTTP requests.
+	</Card>
+	<Card title="Ground TypeScript SDK requests with search" icon="compass" href="./sdk-typescript-managed-search">
+		Use the official TypeScript SDK with managed web search, presets, and metadata-rich debugging.
+	</Card>
+	<Card title="Debug web search requests" icon="search-check" href="./web-search-debugging">
+		Inspect routed providers, search usage meters, and normalized results plus citations from logs.
+	</Card>
+	<Card title="Ground extraction with web fetch" icon="globe-lock" href="./tool-grounding-with-web-fetch">
+		Fetch one known page through the gateway, inspect bounded text, and verify grounded follow-up extraction from logs.
+	</Card>
+	<Card title="Recover malformed structured JSON" icon="wrench" href="./response-healing-for-structured-json">
+		Recover nearly-valid JSON responses so strict parsers do not break your workflow.
+	</Card>
+	<Card title="Set plugin defaults for structured JSON" icon="sliders-horizontal" href="./plugin-defaults-and-response-healing">
+		Set response-healing defaults at the workspace, preset, or request level.
+	</Card>
+</Columns>
+
+## Agent workflows
+
+<Columns cols={2}>
+	<Card title="Build a durable agent loop" icon="bot-message-square" href="./agent-sdk-durable-loop">
+		Run a resumable TypeScript agent loop with local tools and a gateway-backed client.
+	</Card>
+	<Card title="Research with agent-backed web search" icon="search" href="./agent-sdk-research-brief">
+		Run a structured-output research agent that grounds itself with managed web search and deterministic response healing.
+	</Card>
+	<Card title="Triage support with preset-driven agents" icon="badge-help" href="./agent-sdk-support-triage">
+		Route one support workflow through a dashboard preset, strict JSON, bounded retries, and explicit human review pauses.
+	</Card>
+	<Card title="Extract structured JSON with Python agents" icon="braces" href="./agent-sdk-python-structured-extraction">
+		Use the Python Agent SDK for one bounded local-tool loop that returns structured JSON.
+	</Card>
+	<Card title="Build an ops runbook agent in Go" icon="server-cog" href="./agent-sdk-go-ops-runbook">
+		Use the Go Agent SDK to combine deterministic local tools into one troubleshooting loop.
+	</Card>
+	<Card title="Triage tickets with the C# Agent SDK" icon="tickets" href="./agent-sdk-csharp-ticket-triage">
+		Keep one .NET support workflow inside a bounded local-tool agent loop.
+	</Card>
+	<Card title="Review CMS drafts with the PHP Agent SDK" icon="file-pen-line" href="./agent-sdk-php-content-review">
+		Wrap one internal content lookup tool in a simple PHP review workflow.
+	</Card>
+	<Card title="Summarize notes with the Ruby Agent SDK" icon="notebook-pen" href="./agent-sdk-ruby-rag-notes">
+		Query one internal note source and return a bounded summary from a Ruby workflow.
+	</Card>
+	<Card title="Review code with local runtime tools" icon="file-code-2" href="./agent-sdk-coding-review">
+		Build a resumable coding workflow that uses local tools, strict JSON, and approval checkpoints instead of one-shot prose.
+	</Card>
+	<Card title="Fan out local tools concurrently" icon="split" href="./agent-sdk-parallel-tools">
+		Run several independent local tools in one agent turn without serializing the whole tool phase.
+	</Card>
+	<Card title="Set up coding agents with SKILL.md" icon="bot" href="./coding-agents-skill-md">
+		Pair the SDK with agent instructions so local coding agents can use the gateway productively on day one.
+	</Card>
+</Columns>
+
+## Choose the right recipe
+
+### Start here
+
+- Use the free-router recipe when you need the fastest path to a live integration without funding a wallet first.
+- Use the mini-app prompts page when you want a coding agent to scaffold a small app around one SDK or raw HTTP path.
+- Use the Next.js chat page when you want a complete browser example with a server-side gateway boundary.
+- Use the OAuth workbench page when you need a signed-in product integration with delegated access and multiple gateway surfaces.
+- Use the Node REST page when you want a raw HTTP script or smoke test.
+- Use the Python gateway CLI page when your first integration lives in Python.
+
+### Routing and policy
+
+- Use the presets recipe when multiple services need the same prompt, routing, and parameter defaults.
+- Use the provider-sort recipe when one request should keep the same model but optimize for cost, latency, or throughput.
+- Use the pin-or-ignore recipe when one workflow needs a temporary provider override without changing shared presets.
+- Use the residency or ZDR recipe when one request must stay within a regional or zero-data-retention boundary.
+- Use the guardrails recipe when one or more API keys need policy controls before broader rollout.
+- Use the response-caching recipe when repeated requests should return exact cached responses instead of re-running inference.
+
+### Video and async jobs
+
+- Use the video-model recipe before you submit paid jobs and still need to choose the right model path.
+- Use the text-to-video recipe when you want the smallest possible async video loop before adding webhooks.
+- Use the image-input recipe when one or more images should guide the generated clip.
+- Use the provider-specific video-options recipe when the shared video fields are not enough for one provider path.
+- Use the async video recipe when the workload is long-running and your application needs delivery callbacks.
+- Use the async batch recipe when you need one durable polling and webhook loop around fan-out batch execution.
+
+### Search, grounding, and structured outputs
+
+- Use the Python SDK recipe when one Python service should stay on the official SDK while relying on presets, structured JSON, and response metadata.
+- Use the TypeScript SDK search recipe when one JS or TS workflow should stay grounded with managed web search and still remain easy to debug from logs.
+- Use the web-search recipe when native search requests need capability or citation debugging.
+- Use the web-fetch recipe when the URL is already known and one-page grounding is enough.
+- Use the response-healing recipe when strict JSON callers need deterministic recovery from near-valid malformed payloads.
+- Use the plugin-defaults recipe when one team needs stable workspace, preset, and request-level control over response-healing policy.
+
+### Agent workflows
+
+- Use the durable agent recipe when you need resumable multi-step execution instead of one-shot text generation.
+- Use the research-agent recipe when one agent workflow should always combine managed web search, strict JSON, and response healing through the gateway-backed adapter.
+- Use the support-triage recipe when one workflow should inherit preset routing defaults, pause risky cases for review, and keep guardrail failures operationally visible.
+- Use the Python agent JSON recipe when one Python worker needs one local-tool loop and one structured output shape.
+- Use the Go ops recipe when one Go service should answer operational questions with a few deterministic local tools.
+- Use the C# ticket recipe when one .NET service should classify or summarize support tickets with local context.
+- Use the PHP content-review recipe when one PHP app should review drafts with local content lookup tools.
+- Use the Ruby notes recipe when one Ruby service should summarize internal notes through a bounded tool loop.
+- Use the coding-review recipe when one workflow should loop over local runtime tools and explicit approval checkpoints instead of only upstream-managed tools.
+- Use the parallel-tools recipe when one model turn can safely fan out into several independent local runtime tools.
+- Use the coding-agent recipe when your team is building internal tools or SDK-backed automations with local agents.
+
+## Related guides
+
+- [Quickstart](../quickstart)
+- [Routing and Fallbacks](../guides/routing-and-fallbacks)
+- [Presets](../guides/presets)
+- [Integrations](../guides/integrations/index)

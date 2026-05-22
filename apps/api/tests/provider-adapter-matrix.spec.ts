@@ -98,7 +98,7 @@ const SCENARIOS: Partial<Record<Endpoint, Scenario>> = {
         requestBody: { model: "gpt-4o-mini-tts", input: "Hello", voice: "alloy", format: "mp3" },
         responseBody: "SPEECH",
         responseHeaders: { "Content-Type": "audio/mpeg" },
-        urlMatch: (url) => url.includes("/audio/speech"),
+        urlMatch: (url) => url.includes("/audio/speech") || url.includes("/tts"),
         expectsNormalized: false,
     },
     "audio.transcription": {

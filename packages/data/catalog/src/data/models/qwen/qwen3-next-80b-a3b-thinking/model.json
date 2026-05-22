@@ -4,6 +4,7 @@
   "name": "Qwen 3 Next 80B A3B Thinking",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 Next 80B A3B Thinking is a reasoning-first chat model in the Qwen3-Next line that outputs structured \"thinking\" traces by default.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

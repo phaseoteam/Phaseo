@@ -2,7 +2,6 @@
 
 alter table public.teams
   add column if not exists invoice_mode_activated_at timestamptz null;
-
 update public.teams
 set invoice_mode_activated_at = coalesce(
   invoice_mode_activated_at,
@@ -11,7 +10,6 @@ set invoice_mode_activated_at = coalesce(
 )
 where coalesce(billing_mode, 'wallet') = 'invoice'
   and invoice_mode_activated_at is null;
-
 create or replace function public.enforce_team_invoice_mode_lock()
 returns trigger
 language plpgsql
@@ -44,20 +42,16 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists teams_invoice_mode_lock on public.teams;
 create trigger teams_invoice_mode_lock
 before insert or update of billing_mode, invoice_mode_activated_at
 on public.teams
 for each row
 execute function public.enforce_team_invoice_mode_lock();
-
 alter table public.teams
   drop constraint if exists teams_invoice_mode_lock_check;
-
 alter table public.teams
   add constraint teams_invoice_mode_lock_check
   check (invoice_mode_activated_at is null or billing_mode = 'invoice');
-
 comment on column public.teams.invoice_mode_activated_at
   is 'Set the first time team billing enters invoice mode. Non-null means invoice mode is permanently locked on.';

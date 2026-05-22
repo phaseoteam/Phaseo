@@ -5,5 +5,7 @@
   "link": "https://platform.xiaomimimo.com/#/docs/welcome",
   "country_code": "CN",
   "status": "Active",
-  "colour": "#FF6900"
+  "colour": "#FF6900",
+  "privacy_policy_url": "https://p.www.xiaomi.com/policy/privacyPolicy.html",
+  "terms_of_service_url": "https://static.account.xiaomi.com/html/agreement/user/en_US.html"
 }

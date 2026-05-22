@@ -4,6 +4,7 @@
   "name": "Qwen 2.5 Coder 7B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 2.5 Coder 7B is the latest series of Code-Specific Qwen large language models (formerly known as CodeQwen).",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

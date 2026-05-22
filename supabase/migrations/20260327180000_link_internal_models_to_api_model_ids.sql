@@ -4,19 +4,15 @@
 
 alter table public.data_models
   add column if not exists api_model_id text;
-
 create index if not exists data_models_api_model_id_idx
   on public.data_models(api_model_id);
-
 create table if not exists public.data_model_api_id_link_conflicts (
   conflict_id bigint generated always as identity primary key,
   internal_model_id text not null,
   candidate_api_model_ids text[] not null,
   created_at timestamptz not null default now()
 );
-
 truncate table public.data_model_api_id_link_conflicts;
-
 with provider_candidates as (
   select
     btrim(pm.internal_model_id) as internal_model_id,
@@ -40,7 +36,6 @@ select
   c.internal_model_id,
   c.candidate_api_model_ids
 from conflicts c;
-
 do $$
 declare
   conflict_count integer;
@@ -55,7 +50,6 @@ begin
   end if;
 end
 $$;
-
 with ranked_mapping as (
   select
     btrim(pm.internal_model_id) as internal_model_id,
@@ -86,7 +80,6 @@ set api_model_id = c.api_model_id
 from chosen c
 where dm.model_id = c.internal_model_id
   and dm.api_model_id is distinct from c.api_model_id;
-
 -- Recompute provider model bridge FK (model_id) from:
 -- 1) internal_model_id if it exists in data_models
 -- 2) data_models.api_model_id lookup
@@ -122,7 +115,6 @@ set model_id = r.resolved_model_id
 from resolved r
 where pm.provider_api_model_id = r.provider_api_model_id
   and pm.model_id is distinct from r.resolved_model_id;
-
 create or replace function public.sync_data_api_provider_models_model_id()
 returns trigger
 language plpgsql
@@ -185,4 +177,3 @@ begin
   return new;
 end;
 $$;
-

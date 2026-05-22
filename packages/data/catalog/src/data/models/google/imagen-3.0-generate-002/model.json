@@ -4,6 +4,7 @@
   "name": "Imagen 3.0 Generate 002",
   "status": "Retired",
   "previous_model_id": "google/imagen-3-0-generate-002-2025-01-29",
+  "description": "Imagen 3.0 Generate 002 is an image generation model from Google for visual creation workflows. It is aimed at illustration, design exploration, and marketing creative.",
   "announced_date": "2025-01-29T00:00:00",
   "release_date": "2025-01-29T00:00:00",
   "deprecation_date": "2025-11-10T00:00:00",

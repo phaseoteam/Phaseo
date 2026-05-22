@@ -172,7 +172,8 @@
           "value": false
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_to": "2026-05-11T00:00:00"
     },
     {
       "meter": "output_video_seconds",
@@ -198,7 +199,89 @@
           "value": false
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_to": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.08,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "720p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1080p"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
+    },
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0.25,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "video_params.resolution",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "4k"
+        },
+        {
+          "path": "video_params.audio",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 2,
+          "value": false
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     }
   ]
 }

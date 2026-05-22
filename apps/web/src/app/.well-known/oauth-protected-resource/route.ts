@@ -1,9 +1,12 @@
-import { buildOAuthProtectedResourceMetadata } from "@/lib/agent-discovery";
+import { NextResponse } from "next/server";
 
 export async function GET() {
-	return Response.json(buildOAuthProtectedResourceMetadata(), {
-		headers: {
-			"Cache-Control": "public, max-age=3600, stale-while-revalidate=3600",
+	return NextResponse.json(
+		{
+			error: "not_configured",
+			message:
+				"OAuth protected resource metadata is not configured in this deployment yet.",
 		},
-	});
+		{ status: 501 },
+	);
 }

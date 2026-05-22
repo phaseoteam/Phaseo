@@ -4,6 +4,7 @@
   "name": "Qwen3 Max Preview",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen3 Max Preview is a proprietary frontier model from Alibaba Cloud built on a sparse mixture-of-experts architecture with approximately 1 trillion total parameters.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

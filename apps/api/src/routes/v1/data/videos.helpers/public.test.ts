@@ -55,6 +55,27 @@ describe("public video response helper", () => {
 				requestId: "gen_req_123",
 				keySource: "byok",
 				costUsd: 1.23,
+				webhook: {
+					url: "https://example.com/hooks/video",
+					secret: "whsec_video_secret",
+					events: ["video.completed"],
+				},
+				webhookDeliveries: {
+					"video.completed": "2026-05-05T10:05:30.000Z",
+				},
+				webhookAttempts: [
+					{
+						id: "video.completed:1",
+						delivery_key: "video.completed",
+						event_type: "video.completed",
+						status: "delivered",
+						attempt_number: 1,
+						max_attempts: 4,
+						tried_at: "2026-05-05T10:05:29.000Z",
+						delivered_at: "2026-05-05T10:05:30.000Z",
+						response_status: 202,
+					},
+				],
 			} as any,
 		});
 
@@ -62,10 +83,12 @@ describe("public video response helper", () => {
 			id: "G-123",
 			object: "video",
 			status: "completed",
+			lifecycle_status: "completed",
 			output_access: "both",
 			progress: 100,
 			progress_source: "provider",
 			poll_after_seconds: 20,
+			cancel_url: null,
 			generation_id: "gen_req_123",
 			created_at: 1710000000,
 			started_at: "2026-05-05T10:00:00.000Z",
@@ -91,6 +114,24 @@ describe("public video response helper", () => {
 				state: "settled",
 				billable: true,
 				billed_at: "2026-05-05T10:06:00.000Z",
+			},
+			webhook: {
+				url: "https://example.com/hooks/video",
+				events: ["video.completed"],
+				has_secret: true,
+				delivery: {
+					total_attempts: 1,
+					delivered_events: 1,
+					delivered_event_types: ["video.completed"],
+					pending_retries: 0,
+					next_retry_at: null,
+					last_attempt_at: "2026-05-05T10:05:29.000Z",
+					last_attempt_status: "delivered",
+					last_response_status: 202,
+					last_delivered_at: "2026-05-05T10:05:30.000Z",
+					last_failure_at: null,
+					last_error_message: null,
+				},
 			},
 		});
 
@@ -138,6 +179,8 @@ describe("public video response helper", () => {
 		});
 
 		expect(response.output_access).toBe("bytes");
+		expect(response.lifecycle_status).toBe("completed");
+		expect(response.cancel_url).toBeNull();
 		expect(response.content_url).toBe("https://api.phaseo.app/v1/videos/G-456/content");
 		expect(response).not.toHaveProperty("download_url");
 		expect(response).not.toHaveProperty("expires_at");

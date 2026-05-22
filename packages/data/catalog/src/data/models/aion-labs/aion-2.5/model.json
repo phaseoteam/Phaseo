@@ -4,6 +4,7 @@
   "name": "Aion 2.5",
   "status": "Available",
   "previous_model_id": "aion-labs/aion-2-0-2025-12-21",
+  "description": "Aion 2.5 is a variant of DeepSeek V3.2 optimized for immersive roleplaying and storytelling. It accepts text inputs and produces text outputs.",
   "announced_date": "2026-03-10T00:00:00",
   "release_date": "2026-03-10T00:00:00",
   "deprecation_date": null,

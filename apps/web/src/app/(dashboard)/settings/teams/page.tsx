@@ -5,5 +5,5 @@ export const metadata = {
 };
 
 export default function TeamsPage() {
-	redirect("/settings/workspaces/general");
+	redirect("/settings/workspaces/members");
 }

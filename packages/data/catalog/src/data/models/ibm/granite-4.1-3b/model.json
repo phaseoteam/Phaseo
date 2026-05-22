@@ -4,6 +4,7 @@
   "name": "Granite 4.1 3B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Granite 4.1 3B is a language model from IBM for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2026-04-29T00:00:00",
   "release_date": "2026-04-29T00:00:00",
   "deprecation_date": null,

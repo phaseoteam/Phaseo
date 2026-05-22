@@ -4,6 +4,11 @@
   "description": null,
   "link": null,
   "country_code": "CN",
-  "status": "Beta",
-  "colour": "#4F46E5"
+  "status": "Active",
+  "colour": "#4F46E5",
+  "privacy_policy_url": "https://docs.byteplus.com/legal/docs/privacy-policy",
+  "terms_of_service_url": "https://docs.byteplus.com/en/docs/legal/docs-terms-of-service",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "BytePlus ModelArk says it processes customer data solely under customer instructions and will not use Customer Data for its own model training without prior customer authorization.",
+  "prompt_training_source_url": "https://docs.byteplus.com/api/docs/ModelArk/BytePlus_ModelArk_Data_Processing"
 }

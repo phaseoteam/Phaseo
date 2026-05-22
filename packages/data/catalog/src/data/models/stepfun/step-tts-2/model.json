@@ -4,6 +4,7 @@
   "name": "Step TTS 2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Step TTS 2 is StepFun's most capable open-source foundation model.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

@@ -522,6 +522,20 @@ struct GatewayModelsResponse {
 	int total;
 };
 
+struct GatewayWebFetchToolDefinition {
+	std::optional<int> max_chars;
+	std::map<std::string, std::any> parameters;
+	std::any type;
+};
+
+struct GatewayWebSearchToolDefinition {
+	std::optional<bool> include_highlights;
+	std::optional<bool> include_text;
+	std::optional<int> max_results;
+	std::map<std::string, std::any> parameters;
+	std::any type;
+};
+
 struct GenerationResponse {
 	std::optional<std::string> app_id;
 	std::optional<bool> byok;
@@ -847,10 +861,23 @@ struct ProviderOptions {
 };
 
 struct ProviderRoutingOptions {
+	std::optional<bool> allow_fallbacks;
+	std::optional<std::any> data_collection;
+	std::optional<bool> enforce_distillable_text;
 	std::vector<std::string> ignore;
 	std::optional<bool> include_alpha;
+	std::map<std::string, std::any> max_price;
 	std::vector<std::string> only;
 	std::vector<std::string> order;
+	std::any preferred_max_latency;
+	std::any preferred_min_throughput;
+	std::optional<std::vector<std::string>> quantizations;
+	std::optional<bool> require_parameters;
+	std::optional<bool> require_zero_data_retention;
+	std::optional<std::string> required_data_region;
+	std::optional<std::string> required_execution_region;
+	std::any sort;
+	std::optional<bool> zdr;
 };
 
 struct ProvisioningKey {
@@ -1039,6 +1066,8 @@ struct ResponsesWebSocketUpgradeRequiredResponse {
 
 struct ServerToolUsage {
 	std::optional<int> datetime_requests;
+	std::optional<int> web_fetch_requests;
+	std::optional<int> web_search_requests;
 };
 
 struct TextContentPart {

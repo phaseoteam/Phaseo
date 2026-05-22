@@ -1,0 +1,117 @@
+{
+  "key": "openai-eu:openai/gpt-5.4-nano:text.generate",
+  "api_provider_id": "openai-eu",
+  "provider_slug": "openai-eu",
+  "api_model_id": "openai/gpt-5.4-nano",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.022,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.375,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.11,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.011,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6875,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.11,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.011,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6875,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": "EU regional processing price (+10%).",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-17T00:00:00"
+    }
+  ]
+}

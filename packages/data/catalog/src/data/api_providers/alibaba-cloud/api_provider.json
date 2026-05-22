@@ -4,6 +4,11 @@
   "description": null,
   "link": "https://www.alibabacloud.com/help/en/model-studio/models",
   "country_code": "CN",
-  "status": "Beta",
-  "colour": "#FF6A00"
+  "status": "Active",
+  "colour": "#FF6A00",
+  "privacy_policy_url": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-privacy-policy",
+  "terms_of_service_url": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-terms-of-use-alibaba-cloud-international-website-terms-of-use",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Alibaba Cloud Model Studio says it will never use your data for model training. For direct API calls, it says conversation data is not saved and only desensitized call status is recorded.",
+  "prompt_training_source_url": "https://www.alibabacloud.com/help/en/model-studio/compliance-and-privacy"
 }

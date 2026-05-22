@@ -29,6 +29,75 @@ type RoutingDiagnostics = {
 			reason?: string | null;
 		}>;
 	}>;
+	workspacePolicy?: {
+		resolvedModel?: string;
+		allowedApiModels?: string[];
+		providerAllowlist?: string[];
+		providerBlocklist?: string[];
+		requestProviderOnly?: string[];
+		requestProviderIgnore?: string[];
+		activeGuardrailIds?: string[];
+		beforeCount?: number;
+		afterCount?: number;
+	};
+	consideredProviders?: Array<{
+		providerId?: string | null;
+		apiModelId?: string | null;
+		providerModelSlug?: string | null;
+		providerStatus?: string | null;
+		providerRoutingStatus?: string | null;
+		modelRoutingStatus?: string | null;
+		capabilityStatus?: string | null;
+		baseWeight?: number | null;
+	}>;
+	rankedProviders?: Array<{
+		providerId?: string | null;
+		apiModelId?: string | null;
+		providerModelSlug?: string | null;
+		score?: number | null;
+		breaker?: string | null;
+		breakerUntilMs?: number | null;
+		scoreFactors?: {
+			successRate?: number | null;
+			latencyScore?: number | null;
+			tailLatencyScore?: number | null;
+			throughputScore?: number | null;
+			priceScore?: number | null;
+			tokenAffinity?: number | null;
+			loadPenalty?: number | null;
+			baseWeight?: number | null;
+			rolloutMultiplier?: number | null;
+			routingMultiplier?: number | null;
+			cacheBoostMultiplier?: number | null;
+		};
+	}>;
+};
+
+type ValidationErrorDetail = {
+	keyword?: string;
+	params?: Record<string, unknown>;
+};
+
+type KeyLimitBucketDiagnostics = {
+	window_start?: string | null;
+	requests_used?: number | string | null;
+	requests_limit?: number | string | null;
+	cost_used_nanos?: number | string | null;
+	cost_limit_nanos?: number | string | null;
+};
+
+type KeyLimitDiagnostics = {
+	limit_window?: string | null;
+	limit_metric?: string | null;
+	current_value?: number | string | null;
+	limit_value?: number | string | null;
+	reset_at?: string | null;
+	now?: string | null;
+	buckets?: {
+		daily?: KeyLimitBucketDiagnostics | null;
+		weekly?: KeyLimitBucketDiagnostics | null;
+		monthly?: KeyLimitBucketDiagnostics | null;
+	} | null;
 };
 
 type ProviderFailureDiagnostics = {
@@ -66,6 +135,7 @@ type ParsedGatewayError = {
 	provider_candidate_diagnostics?: ProviderCandidateDiagnostics;
 	provider_enablement?: ProviderEnablementDiagnostics;
 	routing_diagnostics?: RoutingDiagnostics;
+	details?: ValidationErrorDetail[];
 	provider_failure_diagnostics?: ProviderFailureDiagnostics;
 	failure_sample?: Array<{
 		provider?: string | null;
@@ -121,6 +191,48 @@ export type FormattedRoomError = {
 				reason: string | null;
 			}>;
 		}>;
+		workspacePolicy?: {
+			resolvedModel: string | null;
+			allowedApiModels: string[];
+			providerAllowlist: string[];
+			providerBlocklist: string[];
+			requestProviderOnly: string[];
+			requestProviderIgnore: string[];
+			activeGuardrailIds: string[];
+			beforeCount: number | null;
+			afterCount: number | null;
+		};
+		consideredProviders: Array<{
+			providerId: string | null;
+			apiModelId: string | null;
+			providerModelSlug: string | null;
+			providerStatus: string | null;
+			providerRoutingStatus: string | null;
+			modelRoutingStatus: string | null;
+			capabilityStatus: string | null;
+			baseWeight: number | null;
+		}>;
+		rankedProviders: Array<{
+			providerId: string | null;
+			apiModelId: string | null;
+			providerModelSlug: string | null;
+			score: number | null;
+			breaker: string | null;
+			breakerUntilMs: number | null;
+			scoreFactors: {
+				successRate: number | null;
+				latencyScore: number | null;
+				tailLatencyScore: number | null;
+				throughputScore: number | null;
+				priceScore: number | null;
+				tokenAffinity: number | null;
+				loadPenalty: number | null;
+				baseWeight: number | null;
+				rolloutMultiplier: number | null;
+				routingMultiplier: number | null;
+				cacheBoostMultiplier: number | null;
+			};
+		}>;
 	};
 	providerFailureCategory?: string;
 	providerFailureProvider?: string;
@@ -131,6 +243,37 @@ export type FormattedRoomError = {
 		upstreamErrorMessage: string | null;
 		upstreamErrorDescription: string | null;
 	}>;
+	keyLimit?: {
+		window: "daily" | "weekly" | "monthly" | null;
+		metric: "requests" | "cost" | "soft_blocked" | null;
+		currentValue: number | null;
+		limitValue: number | null;
+		resetAt: string | null;
+		now: string | null;
+		buckets: {
+			daily?: {
+				windowStart: string | null;
+				requestsUsed: number | null;
+				requestsLimit: number | null;
+				costUsedNanos: number | null;
+				costLimitNanos: number | null;
+			};
+			weekly?: {
+				windowStart: string | null;
+				requestsUsed: number | null;
+				requestsLimit: number | null;
+				costUsedNanos: number | null;
+				costLimitNanos: number | null;
+			};
+			monthly?: {
+				windowStart: string | null;
+				requestsUsed: number | null;
+				requestsLimit: number | null;
+				costUsedNanos: number | null;
+				costLimitNanos: number | null;
+			};
+		};
+	};
 };
 
 function parseJsonLike(raw: string): ParsedGatewayError | null {
@@ -161,6 +304,7 @@ function titleFromCode(code: string): string {
 		return "Unsupported model or endpoint";
 	}
 	if (normalized === "insufficient_funds") return "Insufficient funds";
+	if (normalized === "key_limit_exceeded") return "Key limit exceeded";
 	if (normalized === "validation_error") return "Validation error";
 	if (normalized === "rate_limited") return "Rate limited";
 	return normalized
@@ -262,6 +406,34 @@ function hintForGatewayError(payload: ParsedGatewayError): string | undefined {
 	const structuredFailureHint = payload.provider_failure_diagnostics?.hint?.trim();
 	if (structuredFailureHint) return structuredFailureHint;
 	const code = String(payload.error ?? "").trim().toLowerCase();
+	if (code === "key_limit_exceeded") {
+		const diagnostics = normalizeKeyLimitDiagnostics(payload as ParsedGatewayError & KeyLimitDiagnostics);
+		if (diagnostics?.metric === "soft_blocked") {
+			return "This API key is currently soft-blocked. Re-enable the key or adjust key controls before retrying.";
+		}
+		const windowLabel =
+			diagnostics?.window === "daily"
+				? "daily"
+				: diagnostics?.window === "weekly"
+					? "weekly"
+					: diagnostics?.window === "monthly"
+						? "monthly"
+						: "configured";
+		const metricLabel =
+			diagnostics?.metric === "cost"
+				? "spend"
+				: diagnostics?.metric === "requests"
+					? "request"
+					: "usage";
+		if (
+			diagnostics &&
+			diagnostics.currentValue != null &&
+			diagnostics.limitValue != null
+		) {
+			return `This API key hit its ${windowLabel} ${metricLabel} limit (${diagnostics.currentValue}/${diagnostics.limitValue}). Wait for the reset window or raise the key limit.`;
+		}
+		return `This API key hit a ${windowLabel} limit. Wait for the reset window or raise the key limit.`;
+	}
 	if (code === "unsupported_model_or_endpoint") {
 		return hintFromUnsupportedDiagnostics(payload);
 	}
@@ -444,17 +616,216 @@ function normalizeRoutingDiagnostics(
 								providerId:
 									typeof entry?.providerId === "string" &&
 									entry.providerId.trim()
-										? entry.providerId.trim()
-										: null,
-								reason:
-									typeof entry?.reason === "string" && entry.reason.trim()
-										? entry.reason.trim()
-										: null,
+								? entry.providerId.trim()
+								: null,
+							reason:
+								typeof entry?.reason === "string" && entry.reason.trim()
+									? entry.reason.trim()
+									: null,
 						  }))
 						: [],
 			  }))
 			: [],
+		workspacePolicy: value.workspacePolicy
+			? {
+					resolvedModel:
+						typeof value.workspacePolicy.resolvedModel === "string" &&
+						value.workspacePolicy.resolvedModel.trim()
+							? value.workspacePolicy.resolvedModel.trim()
+							: null,
+					allowedApiModels: normalizeStringList(
+						value.workspacePolicy.allowedApiModels
+					),
+					providerAllowlist: normalizeStringList(
+						value.workspacePolicy.providerAllowlist
+					),
+					providerBlocklist: normalizeStringList(
+						value.workspacePolicy.providerBlocklist
+					),
+					requestProviderOnly: normalizeStringList(
+						value.workspacePolicy.requestProviderOnly
+					),
+					requestProviderIgnore: normalizeStringList(
+						value.workspacePolicy.requestProviderIgnore
+					),
+					activeGuardrailIds: normalizeStringList(
+						value.workspacePolicy.activeGuardrailIds
+					),
+					beforeCount: normalizeCount(value.workspacePolicy.beforeCount),
+					afterCount: normalizeCount(value.workspacePolicy.afterCount),
+			  }
+			: undefined,
+		consideredProviders: Array.isArray(value.consideredProviders)
+			? value.consideredProviders.map((entry) => ({
+					providerId:
+						typeof entry?.providerId === "string" && entry.providerId.trim()
+							? entry.providerId.trim()
+							: null,
+					apiModelId:
+						typeof entry?.apiModelId === "string" && entry.apiModelId.trim()
+							? entry.apiModelId.trim()
+							: null,
+					providerModelSlug:
+						typeof entry?.providerModelSlug === "string" &&
+						entry.providerModelSlug.trim()
+							? entry.providerModelSlug.trim()
+							: null,
+					providerStatus:
+						typeof entry?.providerStatus === "string" &&
+						entry.providerStatus.trim()
+							? entry.providerStatus.trim()
+							: null,
+					providerRoutingStatus:
+						typeof entry?.providerRoutingStatus === "string" &&
+						entry.providerRoutingStatus.trim()
+							? entry.providerRoutingStatus.trim()
+							: null,
+					modelRoutingStatus:
+						typeof entry?.modelRoutingStatus === "string" &&
+						entry.modelRoutingStatus.trim()
+							? entry.modelRoutingStatus.trim()
+							: null,
+					capabilityStatus:
+						typeof entry?.capabilityStatus === "string" &&
+						entry.capabilityStatus.trim()
+							? entry.capabilityStatus.trim()
+							: null,
+					baseWeight: normalizeCount(entry?.baseWeight),
+			  }))
+			: [],
+		rankedProviders: Array.isArray(value.rankedProviders)
+			? value.rankedProviders.map((entry) => ({
+					providerId:
+						typeof entry?.providerId === "string" && entry.providerId.trim()
+							? entry.providerId.trim()
+							: null,
+					apiModelId:
+						typeof entry?.apiModelId === "string" && entry.apiModelId.trim()
+							? entry.apiModelId.trim()
+							: null,
+					providerModelSlug:
+						typeof entry?.providerModelSlug === "string" &&
+						entry.providerModelSlug.trim()
+							? entry.providerModelSlug.trim()
+							: null,
+					score: normalizeCount(entry?.score),
+					breaker:
+						typeof entry?.breaker === "string" && entry.breaker.trim()
+							? entry.breaker.trim()
+							: null,
+					breakerUntilMs: normalizeCount(entry?.breakerUntilMs),
+					scoreFactors: {
+						successRate: normalizeCount(entry?.scoreFactors?.successRate),
+						latencyScore: normalizeCount(entry?.scoreFactors?.latencyScore),
+						tailLatencyScore: normalizeCount(
+							entry?.scoreFactors?.tailLatencyScore,
+						),
+						throughputScore: normalizeCount(
+							entry?.scoreFactors?.throughputScore,
+						),
+						priceScore: normalizeCount(entry?.scoreFactors?.priceScore),
+						tokenAffinity: normalizeCount(
+							entry?.scoreFactors?.tokenAffinity,
+						),
+						loadPenalty: normalizeCount(entry?.scoreFactors?.loadPenalty),
+						baseWeight: normalizeCount(entry?.scoreFactors?.baseWeight),
+						rolloutMultiplier: normalizeCount(
+							entry?.scoreFactors?.rolloutMultiplier,
+						),
+						routingMultiplier: normalizeCount(
+							entry?.scoreFactors?.routingMultiplier,
+						),
+						cacheBoostMultiplier: normalizeCount(
+							entry?.scoreFactors?.cacheBoostMultiplier,
+						),
+					},
+			  }))
+			: [],
 	};
+}
+
+function normalizeKeyLimitBucket(
+	value: KeyLimitBucketDiagnostics | null | undefined,
+): NonNullable<FormattedRoomError["keyLimit"]>["buckets"]["daily"] {
+	if (!value || typeof value !== "object") return undefined;
+	return {
+		windowStart:
+			typeof value.window_start === "string" && value.window_start.trim()
+				? value.window_start.trim()
+				: null,
+		requestsUsed: normalizeCount(value.requests_used),
+		requestsLimit: normalizeCount(value.requests_limit),
+		costUsedNanos: normalizeCount(value.cost_used_nanos),
+		costLimitNanos: normalizeCount(value.cost_limit_nanos),
+	};
+}
+
+function normalizeKeyLimitDiagnostics(
+	value: KeyLimitDiagnostics | undefined,
+): FormattedRoomError["keyLimit"] | undefined {
+	if (!value) return undefined;
+	const window =
+		value.limit_window === "daily" ||
+		value.limit_window === "weekly" ||
+		value.limit_window === "monthly"
+			? value.limit_window
+			: null;
+	const metric =
+		value.limit_metric === "requests" ||
+		value.limit_metric === "cost" ||
+		value.limit_metric === "soft_blocked"
+			? value.limit_metric
+			: null;
+	const resetAt =
+		typeof value.reset_at === "string" && value.reset_at.trim()
+			? value.reset_at.trim()
+			: null;
+	const now =
+		typeof value.now === "string" && value.now.trim()
+			? value.now.trim()
+			: null;
+	const buckets = value.buckets ?? null;
+	if (
+		!window &&
+		!metric &&
+		resetAt == null &&
+		now == null &&
+		!buckets
+	) {
+		return undefined;
+	}
+	return {
+		window,
+		metric,
+		currentValue: normalizeCount(value.current_value),
+		limitValue: normalizeCount(value.limit_value),
+		resetAt,
+		now,
+		buckets: {
+			daily: normalizeKeyLimitBucket(buckets?.daily),
+			weekly: normalizeKeyLimitBucket(buckets?.weekly),
+			monthly: normalizeKeyLimitBucket(buckets?.monthly),
+		},
+	};
+}
+
+function extractWorkspacePolicyFromValidationDetails(
+	details: ValidationErrorDetail[] | undefined,
+): RoutingDiagnostics["workspacePolicy"] | undefined {
+	if (!Array.isArray(details)) return undefined;
+	for (const detail of details) {
+		const keyword = typeof detail?.keyword === "string" ? detail.keyword.trim() : "";
+		if (
+			keyword !== "model_not_allowed_by_workspace_policy" &&
+			keyword !== "no_providers_after_workspace_policy_filter"
+		) {
+			continue;
+		}
+		if (detail?.params && typeof detail.params === "object" && !Array.isArray(detail.params)) {
+			return detail.params as RoutingDiagnostics["workspacePolicy"];
+		}
+	}
+	return undefined;
 }
 
 export function formatRoomError(rawError: string): FormattedRoomError {
@@ -500,7 +871,11 @@ export function formatRoomError(rawError: string): FormattedRoomError {
 			parsed.provider_enablement
 		),
 		routingDiagnostics: normalizeRoutingDiagnostics(
-			parsed.routing_diagnostics
+			parsed.routing_diagnostics ?? {
+				workspacePolicy: extractWorkspacePolicyFromValidationDetails(
+					parsed.details,
+				),
+			}
 		),
 		providerFailureCategory:
 			typeof parsed.provider_failure_diagnostics?.category === "string" &&
@@ -515,5 +890,6 @@ export function formatRoomError(rawError: string): FormattedRoomError {
 		failureSample: Array.isArray(parsed.failure_sample)
 			? parsed.failure_sample.map(normalizeFailureSampleEntry)
 			: undefined,
+		keyLimit: normalizeKeyLimitDiagnostics(parsed as ParsedGatewayError & KeyLimitDiagnostics),
 	};
 }

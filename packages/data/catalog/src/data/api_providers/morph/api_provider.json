@@ -5,5 +5,10 @@
   "link": "https://www.morphllm.com/pricing",
   "country_code": "US",
   "status": "Active",
-  "colour": "#EC4899"
+  "colour": "#EC4899",
+  "privacy_policy_url": "https://www.morphllm.com/privacy",
+  "terms_of_service_url": "https://www.morphllm.com/privacy/tos",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Morph says it does not use inputs and outputs to train its models by default, with limited support/debugging exceptions and stronger zero-retention protections for enterprise customers.",
+  "prompt_training_source_url": "https://www.morphllm.com/privacy"
 }

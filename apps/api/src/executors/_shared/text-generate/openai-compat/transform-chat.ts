@@ -5,7 +5,8 @@
 // OpenAI Chat Completions format transformations
 // Transforms IR <-> OpenAI Chat Completions upstream format
 
-import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRMessage, IRContentPart, IRTool } from "@core/ir";
+import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { applyChatRequestQuirks, applyChatResponseQuirks } from "./chat-quirks-bridge";
 import { applyReasoningParams } from "./reasoning";
 import { getProviderQuirks } from "./quirks";
@@ -57,6 +58,7 @@ export function irToOpenAIChat(
 				providerId === "deepseek" ||
 				providerId === "z-ai" ||
 				providerId === "zai" ||
+				providerId === "crofai" ||
 				providerId === "xiaomi" ||
 				providerId === "minimax" ||
 				providerId === "minimax-lightning";
@@ -113,24 +115,21 @@ export function irToOpenAIChat(
 
 	// Tools
 	if (ir.tools && ir.tools.length > 0) {
-		request.tools = ir.tools.map((t) => ({
-			type: "function",
-			function: {
-				name: t.name,
-				description: t.description,
-				parameters: t.parameters,
-			},
-		}));
+		request.tools = ir.tools.map((tool) => toOpenAIChatTool(tool));
 	}
 
 	if (ir.toolChoice) {
 		if (typeof ir.toolChoice === "string") {
 			request.tool_choice = ir.toolChoice;
 		} else {
-			request.tool_choice = {
-				type: "function",
-				function: { name: ir.toolChoice.name },
-			};
+			const selectedToolName = ir.toolChoice.name;
+			const selectedTool = ir.tools?.find((tool) => tool.name === selectedToolName);
+			request.tool_choice = isIRNativeToolDefinition(selectedTool)
+				? selectedToolName
+				: {
+					type: "function",
+					function: { name: selectedToolName },
+				};
 		}
 	}
 
@@ -199,11 +198,30 @@ export function irToOpenAIChat(
 		};
 	}
 	if (ir.userId !== undefined) request.user = ir.userId;
+	if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
 
 	// Apply provider-specific request transformations after base params are set.
 	applyChatRequestQuirks({ ir, providerId, model, request });
 
 	return request;
+}
+
+function toOpenAIChatTool(tool: IRTool): any {
+	if (isIRNativeToolDefinition(tool)) {
+		return {
+			...(tool?.raw ?? {}),
+			type: tool.type,
+		};
+	}
+
+	return {
+		type: "function",
+		function: {
+			name: tool.name,
+			description: tool.description,
+			parameters: tool.parameters,
+		},
+	};
 }
 
 /**
@@ -492,6 +510,32 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 	const inputTokens = usage.prompt_tokens ?? usage.input_tokens ?? usage.input_text_tokens ?? 0;
 	const outputTokens = usage.completion_tokens ?? usage.output_tokens ?? usage.output_text_tokens ?? 0;
 	const totalTokens = usage.total_tokens ?? (inputTokens + outputTokens);
+	const serverToolUseRaw =
+		usage.server_tool_use && typeof usage.server_tool_use === "object"
+			? usage.server_tool_use
+			: usage.serverToolUse && typeof usage.serverToolUse === "object"
+				? usage.serverToolUse
+				: null;
+	const datetimeRequests =
+		typeof serverToolUseRaw?.datetime_requests === "number"
+			? serverToolUseRaw.datetime_requests
+			: undefined;
+	const webSearchRequests =
+		typeof serverToolUseRaw?.web_search_requests === "number"
+			? serverToolUseRaw.web_search_requests
+			: undefined;
+	const webFetchRequests =
+		typeof serverToolUseRaw?.web_fetch_requests === "number"
+			? serverToolUseRaw.web_fetch_requests
+			: undefined;
+	const serverToolUse =
+		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null
+			? {
+				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
+				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+			}
+			: undefined;
 
 	return {
 		inputTokens,
@@ -508,6 +552,7 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 			outputAudioTokens: outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
 			cachedWriteTokens: outputDetails?.cached_tokens,
+			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};
 }

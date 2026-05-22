@@ -1,0 +1,325 @@
+---
+title: "Run async video with webhooks"
+description: "Create long-running video jobs, poll status safely, and consume standardized webhook deliveries."
+---
+
+Video generation is asynchronous by design. This recipe shows the minimum application loop you need for a production-safe integration.
+
+## 1. Create the job
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/videos \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/veo-3.1-lite",
+    "prompt": "A cinematic sunrise over a mountain lake",
+    "webhook": {
+      "url": "https://example.com/api/video-webhook",
+      "events": ["video.completed", "video.failed"],
+      "secret": "whsec_your_signing_secret"
+    }
+  }'
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.phaseo.app/v1/videos", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "google/veo-3.1-lite",
+    prompt: "A cinematic sunrise over a mountain lake",
+    webhook: {
+      url: "https://example.com/api/video-webhook",
+      events: ["video.completed", "video.failed"],
+      secret: "whsec_your_signing_secret",
+    },
+  }),
+});
+
+const job = await response.json();
+console.log(job.video_id);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/videos",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "google/veo-3.1-lite",
+        "prompt": "A cinematic sunrise over a mountain lake",
+        "webhook": {
+            "url": "https://example.com/api/video-webhook",
+            "events": ["video.completed", "video.failed"],
+            "secret": "whsec_your_signing_secret",
+        },
+    },
+)
+
+job = response.json()
+print(job.get("video_id"))
+```
+
+```go Go
+package main
+
+import (
+  "bytes"
+  "fmt"
+  "net/http"
+)
+
+func main() {
+  body := []byte(`{
+    "model": "google/veo-3.1-lite",
+    "prompt": "A cinematic sunrise over a mountain lake",
+    "webhook": {
+      "url": "https://example.com/api/video-webhook",
+      "events": ["video.completed", "video.failed"],
+      "secret": "whsec_your_signing_secret"
+    }
+  }`)
+
+  req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/videos", bytes.NewBuffer(body))
+  req.Header.Set("Authorization", "Bearer YOUR_API_KEY")
+  req.Header.Set("Content-Type", "application/json")
+
+  resp, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer resp.Body.Close()
+
+  fmt.Println(resp.StatusCode)
+}
+```
+
+```csharp C#
+using System.Net.Http.Headers;
+using System.Text;
+
+using var client = new HttpClient();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "YOUR_API_KEY");
+
+var content = new StringContent("""
+{
+  "model": "google/veo-3.1-lite",
+  "prompt": "A cinematic sunrise over a mountain lake",
+  "webhook": {
+    "url": "https://example.com/api/video-webhook",
+    "events": ["video.completed", "video.failed"],
+    "secret": "whsec_your_signing_secret"
+  }
+}
+""", Encoding.UTF8, "application/json");
+
+var response = await client.PostAsync("https://api.phaseo.app/v1/videos", content);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+$ch = curl_init('https://api.phaseo.app/v1/videos');
+curl_setopt_array($ch, [
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer YOUR_API_KEY',
+        'Content-Type: application/json',
+    ],
+    CURLOPT_POSTFIELDS => json_encode([
+        'model' => 'google/veo-3.1-lite',
+        'prompt' => 'A cinematic sunrise over a mountain lake',
+        'webhook' => [
+            'url' => 'https://example.com/api/video-webhook',
+            'events' => ['video.completed', 'video.failed'],
+            'secret' => 'whsec_your_signing_secret',
+        ],
+    ]),
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+```
+
+```ruby Ruby
+require 'net/http'
+require 'json'
+require 'uri'
+
+uri = URI('https://api.phaseo.app/v1/videos')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = 'Bearer YOUR_API_KEY'
+request['Content-Type'] = 'application/json'
+request.body = {
+  model: 'google/veo-3.1-lite',
+  prompt: 'A cinematic sunrise over a mountain lake',
+  webhook: {
+    url: 'https://example.com/api/video-webhook',
+    events: ['video.completed', 'video.failed'],
+    secret: 'whsec_your_signing_secret'
+  }
+}.to_json
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+puts response.body
+```
+</CodeGroup>
+
+Store the returned `video_id` immediately.
+
+## 2. Poll status until terminal
+
+Your worker or application can poll:
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/videos/VIDEO_ID \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.phaseo.app/v1/videos/VIDEO_ID", {
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+  },
+});
+
+const status = await response.json();
+console.log(status.status);
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api.phaseo.app/v1/videos/VIDEO_ID",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+    },
+)
+
+status = response.json()
+print(status.get("status"))
+```
+
+```go Go
+package main
+
+import (
+  "fmt"
+  "net/http"
+)
+
+func main() {
+  req, _ := http.NewRequest("GET", "https://api.phaseo.app/v1/videos/VIDEO_ID", nil)
+  req.Header.Set("Authorization", "Bearer YOUR_API_KEY")
+
+  resp, err := http.DefaultClient.Do(req)
+  if err != nil {
+    panic(err)
+  }
+  defer resp.Body.Close()
+
+  fmt.Println(resp.StatusCode)
+}
+```
+
+```csharp C#
+using System.Net.Http.Headers;
+
+using var client = new HttpClient();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "YOUR_API_KEY");
+
+var response = await client.GetAsync("https://api.phaseo.app/v1/videos/VIDEO_ID");
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+$ch = curl_init('https://api.phaseo.app/v1/videos/VIDEO_ID');
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => [
+        'Authorization: Bearer YOUR_API_KEY',
+    ],
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+```
+
+```ruby Ruby
+require 'net/http'
+require 'uri'
+
+uri = URI('https://api.phaseo.app/v1/videos/VIDEO_ID')
+request = Net::HTTP::Get.new(uri)
+request['Authorization'] = 'Bearer YOUR_API_KEY'
+
+response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+  http.request(request)
+end
+
+puts response.body
+```
+</CodeGroup>
+
+Use polling for your own control loop even if you also enable webhooks. That gives you a direct way to recover if a webhook destination is temporarily unavailable.
+
+## 3. Consume webhook deliveries
+
+The current async webhook payloads are normalized around:
+
+- the job identifier
+- lifecycle status
+- delivery status summary
+- recent delivery attempts
+- whether signing is enabled
+
+Design your webhook consumer to:
+
+1. verify the signature
+2. treat deliveries as retryable and idempotent
+3. fetch the latest job status if the webhook payload and local state disagree
+
+## 4. Read the final output
+
+When the job reaches a completed terminal state, fetch content from:
+
+```text
+GET /v1/videos/{video_id}/content
+```
+
+If your application only needs a download URL, use the dedicated download-url surface where supported by the endpoint.
+
+## 5. What to monitor
+
+- job lifecycle status
+- webhook delivery success and retry counts
+- last delivery HTTP status
+- failure timestamps and error messages
+
+These signals should live together in your internal async-job dashboard so operations can distinguish generation failures from webhook-delivery failures.
+
+## Related guides
+
+- [Quickstart](../quickstart)
+- [API Reference: Video Generation](../api-reference/endpoint/video-generation)
+- [API Reference: Video Status](../api-reference/endpoint/video-status)

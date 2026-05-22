@@ -5,5 +5,10 @@
   "link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
   "country_code": "US",
   "status": "NotReady",
-  "colour": "#0078D4"
+  "colour": "#0078D4",
+  "privacy_policy_url": "https://privacy.microsoft.com/en-us/privacystatement",
+  "terms_of_service_url": "https://learn.microsoft.com/en-us/legal/termsofuse",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Microsoft says Azure OpenAI prompts, completions, embeddings, and training data are not used to improve OpenAI models, Azure OpenAI models, or third-party models.",
+  "prompt_training_source_url": "https://learn.microsoft.com/en-us/legal/cognitive-services/openai/data-privacy"
 }

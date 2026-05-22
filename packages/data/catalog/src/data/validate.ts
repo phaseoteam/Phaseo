@@ -207,6 +207,8 @@ export function checkApiProviderModelEntrySafety(
 
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];
 const DETAIL_DATE_HINTS = ['date', 'cutoff'];
+const GENERIC_MODEL_DESCRIPTION_FALLBACK =
+    'On AI Stats you can compare providers, pricing, benchmarks, routing support, and availability for this model.';
 
 type ModelEntry = {
     filePath: string;
@@ -425,6 +427,88 @@ function checkApiProviders(state: ValidationState): string[] {
         if (!providerId) {
             errors.push(`API provider ${provider} missing api_provider_id`);
             continue;
+        }
+        if (
+            data.provider_family_id !== undefined &&
+            data.provider_family_id !== null &&
+            (typeof data.provider_family_id !== 'string' || !data.provider_family_id.trim())
+        ) {
+            errors.push(`API provider ${providerId} has invalid provider_family_id`);
+        }
+        if (
+            data.offer_label !== undefined &&
+            data.offer_label !== null &&
+            (typeof data.offer_label !== 'string' || !data.offer_label.trim())
+        ) {
+            errors.push(`API provider ${providerId} has invalid offer_label`);
+        }
+        if (
+            data.offer_scope !== undefined &&
+            data.offer_scope !== null &&
+            !['global', 'regional', 'specialized'].includes(String(data.offer_scope))
+        ) {
+            errors.push(`API provider ${providerId} has invalid offer_scope '${String(data.offer_scope)}'`);
+        }
+        if (
+            data.residency_mode !== undefined &&
+            data.residency_mode !== null &&
+            !['unknown', 'provider_managed', 'customer_selectable', 'account_selected'].includes(String(data.residency_mode))
+        ) {
+            errors.push(`API provider ${providerId} has invalid residency_mode '${String(data.residency_mode)}'`);
+        }
+        if (
+            data.zero_data_retention !== undefined &&
+            data.zero_data_retention !== null &&
+            !['unknown', 'unsupported', 'optional', 'default'].includes(String(data.zero_data_retention))
+        ) {
+            errors.push(`API provider ${providerId} has invalid zero_data_retention '${String(data.zero_data_retention)}'`);
+        }
+        if (
+            data.regional_pricing_mode !== undefined &&
+            data.regional_pricing_mode !== null &&
+            !['unknown', 'same_as_global', 'uplift', 'source_region_rates', 'offer_specific'].includes(String(data.regional_pricing_mode))
+        ) {
+            errors.push(`API provider ${providerId} has invalid regional_pricing_mode '${String(data.regional_pricing_mode)}'`);
+        }
+        if (
+            data.regional_pricing_uplift_percent !== undefined &&
+            data.regional_pricing_uplift_percent !== null &&
+            (typeof data.regional_pricing_uplift_percent !== 'number' ||
+                !Number.isFinite(data.regional_pricing_uplift_percent) ||
+                data.regional_pricing_uplift_percent < 0)
+        ) {
+            errors.push(`API provider ${providerId} has invalid regional_pricing_uplift_percent`);
+        }
+        if (
+            data.user_identifier_policy !== undefined &&
+            data.user_identifier_policy !== null &&
+            !['unknown', 'sent', 'not_sent', 'varies'].includes(String(data.user_identifier_policy))
+        ) {
+            errors.push(`API provider ${providerId} has invalid user_identifier_policy '${String(data.user_identifier_policy)}'`);
+        }
+        for (const key of [
+            'prompt_training_notes',
+            'prompt_training_source_url',
+            'user_identifier_notes',
+            'privacy_policy_url',
+            'terms_of_service_url',
+            'residency_source_url',
+            'pricing_source_url',
+        ]) {
+            const value = (data as Record<string, unknown>)[key];
+            if (
+                value !== undefined &&
+                value !== null &&
+                (typeof value !== 'string' || !value.trim())
+            ) {
+                errors.push(`API provider ${providerId} has invalid ${key}`);
+            }
+        }
+        for (const key of ['default_execution_regions', 'default_data_regions']) {
+            const value = (data as Record<string, unknown>)[key];
+            if (value !== undefined && value !== null && !Array.isArray(value)) {
+                errors.push(`API provider ${providerId} field ${key} must be an array when present`);
+            }
         }
         state.apiProviderIds.add(providerId);
     }
@@ -647,6 +731,12 @@ function checkModelReferences(state: ValidationState): { errors: string[]; warni
         }
         if (typeof data.name !== 'string' || !data.name.trim()) {
             errors.push(`${label} missing a name`);
+        }
+        const description = typeof data.description === 'string' ? data.description.trim() : '';
+        if (!description) {
+            errors.push(`${label} missing description`);
+        } else if (description === GENERIC_MODEL_DESCRIPTION_FALLBACK) {
+            errors.push(`${label} uses legacy generic description placeholder`);
         }
     }
     return { errors, warnings };

@@ -16,15 +16,7 @@ export const NEW_LANDING_PAGE_EXPERIMENT =
 export const NEW_GATEWAY_HERO_GATE = NEW_LANDING_PAGE_GATE;
 export const NEW_GATEWAY_HERO_EXPERIMENT = NEW_LANDING_PAGE_EXPERIMENT;
 
-export const WEB_BETA_FEATURES = [
-	{
-		key: NEW_LANDING_PAGE_GATE,
-		kind: "toggle",
-		title: "Experimental landing page",
-		description:
-			"Applies the experimental homepage treatment across the landing page, including the hero, supporting cards, and gateway-first positioning.",
-	},
-] as const;
+export const WEB_BETA_FEATURES = [] as const;
 
 export type WebBetaFeatureKey = (typeof WEB_BETA_FEATURES)[number]["key"];
 export type GatewayHeroVariant = "classic" | "experimental";

@@ -4,6 +4,7 @@
   "name": "Kimi K2.6",
   "status": "Available",
   "previous_model_id": "moonshotai/kimi-k2.5",
+  "description": "Kimi K2.6 is Moonshot AI's next-generation multimodal model, designed for long-horizon coding, coding-driven UI/UX generation, and multi-agent orchestration.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

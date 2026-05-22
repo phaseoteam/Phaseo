@@ -7,6 +7,7 @@ export interface ModelPage {
     model_id: string;
     name: string;
     organisation_id: string;
+    description?: string | null;
     hidden?: boolean;
     status?: string | null;
     previous_model_id?: string | null;
@@ -84,6 +85,7 @@ export default async function getModel(
         supabase.from("data_models").select(`
         model_id,
         name,
+        description,
         status,
         previous_model_id,
         organisation_id,

@@ -4,6 +4,7 @@
   "name": "LearnLM 2.0 Flash Experimental",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "LearnLM 2.0 Flash Experimental is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": "2025-04-17T00:00:00",
   "deprecation_date": null,

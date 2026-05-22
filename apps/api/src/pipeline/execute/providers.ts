@@ -20,6 +20,12 @@ export async function rankProviders(
     candidates: ProviderCandidate[],
     ctx: PipelineContext
 ) {
+    const existingRoutingDiagnostics =
+        (ctx as any).routingDiagnostics &&
+        typeof (ctx as any).routingDiagnostics === "object" &&
+        !Array.isArray((ctx as any).routingDiagnostics)
+            ? (ctx as any).routingDiagnostics
+            : null;
     const routed = await routeProviders(candidates, {
         endpoint: ctx.endpoint,
         model: ctx.model,
@@ -40,7 +46,9 @@ export async function rankProviders(
         breaker_until_ms: entry.health.breaker_until_ms,
         score: Number.isFinite(entry.score) ? Number(entry.score.toFixed(6)) : entry.score,
     }));
-    (ctx as any).routingDiagnostics = routed.diagnostics;
+    (ctx as any).routingDiagnostics = existingRoutingDiagnostics
+        ? { ...existingRoutingDiagnostics, ...routed.diagnostics }
+        : routed.diagnostics;
     return ranked;
 }
 

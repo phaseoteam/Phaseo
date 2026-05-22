@@ -4,6 +4,7 @@
   "name": "Llama 3.1 Nemotron 70B Instruct",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Llama 3.1 Nemotron 70B Instruct is a 49B-parameter, English-centric reasoning/chat model derived from Meta's Llama-3.3-70B-Instruct with a 128K context.",
   "announced_date": null,
   "release_date": "2024-10-01T00:00:00",
   "deprecation_date": null,

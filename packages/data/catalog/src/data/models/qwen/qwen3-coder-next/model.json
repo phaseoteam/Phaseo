@@ -4,6 +4,7 @@
   "name": "Qwen 3 Coder Next",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 Coder Next is an open-weight causal language model optimized for coding agents and local development workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

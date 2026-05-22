@@ -4,11 +4,9 @@
 alter table if exists public.keys
   add column if not exists revoked_at timestamptz null,
   add column if not exists revoked_reason text null;
-
 alter table if exists public.management_keys
   add column if not exists revoked_at timestamptz null,
   add column if not exists revoked_reason text null;
-
 create table if not exists public.security_key_reports (
   id uuid primary key default gen_random_uuid(),
   received_at timestamptz not null default (now() at time zone 'utc'),
@@ -27,15 +25,11 @@ create table if not exists public.security_key_reports (
   ip_hash text null,
   user_agent_hash text null
 );
-
 create index if not exists security_key_reports_received_at_idx
   on public.security_key_reports (received_at desc);
-
 create index if not exists security_key_reports_token_fingerprint_idx
   on public.security_key_reports (token_fingerprint);
-
 create index if not exists security_key_reports_workspace_id_idx
   on public.security_key_reports (workspace_id);
-
 create index if not exists security_key_reports_matched_idx
   on public.security_key_reports (matched, received_at desc);

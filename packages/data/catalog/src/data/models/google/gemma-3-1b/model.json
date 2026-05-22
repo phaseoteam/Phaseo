@@ -4,6 +4,7 @@
   "name": "Gemma 3 1B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemma 3 1B is optimized for efficient execution on mobile and low-resource devices, such as phones, laptops, and tablets. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-03-12T00:00:00",
   "release_date": "2025-03-12T00:00:00",
   "deprecation_date": null,

@@ -91,6 +91,8 @@ export function setupTestRuntime() {
         GMI_BASE_URL: "https://api.gmi-serving.com",
         GROQ_API_KEY: "test-groq-key",
         GROQ_BASE_URL: "https://api.groq.example",
+        INFLECTION_API_KEY: "test-inflection-key",
+        INFLECTION_BASE_URL: "https://api.inflection.example",
         IONROUTER_API_KEY: "test-ionrouter-key",
         IONROUTER_BASE_URL: "https://api.ionrouter.example",
         GOOGLE_VERTEX_API_KEY: "test-vertex-key",

@@ -1,46 +1,46 @@
 ---
 title: "Gateway Parity Review"
-description: "Repo-grounded review of current migration and compatibility parity for OpenRouter, LLMGateway, and Vercel AI Gateway."
+description: "Understand how ready AI Stats is for migrations from OpenRouter, Vercel AI Gateway, and LLMGateway."
 ---
 
-This review summarizes what the current repository already proves for gateway migration and compatibility parity, and where meaningful gaps still remain.
+Use this page to understand how ready AI Stats is for migrations from OpenRouter, Vercel AI Gateway, and LLMGateway.
 
-It is intentionally grounded in the current codebase, tests, SDKs, and docs rather than live competitor traffic.
+This review is based on the current codebase, tests, SDKs, and docs in this repo.
 
 ## Scope reviewed
 
 - Public migration guides
 - OpenAI-compatible request and response compatibility
-- Batch, file, webhook, and async-job surfaces
+- Batch, file, webhook, and async-job support
 - SDK and local devtools parity
 - Vercel AI SDK compatibility coverage
 - Benchmarking and migration validation tooling
 
 ## Current parity status
 
-| Surface | OpenRouter | Vercel AI Gateway | LLMGateway | Current AI Stats status |
+| Capability | OpenRouter | Vercel AI Gateway | LLMGateway | Current AI Stats status |
 | --- | --- | --- | --- | --- |
 | Public migration guide | Yes | Yes | Yes | Public docs now include all three guides |
 | OpenAI-compatible base URL + key swap | Yes | Yes | Yes | Covered in migration docs and SDK examples |
 | Model-ID verification guidance | Yes | Yes | Yes | Covered in migration docs via `/v1/models` checks |
 | Batch + file migration readiness | Partial | Partial | Partial | Gateway/API/SDK/docs now support batch create/retrieve/cancel, owned files, and result download |
-| Routing/observability metadata | Strong | Medium | Medium | Usage UI, devtools, and batch responses expose `request_id`, `provider`, `pricing_lines`, and related metadata |
+| Routing and observability metadata | Strong | Medium | Medium | Usage UI, devtools, and batch responses expose `request_id`, `provider`, `pricing_lines`, and related metadata |
 | Public benchmark tooling | Strong | Medium | Medium | Internal benchmark tooling now compares AI Stats vs OpenRouter, LLMGateway, and Vercel AI Gateway, with aggregate and live compare support when benchmark keys are configured |
 | Vercel AI SDK compatibility proof | N/A | Strong across shipped modalities | N/A | Local compatibility tests now exist for language, streaming, embeddings, image, speech, and transcription flows |
 
 ## What the repo now clearly covers
 
-### 1) Migration docs are no longer uneven
+### 1) Migration docs are now in good shape
 
 The public docs now contain platform migration guides for:
 
-- [Migration from OpenRouter](./from-openrouter.mdx)
-- [Migrating from Vercel AI Gateway](./from-vercel.mdx)
-- [Migrating from LLM Gateway](./from-llmgateway.mdx)
+- [Migration from OpenRouter](./from-openrouter)
+- [Migrating from Vercel AI Gateway](./from-vercel)
+- [Migrating from LLM Gateway](./from-llmgateway)
 
-These guides now follow the same basic shape:
+These guides now follow the same basic structure:
 
-- inventory current gateway boundary
+- inventory the current gateway boundary
 - swap endpoint and credentials
 - validate model IDs and request behavior
 - use a rollout checklist instead of a one-shot cutover
@@ -54,11 +54,11 @@ OpenRouter currently has the deepest repo support among the reviewed competitors
 - OpenRouter-specific compatibility headers in the benchmark flow
 - existing product copy and internal compare UI built around the OpenRouter comparison path
 
-This does not mean every OpenRouter feature is matched. It means the repository currently provides the clearest migration and validation story for that competitor.
+This does not mean every OpenRouter feature is matched. It means AI Stats currently gives you the clearest migration and validation path for that competitor.
 
-### 3) Batch and async parity improved materially
+### 3) Batch and async support is much stronger now
 
-Recent gateway work now gives the migration story stronger async coverage than before:
+Recent gateway work now gives the migration story much stronger async coverage than before:
 
 - batch create, retrieve, and cancel across API, docs, and SDKs
 - owned file retrieval and content download
@@ -66,22 +66,22 @@ Recent gateway work now gives the migration story stronger async coverage than b
 - batch billing and terminal observability metadata
 - local gateway smoke coverage for successful and failed batch flows
 
-That matters for all three competitor migrations because async and batch flows are usually where "OpenAI-compatible" claims break down.
+That matters because async and batch flows are often where simple "OpenAI-compatible" claims stop being enough.
 
-### 4) SDK and devtools parity is stronger than the docs used to imply
+### 4) SDK and local tooling are stronger than the docs used to suggest
 
 The maintained SDKs now have:
 
 - batch helper coverage beyond cancellation
 - file-content helper coverage
 - batch-aware devtools metadata across the maintained language SDKs
-- richer routing/pricing metadata in local recorder output
+- richer routing and pricing metadata in local recorder output
 
-This means the migration story is no longer only "change the base URL." The local debugging and observability path is now meaningfully part of the parity surface.
+This means the migration story is no longer only "change the base URL." The local debugging and observability experience now matters too.
 
-## What remains weak or incomplete
+## What still needs work
 
-### 1) Competitor comparison tooling is now broadly aligned
+### 1) Competitor comparison tooling is now mostly aligned
 
 The internal benchmark and compare tooling now supports:
 
@@ -90,60 +90,58 @@ The internal benchmark and compare tooling now supports:
 - LLMGateway
 - Vercel AI Gateway
 
-That closes the earlier operational benchmarking gap for Vercel AI Gateway and makes the internal compare flow consistent across the three reviewed external gateways.
+That closes the earlier benchmarking gap for Vercel AI Gateway and makes the internal comparison flow more consistent across all three reviewed gateways.
 
-### 2) The public feature-parity matrix now exists, but broader product docs still do not surface every dimension directly
+### 2) The parity matrix exists, but not every related capability has a dedicated doc page yet
 
-The migration guides now have a dedicated [Feature Parity Matrix](./feature-parity-matrix.mdx), but the broader product docs still do not surface every dimension directly. The matrix currently tracks:
+The migration guides now have a dedicated [Feature Parity Matrix](./feature-parity-matrix), but the wider docs still do not give every capability the same level of visibility. The matrix currently tracks:
 
 - routing transparency
 - fallback controls
 - pricing transparency
-- request transforms/defaults
+- request transforms and defaults
 - provider/model filtering depth
 
-The matrix closes the original documentation gap, but the broader product docs still do not expose all of those dimensions as first-class capability pages.
+The matrix closes the original documentation gap, but the wider docs still need more direct capability pages in a few places.
 
-### 3) Some gaps are still evidence gaps, not confirmed missing code
+### 3) Some gaps are still proof gaps, not confirmed product gaps
 
-For several backlog items, the current weakness is not necessarily "feature absent," but "no strong repo evidence yet":
+For several backlog items, the current weakness is not necessarily "feature absent," but "not strongly documented or validated yet":
 
 - broader competitor-specific benchmark validation outside the internal benchmark tool
 
-Those should be treated as follow-up audit targets rather than assumed product failures.
+Treat those as follow-up validation work rather than assumed product failures.
 
-## Adoption-priority ranking
+## What still matters most
 
-The highest-value remaining parity work is no longer broad SDK compatibility. The repository already has strong evidence for:
+AI Stats already has strong evidence for:
 
 - provider routing transparency
 - richer generation metadata
 - generation replay payload recovery through `GET /v1/generations`
 - more complete model/provider filters
-- better webhook and async job ergonomics
+- better webhook and async-job ergonomics
 - more complete pricing and usage transparency
 - Vercel AI SDK compatibility across the shipped text, embedding, image, and audio surfaces
 
-The adoption-priority ranking for what still remains is:
+The highest-value next work is:
 
-1. Public feature-parity matrix:
-   - keep the matrix current as routing, pricing, async-job, and replay/retry evidence evolves
-2. Broader competitor benchmarking:
-   - keep the internal compare flow aligned across OpenRouter, LLMGateway, and Vercel AI Gateway as request contracts evolve
+1. Keep the parity matrix current as routing, pricing, async jobs, and replay/retry support evolve.
+2. Keep the competitor comparison flow current as request contracts change.
 
-## Recommended next slices
+## Recommended next steps
 
-If you want to continue the parity area before moving fully to video review, the highest-value slices are:
+If you want to keep improving migration parity before moving fully into video review, the highest-value next step is:
 
-1. Keep the benchmark/migration docs aligned as the compare tooling evolves so parity claims stay evidence-backed.
+1. Keep the migration and benchmarking docs aligned as the comparison tooling evolves.
 
-If you want to follow the backlog order more strictly after this review, the next major area is:
+If you want to follow the broader backlog order after this review, the next major area is:
 
-1. Review and harden the video pipeline end to end, especially status transitions, billing state, retries, webhook behavior, and provider-access diagnostics.
+1. Review and harden the video pipeline end to end, especially status transitions, billing state, retries, webhook behavior, and provider-access errors.
 
 ## Related guides
 
-- [Migration Guides Index](./index.mdx)
-- [Migration from OpenRouter](./from-openrouter.mdx)
-- [Migrating from Vercel AI Gateway](./from-vercel.mdx)
-- [Migrating from LLM Gateway](./from-llmgateway.mdx)
+- [Migration Guides Index](./index)
+- [Migration from OpenRouter](./from-openrouter)
+- [Migrating from Vercel AI Gateway](./from-vercel)
+- [Migrating from LLM Gateway](./from-llmgateway)

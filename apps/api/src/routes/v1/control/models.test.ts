@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const guardAuthMock = vi.fn();
 const fetchCatalogueMock = vi.fn();
+const fetchGatewayContextMock = vi.fn();
 
 vi.mock("@pipeline/before/guards", () => ({
     guardAuth: (...args: any[]) => guardAuthMock(...args),
@@ -9,6 +10,10 @@ vi.mock("@pipeline/before/guards", () => ({
 
 vi.mock("./models.catalogue", () => ({
     fetchCatalogue: (...args: any[]) => fetchCatalogueMock(...args),
+}));
+
+vi.mock("@pipeline/before/context", () => ({
+    fetchGatewayContext: (...args: any[]) => fetchGatewayContextMock(...args),
 }));
 
 import { handleModels } from "./models";
@@ -66,13 +71,20 @@ describe("handleModels", () => {
     beforeEach(() => {
         guardAuthMock.mockReset();
         fetchCatalogueMock.mockReset();
+        fetchGatewayContextMock.mockReset();
         guardAuthMock.mockResolvedValue({
             ok: true,
             value: {
                 workspaceId: "ws_test",
+                apiKeyId: "key_test",
             },
         });
         fetchCatalogueMock.mockResolvedValue([buildCatalogueModel()]);
+        fetchGatewayContextMock.mockResolvedValue({
+            resolvedModel: "ai-stats/free",
+            providers: [],
+            pricing: {},
+        });
     });
 
     it("rejects invalid availability filters", async () => {
@@ -102,6 +114,120 @@ describe("handleModels", () => {
         await expect(response.json()).resolves.toMatchObject({
             ok: true,
             availability_mode: "active",
+        });
+    });
+
+    it("prepends the free router model when the workspace has eligible free providers", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel({
+                model_id: "openai/gpt-free-b",
+                name: "GPT Free B",
+                providers: [
+                    {
+                        api_provider_id: "openai",
+                        api_provider_name: "OpenAI",
+                        is_active_gateway: true,
+                        availability_status: "active",
+                        availability_reason: "active",
+                        provider_status: "active",
+                        provider_routing_status: "active",
+                        model_routing_status: "active",
+                        capability_status: "active",
+                        effective_from: null,
+                        effective_to: null,
+                        endpoints: ["responses", "chat/completions"],
+                        params: ["temperature"],
+                    },
+                ],
+            }),
+        ]);
+        fetchGatewayContextMock.mockResolvedValue({
+            resolvedModel: "ai-stats/free",
+            providers: [
+                {
+                    providerId: "openai",
+                    apiModelId: "openai/gpt-free-b",
+                    pricingKey: "openai:openai/gpt-free-b",
+                    capabilityParams: {
+                        temperature: true,
+                        top_p: true,
+                    },
+                },
+            ],
+            pricing: {
+                "openai:openai/gpt-free-b": {
+                    rules: [
+                        {
+                            meter: "input_text_tokens",
+                            unit: "token",
+                            unit_size: 1,
+                            price_per_unit: "0",
+                            currency: "USD",
+                        },
+                    ],
+                },
+            },
+        });
+
+        const response = await handleModels(
+            new Request("https://api.example.com/"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            total: 2,
+            models: [
+                {
+                    model_id: "ai-stats/free",
+                    name: "AI Stats Free Router",
+                    providers: [
+                        {
+                            api_provider_id: "openai",
+                            params: ["temperature", "top_p"],
+                        },
+                    ],
+                    pricing: {
+                        prompt: "0",
+                    },
+                },
+                {
+                    model_id: "openai/gpt-free-b",
+                },
+            ],
+        });
+    });
+
+    it("skips the free router model when endpoint filters exclude text surfaces", async () => {
+        fetchGatewayContextMock.mockResolvedValue({
+            resolvedModel: "ai-stats/free",
+            providers: [
+                {
+                    providerId: "openai",
+                    apiModelId: "openai/gpt-free-b",
+                    pricingKey: "openai:openai/gpt-free-b",
+                    capabilityParams: {},
+                },
+            ],
+            pricing: {},
+        });
+
+        const response = await handleModels(
+            new Request("https://api.example.com/?endpoints=embeddings"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchGatewayContextMock).not.toHaveBeenCalled();
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            total: 1,
+            models: [
+                {
+                    model_id: "openai/gpt-4o-mini",
+                },
+            ],
         });
     });
 

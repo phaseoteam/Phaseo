@@ -1,0 +1,109 @@
+{
+    "key":  "anthropic-aws:anthropic/claude-3.5-haiku:text.generate",
+    "api_provider_id":  "anthropic-aws",
+    "provider_slug":  "anthropic-aws",
+    "api_model_id":  "anthropic/claude-3.5-haiku",
+    "capability_id":  "text.generate",
+    "rules":  [
+                  {
+                      "meter":  "input_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  0.8,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2024-11-04T00:00:00",
+                      "effective_to":  "2026-02-19T00:00:00"
+                  },
+                  {
+                      "meter":  "output_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  4,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2024-11-04T00:00:00",
+                      "effective_to":  "2026-02-19T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_read_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  0.08,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2024-11-04T00:00:00",
+                      "effective_to":  "2026-02-19T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_write_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  1,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+                                    {
+                                        "path":  "cache_ttl",
+                                        "op":  "eq",
+                                        "or_group":  1,
+                                        "and_index":  1,
+                                        "value":  "5m"
+                                    }
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2024-11-04T00:00:00",
+                      "effective_to":  "2026-02-19T00:00:00"
+                  },
+                  {
+                      "meter":  "cached_write_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  1.6,
+                      "currency":  "USD",
+                      "pricing_plan":  "standard",
+                      "note":  null,
+                      "match":  [
+                                    {
+                                        "path":  "cache_ttl",
+                                        "op":  "eq",
+                                        "or_group":  1,
+                                        "and_index":  1,
+                                        "value":  "1h"
+                                    }
+                                ],
+                      "priority":  100,
+                      "effective_from":  "2024-11-04T00:00:00",
+                      "effective_to":  "2026-02-19T00:00:00"
+                  },
+                  {
+                      "meter":  "input_text_tokens",
+                      "unit":  "token",
+                      "unit_size":  1000000,
+                      "price_per_unit":  0.4,
+                      "currency":  "USD",
+                      "pricing_plan":  "batch",
+                      "note":  null,
+                      "match":  [
+
+                                ],
+                      "priority":  100
+                  }
+              ]
+}

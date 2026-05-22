@@ -4,6 +4,7 @@
   "name": "Gemma 3n E4B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemma 3n E4B is an instruction-tuned Mixture-of-Experts (MoE) model from Google DeepMind. It supports turning still images into animated clips as well as prompt-driven video workflows.",
   "announced_date": "2025-05-20T00:00:00",
   "release_date": "2025-06-25T00:00:00",
   "deprecation_date": null,

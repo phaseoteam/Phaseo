@@ -59,6 +59,8 @@ describe("resolveProviderExecutor", () => {
 			"sambanova",
 			"siliconflow",
 			"sourceful",
+			"stepfun",
+			"tensorix",
 			"together",
 			"venice",
 			"weights-and-biases",
@@ -71,7 +73,9 @@ describe("resolveProviderExecutor", () => {
 			"zai",
 			// Additional configured compat providers
 			"cohere",
-			"crusoe",
+			"crofai",
+			"crusoe",
+			"nvidia",
 			"qwen",
 		];
 		for (const provider of providers) {
@@ -147,6 +151,69 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("google-vertex", "video.generation")).toBe(
 			EXECUTORS_BY_PROVIDER["google-vertex"]?.["video.generate"],
 		);
+	});
+
+	it("prefers explicit provider-local wrapper executors over generic fallback when present", () => {
+		for (const providerId of [
+			"ai21",
+			"akashml",
+			"arcee",
+			"arcee-ai",
+			"alibaba-cloud",
+			"atlas-cloud",
+			"atlascloud",
+			"baseten",
+			"byteplus",
+			"bytedance-seed",
+			"cerebras",
+			"chutes",
+			"clarifai",
+			"cloudflare",
+			"cohere",
+			"crofai",
+			"crusoe",
+			"featherless",
+			"friendli",
+			"fireworks",
+			"gmicloud",
+			"groq",
+			"hyperbolic",
+			"inception",
+			"infermatic",
+			"inflection",
+			"ionrouter",
+			"longcat",
+			"liquid",
+			"liquid-ai",
+			"mancer",
+			"morph",
+			"morpheus",
+			"nebius-token-factory",
+			"nebius-token-factory-eu-north-1",
+			"nebius-token-factory-us-central-1",
+			"nvidia",
+			"novita",
+			"novitaai",
+			"parasail",
+			"perplexity",
+			"phala",
+			"poolside",
+			"relace",
+			"sambanova",
+			"siliconflow",
+			"sourceful",
+			"stepfun",
+			"tensorix",
+			"venice",
+			"venice-e2ee",
+			"voyage",
+			"voyageai",
+			"weights-and-biases",
+		]) {
+			expect(resolveProviderExecutor(providerId, "text.generate")).toBe(
+				EXECUTORS_BY_PROVIDER[providerId]?.["text.generate"],
+			);
+		}
 	});
 
 	it("maps video endpoint-style capabilities to video executors", () => {

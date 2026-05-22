@@ -16,6 +16,7 @@ import {
     normalizeProviderStatus as normalizeSharedProviderStatus,
     normalizeRoutingStatus as normalizeSharedRoutingStatus,
 } from "../before/context.shared";
+import { providerMeetsResidencyRequirement } from "@/lib/config/providerResidency";
 import { readHealthMany, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
@@ -57,9 +58,32 @@ const TEXT_PRICE_METERS = ["input_text_tokens", "output_text_tokens"];
 function normalizeRoutingMode(value?: string | null): RoutingMode {
     const mode = (value ?? "").toLowerCase();
     if (mode === "price") return "price";
+    if (mode === "pricing") return "price";
+    if (mode === "cost") return "price";
     if (mode === "latency") return "latency";
+    if (mode === "speed") return "latency";
     if (mode === "throughput") return "throughput";
+    if (mode === "tps") return "throughput";
     return "balanced";
+}
+
+function resolveRequestedRoutingMode(body: any): string | null {
+    const providerSort = body?.provider?.sort;
+    if (typeof providerSort === "string") {
+        return providerSort;
+    }
+    if (providerSort && typeof providerSort === "object") {
+        const nestedMode =
+            typeof providerSort.mode === "string"
+                ? providerSort.mode
+                : typeof providerSort.metric === "string"
+                    ? providerSort.metric
+                    : typeof providerSort.by === "string"
+                        ? providerSort.by
+                        : null;
+        if (nestedMode) return nestedMode;
+    }
+    return null;
 }
 
 function normalizeProviderStatus(value?: string | null): ProviderStatus {
@@ -284,11 +308,13 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "residency_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
         providerId: string;
+        apiModelId?: string | null;
+        providerModelSlug?: string | null;
         reason: string;
     }>;
 };
@@ -314,8 +340,124 @@ export type RoutingDiagnostics = {
         applied: boolean;
     };
     filterStages: RoutingFilterStageDiagnostics[];
+    consideredProviders: Array<{
+        providerId: string;
+        apiModelId: string | null;
+        providerModelSlug: string | null;
+        providerStatus: ProviderStatus;
+        providerRoutingStatus: RoutingStatus;
+        modelRoutingStatus: RoutingStatus;
+        capabilityStatus: CapabilityStatus;
+        baseWeight: number;
+    }>;
+    rankedProviders: Array<{
+        providerId: string;
+        apiModelId: string | null;
+        providerModelSlug: string | null;
+        score: number;
+        breaker: ProviderHealth["breaker"];
+        breakerUntilMs: number | null;
+        scoreFactors: {
+            successRate: number;
+            latencyScore: number;
+            tailLatencyScore: number;
+            throughputScore: number;
+            priceScore: number;
+            tokenAffinity: number;
+            loadPenalty: number;
+            baseWeight: number;
+            rolloutMultiplier: number;
+            routingMultiplier: number;
+            cacheBoostMultiplier: number;
+        };
+    }>;
     finalCandidateCount: number;
 };
+
+function roundDiagnosticNumber(value: number): number {
+    return Number.isFinite(value) ? Number(value.toFixed(6)) : 0;
+}
+
+function getRoutingCandidateKey(candidate: Pick<ProviderCandidate, "providerId" | "apiModelId" | "providerModelSlug">): string {
+    const providerId = String(candidate.providerId ?? "").trim();
+    const providerModelSlug = String(candidate.providerModelSlug ?? "").trim();
+    const apiModelId = String(candidate.apiModelId ?? "").trim();
+    return `${providerId}::${providerModelSlug || apiModelId || "*"}`;
+}
+
+function normalizeOfferScope(
+    value?: ProviderCandidate["offerScope"] | null,
+): ProviderCandidate["offerScope"] {
+    if (value === "global" || value === "regional" || value === "specialized") {
+        return value;
+    }
+    return null;
+}
+
+function hasGlobalOfferSibling(
+	candidates: ProviderCandidate[],
+	candidate: ProviderCandidate,
+): boolean {
+    const familyId = String(candidate.providerFamilyId ?? "").trim().toLowerCase();
+    if (!familyId) return false;
+    return candidates.some((entry) =>
+        String(entry.providerId ?? "").trim().toLowerCase() !==
+            String(candidate.providerId ?? "").trim().toLowerCase() &&
+        String(entry.providerFamilyId ?? "").trim().toLowerCase() === familyId &&
+        normalizeOfferScope(entry.offerScope) === "global",
+	);
+}
+
+function normalizeRequestedServiceTier(body: any): string | null {
+	const speed = String(body?.speed ?? "").trim().toLowerCase();
+	if (speed === "fast") return "priority";
+	const tier = String(body?.service_tier ?? body?.serviceTier ?? "").trim().toLowerCase();
+	return tier || null;
+}
+
+function hasSpecializedTierSibling(args: {
+	candidates: ProviderCandidate[];
+	candidate: ProviderCandidate;
+	tier: string | null;
+}): boolean {
+	const familyId = String(args.candidate.providerFamilyId ?? "").trim().toLowerCase();
+	if (!familyId || !args.tier) return false;
+	return args.candidates.some((entry) =>
+		String(entry.providerId ?? "").trim().toLowerCase() !==
+			String(args.candidate.providerId ?? "").trim().toLowerCase() &&
+		String(entry.providerFamilyId ?? "").trim().toLowerCase() === familyId &&
+		normalizeOfferScope(entry.offerScope) === "specialized" &&
+		String(entry.offerLabel ?? "").trim().toLowerCase() === args.tier,
+	);
+}
+
+function expandProviderHintsForSpecializedTierOffers(args: {
+	candidates: ProviderCandidate[];
+	providerIds: string[];
+	tier: string | null;
+}): string[] {
+	if (args.tier !== "priority") return args.providerIds;
+
+	const expanded = new Set(args.providerIds);
+	for (const requestedProviderId of args.providerIds) {
+		const requestedCandidate = args.candidates.find(
+			(candidate) => String(candidate.providerId ?? "").trim().toLowerCase() === requestedProviderId,
+		);
+		if (!requestedCandidate) continue;
+
+		const familyId = String(requestedCandidate.providerFamilyId ?? "").trim().toLowerCase();
+		if (!familyId) continue;
+
+		for (const candidate of args.candidates) {
+			if (normalizeOfferScope(candidate.offerScope) !== "specialized") continue;
+			if (String(candidate.providerFamilyId ?? "").trim().toLowerCase() !== familyId) continue;
+			if (String(candidate.offerLabel ?? "").trim().toLowerCase() !== args.tier) continue;
+			expanded.add(candidate.providerId);
+		}
+	}
+
+	return Array.from(expanded);
+}
 
 /**
  * Extracts the requested max_tokens from the request body
@@ -386,7 +528,12 @@ export async function routeProviders(
 ): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
     const debugEnabled = Boolean(ctx.meta?.debug?.enabled);
     const { base, priority, strict } = parsePriority(ctx.model);
-    const mode = normalizeRoutingMode(ctx.routingMode);
+    const requestedRoutingMode = resolveRequestedRoutingMode(ctx.body);
+    const requestedServiceTier = normalizeRequestedServiceTier(ctx.body);
+    const mode = normalizeRoutingMode(
+        ctx.routingMode ?? requestedRoutingMode,
+    );
+    const deterministicRequestSort = Boolean(requestedRoutingMode);
     const preset = applyRoutingMode(PRESETS[priority], mode);
     const hints = (ctx.body?.provider ?? {}) as {
         order?: string[];
@@ -394,11 +541,40 @@ export async function routeProviders(
         ignore?: string[];
         include_alpha?: boolean;
         includeAlpha?: boolean;
+        required_execution_region?: string | null;
+        requiredExecutionRegion?: string | null;
+        required_data_region?: string | null;
+        requiredDataRegion?: string | null;
+        require_zero_data_retention?: boolean | null;
+        requireZeroDataRetention?: boolean | null;
     };
     const includeAlphaHint = Boolean(hints.include_alpha ?? hints.includeAlpha);
-    const onlyHints = normalizeProviderList(hints.only ?? []);
+    const onlyHints = expandProviderHintsForSpecializedTierOffers({
+        candidates,
+        providerIds: normalizeProviderList(hints.only ?? []),
+        tier: requestedServiceTier,
+    });
     const ignoreHints = normalizeProviderList(hints.ignore ?? []);
-    const orderedHints = normalizeProviderList(hints.order ?? []);
+    const orderedHints = expandProviderHintsForSpecializedTierOffers({
+        candidates,
+        providerIds: normalizeProviderList(hints.order ?? []),
+        tier: requestedServiceTier,
+    });
+    const requiredExecutionRegion =
+        hints.requiredExecutionRegion ?? hints.required_execution_region ?? null;
+    const requiredDataRegion =
+        hints.requiredDataRegion ?? hints.required_data_region ?? null;
+    const requireZeroDataRetention =
+        hints.requireZeroDataRetention ?? hints.require_zero_data_retention ?? null;
+    const explicitlySelectedProviders = new Set([
+        ...onlyHints,
+        ...orderedHints,
+    ]);
+    const hasExplicitRegionPreference =
+        (typeof requiredExecutionRegion === "string" &&
+            requiredExecutionRegion.trim().length > 0) ||
+        (typeof requiredDataRegion === "string" &&
+            requiredDataRegion.trim().length > 0);
     const betaChannelEnabled = Boolean(ctx.betaChannelEnabled);
     const alphaChannelEnabled = Boolean(ctx.alphaChannelEnabled);
     const providerCapabilitiesBeta = Boolean(ctx.providerCapabilitiesBeta);
@@ -448,7 +624,10 @@ export async function routeProviders(
         applied: stickyRoutingApplied,
     });
 
-    const buildDiagnostics = (finalCandidateCount: number): RoutingDiagnostics => ({
+    const buildDiagnostics = (
+        finalCandidateCount: number,
+        rankedProviders: RoutingDiagnostics["rankedProviders"] = [],
+    ): RoutingDiagnostics => ({
         model: ctx.model,
         endpoint: ctx.endpoint,
         priority,
@@ -462,6 +641,17 @@ export async function routeProviders(
         providerCapabilitiesBeta,
         stickyRouting: buildStickyDiagnostics(),
         filterStages,
+        consideredProviders: candidates.map((candidate) => ({
+            providerId: candidate.providerId,
+            apiModelId: candidate.apiModelId ?? null,
+            providerModelSlug: candidate.providerModelSlug ?? null,
+            providerStatus: normalizeProviderStatus(candidate.providerStatus),
+            providerRoutingStatus: normalizeRoutingStatus(candidate.providerRoutingStatus),
+            modelRoutingStatus: normalizeRoutingStatus(candidate.modelRoutingStatus),
+            capabilityStatus: normalizeCapabilityStatus(candidate.capabilityStatus),
+            baseWeight: roundDiagnosticNumber(candidate.baseWeight > 0 ? candidate.baseWeight : 1),
+        })),
+        rankedProviders,
         finalCandidateCount,
     });
 
@@ -471,11 +661,13 @@ export async function routeProviders(
         after: ProviderCandidate[],
         reasonForDrop: (candidate: ProviderCandidate) => string,
     ) => {
-        const afterSet = new Set(after.map((candidate) => candidate.providerId));
+        const afterSet = new Set(after.map((candidate) => getRoutingCandidateKey(candidate)));
         const droppedProviders = before
-            .filter((candidate) => !afterSet.has(candidate.providerId))
+            .filter((candidate) => !afterSet.has(getRoutingCandidateKey(candidate)))
             .map((candidate) => ({
                 providerId: candidate.providerId,
+                apiModelId: candidate.apiModelId ?? null,
+                providerModelSlug: candidate.providerModelSlug ?? null,
                 reason: reasonForDrop(candidate),
             }));
         filterStages.push({
@@ -559,6 +751,90 @@ export async function routeProviders(
         return "capability_status_" + capabilityStatus;
     });
 
+    const beforeOfferScopeGate = poolCandidates;
+    poolCandidates = poolCandidates.filter((candidate) => {
+        if (testingMode) return true;
+        const offerScope = normalizeOfferScope(candidate.offerScope);
+        if (offerScope === null || offerScope === "global") return true;
+        if (explicitlySelectedProviders.has(candidate.providerId)) return true;
+        if (hasExplicitRegionPreference) return true;
+        if (
+            offerScope === "specialized" &&
+            requestedServiceTier === "priority" &&
+            String(candidate.offerLabel ?? "").trim().toLowerCase() === "priority"
+        ) {
+            return true;
+        }
+        if (!hasGlobalOfferSibling(beforeOfferScopeGate, candidate)) return true;
+        return false;
+    });
+    if (requestedServiceTier === "priority") {
+        poolCandidates = poolCandidates.filter((candidate) => {
+            const offerScope = normalizeOfferScope(candidate.offerScope);
+            if (offerScope !== "global") return true;
+            return !hasSpecializedTierSibling({
+                candidates: beforeOfferScopeGate,
+                candidate,
+                tier: requestedServiceTier,
+            });
+        });
+    }
+    pushStage("offer_scope_gate", beforeOfferScopeGate, poolCandidates, (candidate) => {
+        const offerScope = normalizeOfferScope(candidate.offerScope);
+        if (offerScope === "regional") return "regional_offer_requires_explicit_opt_in";
+        if (
+            offerScope === "global" &&
+            requestedServiceTier === "priority" &&
+            hasSpecializedTierSibling({
+                candidates: beforeOfferScopeGate,
+                candidate,
+                tier: requestedServiceTier,
+            })
+        ) {
+            return "global_offer_replaced_by_priority_specialized_offer";
+        }
+        if (offerScope === "specialized") return "specialized_offer_requires_explicit_opt_in";
+        return "non_global_offer_requires_explicit_opt_in";
+    });
+
+    const beforeResidencyGate = poolCandidates;
+    poolCandidates = poolCandidates.filter((candidate) => {
+        const result = providerMeetsResidencyRequirement(
+            {
+                residencyMode: candidate.residencyMode ?? null,
+                executionRegions: candidate.executionRegions ?? null,
+                dataRegions: candidate.dataRegions ?? null,
+                zeroDataRetention: candidate.zeroDataRetention ?? null,
+                residencyNotes: null,
+                residencySourceUrl: null,
+            },
+            {
+                requiredExecutionRegion,
+                requiredDataRegion,
+                requireZeroDataRetention,
+            },
+        );
+        return result.ok;
+    });
+    pushStage("residency_gate", beforeResidencyGate, poolCandidates, (candidate) => {
+        const result = providerMeetsResidencyRequirement(
+            {
+                residencyMode: candidate.residencyMode ?? null,
+                executionRegions: candidate.executionRegions ?? null,
+                dataRegions: candidate.dataRegions ?? null,
+                zeroDataRetention: candidate.zeroDataRetention ?? null,
+                residencyNotes: null,
+                residencySourceUrl: null,
+            },
+            {
+                requiredExecutionRegion,
+                requiredDataRegion,
+                requireZeroDataRetention,
+            },
+        );
+        return result.reason ?? "residency_requirement_failed";
+    });
+
     if (!poolCandidates.length) {
         const diagnostics = buildDiagnostics(0);
         console.warn("[gateway] provider pool empty", {
@@ -571,10 +847,11 @@ export async function routeProviders(
 
     if (orderedHints.length) {
         const order = orderedHints;
-        const byName = new Map(poolCandidates.map((c) => [c.adapter.name, c]));
-        const ordered = order.map((name) => byName.get(name)).filter(Boolean) as typeof poolCandidates;
-        const orderedSet = new Set(ordered.map((c) => c.adapter.name));
-        const remaining = poolCandidates.filter((c) => !orderedSet.has(c.adapter.name));
+        const ordered = order.flatMap((name) =>
+            poolCandidates.filter((candidate) => candidate.adapter.name === name)
+        );
+        const orderedSet = new Set(ordered.map((candidate) => getRoutingCandidateKey(candidate)));
+        const remaining = poolCandidates.filter((candidate) => !orderedSet.has(getRoutingCandidateKey(candidate)));
         poolCandidates = [...ordered, ...remaining];
     }
 
@@ -598,6 +875,8 @@ export async function routeProviders(
                 .filter((entry) => entry.h.breaker === "open" && (entry.h.breaker_until_ms ?? 0) > now)
                 .map((entry) => ({
                     providerId: entry.candidate.providerId,
+                    apiModelId: entry.candidate.apiModelId ?? null,
+                    providerModelSlug: entry.candidate.providerModelSlug ?? null,
                     reason: "breaker_open",
                 })),
         });
@@ -689,42 +968,81 @@ export async function routeProviders(
                 routingStatusMultiplierCombined *
                 cacheRoutingMultiplier
         );
-        return { candidate: v.candidate, adapter: v.adapter, health: h, score };
+        return {
+            candidate: v.candidate,
+            adapter: v.adapter,
+            health: h,
+            score,
+            diagnostics: {
+                providerId: v.candidate.providerId,
+                apiModelId: v.candidate.apiModelId ?? null,
+                providerModelSlug: v.candidate.providerModelSlug ?? null,
+                score: roundDiagnosticNumber(score),
+                breaker: h.breaker,
+                breakerUntilMs:
+                    typeof h.breaker_until_ms === "number" && Number.isFinite(h.breaker_until_ms)
+                        ? h.breaker_until_ms
+                        : null,
+                scoreFactors: {
+                    successRate: roundDiagnosticNumber(succ),
+                    latencyScore: roundDiagnosticNumber(0.5 * p50Curve + 0.5 * p50Norm),
+                    tailLatencyScore: roundDiagnosticNumber(tailNorm),
+                    throughputScore: roundDiagnosticNumber(tpsNorm),
+                    priceScore: roundDiagnosticNumber(priceScore),
+                    tokenAffinity: roundDiagnosticNumber(tokenAffinity),
+                    loadPenalty: roundDiagnosticNumber(loadPen),
+                    baseWeight: roundDiagnosticNumber(weight),
+                    rolloutMultiplier: roundDiagnosticNumber(rolloutMultiplier),
+                    routingMultiplier: roundDiagnosticNumber(routingStatusMultiplierCombined),
+                    cacheBoostMultiplier: roundDiagnosticNumber(cacheRoutingMultiplier),
+                },
+            },
+        };
     });
     const routableScored = scored.filter((entry) => entry.score > 0);
+    const rankedProviderDiagnostics = (entries: typeof routableScored) =>
+        entries
+            .slice()
+            .sort((a, b) => b.score - a.score)
+            .map((entry) => entry.diagnostics);
 
     if (orderedHints.length) {
         const order = orderedHints;
-        const byName = new Map(routableScored.map((entry) => [entry.adapter.name, entry]));
-        const ordered = order.map((name) => byName.get(name)).filter(Boolean) as RoutedCandidate[];
-        const orderedSet = new Set(ordered.map((entry) => entry.adapter.name));
-        const remaining = routableScored.filter((entry) => !orderedSet.has(entry.adapter.name));
-        if (strict) {
+        const ordered = order.flatMap((name) =>
+            routableScored.filter((entry) => entry.adapter.name === name)
+        );
+        const orderedSet = new Set(
+            ordered.map((entry) => getRoutingCandidateKey(entry.candidate))
+        );
+        const remaining = routableScored.filter(
+            (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
+        );
+        if (strict || deterministicRequestSort) {
             const ranked = [...ordered, ...remaining.sort((a, b) => b.score - a.score)];
             return {
                 ranked,
-                diagnostics: buildDiagnostics(ranked.length),
+                diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
             };
         }
         const ranked = [...ordered, ...weightedOrder(remaining, (s) => s.score, rng)];
         return {
             ranked,
-            diagnostics: buildDiagnostics(ranked.length),
+            diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
         };
     }
 
-    if (strict) {
+    if (strict || deterministicRequestSort) {
         const ranked = [...routableScored].sort((a, b) => b.score - a.score);
         return {
             ranked,
-            diagnostics: buildDiagnostics(ranked.length),
+            diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
         };
     }
 
     const ranked = weightedOrder(routableScored, (s) => s.score, rng);
     return {
         ranked,
-        diagnostics: buildDiagnostics(ranked.length),
+        diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
     };
 }
 

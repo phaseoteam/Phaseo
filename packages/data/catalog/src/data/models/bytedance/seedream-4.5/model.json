@@ -4,6 +4,7 @@
   "name": "Seedream 4.5",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seedream 4.5 is an image generation model from ByteDance for visual creation workflows. It is aimed at illustration, design exploration, and marketing creative.",
   "announced_date": "2025-12-03T00:00:00",
   "release_date": "2025-12-03T00:00:00",
   "deprecation_date": null,

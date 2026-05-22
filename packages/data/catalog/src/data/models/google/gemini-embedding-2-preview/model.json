@@ -4,6 +4,7 @@
   "name": "Gemini Embedding 2 Preview",
   "status": "Available",
   "previous_model_id": "google/gemini-embedding-001-2025-05-20",
+  "description": "Gemini Embedding 2 Preview is Google's first multimodal embedding model. We currently support mapping text and images into a unified vector space for semantic search and retrieval-augmented generation (RAG).",
   "announced_date": "2026-03-10T00:00:00",
   "release_date": "2026-03-10T00:00:00",
   "deprecation_date": null,

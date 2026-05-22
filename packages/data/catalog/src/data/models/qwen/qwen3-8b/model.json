@@ -4,6 +4,7 @@
   "name": "Qwen 3 8B",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 8B is a dense 8.2B parameter causal language model from the Qwen3 series, designed for both reasoning-heavy tasks and efficient dialogue.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

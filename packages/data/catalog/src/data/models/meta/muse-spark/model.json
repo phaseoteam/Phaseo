@@ -4,6 +4,7 @@
   "name": "Muse Spark",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Muse Spark is a multimodal model from Meta that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": "2026-04-08T00:00:00",
   "release_date": "2026-04-08T00:00:00",
   "deprecation_date": null,

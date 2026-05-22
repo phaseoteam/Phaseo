@@ -4,7 +4,7 @@
     "provider_api_model_id": "inception:inception/mercury-2",
     "provider_model_slug": "mercury-2",
     "internal_model_id": "inception/mercury-2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
@@ -46,6 +46,27 @@
             "notes": null
           }
         ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "inception/mercury-edit-2",
+    "provider_api_model_id": "inception:inception/mercury-edit-2",
+    "provider_model_slug": "mercury-edit-2",
+    "internal_model_id": "inception/mercury-edit-2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32000,
+    "max_output_tokens": null,
+    "effective_from": "2026-02-24T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
       }
     ]
   }

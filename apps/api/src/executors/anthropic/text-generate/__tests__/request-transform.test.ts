@@ -1,8 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { IRChatRequest } from "@core/ir";
-import { irToAnthropicMessages } from "../index";
+import {
+	clearRuntime,
+} from "@/runtime/env";
 import { decodeOpenAIChatRequest } from "../../../../protocols/openai-chat/decode";
 import { decodeAnthropicMessagesRequest } from "../../../../protocols/anthropic-messages/decode";
+import {
+	irToAnthropicMessages,
+	resolveAnthropicInferenceGeo,
+} from "../index";
 
 function createBaseRequest(): IRChatRequest {
 	return {
@@ -17,6 +23,12 @@ function createBaseRequest(): IRChatRequest {
 	};
 }
 
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.restoreAllMocks();
+	clearRuntime();
+});
+
 describe("irToAnthropicMessages service controls", () => {
 	it("maps priority tier to auto service tier without fast mode", () => {
 		const request = createBaseRequest();
@@ -25,6 +37,26 @@ describe("irToAnthropicMessages service controls", () => {
 		const payload = irToAnthropicMessages(request);
 		expect(payload.speed).toBeUndefined();
 		expect(payload.service_tier).toBe("auto");
+	});
+
+	it("maps priority tier to fast mode for Opus 4.6", () => {
+		const request = createBaseRequest();
+		request.model = "anthropic/claude-opus-4.6";
+		request.serviceTier = "priority";
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
+	});
+
+	it("maps priority tier to fast mode for Opus 4.7", () => {
+		const request = createBaseRequest();
+		request.model = "anthropic/claude-opus-4.7";
+		request.serviceTier = "priority";
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
 	});
 
 	it("maps speed fast to Anthropic fast mode without service tier override", () => {
@@ -56,6 +88,18 @@ describe("irToAnthropicMessages service controls", () => {
 		const payload = irToAnthropicMessages(request);
 		expect(payload.speed).toBeUndefined();
 		expect(payload.service_tier).toBe("auto");
+	});
+
+	it("maps OpenAI surface service_tier=priority to Anthropic fast mode for Opus 4.7", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-opus-4.7",
+			messages: [{ role: "user", content: "Hello" }],
+			service_tier: "priority",
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.speed).toBe("fast");
+		expect(payload.service_tier).toBeUndefined();
 	});
 
 	it("maps Anthropic surface speed=fast to Anthropic speed=fast", () => {
@@ -186,6 +230,26 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(typeof payload.system).toBe("string");
 		expect(payload.system).toContain("strictly matches this schema");
 		expect(payload.system).toContain("\"temperature_c\"");
+	});
+
+	it("adds inference_geo when a US-only Anthropic offer is selected", () => {
+		const request = createBaseRequest();
+
+		const payload = irToAnthropicMessages(request, null, request.model, {
+			inferenceGeo: "us",
+		});
+
+		expect(payload.inference_geo).toBe("us");
+	});
+
+	it("resolves inference geo from IR geo preferences before provider defaults", () => {
+		const request = createBaseRequest();
+		request.geo = {
+			requiredExecutionRegion: "us",
+		};
+
+		expect(resolveAnthropicInferenceGeo("anthropic", request)).toBe("us");
+		expect(resolveAnthropicInferenceGeo("anthropic-us", request)).toBe("us");
 	});
 });
 

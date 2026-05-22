@@ -4,6 +4,7 @@
   "name": "Command R7b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Command R7b is a small, fast update of the Command R+ model, delivered in December 2024. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

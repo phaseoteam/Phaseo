@@ -178,6 +178,21 @@
     ]
   },
   {
+    "api_model_id": "aion-labs/aion-3.0",
+    "provider_api_model_id": "aion-labs:aion-labs/aion-3.0",
+    "provider_model_slug": "aion-labs/aion-3.0",
+    "internal_model_id": "aion-labs/aion-3.0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
     "api_model_id": "aion-labs/aion-rp-llama-3.1-8b",
     "provider_api_model_id": "aion-labs:aion-labs/aion-rp-llama-3.1-8b",
     "provider_model_slug": "aion-labs/aion-rp-llama-3.1-8b",

@@ -4,6 +4,7 @@
   "name": "GLM 4 32B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM 4 32B is a cost-effective foundation language model. It can efficiently perform complex tasks and has significantly enhanced capabilities in tool use, online search, and code-related intelligent tasks.",
   "announced_date": "2025-04-15T00:00:00",
   "release_date": "2025-04-15T00:00:00",
   "deprecation_date": null,

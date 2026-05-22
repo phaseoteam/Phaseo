@@ -4,6 +4,7 @@
   "name": "I2V 01 Director",
   "status": "Available",
   "previous_model_id": null,
+  "description": "I2V 01 Director is a video generation model from MiniMax for prompt-driven clip and scene creation. It is aimed at text-to-video, multimodal clip generation, and motion design workflows.",
   "announced_date": "2025-02-11T00:00:00",
   "release_date": "2025-02-11T00:00:00",
   "deprecation_date": null,

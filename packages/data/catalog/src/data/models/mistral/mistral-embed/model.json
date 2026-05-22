@@ -4,6 +4,7 @@
   "name": "Mistral Embed",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Mistral Embed is an embedding model from Mistral for vector search and semantic retrieval workflows. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2023-12-11T00:00:00",
   "release_date": "2023-12-11T00:00:00",
   "deprecation_date": null,

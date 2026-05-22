@@ -4,6 +4,7 @@
   "name": "Gemini 1.5 Flash 8B Exp (2024-08-27)",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Gemini 1.5 Flash 8B Exp (2024-08-27) is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2024-08-27T00:00:00",
   "release_date": "2024-08-27T00:00:00",
   "deprecation_date": null,

@@ -58,10 +58,8 @@ where canonical_model_id is not null
 order by ord
 limit 1;
 $$;
-
 comment on function public.resolve_public_model_id(text, text)
   is 'Resolves raw gateway model ids, aliases, provider slugs, and legacy internal ids to canonical API model ids.';
-
 create or replace function public.get_public_model_rankings(
   p_time_range text default 'week',
   p_metric text default 'tokens',
@@ -204,7 +202,6 @@ begin
   order by rc.rk;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_model_performance(
   p_hours integer default 24,
   p_min_requests integer default 0
@@ -260,7 +257,6 @@ begin
   order by requests desc;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_trending_models(
   p_limit integer default 20,
   p_min_requests integer default 0
@@ -320,7 +316,6 @@ begin
   limit p_limit;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_market_share(
   p_dimension text default 'organization',
   p_time_range text default 'week'
@@ -414,7 +409,6 @@ begin
   end if;
 end;
 $$ language plpgsql stable;
-
 create or replace function public.get_public_top_models_with_metadata(
   p_time_range text default 'week',
   p_limit integer default 6
@@ -508,6 +502,5 @@ begin
   limit greatest(1, p_limit);
 end;
 $$ language plpgsql stable;
-
 comment on function public.get_public_top_models_with_metadata(text, integer)
   is 'Public top models by token usage resolved to canonical API model ids with metadata enrichment.';

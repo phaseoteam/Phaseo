@@ -4,6 +4,7 @@
   "name": "Hermes 4 70B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Hermes 4 70B is a language model from Nous for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-07-26T00:00:00",
   "release_date": "2025-07-26T00:00:00",
   "deprecation_date": null,

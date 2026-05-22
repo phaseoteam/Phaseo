@@ -4,6 +4,7 @@
   "name": "Qwen 3.6 Plus",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.6 Plus builds on a hybrid architecture that combines efficient linear attention with sparse mixture-of-experts routing, enabling strong scalability and high-performance inference.",
   "announced_date": "2026-04-01T00:00:00",
   "release_date": "2026-04-01T00:00:00",
   "deprecation_date": null,

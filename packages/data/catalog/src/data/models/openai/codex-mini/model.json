@@ -4,6 +4,7 @@
   "name": "Codex Mini",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Codex Mini is a smaller and faster version of GPT-5.1-Codex. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-05-16T00:00:00",
   "release_date": "2025-05-16T00:00:00",
   "deprecation_date": "2025-11-17T00:00:00",

@@ -4,6 +4,7 @@ import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import PrivacySettingsClient from "@/components/(gateway)/settings/privacy/PrivacySettingsClient";
+import { formatProviderOfferDisplayName } from "@/lib/providers/providerOffers";
 
 export const metadata = {
 	title: "Privacy - Settings",
@@ -47,7 +48,9 @@ async function PrivacySettingsContent() {
 				.maybeSingle(),
 			supabase
 				.from("data_api_providers")
-				.select("api_provider_id, api_provider_name")
+				.select(
+					"api_provider_id, api_provider_name, offer_label, offer_scope",
+				)
 				.order("api_provider_name", { ascending: true }),
 			supabase
 				.from("data_api_provider_models")
@@ -67,7 +70,14 @@ async function PrivacySettingsContent() {
 			initialGlobal={settingsResult.data ?? null}
 			providers={(providersResult.data ?? []).map((p: any) => ({
 				id: p.api_provider_id as string,
-				name: (p.api_provider_name as string) ?? (p.api_provider_id as string),
+				name: formatProviderOfferDisplayName({
+					providerName:
+						(p.api_provider_name as string) ?? (p.api_provider_id as string),
+					offerLabel: (p.offer_label as string | null) ?? null,
+					offerScope:
+						(p.offer_scope as "global" | "regional" | "specialized" | null) ??
+						null,
+				}),
 			}))}
 			activeProviderModels={(activeProviderModelsResult.data ?? []).map((row: any) => ({
 				providerId: row.provider_id as string,

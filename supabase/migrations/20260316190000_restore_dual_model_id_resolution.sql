@@ -72,7 +72,6 @@ begin
   return new;
 end;
 $$;
-
 -- Backfill existing rows to align with dual-ID preference.
 update public.data_api_provider_models pm
 set model_id = pm.internal_model_id,
@@ -85,7 +84,6 @@ where pm.internal_model_id is not null
     where dm.model_id = pm.internal_model_id
   )
   and pm.model_id is distinct from pm.internal_model_id;
-
 -- For unresolved rows, try api_model_id only when materialized in data_models.
 update public.data_api_provider_models pm
 set model_id = pm.api_model_id,
@@ -98,7 +96,6 @@ where (pm.model_id is null or btrim(pm.model_id) = '')
     from public.data_models dm
     where dm.model_id = pm.api_model_id
   );
-
 -- Safety cleanup: if any stale model_id slipped through, null it out.
 update public.data_api_provider_models pm
 set model_id = null,

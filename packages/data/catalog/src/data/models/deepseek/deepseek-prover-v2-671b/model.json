@@ -4,6 +4,7 @@
   "name": "DeepSeek Prover V2 671B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek Prover V2 671B is a language model from DeepSeek for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

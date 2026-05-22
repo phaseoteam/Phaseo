@@ -4,6 +4,7 @@
   "name": "Phi 4",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Phi 4 is designed to perform well in complex reasoning tasks and can operate efficiently in situations with limited memory or where quick responses are needed.",
   "announced_date": null,
   "release_date": "2024-12-12T00:00:00",
   "deprecation_date": null,

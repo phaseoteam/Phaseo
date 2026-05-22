@@ -4,6 +4,7 @@
   "name": "GPT 3.5 Turbo Instruct",
   "status": "Deprecated",
   "previous_model_id": "openai/gpt-3-5-turbo-0613",
+  "description": "GPT 3.5 Turbo Instruct is a variant of GPT-3.5 Turbo tuned for instructional prompts and omitting chat-related optimizations. Training data: up to Sep 2021.",
   "announced_date": null,
   "release_date": "2023-11-06T00:00:00",
   "deprecation_date": "2025-09-26T00:00:00",

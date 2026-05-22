@@ -43,9 +43,6 @@ function normalizeSearchTerm(value: string): string {
 		.trim();
 }
 
-let cachedSearchData: SearchData | null = null;
-let searchDataRequest: Promise<SearchData> | null = null;
-
 function buildSearchKeywords(item: SearchableItem): string[] {
 	const keywords = new Set<string>();
 	const terms = [
@@ -79,6 +76,9 @@ function buildSearchKeywords(item: SearchableItem): string[] {
 
 	return Array.from(keywords).filter(Boolean);
 }
+
+let cachedSearchData: SearchData | null = null;
+let searchDataRequest: Promise<SearchData> | null = null;
 
 function isCompactSearchData(value: unknown): value is CompactSearchData {
 	return Boolean(
@@ -345,12 +345,12 @@ export default function Search({ className, initialData = null }: Props) {
 			<button
 				type="button"
 				onClick={() => setOpen(true)}
-				className="relative flex h-10 w-full items-center rounded-lg border border-zinc-200 bg-white pl-10 pr-16 text-left text-sm text-zinc-500 shadow-none transition-[border-color,box-shadow] hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700"
+				className="relative flex h-[var(--site-header-control-h,2.25rem)] w-[var(--site-header-control-h,2.25rem)] items-center justify-center rounded-lg border border-zinc-200/80 bg-white px-0 text-left text-sm text-zinc-500 shadow-none transition-[border-color,color,background-color] hover:border-zinc-300 hover:text-zinc-700 xl:w-full xl:justify-start xl:pl-9 xl:pr-12 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200"
 				aria-label="Open search"
 			>
-				<SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-				<span className="truncate">Search...</span>
-				<span className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-zinc-200 px-1.5 py-0.5 text-[11px] font-medium text-zinc-500 lg:inline-flex dark:border-zinc-800 dark:text-zinc-400">
+				<SearchIcon className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-zinc-400 xl:left-3 xl:translate-x-0 dark:text-zinc-500" />
+				<span className="hidden truncate font-medium xl:inline">Search</span>
+				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-zinc-200 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 xl:inline-flex dark:border-zinc-800 dark:text-zinc-400">
 					Ctrl K
 				</span>
 			</button>

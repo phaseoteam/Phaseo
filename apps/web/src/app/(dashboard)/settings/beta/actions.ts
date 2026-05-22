@@ -9,7 +9,9 @@ import {
 	type StatsigProfile,
 } from "@/lib/statsig/shared";
 
-const ALLOWED_BETA_FEATURE_KEYS = new Set(WEB_BETA_FEATURES.map((feature) => feature.key));
+const ALLOWED_BETA_FEATURE_KEYS = new Set<string>(
+	(WEB_BETA_FEATURES as readonly { key: string }[]).map((feature) => feature.key),
+);
 
 function sanitizeBetaFeatures(value: unknown): Record<string, boolean> {
 	const normalized = normalizeBetaFeatures(value);

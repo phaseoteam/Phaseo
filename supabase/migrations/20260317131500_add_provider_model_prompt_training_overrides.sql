@@ -3,7 +3,6 @@
 
 alter table if exists public.data_api_provider_models
   add column if not exists prompt_training_policy_override text;
-
 update public.data_api_provider_models
 set prompt_training_policy_override = case
   when prompt_training_policy_override is null then null
@@ -14,10 +13,8 @@ set prompt_training_policy_override = case
   when lower(trim(prompt_training_policy_override)) in ('enterprise_no_train', 'enterprise-no-train', 'enterprise_only_no_train') then 'enterprise_no_train'
   else null
 end;
-
 alter table if exists public.data_api_provider_models
   drop constraint if exists data_api_provider_models_prompt_training_policy_override_check;
-
 alter table if exists public.data_api_provider_models
   add constraint data_api_provider_models_prompt_training_policy_override_check
   check (
@@ -30,9 +27,7 @@ alter table if exists public.data_api_provider_models
       'enterprise_no_train'
     )
   );
-
 alter table if exists public.data_api_provider_models
   add column if not exists prompt_training_override_notes text;
-
 alter table if exists public.data_api_provider_models
   add column if not exists prompt_training_override_source_url text;

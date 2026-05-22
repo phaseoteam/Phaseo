@@ -36,6 +36,7 @@ import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/a
 import * as elevenLabsMusic from "@providers/elevenlabs/endpoints/music-generate";
 import * as googleAiStudioImages from "@providers/google-ai-studio/endpoints/images";
 import * as xiaomiAudioSpeech from "@providers/xiaomi/endpoints/audio-speech";
+import * as xAiAudioSpeech from "@providers/x-ai/endpoints/audio-speech";
 import * as sunoMusic from "@providers/suno/endpoints/music-generate";
 
 type NonTextEndpoint =
@@ -453,6 +454,9 @@ async function executeProviderEndpoint(
 			}
 			if (providerId === "xiaomi") {
 				return xiaomiAudioSpeech.exec(providerArgs);
+			}
+			if (providerId === "x-ai" || providerId === "xai") {
+				return xAiAudioSpeech.exec(providerArgs);
 			}
 			if (!isOpenAICompatProvider(providerId)) {
 				throw new Error(`non_text_provider_not_supported_${providerId}_${endpoint}`);

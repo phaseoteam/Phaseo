@@ -1,0 +1,175 @@
+---
+title: "Build an OAuth Next.js Workbench"
+description: "Use the full OAuth Next.js example as a walkthrough for a signed-in gateway app with a unified proxy."
+---
+
+Use this page when your product needs sign-in, session-backed gateway access, and more than a single chat route.
+
+<Prompt
+  description="Build a **signed-in Next.js workbench** with OAuth and a unified AI Stats proxy."
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`You are building a signed-in Next.js app on top of AI Stats Gateway.
+
+Create a workbench-style app with:
+- OAuth 2.1 + PKCE sign-in
+- session-backed token storage
+- one unified gateway proxy route on the server
+- model discovery
+- one chat flow using the Responses API
+- one generic endpoint tester for additional AI Stats endpoints
+
+Requirements:
+- Keep gateway credentials and access tokens server-side.
+- Use a proxy allowlist for safety.
+- Support token refresh.
+- Keep the workbench understandable rather than over-engineered.
+- Add a short README with setup, env vars, and run steps.
+
+Verification:
+- run the app if possible
+- verify sign-in flow as far as local setup allows
+- verify at least one proxied gateway request path
+- report exactly what you verified and what remains dependent on external OAuth configuration.`}
+</Prompt>
+
+## Sample project
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/AI-Stats/AI-Stats/tree/main/examples/oauth-client-nextjs)
+- Local repo path: `examples/oauth-client-nextjs`
+
+## What this app covers
+
+- OAuth 2.1 + PKCE login
+- session-backed token storage and refresh
+- a unified proxy for control and generation routes
+- model discovery
+- a chat flow over `/responses`
+- a generic endpoint tester for other gateway routes
+
+## When to start with this example
+
+Use this when:
+
+- end users should sign in with delegated access
+- you need more than a simple chat page
+- you want one secure server route for several AI Stats endpoints
+
+Do not start here if:
+
+- you only need a simple API-key chat UI
+- you want a script or CLI first
+
+## Key files
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## Why the sample is structured this way
+
+### 1. OAuth stays separate from gateway logic
+
+The app isolates:
+
+- auth start and callback logic
+- encrypted session handling
+- token refresh
+
+That keeps the AI integration code simpler and makes sign-in issues easier to debug.
+
+### 2. One proxy route handles the gateway calls
+
+The catch-all proxy route:
+
+- checks the endpoint allowlist
+- injects the current bearer token
+- refreshes tokens when needed
+- forwards request and response bodies
+
+This is a good pattern when you want several AI Stats endpoints without copying auth logic into every route.
+
+### 3. The dashboard doubles as an internal workbench
+
+The workbench page is not only chat:
+
+- it discovers models
+- it exercises `/responses`
+- it can test non-chat endpoints too
+
+That makes it useful for onboarding, QA, and internal debugging before you build a more polished end-user UI.
+
+## Run the sample
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+Set:
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_AISTATS_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+Then run:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+Open `http://localhost:3000`.
+
+## How to make it your own
+
+- trim the proxy allowlist to the endpoints your product really needs
+- keep the workbench internally while building a cleaner user-facing UI on top
+- swap the generic tester for purpose-built product flows once the integration stabilizes
+
+## Related guides
+
+- [Build a Next.js web chat app](./build-a-nextjs-web-chat-app)
+- [Mini app starter prompts](./mini-app-starter-prompts)
+- [Examples](../guides/examples)

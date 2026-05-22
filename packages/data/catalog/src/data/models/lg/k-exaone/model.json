@@ -4,6 +4,7 @@
   "name": "K EXAONE",
   "status": "Available",
   "previous_model_id": null,
+  "description": "K EXAONE is a language model from LG for chat, writing, analysis, and general-purpose automation. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-12-31T00:00:00",
   "release_date": "2025-12-31T00:00:00",
   "deprecation_date": null,

@@ -5,6 +5,28 @@ description: "Use the AI Stats Gateway as a custom provider for Codex CLI."
 
 Codex CLI supports custom model providers through `~/.codex/config.toml`, so you can route requests to AI Stats without changing your local workflow.
 
+If you also want Codex to read the live AI Stats documentation while it works, add the [Docs MCP](./docs-mcp.mdx) server as well.
+
+<Visibility for="humans">
+<Note>
+Need reusable agent setup help as well as provider wiring? Install the public AI Stats skills from [`AI-Stats/skills`](https://github.com/AI-Stats/skills):
+
+```bash
+npx skills add AI-Stats/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+Reusable AI Stats skills are available from [`AI-Stats/skills`](https://github.com/AI-Stats/skills). For Codex installs, use:
+
+```bash
+npx skills add AI-Stats/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
 ## Prerequisites
 
 - An AI Stats API key.

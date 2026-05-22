@@ -253,6 +253,177 @@ describe("formatRoomError", () => {
 					],
 				},
 			],
+			workspacePolicy: undefined,
+			consideredProviders: [],
+			rankedProviders: [],
+		});
+	});
+
+	test("preserves workspace policy diagnostics for guardrail-driven validation failures", () => {
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "validation_error",
+				description: "Workspace policy blocked this request.",
+				routing_diagnostics: {
+					workspacePolicy: {
+						resolvedModel: "blocked-model",
+						allowedApiModels: ["allowed-model"],
+						providerAllowlist: ["anthropic"],
+						providerBlocklist: ["xai"],
+						requestProviderOnly: [],
+						requestProviderIgnore: ["openai"],
+						activeGuardrailIds: ["gr_123"],
+						beforeCount: 3,
+						afterCount: 0,
+					},
+				},
+			}),
+		);
+
+		expect(formatted.routingDiagnostics).toEqual({
+			filterStages: [],
+			workspacePolicy: {
+				resolvedModel: "blocked-model",
+				allowedApiModels: ["allowed-model"],
+				providerAllowlist: ["anthropic"],
+				providerBlocklist: ["xai"],
+				requestProviderOnly: [],
+				requestProviderIgnore: ["openai"],
+				activeGuardrailIds: ["gr_123"],
+				beforeCount: 3,
+				afterCount: 0,
+			},
+			consideredProviders: [],
+			rankedProviders: [],
+		});
+	});
+
+	test("extracts workspace policy diagnostics from validation details when top-level routing diagnostics are absent", () => {
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "validation_error",
+				description: "Workspace policy blocked this request.",
+				details: [
+					{
+						keyword: "model_not_allowed_by_workspace_policy",
+						params: {
+							resolvedModel: "blocked-model",
+							allowedApiModels: ["allowed-model"],
+							providerAllowlist: ["anthropic"],
+							providerBlocklist: ["xai"],
+							requestProviderOnly: ["openai"],
+							requestProviderIgnore: [],
+							activeGuardrailIds: ["gr_123"],
+							beforeCount: 4,
+							afterCount: 0,
+						},
+					},
+				],
+			}),
+		);
+
+		expect(formatted.routingDiagnostics).toEqual({
+			filterStages: [],
+			workspacePolicy: {
+				resolvedModel: "blocked-model",
+				allowedApiModels: ["allowed-model"],
+				providerAllowlist: ["anthropic"],
+				providerBlocklist: ["xai"],
+				requestProviderOnly: ["openai"],
+				requestProviderIgnore: [],
+				activeGuardrailIds: ["gr_123"],
+				beforeCount: 4,
+				afterCount: 0,
+			},
+			consideredProviders: [],
+			rankedProviders: [],
+		});
+	});
+
+	test("preserves considered and ranked provider routing diagnostics", () => {
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "upstream_error",
+				description: "All providers failed.",
+				routing_diagnostics: {
+					filterStages: [],
+					consideredProviders: [
+						{
+							providerId: "openai",
+							apiModelId: "openai/gpt-free-b",
+							providerModelSlug: "gpt-free-b",
+							providerStatus: "active",
+							providerRoutingStatus: "active",
+							modelRoutingStatus: "active",
+							capabilityStatus: "active",
+							baseWeight: 1,
+						},
+					],
+					rankedProviders: [
+						{
+							providerId: "openai",
+							apiModelId: "openai/gpt-free-b",
+							providerModelSlug: "gpt-free-b",
+							score: 0.912345,
+							breaker: "closed",
+							breakerUntilMs: 0,
+							scoreFactors: {
+								successRate: 0.99,
+								latencyScore: 0.8,
+								tailLatencyScore: 0.7,
+								throughputScore: 0.6,
+								priceScore: 0.5,
+								tokenAffinity: 0.4,
+								loadPenalty: 0.1,
+								baseWeight: 1,
+								rolloutMultiplier: 1,
+								routingMultiplier: 1,
+								cacheBoostMultiplier: 1,
+							},
+						},
+					],
+				},
+			}),
+		);
+
+		expect(formatted.routingDiagnostics).toEqual({
+			filterStages: [],
+			workspacePolicy: undefined,
+			consideredProviders: [
+				{
+					providerId: "openai",
+					apiModelId: "openai/gpt-free-b",
+					providerModelSlug: "gpt-free-b",
+					providerStatus: "active",
+					providerRoutingStatus: "active",
+					modelRoutingStatus: "active",
+					capabilityStatus: "active",
+					baseWeight: 1,
+				},
+			],
+			rankedProviders: [
+				{
+					providerId: "openai",
+					apiModelId: "openai/gpt-free-b",
+					providerModelSlug: "gpt-free-b",
+					score: 0.912345,
+					breaker: "closed",
+					breakerUntilMs: 0,
+					scoreFactors: {
+						successRate: 0.99,
+						latencyScore: 0.8,
+						tailLatencyScore: 0.7,
+						throughputScore: 0.6,
+						priceScore: 0.5,
+						tokenAffinity: 0.4,
+						loadPenalty: 0.1,
+						baseWeight: 1,
+						rolloutMultiplier: 1,
+						routingMultiplier: 1,
+						cacheBoostMultiplier: 1,
+					},
+				},
+			],
 		});
 	});
 
@@ -272,5 +443,54 @@ describe("formatRoomError", () => {
 		expect(formatted.attemptCount).toBe(3);
 		expect(formatted.failedProviders).toEqual(["openai", "anthropic"]);
 		expect(formatted.failedStatuses).toEqual([429, 503]);
+	});
+
+	test("preserves key limit diagnostics and creates a concrete hint", () => {
+		const formatted = formatRoomError(
+			JSON.stringify({
+				error: "key_limit_exceeded",
+				description: "This API key has reached its daily request limit (100/100).",
+				reason: "daily_request_limit_reached",
+				limit_window: "daily",
+				limit_metric: "requests",
+				current_value: 100,
+				limit_value: 100,
+				reset_at: "2026-05-09T23:59:59.000Z",
+				now: "2026-05-09T12:00:00.000Z",
+				buckets: {
+					daily: {
+						window_start: "2026-05-09T00:00:00.000Z",
+						requests_used: 100,
+						requests_limit: 100,
+						cost_used_nanos: 0,
+						cost_limit_nanos: 0,
+					},
+				},
+			}),
+		);
+
+		expect(formatted.title).toBe("Key limit exceeded");
+		expect(formatted.hint).toBe(
+			"This API key hit its daily request limit (100/100). Wait for the reset window or raise the key limit.",
+		);
+		expect(formatted.keyLimit).toEqual({
+			window: "daily",
+			metric: "requests",
+			currentValue: 100,
+			limitValue: 100,
+			resetAt: "2026-05-09T23:59:59.000Z",
+			now: "2026-05-09T12:00:00.000Z",
+			buckets: {
+				daily: {
+					windowStart: "2026-05-09T00:00:00.000Z",
+					requestsUsed: 100,
+					requestsLimit: 100,
+					costUsedNanos: 0,
+					costLimitNanos: 0,
+				},
+				weekly: undefined,
+				monthly: undefined,
+			},
+		});
 	});
 });

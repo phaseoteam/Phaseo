@@ -12,6 +12,7 @@ export interface MonitorModelData {
         id: string; // Add provider ID for logo lookup
         inputPrice: number;
         outputPrice: number;
+        executionRegions?: string[] | null;
         standardInputPrice?: number | null;
         standardOutputPrice?: number | null;
         standardInputPriceLabel?: string | null;
@@ -43,6 +44,28 @@ export interface MonitorModelData {
     weeklyThroughputModel?: number | null;
     weeklyLatencyModel?: number | null;
 }
+
+export type MonitorModelTableRow = Pick<
+    MonitorModelData,
+    | "id"
+    | "model"
+    | "modelId"
+    | "organisationId"
+    | "organisationName"
+    | "endpoint"
+    | "gatewayStatus"
+    | "inputModalities"
+    | "outputModalities"
+    | "context"
+    | "maxOutput"
+    | "quantization"
+    | "tier"
+    | "added"
+    | "retired"
+> & {
+    provider: Pick<MonitorModelData["provider"], "name" | "id" | "inputPrice" | "outputPrice" | "features">;
+    popularityTokensWeek?: number;
+};
 
 export interface MonitorModelFilters {
     search?: string;

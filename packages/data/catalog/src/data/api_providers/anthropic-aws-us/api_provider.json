@@ -1,0 +1,30 @@
+{
+  "api_provider_id": "anthropic-aws-us",
+  "api_provider_name": "Anthropic",
+  "provider_family_id": "anthropic",
+  "offer_label": "AWS US",
+  "offer_scope": "regional",
+  "description": null,
+  "link": "https://aws.amazon.com/claude-platform",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "us"
+  ],
+  "default_data_regions": null,
+  "zero_data_retention": "optional",
+  "residency_source_url": "https://platform.claude.com/docs/en/build-with-claude/claude-platform-on-aws",
+  "residency_notes": "US-only inference offer for Claude Platform on AWS. Anthropic documents that inference_geo=us keeps inference within US data centers on supported 4.6+ models.",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Anthropic says customer API data is not used to train its models by default.",
+  "prompt_training_source_url": "https://docs.anthropic.com/en/docs/claude-code/data-usage",
+  "user_identifier_policy": "not_sent",
+  "user_identifier_notes": "AI Stats does not currently send this provider a provider-facing user identifier in the Anthropic chat adapter.",
+  "privacy_policy_url": "https://www.anthropic.com/legal/privacy",
+  "terms_of_service_url": "https://www.anthropic.com/legal/commercial-terms",
+  "regional_pricing_mode": "offer_specific",
+  "pricing_source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "regional_pricing_notes": "US-only inference on Claude Platform on AWS is priced at 1.1x the standard rate on Claude Opus 4.6, Claude Sonnet 4.6, and later models.",
+  "country_code": "US",
+  "status": "NotReady",
+  "colour": "#CC785C"
+}

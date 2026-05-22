@@ -4,9 +4,11 @@ badge: "Beta"
 openapi: "GET /videos/{video_id}"
 description: "Check the status of a video generation request."
 ---
-Fetches the current state of a video generation job and returns the latest provider status payload.
+Fetches the current state of a video generation job.
 
-Use this endpoint for polling while the job is running.
+<Warning>
+The public video routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
 
 Common response fields include:
 
@@ -46,5 +48,5 @@ Each entry in `outputs` includes:
 - `content_url` when unsigned byte access is enabled
 - `download_url` and `expires_at` when signed download access is enabled
 
-When the job becomes terminal, this response is also where billing, asset metadata, output access, and any final provider error payload become most useful.
+When the job becomes terminal, this response is also where billing, asset metadata, output access, and any final provider error payload are most useful.
 

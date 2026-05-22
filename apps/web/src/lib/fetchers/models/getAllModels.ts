@@ -33,6 +33,7 @@ export interface ModelCard {
     gateway_provider_ids?: string[];
     gateway_provider_names?: string[];
     gateway_active_provider_names?: string[];
+    gateway_execution_regions?: string[];
     gateway_provider_details?: Array<{
         id: string;
         name: string;

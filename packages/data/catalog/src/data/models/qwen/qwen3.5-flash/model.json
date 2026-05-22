@@ -4,6 +4,7 @@
   "name": "Qwen 3.5 Flash",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Qwen 3.5 Flash is a fast, efficient language model from Alibaba's Qwen 3.6 series. It supports text, image, and video input with a 1M token context window.",
   "announced_date": "2026-02-23T00:00:00",
   "release_date": "2026-02-23T00:00:00",
   "deprecation_date": null,

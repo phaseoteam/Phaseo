@@ -4,9 +4,12 @@ badge: "Beta"
 openapi: "GET /videos/models"
 description: "List active public video model capabilities."
 ---
-Returns the DB-backed public video model catalogue for the video surface.
 
 Each item includes capability metadata such as:
+
+<Warning>
+The public video routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
 
 - `model`
 - `name`
@@ -16,9 +19,3 @@ Each item includes capability metadata such as:
 - `supported_params`
 - `providers`
 - `pricing`
-
-Use this endpoint when you need a video-specific capability list for:
-
-- playground model selectors
-- SDK/runtime validation
-- product surfaces that should only expose active public video models

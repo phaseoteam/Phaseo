@@ -4,6 +4,7 @@
   "name": "Chat Bison",
   "status": "Retired",
   "previous_model_id": null,
+  "description": "Chat Bison is a language model from Google for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": "2023-05-01T00:00:00",
   "deprecation_date": null,

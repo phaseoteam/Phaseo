@@ -4,6 +4,7 @@
   "name": "Grok 2 Vision 1212",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok 2 Vision 1212 is a reasoning model from xAI. It accepts text and image inputs with text output, and is suited for agentic workflows, instruction-following tasks, and applications requiring high factual.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

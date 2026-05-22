@@ -4,14 +4,12 @@
 -- - After the lock window, start counting low completed months.
 -- - Downgrade after 3 consecutive completed months below $10k.
 
-alter table public.workspaces
+alter table public.teams
   add column if not exists enterprise_lock_through_month date null;
-
-alter table public.workspaces
+alter table public.teams
   add column if not exists tier_low_streak_evaluated_month date null;
-
 create or replace function public.calculate_tier_with_grace(
-  p_workspace_id uuid,
+  p_team_id uuid,
   p_spend_30d_nanos bigint
 )
 returns text
@@ -56,8 +54,8 @@ begin
     v_consecutive_low,
     v_lock_through_month,
     v_low_streak_evaluated_month
-  from public.workspaces t
-  where t.id = p_workspace_id
+  from public.teams t
+  where t.id = p_team_id
   for update;
 
   if v_stored_tier is null then
@@ -71,7 +69,7 @@ begin
   select coalesce(sum(gr.cost_nanos), 0)::bigint
   into v_current_month_spend_nanos
   from public.gateway_requests gr
-  where gr.workspace_id = p_workspace_id
+  where gr.team_id = p_team_id
     and gr.success is true
     and gr.created_at >= v_current_month_start_ts
     and gr.created_at < v_next_month_start_ts;
@@ -109,7 +107,7 @@ begin
         select coalesce(sum(gr.cost_nanos), 0)::bigint
         into v_eval_month_spend_nanos
         from public.gateway_requests gr
-        where gr.workspace_id = p_workspace_id
+        where gr.team_id = p_team_id
           and gr.success is true
           and gr.created_at >= v_last_completed_month_start_ts
           and gr.created_at < (v_last_completed_month_start_ts + interval '1 month');
@@ -150,18 +148,18 @@ begin
     v_consecutive_low := 0;
   end if;
 
-  update public.workspaces
+  update public.teams
   set
     tier = v_new_tier,
     tier_updated_at = case when v_tier_changed then now() else tier_updated_at end,
     consecutive_low_spend_months = v_consecutive_low,
     enterprise_lock_through_month = v_effective_lock_through,
     tier_low_streak_evaluated_month = v_low_streak_evaluated_month
-  where id = p_workspace_id;
+  where id = p_team_id;
 
   if v_tier_changed then
-    insert into public.workspace_tier_history (
-      workspace_id,
+    insert into public.team_tier_history (
+      team_id,
       old_tier,
       new_tier,
       reason,
@@ -169,7 +167,7 @@ begin
       threshold_usd,
       consecutive_low_months
     ) values (
-      p_workspace_id,
+      p_team_id,
       v_stored_tier,
       v_new_tier,
       v_reason,
@@ -182,15 +180,14 @@ begin
   return v_new_tier;
 end;
 $$;
-
-create or replace function public.cleanup_dormant_enterprise_workspaces()
+create or replace function public.cleanup_dormant_enterprise_teams()
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_workspace_id uuid;
+  v_team_id uuid;
   v_result text;
   v_total_checked int := 0;
   v_updated_count int := 0;
@@ -199,15 +196,15 @@ declare
   v_prev_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc')) - interval '1 month';
   v_current_month_start_ts timestamptz := date_trunc('month', (now() at time zone 'utc'));
 begin
-  for v_workspace_id in
+  for v_team_id in
     select t.id
-    from public.workspaces t
+    from public.teams t
     where coalesce(t.tier, 'basic') = 'enterprise'
     order by t.id
   loop
     v_total_checked := v_total_checked + 1;
 
-    v_result := public.calculate_tier_with_grace(v_workspace_id, 0);
+    v_result := public.calculate_tier_with_grace(v_team_id, 0);
 
     if v_result = 'basic' then
       v_updated_count := v_updated_count + 1;
@@ -215,7 +212,7 @@ begin
       select coalesce(sum(gr.cost_nanos), 0)::bigint
       into v_last_month_spend_nanos
       from public.gateway_requests gr
-      where gr.workspace_id = v_workspace_id
+      where gr.team_id = v_team_id
         and gr.success is true
         and gr.created_at >= v_prev_month_start_ts
         and gr.created_at < v_current_month_start_ts;
@@ -223,7 +220,7 @@ begin
       v_results := array_append(
         v_results,
         jsonb_build_object(
-          'workspace_id', v_workspace_id,
+          'team_id', v_team_id,
           'old_tier', 'enterprise',
           'new_tier', 'basic',
           'spend_30d_usd', round((v_last_month_spend_nanos::numeric / 1000000000.0)::numeric, 2)
@@ -240,8 +237,7 @@ begin
   );
 end;
 $$;
-
-create or replace function public.get_workspace_tier_info(p_workspace_id uuid)
+create or replace function public.get_team_tier_info(p_team_id uuid)
 returns jsonb
 language plpgsql
 security definer
@@ -284,11 +280,11 @@ begin
     v_consecutive_low,
     v_lock_through_month,
     v_low_eval_month
-  from public.workspaces t
-  where t.id = p_workspace_id;
+  from public.teams t
+  where t.id = p_team_id;
 
   if v_tier is null then
-    raise exception 'Team not found: %', p_workspace_id;
+    raise exception 'Team not found: %', p_team_id;
   end if;
 
   v_markup_pct := case when v_tier = 'enterprise' then 5.00 else 7.00 end;
@@ -296,7 +292,7 @@ begin
   select coalesce(sum(gr.cost_nanos), 0)::bigint
   into v_current_month_nanos
   from public.gateway_requests gr
-  where gr.workspace_id = p_workspace_id
+  where gr.team_id = p_team_id
     and gr.success is true
     and gr.created_at >= v_current_month_start_ts
     and gr.created_at < v_next_month_start_ts;
@@ -304,7 +300,7 @@ begin
   select coalesce(sum(gr.cost_nanos), 0)::bigint
   into v_prev_month_nanos
   from public.gateway_requests gr
-  where gr.workspace_id = p_workspace_id
+  where gr.team_id = p_team_id
     and gr.success is true
     and gr.created_at >= v_prev_month_start_ts
     and gr.created_at < v_current_month_start_ts;
@@ -347,16 +343,12 @@ begin
   );
 end;
 $$;
-
 grant execute on function public.calculate_tier_with_grace(uuid, bigint) to anon, authenticated, service_role;
-grant execute on function public.cleanup_dormant_enterprise_workspaces() to service_role;
-grant execute on function public.get_workspace_tier_info(uuid) to authenticated;
-
+grant execute on function public.cleanup_dormant_enterprise_teams() to service_role;
+grant execute on function public.get_team_tier_info(uuid) to authenticated;
 comment on function public.calculate_tier_with_grace(uuid, bigint)
   is 'Calendar-month tiering: immediate enterprise qualification at $10k current-month spend; lock current+next month; then 3 consecutive low completed months required for downgrade.';
-
-comment on function public.cleanup_dormant_enterprise_workspaces()
+comment on function public.cleanup_dormant_enterprise_teams()
   is 'Monthly cleanup for enterprise teams using the same calendar-month lock-window tier logic as request-time evaluation.';
-
-comment on function public.get_workspace_tier_info(uuid)
+comment on function public.get_team_tier_info(uuid)
   is 'Returns team tier status, calendar-month spend progress, lock window metadata, and downgrade runway.';

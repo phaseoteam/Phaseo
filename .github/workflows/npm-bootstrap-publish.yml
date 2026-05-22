@@ -3,6 +3,11 @@ name: npm bootstrap publish
 on:
   workflow_dispatch:
     inputs:
+      publish_agent_sdk:
+        description: "Publish @ai-stats/agent-sdk"
+        required: false
+        type: boolean
+        default: true
       publish_ai_sdk_provider:
         description: "Publish @ai-stats/ai-sdk-provider"
         required: false
@@ -27,6 +32,15 @@ jobs:
     name: Bootstrap publish npm packages
     runs-on: ubuntu-latest
     steps:
+      - name: Require main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Run this workflow from refs/heads/main only."
+            exit 1
+          fi
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 
       - name: Setup pnpm
@@ -40,6 +54,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
       - name: Restore lockfile (guard setup-node cache mutation)
         run: git checkout -- pnpm-lock.yaml
@@ -49,12 +64,14 @@ jobs:
 
       - name: Build target packages
         run: |
+          pnpm --filter @ai-stats/agent-sdk run build
           pnpm --filter @ai-stats/ai-sdk-provider run build
           pnpm --filter @ai-stats/devtools-viewer run build
 
       - name: Publish selected packages (skip if version already exists)
         shell: bash
         env:
+          PUBLISH_AGENT_SDK: ${{ inputs.publish_agent_sdk }}
           PUBLISH_AI_SDK_PROVIDER: ${{ inputs.publish_ai_sdk_provider }}
           PUBLISH_DEVTOOLS_VIEWER: ${{ inputs.publish_devtools_viewer }}
         run: |
@@ -76,9 +93,13 @@ jobs:
             echo "publishing ${pkg_name}@${pkg_version} from ${pkg_dir}"
             (
               cd "${pkg_dir}"
-              npm publish --access public
+              pnpm publish --access public --no-git-checks
             )
           }
+
+          if [ "${PUBLISH_AGENT_SDK}" = "true" ]; then
+            publish_if_needed "@ai-stats/agent-sdk" "packages/sdk/agent-sdk-ts"
+          fi
 
           if [ "${PUBLISH_AI_SDK_PROVIDER}" = "true" ]; then
             publish_if_needed "@ai-stats/ai-sdk-provider" "packages/integrations/ai-sdk-ai-stats"

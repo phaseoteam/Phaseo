@@ -182,7 +182,7 @@ create table if not exists public.gateway_request_details (
   gateway_request_id uuid not null,
   gateway_request_created_at timestamp with time zone not null,
   request_id text not null,
-  workspace_id uuid not null references public.workspaces (id) on delete cascade,
+  team_id uuid not null references public.teams (id) on delete cascade,
   app_id uuid null references public.api_apps (id) on delete set null,
   key_id uuid null references public.keys (id) on delete set null,
   endpoint text not null,
@@ -203,7 +203,7 @@ create table if not exists public.gateway_request_details (
     on delete cascade
 );
 create index if not exists idx_gateway_request_details_team_created
-  on public.gateway_request_details (workspace_id, created_at desc);
+  on public.gateway_request_details (team_id, created_at desc);
 create index if not exists idx_gateway_request_details_request_id
   on public.gateway_request_details (request_id);
 create index if not exists idx_gateway_request_details_gateway_request
@@ -214,7 +214,7 @@ create policy gateway_request_details_select_own_team
   on public.gateway_request_details
   for select
   to authenticated
-  using (public.is_workspace_member(workspace_id));
+  using (public.is_team_member(team_id));
 drop policy if exists gateway_request_details_insert_service on public.gateway_request_details;
 create policy gateway_request_details_insert_service
   on public.gateway_request_details

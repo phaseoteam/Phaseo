@@ -4,6 +4,7 @@
   "name": "Image Generation 006",
   "status": "Retired",
   "previous_model_id": "google/image-generation-005-2023-11-22",
+  "description": "Image Generation 006 is a language model from Google for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": "2024-03-27T00:00:00",
   "deprecation_date": null,

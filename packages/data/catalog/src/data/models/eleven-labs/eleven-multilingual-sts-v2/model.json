@@ -4,6 +4,7 @@
   "name": "Eleven Multilingual STS V2",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Eleven Multilingual STS V2 is a language model from ElevenLabs for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

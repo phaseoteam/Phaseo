@@ -297,6 +297,34 @@ export async function getTeamsSettingsData(preferredWorkspaceId?: string | null)
 		}
 	}
 
+	const teamSsoSettingsByTeam: Record<string, any> = {};
+	if (teamsArray.length) {
+		const { data: workspaceSettingsRows } = await readClient
+			.from("workspace_settings")
+			.select(
+				"workspace_id,sso_enabled,sso_enforced,sso_mode,sso_provider_identifier,sso_domains",
+			)
+			.in(
+				"workspace_id",
+				teamsArray.map((team) => team.id),
+			);
+
+		for (const row of workspaceSettingsRows ?? []) {
+			const workspaceId = String((row as any)?.workspace_id ?? "").trim();
+			if (!workspaceId) continue;
+			teamSsoSettingsByTeam[workspaceId] = {
+				sso_enabled: Boolean((row as any)?.sso_enabled),
+				sso_enforced: Boolean((row as any)?.sso_enforced),
+				sso_mode: String((row as any)?.sso_mode ?? "none"),
+				sso_provider_identifier:
+					(row as any)?.sso_provider_identifier ?? null,
+				sso_domains: Array.isArray((row as any)?.sso_domains)
+					? (row as any).sso_domains
+					: [],
+			};
+		}
+	}
+
 	return {
 		teams: teamsArray,
 		membersByTeam,
@@ -307,5 +335,6 @@ export async function getTeamsSettingsData(preferredWorkspaceId?: string | null)
 		personalTeamId,
 		manageableTeamIds,
 		walletBalances,
+		teamSsoSettingsByTeam,
 	};
 }

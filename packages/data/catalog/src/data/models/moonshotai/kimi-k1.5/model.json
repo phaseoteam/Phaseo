@@ -4,6 +4,7 @@
   "name": "Kimi K1.5",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Kimi K1.5 is Moonshot AI's next-generation multimodal model, designed for long-horizon coding, coding-driven UI/UX generation, and multi-agent orchestration.",
   "announced_date": "2025-01-20T00:00:00",
   "release_date": "2025-01-20T00:00:00",
   "deprecation_date": null,

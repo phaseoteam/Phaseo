@@ -124,6 +124,15 @@ function isWorkspacePolicyLike(value: unknown): value is WorkspacePolicy {
 		isStringArrayOrNull(policy.providerAllowlist) &&
 		isStringArrayOrNull(policy.providerBlocklist) &&
 		isStringArrayOrNull(policy.allowedApiModels) &&
+		(policy.promptInjectionAction === "flag" ||
+			policy.promptInjectionAction === "redact" ||
+			policy.promptInjectionAction === "block" ||
+			policy.promptInjectionAction === null) &&
+		Array.isArray(policy.promptInjectionGuardrailIds) &&
+		policy.promptInjectionGuardrailIds.every((item) => typeof item === "string") &&
+		Array.isArray(policy.sensitiveInfoRules) &&
+		Array.isArray(policy.sensitiveInfoGuardrailIds) &&
+		policy.sensitiveInfoGuardrailIds.every((item) => typeof item === "string") &&
 		typeof policy.enforceAllowed === "boolean" &&
 		Array.isArray(policy.activeGuardrailIds) &&
 		policy.activeGuardrailIds.every((item) => typeof item === "string")
@@ -135,6 +144,11 @@ function cloneWorkspacePolicy(policy: WorkspacePolicy): WorkspacePolicy {
 		providerAllowlist: policy.providerAllowlist ? [...policy.providerAllowlist] : null,
 		providerBlocklist: policy.providerBlocklist ? [...policy.providerBlocklist] : null,
 		allowedApiModels: policy.allowedApiModels ? [...policy.allowedApiModels] : null,
+		blockedApiModels: policy.blockedApiModels ? [...policy.blockedApiModels] : null,
+		promptInjectionAction: policy.promptInjectionAction ?? null,
+		promptInjectionGuardrailIds: [...policy.promptInjectionGuardrailIds],
+		sensitiveInfoRules: [...policy.sensitiveInfoRules],
+		sensitiveInfoGuardrailIds: [...policy.sensitiveInfoGuardrailIds],
 		enforceAllowed: policy.enforceAllowed,
 		activeGuardrailIds: [...policy.activeGuardrailIds],
 	};
@@ -276,6 +290,11 @@ export function buildWorkspacePolicy(args: {
 			allowedApiModels && allowedApiModels.size > 0
 				? [...allowedApiModels]
 				: null,
+		blockedApiModels: null,
+		promptInjectionAction: null,
+		promptInjectionGuardrailIds: [],
+		sensitiveInfoRules: [],
+		sensitiveInfoGuardrailIds: [],
 		enforceAllowed,
 		activeGuardrailIds: (args.guardrails ?? []).map((guardrail) => guardrail.id),
 	};

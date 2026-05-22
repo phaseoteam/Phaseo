@@ -5,17 +5,21 @@ openapi: "POST /batches"
 description: "Create an async batch job and attach observability metadata such as session ids and webhooks."
 ---
 
-Create a batch job for asynchronous processing.
+Creates an async batch job.
 
-The gateway forwards the upstream batch request and also accepts AI Stats-specific observability fields:
+<Warning>
+The public batch routes are currently mounted but temporarily disabled, so requests currently return `501 not_implemented`.
+</Warning>
 
-- `session_id` to group the batch with related requests in logs and investigate tooling.
+AI Stats also accepts these extra fields:
+
+- `session_id` to group the batch with related requests in logs and activity views
 - `webhook` to configure async notifications when the batch transitions state.
 - `metadata` to persist caller-defined tags alongside the batch.
 
 Use `GET /batches/{batch_id}` to poll status and `POST /batches/{batch_id}/cancel` to stop a pending or processing batch.
 
-Batch responses also include gateway observability fields when available:
+Batch responses can also include:
 
 - `request_id`
 - `provider`

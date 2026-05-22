@@ -4,6 +4,7 @@
   "name": "Text Embedding Gecko 002",
   "status": "Retired",
   "previous_model_id": "google/text-embedding-gecko-001-2023-06-07",
+  "description": "gemini-embedding-001 provides a unified cutting edge experience across domains, including science, legal, finance, and coding. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": null,
   "release_date": "2023-11-02T00:00:00",
   "deprecation_date": null,

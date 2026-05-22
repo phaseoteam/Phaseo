@@ -4,6 +4,7 @@
   "name": "DeepSeek V4",
   "status": "Rumoured",
   "previous_model_id": "deepseek/deepseek-v3-2-2025-12-01",
+  "description": "DeepSeek V4 is a large-scale Mixture-of-Experts model from DeepSeek with 1.6T total parameters and 49B activated parameters, supporting a 1M-token context window.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

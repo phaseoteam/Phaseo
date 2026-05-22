@@ -4,6 +4,7 @@
   "name": "MiniMax M1 80K",
   "status": "Available",
   "previous_model_id": null,
+  "description": "MiniMax M1 80K is a large-scale, open-weight reasoning model designed for extended context and high-efficiency inference. It accepts text inputs and produces text outputs.",
   "announced_date": "2025-06-16T00:00:00",
   "release_date": "2025-06-16T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "Aion RP Llama 3.1 8B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Aion-RP-Llama-3.1-8B ranks the highest in the character evaluation portion of the RPBench-Auto benchmark, a roleplaying-specific variant of Arena-Hard-Auto, where LLMs evaluate each other's responses.",
   "announced_date": "2024-11-30T00:00:00",
   "release_date": "2024-11-30T00:00:00",
   "deprecation_date": null,

@@ -5,14 +5,12 @@
 update public.team_invites
 set role = 'admin'::public.team_role
 where lower(coalesce(role::text, '')) = 'owner';
-
 -- Ensure canonical owner membership rows exist and are marked owner.
 insert into public.team_members (team_id, user_id, role)
 select t.id, t.owner_user_id, 'owner'::public.team_role
 from public.teams t
 on conflict (team_id, user_id)
 do update set role = 'owner'::public.team_role;
-
 -- Demote non-canonical owner rows to admin.
 update public.team_members tm
 set role = 'admin'::public.team_role
@@ -23,7 +21,6 @@ where lower(coalesce(tm.role::text, '')) = 'owner'
     where t.id = tm.team_id
       and t.owner_user_id <> tm.user_id
   );
-
 -- Enforce membership role rules:
 -- - Only canonical owner may have role=owner.
 -- - Non-owner members can only be admin/member.
@@ -69,14 +66,12 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists team_members_role_policy_guard on public.team_members;
 create trigger team_members_role_policy_guard
 before insert or update
 on public.team_members
 for each row
 execute function public.enforce_team_member_role_policy();
-
 -- Enforce invite role rules:
 -- - Invites may only grant admin/member.
 create or replace function public.enforce_team_invite_role_policy()
@@ -96,14 +91,12 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists team_invites_role_policy_guard on public.team_invites;
 create trigger team_invites_role_policy_guard
 before insert or update
 on public.team_invites
 for each row
 execute function public.enforce_team_invite_role_policy();
-
 -- Mirror the same restriction in RLS checks for invite writes.
 drop policy if exists team_invites_insert_own_team on public.team_invites;
 create policy team_invites_insert_own_team
@@ -114,7 +107,6 @@ create policy team_invites_insert_own_team
     public.is_team_admin(team_id)
     and role in ('admin'::public.team_role, 'member'::public.team_role)
   );
-
 drop policy if exists team_invites_update_own_team on public.team_invites;
 create policy team_invites_update_own_team
   on public.team_invites

@@ -7,6 +7,8 @@ import { getModelSubscriptionPlansCached } from "@/lib/fetchers/models/getModelS
 import { getModelProviderRoutingHealthCached } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
+import { createClient as createServerClient } from "@/utils/supabase/server";
+import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	Empty,
 	EmptyContent,
@@ -15,6 +17,15 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
+
+type WorkspacePrivacySettings = {
+	isAuthenticated: boolean;
+	privacyEnablePaidMayTrain: boolean;
+	privacyEnableFreeMayTrain: boolean;
+	privacyZdrOnly: boolean;
+	providerRestrictionMode: "none" | "allowlist" | "blocklist";
+	providerRestrictionProviderIds: string[];
+};
 
 export default async function ModelPricing({
 	modelId,
@@ -36,6 +47,53 @@ export default async function ModelPricing({
 			return [];
 		}),
 	]);
+	const supabase = await createServerClient();
+	const {
+		data: { user },
+	} = await supabase.auth.getUser();
+	const workspaceId = user?.id ? await getWorkspaceIdFromCookie() : undefined;
+	let workspacePrivacySettings: WorkspacePrivacySettings | null = null;
+	if (user?.id && workspaceId) {
+		const { data: settingsRow, error: settingsError } = await supabase
+			.from("workspace_settings")
+			.select(
+				"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids",
+			)
+			.eq("workspace_id", workspaceId)
+			.maybeSingle();
+		if (settingsError) {
+			console.warn("[pricing] failed to load workspace privacy settings", {
+				workspaceId,
+				error: settingsError.message,
+			});
+		} else if (settingsRow) {
+			const rawMode = String(settingsRow.provider_restriction_mode ?? "")
+				.trim()
+				.toLowerCase();
+			const providerRestrictionMode =
+				rawMode === "allowlist" || rawMode === "blocklist" || rawMode === "none"
+					? rawMode
+					: "none";
+			workspacePrivacySettings = {
+				isAuthenticated: true,
+				privacyEnablePaidMayTrain: Boolean(
+					settingsRow.privacy_enable_paid_may_train ?? true,
+				),
+				privacyEnableFreeMayTrain: Boolean(
+					settingsRow.privacy_enable_free_may_train ?? true,
+				),
+				privacyZdrOnly: Boolean(settingsRow.privacy_zdr_only ?? false),
+				providerRestrictionMode,
+				providerRestrictionProviderIds: Array.isArray(
+					settingsRow.provider_restriction_provider_ids,
+				)
+					? settingsRow.provider_restriction_provider_ids
+							.map((value: unknown) => String(value ?? "").trim())
+							.filter(Boolean)
+					: [],
+			};
+		}
+	}
 
 	// Show providers with model mappings even when pricing rules are missing.
 	const providersForDisplay = (providers || []).filter(
@@ -145,6 +203,7 @@ export default async function ModelPricing({
 				creatorOrgId={header?.organisation_id ?? null}
 				runtimeStats={runtimeStats}
 				routingHealth={routingHealth}
+				workspacePrivacySettings={workspacePrivacySettings}
 				showHeader={showHeader}
 			/>
 		</div>

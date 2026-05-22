@@ -4,6 +4,7 @@
   "name": "Minimax Text 01",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Minimax Text 01 is a language model from MiniMax for chat, writing, analysis, and general-purpose automation.",
   "announced_date": "2025-01-15T00:00:00",
   "release_date": "2025-01-15T00:00:00",
   "deprecation_date": null,

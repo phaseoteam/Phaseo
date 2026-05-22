@@ -4,6 +4,7 @@
   "name": "Gemini Robotics ER 1.6 Preview",
   "status": "Available",
   "previous_model_id": "google/gemini-robotics-er-1.5-preview",
+  "description": "Gemini Robotics ER 1.6 Preview is Google's GA high-efficiency multimodal model optimized for low-latency, high-volume workloads. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2026-04-14T00:00:00",
   "release_date": "2026-04-14T00:00:00",
   "deprecation_date": null,

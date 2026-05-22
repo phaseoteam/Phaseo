@@ -4,6 +4,7 @@
   "name": "Granite Vision 3.1 2B Preview",
   "status": null,
   "previous_model_id": null,
+  "description": "Granite Vision 3.1 2B Preview is a multimodal model from IBM that can work across text and visual inputs. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

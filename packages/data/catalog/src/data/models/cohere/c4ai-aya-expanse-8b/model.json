@@ -4,6 +4,7 @@
   "name": "C4AI Aya Expanse 8B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "C4AI Aya Expanse 8B is a language model from Cohere for chat, writing, analysis, and general-purpose automation.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

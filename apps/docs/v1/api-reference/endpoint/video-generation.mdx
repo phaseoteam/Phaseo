@@ -3,33 +3,24 @@ title: "Video generation (Beta)"
 badge: "Beta"
 openapi: "POST /videos"
 ---
-Creates an asynchronous video generation job and returns a job record immediately.
+Creates an async video job and returns the job record immediately.
 
-Related collection endpoints:
-
-- `GET /v1/videos` to review recent owned jobs
-- `GET /v1/videos/models` to inspect active public video model capabilities
-
-The initial response is a `video` object with fields such as:
-
-- `id`
-- `status`
-- `polling_url`
-- `provider`
-- `model`
-- `poll_after_seconds`
-- optional `billing`, `content_url`, `download_url`, and `outputs` fields when available
+<Warning>
+The public video routes are currently mounted but temporarily disabled, so requests currently return `501 not_implemented` while this surface is being re-enabled.
+</Warning>
 
 After creating a job:
 
-- `GET /v1/videos/{video_id}` for status updates.
-- `GET /v1/videos/{video_id}/content` when the job is complete.
-- `POST /v1/videos/{video_id}/download_url` when you need a short-lived signed download link.
+- use `GET /v1/videos/{video_id}` for status updates
+- use `GET /v1/videos/{video_id}/content` when the job is complete
+- use `POST /v1/videos/{video_id}/download_url` when you need a short-lived signed download link
+- use `GET /v1/videos` to review owned jobs
+- use `GET /v1/videos/models` to inspect active public video models
 
 ## Lifecycle notes
 
 - Video generation is async by design. Do not expect binary video data in the create response.
-- The gateway can hold funds up front and later settle or void them when the provider reaches a terminal state.
+- AI Stats can hold funds up front and later settle or void them when the provider reaches a terminal state.
 - Terminal states include `completed`, `failed`, `cancelled`, and `expired`.
 - Webhook configuration can be included in the create request when you want lifecycle notifications instead of pure polling.
 

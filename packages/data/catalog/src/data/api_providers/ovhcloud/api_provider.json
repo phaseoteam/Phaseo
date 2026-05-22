@@ -1,0 +1,24 @@
+{
+  "api_provider_id": "ovhcloud",
+  "api_provider_name": "OVHcloud",
+  "description": null,
+  "link": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/",
+  "residency_mode": "provider_managed",
+  "default_execution_regions": [
+    "eu"
+  ],
+  "default_data_regions": [
+    "eu"
+  ],
+  "zero_data_retention": "unknown",
+  "residency_source_url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/",
+  "regional_pricing_mode": "offer_specific",
+  "pricing_source_url": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/",
+  "regional_pricing_notes": "OVHcloud AI Endpoints publishes model pricing in EUR on the public catalog pages.",
+  "country_code": "FR",
+  "status": "Alpha",
+  "colour": "#123F6D",
+  "privacy_policy_url": "https://www.ovhcloud.com/en/personal-data-protection/",
+  "terms_of_service_url": "https://www.ovhcloud.com/en/terms-and-conditions/contracts/",
+  "prompt_training_policy": "unknown"
+}

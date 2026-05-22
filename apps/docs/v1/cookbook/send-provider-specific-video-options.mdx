@@ -1,0 +1,132 @@
+---
+title: "Send provider-specific video options"
+description: "Add provider-specific video settings through `provider_params` without losing the shared gateway request shape."
+---
+
+Use this recipe when the common video request fields are not enough and one provider path needs extra settings.
+
+## Goal
+
+- Keep the shared gateway request shape.
+- Add provider-specific overrides only where required.
+- Avoid forking your whole integration around one provider.
+
+## 1. Start with the shared video request
+
+Keep the common request fields at the top level:
+
+- `model`
+- `prompt`
+- `duration`
+- `aspect_ratio`
+- `resolution`
+- `input_references`
+- `webhook`
+
+Only use `provider_params` for the extra provider-specific fields.
+
+## 2. Add provider-specific settings under `provider_params`
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/videos \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/sora-2",
+    "prompt": "A clean product reveal with a slow dolly forward.",
+    "duration": 8,
+    "provider_params": {
+      "camera_motion": "dolly_in",
+      "style_preset": "product_clean"
+    }
+  }'
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.phaseo.app/v1/videos", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "openai/sora-2",
+    prompt: "A clean product reveal with a slow dolly forward.",
+    duration: 8,
+    provider_params: {
+      camera_motion: "dolly_in",
+      style_preset: "product_clean",
+    },
+  }),
+});
+
+const job = await response.json();
+console.log(job.video_id);
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/videos",
+    headers={
+        "Authorization": "Bearer YOUR_API_KEY",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "openai/sora-2",
+        "prompt": "A clean product reveal with a slow dolly forward.",
+        "duration": 8,
+        "provider_params": {
+            "camera_motion": "dolly_in",
+            "style_preset": "product_clean",
+        },
+    },
+)
+
+job = response.json()
+print(job.get("video_id"))
+```
+</CodeGroup>
+
+The exact accepted keys depend on the provider and model path. Keep provider documentation as the source of truth for the enum values and option names that sit inside this object.
+
+## 3. Keep overrides isolated
+
+Do not duplicate the whole request just because one provider needs two extra fields.
+
+Good pattern:
+
+- one gateway request shape
+- one optional `provider_params` object
+
+Bad pattern:
+
+- one code path per provider for otherwise identical video jobs
+
+## 4. Validate with one known model path first
+
+Before generalizing the override:
+
+- choose one known model
+- submit one real job
+- confirm the status and final output
+
+Provider-specific video controls are exactly where silent request mismatches become expensive if you try to abstract too early.
+
+## 5. Document the override at the call site
+
+Whenever you add `provider_params`, leave a short comment or internal note that explains:
+
+- which provider path requires it
+- why the top-level gateway fields were not enough
+- where the provider docs live
+
+That keeps the exception maintainable later.
+
+## Related guides
+
+- [Use image inputs for video generation](./use-image-inputs-for-video-generation.mdx)
+- [Run async video with webhooks](./async-video-webhooks.mdx)
+- [API Reference: Video generation](../api-reference/endpoint/video-generation.mdx)

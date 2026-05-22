@@ -4,6 +4,7 @@
   "name": "v0 1.0 md",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "v0 1.0 md is a multimodal model from Vercel that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

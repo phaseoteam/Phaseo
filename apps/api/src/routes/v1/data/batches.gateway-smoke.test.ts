@@ -68,6 +68,43 @@ vi.mock("@core/async-notifications", () => ({
 		state.webhookEvents.push(payload);
 	}),
 	parseAsyncWebhookConfig: vi.fn((_kind: string, webhook: Record<string, unknown>) => webhook),
+	toAsyncLifecycleStatus: vi.fn((status: string) => {
+		switch (String(status ?? "").toLowerCase()) {
+			case "completed":
+				return "completed";
+			case "failed":
+			case "expired":
+				return "failed";
+			case "cancelled":
+			case "canceled":
+				return "cancelled";
+			case "processing":
+			case "in_progress":
+			case "running":
+				return "running";
+			default:
+				return "pending";
+		}
+	}),
+	buildPublicAsyncWebhook: vi.fn((_kind: string, meta: Record<string, unknown>) => ({
+		url: (meta.webhook as any)?.url ?? null,
+		events: Array.isArray((meta.webhook as any)?.events) ? (meta.webhook as any).events : [],
+		has_secret: typeof (meta.webhook as any)?.secret === "string" && (meta.webhook as any).secret.length > 0,
+		delivery: {
+			total_attempts: 0,
+			delivered_events: 0,
+			delivered_event_types: [],
+			pending_retries: 0,
+			next_retry_at: null,
+			last_attempt_at: null,
+			last_attempt_status: null,
+			last_response_status: null,
+			last_delivered_at: null,
+			last_failure_at: null,
+			last_error_message: null,
+		},
+		attempts: [],
+	})),
 }));
 
 vi.mock("@core/batch-jobs", () => ({
@@ -222,6 +259,9 @@ describe("mounted batch gateway smoke flows", () => {
 		expect(await createResponse.json()).toMatchObject({
 			id: "batch_123",
 			status: "queued",
+			lifecycle_status: "pending",
+			polling_url: "https://example.com/v1/batches/batch_123",
+			cancel_url: "https://example.com/v1/batches/batch_123/cancel",
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_smoke_success",
@@ -235,6 +275,9 @@ describe("mounted batch gateway smoke flows", () => {
 		expect(await retrieveResponse.json()).toMatchObject({
 			id: "batch_123",
 			status: "completed",
+			lifecycle_status: "completed",
+			polling_url: "https://example.com/v1/batches/batch_123",
+			cancel_url: null,
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_smoke_success",
@@ -421,6 +464,9 @@ describe("mounted batch gateway smoke flows", () => {
 		expect(await createResponse.json()).toMatchObject({
 			id: "batch_fail_123",
 			status: "queued",
+			lifecycle_status: "pending",
+			polling_url: "https://example.com/v1/batches/batch_fail_123",
+			cancel_url: "https://example.com/v1/batches/batch_fail_123/cancel",
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_smoke_fail",
@@ -434,6 +480,9 @@ describe("mounted batch gateway smoke flows", () => {
 		expect(await retrieveResponse.json()).toMatchObject({
 			id: "batch_fail_123",
 			status: "failed",
+			lifecycle_status: "failed",
+			polling_url: "https://example.com/v1/batches/batch_fail_123",
+			cancel_url: null,
 			request_id: expect.any(String),
 			provider: "openai",
 			session_id: "session_smoke_fail",

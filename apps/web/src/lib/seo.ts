@@ -4,8 +4,8 @@ const configuredSiteUrl =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
 
 if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
-	throw new Error(
-		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) must be set in production."
+	console.warn(
+		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
 	);
 }
 

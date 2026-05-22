@@ -17,11 +17,9 @@ as $$
       and lower(coalesce(u.role::text, '')) = 'admin'
   );
 $$;
-
 revoke all on function public.is_admin_user() from public;
 grant execute on function public.is_admin_user() to authenticated;
 grant execute on function public.is_admin_user() to service_role;
-
 create table if not exists public.credit_grants (
   id uuid primary key default gen_random_uuid(),
   code text not null,
@@ -37,32 +35,25 @@ create table if not exists public.credit_grants (
   note text null,
   constraint credit_grants_redemption_bounds check (redemptions_count <= max_redemptions)
 );
-
 create unique index if not exists credit_grants_code_normalized_key
   on public.credit_grants (code_normalized);
-
 create index if not exists credit_grants_active_expiry_idx
   on public.credit_grants (is_active, expires_at, code_normalized);
-
 create table if not exists public.credit_grant_redemptions (
   id uuid primary key default gen_random_uuid(),
   grant_id uuid not null references public.credit_grants(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  workspace_id uuid not null references public.workspaces(id) on delete cascade,
+  team_id uuid not null references public.teams(id) on delete cascade,
   amount_nanos bigint not null check (amount_nanos > 0),
   created_at timestamptz not null default now(),
   constraint credit_grant_redemptions_grant_user_unique unique (grant_id, user_id)
 );
-
 create index if not exists credit_grant_redemptions_user_created_idx
   on public.credit_grant_redemptions (user_id, created_at desc);
-
 create index if not exists credit_grant_redemptions_team_created_idx
-  on public.credit_grant_redemptions (workspace_id, created_at desc);
-
+  on public.credit_grant_redemptions (team_id, created_at desc);
 alter table public.credit_grants enable row level security;
 alter table public.credit_grant_redemptions enable row level security;
-
 drop policy if exists credit_grants_admin_all on public.credit_grants;
 create policy credit_grants_admin_all
   on public.credit_grants
@@ -70,7 +61,6 @@ create policy credit_grants_admin_all
   to authenticated
   using ((select public.is_admin_user()))
   with check ((select public.is_admin_user()));
-
 drop policy if exists credit_grant_redemptions_admin_all on public.credit_grant_redemptions;
 create policy credit_grant_redemptions_admin_all
   on public.credit_grant_redemptions
@@ -78,7 +68,6 @@ create policy credit_grant_redemptions_admin_all
   to authenticated
   using ((select public.is_admin_user()))
   with check ((select public.is_admin_user()));
-
 drop policy if exists credit_grants_service_all on public.credit_grants;
 create policy credit_grants_service_all
   on public.credit_grants
@@ -86,7 +75,6 @@ create policy credit_grants_service_all
   to service_role
   using (true)
   with check (true);
-
 drop policy if exists credit_grant_redemptions_service_all on public.credit_grant_redemptions;
 create policy credit_grant_redemptions_service_all
   on public.credit_grant_redemptions
@@ -94,15 +82,13 @@ create policy credit_grant_redemptions_service_all
   to service_role
   using (true)
   with check (true);
-
 grant select, insert, update on public.credit_grants to authenticated;
 grant select, insert, update on public.credit_grant_redemptions to authenticated;
 grant select, insert, update, delete on public.credit_grants to service_role;
 grant select, insert, update, delete on public.credit_grant_redemptions to service_role;
-
 create or replace function public.redeem_credit_code(
   p_code text,
-  p_workspace_id uuid
+  p_team_id uuid
 )
 returns table(
   status text,
@@ -111,7 +97,7 @@ returns table(
   amount_nanos bigint,
   before_balance_nanos bigint,
   after_balance_nanos bigint,
-  workspace_id uuid
+  team_id uuid
 )
 language plpgsql
 security definer
@@ -134,11 +120,11 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
-  if p_workspace_id is null or not public.is_workspace_member(p_workspace_id) then
+  if p_team_id is null or not public.is_team_member(p_team_id) then
     return query
     select
       'team_forbidden'::text,
@@ -147,14 +133,14 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
   select lower(coalesce(t.billing_mode::text, 'wallet'))
   into v_team_billing_mode
-  from public.workspaces t
-  where t.id = p_workspace_id;
+  from public.teams t
+  where t.id = p_team_id;
 
   if not found then
     return query
@@ -165,7 +151,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
@@ -178,7 +164,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
@@ -196,7 +182,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
@@ -215,7 +201,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
@@ -228,7 +214,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
@@ -241,7 +227,7 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
@@ -254,14 +240,14 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
   select *
   into v_wallet
   from public.wallets w
-  where w.workspace_id = p_workspace_id
+  where w.team_id = p_team_id
   for update;
 
   if not found then
@@ -273,19 +259,19 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
   insert into public.credit_grant_redemptions (
     grant_id,
     user_id,
-    workspace_id,
+    team_id,
     amount_nanos
   ) values (
     v_grant.id,
     v_user_id,
-    p_workspace_id,
+    p_team_id,
     v_grant.amount_nanos
   )
   on conflict on constraint credit_grant_redemptions_grant_user_unique
@@ -302,19 +288,19 @@ begin
       null::bigint,
       null::bigint,
       null::bigint,
-      p_workspace_id;
+      p_team_id;
     return;
   end if;
 
   update public.wallets
   set balance_nanos = balance_nanos + v_grant.amount_nanos,
       updated_at = now()
-  where workspace_id = p_workspace_id
+  where team_id = p_team_id
   returning *
   into v_wallet;
 
   insert into public.credit_ledger (
-    workspace_id,
+    team_id,
     event_time,
     kind,
     amount_nanos,
@@ -325,7 +311,7 @@ begin
     created_at,
     status
   ) values (
-    p_workspace_id,
+    p_team_id,
     now(),
     'promo_code',
     v_grant.amount_nanos,
@@ -349,10 +335,9 @@ begin
     v_grant.amount_nanos,
     v_wallet.balance_nanos - v_grant.amount_nanos,
     v_wallet.balance_nanos,
-    p_workspace_id;
+    p_team_id;
 end;
 $$;
-
 revoke all on function public.redeem_credit_code(text, uuid) from public;
 grant execute on function public.redeem_credit_code(text, uuid) to authenticated;
 grant execute on function public.redeem_credit_code(text, uuid) to service_role;

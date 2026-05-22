@@ -4,6 +4,7 @@
   "name": "Step 3.5 Flash",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Step 3.5 Flash is StepFun's most capable open-source foundation model. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

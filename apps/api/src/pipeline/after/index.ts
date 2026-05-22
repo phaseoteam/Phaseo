@@ -20,12 +20,14 @@ import { normalizeFinishReason } from "../audit/normalize-finish-reason";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { getBaseModel } from "../execute/utils";
-import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { dispatchBackground, ensureRuntimeForBackground, getResponseCache } from "@/runtime/env";
 import { resolveNonStreamLatencyMs } from "./timing";
 import {
     maybeWriteStickyRoutingFromUsage,
     resolveCacheAwareRoutingPreference,
 } from "../execute/sticky-routing";
+import { buildCachedResponseRecord } from "@/core/response-cache";
+import { applyResponsePlugins } from "@/plugins/registry";
 
 function decodeBase64ToBytes(value: string): Uint8Array {
 	const binary = atob(value);
@@ -122,6 +124,8 @@ function dispatchNonStreamSuccessSideEffects(args: {
     nativeResponseId: string | null;
     gatewayPayload: any;
     cacheAwareRoutingEnabled: boolean;
+    clientResponseBody: any;
+    responseStatus: number;
 }) {
     const {
         ctx,
@@ -135,6 +139,8 @@ function dispatchNonStreamSuccessSideEffects(args: {
         nativeResponseId,
         gatewayPayload,
         cacheAwareRoutingEnabled,
+        clientResponseBody,
+        responseStatus,
     } = args;
 
     let releaseRuntime: () => void = () => { };
@@ -149,6 +155,50 @@ function dispatchNonStreamSuccessSideEffects(args: {
     }
     dispatchBackground((async () => {
         try {
+            try {
+                const responseCache = getResponseCache();
+                const cacheState = ctx.responseCache;
+                if (
+                    responseCache &&
+                    cacheState?.enabled &&
+                    cacheState.status === "miss" &&
+                    cacheState.key &&
+                    cacheState.fingerprint &&
+                    typeof cacheState.ttlSeconds === "number" &&
+                    cacheState.ttlSeconds > 0
+                ) {
+                    const cacheRecord = buildCachedResponseRecord({
+                        key: cacheState.key,
+                        fingerprint: cacheState.fingerprint,
+                        endpoint: ctx.endpoint,
+                        model: ctx.model,
+                        statusCode: responseStatus,
+                        responseBody: clientResponseBody,
+                        providerId: result.provider,
+                        usage: usageForBilling,
+                        currency,
+                        finishReason,
+                        nativeResponseId,
+                        routingMode: ctx.routingMode ?? null,
+                        presetId: ctx.preset?.id ?? null,
+                        presetSlug: ctx.preset?.slug ?? null,
+                        ttlSeconds: cacheState.ttlSeconds,
+                    });
+                    await responseCache.set(
+                        cacheState.key,
+                        cacheRecord,
+                        cacheState.ttlSeconds,
+                    );
+                }
+            } catch (error) {
+                console.warn("[gateway] response cache write failed", {
+                    endpoint: ctx.endpoint,
+                    model: ctx.model,
+                    provider: result.provider,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+
             try {
                 await maybeWriteStickyRoutingFromUsage({
                     workspaceId: ctx.workspaceId,
@@ -191,6 +241,43 @@ function dispatchNonStreamSuccessSideEffects(args: {
             releaseRuntime();
         }
     })());
+}
+
+export function attachGatewaySuccessMeta(args: {
+    ctx: PipelineContext;
+    result: RequestResult;
+    payload: Record<string, any>;
+    includeMeta: boolean;
+}) {
+    const { ctx, result, payload, includeMeta } = args;
+    if (!(ctx.meta?.debug?.enabled || includeMeta)) {
+        return payload;
+    }
+
+    payload.meta = {
+        ...payload.meta,
+        routing: {
+            selected_provider: result.provider,
+            requested_params: ctx.requestedParams ?? [],
+            param_provider_count_before:
+                ctx.paramRoutingDiagnostics?.providerCountBefore ?? null,
+            param_provider_count_after:
+                ctx.paramRoutingDiagnostics?.providerCountAfter ?? null,
+            param_dropped_providers:
+                ctx.paramRoutingDiagnostics?.droppedProviders?.map((entry) => ({
+                    provider: entry.providerId,
+                    unsupported_params: entry.unsupportedParams,
+                })) ?? [],
+        },
+        ...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
+        ...(ctx.guardrailEnforcement
+            ? { guardrail_enforcement: ctx.guardrailEnforcement }
+            : {}),
+        ...(ctx.pluginExecutions?.length
+            ? { plugin_executions: ctx.pluginExecutions }
+            : {}),
+    };
+    return payload;
 }
 
 export async function finalizeRequest(args: {
@@ -265,7 +352,22 @@ async function handleNonStreamResponse(
     timingHeader?: string
 ): Promise<Response> {
     // Enrich payload
-    const payload = await ctx.timer.span("after_enrich_payload", () => enrichSuccessPayload(ctx, result));
+    let payload = await ctx.timer.span("after_enrich_payload", () => enrichSuccessPayload(ctx, result));
+    const finishReason = await ctx.timer.span("after_extract_finish_reason", () => {
+        const rawFinishReason = extractFinishReason(payload);
+        return normalizeFinishReason(rawFinishReason, result.provider);
+    });
+    const pluginOutcome = await ctx.timer.span("after_response_plugins", async () =>
+        applyResponsePlugins({
+            ctx,
+            result,
+            payload,
+            finishReason,
+        })
+    );
+    payload = pluginOutcome.payload;
+    result.normalized = payload;
+    ctx.pluginExecutions = pluginOutcome.executions;
     const usageFromPayload = payload?.usage ?? null;
     const usageFromBill = result.bill?.usage ?? null;
     const payloadUsageObject =
@@ -357,22 +459,6 @@ async function handleNonStreamResponse(
         generation_ms: generationMs,
         latency_ms: latencyMs,
     };
-    if (ctx.meta?.debug?.enabled || ctx.meta.returnMeta) {
-        payload.meta.routing = {
-            selected_provider: result.provider,
-            requested_params: ctx.requestedParams ?? [],
-            param_provider_count_before:
-                ctx.paramRoutingDiagnostics?.providerCountBefore ?? null,
-            param_provider_count_after:
-                ctx.paramRoutingDiagnostics?.providerCountAfter ?? null,
-            param_dropped_providers:
-                ctx.paramRoutingDiagnostics?.droppedProviders?.map((entry) => ({
-                    provider: entry.providerId,
-                    unsupported_params: entry.unsupportedParams,
-                })) ?? [],
-        };
-    }
-
     // Update result billing
     result.bill.cost_cents = totalCentsFinal;
     result.bill.currency = currencyFinal;
@@ -384,13 +470,21 @@ async function handleNonStreamResponse(
             ? ctx.teamSettings.cacheAwareRoutingEnabled
             : true
     );
-    // Extract finish reason and normalize it for consistent storage
-    const finishReason = await ctx.timer.span("after_extract_finish_reason", () => {
-        const rawFinishReason = extractFinishReason(payload);
-        return normalizeFinishReason(rawFinishReason, result.provider);
+    const nativeResponseId = payload.nativeResponseId ?? null;
+    const includeMeta = ctx.meta.returnMeta ?? false;
+    attachGatewaySuccessMeta({
+        ctx,
+        result,
+        payload,
+        includeMeta,
+    });
+    const responseBody = formatClientPayload({
+        ctx,
+        result,
+        payload,
+        includeMeta,
     });
 
-    const nativeResponseId = payload.nativeResponseId ?? null;
     dispatchNonStreamSuccessSideEffects({
         ctx,
         result,
@@ -403,15 +497,8 @@ async function handleNonStreamResponse(
         nativeResponseId,
         gatewayPayload: payload,
         cacheAwareRoutingEnabled,
-    });
-
-    const includeMeta = ctx.meta.returnMeta ?? false;
-
-    const responseBody = formatClientPayload({
-        ctx,
-        result,
-        payload,
-        includeMeta,
+        clientResponseBody: responseBody,
+        responseStatus: ctx.endpoint === "video.generation" ? 202 : result.upstream.status,
     });
 
     if (ctx.endpoint === "audio.speech" && shouldReturnBinaryAudio(ctx)) {
@@ -448,6 +535,9 @@ async function handleNonStreamResponse(
     }
 
     const headers = makeHeaders(timingHeader);
+    if (ctx.responseCache?.status === "miss") {
+        headers.set("X-AI-Stats-Response-Cache", "miss");
+    }
     const responseStatus = ctx.endpoint === "video.generation" ? 202 : result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
 }

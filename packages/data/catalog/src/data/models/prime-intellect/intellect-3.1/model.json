@@ -4,6 +4,7 @@
   "name": "Intellect 3.1",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Intellect 3.1 is a 106B-parameter Mixture-of-Experts model (12B active) post-trained from GLM-4.5-Air-Base using supervised fine-tuning (SFT) followed by large-scale reinforcement learning (RL).",
   "announced_date": "2026-02-18T00:00:00",
   "release_date": "2026-02-18T00:00:00",
   "deprecation_date": null,

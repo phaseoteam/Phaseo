@@ -4,6 +4,7 @@
   "name": "Kimi K2 (2025-09-05)",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Kimi K2 (2025-09-05) is a large-scale Mixture-of-Experts (MoE) language model developed by Moonshot AI, featuring 1 trillion total parameters with 32 billion active per forward pass.",
   "announced_date": "2025-09-05T00:00:00",
   "release_date": "2025-09-05T00:00:00",
   "deprecation_date": "2026-05-07T00:00:00",

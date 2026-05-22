@@ -1,9 +1,13 @@
 {
   "api_provider_id": "minimax",
+  "provider_family_id": "minimax",
+  "offer_scope": "global",
   "api_provider_name": "MiniMax",
   "description": null,
   "link": "https://www.minimax.io/platform_overview",
   "country_code": "CN",
   "status": "Active",
-  "colour": "#F13E5A"
+  "colour": "#F13E5A",
+  "privacy_policy_url": "https://www.minimax.io/privacy-policy-v2.html",
+  "terms_of_service_url": "https://www.minimax.io/terms-of-service-v2.html"
 }

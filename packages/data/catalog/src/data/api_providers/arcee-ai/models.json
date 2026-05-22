@@ -293,7 +293,7 @@
     "provider_api_model_id": "arcee-ai:arcee-ai/trinity-large-thinking",
     "provider_model_slug": "trinity-large-thinking",
     "internal_model_id": "arcee-ai/trinity-large-thinking",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": "BF16",
     "input_modalities": "text",
     "output_modalities": "text",

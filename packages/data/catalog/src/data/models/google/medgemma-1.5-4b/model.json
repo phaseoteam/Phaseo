@@ -4,6 +4,7 @@
   "name": "MedGemma 1.5 4B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "MedGemma 1.5 4B is a multimodal model from Google that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": "2026-01-13T00:00:00",
   "release_date": "2026-01-13T00:00:00",
   "deprecation_date": null,

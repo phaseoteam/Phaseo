@@ -4,6 +4,7 @@
   "name": "Trinity Large",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Trinity Large is a frontier-scale open-weight language model from Arcee, built as a 400B-parameter sparse Mixture-of-Experts with 13B active parameters per token using 4-of-256 expert routing.",
   "announced_date": "2025-12-01T00:00:00",
   "release_date": "2026-01-27T00:00:00",
   "deprecation_date": null,

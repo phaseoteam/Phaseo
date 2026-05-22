@@ -9,10 +9,10 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.625,
+      "price_per_unit": 0.63,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -22,16 +22,17 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.0625,
+      "price_per_unit": 0.06,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -41,7 +42,8 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -50,7 +52,7 @@
       "price_per_unit": 0.78,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -60,7 +62,8 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -69,7 +72,7 @@
       "price_per_unit": 3.75,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -79,7 +82,8 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "input_text_tokens",
@@ -88,7 +92,7 @@
       "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -98,16 +102,17 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.0625,
+      "price_per_unit": 0.06,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -117,7 +122,8 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -126,7 +132,7 @@
       "price_per_unit": 0.78,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -136,7 +142,8 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -145,7 +152,7 @@
       "price_per_unit": 7.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [
         {
           "path": "input_tokens",
@@ -155,7 +162,8 @@
           "value": 256000
         }
       ],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00"
     }
   ]
 }

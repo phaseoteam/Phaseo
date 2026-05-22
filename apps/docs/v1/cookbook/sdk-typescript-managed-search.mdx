@@ -1,0 +1,154 @@
+---
+title: "Ground one TypeScript SDK workflow with managed web search"
+description: "Use the official TypeScript SDK with presets, managed web search, and response metadata so one workflow stays grounded and debuggable."
+---
+
+Use this recipe when a TypeScript or JavaScript service should combine:
+
+- preset-driven routing defaults
+- managed `gateway:web_search`
+- strict response parsing
+- request-level metadata for debugging
+
+## Goal
+
+- keep the caller on the official SDK
+- avoid rebuilding raw compatibility payloads by hand
+- preserve enough metadata to debug search results, routing, and plugin behavior
+
+## 1. Start with one shared client
+
+```ts
+import AIStats from "@ai-stats/sdk";
+
+export const gateway = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY!,
+});
+```
+
+## 2. Put stable defaults in a preset first
+
+Create a preset when multiple callers should share:
+
+- model policy
+- provider preferences
+- reasoning defaults
+- system prompt
+- deterministic caching behavior
+
+Then keep the SDK request focused on what varies for the one call.
+
+## 3. Ask for grounded output through the managed search tool
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "gateway:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "gateway:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+This gives you:
+
+- preset-managed routing and prompt defaults
+- server-managed search that works without depending on provider-native search support
+- structured output for predictable downstream parsing
+- metadata needed for operational debugging
+
+## 4. Parse the output and keep the debug fields
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+These fields make it much easier to answer:
+
+- which provider actually served the request
+- whether managed search ran
+- whether response healing ran
+- which request to inspect in the dashboard
+
+## 5. Verify the grounded request in logs
+
+Open the request in **Gateway -> Usage** and inspect:
+
+- normalized search results
+- citations
+- provider selection
+- plugin execution metadata
+
+If the search behavior or ranking looks wrong, fix the preset or tool parameters from evidence in logs rather than adding blind overrides.
+
+## 6. Split exploratory and deterministic workflows
+
+Recommended pattern:
+
+1. one preset for deterministic structured research outputs
+2. another preset for exploratory or higher-temperature requests
+
+That keeps:
+
+- response caching cleaner
+- routing behavior easier to reason about
+- search-heavy workflows separate from general-purpose generation traffic
+
+## Related
+
+- [Debug web search requests](./web-search-debugging.mdx)
+- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
+- [Use response healing for structured JSON](./response-healing-for-structured-json.mdx)
+- [TypeScript SDK Overview](../sdk-reference/typescript/overview.mdx)

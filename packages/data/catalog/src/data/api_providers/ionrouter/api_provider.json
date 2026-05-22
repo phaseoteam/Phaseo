@@ -5,5 +5,10 @@
   "link": "https://ionrouter.io/docs",
   "country_code": "US",
   "status": "Active",
-  "colour": "#06B6D4"
+  "colour": "#06B6D4",
+  "privacy_policy_url": "https://ionrouter.io/privacy-policy.pdf",
+  "terms_of_service_url": "https://ionrouter.io/terms-of-service.pdf",
+  "prompt_training_policy": "may_train",
+  "prompt_training_notes": "IonRouter stores prompts and generated content for limited periods and says request logs and generated content may be reviewed to improve model performance, content safety systems, and the service.",
+  "prompt_training_source_url": "https://ionrouter.io/privacy-policy.pdf"
 }

@@ -3,7 +3,14 @@
 // Why: Centralizes execution/failover behavior.
 // How: Executes a single provider attempt and records attempt errors.
 
-import { onCallEnd, onCallStart, admitThroughBreaker, reportProbeResult, maybeOpenOnRecentErrors } from "./health";
+import {
+    onCallEnd,
+    onCallStart,
+    admitThroughBreaker,
+    reportProbeResult,
+    maybeOpenOnRecentErrors,
+    classifyProviderHealthImpact,
+} from "./health";
 import { loadPriceCard } from "../pricing";
 import type { PipelineContext } from "../before/types";
 import type { PipelineTiming } from "./index";
@@ -173,21 +180,24 @@ export async function attemptProvider(
                 console.error('Failed to add meta to response:', e);
             }
 
+            const healthImpact = classifyProviderHealthImpact({
+                upstreamStatus: r.upstream.status,
+            });
             await onCallEnd(ctx.endpoint, {
                 provider: adapter.name,
                 model: baseModel,
-                ok: true,
+                ok: r.upstream.ok,
+                healthImpact,
                 latency_ms: ctx.meta.latency_ms ?? duration,
                 generation_ms: generationMs,
                 tokens_in: tokensIn,
                 tokens_out: tokensOut,
             });
-        }
-
-        if (isProbe) {
-            await reportProbeResult(ctx.endpoint, adapter.name, baseModel, true);
-        } else {
-            await maybeOpenOnRecentErrors(ctx.endpoint, adapter.name, baseModel);
+            if (isProbe && healthImpact !== "neutral") {
+                await reportProbeResult(ctx.endpoint, adapter.name, baseModel, r.upstream.ok);
+            } else if (healthImpact === "failure") {
+                await maybeOpenOnRecentErrors(ctx.endpoint, adapter.name, baseModel);
+            }
         }
 
         return {
@@ -247,17 +257,22 @@ export async function attemptProvider(
             ctx.meta.latency_ms = latencyMs;
         }
 
+        const errorHealthImpact = classifyProviderHealthImpact({
+            errorCode: typeof (e as any)?.code === "string" ? (e as any).code : null,
+            errorMessage: e instanceof Error ? e.message : String(e),
+        });
         await onCallEnd(ctx.endpoint, {
             provider: adapter.name,
             model: baseModel,
             ok: false,
+            healthImpact: errorHealthImpact,
             latency_ms: ctx.meta.latency_ms ?? duration,
             generation_ms: generationMs,
         });
 
-        if (isProbe) {
+        if (isProbe && errorHealthImpact !== "neutral") {
             await reportProbeResult(ctx.endpoint, adapter.name, baseModel, false);
-        } else {
+        } else if (errorHealthImpact === "failure") {
             await maybeOpenOnRecentErrors(ctx.endpoint, adapter.name, baseModel);
         }
 

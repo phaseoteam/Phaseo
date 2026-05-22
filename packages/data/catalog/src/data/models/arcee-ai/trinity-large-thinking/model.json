@@ -4,6 +4,7 @@
   "name": "Trinity Large Thinking",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Trinity Large Thinking is a powerful open source reasoning model from the team at Arcee AI. It shows strong performance in PinchBench, agentic workloads, and reasoning tasks.",
   "announced_date": "2026-04-01T00:00:00",
   "release_date": "2026-04-01T00:00:00",
   "deprecation_date": null,

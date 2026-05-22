@@ -16,6 +16,7 @@ export type ErrorCode =
     | "not_ready"
     | "key_limit_exceeded"
     | "insufficient_funds"
+    | "guardrail_blocked"
     | "unsupported_model_or_endpoint";
 
 export function json(data: unknown, status = 200) {
@@ -107,6 +108,7 @@ const STATUS: Record<ErrorCode, number> = {
     not_ready: 409,
     key_limit_exceeded: 429,
     insufficient_funds: 402,
+    guardrail_blocked: 403,
     unsupported_model_or_endpoint: 400,
 };
 

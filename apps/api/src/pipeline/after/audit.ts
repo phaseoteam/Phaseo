@@ -9,6 +9,8 @@ import type { RequestResult } from "../execute";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
+import { extractSearchObservability } from "./search-observability";
+import { mergeWebFetchObservability } from "./fetch-observability";
 import {
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
@@ -138,6 +140,10 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
             param_provider_count_before: paramDiagnostics?.providerCountBefore ?? null,
             param_provider_count_after: paramDiagnostics?.providerCountAfter ?? null,
             param_dropped_provider_count: paramDiagnostics?.droppedProviders?.length ?? null,
+            response_cache_status: ctx.responseCache?.status ?? null,
+            response_cache_key: ctx.responseCache?.key ?? null,
+            response_cache_ttl_seconds: ctx.responseCache?.ttlSeconds ?? null,
+            response_cache_provider: ctx.responseCache?.providerId ?? null,
         };
     } catch (err) {
         console.error("extractRoutingContext error", err);
@@ -174,6 +180,7 @@ function buildTransformSnapshot(
 	const routingSnapshot = Array.isArray((ctx as any).routingSnapshot) ? (ctx as any).routingSnapshot : null;
 	const routingDiagnostics = (ctx as any).routingDiagnostics ?? null;
 	const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : null;
+	const pluginExecutions = Array.isArray(ctx.pluginExecutions) ? ctx.pluginExecutions : null;
 	const paramRoutingDiagnostics = ctx.paramRoutingDiagnostics ? sanitizeForAxiom(ctx.paramRoutingDiagnostics) : null;
 	const providerEnablementDiagnostics = ctx.providerEnablementDiagnostics
 		? sanitizeForAxiom(ctx.providerEnablementDiagnostics)
@@ -187,6 +194,17 @@ function buildTransformSnapshot(
 	const sanitizedProviderResponse = sanitizeForAxiom(options?.providerResponse ?? result?.rawResponse ?? null);
 	const sanitizedProviderHeaders = sanitizeForAxiom(headersToRecord(result?.upstream?.headers));
 	const sanitizedErrorDetails = sanitizeForAxiom(options?.errorDetails ?? null);
+	const searchObservability = sanitizeForAxiom(
+		extractSearchObservability({
+			body: ctx.body,
+			gatewayResponse: options?.gatewayResponse ?? null,
+			providerResponse: options?.providerResponse ?? result?.rawResponse ?? null,
+			managedSearch: ctx.searchObservability ?? null,
+		}),
+	);
+	const webFetchObservability = sanitizeForAxiom(
+		mergeWebFetchObservability(ctx.webFetchObservability ?? null),
+	);
 
 	return {
 		protocol: ctx.protocol ?? null,
@@ -206,6 +224,7 @@ function buildTransformSnapshot(
 		upstream_status_text: result?.upstream?.statusText ?? null,
 		upstream_url: result?.upstream?.url ?? null,
 		requested_params: requestedParams,
+		plugin_executions: sanitizeForAxiom(pluginExecutions),
 		param_routing_diagnostics: paramRoutingDiagnostics,
 		provider_enablement_diagnostics: providerEnablementDiagnostics,
 		provider_candidate_build_diagnostics: providerCandidateBuildDiagnostics,
@@ -213,6 +232,9 @@ function buildTransformSnapshot(
 		attempt_errors: sanitizeForAxiom(attemptErrors),
 		routing_snapshot: sanitizeForAxiom(routingSnapshot),
 		routing_diagnostics: sanitizeForAxiom(routingDiagnostics),
+		response_cache: sanitizeForAxiom(ctx.responseCache ?? null),
+		search_observability: searchObservability,
+		web_fetch_observability: webFetchObservability,
 		error_details: sanitizedErrorDetails,
 	};
 }
@@ -300,6 +322,7 @@ export async function handleFailureAudit(
             workspaceId: ctx.workspaceId,
             endpoint: ctx.endpoint,
             model: ctx.model,
+            requestedModel: ctx.requestedModel ?? ctx.model,
             provider: result.provider ?? null,
             stream: ctx.stream,
             statusCode: upstreamStatus,
@@ -343,6 +366,16 @@ export async function handleFailureAudit(
             providerResponse: errorDetails ?? result.rawResponse ?? null,
             detailMetadata: {
                 stage: "execute",
+                routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
+                provider_enablement_diagnostics: sanitizeForAxiom(
+                    ctx.providerEnablementDiagnostics ?? null,
+                ),
+                provider_candidate_diagnostics: sanitizeForAxiom(
+                    ctx.providerCandidateBuildDiagnostics ?? null,
+                ),
+                web_fetch_observability: sanitizeForAxiom(
+                    mergeWebFetchObservability(ctx.webFetchObservability ?? null),
+                ),
                 replay_supported: true,
             },
         });
@@ -457,6 +490,22 @@ export async function handleSuccessAudit(
     // Extract enrichment data for wide event logging
     const requestEnrichment = extractRequestEnrichment(ctx);
     const routingContext = extractRoutingContext(ctx, result);
+    const guardrailEnforcementPayload = ctx.guardrailEnforcement
+        ? sanitizeForAxiom({
+            guardrail_enforcement: ctx.guardrailEnforcement,
+        })
+        : null;
+    const searchObservability = sanitizeForAxiom(
+        extractSearchObservability({
+            body: ctx.body,
+            gatewayResponse: gatewayResponse ?? null,
+            providerResponse: result.rawResponse ?? null,
+            managedSearch: ctx.searchObservability ?? null,
+        }),
+    );
+    const webFetchObservability = sanitizeForAxiom(
+        mergeWebFetchObservability(ctx.webFetchObservability ?? null),
+    );
 
     try {
         await auditSuccess({
@@ -464,6 +513,7 @@ export async function handleSuccessAudit(
             workspaceId: ctx.workspaceId,
             provider: result.provider,
             model: ctx.model,
+            requestedModel: ctx.requestedModel ?? ctx.model,
             endpoint: ctx.endpoint,
             stream: isStream,
             byok,
@@ -502,6 +552,7 @@ export async function handleSuccessAudit(
             throughput: ctx.meta.throughput_tps ?? null,
             keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
             extraJson,
+            errorPayload: guardrailEnforcementPayload as Record<string, unknown> | null,
             requestPayload: ctx.rawBody ?? ctx.body ?? null,
             gatewayResponse: gatewayResponse ?? null,
             providerRequest: result.mappedRequest ?? null,
@@ -509,7 +560,19 @@ export async function handleSuccessAudit(
             detailMetadata: {
                 stage: "execute",
                 finish_reason: finishReason ?? null,
+                plugin_executions: sanitizeForAxiom(ctx.pluginExecutions ?? null),
+                routing_diagnostics: sanitizeForAxiom((ctx as any).routingDiagnostics ?? null),
+                response_cache: sanitizeForAxiom(ctx.responseCache ?? null),
+                provider_enablement_diagnostics: sanitizeForAxiom(
+                    ctx.providerEnablementDiagnostics ?? null,
+                ),
+                provider_candidate_diagnostics: sanitizeForAxiom(
+                    ctx.providerCandidateBuildDiagnostics ?? null,
+                ),
+                search_observability: searchObservability,
+                web_fetch_observability: webFetchObservability,
                 replay_supported: true,
+                guardrail_enforcement_present: Boolean(ctx.guardrailEnforcement),
             },
             // Wide event enrichment
             teamEnrichment: ctx.teamEnrichment ?? null,

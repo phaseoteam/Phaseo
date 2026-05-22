@@ -8,13 +8,14 @@ import {
 	resolveModelRouteIds,
 	type ModelRouteParams,
 } from "@/components/(data)/model/model-route-helpers";
+import { buildModelPageMetadataDescription } from "@/lib/models/modelDescription";
 import { permanentRedirect } from "next/navigation";
 
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
 	const params = await props.params;
-	const { modelId, modelName, organisationName } = await getModelMetadataIdentity(
+	const { modelId, modelName, organisationName, modelDescription } = await getModelMetadataIdentity(
 		params,
 		false,
 	);
@@ -23,8 +24,12 @@ export async function generateMetadata(props: {
 
 	return buildMetadata({
 		title: `${modelName} Benchmarks - Performance Highlights`,
-		description:
-			`Explore detailed benchmark scores for ${modelName} on AI Stats and compare performance across industry-standard evaluations, category breakdowns, and historical result updates.`,
+		description: buildModelPageMetadataDescription({
+			modelDescription,
+			suffix:
+				"Explore detailed benchmark scores, category breakdowns, and historical result updates across industry-standard evaluations.",
+			fallback: `Explore detailed benchmark scores for ${modelName} on AI Stats and compare performance across industry-standard evaluations, category breakdowns, and historical result updates.`,
+		}),
 		path,
 		keywords: [
 			modelName,

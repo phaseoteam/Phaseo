@@ -6,7 +6,6 @@
 -- Verification/welcome-style auth email is expected to be handled by Supabase Auth settings.
 
 create extension if not exists pg_net;
-
 create or replace function public.enqueue_welcome_email()
 returns trigger
 language plpgsql
@@ -111,7 +110,6 @@ exception when others then
   raise;
 end;
 $$;
-
 drop trigger if exists on_auth_user_created_enqueue_welcome on auth.users;
 create trigger on_auth_user_created_enqueue_welcome
 after insert on auth.users

@@ -4,7 +4,6 @@
 -- - read webhook URL from DB setting: app.settings.discord_signup_webhook_url
 
 create extension if not exists pg_net;
-
 create table if not exists public.signup_discord_notifications (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default (now() at time zone 'utc'),
@@ -15,14 +14,11 @@ create table if not exists public.signup_discord_notifications (
   sent_at timestamptz null,
   last_error text null
 );
-
 create unique index if not exists signup_discord_notifications_user_id_uidx
   on public.signup_discord_notifications (user_id);
-
 alter table public.signup_discord_notifications enable row level security;
 revoke all on public.signup_discord_notifications from anon, authenticated;
 grant select, insert, update on public.signup_discord_notifications to service_role;
-
 create or replace function public.enqueue_welcome_email()
 returns trigger
 language plpgsql
@@ -110,7 +106,6 @@ begin
   return new;
 end;
 $$;
-
 drop trigger if exists on_auth_user_created_enqueue_welcome on auth.users;
 create trigger on_auth_user_created_enqueue_welcome
 after insert on auth.users

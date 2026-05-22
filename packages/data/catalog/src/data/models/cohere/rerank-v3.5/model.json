@@ -4,6 +4,7 @@
   "name": "Rerank V3.5",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Rerank V3.5 is designed to reorder search results for improved relevance. It supports multi-aspect and semi-structured data reranking over 100+ languages.",
   "announced_date": "2024-10-02T00:00:00",
   "release_date": "2024-10-02T00:00:00",
   "deprecation_date": null,

@@ -1,6 +1,5 @@
 drop view if exists public.workspace_members;
 drop view if exists public.workspaces;
-
 do $$
 begin
   if exists (
@@ -13,7 +12,6 @@ begin
     alter type public.team_role rename to workspace_role;
   end if;
 end $$;
-
 alter table if exists public.teams rename to workspaces;
 alter table if exists public.team_members rename to workspace_members;
 alter table if exists public.team_invites rename to workspace_invites;
@@ -27,7 +25,6 @@ alter table if exists public.team_invoices rename to workspace_invoices;
 alter table if exists public.team_tier_history rename to workspace_tier_history;
 alter table if exists public.gateway_usage_rollup_15m_team_provider_model rename to gateway_usage_rollup_15m_workspace_provider_model;
 alter table if exists public.gateway_usage_rollup_team_request_state rename to gateway_usage_rollup_workspace_request_state;
-
 do $$
 declare
   column_row record;
@@ -82,7 +79,6 @@ begin
     end;
   end loop;
 end $$;
-
 do $$
 declare
   fn_row record;
@@ -134,7 +130,6 @@ begin
     end loop;
   end loop;
 end $$;
-
 do $$
 declare
   idx_row record;
@@ -167,7 +162,6 @@ begin
     end if;
   end loop;
 end $$;
-
 do $$
 declare
   con_row record;
@@ -205,7 +199,6 @@ begin
     end if;
   end loop;
 end $$;
-
 do $$
 declare
   trig_row record;

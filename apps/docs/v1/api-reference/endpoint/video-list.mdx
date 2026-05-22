@@ -6,6 +6,10 @@ description: "List owned video generation jobs for the authenticated workspace."
 ---
 Returns the authenticated workspace's owned video jobs in reverse chronological order.
 
+<Warning>
+The public video routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
+</Warning>
+
 Use query parameters to narrow the response:
 
 - `limit` to cap the number of returned jobs

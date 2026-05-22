@@ -4,6 +4,7 @@
   "name": "Command A+",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Command A+ is Cohere's updated Command-family multimodal model with image understanding, a 128k context window, and stronger instruction-following and agentic performance.",
   "announced_date": "2026-05-20T00:00:00",
   "release_date": "2026-05-20T00:00:00",
   "deprecation_date": null,

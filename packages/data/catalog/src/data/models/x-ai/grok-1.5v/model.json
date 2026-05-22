@@ -4,6 +4,7 @@
   "name": "Grok 1.5V",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Grok 1.5V is a text-to-speech model from xAI.",
   "announced_date": null,
   "release_date": "2024-04-12T00:00:00",
   "deprecation_date": null,

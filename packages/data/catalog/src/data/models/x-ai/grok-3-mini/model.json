@@ -4,6 +4,7 @@
   "name": "Grok 3 Mini",
   "status": "Available",
   "previous_model_id": "x-ai/grok-3-mini-beta-2025-02-19",
+  "description": "A lightweight model that thinks before responding. Fast, smart, and great for logic-based tasks that do not require deep domain knowledge. The raw thinking traces are accessible.",
   "announced_date": "2025-04-18T00:00:00",
   "release_date": "2025-04-18T00:00:00",
   "deprecation_date": null,

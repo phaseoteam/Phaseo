@@ -4,6 +4,7 @@
   "name": "Qwen 3 VL 235B A22B Instruct",
   "status": null,
   "previous_model_id": null,
+  "description": "Qwen 3 VL 235B A22B Instruct is an open-weight multimodal model that unifies strong text generation with visual understanding across images and video.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

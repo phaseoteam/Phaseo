@@ -4,6 +4,11 @@
   "description": null,
   "link": "https://docs.venice.ai/",
   "country_code": "US",
-  "status": "Beta",
-  "colour": "#0F766E"
+  "status": "Active",
+  "colour": "#0F766E",
+  "privacy_policy_url": "https://venice.ai/legal/privacy-policy",
+  "terms_of_service_url": "https://cdn.venice.ai/legal/tos",
+  "prompt_training_policy": "no_train",
+  "prompt_training_notes": "Venice says it does not store or log prompt text or model responses on its servers, and local conversation history stays on the user device.",
+  "prompt_training_source_url": "https://docs.venice.ai/welcome/privacy"
 }

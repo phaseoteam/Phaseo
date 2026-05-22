@@ -4,6 +4,7 @@
   "name": "Qianfan VL 8B",
   "status": "Available",
   "previous_model_id": null,
+  "description": "A powerful multimodal Mixture-of-Experts chat model featuring 28B total parameters with 3B activated per token, delivering exceptional text and vision understanding through its innovative heterogeneous MoE structure with modality-isolated routing.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

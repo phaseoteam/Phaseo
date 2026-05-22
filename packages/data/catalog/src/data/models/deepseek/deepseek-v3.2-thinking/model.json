@@ -4,6 +4,7 @@
   "name": "DeepSeek V3.2 Thinking",
   "status": "Available",
   "previous_model_id": null,
+  "description": "DeepSeek V3.2 Thinking is a reasoning model from DeepSeek for multi-step analysis, math, and tool-driven tasks. It accepts text inputs and produces text outputs.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

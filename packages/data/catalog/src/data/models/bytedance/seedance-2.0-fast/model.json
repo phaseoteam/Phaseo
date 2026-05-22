@@ -4,6 +4,7 @@
   "name": "Seedance 2.0 Fast",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Seedance 2.0 Fast is a video generation model from ByteDance. It supports text-to-video, image-to-video with first and last frame control, and multimodal reference-to-video.",
   "announced_date": "2026-02-12T00:00:00",
   "release_date": "2026-02-12T00:00:00",
   "deprecation_date": null,

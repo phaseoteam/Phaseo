@@ -56,10 +56,7 @@ function applyGaConsent(consent: AnalyticsConsent, gaMeasurementId?: string) {
 export function CookieConsentManager({
   gaMeasurementId,
 }: CookieConsentManagerProps) {
-  const [consent, setConsent] = useState<AnalyticsConsent | null | "pending">(() => {
-    if (typeof window === "undefined") return "pending"
-    return readAnalyticsConsent()
-  })
+  const [consent, setConsent] = useState<AnalyticsConsent | null | "pending">("pending")
   const [feedback, setFeedback] = useState<{
     message: string
     title: string

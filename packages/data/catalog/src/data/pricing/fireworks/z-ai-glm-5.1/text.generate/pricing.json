@@ -1,0 +1,81 @@
+{
+  "key": "fireworks:z-ai/glm-5.1:text.generate",
+  "api_provider_id": "fireworks",
+  "provider_slug": "fireworks",
+  "api_model_id": "z-ai/glm-5.1",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-27T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.26,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-27T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-27T00:00:00"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.1,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-27T00:00:00"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.39,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-27T00:00:00"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.6,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-27T00:00:00"
+    }
+  ]
+}

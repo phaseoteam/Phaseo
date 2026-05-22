@@ -4,6 +4,7 @@
   "name": "Claude Haiku 4.5",
   "status": "Available",
   "previous_model_id": "anthropic/claude-3-5-haiku-2024-11-04",
+  "description": "Claude Haiku 4.5 is Anthropic's fastest and most efficient model, delivering near-frontier intelligence at a fraction of the cost and latency of larger Claude models.",
   "announced_date": "2025-10-15T00:00:00",
   "release_date": "2025-10-15T00:00:00",
   "deprecation_date": null,

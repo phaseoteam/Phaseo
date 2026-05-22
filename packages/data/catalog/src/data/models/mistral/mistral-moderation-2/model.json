@@ -4,6 +4,7 @@
   "name": "Mistral Moderation 2",
   "status": "Available",
   "previous_model_id": "mistral/mistral-moderation-2024-11-06",
+  "description": "Mistral Moderation 2 is a safety model from Mistral for moderation, prompt filtering, and policy enforcement. It is suited to input filtering, safety checks, and policy enforcement in LLM applications.",
   "announced_date": "2026-03-17T00:00:00",
   "release_date": "2026-03-17T00:00:00",
   "deprecation_date": null,

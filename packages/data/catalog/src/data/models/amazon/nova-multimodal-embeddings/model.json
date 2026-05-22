@@ -4,6 +4,7 @@
   "name": "Nova Multimodal Embeddings",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Nova Multimodal Embeddings is an embedding model from Amazon for vector search and semantic retrieval workflows. It is aimed at semantic search, retrieval, clustering, and RAG pipelines.",
   "announced_date": "2025-12-02T00:00:00",
   "release_date": "2025-12-02T00:00:00",
   "deprecation_date": null,

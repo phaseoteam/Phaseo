@@ -4,6 +4,7 @@
   "name": "Ring 1T 2.5",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Ring 1T 2.5 is a 1T-parameter-scale thinking model with 63B active parameters, built for real-world agent workflows that require both strong capability and operational efficiency.",
   "announced_date": "2026-02-12T00:00:00",
   "release_date": "2026-02-12T00:00:00",
   "deprecation_date": null,

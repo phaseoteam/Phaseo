@@ -1621,7 +1621,7 @@
         "output_modalities":  "video",
         "context_length":  1024,
         "max_output_tokens":  null,
-        "effective_from":  null,
+        "effective_from":  "2026-03-31T00:00:00",
         "effective_to":  null,
         "capabilities":  [
                              {

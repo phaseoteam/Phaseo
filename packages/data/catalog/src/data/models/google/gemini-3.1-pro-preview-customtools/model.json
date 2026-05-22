@@ -4,6 +4,7 @@
   "name": "Gemini 3.1 Pro Preview Customtools",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Gemini 3.1 Pro Preview Customtools is a variant of Gemini 3.1 Pro that improves tool selection behavior by preventing overuse of a general bash tool when more efficient third-party.",
   "announced_date": "2026-02-19T00:00:00",
   "release_date": "2026-02-19T00:00:00",
   "deprecation_date": null,

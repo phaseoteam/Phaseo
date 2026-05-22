@@ -4,6 +4,7 @@
   "name": "GPT 4o Mini Realtime Preview",
   "status": "Available",
   "previous_model_id": null,
+  "description": "A cost-efficient version of GPT Audio. The new snapshot features an upgraded decoder for more natural sounding voices and maintains better voice consistency. This entry tracks a preview release and capabilities may change before general availability.",
   "announced_date": "2024-12-17T00:00:00",
   "release_date": "2024-12-17T00:00:00",
   "deprecation_date": null,

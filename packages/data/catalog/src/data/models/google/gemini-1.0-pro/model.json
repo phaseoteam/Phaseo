@@ -4,6 +4,7 @@
   "name": "Gemini 1.0 Pro",
   "status": "Deprecated",
   "previous_model_id": null,
+  "description": "Gemini 1.0 Pro is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": "2023-12-06T00:00:00",
   "release_date": "2023-12-06T00:00:00",
   "deprecation_date": "2025-04-21T00:00:00",

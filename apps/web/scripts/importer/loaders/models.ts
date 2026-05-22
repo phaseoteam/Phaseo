@@ -23,6 +23,7 @@ type ModelJSON = {
     name: string;
     status?: string | null;
     previous_model_id?: string | null;
+    description?: string | null;
     announced_date?: string | null;
     release_date?: string | null;
     deprecation_date?: string | null;
@@ -196,11 +197,16 @@ export async function loadModels(
             const m = await readJson<ModelJSON>(fp);
             if (modelId && m.model_id !== modelId) continue;
             if (!shouldReconcileAllModels && !changedModels.has(m.model_id)) continue;
+            const description =
+                typeof m.description === "string" && m.description.trim()
+                    ? m.description.trim()
+                    : null;
 
             const coreRow: Record<string, any> = {
                 name: m.name,
                 organisation_id: m.organisation_id,
                 status: m.status ?? null,
+                description,
                 announcement_date: m.announced_date ?? null,
                 release_date: m.release_date ?? null,
                 deprecation_date: m.deprecation_date ?? null,
@@ -261,11 +267,16 @@ export async function loadModels(
         }
 
         // DETAILS
-        const rawDetailRows = (m.details ?? []).map(d => ({
-            model_id,
-            detail_name: d.name,
-            detail_value: String(d.value),
-        }));
+        const rawDetailRows = [
+            ...(description
+                ? [{ model_id, detail_name: "description", detail_value: description }]
+                : []),
+            ...(m.details ?? []).map(d => ({
+                model_id,
+                detail_name: d.name,
+                detail_value: String(d.value),
+            })),
+        ];
         const detailMap = new Map<string, { model_id: string; detail_name: string; detail_value: string }>();
         for (const r of rawDetailRows) {
             // keep last occurrence per detail_name

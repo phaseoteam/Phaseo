@@ -4,6 +4,7 @@
   "name": "Openreasoning Nemotron 7B",
   "status": null,
   "previous_model_id": null,
+  "description": "Openreasoning Nemotron 7B is a 120B-parameter open hybrid MoE model, activating just 12B parameters for maximum compute efficiency and accuracy in complex multi-agent applications.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

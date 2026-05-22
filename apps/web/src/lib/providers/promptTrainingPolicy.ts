@@ -13,7 +13,7 @@ export const PROVIDER_PROMPT_TRAINING_POLICY_LABELS: Record<
 	ProviderPromptTrainingPolicy,
 	string
 > = {
-	unknown: "Unknown",
+	unknown: "No clear public training policy",
 	may_train: "May train on prompts",
 	no_train: "Does not train on prompts",
 	opt_out_available: "May train (opt-out available)",

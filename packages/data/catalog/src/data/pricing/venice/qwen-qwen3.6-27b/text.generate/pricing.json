@@ -9,12 +9,13 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.325,
+      "price_per_unit": 0.33,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     },
     {
       "meter": "output_text_tokens",
@@ -23,9 +24,10 @@
       "price_per_unit": 3.25,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Venice published pricing as of 2026-05-22.",
+      "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-05-11T00:00:00"
     }
   ]
 }

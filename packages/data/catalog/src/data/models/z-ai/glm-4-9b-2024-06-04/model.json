@@ -4,6 +4,7 @@
   "name": "GLM 4 9B (2024-06-04)",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GLM-5.1 delivers a major leap in coding capability, with particularly significant gains in handling long-horizon tasks.",
   "announced_date": "2024-06-04T00:00:00",
   "release_date": "2024-06-04T00:00:00",
   "deprecation_date": null,

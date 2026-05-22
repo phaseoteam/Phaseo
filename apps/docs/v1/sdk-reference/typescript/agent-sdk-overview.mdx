@@ -1,0 +1,26 @@
+---
+title: "Overview"
+description: "What the TypeScript Agent SDK is for and when to use it."
+---
+
+Use the TypeScript Agent SDK when your app needs more than one-shot generation:
+
+- multi-step local tool loops
+- resumable run state
+- gateway-backed model turns
+- structured outputs and plugin-aware routing
+
+It builds on top of `@ai-stats/sdk` and is the most feature-complete Agent SDK in the current language set.
+
+## What you get
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `continueRun()` and richer lifecycle hooks
+- support for local tool concurrency, human review pauses, and typed output parsing
+
+## Next
+
+- [Installation](./agent-sdk-installation.mdx)
+- [Usage](./agent-sdk.mdx)

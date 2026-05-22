@@ -4,6 +4,7 @@
   "name": "Claude Opus 4.7",
   "status": "Available",
   "previous_model_id": "anthropic/claude-opus-4.6",
+  "description": "Claude Opus 4.7 is the next generation of Anthropic's Opus family, built for long-running, asynchronous agents. It supports up to 1M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2026-04-16T00:00:00",
   "release_date": "2026-04-16T00:00:00",
   "deprecation_date": null,

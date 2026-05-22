@@ -4,6 +4,7 @@
   "name": "GPT 3",
   "status": "Available",
   "previous_model_id": "openai/gpt-2-2019-11-05",
+  "description": "GPT 3 is OpenAI's high-quality speech-to-text model built on GPT-4o audio capabilities. It's priced per token (input and output), making it suitable for workflows that benefit from token-level billing transparency.",
   "announced_date": "2020-05-29T00:00:00",
   "release_date": "2020-06-11T00:00:00",
   "deprecation_date": null,

@@ -4,6 +4,7 @@
   "name": "GPT Realtime Translate",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT Realtime Translate is a translation model from OpenAI for converting text between languages. It is aimed at multilingual translation and localization workflows.",
   "announced_date": "2026-05-07T00:00:00",
   "release_date": "2026-05-07T00:00:00",
   "deprecation_date": null,

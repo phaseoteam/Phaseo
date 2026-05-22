@@ -4,6 +4,7 @@
   "name": "Llama 3 8b Lite",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Llama 3 8b Lite is a language model from Meta for chat, writing, analysis, and general-purpose automation. It is tuned for lower latency and cost-sensitive production use.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

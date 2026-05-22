@@ -4,6 +4,7 @@
   "name": "o1 pro",
   "status": "Available",
   "previous_model_id": null,
+  "description": "The o1 series of models are trained with reinforcement learning to think before they answer and perform complex reasoning. It supports up to 200K of input context for long documents, codebases, and agent workflows.",
   "announced_date": null,
   "release_date": "2025-03-19T00:00:00",
   "deprecation_date": null,

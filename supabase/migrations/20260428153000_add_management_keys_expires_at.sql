@@ -1,7 +1,6 @@
 -- Allow management keys to expire on a schedule.
 alter table if exists public.management_keys
   add column if not exists expires_at timestamptz null;
-
 do $$
 begin
   if to_regclass('public.management_keys') is not null then

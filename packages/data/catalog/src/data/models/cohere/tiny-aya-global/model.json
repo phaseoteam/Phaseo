@@ -4,6 +4,7 @@
   "name": "Tiny Aya Global",
   "status": "Available",
   "previous_model_id": null,
+  "description": "Tiny Aya Global is a language model from Cohere for chat, writing, analysis, and general-purpose automation. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,

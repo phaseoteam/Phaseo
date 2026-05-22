@@ -4,6 +4,7 @@
   "name": "GPT OSS 120b",
   "status": "Available",
   "previous_model_id": null,
+  "description": "GPT OSS 120b is an open-weight, 117B-parameter Mixture-of-Experts (MoE) language model from OpenAI designed for high-reasoning, agentic, and general-purpose production use cases.",
   "announced_date": "2025-08-05T00:00:00",
   "release_date": "2025-08-05T00:00:00",
   "deprecation_date": null,

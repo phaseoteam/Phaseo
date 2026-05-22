@@ -420,6 +420,57 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.stream).toBe(true);
 	});
 
+	it("should decode top-level web_search_options", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Find the latest updates." }],
+			web_search_options: {
+				search_context_size: "high",
+			},
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.webSearchOptions).toEqual({
+			search_context_size: "high",
+		});
+	});
+
+	it("should preserve native anthropic web search tools", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "Search the web" }],
+			tools: [
+				{
+					type: "web_search_20250305",
+					name: "web_search",
+					max_uses: 5,
+					allowed_domains: ["docs.anthropic.com"],
+				},
+			],
+			tool_choice: { type: "tool", name: "web_search" },
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.tools).toEqual([
+			{
+				name: "web_search",
+				type: "web_search_20250305",
+				parameters: {},
+				raw: {
+					type: "web_search_20250305",
+					name: "web_search",
+					max_uses: 5,
+					allowed_domains: ["docs.anthropic.com"],
+				},
+			},
+		]);
+		expect(ir.toolChoice).toEqual({ name: "web_search" });
+	});
+
 	it("should decode image_config and filter invalid font inputs", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
@@ -527,6 +578,24 @@ describe("decodeAnthropicMessagesRequest", () => {
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
 		expect(ir.serviceTier).toBe("standard_only");
+	});
+
+	it("should decode inference geo controls into IR", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 2048,
+			inference_geo: "us",
+			provider: {
+				required_execution_region: "us",
+			},
+			messages: [{ role: "user", content: "Hello" }],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+		expect(ir.geo).toEqual({
+			requiredExecutionRegion: "us",
+			inferenceGeo: "us",
+		});
 	});
 
 	it("should handle metadata field", () => {
