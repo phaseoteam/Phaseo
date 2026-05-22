@@ -54,7 +54,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00"
+      "effective_from": "2026-04-24T00:00:00",
+      "effective_to": "2026-05-31T15:59:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -66,7 +67,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00"
+      "effective_from": "2026-04-24T00:00:00",
+      "effective_to": "2026-05-31T15:59:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -78,7 +80,44 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00"
+      "effective_from": "2026-04-24T00:00:00",
+      "effective_to": "2026-05-31T15:59:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.435,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-31T15:59:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.003625,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-31T15:59:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.87,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-31T15:59:00Z"
     }
   ]
 }
