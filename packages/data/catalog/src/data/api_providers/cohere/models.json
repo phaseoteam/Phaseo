@@ -15,6 +15,21 @@
     "capabilities": []
   },
   {
+    "api_model_id": "cohere/command-a-plus",
+    "provider_api_model_id": "cohere:cohere/command-a-plus",
+    "provider_model_slug": "command-a-plus-05-2026",
+    "internal_model_id": "cohere/command-a-plus",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 128000,
+    "max_output_tokens": 64000,
+    "effective_from": "2026-05-20T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
     "api_model_id": "cohere/command-a-reasoning",
     "provider_api_model_id": "cohere:cohere/command-a-reasoning",
     "provider_model_slug": "command-a-reasoning-08-2025",

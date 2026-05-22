@@ -126,6 +126,27 @@
     ]
   },
   {
+    "api_model_id": "bytedance/seed-2.0-lite-260428",
+    "provider_api_model_id": "byteplus:bytedance/seed-2.0-lite-260428",
+    "provider_model_slug": "seed-2-0-lite-260428",
+    "internal_model_id": "bytedance/seed-2.0-lite-2026-04-28",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "bytedance/seed-2.0-mini",
     "provider_api_model_id": "byteplus:bytedance/seed-2.0-mini",
     "provider_model_slug": "seed-2-0-mini-260215",
@@ -137,6 +158,27 @@
     "context_length": 256000,
     "max_output_tokens": 128000,
     "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "bytedance/seed-2.0-mini-260428",
+    "provider_api_model_id": "byteplus:bytedance/seed-2.0-mini-260428",
+    "provider_model_slug": "seed-2-0-mini-260428",
+    "internal_model_id": "bytedance/seed-2.0-mini-2026-04-28",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

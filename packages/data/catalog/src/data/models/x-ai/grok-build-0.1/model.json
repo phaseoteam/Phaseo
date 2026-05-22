@@ -1,0 +1,29 @@
+{
+  "model_id": "x-ai/grok-build-0.1",
+  "organisation_id": "x-ai",
+  "name": "Grok Build 0.1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Grok Build 0.1 is an xAI beta model optimized for coding and developer workflows, with tool calling and vision support.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "x-ai/grok-build-0.1",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.venice.ai/models/text"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    }
+  ],
+  "benchmarks": []
+}

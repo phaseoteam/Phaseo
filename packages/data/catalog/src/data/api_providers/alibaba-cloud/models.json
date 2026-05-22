@@ -322,6 +322,29 @@
                          ]
     },
     {
+        "api_model_id":  "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19",
+        "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19",
+        "provider_model_slug":  "qwen3.5-livetranslate-flash-realtime-2026-05-19",
+        "internal_model_id":  "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "audio,image",
+        "output_modalities":  "audio,text",
+        "context_length":  52000,
+        "max_output_tokens":  null,
+        "effective_from":  "2026-05-19T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
         "api_model_id":  "qwen/qwen3.5-plus",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.5-plus-2026-02-15",
         "provider_model_slug":  "qwen3.5-plus-2026-02-15",
@@ -2076,6 +2099,29 @@
                                                     "provider_default":  null,
                                                     "notes":  null
                                                 }
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.7-max",
+        "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.7-max",
+        "provider_model_slug":  "qwen3.7-max",
+        "internal_model_id":  "qwen/qwen3.7-max",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text",
+        "output_modalities":  "text",
+        "context_length":  1000000,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-05-21T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
                                             ]
                              }
                          ]

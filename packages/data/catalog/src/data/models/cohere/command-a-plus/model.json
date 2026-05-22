@@ -1,0 +1,36 @@
+{
+  "model_id": "cohere/command-a-plus",
+  "organisation_id": "cohere",
+  "name": "Command A+",
+  "status": "Available",
+  "previous_model_id": null,
+  "announced_date": "2026-05-20T00:00:00",
+  "release_date": "2026-05-20T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "cohere/command-a-plus",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://docs.cohere.com/changelog"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.cohere.com/docs/command-a-plus"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 64000
+    }
+  ],
+  "benchmarks": []
+}

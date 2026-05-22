@@ -1,0 +1,18 @@
+{
+  "model_id": "bytedance/seed-2.0-mini-2026-04-28",
+  "organisation_id": "bytedance",
+  "name": "Seed 2.0 Mini (2026-04-28)",
+  "status": null,
+  "previous_model_id": "bytedance/seed-2.0-mini",
+  "announced_date": null,
+  "release_date": "2026-04-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "bytedance/seed-2.0-mini-2026-04-28",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

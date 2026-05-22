@@ -628,5 +628,26 @@
         "params": []
       }
     ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.7-max",
+    "provider_api_model_id": "gmicloud:qwen/qwen3.7-max",
+    "provider_model_slug": "Qwen/Qwen3.7-Max",
+    "internal_model_id": "qwen/qwen3.7-max",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-05-22T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
   }
 ]

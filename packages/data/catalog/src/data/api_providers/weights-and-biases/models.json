@@ -63,6 +63,48 @@
     ]
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-flash",
+    "provider_api_model_id": "weights-and-biases:deepseek/deepseek-v4-flash",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash",
+    "internal_model_id": "deepseek/deepseek-v4-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "deepseek/deepseek-v4-pro",
+    "provider_api_model_id": "weights-and-biases:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "ibm/granite-4.1-8b",
     "provider_api_model_id": "weights-and-biases:ibm/granite-4.1-8b",
     "provider_model_slug": "ibm-granite/granite-4.1-8b",
@@ -348,6 +390,27 @@
     "max_output_tokens": null,
     "effective_from": null,
     "effective_to": "2026-03-06T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-27b",
+    "provider_api_model_id": "weights-and-biases:qwen/qwen3.6-27b",
+    "provider_model_slug": "Qwen/Qwen3.6-27B",
+    "internal_model_id": "qwen/qwen3.6-27b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
