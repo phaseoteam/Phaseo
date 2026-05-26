@@ -23,7 +23,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -43,7 +44,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -63,7 +65,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
     },
     {
       "meter": "input_text_tokens",
@@ -83,7 +86,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -103,7 +107,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -123,7 +128,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -135,7 +141,56 @@
       "note": "Cache writes are free for a limited time",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00"
+      "effective_from": "2026-04-22T00:00:00",
+      "effective_to": "2026-05-27T01:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.0028,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Unified pricing across all context lengths",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-27T01:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.14,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Unified pricing across all context lengths",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-27T01:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.28,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Unified pricing across all context lengths",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-27T01:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Cache writes are free for a limited time",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-27T01:00:00Z"
     }
   ]
 }
