@@ -23,7 +23,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
@@ -44,7 +44,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
@@ -65,7 +65,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
@@ -86,7 +86,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
@@ -107,7 +107,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
@@ -128,7 +128,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
@@ -141,7 +141,7 @@
       "note": "Cache writes are free for a limited time",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-22T00:00:00",
+      "effective_from": "2026-04-22T00:00:00Z",
       "effective_to": "2026-05-27T01:00:00Z"
     },
     {
