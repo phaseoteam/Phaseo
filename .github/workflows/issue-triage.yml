@@ -33,7 +33,7 @@ jobs:
               env:
                   OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
               with:
-                  model: opencode/gpt-5-nano
+                  model: opencode/big-pickle
                   prompt: |
                       You are responding to a new GitHub issue on AI Stats.
                       AI Stats is an open-source monorepo with a Next.js web app, Cloudflare
