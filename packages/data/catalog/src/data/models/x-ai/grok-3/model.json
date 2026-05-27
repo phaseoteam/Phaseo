@@ -2,7 +2,7 @@
   "model_id": "x-ai/grok-3",
   "organisation_id": "x-ai",
   "name": "Grok 3",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "x-ai/grok-3-beta-2025-02-19",
   "description": "Grok 3 is the latest model from xAI. It's their flagship model that excels at enterprise use cases like data extraction, coding, and text summarization.",
   "announced_date": "2025-04-18T00:00:00",
