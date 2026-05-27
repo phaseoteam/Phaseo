@@ -2,7 +2,7 @@
   "model_id": "x-ai/grok-4",
   "organisation_id": "x-ai",
   "name": "Grok 4",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "x-ai/grok-3-2025-04-18",
   "description": "Grok 4 is xAI's latest reasoning model with a 256k context window. It supports parallel tool calling, structured outputs, and both image and text inputs.",
   "announced_date": "2025-07-10T00:00:00",
