@@ -1,0 +1,19 @@
+{
+    "model_id": "minimax/minimax-m3",
+    "organisation_id": "minimax",
+    "name": "MiniMax M3",
+    "status": "Rumoured",
+    "previous_model_id": "minimax/minimax-m2.7",
+    "description": "MiniMax M3 is a rumoured next-generation MiniMax flagship language model expected to succeed the M2 series.",
+    "announced_date": null,
+    "release_date": null,
+    "deprecation_date": null,
+    "retirement_date": null,
+    "license": null,
+    "input_types": "text",
+    "output_types": "text",
+    "api_model_id": "minimax/minimax-m3",
+    "links": [],
+    "details": [],
+    "benchmarks": []
+}
