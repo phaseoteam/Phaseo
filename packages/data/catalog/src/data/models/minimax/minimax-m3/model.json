@@ -13,6 +13,7 @@
     "input_types": "text",
     "output_types": "text",
     "api_model_id": "minimax/minimax-m3",
+    "family_id": "minimax/minimax-m3",
     "links": [],
     "details": [],
     "benchmarks": []
