@@ -414,6 +414,7 @@ export type KnownModelId =
   | "x-ai/grok-4.20-beta-0309"
   | "x-ai/grok-4.20-multi-agent-beta-0309"
   | "x-ai/grok-4.3"
+  | "x-ai/grok-build-0.1"
   | "x-ai/grok-code-fast-1"
   | "x-ai/grok-imagine-image"
   | "x-ai/grok-imagine-image-quality"

@@ -1662,6 +1662,7 @@ const (
 	KnownModelIdXAiGrok420Beta0309 KnownModelId = "x-ai/grok-4.20-beta-0309"
 	KnownModelIdXAiGrok420MultiAgentBeta0309 KnownModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
 	KnownModelIdXAiGrok43 KnownModelId = "x-ai/grok-4.3"
+	KnownModelIdXAiGrokBuild01 KnownModelId = "x-ai/grok-build-0.1"
 	KnownModelIdXAiGrokCodeFast1 KnownModelId = "x-ai/grok-code-fast-1"
 	KnownModelIdXAiGrokImagineImage KnownModelId = "x-ai/grok-imagine-image"
 	KnownModelIdXAiGrokImagineImageQuality KnownModelId = "x-ai/grok-imagine-image-quality"
