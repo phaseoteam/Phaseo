@@ -456,10 +456,31 @@
             "provider_max": null,
             "provider_default": null,
             "notes": null
-          }
-        ]
       }
     ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m3",
+    "provider_api_model_id": "minimax:minimax/minimax-m3",
+    "provider_model_slug": "MiniMax-M3",
+    "internal_model_id": "minimax/minimax-m3",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "coming_soon",
+        "params": []
+      }
+    ]
+  }
+]
   },
   {
     "api_model_id": "minimax/music-1.5",
