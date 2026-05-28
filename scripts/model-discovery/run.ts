@@ -496,6 +496,55 @@ async function updateRunFinish(
     }
 }
 
+async function loadSeenModelIdsByProvider(
+    client: SupabaseAdminClient,
+    providerIds: string[]
+): Promise<Map<string, Set<string>>> {
+    const out = new Map<string, Set<string>>();
+    for (const providerId of providerIds) {
+        out.set(providerId, new Set<string>());
+    }
+
+    if (providerIds.length === 0) {
+        return out;
+    }
+
+    const pageSize = 1000;
+    let from = 0;
+
+    while (true) {
+        const { data, error } = await client
+            .from("model_discovery_seen_models")
+            .select("provider_id, model_id")
+            .in("provider_id", providerIds)
+            .range(from, from + pageSize - 1);
+
+        if (error) {
+            throw new Error(error.message || "Failed to load model_discovery_seen_models");
+        }
+
+        const rows = (data ?? []) as Array<{ provider_id: string | null; model_id: string | null }>;
+        if (rows.length === 0) {
+            break;
+        }
+
+        for (const row of rows) {
+            if (!row.provider_id || !row.model_id) continue;
+            const bucket = out.get(row.provider_id);
+            if (!bucket) continue;
+            bucket.add(row.model_id);
+        }
+
+        if (rows.length < pageSize) {
+            break;
+        }
+
+        from += pageSize;
+    }
+
+    return out;
+}
+
 async function upsertSeenModels(client: SupabaseAdminClient, rows: SeenModelUpsertRow[]): Promise<void> {
     if (rows.length === 0) return;
     for (let index = 0; index < rows.length; index += UPSERT_BATCH_SIZE) {
@@ -791,6 +840,7 @@ async function main(): Promise<void> {
             .map((provider) => [provider.providerId, provider.inactiveReason])
     );
     const db = createAdminClient();
+    const seenModelIdsByProvider = await loadSeenModelIdsByProvider(db, providers.map((provider) => provider.id));
     await insertRunStart(db, runId, runStartedAtIso, providers.length);
 
     try {
@@ -844,7 +894,7 @@ async function main(): Promise<void> {
                 }
 
                 const currentModelIds = new Set(models.map((model) => model.id));
-                const previousSeenIds = new Set(Object.keys(previousSnapshot?.models ?? {}));
+                const previousSeenIds = seenModelIdsByProvider.get(provider.id) ?? new Set<string>();
                 for (const model of models) {
                     const modelDetails = asRecord(model.payload) ?? { value: model.payload };
                     upsertRows.push({
@@ -865,6 +915,7 @@ async function main(): Promise<void> {
                         });
                     }
                 }
+                seenModelIdsByProvider.set(provider.id, currentModelIds);
                 nextState.providers[provider.id] = currentSnapshot;
 
                 results.push({
@@ -1042,9 +1093,6 @@ async function main(): Promise<void> {
 
         if (notificationError) {
             throw new Error(`Discord notification failed: ${notificationError}`);
-        }
-        if (issueSyncError) {
-            throw new Error(`GitHub issue sync failed: ${issueSyncError}`);
         }
     } catch (error) {
         finishedAtIso = nowIso();

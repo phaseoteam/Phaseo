@@ -63,6 +63,7 @@ type GitHubIssueClient = {
 
 const MAX_RECENT_EVENTS = 20;
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
+const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
 
 function canonicalModelId(value: string): string {
     return value.trim().toLowerCase().replace(/\s+/g, "");
@@ -305,6 +306,7 @@ function createGitHubIssueClient(args: {
     const requestJson = async <T>(pathName: string, init: RequestInit = {}): Promise<T> => {
         const response = await args.requestImpl(`${apiBaseUrl}${pathName}`, {
             ...init,
+            signal: init.signal ?? AbortSignal.timeout(DEFAULT_GITHUB_REQUEST_TIMEOUT_MS),
             headers: {
                 Accept: "application/vnd.github+json",
                 Authorization: `Bearer ${args.token}`,

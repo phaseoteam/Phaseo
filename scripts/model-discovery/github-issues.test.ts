@@ -93,23 +93,42 @@ async function main(): Promise<void> {
         return new Response("not found", { status: 404 });
     };
 
+    const additionKnownModelIdsByProvider = new Map([[baseEntry.providerId, new Set(["gpt-5.4-preview", "gpt-5.4-mini-preview"])]]);
     const ghostDeleteSync = await syncProviderChangeIssues([deleteEntry], {
         token: "test-token",
         repository: "AI-Stats/AI-Stats",
         statePath,
-        knownModelIdsByProvider,
+        knownModelIdsByProvider: additionKnownModelIdsByProvider,
         requestImpl,
         logger: console,
     });
     assert.deepEqual(ghostDeleteSync, { created: 0, updated: 0, skipped: false });
     assert.equal(requests.length, 0);
 
+    const deleteKnownModelIdsByProvider = new Map([
+        [baseEntry.providerId, new Set(["gpt-5.4-preview", "gpt-5.4-mini-preview", "gpt-5.3-preview"])],
+    ]);
+    const deleteSync = await syncProviderChangeIssues([deleteEntry], {
+        token: "test-token",
+        repository: "AI-Stats/AI-Stats",
+        statePath,
+        knownModelIdsByProvider: deleteKnownModelIdsByProvider,
+        requestImpl,
+        logger: console,
+    });
+    assert.deepEqual(deleteSync, { created: 1, updated: 0, skipped: false });
+    assert.match(issueBody, /provider model deletions/);
+    assert.match(issueBody, /Latest action: deletions/);
+    assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
+    requests.length = 0;
+    issueBody = "";
+
     const firstSync = await syncProviderChangeIssues([baseEntry, siblingEntry], {
         token: "test-token",
         repository: "AI-Stats/AI-Stats",
         statePath,
         runUrl: "https://github.com/AI-Stats/AI-Stats/actions/runs/1",
-        knownModelIdsByProvider,
+        knownModelIdsByProvider: additionKnownModelIdsByProvider,
         requestImpl,
         logger: console,
     });
@@ -121,7 +140,7 @@ async function main(): Promise<void> {
         token: "test-token",
         repository: "AI-Stats/AI-Stats",
         statePath,
-        knownModelIdsByProvider,
+        knownModelIdsByProvider: additionKnownModelIdsByProvider,
         requestImpl,
         logger: console,
     });

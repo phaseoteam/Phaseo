@@ -49,6 +49,9 @@ jobs:
             - name: Ensure state directory exists
               run: mkdir -p scripts/model-discovery/state
 
+            - name: Test GitHub issue sync helpers
+              run: pnpm exec tsx scripts/model-discovery/github-issues.test.ts
+
             - name: Restore internal model state cache
               id: internal-model-state-cache
               uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
@@ -102,4 +105,3 @@ jobs:
               with:
                   path: scripts/model-discovery/state
                   key: ${{ steps.internal-model-state-cache.outputs.cache-primary-key }}
-
