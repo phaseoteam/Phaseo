@@ -1454,6 +1454,10 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
     X_AI_GROK_4_20_MULTI_AGENT_BETA_0309: Final[str] = "x-ai/grok-4.20-multi-agent-beta-0309"
 
+    # Model ID: x-ai/grok-build-0.1
+    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
+    X_AI_GROK_BUILD_0_1: Final[str] = "x-ai/grok-build-0.1"
+
     # Model ID: x-ai/grok-code-fast-1
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
     X_AI_GROK_CODE_FAST_1: Final[str] = "x-ai/grok-code-fast-1"
@@ -1929,6 +1933,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.X_AI_GROK_4_1_THINKING,
         ModelIds.X_AI_GROK_4_20_BETA_0309,
         ModelIds.X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
+        ModelIds.X_AI_GROK_BUILD_0_1,
         ModelIds.X_AI_GROK_CODE_FAST_1,
         ModelIds.XIAOMI_MIMO_V2_FLASH,
         ModelIds.XIAOMI_MIMO_V2_OMNI,

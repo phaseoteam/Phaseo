@@ -725,6 +725,8 @@ export const ModelIds = {
   X_AI_GROK_4_20_BETA_0309: "x-ai/grok-4.20-beta-0309",
   /** Model ID: `x-ai/grok-4.20-multi-agent-beta-0309`. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309 */
   X_AI_GROK_4_20_MULTI_AGENT_BETA_0309: "x-ai/grok-4.20-multi-agent-beta-0309",
+  /** Model ID: `x-ai/grok-build-0.1`. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1 */
+  X_AI_GROK_BUILD_0_1: "x-ai/grok-build-0.1",
   /** Model ID: `x-ai/grok-code-fast-1`. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1 */
   X_AI_GROK_CODE_FAST_1: "x-ai/grok-code-fast-1",
   /** Model ID: `xiaomi/mimo-v2-flash`. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash */

@@ -1090,6 +1090,9 @@ const (
 	// Model ID: x-ai/grok-4.20-multi-agent-beta-0309
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
 	ModelIDXAiGrok420MultiAgentBeta0309 gen.ModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
+	// Model ID: x-ai/grok-build-0.1
+	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
+	ModelIDXAiGrokBuild01 gen.ModelId = "x-ai/grok-build-0.1"
 	// Model ID: x-ai/grok-code-fast-1
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
 	ModelIDXAiGrokCodeFast1 gen.ModelId = "x-ai/grok-code-fast-1"
@@ -1537,6 +1540,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDXAiGrok41Thinking,
 	ModelIDXAiGrok420Beta0309,
 	ModelIDXAiGrok420MultiAgentBeta0309,
+	ModelIDXAiGrokBuild01,
 	ModelIDXAiGrokCodeFast1,
 	ModelIDXiaomiMimoV2Flash,
 	ModelIDXiaomiMimoV2Omni,
