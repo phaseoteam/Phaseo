@@ -1,0 +1,28 @@
+{
+  "model_id": "anthropic/claude-opus-4.8",
+  "organisation_id": "anthropic",
+  "name": "Claude Opus 4.8",
+  "status": "Available",
+  "previous_model_id": "anthropic/claude-opus-4.7",
+  "description": "Claude Opus 4.8 is a staged AI Stats catalog entry following Anthropic's recent Opus release pattern. Provider routing, pricing, and benchmark metadata can be added once public launch details are finalized.",
+  "announced_date": "2026-05-28T00:00:00",
+  "release_date": "2026-05-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-opus-4.8",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    }
+  ],
+  "benchmarks": []
+}
