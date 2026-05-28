@@ -1158,6 +1158,9 @@ pub mod model_ids {
     /// Model ID: `x-ai/grok-4.3`.
     /// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
     pub const X_AI_GROK_4_3: &str = "x-ai/grok-4.3";
+    /// Model ID: `x-ai/grok-build-0.1`.
+    /// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
+    pub const X_AI_GROK_BUILD_0_1: &str = "x-ai/grok-build-0.1";
     /// Model ID: `x-ai/grok-code-fast-1`.
     /// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
     pub const X_AI_GROK_CODE_FAST_1: &str = "x-ai/grok-code-fast-1";
@@ -1638,6 +1641,7 @@ pub mod model_ids {
         X_AI_GROK_4_20_BETA_0309,
         X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
         X_AI_GROK_4_3,
+        X_AI_GROK_BUILD_0_1,
         X_AI_GROK_CODE_FAST_1,
         X_AI_GROK_IMAGINE_IMAGE,
         X_AI_GROK_IMAGINE_IMAGE_QUALITY,

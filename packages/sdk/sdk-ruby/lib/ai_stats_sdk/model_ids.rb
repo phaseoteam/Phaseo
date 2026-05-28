@@ -1158,6 +1158,9 @@ module AIStatsSdk
     # Model ID: x-ai/grok-4.3
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
     X_AI_GROK_4_3 = "x-ai/grok-4.3"
+    # Model ID: x-ai/grok-build-0.1
+    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
+    X_AI_GROK_BUILD_0_1 = "x-ai/grok-build-0.1"
     # Model ID: x-ai/grok-code-fast-1
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
     X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1"
@@ -1638,6 +1641,7 @@ module AIStatsSdk
     ModelIds::X_AI_GROK_4_20_BETA_0309,
     ModelIds::X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
     ModelIds::X_AI_GROK_4_3,
+    ModelIds::X_AI_GROK_BUILD_0_1,
     ModelIds::X_AI_GROK_CODE_FAST_1,
     ModelIds::X_AI_GROK_IMAGINE_IMAGE,
     ModelIds::X_AI_GROK_IMAGINE_IMAGE_QUALITY,

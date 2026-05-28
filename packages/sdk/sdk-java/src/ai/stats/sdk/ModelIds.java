@@ -1162,6 +1162,9 @@ public final class ModelIds {
     /** Model ID: <code>x-ai/grok-4.3</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3 */
     public static final String X_AI_GROK_4_3 = "x-ai/grok-4.3";
 
+    /** Model ID: <code>x-ai/grok-build-0.1</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1 */
+    public static final String X_AI_GROK_BUILD_0_1 = "x-ai/grok-build-0.1";
+
     /** Model ID: <code>x-ai/grok-code-fast-1</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1 */
     public static final String X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1";
 

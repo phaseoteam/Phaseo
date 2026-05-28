@@ -3,10 +3,10 @@
   "organisation_id": "x-ai",
   "name": "Grok Build 0.1",
   "status": "Available",
-  "previous_model_id": null,
-  "description": "Grok Build 0.1 is an xAI beta model optimized for coding and developer workflows, with tool calling and vision support.",
-  "announced_date": null,
-  "release_date": null,
+  "previous_model_id": "x-ai/grok-code-fast-1",
+  "description": "Grok Build 0.1 is xAI's fast coding model for agentic software engineering workflows. It supports text and image inputs with text outputs, tool use, structured outputs, and reasoning.",
+  "announced_date": "2026-05-15T00:00:00",
+  "release_date": "2026-05-15T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
@@ -16,7 +16,7 @@
   "links": [
     {
       "platform": "api_reference",
-      "url": "https://docs.venice.ai/models/text"
+      "url": "https://docs.x.ai/developers/models/grok-build-0.1"
     }
   ],
   "details": [

@@ -1163,6 +1163,9 @@ final class ModelIds
     /** Model ID: x-ai/grok-4.3. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3 */
     public const X_AI_GROK_4_3 = 'x-ai/grok-4.3';
 
+    /** Model ID: x-ai/grok-build-0.1. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1 */
+    public const X_AI_GROK_BUILD_0_1 = 'x-ai/grok-build-0.1';
+
     /** Model ID: x-ai/grok-code-fast-1. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1 */
     public const X_AI_GROK_CODE_FAST_1 = 'x-ai/grok-code-fast-1';
 

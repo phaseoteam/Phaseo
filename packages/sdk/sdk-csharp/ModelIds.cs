@@ -776,6 +776,8 @@ namespace AiStatsSdk
         public const string XAiGrok420MultiAgentBeta0309 = "x-ai/grok-4.20-multi-agent-beta-0309";
         /// <summary>Model ID: <c>x-ai/grok-4.3</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3</summary>
         public const string XAiGrok43 = "x-ai/grok-4.3";
+        /// <summary>Model ID: <c>x-ai/grok-build-0.1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1</summary>
+        public const string XAiGrokBuild01 = "x-ai/grok-build-0.1";
         /// <summary>Model ID: <c>x-ai/grok-code-fast-1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1</summary>
         public const string XAiGrokCodeFast1 = "x-ai/grok-code-fast-1";
         /// <summary>Model ID: <c>x-ai/grok-imagine-image</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-imagine-image</summary>

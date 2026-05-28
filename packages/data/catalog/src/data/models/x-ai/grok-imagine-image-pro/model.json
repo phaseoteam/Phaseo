@@ -2,7 +2,7 @@
   "model_id": "x-ai/grok-imagine-image-pro",
   "organisation_id": "x-ai",
   "name": "Grok Imagine Image Pro",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Grok Imagine Image Pro is an image generation model from xAI for visual creation workflows. It supports text and image inputs for generation, restyling, or edit-style workflows.",
   "announced_date": "2026-01-29T00:00:00",

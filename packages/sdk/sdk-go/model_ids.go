@@ -1162,6 +1162,9 @@ const (
 	// Model ID: x-ai/grok-4.3
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.3
 	ModelIDXAiGrok43 gen.ModelId = "x-ai/grok-4.3"
+	// Model ID: x-ai/grok-build-0.1
+	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1
+	ModelIDXAiGrokBuild01 gen.ModelId = "x-ai/grok-build-0.1"
 	// Model ID: x-ai/grok-code-fast-1
 	// Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1
 	ModelIDXAiGrokCodeFast1 gen.ModelId = "x-ai/grok-code-fast-1"
@@ -1642,6 +1645,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDXAiGrok420Beta0309,
 	ModelIDXAiGrok420MultiAgentBeta0309,
 	ModelIDXAiGrok43,
+	ModelIDXAiGrokBuild01,
 	ModelIDXAiGrokCodeFast1,
 	ModelIDXAiGrokImagineImage,
 	ModelIDXAiGrokImagineImageQuality,
