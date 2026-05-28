@@ -728,6 +728,8 @@ namespace AiStatsSdk
         public const string XAiGrok420Beta0309 = "x-ai/grok-4.20-beta-0309";
         /// <summary>Model ID: <c>x-ai/grok-4.20-multi-agent-beta-0309</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309</summary>
         public const string XAiGrok420MultiAgentBeta0309 = "x-ai/grok-4.20-multi-agent-beta-0309";
+        /// <summary>Model ID: <c>x-ai/grok-build-0.1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-build-0.1</summary>
+        public const string XAiGrokBuild01 = "x-ai/grok-build-0.1";
         /// <summary>Model ID: <c>x-ai/grok-code-fast-1</c>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-code-fast-1</summary>
         public const string XAiGrokCodeFast1 = "x-ai/grok-code-fast-1";
         /// <summary>Model ID: <c>xiaomi/mimo-v2-flash</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash</summary>
