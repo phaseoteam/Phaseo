@@ -686,6 +686,14 @@ namespace AiStatsSdk
         public const string QwenQwen36MaxPreview = "qwen/qwen3.6-max-preview";
         /// <summary>Model ID: <c>qwen/qwen3.6-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus</summary>
         public const string QwenQwen36Plus_2 = "qwen/qwen3.6-plus";
+        /// <summary>Model ID: <c>qwen/qwen3.7-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max</summary>
+        public const string QwenQwen37Max = "qwen/qwen3.7-max";
+        /// <summary>Model ID: <c>qwen/qwen3.7-max-2026-05-17</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17</summary>
+        public const string QwenQwen37Max20260517 = "qwen/qwen3.7-max-2026-05-17";
+        /// <summary>Model ID: <c>qwen/qwen3.7-max-2026-05-20</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20</summary>
+        public const string QwenQwen37Max20260520 = "qwen/qwen3.7-max-2026-05-20";
+        /// <summary>Model ID: <c>qwen/qwen3.7-plus-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview</summary>
+        public const string QwenQwen37PlusPreview = "qwen/qwen3.7-plus-preview";
         /// <summary>Model ID: <c>qwen/qwq-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus</summary>
         public const string QwenQwqPlus = "qwen/qwq-plus";
         /// <summary>Model ID: <c>qwen/text-embedding-v3</c>. Model page: https://ai-stats.phaseo.app/models/qwen/text-embedding-v3</summary>

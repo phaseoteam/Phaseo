@@ -1023,6 +1023,18 @@ pub mod model_ids {
     /// Model ID: `qwen/qwen3.6-plus`.
     /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus
     pub const QWEN_QWEN3_6_PLUS: &str = "qwen/qwen3.6-plus";
+    /// Model ID: `qwen/qwen3.7-max`.
+    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max
+    pub const QWEN_QWEN3_7_MAX: &str = "qwen/qwen3.7-max";
+    /// Model ID: `qwen/qwen3.7-max-2026-05-17`.
+    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
+    pub const QWEN_QWEN3_7_MAX_2026_05_17: &str = "qwen/qwen3.7-max-2026-05-17";
+    /// Model ID: `qwen/qwen3.7-max-2026-05-20`.
+    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20
+    pub const QWEN_QWEN3_7_MAX_2026_05_20: &str = "qwen/qwen3.7-max-2026-05-20";
+    /// Model ID: `qwen/qwen3.7-plus-preview`.
+    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
+    pub const QWEN_QWEN3_7_PLUS_PREVIEW: &str = "qwen/qwen3.7-plus-preview";
     /// Model ID: `qwen/qwq-plus`.
     /// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus
     pub const QWEN_QWQ_PLUS: &str = "qwen/qwq-plus";
@@ -1581,6 +1593,10 @@ pub mod model_ids {
         QWEN_QWEN3_6_35B_A3B,
         QWEN_QWEN3_6_MAX_PREVIEW,
         QWEN_QWEN3_6_PLUS,
+        QWEN_QWEN3_7_MAX,
+        QWEN_QWEN3_7_MAX_2026_05_17,
+        QWEN_QWEN3_7_MAX_2026_05_20,
+        QWEN_QWEN3_7_PLUS_PREVIEW,
         QWEN_QWQ_PLUS,
         QWEN_TEXT_EMBEDDING_V3,
         QWEN_TEXT_EMBEDDING_V4,

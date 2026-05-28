@@ -1027,6 +1027,18 @@ const (
 	// Model ID: qwen/qwen3.6-plus
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus
 	ModelIDQwenQwen36Plus_2 gen.ModelId = "qwen/qwen3.6-plus"
+	// Model ID: qwen/qwen3.7-max
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max
+	ModelIDQwenQwen37Max gen.ModelId = "qwen/qwen3.7-max"
+	// Model ID: qwen/qwen3.7-max-2026-05-17
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
+	ModelIDQwenQwen37Max20260517 gen.ModelId = "qwen/qwen3.7-max-2026-05-17"
+	// Model ID: qwen/qwen3.7-max-2026-05-20
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20
+	ModelIDQwenQwen37Max20260520 gen.ModelId = "qwen/qwen3.7-max-2026-05-20"
+	// Model ID: qwen/qwen3.7-plus-preview
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
+	ModelIDQwenQwen37PlusPreview gen.ModelId = "qwen/qwen3.7-plus-preview"
 	// Model ID: qwen/qwq-plus
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus
 	ModelIDQwenQwqPlus gen.ModelId = "qwen/qwq-plus"
@@ -1585,6 +1597,10 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenQwen3635bA3b,
 	ModelIDQwenQwen36MaxPreview,
 	ModelIDQwenQwen36Plus_2,
+	ModelIDQwenQwen37Max,
+	ModelIDQwenQwen37Max20260517,
+	ModelIDQwenQwen37Max20260520,
+	ModelIDQwenQwen37PlusPreview,
 	ModelIDQwenQwqPlus,
 	ModelIDQwenTextEmbeddingV3,
 	ModelIDQwenTextEmbeddingV4,

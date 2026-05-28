@@ -1023,6 +1023,18 @@ module AIStatsSdk
     # Model ID: qwen/qwen3.6-plus
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus
     QWEN_QWEN3_6_PLUS = "qwen/qwen3.6-plus"
+    # Model ID: qwen/qwen3.7-max
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max
+    QWEN_QWEN3_7_MAX = "qwen/qwen3.7-max"
+    # Model ID: qwen/qwen3.7-max-2026-05-17
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
+    QWEN_QWEN3_7_MAX_2026_05_17 = "qwen/qwen3.7-max-2026-05-17"
+    # Model ID: qwen/qwen3.7-max-2026-05-20
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20
+    QWEN_QWEN3_7_MAX_2026_05_20 = "qwen/qwen3.7-max-2026-05-20"
+    # Model ID: qwen/qwen3.7-plus-preview
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
+    QWEN_QWEN3_7_PLUS_PREVIEW = "qwen/qwen3.7-plus-preview"
     # Model ID: qwen/qwq-plus
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus
     QWEN_QWQ_PLUS = "qwen/qwq-plus"
@@ -1581,6 +1593,10 @@ module AIStatsSdk
     ModelIds::QWEN_QWEN3_6_35B_A3B,
     ModelIds::QWEN_QWEN3_6_MAX_PREVIEW,
     ModelIds::QWEN_QWEN3_6_PLUS,
+    ModelIds::QWEN_QWEN3_7_MAX,
+    ModelIds::QWEN_QWEN3_7_MAX_2026_05_17,
+    ModelIds::QWEN_QWEN3_7_MAX_2026_05_20,
+    ModelIds::QWEN_QWEN3_7_PLUS_PREVIEW,
     ModelIds::QWEN_QWQ_PLUS,
     ModelIds::QWEN_TEXT_EMBEDDING_V3,
     ModelIds::QWEN_TEXT_EMBEDDING_V4,

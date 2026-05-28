@@ -1027,6 +1027,18 @@ public final class ModelIds {
     /** Model ID: <code>qwen/qwen3.6-plus</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.6-plus */
     public static final String QWEN_QWEN3_6_PLUS = "qwen/qwen3.6-plus";
 
+    /** Model ID: <code>qwen/qwen3.7-max</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max */
+    public static final String QWEN_QWEN3_7_MAX = "qwen/qwen3.7-max";
+
+    /** Model ID: <code>qwen/qwen3.7-max-2026-05-17</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17 */
+    public static final String QWEN_QWEN3_7_MAX_2026_05_17 = "qwen/qwen3.7-max-2026-05-17";
+
+    /** Model ID: <code>qwen/qwen3.7-max-2026-05-20</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20 */
+    public static final String QWEN_QWEN3_7_MAX_2026_05_20 = "qwen/qwen3.7-max-2026-05-20";
+
+    /** Model ID: <code>qwen/qwen3.7-plus-preview</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview */
+    public static final String QWEN_QWEN3_7_PLUS_PREVIEW = "qwen/qwen3.7-plus-preview";
+
     /** Model ID: <code>qwen/qwq-plus</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus */
     public static final String QWEN_QWQ_PLUS = "qwen/qwq-plus";
 
