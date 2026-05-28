@@ -2,6 +2,14 @@ export type ProviderOfferScope = "global" | "regional" | "specialized";
 
 const PRIORITY_SUFFIXES = ["-lightning", "-turbo", "-fast"] as const;
 const REGIONAL_SUFFIXES = ["-eu", "-us"] as const;
+const KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES = new Map<string, string>([
+    ["anthropic-aws", "Anthropic on AWS"],
+    ["anthropic-aws-us", "Anthropic on AWS US"],
+]);
+const KNOWN_PROVIDER_LOGO_ID_OVERRIDES = new Map<string, string>([
+    ["anthropic-aws", "amazon"],
+    ["anthropic-aws-us", "amazon"],
+]);
 
 function toTitleCase(value: string): string {
     return value.replace(/\b([a-z])/g, (match) => match.toUpperCase());
@@ -16,19 +24,43 @@ function normalizeOfferLabel(value?: string | null): string {
 }
 
 export function formatProviderOfferDisplayName(args: {
+    providerId?: string | null;
     providerName: string;
     offerLabel?: string | null;
     offerScope?: ProviderOfferScope | null;
 }): string {
-    const providerName = String(args.providerName ?? "").trim();
+    const providerName = resolveProviderDisplayName({
+        providerId: args.providerId,
+        providerName: args.providerName,
+    });
     const offerLabel = String(args.offerLabel ?? "").trim();
     const offerScope = args.offerScope ?? null;
 
     if (!providerName) return "";
+    if (
+        args.providerId &&
+        KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES.has(
+            String(args.providerId).trim().toLowerCase(),
+        )
+    ) {
+        return providerName;
+    }
     if (!offerLabel) return providerName;
     if (offerScope === "global") return providerName;
 
     return `${providerName} ${offerLabel}`;
+}
+
+export function resolveProviderDisplayName(args: {
+    providerId?: string | null;
+    providerName: string;
+}): string {
+    const providerId = String(args.providerId ?? "").trim().toLowerCase();
+    if (providerId) {
+        const override = KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES.get(providerId);
+        if (override) return override;
+    }
+    return String(args.providerName ?? "").trim();
 }
 
 export function isGlobalProviderOffer(args: {
@@ -87,6 +119,9 @@ export function resolveProviderLogoId(args: {
     providerId: string;
     providerFamilyId?: string | null;
 }): string {
+    const providerId = String(args.providerId ?? "").trim().toLowerCase();
+    const providerOverride = KNOWN_PROVIDER_LOGO_ID_OVERRIDES.get(providerId);
+    if (providerOverride) return providerOverride;
     const providerFamilyId = String(args.providerFamilyId ?? "").trim();
     if (providerFamilyId) return providerFamilyId;
     return args.providerId;

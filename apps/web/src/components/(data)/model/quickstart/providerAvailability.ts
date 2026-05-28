@@ -12,6 +12,7 @@ import {
 	inferProviderFamilyIdFromSiblings,
 	inferProviderFamilyName,
 	isGlobalProviderOffer,
+	resolveProviderDisplayName,
 	resolveProviderLogoId,
 } from "@/lib/providers/providerOffers";
 
@@ -564,13 +565,16 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 			}
 			if (isRepresentativeOffer && current.providerId !== providerId) {
 				current.providerId = providerId;
-				current.providerName =
-					item.provider?.api_provider_name ??
-					inferProviderFamilyName({
-						providerName: item.provider?.api_provider_name ?? providerId,
-						offerLabel: item.provider?.offer_label ?? null,
-						offerScope: item.provider?.offer_scope ?? null,
-					});
+				current.providerName = resolveProviderDisplayName({
+					providerId,
+					providerName:
+						item.provider?.api_provider_name ??
+						inferProviderFamilyName({
+							providerName: item.provider?.api_provider_name ?? providerId,
+							offerLabel: item.provider?.offer_label ?? null,
+							offerScope: item.provider?.offer_scope ?? null,
+						}),
+				});
 			}
 			if (state.availability === "active") current.activeEndpointCount += 1;
 			else if (state.availability === "coming_soon") current.comingSoonEndpointCount += 1;
@@ -646,16 +650,19 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 				providerId,
 				providerFamilyId: familyId,
 			}),
-			providerName:
-				(isRepresentativeOffer
-					? item.provider?.api_provider_name
-					: null) ??
-				inferProviderFamilyName({
-					providerName:
-						item.provider?.api_provider_name ?? item.api_provider_id,
-					offerLabel: item.provider?.offer_label ?? null,
-					offerScope: item.provider?.offer_scope ?? null,
-				}),
+			providerName: resolveProviderDisplayName({
+				providerId,
+				providerName:
+					(isRepresentativeOffer
+						? item.provider?.api_provider_name
+						: null) ??
+					inferProviderFamilyName({
+						providerName:
+							item.provider?.api_provider_name ?? item.api_provider_id,
+						offerLabel: item.provider?.offer_label ?? null,
+						offerScope: item.provider?.offer_scope ?? null,
+					}),
+			}),
 			offerLabels: new Set([offerLabel]),
 			endpoints,
 			modelSlugs,

@@ -71,6 +71,7 @@ async function PrivacySettingsContent() {
 			providers={(providersResult.data ?? []).map((p: any) => ({
 				id: p.api_provider_id as string,
 				name: formatProviderOfferDisplayName({
+					providerId: (p.api_provider_id as string) ?? null,
 					providerName:
 						(p.api_provider_name as string) ?? (p.api_provider_id as string),
 					offerLabel: (p.offer_label as string | null) ?? null,
@@ -87,4 +88,3 @@ async function PrivacySettingsContent() {
 		/>
 	);
 }
-
