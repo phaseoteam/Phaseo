@@ -19,6 +19,7 @@ import {
 	FREE_ROUTER_PRIMARY_TIMESTAMP,
 } from "@/lib/models/freeRouter";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
+import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
@@ -525,7 +526,10 @@ function aggregateGatewaySignals(
 			existing.organisationIds.add(organisationId);
 		}
 		const providerId = String(row.provider.id ?? "").trim();
-		const providerName = String(row.provider.name ?? "").trim();
+		const providerName = resolveProviderDisplayName({
+			providerId,
+			providerName: String(row.provider.name ?? "").trim(),
+		});
 		const providerDetailKey = providerId || providerName;
 		const rowGatewayStatus = normalizeProviderGatewayStatus(row.gatewayStatus);
 		if (providerId) {

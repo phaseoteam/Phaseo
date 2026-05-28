@@ -700,6 +700,7 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
 
     const out: ProviderSections = {
         providerName: formatProviderOfferDisplayName({
+            providerId: p.provider.api_provider_id,
             providerName: p.provider.api_provider_name || p.provider.api_provider_id,
             offerLabel: p.provider.offer_label ?? null,
             offerScope: p.provider.offer_scope ?? null,
@@ -1320,4 +1321,3 @@ export function getMeterInputConfig(
 
     return { type: "number", step: "1", placeholder: "Enter value..." };
 }
-

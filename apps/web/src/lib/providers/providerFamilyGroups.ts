@@ -4,6 +4,7 @@ import {
     inferProviderFamilyIdFromSiblings,
     inferProviderFamilyName,
     isGlobalProviderOffer,
+    resolveProviderDisplayName,
     resolveProviderLogoId,
 } from "@/lib/providers/providerOffers";
 
@@ -135,16 +136,20 @@ export function groupProviderPricingFamilies(
             providersInFamily,
         );
         const familyName =
-            representative.provider.api_provider_name ||
-            inferProviderFamilyName({
+            resolveProviderDisplayName({
+                providerId: representative.provider.api_provider_id,
                 providerName:
-                    providersInFamily[0]?.provider.api_provider_name ??
-                    providersInFamily[0]?.provider.api_provider_id ??
+                    representative.provider.api_provider_name ||
+                    inferProviderFamilyName({
+                        providerName:
+                            providersInFamily[0]?.provider.api_provider_name ??
+                            providersInFamily[0]?.provider.api_provider_id ??
+                            familyId,
+                        offerLabel: providersInFamily[0]?.provider.offer_label ?? null,
+                        offerScope: providersInFamily[0]?.provider.offer_scope ?? null,
+                    }) ||
                     familyId,
-                offerLabel: providersInFamily[0]?.provider.offer_label ?? null,
-                offerScope: providersInFamily[0]?.provider.offer_scope ?? null,
-            }) ||
-            familyId;
+            }) || familyId;
 
         return {
             familyId,
