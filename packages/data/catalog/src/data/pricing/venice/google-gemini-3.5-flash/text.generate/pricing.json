@@ -1,0 +1,53 @@
+{
+  "key": "venice:google/gemini-3.5-flash:text.generate",
+  "api_provider_id": "venice",
+  "provider_slug": "venice",
+  "api_model_id": "google/gemini-3.5-flash",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.8,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice published pricing as of 2026-05-22.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.18,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice published pricing as of 2026-05-22.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice published pricing as of 2026-05-22.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 11,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Venice published pricing as of 2026-05-22.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

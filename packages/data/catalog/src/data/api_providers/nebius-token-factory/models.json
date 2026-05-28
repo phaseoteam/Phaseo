@@ -42,6 +42,27 @@
     ]
   },
   {
+    "api_model_id": "deepseek/deepseek-v4-pro",
+    "provider_api_model_id": "nebius-token-factory:deepseek/deepseek-v4-pro",
+    "provider_model_slug": "deepseek-ai/DeepSeek-V4-Pro",
+    "internal_model_id": "deepseek/deepseek-v4-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "deepseek/deepseek-v3-0324",
     "provider_api_model_id": "nebius-token-factory:deepseek/deepseek-v3-0324",
     "provider_model_slug": "deepseek-ai/DeepSeek-V3-0324-fast",
@@ -285,6 +306,27 @@
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": "2026-05-11T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.6",
+    "provider_api_model_id": "nebius-token-factory:moonshotai/kimi-k2.6",
+    "provider_model_slug": "moonshotai/Kimi-K2.6",
+    "internal_model_id": "moonshotai/kimi-k2.6",
+    "is_active_gateway": true,
+    "quantization_scheme": "INT4",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
     "capabilities": [
       {
         "capability_id": "text.generate",
