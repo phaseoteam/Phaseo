@@ -22,6 +22,7 @@ const OUTPUT_DETAILED_METERS = new Set<string>([
 ]);
 
 const ALLOWED_BILL_MODES = new Set<string>(['all', 'over', 'between']);
+const EXPLICIT_UTC_TIMESTAMP_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 function parseNumericValue(value: unknown): number | undefined {
     if (typeof value === 'number') {
@@ -43,6 +44,7 @@ export function isMajorError(msg: string): boolean {
         /benchmark.*not found|benchmark.*missing/i,
         /pricing.*active.*no rules/i,
         /pricing.*invalid key/i,
+        /pricing.*explicit UTC timestamp with Z/i,
         /pricing.*unknown meter/i,
         /pricing.*mixed aggregate and detailed.*meters/i,
         /pricing.*non-positive price/i,
@@ -51,6 +53,10 @@ export function isMajorError(msg: string): boolean {
         /pricing.*effective_to.*before.*effective_from/i,
     ];
     return majorPatterns.some((p) => p.test(msg));
+}
+
+function hasExplicitUtcTimestamp(value: unknown): value is string {
+    return typeof value === 'string' && EXPLICIT_UTC_TIMESTAMP_REGEX.test(value);
 }
 
 export function checkPricingEntrySafety(p: any): string[] {
@@ -76,6 +82,18 @@ export function checkPricingEntrySafety(p: any): string[] {
         }
     }
 
+    if (p.effective_from && !hasExplicitUtcTimestamp(p.effective_from)) {
+        errs.push(
+            `pricing: effective_from must use explicit UTC timestamp with Z for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+        );
+    }
+
+    if (p.effective_to && !hasExplicitUtcTimestamp(p.effective_to)) {
+        errs.push(
+            `pricing: effective_to must use explicit UTC timestamp with Z for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`
+        );
+    }
+
     if (p.effective_from && p.effective_to) {
         const from = Date.parse(String(p.effective_from));
         const to = Date.parse(String(p.effective_to));
@@ -94,6 +112,29 @@ export function checkPricingEntrySafety(p: any): string[] {
                 errs.push(`pricing: unknown meter '${meter}' for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}`);
                 continue;
             }
+
+            if (r?.effective_from && !hasExplicitUtcTimestamp(r.effective_from)) {
+                errs.push(
+                    `pricing: rule effective_from must use explicit UTC timestamp with Z for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                );
+            }
+
+            if (r?.effective_to && !hasExplicitUtcTimestamp(r.effective_to)) {
+                errs.push(
+                    `pricing: rule effective_to must use explicit UTC timestamp with Z for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                );
+            }
+
+            if (r?.effective_from && r?.effective_to) {
+                const from = Date.parse(String(r.effective_from));
+                const to = Date.parse(String(r.effective_to));
+                if (Number.isFinite(from) && Number.isFinite(to) && to < from) {
+                    errs.push(
+                        `pricing: effective_to is before effective_from for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                    );
+                }
+            }
+
             metersInEntry.add(meter);
             const unit_size = parseNumericValue(r?.unit_size);
             if (unit_size === undefined || unit_size <= 0) {

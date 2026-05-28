@@ -15,7 +15,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_image_tokens",
@@ -27,7 +27,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +39,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_image_tokens",
@@ -62,7 +62,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_text_tokens",
@@ -74,7 +74,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_image_tokens",
@@ -86,7 +86,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -98,7 +98,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_image_tokens",
@@ -121,7 +121,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_text_tokens",
@@ -133,7 +133,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_image_tokens",
@@ -145,7 +145,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -157,7 +157,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_image_tokens",
@@ -180,7 +180,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_text_tokens",
@@ -192,7 +192,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "input_image_tokens",
@@ -204,7 +204,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -216,7 +216,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     },
     {
       "meter": "output_image_tokens",
@@ -239,7 +239,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-11-20T00:00:00"
+      "effective_from": "2025-11-20T00:00:00Z"
     }
   ]
 }

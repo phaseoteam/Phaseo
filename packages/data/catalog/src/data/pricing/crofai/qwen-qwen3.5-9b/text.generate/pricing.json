@@ -15,8 +15,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00",
-      "effective_to": "2026-05-11T00:00:00"
+      "effective_from": "2026-04-27T00:00:00Z",
+      "effective_to": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -28,8 +28,8 @@
       "note": "Derived from CrofAI pricing page cache pricing display.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00",
-      "effective_to": "2026-05-11T00:00:00"
+      "effective_from": "2026-04-27T00:00:00Z",
+      "effective_to": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -41,8 +41,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00",
-      "effective_to": "2026-05-11T00:00:00"
+      "effective_from": "2026-04-27T00:00:00Z",
+      "effective_to": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "input_text_tokens",
@@ -54,7 +54,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -66,7 +66,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -78,7 +78,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     }
   ]
 }

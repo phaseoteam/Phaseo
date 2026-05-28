@@ -48,7 +48,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-20T00:00:00"
+      "effective_from": "2026-04-20T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -60,7 +60,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-20T00:00:00"
+      "effective_from": "2026-04-20T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -72,7 +72,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-20T00:00:00"
+      "effective_from": "2026-04-20T00:00:00Z"
     }
   ]
 }

@@ -15,8 +15,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-11-04T00:00:00",
-      "effective_to": "2026-02-19T00:00:00"
+      "effective_from": "2024-11-04T00:00:00Z",
+      "effective_to": "2026-02-19T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -28,8 +28,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-11-04T00:00:00",
-      "effective_to": "2026-02-19T00:00:00"
+      "effective_from": "2024-11-04T00:00:00Z",
+      "effective_to": "2026-02-19T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -41,8 +41,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2024-11-04T00:00:00",
-      "effective_to": "2026-02-19T00:00:00"
+      "effective_from": "2024-11-04T00:00:00Z",
+      "effective_to": "2026-02-19T00:00:00Z"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -62,8 +62,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2024-11-04T00:00:00",
-      "effective_to": "2026-02-19T00:00:00"
+      "effective_from": "2024-11-04T00:00:00Z",
+      "effective_to": "2026-02-19T00:00:00Z"
     },
     {
       "meter": "cached_write_text_tokens",
@@ -83,8 +83,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2024-11-04T00:00:00",
-      "effective_to": "2026-02-19T00:00:00"
+      "effective_from": "2024-11-04T00:00:00Z",
+      "effective_to": "2026-02-19T00:00:00Z"
     }
   ]
 }

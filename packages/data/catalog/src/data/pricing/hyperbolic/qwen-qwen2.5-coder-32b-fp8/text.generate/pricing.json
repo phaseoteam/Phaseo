@@ -15,7 +15,7 @@
       "note": "Hyperbolic publishes a single blended per-token rate.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     }
   ]
 }

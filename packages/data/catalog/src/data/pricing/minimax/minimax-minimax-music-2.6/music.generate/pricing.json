@@ -15,8 +15,8 @@
       "note": "Introductory promotional window (first 2 weeks)",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-11T00:00:00",
-      "effective_to": "2026-04-25T00:00:00"
+      "effective_from": "2026-04-11T00:00:00Z",
+      "effective_to": "2026-04-25T00:00:00Z"
     },
     {
       "meter": "requests",
@@ -28,7 +28,7 @@
       "note": "$0.15 per song (up to 5 minutes)",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-25T00:00:00"
+      "effective_from": "2026-04-25T00:00:00Z"
     }
   ]
 }

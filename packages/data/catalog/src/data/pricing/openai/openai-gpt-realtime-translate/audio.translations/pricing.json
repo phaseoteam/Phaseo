@@ -15,7 +15,7 @@
       "note": "Aligned to OpenAI GPT Realtime Translate pricing at $0.034/minute using 40 audio tokens/sec.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-07T00:00:00"
+      "effective_from": "2026-05-07T00:00:00Z"
     }
   ]
 }
