@@ -18,547 +18,50 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import Link from "next/link";
 import {
 	ArrowRight,
-	Bot,
-	Braces,
 	Check,
 	ChevronDown,
 	Globe,
 	Info,
-	Package,
 	Shield,
 	TerminalSquare,
-	type LucideIcon,
 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { HttpMethodBadge, type HttpMethod } from "@/components/HttpMethodBadge";
 import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";     
 import { resolveGatewayPath } from "./endpoint-paths";
+import { EndpointRoutesTable } from "./EndpointRoutesTable";
+import { QuickstartUsageSection } from "./QuickstartUsageSection";
+import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
+import { AI_SDK_ENDPOINTS, AI_STATS_METHODS, DIRECT_LANGUAGE_ORDER, LANGUAGE_GROUP_META, LANGUAGE_GROUP_ORDER, LANGUAGE_OPTIONS, OPENAI_METHODS, STREAMING_PATHS, type LanguageOption } from "./quickstartSdkConfig";
+import {
+	applyRoutingPreferenceToPayload,
+	buildExamplePayload,
+	buildStreamingDiff,
+	jsonToPythonLiteral,
+	resolveRoutingPreference,
+} from "./quickstartPayloads";
 import { Switch } from "@/components/ui/switch";
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { QuickstartRequestContext } from "./requestContext";
 
 interface QuickstartProps {
-        modelId?: string;
-        aliases?: string[];
-        apiModelIds?: string[];
-        primaryModelIdentifier?: string;
-        acceptedModelIdentifiers?: string[];
-        primaryModelIdentifierByEndpoint?: Record<string, string>;
-        acceptedModelIdentifiersByEndpoint?: Record<string, string[]>;
-        endpoint?: string | null;
-        supportedEndpoints?: string[];
-        showHeader?: boolean;
+	modelId?: string; aliases?: string[]; apiModelIds?: string[];
+	primaryModelIdentifier?: string; acceptedModelIdentifiers?: string[];
+	primaryModelIdentifierByEndpoint?: Record<string, string>;
+	acceptedModelIdentifiersByEndpoint?: Record<string, string[]>;
+	endpoint?: string | null; supportedEndpoints?: string[]; showHeader?: boolean;
 	requestContext?: QuickstartRequestContext;
 }
 
 const normalizeEndpointValue = (value: string | null | undefined) =>
-        value
-                ? value.toLowerCase().replace(/^\//, "").replace(/\//g, ".")
-                : "";
+	value ? value.toLowerCase().replace(/^\//, "").replace(/\//g, ".") : "";
 
-const endpointValueFromPath = (path: string) =>
-        normalizeEndpointValue(path);
-
-function resolveSpeechVoiceForModel(model: string): string {
-        const provider = model.split("/")[0]?.toLowerCase();
-        if (provider === "xiaomi") return "mimo_default";
-        if (provider === "google" || provider === "google-ai-studio") return "Kore";
-        if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
-        return "alloy";
-}
-
-function buildExamplePayload(
-        endpoint: string | null | undefined,
-        model: string
-) {
-        const normalized = normalizeEndpointValue(endpoint);
-        switch (normalized) {
-                case "responses":
-                        return {
-                                model,
-                                input: "Give me one fun fact about cURL.",
-                        };
-                case "messages":
-                        return {
-                                model,
-                                messages: [
-                                        { role: "user", content: "Summarize the latest AI Stats metrics." },
-                                ],
-                                max_tokens: 256,
-                        };
-                case "moderations":
-                case "moderations.create":
-                        return {
-                                model,
-                                input: "Check this prompt for safety before routing downstream.",
-                        };
-                case "embeddings":
-			return {
-				model,
-				input: [
-					"Route requests across providers with AI Stats.",
-					"Monitor latency, throughput, and spend in real time.",
-				],
-			};
-                case "image.generations":
-                case "images.generations":
-                case "images.generate":
-                        return {
-                                model,
-                                prompt: "Create a cinematic hero image of an AI observability dashboard lit by soft ambient light.",
-                                size: "1024x1024",
-                                quality: "high",
-                        };
-                case "images.edits":
-                case "images.edit":
-                case "image.edits":
-                        return {
-                                model,
-                                prompt: "Add a warm sunset glow to the skyline.",
-                                image_url: "https://assets.ai-stats.com/sample-image.png",
-                        };
-                case "video.generations":
-                case "video.generation":
-                        return {
-                                model,
-                                prompt: "An engineer exploring a real-time operations room, charts updating smoothly, confident tone.",
-                                duration_seconds: 6,
-                                aspect_ratio: "16:9",
-                        };
-                case "music.generate":
-                        return {
-                                model,
-                                prompt: "Create a calm, futuristic ambient loop for a dashboard intro.",
-                                duration_seconds: 20,
-                        };
-                case "audio.speech":
-                        return {
-                                model,
-                                voice: resolveSpeechVoiceForModel(model),
-                                input: "Welcome to the AI Stats Gateway where latency, uptime, and pricing are in your control.",
-                                response_format: "mp3",
-                        };
-                case "audio.realtime":
-                        return {
-                                model,
-                                input: "Start a realtime voice session for live support.",
-                        };
-                case "audio.transcriptions":
-                case "audio.transcription":
-                        return {
-                                model,
-                                audio_url: "https://assets.ai-stats.com/sample-audio.wav",
-                                language: "en",
-                        };
-                case "audio.translations":
-                case "audio.translation":
-                        return {
-                                model,
-                                audio_url: "https://assets.ai-stats.com/sample-audio.wav",
-                                target_language: "en",
-                        };
-                case "batch.create":
-                case "batch":
-                        return {
-                                input_file_id: "file_abc123",
-                                endpoint: "/responses",
-                                completion_window: "24h",
-                        };
-                default:
-                        return {
-                                model,
-                                messages: [
-					{ role: "system", content: "You are a helpful assistant." },
-					{
-						role: "user",
-						content: "Give me one fun fact about cURL.",
-					},
-				],
-			};
-	}
-}
-
-type RoutingMode = "price" | "latency" | "throughput";
-
-type QuickstartRoutingPreference = {
-	routingMode: RoutingMode | null;
-};
-
-const SORT_TO_ROUTING_MODE: Record<string, RoutingMode | null> = {
-	default: null,
-	pricing: "price",
-	latency: "latency",
-	throughput: "throughput",
-	uptime: null,
-};
-
-function resolveRoutingPreference(
-	requestContext?: QuickstartRequestContext,
-): QuickstartRoutingPreference | null {
-	const sortKey = String(requestContext?.sort ?? "").trim().toLowerCase();
-	if (!sortKey || !(sortKey in SORT_TO_ROUTING_MODE)) return null;
-
-	const routingMode = SORT_TO_ROUTING_MODE[sortKey];
-
-	if (routingMode) {
-		return {
-			routingMode,
-		};
-	}
-
-	if (sortKey === "uptime") {
-		return {
-			routingMode: null,
-		};
-	}
-
-	return null;
-}
-
-function applyRoutingPreferenceToPayload(
-	payload: Record<string, unknown>,
-	preference: QuickstartRoutingPreference | null,
-) {
-	const effectiveSort = preference?.routingMode ?? null;
-	if (!effectiveSort) return payload;
-
-	return {
-		...payload,
-		provider: {
-			sort: effectiveSort,
-		},
-	};
-}
-
-const jsonToPythonLiteral = (json: string) =>
-        json
-                .replace(/true/g, "True")
-                .replace(/false/g, "False")
-                .replace(/null/g, "None");
-
-const buildStreamingDiff = (payloadJson: string) => {
-        const lines = payloadJson.split("\n");
-        const diffLines = lines.map((line) => ` ${line}`);
-        const indentMatch = lines[1]?.match(/^\s*/);
-        const indent = indentMatch ? indentMatch[0] : "  ";
-        const insertIndex = lines.findIndex((line) =>
-                line.includes('"model"')
-        );
-        const targetIndex = insertIndex >= 0 ? insertIndex + 1 : 1;
-        diffLines.splice(targetIndex, 0, `+${indent}"stream": true,`);
-        return diffLines.join("\n");
-};
-
-type EndpointOption = {
-        value: string;
-        label: string;
-};
-
-type EndpointRoute = {
-        value: string;
-        method: HttpMethod;
-        path: string;
-        title: string;
-        description: string;
-        tag: "Recommended" | "Compatible" | "Optional" | "Discovery";
-};
-
-const ENDPOINT_OPTIONS: EndpointOption[] = [
-        { value: "responses", label: "Responses" },
-        { value: "chat.completions", label: "Chat Completions" },
-        { value: "messages", label: "Messages" },
-        { value: "embeddings", label: "Embeddings" },
-        { value: "moderations", label: "Moderations" },
-        { value: "moderations.create", label: "Moderations (Create)" },
-        { value: "images.generations", label: "Image Generation" },
-        { value: "images.edits", label: "Image Edits" },
-        { value: "video.generations", label: "Video Generation" },
-        { value: "audio.speech", label: "Audio Speech" },
-        { value: "audio.realtime", label: "Audio Realtime" },
-        { value: "audio.transcriptions", label: "Audio Transcription" },
-        { value: "audio.translations", label: "Audio Translation" },
-        { value: "batch.create", label: "Batch Create" },
-        { value: "music.generate", label: "Music Generation" },
-];
-
-const ENDPOINT_ROUTE_META: Record<string, Omit<EndpointRoute, "value">> = {
-        responses: {
-                method: "POST",
-                path: "/v1/responses",
-                title: "Responses",
-                description: "Modern response API with text, tools, and multimodal input support.",
-                tag: "Recommended",
-        },
-        "chat.completions": {
-                method: "POST",
-                path: "/v1/chat/completions",
-                title: "Chat Completions",
-                description: "OpenAI-compatible route for existing chat integrations.",
-                tag: "Compatible",
-        },
-        messages: {
-                method: "POST",
-                path: "/v1/messages",
-                title: "Messages",
-                description: "Anthropic-compatible route for Claude-style clients.",
-                tag: "Compatible",
-        },
-        embeddings: {
-                method: "POST",
-                path: "/v1/embeddings",
-                title: "Embeddings",
-                description: "Create vector embeddings for search, retrieval, and ranking workflows.",
-                tag: "Recommended",
-        },
-        moderations: {
-                method: "POST",
-                path: "/v1/moderations",
-                title: "Moderations",
-                description: "Classify content before routing requests downstream.",
-                tag: "Recommended",
-        },
-        "moderations.create": {
-                method: "POST",
-                path: "/v1/moderations",
-                title: "Moderations",
-                description: "Create a moderation check with SDK method compatibility.",
-                tag: "Compatible",
-        },
-        "images.generations": {
-                method: "POST",
-                path: "/v1/images/generations",
-                title: "Image Generation",
-                description: "Generate images from a prompt.",
-                tag: "Recommended",
-        },
-        "images.edits": {
-                method: "POST",
-                path: "/v1/images/edits",
-                title: "Image Edits",
-                description: "Edit or transform an existing image.",
-                tag: "Optional",
-        },
-        "video.generations": {
-                method: "POST",
-                path: "/v1/video/generations",
-                title: "Video Generation",
-                description: "Create long-running video generation jobs from prompts.",
-                tag: "Recommended",
-        },
-        "audio.speech": {
-                method: "POST",
-                path: "/v1/audio/speech",
-                title: "Audio Speech",
-                description: "Generate spoken audio from text input.",
-                tag: "Recommended",
-        },
-        "audio.realtime": {
-                method: "POST",
-                path: "/v1/audio/realtime",
-                title: "Realtime Audio",
-                description: "Start realtime voice sessions for low-latency audio workflows.",
-                tag: "Optional",
-        },
-        "audio.transcriptions": {
-                method: "POST",
-                path: "/v1/audio/transcriptions",
-                title: "Audio Transcription",
-                description: "Transcribe audio files into text.",
-                tag: "Recommended",
-        },
-        "audio.translations": {
-                method: "POST",
-                path: "/v1/audio/translations",
-                title: "Audio Translation",
-                description: "Translate audio into English text.",
-                tag: "Optional",
-        },
-        "batch.create": {
-                method: "POST",
-                path: "/v1/batches",
-                title: "Batch Create",
-                description: "Create asynchronous batch jobs for high-volume requests.",
-                tag: "Optional",
-        },
-        "music.generate": {
-                method: "POST",
-                path: "/v1/music/generations",
-                title: "Music Generation",
-                description: "Generate music or audio loops from prompts.",
-                tag: "Recommended",
-        },
-};
-
-const ENDPOINT_ROUTE_PREVIEW_LIMIT = 4;
-
-type LanguageOption = {
-        value: string;
-        label: string;
-	group: LanguageGroupId;
-	placement?: "direct" | "grouped";
-	icon?: LucideIcon;
-        disabled: boolean;
-};
-
-type LanguageGroupId =
-	| "raw"
-	| "ai-stats-client"
-	| "ai-stats-agent"
-	| "openai"
-	| "anthropic";
-
-const LANGUAGE_GROUP_META: Record<
-	LanguageGroupId,
-	{ label: string; icon: LucideIcon }
-> = {
-	raw: { label: "Raw HTTP", icon: TerminalSquare },
-	"ai-stats-client": { label: "AI Stats Client SDKs", icon: Braces },
-	"ai-stats-agent": { label: "AI Stats Agent SDK", icon: Bot },
-	openai: { label: "OpenAI SDK", icon: Package },
-	anthropic: { label: "Anthropic SDK", icon: Package },
-};
-
-const LANGUAGE_OPTIONS: LanguageOption[] = [
-        { value: "curl", label: "cURL", group: "raw", placement: "direct", icon: TerminalSquare, disabled: false },
-        { value: "ai-sdk", label: "AI SDK", group: "ai-stats-client", placement: "direct", icon: Bot, disabled: false },
-        { value: "node-fetch", label: "Node.js fetch", group: "raw", disabled: false },
-        { value: "python-requests", label: "Python requests", group: "raw", disabled: false },
-        { value: "typescript-sdk", label: "TypeScript SDK", group: "ai-stats-client", disabled: false },
-        { value: "python-sdk", label: "Python SDK", group: "ai-stats-client", disabled: false },
-        { value: "go-sdk", label: "Go SDK", group: "ai-stats-client", disabled: false },
-        { value: "csharp-sdk", label: "C# SDK", group: "ai-stats-client", disabled: false },
-        { value: "php-sdk", label: "PHP SDK", group: "ai-stats-client", disabled: false },
-        { value: "ruby-sdk", label: "Ruby SDK", group: "ai-stats-client", disabled: false },
-        { value: "agent-sdk-ts", label: "TypeScript Agent SDK", group: "ai-stats-agent", disabled: false },
-        { value: "agent-sdk-python", label: "Python Agent SDK", group: "ai-stats-agent", disabled: false },
-        { value: "agent-sdk-go", label: "Go Agent SDK", group: "ai-stats-agent", disabled: false },
-        { value: "agent-sdk-csharp", label: "C# Agent SDK", group: "ai-stats-agent", disabled: false },
-        { value: "agent-sdk-php", label: "PHP Agent SDK", group: "ai-stats-agent", disabled: false },
-        { value: "agent-sdk-ruby", label: "Ruby Agent SDK", group: "ai-stats-agent", disabled: false },
-        { value: "openai-python", label: "OpenAI Python Client", group: "openai", disabled: false },
-        { value: "openai-node", label: "OpenAI Node.js Client", group: "openai", disabled: false },
-        { value: "anthropic-python", label: "Anthropic Python Client", group: "anthropic", disabled: false },
-        { value: "anthropic-node", label: "Anthropic TypeScript Client", group: "anthropic", disabled: false },
-];
-
-const LANGUAGE_GROUP_ORDER: LanguageGroupId[] = [
-	"raw",
-	"ai-stats-client",
-	"ai-stats-agent",
-	"openai",
-	"anthropic",
-];
-
-const DIRECT_LANGUAGE_ORDER = ["curl", "ai-sdk"] as const;
-
-const STREAMING_PATHS = new Set(["/chat/completions", "/responses", "/messages"]);
-const AI_SDK_ENDPOINTS = new Set(["chat.completions", "messages", "responses"]);
-const INSTALLABLE_LANGUAGES = new Set([
-	"ai-sdk",
-	"agent-sdk-ts",
-	"agent-sdk-python",
-	"agent-sdk-go",
-	"agent-sdk-csharp",
-	"agent-sdk-php",
-	"agent-sdk-ruby",
-	"typescript-sdk",
-	"python-sdk",
-	"go-sdk",
-	"csharp-sdk",
-	"php-sdk",
-	"ruby-sdk",
-	"openai-python",
-	"openai-node",
-	"anthropic-python",
-	"anthropic-node",
-]);
-
-const AI_STATS_METHODS: Record<string, { ts: string; py: string }> = {
-        "chat.completions": { ts: "generateText", py: "generate_text" },
-        responses: { ts: "generateResponse", py: "generate_response" },
-        embeddings: { ts: "generateEmbedding", py: "generate_embedding" },
-        moderations: { ts: "generateModeration", py: "generate_moderation" },
-        "moderations.create": { ts: "generateModeration", py: "generate_moderation" },
-        "images.generations": { ts: "generateImage", py: "generate_image" },
-        "images.edits": { ts: "generateImageEdit", py: "generate_image_edit" },
-        "audio.speech": { ts: "generateSpeech", py: "generate_speech" },
-        "audio.transcriptions": { ts: "generateTranscription", py: "generate_transcription" },
-        "audio.translations": { ts: "generateTranslation", py: "generate_translation" },
-        "video.generations": { ts: "generateVideo", py: "generate_video" },
-        "batch.create": { ts: "createBatch", py: "create_batch" },
-};
-
-const OPENAI_METHODS: Record<string, { ts: string; py: string }> = {
-        "chat.completions": { ts: "chat.completions.create", py: "chat.completions.create" },
-        responses: { ts: "responses.create", py: "responses.create" },
-};
-
-function EndpointRouteRow({
-        route,
-        active,
-        onSelect,
-}: {
-        route: EndpointRoute;
-        active: boolean;
-        onSelect: () => void;
-}) {
-        const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-                if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onSelect();
-                }
-        };
-
-        return (
-                <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={onSelect}
-                        onKeyDown={handleKeyDown}
-                        className="grid w-full cursor-pointer grid-cols-[72px_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[72px_minmax(0,220px)_1fr_auto]"
-                        aria-pressed={active}
-                >
-                        <HttpMethodBadge method={route.method} />
-
-                        <code className="truncate font-mono text-xs text-foreground">
-                                {route.path}
-                        </code>
-
-                        <div className="min-w-0 space-y-0.5 md:space-y-0">
-                                <div className="flex items-center gap-2 md:block">
-                                        <span className="text-sm font-medium">{route.title}</span>
-                                        {active ? (
-                                                <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-primary md:hidden">
-                                                        Selected
-                                                </span>
-                                        ) : null}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                        {route.description}
-                                </div>
-                        </div>
-
-                        <div className="hidden items-center gap-2 md:flex">
-                                {active ? (
-                                        <Badge variant="outline" className="rounded-md text-[10px]">
-                                                Selected
-                                        </Badge>
-                                ) : null}
-                                <Badge variant="outline" className="rounded-md text-[10px]">
-                                        {route.tag}
-                                </Badge>
-                        </div>
-                </div>
-        );
-}
+const endpointValueFromPath = (path: string) => normalizeEndpointValue(path);
 
 export default function Quickstart({
 	modelId,
@@ -616,22 +119,10 @@ export default function Quickstart({
                 );
         }, [availableEndpoints]);
 
-        const endpointRoutes = useMemo(() => {
-                return availableEndpoints.map((option) => {
-                        const meta = ENDPOINT_ROUTE_META[option.value];
-                        if (meta) {
-                                return { value: option.value, ...meta };
-                        }
-                        return {
-                                value: option.value,
-                                method: "POST" as const,
-                                path: `/v1${resolveGatewayPath(option.value)}`,
-                                title: option.label,
-                                description: "Call this Gateway route with the selected model identifier.",
-                                tag: "Compatible" as const,
-                        };
-                });
-        }, [availableEndpoints]);
+        const endpointRoutes = useMemo(
+		() => buildEndpointRoutes(availableEndpoints),
+		[availableEndpoints],
+	);
 
         const [selectedEndpoint, setSelectedEndpoint] = useState(defaultEndpoint);
         const [selectedLanguage, setSelectedLanguage] = useState("curl");       
@@ -711,43 +202,6 @@ export default function Quickstart({
 			null,
 		[availableLanguages, selectedLanguage],
 	);
-
-	/* const providerMenuSummary = useMemo(() => {
-		const activeSort =
-			selectedProviderSort !== "default"
-				? selectedProviderSort
-				: resolveRoutingPreference(requestContext)?.routingMode ?? null;
-		const parts: string[] = [];
-		if (activeSort) {
-			parts.push(
-				activeSort.charAt(0).toUpperCase() + activeSort.slice(1),
-			);
-		}
-		if (selectedProviderOrder.length > 0) {
-			parts.push(
-				selectedProviderOrder.length === 1
-					? availableProviderOptions.find(
-						(provider) => provider.id === selectedProviderOrder[0],
-					)?.label ?? "1 provider"
-					: `${selectedProviderOrder.length} providers`,
-			);
-		}
-		return parts.join(" · ") || "Default routing";
-	}, [
-		availableProviderOptions,
-		requestContext,
-		selectedProviderOrder,
-		selectedProviderSort,
-	]);
-
-	const toggleProviderOrder = (providerId: string, checked: boolean) => {
-		setSelectedProviderOrder((current) => {
-			const exists = current.includes(providerId);
-			if (checked && !exists) return [...current, providerId];
-			if (!checked && exists) return current.filter((id) => id !== providerId);
-			return current;
-		});
-	}; */
 
         useEffect(() => {
                 if (!supportedLanguageSet.has(selectedLanguage)) {
@@ -849,55 +303,6 @@ export default function Quickstart({
                 ? buildStreamingDiff(payloadJson)
                 : "";
 
-        function getInstallationCode(language: string): string {
-                        switch (language) {
-                        case "ai-sdk":
-                                return "npm install ai @ai-stats/ai-sdk-provider";
-			case "agent-sdk-ts":
-				return "pnpm add @ai-stats/sdk @ai-stats/agent-sdk";
-			case "agent-sdk-python":
-				return "pip install ai-stats-py-sdk ai-stats-agent-sdk";
-			case "agent-sdk-go":
-				return "go get github.com/AI-Stats/AI-Stats/packages/sdk/agent-sdk-go@latest";
-			case "agent-sdk-csharp":
-				return "dotnet add package AI.Stats.Sdk\ndotnet add package AI.Stats.AgentSdk";
-			case "agent-sdk-php":
-				return "composer require ai-stats/php-sdk ai-stats/agent-sdk-php";
-			case "agent-sdk-ruby":
-				return "gem install ai_stats_sdk ai_stats_agent_sdk";
-                        case "typescript-sdk":
-                                return "npm install @ai-stats/sdk";
-			case "python-sdk":
-				return "pip install ai-stats-py-sdk";
-			case "go-sdk":
-				return "go get github.com/AI-Stats/AI-Stats/packages/sdk/sdk-go@latest";
-			case "csharp-sdk":
-				return "dotnet add package AI.Stats.Sdk";
-			case "php-sdk":
-				return "composer require ai-stats/php-sdk";
-			case "ruby-sdk":
-				return "gem install ai_stats_sdk";
-			case "openai-python":
-				return "pip install openai";
-			case "openai-node":
-				return "npm install openai";
-			case "anthropic-python":
-				return "pip install anthropic";
-			case "anthropic-node":
-				return "npm install @anthropic-ai/sdk";
-			default:
-				return "";
-		}
-	}
-
-        const visibleEndpointRoutes = showAllEndpointRoutes
-                ? endpointRoutes
-                : endpointRoutes.slice(0, ENDPOINT_ROUTE_PREVIEW_LIMIT);
-        const hiddenEndpointRouteCount = Math.max(
-                endpointRoutes.length - ENDPOINT_ROUTE_PREVIEW_LIMIT,
-                0,
-        );
-
         const curlCommandLabel = shouldStream
                 ? "Send a streaming request"
                 : "Send a request";
@@ -910,48 +315,6 @@ curl ${curlFlags} ${endpointUrl} \\
 -H "Authorization: Bearer $AI_STATS_API_KEY" \\
 -H "Content-Type: application/json" \\
 -d '${activePayloadJson}'`;
-
-	const nodeQuickstart =
-		`// 1) Set your key
-const apiKey = process.env.AI_STATS_API_KEY;
-
-// 2) Send a request
-const res = await fetch("${endpointUrl}", {
-	method: "POST",
-	headers: {
-		"Content-Type": "application/json",
-		"Authorization": ` +
-		"`Bearer ${apiKey}`" +
-		`,
-	},
-	body: JSON.stringify({
-${payloadJsonNode}
-	}),
-});
-
-const data = await res.json();
-
-console.log(data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2));`;
-
-	const pythonQuickstart = `# Import os and requests libraries
-import os
-import requests
-
-# Get your API key
-API_KEY = os.environ.get("AI_STATS_API_KEY")
-
-# Send a request
-url = "${endpointUrl}"
-payload = ${payloadJsonPython}
-
-resp = requests.post(url, json=payload, headers={
-	"Authorization": f"Bearer {API_KEY}",
-	"Content-Type": "application/json",
-})
-
-data = resp.json()
-
-print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`;
 
         const normalizedEndpoint = normalizeEndpointValue(selectedEndpoint);    
         const aiStatsMethod = AI_STATS_METHODS[normalizedEndpoint];
@@ -1584,198 +947,45 @@ console.log(response);`
 					</div>
 				</div>
 
-				<div className="space-y-3">
-					<div className="flex items-center justify-between gap-3">
-						<div>
-							<h3 className="text-base font-semibold">Available endpoints</h3>
-							<p className="text-xs text-muted-foreground">
-								Supported routes for this model. Select a row to update the quickstart code.
-							</p>
-						</div>
-						{hiddenEndpointRouteCount > 0 ? (
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => setShowAllEndpointRoutes((current) => !current)}
-							>
-								{showAllEndpointRoutes
-									? "Show fewer"
-									: `Show ${hiddenEndpointRouteCount} more`}
-							</Button>
-						) : null}
-					</div>
-					<div className="overflow-hidden rounded-lg border bg-card">
-						<div className="hidden grid-cols-[72px_minmax(0,220px)_1fr_auto] items-center gap-3 border-b bg-muted/40 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground md:grid">
-							<span>Method</span>
-							<span>Route</span>
-							<span>Description</span>
-							<span>Status</span>
-						</div>
-						<div className="divide-y">
-							{visibleEndpointRoutes.map((route) => (
-								<EndpointRouteRow
-									key={route.value}
-									route={route}
-									active={route.value === selectedEndpoint}
-									onSelect={() => setSelectedEndpoint(route.value)}
-								/>
-							))}
-						</div>
-					</div>
-				</div>
+				<EndpointRoutesTable
+					endpointRoutes={endpointRoutes}
+					selectedEndpoint={selectedEndpoint}
+					showAllEndpointRoutes={showAllEndpointRoutes}
+					onToggleShowAllEndpointRoutes={() =>
+						setShowAllEndpointRoutes((current) => !current)
+					}
+					onSelectEndpoint={setSelectedEndpoint}
+				/>
 
-				<div className={compactMode ? "space-y-2" : "space-y-3"}>
-					{compactMode ? null : (
-						<h3 className="text-base font-semibold">3) Send your first request</h3>
-					)}
-					{/* Installation step for SDKs */}
-					{INSTALLABLE_LANGUAGES.has(selectedLanguage) && (
-						<div className="space-y-2">
-							{compactMode ? null : (
-							<h4 className="text-sm font-medium">
-								Installation
-							</h4>
-							)}
-							<CodeBlock
-								code={getInstallationCode(selectedLanguage)}
-								lang="bash"
-								label="bash"
-							/>
-						</div>
-					)}
-					{supportsStreaming && streamingEnabled ? (
-						<div className="space-y-2">
-							{compactMode ? null : (
-								<h4 className="text-sm font-medium">Streaming change</h4>
-							)}
-							<CodeBlock code={streamingDiff} lang="diff" label="diff" />
-						</div>
-					) : null}
-					{/* Usage code */}
-					<div className="space-y-2">
-						{compactMode ? null : (
-							<h4 className="text-sm font-medium">
-								{INSTALLABLE_LANGUAGES.has(selectedLanguage)
-								? "Usage"
-								: "Code"}
-							</h4>
-						)}
-						{selectedLanguage === "curl" && (
-							<CodeBlock
-								code={curlQuickstart}
-								lang="bash"
-								label="bash"
-							/>
-						)}
-						{selectedLanguage === "typescript-sdk" &&
-						typescriptSdkUsage && (
-							<CodeBlock code={typescriptSdkUsage} lang="ts" label="ts" />
-						)}
-						{selectedLanguage === "ai-sdk" && aiSdkUsage && (
-							<CodeBlock code={aiSdkUsage} lang="ts" label="ts" />
-						)}
-						{selectedLanguage === "agent-sdk-ts" && agentSdkTsUsage && (
-							<CodeBlock code={agentSdkTsUsage} lang="ts" label="ts" />
-						)}
-						{selectedLanguage === "agent-sdk-python" && agentSdkPythonUsage && (
-							<CodeBlock code={agentSdkPythonUsage} lang="python" label="python" />
-						)}
-						{selectedLanguage === "agent-sdk-go" && agentSdkGoUsage && (
-							<CodeBlock code={agentSdkGoUsage} lang="go" label="go" />
-						)}
-						{selectedLanguage === "agent-sdk-csharp" && agentSdkCsharpUsage && (
-							<CodeBlock code={agentSdkCsharpUsage} lang="csharp" label="csharp" />
-						)}
-						{selectedLanguage === "agent-sdk-php" && agentSdkPhpUsage && (
-							<CodeBlock code={agentSdkPhpUsage} lang="php" label="php" />
-						)}
-						{selectedLanguage === "agent-sdk-ruby" && agentSdkRubyUsage && (
-							<CodeBlock code={agentSdkRubyUsage} lang="ruby" label="ruby" />
-						)}
-						{selectedLanguage === "python-sdk" && pythonSdkUsage && (
-							<CodeBlock code={pythonSdkUsage} lang="python" label="python" />
-						)}
-						{selectedLanguage === "go-sdk" && (
-							<CodeBlock code={goSdkUsage} lang="go" label="go" />
-						)}
-						{selectedLanguage === "csharp-sdk" && (
-							<CodeBlock
-								code={csharpSdkUsage}
-								lang="csharp"
-								label="csharp"
-							/>
-						)}
-						{selectedLanguage === "php-sdk" && (
-							<CodeBlock
-								code={phpSdkUsage}
-								lang="php"
-								label="php"
-							/>
-						)}
-						{selectedLanguage === "ruby-sdk" && (
-							<CodeBlock
-								code={rubySdkUsage}
-								lang="ruby"
-								label="ruby"
-							/>
-						)}
-						{selectedLanguage === "node-fetch" && (
-							<CodeBlock
-								code={
-									shouldStream
-										? nodeFetchStreamingQuickstart
-										: nodeFetchQuickstart
-								}
-								lang="ts"
-								label="ts"
-							/>
-						)}
-						{selectedLanguage === "python-requests" && (
-							<CodeBlock
-								code={
-									shouldStream
-										? pythonRequestsStreamingQuickstart
-										: pythonRequestsQuickstart
-								}
-								lang="python"
-								label="python"
-							/>
-						)}
-						{selectedLanguage === "openai-python" &&
-						openaiPythonUsage && (
-							<CodeBlock
-								code={openaiPythonUsage}
-								lang="python"
-								label="python"
-							/>
-						)}
-						{selectedLanguage === "openai-node" &&
-						openaiNodeUsage && (
-							<CodeBlock
-								code={openaiNodeUsage}
-								lang="ts"
-								label="ts"
-							/>
-						)}
-						{selectedLanguage === "anthropic-python" &&
-						anthropicPythonUsage && (
-							<CodeBlock
-								code={anthropicPythonUsage}
-								lang="python"
-								label="python"
-							/>
-						)}
-						{selectedLanguage === "anthropic-node" &&
-						anthropicNodeUsage && (
-							<CodeBlock
-								code={anthropicNodeUsage}
-								lang="ts"
-								label="ts"
-							/>
-						)}
-					</div>
-				</div>
+				<QuickstartUsageSection
+					compactMode={compactMode}
+					selectedLanguage={selectedLanguage}
+					supportsStreaming={supportsStreaming}
+					streamingEnabled={streamingEnabled}
+					streamingDiff={streamingDiff}
+					curlQuickstart={curlQuickstart}
+					typescriptSdkUsage={typescriptSdkUsage}
+					aiSdkUsage={aiSdkUsage}
+					agentSdkTsUsage={agentSdkTsUsage}
+					agentSdkPythonUsage={agentSdkPythonUsage}
+					agentSdkGoUsage={agentSdkGoUsage}
+					agentSdkCsharpUsage={agentSdkCsharpUsage}
+					agentSdkPhpUsage={agentSdkPhpUsage}
+					agentSdkRubyUsage={agentSdkRubyUsage}
+					pythonSdkUsage={pythonSdkUsage}
+					goSdkUsage={goSdkUsage}
+					csharpSdkUsage={csharpSdkUsage}
+					phpSdkUsage={phpSdkUsage}
+					rubySdkUsage={rubySdkUsage}
+					nodeFetchQuickstart={nodeFetchQuickstart}
+					nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
+					pythonRequestsQuickstart={pythonRequestsQuickstart}
+					pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
+					openaiPythonUsage={openaiPythonUsage}
+					openaiNodeUsage={openaiNodeUsage}
+					anthropicPythonUsage={anthropicPythonUsage}
+					anthropicNodeUsage={anthropicNodeUsage}
+				/>
 			</div>
 		</section>
 	);
