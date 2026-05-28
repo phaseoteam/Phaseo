@@ -493,7 +493,7 @@
     "output_modalities": null,
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-05-22T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

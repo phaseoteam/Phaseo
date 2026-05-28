@@ -1874,6 +1874,7 @@
     "alibaba-cloud:text.generate:qwen-qwen3.5-35b-a3b",
     "alibaba-cloud:text.generate:qwen-qwen3.5-397b-a17b",
     "alibaba-cloud:text.generate:qwen-qwen3.5-flash",
+    "alibaba-cloud:text.generate:qwen-qwen3.5-livetranslate-flash-realtime-2026-05-19",
     "alibaba-cloud:text.generate:qwen-qwen3.5-plus",
     "alibaba-cloud:text.generate:qwen-qwen3.6-35b-a3b",
     "alibaba-cloud:text.generate:qwen-qwen3.6-max-preview",
