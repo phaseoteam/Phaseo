@@ -15,7 +15,7 @@
       "note": "Limited-time 75% discount",
       "match": [],
       "priority": 200,
-      "effective_from": "2026-04-24T00:00:00",
+      "effective_from": "2026-04-24T00:00:00Z",
       "effective_to": "2026-05-31T15:59:00Z"
     },
     {
@@ -28,7 +28,7 @@
       "note": "Limited-time 75% discount",
       "match": [],
       "priority": 200,
-      "effective_from": "2026-04-24T00:00:00",
+      "effective_from": "2026-04-24T00:00:00Z",
       "effective_to": "2026-05-31T15:59:00Z"
     },
     {
@@ -41,7 +41,7 @@
       "note": "Limited-time 75% discount",
       "match": [],
       "priority": 200,
-      "effective_from": "2026-04-24T00:00:00",
+      "effective_from": "2026-04-24T00:00:00Z",
       "effective_to": "2026-05-31T15:59:00Z"
     },
     {
@@ -54,7 +54,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00",
+      "effective_from": "2026-04-24T00:00:00Z",
       "effective_to": "2026-05-31T15:59:00Z"
     },
     {
@@ -67,7 +67,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00",
+      "effective_from": "2026-04-24T00:00:00Z",
       "effective_to": "2026-05-31T15:59:00Z"
     },
     {
@@ -80,7 +80,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00",
+      "effective_from": "2026-04-24T00:00:00Z",
       "effective_to": "2026-05-31T15:59:00Z"
     },
     {

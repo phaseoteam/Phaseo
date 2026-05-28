@@ -15,7 +15,7 @@
       "note": "Current xAI docs list $15.00 / 1M characters as of 2026-05-11; initial launch pricing on 2026-04-17 was lower beta pricing.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     }
   ]
 }

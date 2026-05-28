@@ -23,7 +23,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-01-28T00:00:00"
+      "effective_from": "2026-01-28T00:00:00Z"
     },
     {
       "meter": "total_tokens",
@@ -43,7 +43,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-01-28T00:00:00"
+      "effective_from": "2026-01-28T00:00:00Z"
     }
   ]
 }

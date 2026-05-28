@@ -61,6 +61,34 @@ describe('pricing safety checks', () => {
         }
     });
 
+    test('bare rule timestamps without Z -> error', () => {
+        const bad = {
+            key: 'p:m:e',
+            api_provider_id: 'p',
+            model_id: 'm',
+            endpoint: 'e',
+            is_active_gateway: false,
+            rules: [
+                {
+                    meter: 'input_text_tokens',
+                    unit_size: 1,
+                    price_per_unit: 0.0025,
+                    bill: { mode: 'all' },
+                    effective_from: '2026-05-22T00:00:00',
+                    effective_to: '2026-05-23T00:00:00',
+                },
+            ],
+        };
+        const errs = checkPricingEntrySafety(bad);
+        expect(errs).toEqual(
+            expect.arrayContaining([
+                expect.stringContaining('rule effective_from must use explicit UTC timestamp with Z'),
+                expect.stringContaining('rule effective_to must use explicit UTC timestamp with Z'),
+            ])
+        );
+        expect(errs.some(isMajorError)).toBe(true);
+    });
+
     test('mixed aggregate and detailed input meters -> error', () => {
         const bad = {
             key: 'p:m:e',
@@ -215,4 +243,3 @@ describe('api provider model safety checks', () => {
         ).toBe(false);
     });
 });
-

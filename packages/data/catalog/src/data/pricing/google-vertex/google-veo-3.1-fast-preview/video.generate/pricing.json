@@ -33,8 +33,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2025-10-15T00:00:00",
-      "effective_to": "2026-04-07T00:00:00"
+      "effective_from": "2025-10-15T00:00:00Z",
+      "effective_to": "2026-04-07T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -61,8 +61,8 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-03-24T00:00:00",
-      "effective_to": "2026-04-07T00:00:00"
+      "effective_from": "2026-03-24T00:00:00Z",
+      "effective_to": "2026-04-07T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -89,7 +89,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-07T00:00:00"
+      "effective_from": "2026-04-07T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -116,7 +116,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-07T00:00:00"
+      "effective_from": "2026-04-07T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -143,7 +143,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-04-07T00:00:00"
+      "effective_from": "2026-04-07T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -173,7 +173,7 @@
         }
       ],
       "priority": 100,
-      "effective_to": "2026-05-11T00:00:00"
+      "effective_to": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -200,7 +200,7 @@
         }
       ],
       "priority": 100,
-      "effective_to": "2026-05-11T00:00:00"
+      "effective_to": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -227,7 +227,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -254,7 +254,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -281,7 +281,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-11T00:00:00"
+      "effective_from": "2026-05-11T00:00:00Z"
     }
   ]
 }
