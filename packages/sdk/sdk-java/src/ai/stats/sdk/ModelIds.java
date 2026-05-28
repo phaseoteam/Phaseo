@@ -55,6 +55,9 @@ public final class ModelIds {
     /** Model ID: <code>anthropic/claude-opus-4.7-fast</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast */
     public static final String ANTHROPIC_CLAUDE_OPUS_4_7_FAST = "anthropic/claude-opus-4.7-fast";
 
+    /** Model ID: <code>anthropic/claude-opus-4.8</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
+    public static final String ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8";
+
     /** Model ID: <code>anthropic/claude-sonnet-4</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
     public static final String ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4";
 
@@ -1123,8 +1126,8 @@ public final class ModelIds {
     /** Model ID: <code>qwen/qwen3.7-max-2026-05-17</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17 */
     public static final String QWEN_QWEN3_7_MAX_2026_05_17 = "qwen/qwen3.7-max-2026-05-17";
 
-    /** Model ID: <code>qwen/qwen3.7-max-2026-05-20</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20 */
-    public static final String QWEN_QWEN3_7_MAX_2026_05_20 = "qwen/qwen3.7-max-2026-05-20";
+    /** Model ID: <code>qwen/qwen3.7-plus-preview</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview */
+    public static final String QWEN_QWEN3_7_PLUS_PREVIEW = "qwen/qwen3.7-plus-preview";
 
     /** Model ID: <code>qwen/qwq-32b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b */
     public static final String QWEN_QWQ_32B = "qwen/qwq-32b";

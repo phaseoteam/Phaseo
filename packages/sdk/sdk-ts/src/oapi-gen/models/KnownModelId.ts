@@ -375,7 +375,6 @@ export type KnownModelId =
   | "qwen/qwen3.6-plus"
   | "qwen/qwen3.7-max"
   | "qwen/qwen3.7-max-2026-05-17"
-  | "qwen/qwen3.7-max-2026-05-20"
   | "qwen/qwq-32b"
   | "qwen/qwq-plus"
   | "qwen/text-embedding-v3"

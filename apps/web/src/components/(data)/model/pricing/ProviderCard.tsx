@@ -1595,7 +1595,7 @@ export default function ProviderCard({
 							<div className="text-[11px] font-semibold tracking-wide text-foreground">
 								Pricing
 							</div>
-							{availablePlans.length > 1 ? (
+							{availablePlans.length > 0 ? (
 								<PricingPlanSelect
 									value={selectedPlan}
 									onChange={setSelectedPlan}

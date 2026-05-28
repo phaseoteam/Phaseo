@@ -38,6 +38,8 @@ namespace AiStatsSdk
         public const string AnthropicClaudeOpus47 = "anthropic/claude-opus-4.7";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.7-fast</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast</summary>
         public const string AnthropicClaudeOpus47Fast = "anthropic/claude-opus-4.7-fast";
+        /// <summary>Model ID: <c>anthropic/claude-opus-4.8</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8</summary>
+        public const string AnthropicClaudeOpus48 = "anthropic/claude-opus-4.8";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4</summary>
         public const string AnthropicClaudeSonnet4 = "anthropic/claude-sonnet-4";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5</summary>
@@ -750,8 +752,8 @@ namespace AiStatsSdk
         public const string QwenQwen37Max = "qwen/qwen3.7-max";
         /// <summary>Model ID: <c>qwen/qwen3.7-max-2026-05-17</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17</summary>
         public const string QwenQwen37Max20260517 = "qwen/qwen3.7-max-2026-05-17";
-        /// <summary>Model ID: <c>qwen/qwen3.7-max-2026-05-20</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20</summary>
-        public const string QwenQwen37Max20260520 = "qwen/qwen3.7-max-2026-05-20";
+        /// <summary>Model ID: <c>qwen/qwen3.7-plus-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview</summary>
+        public const string QwenQwen37PlusPreview = "qwen/qwen3.7-plus-preview";
         /// <summary>Model ID: <c>qwen/qwq-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b</summary>
         public const string QwenQwq32b = "qwen/qwq-32b";
         /// <summary>Model ID: <c>qwen/qwq-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus</summary>

@@ -51,6 +51,9 @@ pub mod model_ids {
     /// Model ID: `anthropic/claude-opus-4.7-fast`.
     /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast
     pub const ANTHROPIC_CLAUDE_OPUS_4_7_FAST: &str = "anthropic/claude-opus-4.7-fast";
+    /// Model ID: `anthropic/claude-opus-4.8`.
+    /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
+    pub const ANTHROPIC_CLAUDE_OPUS_4_8: &str = "anthropic/claude-opus-4.8";
     /// Model ID: `anthropic/claude-sonnet-4`.
     /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
     pub const ANTHROPIC_CLAUDE_SONNET_4: &str = "anthropic/claude-sonnet-4";
@@ -1119,9 +1122,9 @@ pub mod model_ids {
     /// Model ID: `qwen/qwen3.7-max-2026-05-17`.
     /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
     pub const QWEN_QWEN3_7_MAX_2026_05_17: &str = "qwen/qwen3.7-max-2026-05-17";
-    /// Model ID: `qwen/qwen3.7-max-2026-05-20`.
-    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20
-    pub const QWEN_QWEN3_7_MAX_2026_05_20: &str = "qwen/qwen3.7-max-2026-05-20";
+    /// Model ID: `qwen/qwen3.7-plus-preview`.
+    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
+    pub const QWEN_QWEN3_7_PLUS_PREVIEW: &str = "qwen/qwen3.7-plus-preview";
     /// Model ID: `qwen/qwq-32b`.
     /// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
     pub const QWEN_QWQ_32B: &str = "qwen/qwq-32b";
@@ -1374,6 +1377,7 @@ pub mod model_ids {
         ANTHROPIC_CLAUDE_OPUS_4_6,
         ANTHROPIC_CLAUDE_OPUS_4_7,
         ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
+        ANTHROPIC_CLAUDE_OPUS_4_8,
         ANTHROPIC_CLAUDE_SONNET_4,
         ANTHROPIC_CLAUDE_SONNET_4_5,
         ANTHROPIC_CLAUDE_SONNET_4_6,
@@ -1730,7 +1734,7 @@ pub mod model_ids {
         QWEN_QWEN3_6_PLUS,
         QWEN_QWEN3_7_MAX,
         QWEN_QWEN3_7_MAX_2026_05_17,
-        QWEN_QWEN3_7_MAX_2026_05_20,
+        QWEN_QWEN3_7_PLUS_PREVIEW,
         QWEN_QWQ_32B,
         QWEN_QWQ_PLUS,
         QWEN_TEXT_EMBEDDING_V3,

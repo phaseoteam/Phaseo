@@ -1,10 +1,10 @@
 {
-  "model_id": "qwen/qwen3.7-max-2026-05-17",
+  "model_id": "qwen/qwen3.7-max-preview",
   "organisation_id": "qwen",
-  "name": "Qwen 3.7 Max (2026-05-17)",
+  "name": "Qwen 3.7 Max Preview",
   "status": "Available",
-  "previous_model_id": "qwen/qwen3.7-max-preview",
-  "description": "Qwen 3.7 Max (2026-05-17) is a dated Qwen 3.7 Max snapshot for reasoning and chat workloads. It accepts text-only input, enables thinking mode by default, and does not expose the cache features available on the stable 2026-05-20 release.",
+  "previous_model_id": "qwen/qwen3.6-max-preview",
+  "description": "Qwen 3.7 Max Preview is a preview Qwen frontier text-generation model for reasoning and chat workloads. It accepts text-only input, enables thinking mode by default, and does not expose the cache features available on the stable 2026-05-20 release.",
   "announced_date": "2026-05-25T00:00:00",
   "release_date": "2026-05-25T00:00:00",
   "deprecation_date": null,
@@ -12,7 +12,7 @@
   "license": "Proprietary",
   "input_types": "text",
   "output_types": "text",
-  "api_model_id": "qwen/qwen3.7-max-2026-05-17",
+  "api_model_id": "qwen/qwen3.7-max-preview",
   "links": [],
   "details": [
     {

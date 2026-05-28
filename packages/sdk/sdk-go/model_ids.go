@@ -55,6 +55,9 @@ const (
 	// Model ID: anthropic/claude-opus-4.7-fast
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast
 	ModelIDAnthropicClaudeOpus47Fast gen.ModelId = "anthropic/claude-opus-4.7-fast"
+	// Model ID: anthropic/claude-opus-4.8
+	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
+	ModelIDAnthropicClaudeOpus48 gen.ModelId = "anthropic/claude-opus-4.8"
 	// Model ID: anthropic/claude-sonnet-4
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
 	ModelIDAnthropicClaudeSonnet4 gen.ModelId = "anthropic/claude-sonnet-4"
@@ -1123,9 +1126,9 @@ const (
 	// Model ID: qwen/qwen3.7-max-2026-05-17
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
 	ModelIDQwenQwen37Max20260517 gen.ModelId = "qwen/qwen3.7-max-2026-05-17"
-	// Model ID: qwen/qwen3.7-max-2026-05-20
-	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20
-	ModelIDQwenQwen37Max20260520 gen.ModelId = "qwen/qwen3.7-max-2026-05-20"
+	// Model ID: qwen/qwen3.7-plus-preview
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
+	ModelIDQwenQwen37PlusPreview gen.ModelId = "qwen/qwen3.7-plus-preview"
 	// Model ID: qwen/qwq-32b
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
 	ModelIDQwenQwq32b gen.ModelId = "qwen/qwq-32b"
@@ -1378,6 +1381,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDAnthropicClaudeOpus46,
 	ModelIDAnthropicClaudeOpus47,
 	ModelIDAnthropicClaudeOpus47Fast,
+	ModelIDAnthropicClaudeOpus48,
 	ModelIDAnthropicClaudeSonnet4,
 	ModelIDAnthropicClaudeSonnet45,
 	ModelIDAnthropicClaudeSonnet46,
@@ -1734,7 +1738,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenQwen36Plus_2,
 	ModelIDQwenQwen37Max,
 	ModelIDQwenQwen37Max20260517,
-	ModelIDQwenQwen37Max20260520,
+	ModelIDQwenQwen37PlusPreview,
 	ModelIDQwenQwq32b,
 	ModelIDQwenQwqPlus,
 	ModelIDQwenTextEmbeddingV3,

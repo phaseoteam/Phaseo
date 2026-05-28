@@ -35,6 +35,8 @@ export const ModelIds = {
   ANTHROPIC_CLAUDE_OPUS_4_7: "anthropic/claude-opus-4.7",
   /** Model ID: `anthropic/claude-opus-4.7-fast`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast */
   ANTHROPIC_CLAUDE_OPUS_4_7_FAST: "anthropic/claude-opus-4.7-fast",
+  /** Model ID: `anthropic/claude-opus-4.8`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
+  ANTHROPIC_CLAUDE_OPUS_4_8: "anthropic/claude-opus-4.8",
   /** Model ID: `anthropic/claude-sonnet-4`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
   ANTHROPIC_CLAUDE_SONNET_4: "anthropic/claude-sonnet-4",
   /** Model ID: `anthropic/claude-sonnet-4.5`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5 */
@@ -747,8 +749,8 @@ export const ModelIds = {
   QWEN_QWEN3_7_MAX: "qwen/qwen3.7-max",
   /** Model ID: `qwen/qwen3.7-max-2026-05-17`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17 */
   QWEN_QWEN3_7_MAX_2026_05_17: "qwen/qwen3.7-max-2026-05-17",
-  /** Model ID: `qwen/qwen3.7-max-2026-05-20`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-20 */
-  QWEN_QWEN3_7_MAX_2026_05_20: "qwen/qwen3.7-max-2026-05-20",
+  /** Model ID: `qwen/qwen3.7-plus-preview`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview */
+  QWEN_QWEN3_7_PLUS_PREVIEW: "qwen/qwen3.7-plus-preview",
   /** Model ID: `qwen/qwq-32b`. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b */
   QWEN_QWQ_32B: "qwen/qwq-32b",
   /** Model ID: `qwen/qwq-plus`. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus */
