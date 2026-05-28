@@ -35,12 +35,14 @@ import {
 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { HttpMethodBadge, type HttpMethod } from "@/components/HttpMethodBadge";
 import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";     
 import { resolveGatewayPath } from "./endpoint-paths";
 import { Switch } from "@/components/ui/switch";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import type { QuickstartRequestContext } from "./requestContext";
 
 interface QuickstartProps {
@@ -260,6 +262,15 @@ type EndpointOption = {
         label: string;
 };
 
+type EndpointRoute = {
+        value: string;
+        method: HttpMethod;
+        path: string;
+        title: string;
+        description: string;
+        tag: "Recommended" | "Compatible" | "Optional" | "Discovery";
+};
+
 const ENDPOINT_OPTIONS: EndpointOption[] = [
         { value: "responses", label: "Responses" },
         { value: "chat.completions", label: "Chat Completions" },
@@ -277,6 +288,116 @@ const ENDPOINT_OPTIONS: EndpointOption[] = [
         { value: "batch.create", label: "Batch Create" },
         { value: "music.generate", label: "Music Generation" },
 ];
+
+const ENDPOINT_ROUTE_META: Record<string, Omit<EndpointRoute, "value">> = {
+        responses: {
+                method: "POST",
+                path: "/v1/responses",
+                title: "Responses",
+                description: "Modern response API with text, tools, and multimodal input support.",
+                tag: "Recommended",
+        },
+        "chat.completions": {
+                method: "POST",
+                path: "/v1/chat/completions",
+                title: "Chat Completions",
+                description: "OpenAI-compatible route for existing chat integrations.",
+                tag: "Compatible",
+        },
+        messages: {
+                method: "POST",
+                path: "/v1/messages",
+                title: "Messages",
+                description: "Anthropic-compatible route for Claude-style clients.",
+                tag: "Compatible",
+        },
+        embeddings: {
+                method: "POST",
+                path: "/v1/embeddings",
+                title: "Embeddings",
+                description: "Create vector embeddings for search, retrieval, and ranking workflows.",
+                tag: "Recommended",
+        },
+        moderations: {
+                method: "POST",
+                path: "/v1/moderations",
+                title: "Moderations",
+                description: "Classify content before routing requests downstream.",
+                tag: "Recommended",
+        },
+        "moderations.create": {
+                method: "POST",
+                path: "/v1/moderations",
+                title: "Moderations",
+                description: "Create a moderation check with SDK method compatibility.",
+                tag: "Compatible",
+        },
+        "images.generations": {
+                method: "POST",
+                path: "/v1/images/generations",
+                title: "Image Generation",
+                description: "Generate images from a prompt.",
+                tag: "Recommended",
+        },
+        "images.edits": {
+                method: "POST",
+                path: "/v1/images/edits",
+                title: "Image Edits",
+                description: "Edit or transform an existing image.",
+                tag: "Optional",
+        },
+        "video.generations": {
+                method: "POST",
+                path: "/v1/video/generations",
+                title: "Video Generation",
+                description: "Create long-running video generation jobs from prompts.",
+                tag: "Recommended",
+        },
+        "audio.speech": {
+                method: "POST",
+                path: "/v1/audio/speech",
+                title: "Audio Speech",
+                description: "Generate spoken audio from text input.",
+                tag: "Recommended",
+        },
+        "audio.realtime": {
+                method: "POST",
+                path: "/v1/audio/realtime",
+                title: "Realtime Audio",
+                description: "Start realtime voice sessions for low-latency audio workflows.",
+                tag: "Optional",
+        },
+        "audio.transcriptions": {
+                method: "POST",
+                path: "/v1/audio/transcriptions",
+                title: "Audio Transcription",
+                description: "Transcribe audio files into text.",
+                tag: "Recommended",
+        },
+        "audio.translations": {
+                method: "POST",
+                path: "/v1/audio/translations",
+                title: "Audio Translation",
+                description: "Translate audio into English text.",
+                tag: "Optional",
+        },
+        "batch.create": {
+                method: "POST",
+                path: "/v1/batches",
+                title: "Batch Create",
+                description: "Create asynchronous batch jobs for high-volume requests.",
+                tag: "Optional",
+        },
+        "music.generate": {
+                method: "POST",
+                path: "/v1/music/generations",
+                title: "Music Generation",
+                description: "Generate music or audio loops from prompts.",
+                tag: "Recommended",
+        },
+};
+
+const ENDPOINT_ROUTE_PREVIEW_LIMIT = 4;
 
 type LanguageOption = {
         value: string;
@@ -380,6 +501,65 @@ const OPENAI_METHODS: Record<string, { ts: string; py: string }> = {
         responses: { ts: "responses.create", py: "responses.create" },
 };
 
+function EndpointRouteRow({
+        route,
+        active,
+        onSelect,
+}: {
+        route: EndpointRoute;
+        active: boolean;
+        onSelect: () => void;
+}) {
+        const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+                if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelect();
+                }
+        };
+
+        return (
+                <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={onSelect}
+                        onKeyDown={handleKeyDown}
+                        className="grid w-full cursor-pointer grid-cols-[72px_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[72px_minmax(0,220px)_1fr_auto]"
+                        aria-pressed={active}
+                >
+                        <HttpMethodBadge method={route.method} />
+
+                        <code className="truncate font-mono text-xs text-foreground">
+                                {route.path}
+                        </code>
+
+                        <div className="min-w-0 space-y-0.5 md:space-y-0">
+                                <div className="flex items-center gap-2 md:block">
+                                        <span className="text-sm font-medium">{route.title}</span>
+                                        {active ? (
+                                                <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-primary md:hidden">
+                                                        Selected
+                                                </span>
+                                        ) : null}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                        {route.description}
+                                </div>
+                        </div>
+
+                        <div className="hidden items-center gap-2 md:flex">
+                                {active ? (
+                                        <Badge variant="outline" className="rounded-md text-[10px]">
+                                                Selected
+                                        </Badge>
+                                ) : null}
+                                <Badge variant="outline" className="rounded-md text-[10px]">
+                                        {route.tag}
+                                </Badge>
+                        </div>
+                </div>
+        );
+}
+
 export default function Quickstart({
 	modelId,
 	aliases,
@@ -436,9 +616,27 @@ export default function Quickstart({
                 );
         }, [availableEndpoints]);
 
+        const endpointRoutes = useMemo(() => {
+                return availableEndpoints.map((option) => {
+                        const meta = ENDPOINT_ROUTE_META[option.value];
+                        if (meta) {
+                                return { value: option.value, ...meta };
+                        }
+                        return {
+                                value: option.value,
+                                method: "POST" as const,
+                                path: `/v1${resolveGatewayPath(option.value)}`,
+                                title: option.label,
+                                description: "Call this Gateway route with the selected model identifier.",
+                                tag: "Compatible" as const,
+                        };
+                });
+        }, [availableEndpoints]);
+
         const [selectedEndpoint, setSelectedEndpoint] = useState(defaultEndpoint);
         const [selectedLanguage, setSelectedLanguage] = useState("curl");       
         const [streamingEnabled, setStreamingEnabled] = useState(false);
+        const [showAllEndpointRoutes, setShowAllEndpointRoutes] = useState(false);
 
         useEffect(() => {
                 if (!availableEndpoints.some((e) => e.value === selectedEndpoint)) {
@@ -691,6 +889,14 @@ export default function Quickstart({
 				return "";
 		}
 	}
+
+        const visibleEndpointRoutes = showAllEndpointRoutes
+                ? endpointRoutes
+                : endpointRoutes.slice(0, ENDPOINT_ROUTE_PREVIEW_LIMIT);
+        const hiddenEndpointRouteCount = Math.max(
+                endpointRoutes.length - ENDPOINT_ROUTE_PREVIEW_LIMIT,
+                0,
+        );
 
         const curlCommandLabel = shouldStream
                 ? "Send a streaming request"
@@ -1374,6 +1580,47 @@ console.log(response);`
 										: "Streaming isn't available for this endpoint."}
 								</p>
 							)}
+						</div>
+					</div>
+				</div>
+
+				<div className="space-y-3">
+					<div className="flex items-center justify-between gap-3">
+						<div>
+							<h3 className="text-base font-semibold">Available endpoints</h3>
+							<p className="text-xs text-muted-foreground">
+								Supported routes for this model. Select a row to update the quickstart code.
+							</p>
+						</div>
+						{hiddenEndpointRouteCount > 0 ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setShowAllEndpointRoutes((current) => !current)}
+							>
+								{showAllEndpointRoutes
+									? "Show fewer"
+									: `Show ${hiddenEndpointRouteCount} more`}
+							</Button>
+						) : null}
+					</div>
+					<div className="overflow-hidden rounded-lg border bg-card">
+						<div className="hidden grid-cols-[72px_minmax(0,220px)_1fr_auto] items-center gap-3 border-b bg-muted/40 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground md:grid">
+							<span>Method</span>
+							<span>Route</span>
+							<span>Description</span>
+							<span>Status</span>
+						</div>
+						<div className="divide-y">
+							{visibleEndpointRoutes.map((route) => (
+								<EndpointRouteRow
+									key={route.value}
+									route={route}
+									active={route.value === selectedEndpoint}
+									onSelect={() => setSelectedEndpoint(route.value)}
+								/>
+							))}
 						</div>
 					</div>
 				</div>
