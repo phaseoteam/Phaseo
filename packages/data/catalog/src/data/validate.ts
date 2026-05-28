@@ -44,7 +44,7 @@ export function isMajorError(msg: string): boolean {
         /benchmark.*not found|benchmark.*missing/i,
         /pricing.*active.*no rules/i,
         /pricing.*invalid key/i,
-        /pricing.*timestamp.*explicit UTC.*Z/i,
+        /pricing.*explicit UTC timestamp with Z/i,
         /pricing.*unknown meter/i,
         /pricing.*mixed aggregate and detailed.*meters/i,
         /pricing.*non-positive price/i,
