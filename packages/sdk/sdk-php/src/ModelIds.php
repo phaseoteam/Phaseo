@@ -1124,6 +1124,9 @@ final class ModelIds
     /** Model ID: qwen/qwen3.7-max-2026-05-17. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17 */
     public const QWEN_QWEN3_7_MAX_2026_05_17 = 'qwen/qwen3.7-max-2026-05-17';
 
+    /** Model ID: qwen/qwen3.7-plus-preview. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview */
+    public const QWEN_QWEN3_7_PLUS_PREVIEW = 'qwen/qwen3.7-plus-preview';
+
     /** Model ID: qwen/qwq-32b. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b */
     public const QWEN_QWQ_32B = 'qwen/qwq-32b';
 

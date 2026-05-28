@@ -750,6 +750,8 @@ namespace AiStatsSdk
         public const string QwenQwen37Max = "qwen/qwen3.7-max";
         /// <summary>Model ID: <c>qwen/qwen3.7-max-2026-05-17</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17</summary>
         public const string QwenQwen37Max20260517 = "qwen/qwen3.7-max-2026-05-17";
+        /// <summary>Model ID: <c>qwen/qwen3.7-plus-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview</summary>
+        public const string QwenQwen37PlusPreview = "qwen/qwen3.7-plus-preview";
         /// <summary>Model ID: <c>qwen/qwq-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b</summary>
         public const string QwenQwq32b = "qwen/qwq-32b";
         /// <summary>Model ID: <c>qwen/qwq-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus</summary>
