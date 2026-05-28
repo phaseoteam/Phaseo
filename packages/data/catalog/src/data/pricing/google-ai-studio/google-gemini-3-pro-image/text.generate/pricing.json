@@ -1,0 +1,245 @@
+{
+  "key": "google-ai-studio:google/gemini-3-pro-image:text.generate",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-3-pro-image",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 120,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 60,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 60,
+      "currency": "USD",
+      "pricing_plan": "flex",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.6,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.6,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 21.6,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 216,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": null,
+      "match": [
+        {
+          "path": "image_params.resolution",
+          "op": "in",
+          "or_group": 1,
+          "and_index": 1,
+          "value": [
+            "1K",
+            "2K"
+          ]
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-05-28T00:00:00Z"
+    }
+  ]
+}

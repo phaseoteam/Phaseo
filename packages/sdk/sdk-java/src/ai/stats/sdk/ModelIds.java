@@ -232,8 +232,14 @@ public final class ModelIds {
     /** Model ID: <code>google/gemini-3-flash-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview */
     public static final String GOOGLE_GEMINI_3_FLASH_PREVIEW = "google/gemini-3-flash-preview";
 
+    /** Model ID: <code>google/gemini-3-pro-image</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image */
+    public static final String GOOGLE_GEMINI_3_PRO_IMAGE = "google/gemini-3-pro-image";
+
     /** Model ID: <code>google/gemini-3-pro-image-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview */
     public static final String GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW = "google/gemini-3-pro-image-preview";
+
+    /** Model ID: <code>google/gemini-3.1-flash-image</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image */
+    public static final String GOOGLE_GEMINI_3_1_FLASH_IMAGE = "google/gemini-3.1-flash-image";
 
     /** Model ID: <code>google/gemini-3.1-flash-image-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview */
     public static final String GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW = "google/gemini-3.1-flash-image-preview";
@@ -1125,9 +1131,6 @@ public final class ModelIds {
 
     /** Model ID: <code>qwen/qwen3.7-max-2026-05-17</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17 */
     public static final String QWEN_QWEN3_7_MAX_2026_05_17 = "qwen/qwen3.7-max-2026-05-17";
-
-    /** Model ID: <code>qwen/qwen3.7-plus-preview</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview */
-    public static final String QWEN_QWEN3_7_PLUS_PREVIEW = "qwen/qwen3.7-plus-preview";
 
     /** Model ID: <code>qwen/qwq-32b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b */
     public static final String QWEN_QWQ_32B = "qwen/qwq-32b";

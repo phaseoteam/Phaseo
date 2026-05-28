@@ -310,9 +310,17 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
     GOOGLE_GEMINI_3_FLASH_PREVIEW: Final[str] = "google/gemini-3-flash-preview"
 
+    # Model ID: google/gemini-3-pro-image
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image
+    GOOGLE_GEMINI_3_PRO_IMAGE: Final[str] = "google/gemini-3-pro-image"
+
     # Model ID: google/gemini-3-pro-image-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview
     GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW: Final[str] = "google/gemini-3-pro-image-preview"
+
+    # Model ID: google/gemini-3.1-flash-image
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image
+    GOOGLE_GEMINI_3_1_FLASH_IMAGE: Final[str] = "google/gemini-3.1-flash-image"
 
     # Model ID: google/gemini-3.1-flash-image-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview
@@ -1502,10 +1510,6 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
     QWEN_QWEN3_7_MAX_2026_05_17: Final[str] = "qwen/qwen3.7-max-2026-05-17"
 
-    # Model ID: qwen/qwen3.7-plus-preview
-    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
-    QWEN_QWEN3_7_PLUS_PREVIEW: Final[str] = "qwen/qwen3.7-plus-preview"
-
     # Model ID: qwen/qwq-32b
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
     QWEN_QWQ_32B: Final[str] = "qwen/qwq-32b"
@@ -1895,7 +1899,9 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
         ModelIds.GOOGLE_GEMINI_3_FLASH_PREVIEW,
+        ModelIds.GOOGLE_GEMINI_3_PRO_IMAGE,
         ModelIds.GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,
+        ModelIds.GOOGLE_GEMINI_3_1_FLASH_IMAGE,
         ModelIds.GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW,
         ModelIds.GOOGLE_GEMINI_3_1_FLASH_LITE,
         ModelIds.GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW,
@@ -2193,7 +2199,6 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.QWEN_QWEN3_6_PLUS,
         ModelIds.QWEN_QWEN3_7_MAX,
         ModelIds.QWEN_QWEN3_7_MAX_2026_05_17,
-        ModelIds.QWEN_QWEN3_7_PLUS_PREVIEW,
         ModelIds.QWEN_QWQ_32B,
         ModelIds.QWEN_QWQ_PLUS,
         ModelIds.QWEN_TEXT_EMBEDDING_V3,
