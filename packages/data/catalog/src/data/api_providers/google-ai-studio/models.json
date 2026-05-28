@@ -801,7 +801,7 @@
         "context_length":  65536,
         "max_output_tokens":  32768,
         "effective_from":  "2026-02-26T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-06-25T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -1545,7 +1545,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-11-20T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-06-25T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -1614,6 +1614,13 @@
                                                     "provider_default":  null,
                                                     "notes":  null
                                                 }
+                                            ]
+                             },
+                             {
+                                 "capability_id":  "images.generations",
+                                 "status":  "active",
+                                 "params":  [
+
                                             ]
                              }
                          ]
@@ -1699,6 +1706,13 @@
                                                     "provider_default":  null,
                                                     "notes":  null
                                                 }
+                                            ]
+                             },
+                             {
+                                 "capability_id":  "images.generations",
+                                 "status":  "active",
+                                 "params":  [
+
                                             ]
                              }
                          ]

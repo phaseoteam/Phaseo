@@ -1,9 +1,9 @@
 {
-  "key": "google-ai-studio:google/gemini-3-pro-image-preview:text.generate",
+  "key": "google-ai-studio:google/gemini-3-pro-image-preview:images.generations",
   "api_provider_id": "google-ai-studio",
   "provider_slug": "google-ai-studio",
   "api_model_id": "google/gemini-3-pro-image-preview",
-  "capability_id": "text.generate",
+  "capability_id": "images.generations",
   "rules": [
     {
       "meter": "input_text_tokens",
