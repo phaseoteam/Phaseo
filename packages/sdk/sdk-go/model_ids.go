@@ -55,6 +55,9 @@ const (
 	// Model ID: anthropic/claude-opus-4.7-fast
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast
 	ModelIDAnthropicClaudeOpus47Fast gen.ModelId = "anthropic/claude-opus-4.7-fast"
+	// Model ID: anthropic/claude-opus-4.8
+	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
+	ModelIDAnthropicClaudeOpus48 gen.ModelId = "anthropic/claude-opus-4.8"
 	// Model ID: anthropic/claude-sonnet-4
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
 	ModelIDAnthropicClaudeSonnet4 gen.ModelId = "anthropic/claude-sonnet-4"
@@ -1378,6 +1381,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDAnthropicClaudeOpus46,
 	ModelIDAnthropicClaudeOpus47,
 	ModelIDAnthropicClaudeOpus47Fast,
+	ModelIDAnthropicClaudeOpus48,
 	ModelIDAnthropicClaudeSonnet4,
 	ModelIDAnthropicClaudeSonnet45,
 	ModelIDAnthropicClaudeSonnet46,

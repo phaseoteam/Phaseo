@@ -1266,6 +1266,7 @@ const (
 	KnownModelIdAnthropicClaudeOpus46 KnownModelId = "anthropic/claude-opus-4.6"
 	KnownModelIdAnthropicClaudeOpus47 KnownModelId = "anthropic/claude-opus-4.7"
 	KnownModelIdAnthropicClaudeOpus47Fast KnownModelId = "anthropic/claude-opus-4.7-fast"
+	KnownModelIdAnthropicClaudeOpus48 KnownModelId = "anthropic/claude-opus-4.8"
 	KnownModelIdAnthropicClaudeSonnet4 KnownModelId = "anthropic/claude-sonnet-4"
 	KnownModelIdAnthropicClaudeSonnet45 KnownModelId = "anthropic/claude-sonnet-4.5"
 	KnownModelIdAnthropicClaudeSonnet46 KnownModelId = "anthropic/claude-sonnet-4.6"

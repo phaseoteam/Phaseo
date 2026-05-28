@@ -56,6 +56,9 @@ final class ModelIds
     /** Model ID: anthropic/claude-opus-4.7-fast. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.7-fast */
     public const ANTHROPIC_CLAUDE_OPUS_4_7_FAST = 'anthropic/claude-opus-4.7-fast';
 
+    /** Model ID: anthropic/claude-opus-4.8. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
+    public const ANTHROPIC_CLAUDE_OPUS_4_8 = 'anthropic/claude-opus-4.8';
+
     /** Model ID: anthropic/claude-sonnet-4. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
     public const ANTHROPIC_CLAUDE_SONNET_4 = 'anthropic/claude-sonnet-4';
 
