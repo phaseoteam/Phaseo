@@ -40,6 +40,7 @@ const pathToKeyMap = new Map<string, KnownLogoId>();
 const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	ai21: "AI21",
 	"alibaba-cloud": "Alibaba Cloud",
+	aws: "AWS",
 	claudecode: "Claude Code",
 	"google-gemma": "Gemma",
 	ibm: "IBM",
@@ -66,8 +67,8 @@ for (const [key, assets] of manifestEntries) {
 // Keep common aliases here so callers can pass provider IDs directly.
 normalisedAliasMap.set(normalise("novitaai"), "novita");
 normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
-normalisedAliasMap.set(normalise("anthropic-aws"), "amazon");
-normalisedAliasMap.set(normalise("anthropic-aws-us"), "amazon");
+normalisedAliasMap.set(normalise("anthropic-aws"), "aws");
+normalisedAliasMap.set(normalise("anthropic-aws-us"), "aws");
 
 function normalise(value: string): string {
 	return value.toLowerCase().replace(/[^a-z0-9]/g, "");
