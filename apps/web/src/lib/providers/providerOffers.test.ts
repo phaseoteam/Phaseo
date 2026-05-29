@@ -5,19 +5,19 @@ import {
 } from "@/lib/providers/providerOffers";
 
 describe("providerOffers", () => {
-    test("keeps Anthropic on AWS offers branded with Amazon logos", () => {
+    test("keeps Anthropic on AWS offers branded with AWS logos", () => {
         expect(
             resolveProviderLogoId({
                 providerId: "anthropic-aws",
                 providerFamilyId: "anthropic",
             }),
-        ).toBe("amazon");
+        ).toBe("aws");
         expect(
             resolveProviderLogoId({
                 providerId: "anthropic-aws-us",
                 providerFamilyId: "anthropic",
             }),
-        ).toBe("amazon");
+        ).toBe("aws");
     });
 
     test("normalizes Anthropic on AWS provider names", () => {
