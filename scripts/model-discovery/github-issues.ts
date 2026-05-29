@@ -424,11 +424,6 @@ async function findOpenIssue(args: {
 }
 
 function shouldSkipForEnv(source: UpstreamDiscoveryIssueSource, logger: Pick<Console, "log">): boolean {
-    if (process.env.MODEL_DISCOVERY_GITHUB_ISSUES === "false") {
-        logger.log("[model-discovery] GitHub issue sync disabled by MODEL_DISCOVERY_GITHUB_ISSUES=false.");
-        return true;
-    }
-
     if (source === "provider-api" && process.env.MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES === "false") {
         logger.log("[model-discovery] Provider API GitHub issue sync disabled by MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false.");
         return true;
@@ -440,6 +435,23 @@ function shouldSkipForEnv(source: UpstreamDiscoveryIssueSource, logger: Pick<Con
     }
 
     return false;
+}
+
+function filterEntriesForEnabledSources(
+    entries: UpstreamDiscoveryIssueEntry[],
+    logger: Pick<Console, "log">
+): UpstreamDiscoveryIssueEntry[] {
+    const disabledSources = new Set<UpstreamDiscoveryIssueSource>();
+    const activeSources = new Set(entries.map((entry) => entry.source));
+
+    for (const source of activeSources) {
+        if (shouldSkipForEnv(source, logger)) {
+            disabledSources.add(source);
+        }
+    }
+
+    if (disabledSources.size === 0) return entries;
+    return entries.filter((entry) => !disabledSources.has(entry.source));
 }
 
 function logSyncSummary(args: {
@@ -481,16 +493,33 @@ export async function syncUpstreamDiscoveryIssues(
         return { created: 0, updated: 0, skipped: false };
     }
 
-    if (sources.some((source) => shouldSkipForEnv(source, logger))) {
+    if (process.env.MODEL_DISCOVERY_GITHUB_ISSUES === "false") {
+        logger.log("[model-discovery] GitHub issue sync disabled by MODEL_DISCOVERY_GITHUB_ISSUES=false.");
         logSyncSummary({
             logger,
             source: sourceForLog,
             inputEvents: rawEntries.length,
-            filteredEvents: entries.length,
+            filteredEvents: 0,
             created: 0,
             updated: 0,
             skipped: true,
-            reason: "disabled by environment",
+            reason: "disabled by MODEL_DISCOVERY_GITHUB_ISSUES",
+        });
+        return { created: 0, updated: 0, skipped: true };
+    }
+
+    const filteredEntries = filterEntriesForEnabledSources(entries, logger);
+
+    if (filteredEntries.length === 0) {
+        logSyncSummary({
+            logger,
+            source: sourceForLog,
+            inputEvents: rawEntries.length,
+            filteredEvents: filteredEntries.length,
+            created: 0,
+            updated: 0,
+            skipped: true,
+            reason: "all entries disabled by environment",
         });
         return { created: 0, updated: 0, skipped: true };
     }
@@ -503,7 +532,7 @@ export async function syncUpstreamDiscoveryIssues(
             logger,
             source: sourceForLog,
             inputEvents: rawEntries.length,
-            filteredEvents: entries.length,
+            filteredEvents: filteredEntries.length,
             created: 0,
             updated: 0,
             skipped: true,
@@ -524,7 +553,7 @@ export async function syncUpstreamDiscoveryIssues(
     let created = 0;
     let updated = 0;
 
-    for (const group of groupUpstreamIssueEntries(entries)) {
+    for (const group of groupUpstreamIssueEntries(filteredEntries)) {
         const legacyKey = group.source === "provider-api" ? legacyProviderIssueKeyForGroup(group) : undefined;
         const existingRecord = state.issues[group.key] ?? (legacyKey ? state.issues[legacyKey] : undefined);
         const events: UpstreamIssueHistoryEvent[] = group.entries.map((entry) => ({ ...entry, runUrl }));
@@ -567,7 +596,7 @@ export async function syncUpstreamDiscoveryIssues(
         logger,
         source: sourceForLog,
         inputEvents: rawEntries.length,
-        filteredEvents: entries.length,
+        filteredEvents: filteredEntries.length,
         created,
         updated,
         skipped: false,

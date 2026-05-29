@@ -247,14 +247,20 @@ async function main(): Promise<void> {
     };
     console.log = () => {};
     try {
-        await syncHfIssues([
-            {
-                org: "openai",
-                addedModelIds: ["openai/example-hf-model"],
-            },
-        ], async () => {
-            throw new Error("simulated GitHub outage");
-        });
+        await assert.rejects(
+            syncHfIssues(
+                [
+                    {
+                        org: "openai",
+                        addedModelIds: ["openai/example-hf-model"],
+                    },
+                ],
+                async () => {
+                    throw new Error("simulated GitHub outage");
+                }
+            ),
+            /simulated GitHub outage/
+        );
     } finally {
         console.error = originalConsoleError;
         console.log = originalConsoleLog;
@@ -292,6 +298,18 @@ async function main(): Promise<void> {
             logger,
         });
         assert.deepEqual(allowedHfSync, { created: 1, updated: 0, skipped: false });
+
+        requests.length = 0;
+        const mixedSourceSync = await syncUpstreamDiscoveryIssues([providerEntry, hfEntry], {
+            token: "test-token",
+            repository: "AI-Stats/AI-Stats",
+            statePath: path.join(tempDir, "provider-disabled-mixed.json"),
+            requestImpl,
+            logger,
+        });
+        assert.deepEqual(mixedSourceSync, { created: 1, updated: 0, skipped: false });
+        assert.equal(issueTitle, "[upstream-discovery] Hugging Face: model additions for openai");
+        assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
     });
 
     await withEnv({ MODEL_DISCOVERY_HF_GITHUB_ISSUES: "false" }, async () => {
@@ -312,6 +330,18 @@ async function main(): Promise<void> {
             logger,
         });
         assert.deepEqual(providerAllowedSync, { created: 1, updated: 0, skipped: false });
+
+        requests.length = 0;
+        const mixedSourceSync = await syncUpstreamDiscoveryIssues([providerDeleteEntry, hfEntry], {
+            token: "test-token",
+            repository: "AI-Stats/AI-Stats",
+            statePath: path.join(tempDir, "hf-disabled-mixed.json"),
+            requestImpl,
+            logger,
+        });
+        assert.deepEqual(mixedSourceSync, { created: 1, updated: 0, skipped: false });
+        assert.equal(issueTitle, "[upstream-discovery] OpenAI: provider model deletions");
+        assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
     });
 
     const publicRunnerSource = fs.readFileSync(path.join(process.cwd(), "scripts", "model-discovery", "run-internal-public.ts"), "utf-8");

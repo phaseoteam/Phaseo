@@ -55,6 +55,7 @@ export async function syncHfIssues(
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.error(`[internal-model-check] Hugging Face GitHub issue sync failed: ${message}`);
+        throw error;
     }
 }
 
