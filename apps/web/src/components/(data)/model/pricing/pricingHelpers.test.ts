@@ -144,4 +144,99 @@ describe("buildProviderSections", () => {
 			label: "≥ 272k",
 		});
 	});
+
+	test("keeps hidden fast sibling standard pricing out of the standard view", () => {
+		const provider = makeProviderPricing();
+		provider.provider.api_provider_id = "venice";
+		provider.provider.api_provider_name = "Venice";
+		provider.provider.provider_family_id = "venice";
+		provider.provider_models = [
+			{
+				id: "venice:anthropic/claude-opus-4.8:text.generate",
+				api_provider_id: "venice",
+				model_id: "anthropic/claude-opus-4.8",
+				provider_model_slug: "claude-opus-4-8",
+				endpoint: "text.generate",
+				capability_status: "active",
+				is_active_gateway: true,
+				input_modalities: "text,image",
+				output_modalities: "text",
+				context_length: 1_000_000,
+				max_input_tokens: 1_000_000,
+				max_output_tokens: 128_000,
+			},
+			{
+				id: "venice:anthropic/claude-opus-4.8-fast:text.generate",
+				api_provider_id: "venice",
+				model_id: "anthropic/claude-opus-4.8-fast",
+				provider_model_slug: "claude-opus-4-8-fast",
+				endpoint: "text.generate",
+				capability_status: "deranked_lvl2",
+				is_active_gateway: false,
+				input_modalities: "text,image",
+				output_modalities: "text",
+				context_length: 1_000_000,
+				max_input_tokens: 1_000_000,
+				max_output_tokens: 128_000,
+			},
+		];
+		provider.pricing_rules = [
+			{
+				id: "venice-std-input",
+				model_key: "venice:anthropic/claude-opus-4.8:text.generate",
+				pricing_plan: "standard",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1000000,
+				price_per_unit: 6,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-05-29T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+			{
+				id: "venice-priority-input",
+				model_key: "venice:anthropic/claude-opus-4.8:text.generate",
+				pricing_plan: "priority",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1000000,
+				price_per_unit: 12,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-05-29T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+			{
+				id: "venice-hidden-fast-std-input",
+				model_key: "venice:anthropic/claude-opus-4.8-fast:text.generate",
+				pricing_plan: "standard",
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1000000,
+				price_per_unit: 12,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-05-29T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+		];
+
+		const standardSections = buildProviderSections(provider, "standard");
+		const prioritySections = buildProviderSections(provider, "priority");
+
+		expect(standardSections.textTokens?.in?.[0]).toMatchObject({
+			per1M: 6,
+		});
+		expect(prioritySections.textTokens?.in?.[0]).toMatchObject({
+			per1M: 12,
+			basePer1M: 6,
+		});
+	});
 });

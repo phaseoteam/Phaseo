@@ -3,6 +3,7 @@ import {
     formatProviderOfferDisplayName,
     resolveProviderLogoId,
 } from "@/lib/providers/providerOffers";
+import { getProviderPricingRulesForPlan } from "@/components/(data)/model/pricing/providerPlanRouting";
 
 /* ---------- shared types ---------- */
 export type Direction = "input" | "output" | "cached" | "cachewrite" | "other";
@@ -673,19 +674,8 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     const now = new Date();
     const nowMs = now.getTime();
     const normalizedPlan = normalizePricingPlan(plan);
-    const allRules = p.pricing_rules;
-    const standardRules = allRules.filter(
-        (r) => normalizePricingPlan(r.pricing_plan) === "standard"
-    );
-    const planRules = allRules.filter(
-        (r) => normalizePricingPlan(r.pricing_plan) === normalizedPlan
-    );
-    const rules =
-        planRules.length > 0 || normalizedPlan === "standard"
-            ? planRules
-            : allRules.filter(
-                (r) => normalizePricingPlan(r.pricing_plan) === "standard"
-            );
+    const standardRules = getProviderPricingRulesForPlan(p, "standard");
+    const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (!pm.endpoint) continue;
