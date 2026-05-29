@@ -1,0 +1,20 @@
+{
+  "model_id": "google/gemini-3-pro-image",
+  "organisation_id": "google",
+  "name": "Gemini 3 Pro Image (Nano Banana Pro)",
+  "status": "Available",
+  "previous_model_id": "google/gemini-3-pro-image-preview",
+  "description": "Gemini 3 Pro Image (Nano Banana Pro) is Google's generally available native image generation and editing model, built on Gemini 3.1 Pro for more contextual and flexible visual creation workflows.",
+  "announced_date": "2026-05-28T00:00:00",
+  "release_date": "2026-05-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text,image",
+  "api_model_id": "google/gemini-3-pro-image",
+  "family_id": "google/gemini-3.1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

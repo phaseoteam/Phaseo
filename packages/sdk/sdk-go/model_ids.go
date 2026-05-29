@@ -232,9 +232,15 @@ const (
 	// Model ID: google/gemini-3-flash-preview
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
 	ModelIDGoogleGemini3FlashPreview gen.ModelId = "google/gemini-3-flash-preview"
+	// Model ID: google/gemini-3-pro-image
+	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image
+	ModelIDGoogleGemini3ProImage gen.ModelId = "google/gemini-3-pro-image"
 	// Model ID: google/gemini-3-pro-image-preview
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview
 	ModelIDGoogleGemini3ProImagePreview gen.ModelId = "google/gemini-3-pro-image-preview"
+	// Model ID: google/gemini-3.1-flash-image
+	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image
+	ModelIDGoogleGemini31FlashImage gen.ModelId = "google/gemini-3.1-flash-image"
 	// Model ID: google/gemini-3.1-flash-image-preview
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview
 	ModelIDGoogleGemini31FlashImagePreview gen.ModelId = "google/gemini-3.1-flash-image-preview"
@@ -1126,9 +1132,6 @@ const (
 	// Model ID: qwen/qwen3.7-max-2026-05-17
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
 	ModelIDQwenQwen37Max20260517 gen.ModelId = "qwen/qwen3.7-max-2026-05-17"
-	// Model ID: qwen/qwen3.7-plus-preview
-	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
-	ModelIDQwenQwen37PlusPreview gen.ModelId = "qwen/qwen3.7-plus-preview"
 	// Model ID: qwen/qwq-32b
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
 	ModelIDQwenQwq32b gen.ModelId = "qwen/qwq-32b"
@@ -1440,7 +1443,9 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDGoogleGemini25FlashLitePreview20250617,
 	ModelIDGoogleGemini25FlashLitePreview20250925,
 	ModelIDGoogleGemini3FlashPreview,
+	ModelIDGoogleGemini3ProImage,
 	ModelIDGoogleGemini3ProImagePreview,
+	ModelIDGoogleGemini31FlashImage,
 	ModelIDGoogleGemini31FlashImagePreview,
 	ModelIDGoogleGemini31FlashLite,
 	ModelIDGoogleGemini31FlashLitePreview,
@@ -1738,7 +1743,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenQwen36Plus_2,
 	ModelIDQwenQwen37Max,
 	ModelIDQwenQwen37Max20260517,
-	ModelIDQwenQwen37PlusPreview,
 	ModelIDQwenQwq32b,
 	ModelIDQwenQwqPlus,
 	ModelIDQwenTextEmbeddingV3,

@@ -156,8 +156,12 @@ namespace AiStatsSdk
         public const string GoogleGemini25FlashLitePreview20250925 = "google/gemini-2.5-flash-lite-preview-2025-09-25";
         /// <summary>Model ID: <c>google/gemini-3-flash-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview</summary>
         public const string GoogleGemini3FlashPreview = "google/gemini-3-flash-preview";
+        /// <summary>Model ID: <c>google/gemini-3-pro-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image</summary>
+        public const string GoogleGemini3ProImage = "google/gemini-3-pro-image";
         /// <summary>Model ID: <c>google/gemini-3-pro-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview</summary>
         public const string GoogleGemini3ProImagePreview = "google/gemini-3-pro-image-preview";
+        /// <summary>Model ID: <c>google/gemini-3.1-flash-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image</summary>
+        public const string GoogleGemini31FlashImage = "google/gemini-3.1-flash-image";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview</summary>
         public const string GoogleGemini31FlashImagePreview = "google/gemini-3.1-flash-image-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-lite</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite</summary>
@@ -752,8 +756,6 @@ namespace AiStatsSdk
         public const string QwenQwen37Max = "qwen/qwen3.7-max";
         /// <summary>Model ID: <c>qwen/qwen3.7-max-2026-05-17</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17</summary>
         public const string QwenQwen37Max20260517 = "qwen/qwen3.7-max-2026-05-17";
-        /// <summary>Model ID: <c>qwen/qwen3.7-plus-preview</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview</summary>
-        public const string QwenQwen37PlusPreview = "qwen/qwen3.7-plus-preview";
         /// <summary>Model ID: <c>qwen/qwq-32b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b</summary>
         public const string QwenQwq32b = "qwen/qwq-32b";
         /// <summary>Model ID: <c>qwen/qwq-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwq-plus</summary>

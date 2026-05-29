@@ -228,9 +228,15 @@ pub mod model_ids {
     /// Model ID: `google/gemini-3-flash-preview`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
     pub const GOOGLE_GEMINI_3_FLASH_PREVIEW: &str = "google/gemini-3-flash-preview";
+    /// Model ID: `google/gemini-3-pro-image`.
+    /// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image
+    pub const GOOGLE_GEMINI_3_PRO_IMAGE: &str = "google/gemini-3-pro-image";
     /// Model ID: `google/gemini-3-pro-image-preview`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview
     pub const GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW: &str = "google/gemini-3-pro-image-preview";
+    /// Model ID: `google/gemini-3.1-flash-image`.
+    /// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image
+    pub const GOOGLE_GEMINI_3_1_FLASH_IMAGE: &str = "google/gemini-3.1-flash-image";
     /// Model ID: `google/gemini-3.1-flash-image-preview`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview
     pub const GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW: &str = "google/gemini-3.1-flash-image-preview";
@@ -1122,9 +1128,6 @@ pub mod model_ids {
     /// Model ID: `qwen/qwen3.7-max-2026-05-17`.
     /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-max-2026-05-17
     pub const QWEN_QWEN3_7_MAX_2026_05_17: &str = "qwen/qwen3.7-max-2026-05-17";
-    /// Model ID: `qwen/qwen3.7-plus-preview`.
-    /// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.7-plus-preview
-    pub const QWEN_QWEN3_7_PLUS_PREVIEW: &str = "qwen/qwen3.7-plus-preview";
     /// Model ID: `qwen/qwq-32b`.
     /// Model page: https://ai-stats.phaseo.app/models/qwen/qwq-32b
     pub const QWEN_QWQ_32B: &str = "qwen/qwq-32b";
@@ -1436,7 +1439,9 @@ pub mod model_ids {
         GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
         GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
         GOOGLE_GEMINI_3_FLASH_PREVIEW,
+        GOOGLE_GEMINI_3_PRO_IMAGE,
         GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,
+        GOOGLE_GEMINI_3_1_FLASH_IMAGE,
         GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW,
         GOOGLE_GEMINI_3_1_FLASH_LITE,
         GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW,
@@ -1734,7 +1739,6 @@ pub mod model_ids {
         QWEN_QWEN3_6_PLUS,
         QWEN_QWEN3_7_MAX,
         QWEN_QWEN3_7_MAX_2026_05_17,
-        QWEN_QWEN3_7_PLUS_PREVIEW,
         QWEN_QWQ_32B,
         QWEN_QWQ_PLUS,
         QWEN_TEXT_EMBEDDING_V3,
