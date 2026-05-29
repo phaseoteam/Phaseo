@@ -58,9 +58,6 @@ public final class ModelIds {
     /** Model ID: <code>anthropic/claude-opus-4.8</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
     public static final String ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8";
 
-    /** Model ID: <code>anthropic/claude-opus-4.8-fast</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast */
-    public static final String ANTHROPIC_CLAUDE_OPUS_4_8_FAST = "anthropic/claude-opus-4.8-fast";
-
     /** Model ID: <code>anthropic/claude-sonnet-4</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
     public static final String ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4";
 

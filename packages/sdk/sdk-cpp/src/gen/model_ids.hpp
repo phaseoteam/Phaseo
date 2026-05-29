@@ -57,9 +57,6 @@ inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4_7_FAST = "anthropic/cl
 // Model ID: anthropic/claude-opus-4.8
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
 inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8";
-// Model ID: anthropic/claude-opus-4.8-fast
-// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast
-inline constexpr std::string_view ANTHROPIC_CLAUDE_OPUS_4_8_FAST = "anthropic/claude-opus-4.8-fast";
 // Model ID: anthropic/claude-sonnet-4
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
 inline constexpr std::string_view ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4";
@@ -1383,7 +1380,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 458> ALL = {
+inline constexpr std::array<std::string_view, 457> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_1_0,
@@ -1401,7 +1398,6 @@ inline constexpr std::array<std::string_view, 458> ALL = {
 	ANTHROPIC_CLAUDE_OPUS_4_7,
 	ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
 	ANTHROPIC_CLAUDE_OPUS_4_8,
-	ANTHROPIC_CLAUDE_OPUS_4_8_FAST,
 	ANTHROPIC_CLAUDE_SONNET_4,
 	ANTHROPIC_CLAUDE_SONNET_4_5,
 	ANTHROPIC_CLAUDE_SONNET_4_6,

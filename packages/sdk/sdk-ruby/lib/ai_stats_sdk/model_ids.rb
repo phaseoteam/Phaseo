@@ -54,9 +54,6 @@ module AIStatsSdk
     # Model ID: anthropic/claude-opus-4.8
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
     ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8"
-    # Model ID: anthropic/claude-opus-4.8-fast
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast
-    ANTHROPIC_CLAUDE_OPUS_4_8_FAST = "anthropic/claude-opus-4.8-fast"
     # Model ID: anthropic/claude-sonnet-4
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
     ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4"
@@ -1399,7 +1396,6 @@ module AIStatsSdk
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_7,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_8,
-    ModelIds::ANTHROPIC_CLAUDE_OPUS_4_8_FAST,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_5,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_6,

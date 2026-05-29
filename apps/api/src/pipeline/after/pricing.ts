@@ -12,11 +12,17 @@ import { getBaseModel } from "../execute/utils";
 import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 
-function derivePricingPlan(_body: any, usage: any): string {
+function normalizeRequestedServiceTier(body: any, usage: any): string {
     const tierRaw =
+        (typeof body?.service_tier === "string" ? body.service_tier : undefined) ??
+        (typeof body?.serviceTier === "string" ? body.serviceTier : undefined) ??
         (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
         (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
-    const tier = typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
+    return typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
+}
+
+function derivePricingPlan(body: any, usage: any): string {
+    const tier = normalizeRequestedServiceTier(body, usage);
 
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
@@ -32,10 +38,7 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         pricing_plan: pricingPlan,
     };
 
-    const serviceTierRaw =
-        (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
-        (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
-    const serviceTier = typeof serviceTierRaw === "string" ? serviceTierRaw.trim().toLowerCase() : "";
+    const serviceTier = normalizeRequestedServiceTier(body, usage);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;
@@ -117,13 +120,3 @@ export function calculatePricing(
 
     return { pricedUsage, totalCents, totalNanos, currency };
 }
-
-
-
-
-
-
-
-
-
-

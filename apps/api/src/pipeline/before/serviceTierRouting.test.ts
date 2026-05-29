@@ -5,6 +5,7 @@ import { applyServiceTierRouting } from "./serviceTierRouting";
 const queryState = vi.hoisted(() => ({
     providerRows: [] as any[],
     capabilityRows: [] as any[],
+    providerFilters: {} as Record<string, unknown>,
 }));
 
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
@@ -18,10 +19,17 @@ vi.mock("@/runtime/env", () => ({
                         const builder: any = {
                             eq: (_column: string, _value: unknown) => builder,
                         };
-                        builder.eq = (column: string, _value: unknown) => {
+                        builder.eq = (column: string, value: unknown) => {
+                            queryState.providerFilters[column] = value;
                             if (column === "is_active_gateway") {
+                                const rows = queryState.providerRows.filter((row) =>
+                                    Object.entries(queryState.providerFilters).every(
+                                        ([filterColumn, filterValue]) =>
+                                            row[filterColumn as keyof typeof row] === filterValue,
+                                    ),
+                                );
                                 return Promise.resolve({
-                                    data: queryState.providerRows,
+                                    data: rows,
                                     error: null,
                                 });
                             }
@@ -115,6 +123,7 @@ describe("applyServiceTierRouting", () => {
     beforeEach(() => {
         queryState.providerRows = [];
         queryState.capabilityRows = [];
+        queryState.providerFilters = {};
         loadPriceCardMock.mockReset();
     });
 
@@ -182,11 +191,14 @@ describe("applyServiceTierRouting", () => {
         expect(loadPriceCardMock).not.toHaveBeenCalled();
     });
 
-    it("remaps Venice priority requests to the fast sibling model", async () => {
+    it("remaps Venice priority requests to the hidden fast sibling slug while keeping the public model stable", async () => {
         queryState.providerRows = [
             {
+                provider_id: "venice",
+                api_model_id: "anthropic/claude-opus-4.8-fast",
                 provider_api_model_id: "venice-fast-pam",
                 provider_model_slug: "claude-opus-4-8-fast",
+                is_active_gateway: false,
                 effective_from: "2026-05-29T00:00:00Z",
                 effective_to: null,
             },
@@ -202,13 +214,6 @@ describe("applyServiceTierRouting", () => {
                 created_at: "2026-05-29T00:00:00Z",
             },
         ];
-        const siblingCard = makeCard({
-            provider: "venice",
-            model: "anthropic/claude-opus-4.8-fast",
-            plans: ["standard"],
-        });
-        loadPriceCardMock.mockResolvedValue(siblingCard);
-
         const result = await applyServiceTierRouting({
             candidates: [
                 makeCandidate({
@@ -218,7 +223,7 @@ describe("applyServiceTierRouting", () => {
                     pricingCard: makeCard({
                         provider: "venice",
                         model: "anthropic/claude-opus-4.8",
-                        plans: ["standard"],
+                        plans: ["standard", "priority"],
                     }),
                 }),
             ],
@@ -226,22 +231,17 @@ describe("applyServiceTierRouting", () => {
             capability: "text.generate",
         });
 
-        expect(loadPriceCardMock).toHaveBeenCalledWith(
-            "venice",
-            "anthropic/claude-opus-4.8-fast",
-            "text.generate",
-        );
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
         expect(result.candidates).toHaveLength(1);
         expect(result.candidates[0]).toMatchObject({
             providerId: "venice",
-            apiModelId: "anthropic/claude-opus-4.8-fast",
-            pricingKey: "venice:anthropic/claude-opus-4.8-fast",
+            apiModelId: "anthropic/claude-opus-4.8",
+            pricingKey: "venice:anthropic/claude-opus-4.8",
             providerModelSlug: "claude-opus-4-8-fast",
             maxInputTokens: 1_000_000,
             maxOutputTokens: 128_000,
             capabilityParams: { reasoning: true },
         });
-        expect(result.candidates[0].pricingCard).toBe(siblingCard);
         expect(result.diagnostics.remappedProviders).toMatchObject([
             {
                 providerId: "venice",
@@ -255,8 +255,11 @@ describe("applyServiceTierRouting", () => {
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {
+                provider_id: "google-ai-studio",
+                api_model_id: "google/gemini-3-pro-image-flex",
                 provider_api_model_id: "provider-flex-pam",
                 provider_model_slug: "gemini-3-pro-image-flex",
+                is_active_gateway: true,
                 effective_from: "2026-05-29T00:00:00Z",
                 effective_to: null,
             },
