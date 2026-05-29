@@ -348,14 +348,14 @@ export async function applyServiceTierRouting(args: {
                 requestedPlan,
             );
             if (hiddenSiblingCandidate) {
+                const remappedApiModelId = candidate.apiModelId
+                    ? getTierSiblingApiModelId(candidate.apiModelId, requestedPlan)
+                    : null;
                 nextCandidates.push(hiddenSiblingCandidate);
                 remappedProviders.push({
                     providerId: candidate.providerId,
                     fromApiModelId: candidate.apiModelId ?? null,
-                    toApiModelId:
-                        getTierSiblingApiModelId(String(candidate.apiModelId ?? "").trim(), requestedPlan) ??
-                        (candidate.apiModelId ?? null) ??
-                        "",
+                    toApiModelId: remappedApiModelId ?? "",
                     reason: requestedPlan === "priority" ? "priority_fast_sibling" : "flex_sibling",
                 });
                 continue;
