@@ -53,7 +53,7 @@ function makeProviderPricing(): ProviderPricing {
                 model_id: "anthropic/claude-opus-4.8-fast",
                 endpoint: "text.generate",
                 capability_status: "active",
-                is_active_gateway: true,
+                is_active_gateway: false,
                 input_modalities: "text,image",
                 output_modalities: "text",
             },
@@ -75,9 +75,9 @@ function makeProviderPricing(): ProviderPricing {
                 effective_to: null,
             },
             {
-                id: "std-fast-input",
-                model_key: "venice:anthropic/claude-opus-4.8-fast:text.generate",
-                pricing_plan: "standard",
+                id: "prio-base-input",
+                model_key: "venice:anthropic/claude-opus-4.8:text.generate",
+                pricing_plan: "priority",
                 meter: "input_text_tokens",
                 unit: "token",
                 unit_size: 1000000,
@@ -94,7 +94,7 @@ function makeProviderPricing(): ProviderPricing {
 }
 
 describe("providerPlanRouting", () => {
-    it("derives a priority plan from fast sibling model pricing", () => {
+    it("prefers explicit priority pricing on the base model over hidden fast sibling rows", () => {
         const provider = makeProviderPricing();
 
         expect(getProviderAvailablePlans(provider)).toEqual(["standard", "priority"]);
@@ -103,10 +103,10 @@ describe("providerPlanRouting", () => {
         ).toEqual(["std-base-input"]);
         expect(
             getProviderPricingRulesForPlan(provider, "priority").map((rule) => rule.id),
-        ).toEqual(["std-fast-input"]);
+        ).toEqual(["prio-base-input"]);
         expect(
             getProviderModelScopeForPlan(provider, "priority").map((model) => model.model_id),
-        ).toEqual(["anthropic/claude-opus-4.8-fast"]);
+        ).toEqual(["anthropic/claude-opus-4.8"]);
     });
 
     it("derives a flex plan from a flex sibling model when present", () => {

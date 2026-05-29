@@ -28,6 +28,7 @@ type ServiceTierRoutingDiagnostics = {
 type TierSiblingProviderRow = {
     provider_api_model_id: string | null;
     provider_model_slug: string | null;
+    is_active_gateway?: boolean | null;
     effective_from: string | null;
     effective_to: string | null;
 };
@@ -133,7 +134,7 @@ async function remapToTierSibling(
     const supabase = getSupabaseAdmin();
     const { data: providerRows, error: providerError } = await supabase
         .from("data_api_provider_models")
-        .select("provider_api_model_id,provider_model_slug,effective_from,effective_to")
+        .select("provider_api_model_id,provider_model_slug,is_active_gateway,effective_from,effective_to")
         .eq("provider_id", candidate.providerId)
         .eq("api_model_id", siblingApiModelId)
         .eq("is_active_gateway", true);
@@ -219,6 +220,93 @@ async function remapToTierSibling(
     };
 }
 
+async function remapToHiddenTierSibling(
+    candidate: ProviderCandidate,
+    capability: string,
+    requestedPlan: ServiceTierPlan,
+): Promise<ProviderCandidate | null> {
+    const apiModelId = String(candidate.apiModelId ?? "").trim();
+    const siblingApiModelId = getTierSiblingApiModelId(apiModelId, requestedPlan);
+    if (!apiModelId || !siblingApiModelId) return null;
+
+    const supabase = getSupabaseAdmin();
+    const { data: providerRows, error: providerError } = await supabase
+        .from("data_api_provider_models")
+        .select("provider_api_model_id,provider_model_slug,is_active_gateway,effective_from,effective_to")
+        .eq("provider_id", candidate.providerId)
+        .eq("api_model_id", siblingApiModelId)
+        .eq("is_active_gateway", false);
+    if (providerError || !providerRows?.length) return null;
+
+    const nowMs = Date.now();
+    const hiddenProviderRows = (providerRows as TierSiblingProviderRow[])
+        .filter((row) => row.is_active_gateway === false)
+        .filter((row) => typeof row.provider_api_model_id === "string" && row.provider_api_model_id.length > 0)
+        .filter((row) => isWithinEffectiveWindow(row.effective_from, row.effective_to, nowMs))
+        .sort((a, b) => {
+            const aTs = a.effective_from ? new Date(a.effective_from).getTime() : 0;
+            const bTs = b.effective_from ? new Date(b.effective_from).getTime() : 0;
+            return bTs - aTs;
+        });
+    if (!hiddenProviderRows.length) return null;
+
+    const providerApiModelIds = hiddenProviderRows
+        .map((row) => row.provider_api_model_id)
+        .filter((value): value is string => typeof value === "string" && value.length > 0);
+    if (!providerApiModelIds.length) return null;
+
+    const { data: capabilityRows, error: capabilityError } = await supabase
+        .from("data_api_provider_model_capabilities")
+        .select("provider_api_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
+        .eq("capability_id", capability)
+        .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
+        .in("provider_api_model_id", providerApiModelIds);
+    if (capabilityError || !capabilityRows?.length) return null;
+
+    const capabilityByProviderModelId = new Map<string, TierSiblingCapabilityRow>();
+    for (const row of capabilityRows as TierSiblingCapabilityRow[]) {
+        const providerApiModelId = row.provider_api_model_id;
+        if (typeof providerApiModelId !== "string" || !providerApiModelId.length) continue;
+        const previous = capabilityByProviderModelId.get(providerApiModelId);
+        const rowTs = Math.max(
+            row.updated_at ? new Date(row.updated_at).getTime() : 0,
+            row.created_at ? new Date(row.created_at).getTime() : 0,
+        );
+        const prevTs = previous
+            ? Math.max(
+                previous.updated_at ? new Date(previous.updated_at).getTime() : 0,
+                previous.created_at ? new Date(previous.created_at).getTime() : 0,
+            )
+            : -1;
+        if (!previous || rowTs >= prevTs) {
+            capabilityByProviderModelId.set(providerApiModelId, row);
+        }
+    }
+
+    const matchedProviderRow = hiddenProviderRows.find((row) =>
+        row.provider_api_model_id && capabilityByProviderModelId.has(row.provider_api_model_id),
+    );
+    if (!matchedProviderRow?.provider_api_model_id) return null;
+
+    const siblingCapability = capabilityByProviderModelId.get(matchedProviderRow.provider_api_model_id) ?? null;
+    return {
+        ...candidate,
+        providerModelSlug: matchedProviderRow.provider_model_slug ?? candidate.providerModelSlug,
+        capabilityParams:
+            siblingCapability?.params && typeof siblingCapability.params === "object"
+                ? siblingCapability.params
+                : candidate.capabilityParams,
+        maxInputTokens:
+            siblingCapability?.max_input_tokens === null || siblingCapability?.max_input_tokens === undefined
+                ? candidate.maxInputTokens
+                : Number(siblingCapability.max_input_tokens),
+        maxOutputTokens:
+            siblingCapability?.max_output_tokens === null || siblingCapability?.max_output_tokens === undefined
+                ? candidate.maxOutputTokens
+                : Number(siblingCapability.max_output_tokens),
+    };
+}
+
 export async function applyServiceTierRouting(args: {
     candidates: ProviderCandidate[];
     body: any;
@@ -251,6 +339,27 @@ export async function applyServiceTierRouting(args: {
         if (!hasConfiguredPricing(candidate)) {
             nextCandidates.push(candidate);
             continue;
+        }
+
+        if (requestedPlan === "priority" || requestedPlan === "flex") {
+            const hiddenSiblingCandidate = await remapToHiddenTierSibling(
+                candidate,
+                args.capability,
+                requestedPlan,
+            );
+            if (hiddenSiblingCandidate) {
+                nextCandidates.push(hiddenSiblingCandidate);
+                remappedProviders.push({
+                    providerId: candidate.providerId,
+                    fromApiModelId: candidate.apiModelId ?? null,
+                    toApiModelId:
+                        getTierSiblingApiModelId(String(candidate.apiModelId ?? "").trim(), requestedPlan) ??
+                        (candidate.apiModelId ?? null) ??
+                        "",
+                    reason: requestedPlan === "priority" ? "priority_fast_sibling" : "flex_sibling",
+                });
+                continue;
+            }
         }
 
         if (supportsRequestedTier(candidate, requestedPlan)) {

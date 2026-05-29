@@ -40,8 +40,6 @@ namespace AiStatsSdk
         public const string AnthropicClaudeOpus47Fast = "anthropic/claude-opus-4.7-fast";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.8</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8</summary>
         public const string AnthropicClaudeOpus48 = "anthropic/claude-opus-4.8";
-        /// <summary>Model ID: <c>anthropic/claude-opus-4.8-fast</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast</summary>
-        public const string AnthropicClaudeOpus48Fast = "anthropic/claude-opus-4.8-fast";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4</summary>
         public const string AnthropicClaudeSonnet4 = "anthropic/claude-sonnet-4";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5</summary>
