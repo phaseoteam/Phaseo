@@ -7,6 +7,7 @@ import {
     testingExports,
     type UpstreamDiscoveryIssueEntry,
 } from "./github-issues";
+import { syncHfIssues } from "./run-hf-private";
 
 const providerEntry: UpstreamDiscoveryIssueEntry = {
     source: "provider-api",
@@ -237,6 +238,30 @@ async function main(): Promise<void> {
     assert.deepEqual(legacySync, { created: 0, updated: 1, skipped: false });
     assert.ok(legacyRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && request.method === "PATCH"));
     assert.ok(!legacyRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
+
+    const originalConsoleError = console.error;
+    const originalConsoleLog = console.log;
+    const capturedErrors: string[] = [];
+    console.error = (...args: unknown[]) => {
+        capturedErrors.push(args.map(String).join(" "));
+    };
+    console.log = () => {};
+    try {
+        await syncHfIssues([
+            {
+                org: "openai",
+                addedModelIds: ["openai/example-hf-model"],
+            },
+        ], async () => {
+            throw new Error("simulated GitHub outage");
+        });
+    } finally {
+        console.error = originalConsoleError;
+        console.log = originalConsoleLog;
+    }
+    assert.ok(
+        capturedErrors.some((line) => line.includes("Hugging Face GitHub issue sync failed: simulated GitHub outage"))
+    );
 
     await withEnv({ MODEL_DISCOVERY_GITHUB_ISSUES: "false" }, async () => {
         const sync = await syncUpstreamDiscoveryIssues([providerEntry], {

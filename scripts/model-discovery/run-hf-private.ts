@@ -1,4 +1,5 @@
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { syncUpstreamDiscoveryIssues, type UpstreamDiscoveryIssueEntry } from "./github-issues";
 import { runInternalModelDiscovery, type HuggingFaceDiscoveryIssueSignal } from "./run-internal";
 
@@ -8,7 +9,7 @@ function nowIso(): string {
     return new Date().toISOString();
 }
 
-function buildHfIssueEntries(hfAdditionsByOrg: HuggingFaceDiscoveryIssueSignal[]): UpstreamDiscoveryIssueEntry[] {
+export function buildHfIssueEntries(hfAdditionsByOrg: HuggingFaceDiscoveryIssueSignal[]): UpstreamDiscoveryIssueEntry[] {
     const ts = nowIso();
     const out: UpstreamDiscoveryIssueEntry[] = [];
 
@@ -32,17 +33,28 @@ function buildHfIssueEntries(hfAdditionsByOrg: HuggingFaceDiscoveryIssueSignal[]
     return out;
 }
 
-async function syncHfIssues(hfAdditionsByOrg: HuggingFaceDiscoveryIssueSignal[]): Promise<void> {
+type HfIssueSyncImpl = typeof syncUpstreamDiscoveryIssues;
+
+export async function syncHfIssues(
+    hfAdditionsByOrg: HuggingFaceDiscoveryIssueSignal[],
+    syncIssues: HfIssueSyncImpl = syncUpstreamDiscoveryIssues
+): Promise<void> {
     const entries = buildHfIssueEntries(hfAdditionsByOrg);
     console.log("[internal-model-check] Syncing GitHub issues for detected upstream Hugging Face model changes.");
-    const issueSync = await syncUpstreamDiscoveryIssues(entries, {
-        statePath: ISSUE_STATE_PATH,
-        logger: console,
-    });
-    if (!issueSync.skipped) {
-        console.log(
-            `[internal-model-check] Hugging Face GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
-        );
+
+    try {
+        const issueSync = await syncIssues(entries, {
+            statePath: ISSUE_STATE_PATH,
+            logger: console,
+        });
+        if (!issueSync.skipped) {
+            console.log(
+                `[internal-model-check] Hugging Face GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
+            );
+        }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[internal-model-check] Hugging Face GitHub issue sync failed: ${message}`);
     }
 }
 
@@ -53,8 +65,16 @@ async function main(): Promise<void> {
     });
 }
 
-main().catch((error) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`[internal-model-check] Fatal error: ${message}`);
-    process.exitCode = 1;
-});
+function isMainModule(): boolean {
+    const entry = process.argv[1];
+    if (!entry) return false;
+    return path.resolve(entry) === path.resolve(fileURLToPath(import.meta.url));
+}
+
+if (isMainModule()) {
+    main().catch((error) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[internal-model-check] Fatal error: ${message}`);
+        process.exitCode = 1;
+    });
+}
