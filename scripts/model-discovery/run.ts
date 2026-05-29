@@ -5,7 +5,7 @@ import { createAdminClient } from "../../apps/web/src/utils/supabase/admin";
 import { getProviderDiscoveryRule } from "./providers/discovery-policy";
 import type { ProviderDefinition, ProviderModel } from "./providers/_shared";
 import { asRecord, getMissingEnvVars, sortKeysDeep } from "./providers/_shared";
-import { syncProviderChangeIssues } from "./github-issues";
+import { syncUpstreamDiscoveryIssues, type UpstreamDiscoveryIssueEntry } from "./github-issues";
 
 type SupabaseAdminClient = ReturnType<typeof createAdminClient>;
 
@@ -820,6 +820,7 @@ async function main(): Promise<void> {
     const deleteRows: SeenModelDeleteRow[] = [];
     let staleModelsDeleted = 0;
     let runChangeEntries: ProviderChangeEntry[] = [];
+    let upstreamIssueEntries: UpstreamDiscoveryIssueEntry[] = [];
     let mergedFeed: ProviderChangeEntry[] = [];
     let notificationError: string | null = null;
     let issueSyncError: string | null = null;
@@ -966,6 +967,17 @@ async function main(): Promise<void> {
 
         const runTimestamp = nowIso();
         runChangeEntries = buildProviderChangeEntries(changes, runTimestamp);
+        upstreamIssueEntries = buildProviderChangeEntries(rawChanges, runTimestamp).map((entry) => ({
+            source: "provider-api",
+            ts: entry.ts,
+            action: entry.action,
+            platformId: entry.platformId,
+            platformName: entry.platformName,
+            providerId: entry.providerId,
+            providerName: entry.providerName,
+            modelId: entry.modelId,
+            reason: "Detected from upstream provider /models API",
+        } satisfies UpstreamDiscoveryIssueEntry));
         const existingFeed = readChangeFeed(CHANGE_FEED_PATH);
         const seenFeedIds = new Set<string>();
         mergedFeed = [];
@@ -1037,23 +1049,28 @@ async function main(): Promise<void> {
             }
         }
 
-        if (changes.length === 0) {
+        if (changes.length === 0 && upstreamIssueEntries.length === 0) {
             console.log("[model-discovery] No model changes detected.");
         } else {
-            const message = buildDiscordMessage(changes, runChangeEntries);
-            console.log(`[model-discovery] Changes detected in ${changes.length} provider(s). Sending Discord notification.`);
-            try {
-                await sendDiscordWebhook(message);
-            } catch (error) {
-                notificationError = error instanceof Error ? error.message : String(error);
-                console.error(`[model-discovery] Discord notification failed: ${notificationError}`);
+            if (changes.length > 0) {
+                const message = buildDiscordMessage(changes, runChangeEntries);
+                console.log(`[model-discovery] Changes detected in ${changes.length} provider(s). Sending Discord notification.`);
+                try {
+                    await sendDiscordWebhook(message);
+                } catch (error) {
+                    notificationError = error instanceof Error ? error.message : String(error);
+                    console.error(`[model-discovery] Discord notification failed: ${notificationError}`);
+                }
+            } else {
+                console.log(
+                    `[model-discovery] ${upstreamIssueEntries.length} upstream provider event(s) detected outside known catalog allowlist; skipping Discord catalog notification.`
+                );
             }
 
-            console.log("[model-discovery] Syncing GitHub issues for detected provider model changes.");
+            console.log("[model-discovery] Syncing GitHub issues for detected upstream provider model changes.");
             try {
-                const issueSync = await syncProviderChangeIssues(runChangeEntries, {
+                const issueSync = await syncUpstreamDiscoveryIssues(upstreamIssueEntries, {
                     statePath: ISSUE_STATE_PATH,
-                    knownModelIdsByProvider: apiModelAllowlistByProvider,
                     logger: console,
                 });
                 if (!issueSync.skipped) {

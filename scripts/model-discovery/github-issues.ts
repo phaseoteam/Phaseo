@@ -1,33 +1,44 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export type ProviderIssueChangeAction = "create" | "update" | "delete";
+export type UpstreamDiscoveryIssueSource = "provider-api" | "huggingface";
 
-export type ProviderIssueChangeEntry = {
+export type UpstreamDiscoveryIssueAction = "create" | "update" | "delete";
+
+export type UpstreamDiscoveryIssueEntry = {
+    source: UpstreamDiscoveryIssueSource;
     ts: string;
-    action: ProviderIssueChangeAction;
+    action: UpstreamDiscoveryIssueAction;
     platformId: string;
     platformName: string;
     providerId: string;
     providerName: string;
     modelId: string;
+    modelUrl?: string;
+    reason?: string;
+    metadata?: Record<string, unknown>;
 };
 
-type ProviderIssueHistoryEvent = ProviderIssueChangeEntry & {
+export type ProviderIssueChangeAction = UpstreamDiscoveryIssueAction;
+export type ProviderIssueChangeEntry = Omit<UpstreamDiscoveryIssueEntry, "source"> & {
+    source?: UpstreamDiscoveryIssueSource;
+};
+
+type UpstreamIssueHistoryEvent = UpstreamDiscoveryIssueEntry & {
     runUrl?: string;
 };
 
-type ProviderIssueRecord = {
+type UpstreamIssueRecord = {
     issueNumber?: number;
     issueUrl?: string;
-    recentEvents: ProviderIssueHistoryEvent[];
+    recentEvents: UpstreamIssueHistoryEvent[];
     updatedAt: string;
 };
 
-type ProviderIssueState = {
+type UpstreamIssueState = {
     version: 1;
     updatedAt: string;
-    issues: Record<string, ProviderIssueRecord>;
+    issues: Record<string, UpstreamIssueRecord>;
 };
 
 type GitHubIssue = {
@@ -48,7 +59,6 @@ type GitHubIssueSyncOptions = {
     apiBaseUrl?: string | null;
     statePath: string;
     runUrl?: string | null;
-    knownModelIdsByProvider?: Map<string, Set<string>>;
     logger?: Pick<Console, "log" | "warn">;
     requestImpl?: typeof fetch;
 };
@@ -65,22 +75,6 @@ const MAX_RECENT_EVENTS = 20;
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
 
-function canonicalModelId(value: string): string {
-    return value.trim().toLowerCase().replace(/\s+/g, "");
-}
-
-function filterEntriesByKnownProviderModels(
-    entries: ProviderIssueChangeEntry[],
-    knownModelIdsByProvider: Map<string, Set<string>> | undefined
-): ProviderIssueChangeEntry[] {
-    if (!knownModelIdsByProvider) return entries;
-
-    return entries.filter((entry) => {
-        const knownModelIds = knownModelIdsByProvider.get(entry.providerId);
-        return Boolean(knownModelIds?.has(canonicalModelId(entry.modelId)));
-    });
-}
-
 function nowIso(): string {
     return new Date().toISOString();
 }
@@ -91,7 +85,14 @@ function trimOrNull(value: string | null | undefined): string | null {
     return trimmed || null;
 }
 
-function readIssueState(filePath: string): ProviderIssueState {
+function normalizeEntry(entry: ProviderIssueChangeEntry | UpstreamDiscoveryIssueEntry): UpstreamDiscoveryIssueEntry {
+    return {
+        ...entry,
+        source: entry.source ?? "provider-api",
+    };
+}
+
+function readIssueState(filePath: string): UpstreamIssueState {
     if (!fs.existsSync(filePath)) {
         return {
             version: 1,
@@ -101,7 +102,7 @@ function readIssueState(filePath: string): ProviderIssueState {
     }
 
     try {
-        const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8")) as Partial<ProviderIssueState> | undefined;
+        const parsed = JSON.parse(fs.readFileSync(filePath, "utf-8")) as Partial<UpstreamIssueState> | undefined;
         if (!parsed || parsed.version !== 1 || !parsed.issues || typeof parsed.issues !== "object") {
             throw new Error("Invalid issue state");
         }
@@ -112,7 +113,7 @@ function readIssueState(filePath: string): ProviderIssueState {
             issues: Object.fromEntries(
                 Object.entries(parsed.issues).map(([key, record]) => {
                     const recentEvents = Array.isArray(record?.recentEvents)
-                        ? record.recentEvents.filter(isProviderIssueHistoryEvent).slice(0, MAX_RECENT_EVENTS)
+                        ? record.recentEvents.filter(isUpstreamIssueHistoryEvent).slice(0, MAX_RECENT_EVENTS)
                         : [];
                     return [
                         key,
@@ -121,7 +122,7 @@ function readIssueState(filePath: string): ProviderIssueState {
                             issueUrl: trimOrNull(record?.issueUrl) ?? undefined,
                             recentEvents,
                             updatedAt: trimOrNull(record?.updatedAt) ?? nowIso(),
-                        } satisfies ProviderIssueRecord,
+                        } satisfies UpstreamIssueRecord,
                     ];
                 })
             ),
@@ -135,15 +136,16 @@ function readIssueState(filePath: string): ProviderIssueState {
     }
 }
 
-function writeIssueState(filePath: string, state: ProviderIssueState): void {
+function writeIssueState(filePath: string, state: UpstreamIssueState): void {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf-8");
 }
 
-function isProviderIssueHistoryEvent(value: unknown): value is ProviderIssueHistoryEvent {
+function isUpstreamIssueHistoryEvent(value: unknown): value is UpstreamIssueHistoryEvent {
     if (!value || typeof value !== "object") return false;
-    const row = value as Partial<ProviderIssueHistoryEvent>;
+    const row = value as Partial<UpstreamIssueHistoryEvent>;
     return (
+        (row.source === "provider-api" || row.source === "huggingface") &&
         typeof row.ts === "string" &&
         (row.action === "create" || row.action === "update" || row.action === "delete") &&
         typeof row.platformId === "string" &&
@@ -154,38 +156,57 @@ function isProviderIssueHistoryEvent(value: unknown): value is ProviderIssueHist
     );
 }
 
-type ProviderIssueGroup = {
+type UpstreamIssueGroup = {
     key: string;
-    action: ProviderIssueChangeAction;
+    source: UpstreamDiscoveryIssueSource;
+    action: UpstreamDiscoveryIssueAction;
     platformId: string;
     platformName: string;
     providerId: string;
     providerName: string;
-    entries: ProviderIssueChangeEntry[];
+    entries: UpstreamDiscoveryIssueEntry[];
 };
 
-function issueKeyForGroup(input: Pick<ProviderIssueChangeEntry, "providerId" | "action">): string {
-    return Buffer.from(`${input.providerId.trim().toLowerCase()}\n${input.action}`).toString("base64url");
+function issueKeyForGroup(input: Pick<UpstreamDiscoveryIssueEntry, "source" | "providerId" | "action">): string {
+    return Buffer.from(`${input.source}\n${input.providerId.trim().toLowerCase()}\n${input.action}`).toString("base64url");
 }
 
 function markerForKey(key: string): string {
+    return `ai-stats-upstream-discovery:${key}`;
+}
+
+function legacyProviderIssueKeyForGroup(input: Pick<UpstreamDiscoveryIssueEntry, "providerId" | "action">): string {
+    return Buffer.from(`${input.providerId.trim().toLowerCase()}
+${input.action}`).toString("base64url");
+}
+
+function legacyMarkerForKey(key: string): string {
     return `ai-stats-model-discovery:${key}`;
 }
 
-function actionNoun(action: ProviderIssueChangeAction): string {
+function actionNoun(action: UpstreamDiscoveryIssueAction): string {
     if (action === "create") return "additions";
     if (action === "delete") return "deletions";
     return "changes";
 }
 
-function actionVerb(action: ProviderIssueChangeAction): string {
+function actionVerb(action: UpstreamDiscoveryIssueAction): string {
     if (action === "create") return "added";
     if (action === "delete") return "removed";
     return "changed";
 }
 
-function issueTitleForGroup(group: ProviderIssueGroup): string {
-    return `[model-discovery] ${group.providerName}: provider model ${actionNoun(group.action)}`.slice(0, 250);
+function sourceLabel(source: UpstreamDiscoveryIssueSource): string {
+    if (source === "huggingface") return "Hugging Face";
+    return "provider API";
+}
+
+function issueTitleForGroup(group: UpstreamIssueGroup): string {
+    if (group.source === "huggingface") {
+        return `[upstream-discovery] Hugging Face: model ${actionNoun(group.action)} for ${group.providerName}`.slice(0, 250);
+    }
+
+    return `[upstream-discovery] ${group.providerName}: provider model ${actionNoun(group.action)}`.slice(0, 250);
 }
 
 function formatDateTime(value: string): string {
@@ -194,65 +215,75 @@ function formatDateTime(value: string): string {
     return parsed.toISOString();
 }
 
-function formatEventLine(event: ProviderIssueHistoryEvent): string {
-    const runSuffix = event.runUrl ? ` ([workflow run](${event.runUrl}))` : "";
-    return `- ${formatDateTime(event.ts)}: ${actionVerb(event.action)} \`${event.modelId}\` on ${event.providerName} (${event.providerId})${runSuffix}`;
+function formatModelLink(event: Pick<UpstreamDiscoveryIssueEntry, "modelId" | "modelUrl">): string {
+    if (event.modelUrl) return `\`${event.modelId}\` (${event.modelUrl})`;
+    return `\`${event.modelId}\``;
 }
 
-function formatModelList(modelIds: string[]): string[] {
-    return modelIds.map((modelId) => `- \`${modelId}\``);
+function formatEventLine(event: UpstreamIssueHistoryEvent): string {
+    const runSuffix = event.runUrl ? ` ([workflow run](${event.runUrl}))` : "";
+    const reasonSuffix = event.reason ? ` — ${event.reason}` : "";
+    return `- ${formatDateTime(event.ts)}: ${actionVerb(event.action)} ${formatModelLink(event)} from ${sourceLabel(event.source)} ${event.providerName} (${event.providerId})${reasonSuffix}${runSuffix}`;
+}
+
+function formatModelList(entries: UpstreamDiscoveryIssueEntry[]): string[] {
+    return entries.map((entry) => `- ${formatModelLink(entry)}`);
 }
 
 function buildIssueBody(args: {
-    group: ProviderIssueGroup;
-    recentEvents: ProviderIssueHistoryEvent[];
+    group: UpstreamIssueGroup;
+    recentEvents: UpstreamIssueHistoryEvent[];
 }): string {
     const { group, recentEvents } = args;
     const marker = markerForKey(group.key);
     const latestEvent = recentEvents[0] ?? group.entries[0];
     const eventLines = recentEvents.length > 0 ? recentEvents.map(formatEventLine) : group.entries.map(formatEventLine);
-    const modelIds = group.entries.map((entry) => entry.modelId);
 
     return [
         `<!-- ${marker} -->`,
         `Tracking key: \`${marker}\``,
         "",
-        `The model discovery bot detected upstream provider model ${actionNoun(group.action)} for ${group.providerName}.`,
+        `The upstream discovery bot detected ${sourceLabel(group.source)} model ${actionNoun(group.action)} for ${group.providerName}.`,
         "",
         "## Current signal",
-        `- Cloud platform: ${group.platformName} (\`${group.platformId}\`)`,
-        `- Provider: ${group.providerName} (\`${group.providerId}\`)`,
+        `- Source: ${sourceLabel(group.source)}`,
+        `- Platform: ${group.platformName} (\`${group.platformId}\`)`,
+        `- Provider/org: ${group.providerName} (\`${group.providerId}\`)`,
         `- Latest action: ${actionNoun(group.action)}`,
         `- Latest detected at: ${latestEvent ? formatDateTime(latestEvent.ts) : "Unknown"}`,
-        `- Models in this signal: ${modelIds.length}`,
+        `- Models in this signal: ${group.entries.length}`,
         "",
         "## Models in this signal",
-        ...formatModelList(modelIds),
+        ...formatModelList(group.entries),
         "",
         "## Recent detections",
         ...eventLines,
         "",
+        "## Workflow run",
+        latestEvent?.runUrl ? `- ${latestEvent.runUrl}` : "- Not available",
+        "",
         "## Triage notes",
-        "- Reuse this issue for repeated signals with the same provider and action type.",
-        "- Only provider model IDs already present in `data_api_provider_models` are included here.",
-        "- Close this issue when the catalog has been updated or the upstream signal is confirmed as non-actionable.",
+        "- Check whether each upstream model should be added to AI Stats or mapped to an existing catalog entry.",
+        "- Unknown upstream models are intentionally included for triage instead of being filtered out.",
+        "- Reuse this issue for repeated signals with the same source, provider/org, and action type.",
+        "- Close this issue once the upstream signal has been triaged.",
     ].join("\n");
 }
 
-function buildIssueComment(group: ProviderIssueGroup, events: ProviderIssueHistoryEvent[]): string {
+function buildIssueComment(group: UpstreamIssueGroup, events: UpstreamIssueHistoryEvent[]): string {
     return [
-        `Model discovery detected another ${actionNoun(group.action)} signal for ${group.providerName}.`,
+        `Upstream discovery detected another ${sourceLabel(group.source)} ${actionNoun(group.action)} signal for ${group.providerName}.`,
         "",
         "Models in this signal:",
-        ...formatModelList(events.map((event) => event.modelId)),
+        ...formatModelList(events),
         "",
         "Events:",
         ...events.map(formatEventLine),
     ].join("\n");
 }
 
-function groupProviderIssueEntries(entries: ProviderIssueChangeEntry[]): ProviderIssueGroup[] {
-    const grouped = new Map<string, ProviderIssueGroup>();
+function groupUpstreamIssueEntries(entries: UpstreamDiscoveryIssueEntry[]): UpstreamIssueGroup[] {
+    const grouped = new Map<string, UpstreamIssueGroup>();
 
     for (const entry of entries) {
         const key = issueKeyForGroup(entry);
@@ -264,6 +295,7 @@ function groupProviderIssueEntries(entries: ProviderIssueChangeEntry[]): Provide
 
         grouped.set(key, {
             key,
+            source: entry.source,
             action: entry.action,
             platformId: entry.platformId,
             platformName: entry.platformName,
@@ -274,6 +306,8 @@ function groupProviderIssueEntries(entries: ProviderIssueChangeEntry[]): Provide
     }
 
     return Array.from(grouped.values()).sort((left, right) => {
+        const sourceComparison = sourceLabel(left.source).localeCompare(sourceLabel(right.source));
+        if (sourceComparison !== 0) return sourceComparison;
         const providerComparison = left.providerName.localeCompare(right.providerName);
         if (providerComparison !== 0) return providerComparison;
         return actionNoun(left.action).localeCompare(actionNoun(right.action));
@@ -368,7 +402,8 @@ async function findOpenIssue(args: {
     client: GitHubIssueClient;
     repository: string;
     key: string;
-    existingRecord?: ProviderIssueRecord;
+    legacyKey?: string;
+    existingRecord?: UpstreamIssueRecord;
 }): Promise<GitHubIssue | null> {
     const issueNumber = args.existingRecord?.issueNumber;
     if (typeof issueNumber === "number") {
@@ -377,29 +412,103 @@ async function findOpenIssue(args: {
     }
 
     const marker = markerForKey(args.key);
-    return await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${marker}"`);
+    const currentIssue = await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${marker}"`);
+    if (currentIssue) return currentIssue;
+
+    if (args.legacyKey) {
+        const legacyMarker = legacyMarkerForKey(args.legacyKey);
+        return await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${legacyMarker}"`);
+    }
+
+    return null;
 }
 
-export async function syncProviderChangeIssues(
-    entries: ProviderIssueChangeEntry[],
+function shouldSkipForEnv(source: UpstreamDiscoveryIssueSource, logger: Pick<Console, "log">): boolean {
+    if (process.env.MODEL_DISCOVERY_GITHUB_ISSUES === "false") {
+        logger.log("[model-discovery] GitHub issue sync disabled by MODEL_DISCOVERY_GITHUB_ISSUES=false.");
+        return true;
+    }
+
+    if (source === "provider-api" && process.env.MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES === "false") {
+        logger.log("[model-discovery] Provider API GitHub issue sync disabled by MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false.");
+        return true;
+    }
+
+    if (source === "huggingface" && process.env.MODEL_DISCOVERY_HF_GITHUB_ISSUES === "false") {
+        logger.log("[model-discovery] Hugging Face GitHub issue sync disabled by MODEL_DISCOVERY_HF_GITHUB_ISSUES=false.");
+        return true;
+    }
+
+    return false;
+}
+
+function logSyncSummary(args: {
+    logger: Pick<Console, "log">;
+    source: UpstreamDiscoveryIssueSource | "mixed";
+    inputEvents: number;
+    filteredEvents: number;
+    created: number;
+    updated: number;
+    skipped: boolean;
+    reason?: string;
+}): void {
+    const reason = args.reason ? ` reason=${JSON.stringify(args.reason)}` : "";
+    args.logger.log(
+        `[model-discovery] upstream issue sync: source=${args.source} inputEvents=${args.inputEvents} filteredEvents=${args.filteredEvents} created=${args.created} updated=${args.updated} skipped=${args.skipped}${reason}`
+    );
+}
+
+export async function syncUpstreamDiscoveryIssues(
+    rawEntries: UpstreamDiscoveryIssueEntry[],
     options: GitHubIssueSyncOptions
 ): Promise<{ created: number; updated: number; skipped: boolean }> {
-    const token = trimOrNull(options.token ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN);
-    const repository = trimOrNull(options.repository ?? process.env.GITHUB_REPOSITORY);
     const logger = options.logger ?? console;
+    const entries = rawEntries.map(normalizeEntry);
+    const sources = Array.from(new Set(entries.map((entry) => entry.source)));
+    const sourceForLog = sources.length === 1 ? sources[0] : "mixed";
 
-    const filteredEntries = filterEntriesByKnownProviderModels(entries, options.knownModelIdsByProvider);
-    if (filteredEntries.length === 0) {
+    if (entries.length === 0) {
+        logSyncSummary({
+            logger,
+            source: sourceForLog ?? "mixed",
+            inputEvents: rawEntries.length,
+            filteredEvents: 0,
+            created: 0,
+            updated: 0,
+            skipped: false,
+            reason: "no entries",
+        });
         return { created: 0, updated: 0, skipped: false };
     }
 
-    if (process.env.MODEL_DISCOVERY_GITHUB_ISSUES === "false") {
-        logger.log("[model-discovery] GitHub issue sync disabled by MODEL_DISCOVERY_GITHUB_ISSUES=false.");
+    if (sources.some((source) => shouldSkipForEnv(source, logger))) {
+        logSyncSummary({
+            logger,
+            source: sourceForLog,
+            inputEvents: rawEntries.length,
+            filteredEvents: entries.length,
+            created: 0,
+            updated: 0,
+            skipped: true,
+            reason: "disabled by environment",
+        });
         return { created: 0, updated: 0, skipped: true };
     }
 
+    const token = trimOrNull(options.token ?? process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN);
+    const repository = trimOrNull(options.repository ?? process.env.GITHUB_REPOSITORY);
     if (!token || !repository) {
         logger.warn("[model-discovery] Skipping GitHub issue sync: GITHUB_TOKEN/GH_TOKEN or GITHUB_REPOSITORY is missing.");
+        logSyncSummary({
+            logger,
+            source: sourceForLog,
+            inputEvents: rawEntries.length,
+            filteredEvents: entries.length,
+            created: 0,
+            updated: 0,
+            skipped: true,
+            reason: "missing GitHub token or repository",
+        });
         return { created: 0, updated: 0, skipped: true };
     }
 
@@ -415,13 +524,14 @@ export async function syncProviderChangeIssues(
     let created = 0;
     let updated = 0;
 
-    for (const group of groupProviderIssueEntries(filteredEntries)) {
-        const existingRecord = state.issues[group.key];
-        const events: ProviderIssueHistoryEvent[] = group.entries.map((entry) => ({ ...entry, runUrl }));
+    for (const group of groupUpstreamIssueEntries(entries)) {
+        const legacyKey = group.source === "provider-api" ? legacyProviderIssueKeyForGroup(group) : undefined;
+        const existingRecord = state.issues[group.key] ?? (legacyKey ? state.issues[legacyKey] : undefined);
+        const events: UpstreamIssueHistoryEvent[] = group.entries.map((entry) => ({ ...entry, runUrl }));
         const recentEvents = [...events, ...(existingRecord?.recentEvents ?? [])].slice(0, MAX_RECENT_EVENTS);
         const body = buildIssueBody({ group, recentEvents });
         const title = issueTitleForGroup(group);
-        const existingIssue = await findOpenIssue({ client, repository, key: group.key, existingRecord });
+        const existingIssue = await findOpenIssue({ client, repository, key: group.key, legacyKey, existingRecord });
 
         if (existingIssue) {
             const issue = await client.updateIssue(existingIssue.number, { title, body });
@@ -453,15 +563,40 @@ export async function syncProviderChangeIssues(
     state.updatedAt = timestamp;
     writeIssueState(options.statePath, state);
 
+    logSyncSummary({
+        logger,
+        source: sourceForLog,
+        inputEvents: rawEntries.length,
+        filteredEvents: entries.length,
+        created,
+        updated,
+        skipped: false,
+    });
+
     return { created, updated, skipped: false };
+}
+
+export async function syncProviderChangeIssues(
+    entries: ProviderIssueChangeEntry[],
+    options: GitHubIssueSyncOptions & { knownModelIdsByProvider?: Map<string, Set<string>> }
+): Promise<{ created: number; updated: number; skipped: boolean }> {
+    if (options.knownModelIdsByProvider) {
+        const logger = options.logger ?? console;
+        logger.warn(
+            "[model-discovery] knownModelIdsByProvider is ignored for private upstream issue sync so unknown upstream models create triage issues."
+        );
+    }
+
+    return await syncUpstreamDiscoveryIssues(entries.map(normalizeEntry), options);
 }
 
 export const testingExports = {
     buildIssueBody,
     buildIssueComment,
-    filterEntriesByKnownProviderModels,
-    groupProviderIssueEntries,
+    groupUpstreamIssueEntries,
     issueKeyForGroup,
     issueTitleForGroup,
+    legacyMarkerForKey,
+    legacyProviderIssueKeyForGroup,
     markerForKey,
 };
