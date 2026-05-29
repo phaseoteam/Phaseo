@@ -17,27 +17,41 @@ function extractModelIdFromModelKey(modelKey: string): string {
     return modelKey.slice(firstColon + 1, lastColon).trim();
 }
 
-function isFastSiblingModelId(modelId: string | null | undefined): boolean {
-    return String(modelId ?? "").trim().toLowerCase().endsWith("-fast");
+function getSiblingSuffixForPlan(plan: string): string | null {
+    if (plan === "priority") return "-fast";
+    if (plan === "flex") return "-flex";
+    return null;
+}
+
+function isSiblingModelIdForPlan(
+    modelId: string | null | undefined,
+    plan: string,
+): boolean {
+    const suffix = getSiblingSuffixForPlan(plan);
+    if (!suffix) return false;
+    return String(modelId ?? "").trim().toLowerCase().endsWith(suffix);
 }
 
 function buildProviderModelKey(model: ProviderModel): string {
     return `${model.api_provider_id}:${model.model_id}:${model.endpoint}`;
 }
 
-function getDerivedPriorityRules(provider: ProviderPricing): PricingRule[] {
-    const fastModelKeys = new Set(
+function getDerivedSiblingPlanRules(
+    provider: ProviderPricing,
+    plan: string,
+): PricingRule[] {
+    const siblingModelKeys = new Set(
         provider.provider_models
-            .filter((model) => isFastSiblingModelId(model.model_id))
+            .filter((model) => isSiblingModelIdForPlan(model.model_id, plan))
             .map((model) => buildProviderModelKey(model)),
     );
-    if (!fastModelKeys.size) return [];
+    if (!siblingModelKeys.size) return [];
 
     return provider.pricing_rules.filter((rule) => {
         if (normalizePlan(rule.pricing_plan) !== "standard") return false;
         const ruleModelId = extractModelIdFromModelKey(rule.model_key);
-        if (!isFastSiblingModelId(ruleModelId)) return false;
-        return fastModelKeys.has(rule.model_key);
+        if (!isSiblingModelIdForPlan(ruleModelId, plan)) return false;
+        return siblingModelKeys.has(rule.model_key);
     });
 }
 
@@ -51,8 +65,8 @@ export function getProviderPricingRulesForPlan(
     );
     if (explicitRules.length > 0) return explicitRules;
 
-    if (normalizedPlan === "priority") {
-        return getDerivedPriorityRules(provider);
+    if (normalizedPlan === "priority" || normalizedPlan === "flex") {
+        return getDerivedSiblingPlanRules(provider, normalizedPlan);
     }
 
     return [];
@@ -67,8 +81,11 @@ export function getProviderAvailablePlans(provider: ProviderPricing): string[] {
     for (const rule of provider.pricing_rules) {
         set.add(normalizePlan(rule.pricing_plan));
     }
-    if (!set.has("priority") && getDerivedPriorityRules(provider).length > 0) {
+    if (!set.has("priority") && getDerivedSiblingPlanRules(provider, "priority").length > 0) {
         set.add("priority");
+    }
+    if (!set.has("flex") && getDerivedSiblingPlanRules(provider, "flex").length > 0) {
+        set.add("flex");
     }
     const ordered = PLAN_ORDER.filter((plan) => set.has(plan));
     const extras = Array.from(set)

@@ -105,4 +105,42 @@ describe("providerPlanRouting", () => {
             getProviderModelScopeForPlan(provider, "priority").map((model) => model.model_id),
         ).toEqual(["anthropic/claude-opus-4.8-fast"]);
     });
+
+    it("derives a flex plan from a flex sibling model when present", () => {
+        const provider = makeProviderPricing();
+        provider.provider_models.push({
+            id: "venice:opus48flex",
+            api_provider_id: "venice",
+            provider_model_slug: "claude-opus-4-8-flex",
+            model_id: "anthropic/claude-opus-4.8-flex",
+            endpoint: "text.generate",
+            capability_status: "active",
+            is_active_gateway: true,
+            input_modalities: "text,image",
+            output_modalities: "text",
+        });
+        provider.pricing_rules.push({
+            id: "std-flex-input",
+            model_key: "venice:anthropic/claude-opus-4.8-flex:text.generate",
+            pricing_plan: "standard",
+            meter: "input_text_tokens",
+            unit: "token",
+            unit_size: 1000000,
+            price_per_unit: 4,
+            currency: "USD",
+            note: null,
+            match: [],
+            priority: 100,
+            effective_from: "2026-05-29T00:00:00Z",
+            effective_to: null,
+        });
+
+        expect(getProviderAvailablePlans(provider)).toEqual(["standard", "priority", "flex"]);
+        expect(
+            getProviderPricingRulesForPlan(provider, "flex").map((rule) => rule.id),
+        ).toEqual(["std-flex-input"]);
+        expect(
+            getProviderModelScopeForPlan(provider, "flex").map((model) => model.model_id),
+        ).toEqual(["anthropic/claude-opus-4.8-flex"]);
+    });
 });

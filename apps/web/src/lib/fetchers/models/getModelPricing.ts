@@ -401,9 +401,11 @@ export default async function getModelPricing(
 
     if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
 
-    const siblingModelIds = modelId.toLowerCase().endsWith("-fast")
-        ? []
-        : [`${modelId}-fast`];
+    const normalizedModelId = modelId.toLowerCase();
+    const siblingModelIds =
+        normalizedModelId.endsWith("-fast") || normalizedModelId.endsWith("-flex")
+            ? []
+            : [`${modelId}-fast`, `${modelId}-flex`];
     const providerIdsForSiblingLookup = Array.from(
         new Set(
             ((pmRows ?? []) as any[])

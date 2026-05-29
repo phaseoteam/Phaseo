@@ -21,18 +21,18 @@ type ServiceTierRoutingDiagnostics = {
         providerId: string;
         fromApiModelId: string | null;
         toApiModelId: string;
-        reason: "priority_fast_sibling";
+        reason: "priority_fast_sibling" | "flex_sibling";
     }>;
 };
 
-type PrioritySiblingProviderRow = {
+type TierSiblingProviderRow = {
     provider_api_model_id: string | null;
     provider_model_slug: string | null;
     effective_from: string | null;
     effective_to: string | null;
 };
 
-type PrioritySiblingCapabilityRow = {
+type TierSiblingCapabilityRow = {
     provider_api_model_id: string | null;
     params: Record<string, any> | null;
     max_input_tokens: number | null;
@@ -70,31 +70,58 @@ function isPriorityDedicatedOffer(candidate: ProviderCandidate): boolean {
     );
 }
 
-function isFastSiblingModel(candidate: ProviderCandidate): boolean {
+function isTierDedicatedOffer(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
+    if (requestedPlan === "priority") return isPriorityDedicatedOffer(candidate);
+    return (
+        candidate.offerScope === "specialized" &&
+        String(candidate.offerLabel ?? "").trim().toLowerCase() === requestedPlan
+    );
+}
+
+function isTierSiblingModel(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
     const apiModelId = String(candidate.apiModelId ?? "").trim().toLowerCase();
     const providerModelSlug = String(candidate.providerModelSlug ?? "").trim().toLowerCase();
-    return apiModelId.endsWith("-fast") || providerModelSlug.endsWith("-fast");
+    if (requestedPlan === "priority") {
+        return apiModelId.endsWith("-fast") || providerModelSlug.endsWith("-fast");
+    }
+    if (requestedPlan === "flex") {
+        return apiModelId.endsWith("-flex") || providerModelSlug.endsWith("-flex");
+    }
+    return false;
+}
+
+function getTierSiblingApiModelId(
+    apiModelId: string,
+    requestedPlan: ServiceTierPlan,
+): string | null {
+    if (requestedPlan === "priority") return `${apiModelId}-fast`;
+    if (requestedPlan === "flex") return `${apiModelId}-flex`;
+    return null;
 }
 
 function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
-    if (requestedPlan === "priority") {
+    if (requestedPlan === "priority" || requestedPlan === "flex") {
         return (
-            hasPricingPlan(candidate.pricingCard, "priority") ||
-            isPriorityDedicatedOffer(candidate) ||
-            isFastSiblingModel(candidate)
+            hasPricingPlan(candidate.pricingCard, requestedPlan) ||
+            isTierDedicatedOffer(candidate, requestedPlan) ||
+            isTierSiblingModel(candidate, requestedPlan)
         );
     }
     return hasPricingPlan(candidate.pricingCard, requestedPlan);
 }
 
-async function remapToPriorityFastSibling(
+async function remapToTierSibling(
     candidate: ProviderCandidate,
     capability: string,
+    requestedPlan: ServiceTierPlan,
 ): Promise<ProviderCandidate | null> {
     const apiModelId = String(candidate.apiModelId ?? "").trim();
-    if (!apiModelId || apiModelId.endsWith("-fast")) return null;
+    const siblingApiModelId = getTierSiblingApiModelId(apiModelId, requestedPlan);
+    if (!apiModelId || !siblingApiModelId) return null;
+    if (String(candidate.apiModelId ?? "").trim().toLowerCase() === siblingApiModelId.toLowerCase()) {
+        return null;
+    }
 
-    const siblingApiModelId = `${apiModelId}-fast`;
     const supabase = getSupabaseAdmin();
     const { data: providerRows, error: providerError } = await supabase
         .from("data_api_provider_models")
@@ -105,7 +132,7 @@ async function remapToPriorityFastSibling(
     if (providerError || !providerRows?.length) return null;
 
     const nowMs = Date.now();
-    const activeProviderRows = (providerRows as PrioritySiblingProviderRow[])
+    const activeProviderRows = (providerRows as TierSiblingProviderRow[])
         .filter((row) => typeof row.provider_api_model_id === "string" && row.provider_api_model_id.length > 0)
         .filter((row) => isWithinEffectiveWindow(row.effective_from, row.effective_to, nowMs))
         .sort((a, b) => {
@@ -128,8 +155,8 @@ async function remapToPriorityFastSibling(
         .in("provider_api_model_id", providerApiModelIds);
     if (capabilityError || !capabilityRows?.length) return null;
 
-    const capabilityByProviderModelId = new Map<string, PrioritySiblingCapabilityRow>();
-    for (const row of capabilityRows as PrioritySiblingCapabilityRow[]) {
+    const capabilityByProviderModelId = new Map<string, TierSiblingCapabilityRow>();
+    for (const row of capabilityRows as TierSiblingCapabilityRow[]) {
         const providerApiModelId = row.provider_api_model_id;
         if (typeof providerApiModelId !== "string" || !providerApiModelId.length) continue;
         const previous = capabilityByProviderModelId.get(providerApiModelId);
@@ -219,7 +246,7 @@ export async function applyServiceTierRouting(args: {
         }
 
         if (requestedPlan === "priority") {
-            const remappedCandidate = await remapToPriorityFastSibling(candidate, args.capability);
+            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan);
             if (remappedCandidate) {
                 nextCandidates.push(remappedCandidate);
                 remappedProviders.push({
@@ -227,6 +254,19 @@ export async function applyServiceTierRouting(args: {
                     fromApiModelId: candidate.apiModelId ?? null,
                     toApiModelId: remappedCandidate.apiModelId ?? `${String(candidate.apiModelId ?? "").trim()}-fast`,
                     reason: "priority_fast_sibling",
+                });
+                continue;
+            }
+        }
+        if (requestedPlan === "flex") {
+            const remappedCandidate = await remapToTierSibling(candidate, args.capability, requestedPlan);
+            if (remappedCandidate) {
+                nextCandidates.push(remappedCandidate);
+                remappedProviders.push({
+                    providerId: candidate.providerId,
+                    fromApiModelId: candidate.apiModelId ?? null,
+                    toApiModelId: remappedCandidate.apiModelId ?? `${String(candidate.apiModelId ?? "").trim()}-flex`,
+                    reason: "flex_sibling",
                 });
                 continue;
             }

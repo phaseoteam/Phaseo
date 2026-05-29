@@ -251,4 +251,72 @@ describe("applyServiceTierRouting", () => {
             },
         ]);
     });
+
+    it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
+        queryState.providerRows = [
+            {
+                provider_api_model_id: "provider-flex-pam",
+                provider_model_slug: "gemini-3-pro-image-flex",
+                effective_from: "2026-05-29T00:00:00Z",
+                effective_to: null,
+            },
+        ];
+        queryState.capabilityRows = [
+            {
+                provider_api_model_id: "provider-flex-pam",
+                params: { mode: "flex" },
+                max_input_tokens: 2_000_000,
+                max_output_tokens: 64_000,
+                status: "active",
+                updated_at: "2026-05-29T00:00:00Z",
+                created_at: "2026-05-29T00:00:00Z",
+            },
+        ];
+        const siblingCard = makeCard({
+            provider: "google-ai-studio",
+            model: "google/gemini-3-pro-image-flex",
+            plans: ["standard"],
+        });
+        loadPriceCardMock.mockResolvedValue(siblingCard);
+
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "google-ai-studio",
+                    apiModelId: "google/gemini-3-pro-image",
+                    providerModelSlug: "gemini-3-pro-image",
+                    pricingCard: makeCard({
+                        provider: "google-ai-studio",
+                        model: "google/gemini-3-pro-image",
+                        plans: ["standard"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "flex" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).toHaveBeenCalledWith(
+            "google-ai-studio",
+            "google/gemini-3-pro-image-flex",
+            "text.generate",
+        );
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "google-ai-studio",
+            apiModelId: "google/gemini-3-pro-image-flex",
+            pricingKey: "google-ai-studio:google/gemini-3-pro-image-flex",
+            providerModelSlug: "gemini-3-pro-image-flex",
+            maxInputTokens: 2_000_000,
+            maxOutputTokens: 64_000,
+            capabilityParams: { mode: "flex" },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([
+            {
+                providerId: "google-ai-studio",
+                fromApiModelId: "google/gemini-3-pro-image",
+                toApiModelId: "google/gemini-3-pro-image-flex",
+                reason: "flex_sibling",
+            },
+        ]);
+    });
 });
