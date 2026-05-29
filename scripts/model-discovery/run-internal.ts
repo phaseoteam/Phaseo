@@ -58,6 +58,12 @@ type HuggingFaceOrgAdditions = {
     addedModelIds: string[];
 };
 
+export type HuggingFaceDiscoveryIssueSignal = HuggingFaceOrgAdditions;
+
+type InternalModelDiscoveryHooks = {
+    afterHfNotifications?: (hfAdditionsByOrg: HuggingFaceDiscoveryIssueSignal[]) => Promise<void>;
+};
+
 type AnnouncedInternalModelsState = {
     version: 1;
     updatedAt: string;
@@ -831,7 +837,7 @@ async function sendDiscordWebhook(
     }
 }
 
-export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
+export async function runInternalModelDiscovery(argv: string[], hooks: InternalModelDiscoveryHooks = {}): Promise<void> {
     const options = parseArgs(argv);
     const internalWebhookUrl =
         options.internalWebhookUrl ??
@@ -1000,6 +1006,9 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
     const holdHfBaseline = shouldCheckHf && hfAdditionsTotal > 0 && !shouldSendHf;
 
     if (!shouldSendInternal && !shouldSendHf) {
+        if (shouldCheckHf && hfAdditionsTotal > 0 && hooks.afterHfNotifications) {
+            await hooks.afterHfNotifications(hfAdditionsByOrg);
+        }
         writeDiscoveryState(
             statePath,
             holdInternalBaseline ? previousState.files : currentFiles,
@@ -1013,6 +1022,7 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
     );
 
     let mentionsSent = false;
+    const shouldRunHfNotificationHook = shouldCheckHf && hfAdditionsTotal > 0 && Boolean(hooks.afterHfNotifications);
 
     if (shouldSendInternal && internalWebhookUrl) {
         const avatarUrl = options.discordAvatarUrl ?? null;
@@ -1050,14 +1060,31 @@ export async function runInternalModelDiscovery(argv: string[]): Promise<void> {
         mentionsSent = true;
     }
 
+    if (shouldRunHfNotificationHook && shouldSendHf) {
+        await hooks.afterHfNotifications?.(hfAdditionsByOrg);
+    }
+
+    let hfNotificationError: unknown = null;
     if (shouldSendHf && hfWebhookUrl) {
         const hfMessage = buildHfDiscordMessage(hfAdditionsByOrg);
-        await sendDiscordWebhook(hfMessage, {
-            webhookUrl: hfWebhookUrl,
-            discordUserId: options.discordUserId,
-            discordRoleId: options.discordRoleId,
-            includeMentions: !mentionsSent,
-        });
+        try {
+            await sendDiscordWebhook(hfMessage, {
+                webhookUrl: hfWebhookUrl,
+                discordUserId: options.discordUserId,
+                discordRoleId: options.discordRoleId,
+                includeMentions: !mentionsSent,
+            });
+        } catch (error) {
+            hfNotificationError = error;
+        }
+    }
+
+    if (shouldRunHfNotificationHook && !shouldSendHf) {
+        await hooks.afterHfNotifications?.(hfAdditionsByOrg);
+    }
+
+    if (hfNotificationError) {
+        throw hfNotificationError;
     }
 
     writeDiscoveryState(

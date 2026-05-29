@@ -1,6 +1,7 @@
 import { runInternalModelDiscovery } from "./run-internal";
 
 async function main(): Promise<void> {
+    // Public AI Stats catalog checks intentionally do not mutate GitHub issues.
     const args = [...process.argv.slice(2), "--skip-hf"];
     await runInternalModelDiscovery(args);
 }

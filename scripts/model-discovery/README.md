@@ -17,8 +17,17 @@ On subsequent runs, the runner computes per-provider:
 - removed models
 - changed model payloads
 
-Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. Provider/model changes with no database mapping are ignored for notification and issue creation.
-If any known filtered diff exists, the runner sends a Discord webhook notification. It also syncs GitHub issues automatically when `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` are available. Issue state is stored in `scripts/model-discovery/state/provider-change-issues.json`, and issue threads are grouped by provider and action type so batched additions, changes, or deletions stay together instead of creating one issue per model. Deletion issues are only created for provider model IDs that still have a `data_api_provider_models` mapping, which avoids ghost issues for unknown upstream removals. Set `MODEL_DISCOVERY_GITHUB_ISSUES=false` to disable issue sync.
+## Private upstream discovery
+
+Private upstream discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. These checks send private Discord notifications and can create or update GitHub triage issues when `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` are available.
+
+Provider `/models` Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. GitHub issue sync is intentionally not filtered by that allowlist: unknown upstream models are included in triage issues so newly exposed provider or Hugging Face models are not silently discarded.
+
+Issue state is stored in `scripts/model-discovery/state/provider-change-issues.json`. Issue threads are grouped by source, provider/org, and action type so provider API and Hugging Face signals cannot collide.
+
+## Public AI Stats catalog discovery
+
+Public AI Stats catalog discovery checks AI Stats-owned state such as database records, public model/catalog files, provider mapping data, and generated SDK/OpenAPI model surfaces. These checks may send Discord notifications or write reports, but they do not create, update, comment on, close, label, or otherwise mutate GitHub issues.
 
 Internal model file checks read from `packages/data/catalog/src/data/models`.
 Internal Discord alerts are sent as embed payloads when internal models are added or when lifecycle fields change:
@@ -40,12 +49,12 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
 
 ## Script entrypoints
 
-- `scripts/model-discovery/run-internal-public.ts`
-  - Public internal model watcher notifications (new models + lifecycle updates).
 - `scripts/model-discovery/run.ts`
-  - Private external provider tracking notifications.
+  - Private upstream provider `/models` API discovery. Sends Discord notifications for known catalog-relevant changes and creates/updates GitHub triage issues for all upstream changes, including unknown models.
 - `scripts/model-discovery/run-hf-private.ts`
-  - Private Hugging Face org tracking notifications.
+  - Private upstream Hugging Face discovery. Sends private Discord notifications and creates/updates GitHub triage issues.
+- `scripts/model-discovery/run-internal-public.ts`
+  - Public AI Stats catalog/database discovery. Sends public/internal catalog notifications or reports only; it intentionally does not mutate GitHub issues.
 
 ## Local run
 
@@ -65,8 +74,10 @@ pnpm run data:check-new-models:test
 - `DISCORD_ROLE_ID_DEV` (optional dev role mention for Hugging Face private notifications)
 - `DISCORD_USER_ID` (optional mention)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling internal runner scripts with `--discord-avatar-url`)
-- `GITHUB_TOKEN` or `GH_TOKEN` plus `GITHUB_REPOSITORY` (optional, enables automatic GitHub issues for external provider additions/changes/deletions)
-- `MODEL_DISCOVERY_GITHUB_ISSUES=false` (optional, disables automatic GitHub issue sync)
+- `GITHUB_TOKEN` or `GH_TOKEN` plus `GITHUB_REPOSITORY` (optional, enables automatic GitHub issues for private upstream provider and Hugging Face additions/changes/deletions)
+- `MODEL_DISCOVERY_GITHUB_ISSUES=false` (optional, disables all private upstream GitHub issue sync)
+- `MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false` (optional, disables provider `/models` API GitHub issue sync only)
+- `MODEL_DISCOVERY_HF_GITHUB_ISSUES=false` (optional, disables Hugging Face GitHub issue sync only)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for known provider model DB allowlist)
 - `SUPABASE_SERVICE_ROLE_KEY` (required for known provider model DB allowlist)
 - Provider-specific API keys declared in each provider module.

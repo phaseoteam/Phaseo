@@ -90,6 +90,7 @@ jobs:
               env:
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_ROLE_ID_DEV: ${{ env.DISCORD_ROLE_ID_DEV }}
+                  GITHUB_TOKEN: ${{ github.token }}
               run: |
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts \
                     --discord-role-id "${{ env.DISCORD_ROLE_ID_DEV }}" \
