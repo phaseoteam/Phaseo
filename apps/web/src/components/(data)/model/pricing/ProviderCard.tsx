@@ -270,8 +270,8 @@ function derivePricingMultiplier(args: {
 	if (!baseProvider) return null;
 
 	const baseRuleMap = new Map<string, number>();
-	for (const rule of baseProvider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.selectedPlan) continue;
+	const basePlanRules = getProviderPricingRulesForPlan(baseProvider, args.selectedPlan);
+	for (const rule of basePlanRules) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -286,8 +286,8 @@ function derivePricingMultiplier(args: {
 	}
 
 	const ratios: number[] = [];
-	for (const rule of args.provider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.selectedPlan) continue;
+	const providerPlanRules = getProviderPricingRulesForPlan(args.provider, args.selectedPlan);
+	for (const rule of providerPlanRules) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -396,8 +396,7 @@ function derivePlanMultiplier(args: {
 	const baseRuleMap = new Map<string, number>();
 	const baseRuleMapIgnoringEndpoint = new Map<string, number>();
 	const activeBaseRules: ProviderPricing["pricing_rules"] = [];
-	for (const rule of args.provider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.basePlan) continue;
+	for (const rule of getProviderPricingRulesForPlan(args.provider, args.basePlan)) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -413,8 +412,7 @@ function derivePlanMultiplier(args: {
 	const fallbackRatios: number[] = [];
 	const inputRatios: number[] = [];
 	const outputRatios: number[] = [];
-	for (const rule of args.provider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.targetPlan) continue;
+	for (const rule of getProviderPricingRulesForPlan(args.provider, args.targetPlan)) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;

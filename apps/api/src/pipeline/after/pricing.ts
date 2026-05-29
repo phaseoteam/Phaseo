@@ -49,11 +49,28 @@ export async function loadProviderPricing(
     result: RequestResult
 ): Promise<PriceCard | null> {
     try {
-        let card = ctx.pricing?.[result.provider] ?? null;
+        const apiModelId =
+            typeof result.apiModelId === "string" && result.apiModelId.trim().length > 0
+                ? result.apiModelId.trim()
+                : null;
+        const pricingKey =
+            typeof result.pricingKey === "string" && result.pricingKey.trim().length > 0
+                ? result.pricingKey.trim()
+                : apiModelId
+                    ? `${result.provider}:${apiModelId}`
+                    : result.provider;
+
+        let card = ctx.pricing?.[pricingKey] ?? null;
+        if (!card && pricingKey !== result.provider) {
+            card = ctx.pricing?.[result.provider] ?? null;
+        }
 
         if (!card) {
-            const baseModel = getBaseModel(ctx.model);
-            card = await loadPriceCard(result.provider, baseModel, ctx.capability);
+            card = await loadPriceCard(
+                result.provider,
+                apiModelId ?? getBaseModel(ctx.model),
+                ctx.capability,
+            );
         }
 
         return card;
@@ -100,7 +117,6 @@ export function calculatePricing(
 
     return { pricedUsage, totalCents, totalNanos, currency };
 }
-
 
 
 

@@ -1,7 +1,18 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import type { PriceCard } from "../pricing";
-import { calculatePricing } from "./pricing";
+import { calculatePricing, loadProviderPricing } from "./pricing";
 import { shapeUsageForClient } from "../usage";
+
+const loadPriceCardMock = vi.hoisted(() => vi.fn());
+
+vi.mock("../pricing", async () => {
+	const actual = await vi.importActual<typeof import("../pricing")>("../pricing");
+	return {
+		...actual,
+		loadPriceCard: (...args: Parameters<typeof actual.loadPriceCard>) =>
+			loadPriceCardMock(...args),
+	};
+});
 
 const IMAGE_CARD: PriceCard = {
 	provider: "openai",
@@ -64,6 +75,10 @@ const TTS_CARD: PriceCard = {
 };
 
 describe("after/pricing calculatePricing", () => {
+	beforeEach(() => {
+		loadPriceCardMock.mockReset();
+	});
+
 	it("passes image request options through to rule matching", () => {
 		const result = calculatePricing(
 			{ output_image: 1 },
@@ -128,5 +143,63 @@ describe("after/pricing calculatePricing", () => {
 			"input_text_tokens",
 			"output_audio_tokens",
 		]);
+	});
+
+	it("prefers the remapped provider-model pricing card when present in context", async () => {
+		const ctx = {
+			model: "anthropic/claude-opus-4.8",
+			capability: "text.generate",
+			pricing: {
+				"venice:anthropic/claude-opus-4.8-fast": {
+					...TTS_CARD,
+					provider: "venice",
+					model: "anthropic/claude-opus-4.8-fast",
+				},
+			},
+		} as any;
+
+		const card = await loadProviderPricing(ctx, {
+			provider: "venice",
+			apiModelId: "anthropic/claude-opus-4.8-fast",
+			pricingKey: "venice:anthropic/claude-opus-4.8-fast",
+			generationTimeMs: 0,
+			kind: "completed",
+			bill: { usage: {} } as any,
+			upstream: new Response(null, { status: 200 }),
+		});
+
+		expect(card?.model).toBe("anthropic/claude-opus-4.8-fast");
+		expect(loadPriceCardMock).not.toHaveBeenCalled();
+	});
+
+	it("falls back to loading the remapped api model pricing when context pricing is missing", async () => {
+		loadPriceCardMock.mockResolvedValue({
+			...TTS_CARD,
+			provider: "venice",
+			model: "anthropic/claude-opus-4.8-fast",
+		});
+
+		const card = await loadProviderPricing(
+			{
+				model: "anthropic/claude-opus-4.8",
+				capability: "text.generate",
+				pricing: {},
+			} as any,
+			{
+				provider: "venice",
+				apiModelId: "anthropic/claude-opus-4.8-fast",
+				generationTimeMs: 0,
+				kind: "completed",
+				bill: { usage: {} } as any,
+				upstream: new Response(null, { status: 200 }),
+			},
+		);
+
+		expect(loadPriceCardMock).toHaveBeenCalledWith(
+			"venice",
+			"anthropic/claude-opus-4.8-fast",
+			"text.generate",
+		);
+		expect(card?.model).toBe("anthropic/claude-opus-4.8-fast");
 	});
 });

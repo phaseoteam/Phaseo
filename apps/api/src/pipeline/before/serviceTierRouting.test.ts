@@ -319,4 +319,23 @@ describe("applyServiceTierRouting", () => {
             },
         ]);
     });
+
+    it("does not classify missing pricing as service-tier unsupported", async () => {
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "venice",
+                    apiModelId: "anthropic/claude-opus-4.8",
+                    providerModelSlug: "claude-opus-4-8",
+                    pricingCard: null,
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(result.candidates).toHaveLength(1);
+        expect(result.diagnostics.droppedProviders).toEqual([]);
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+    });
 });

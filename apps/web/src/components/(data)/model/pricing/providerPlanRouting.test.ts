@@ -99,6 +99,9 @@ describe("providerPlanRouting", () => {
 
         expect(getProviderAvailablePlans(provider)).toEqual(["standard", "priority"]);
         expect(
+            getProviderPricingRulesForPlan(provider, "standard").map((rule) => rule.id),
+        ).toEqual(["std-base-input"]);
+        expect(
             getProviderPricingRulesForPlan(provider, "priority").map((rule) => rule.id),
         ).toEqual(["std-fast-input"]);
         expect(

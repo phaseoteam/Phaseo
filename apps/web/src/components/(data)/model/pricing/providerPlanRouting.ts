@@ -36,6 +36,37 @@ function buildProviderModelKey(model: ProviderModel): string {
     return `${model.api_provider_id}:${model.model_id}:${model.endpoint}`;
 }
 
+function getSiblingModelKeys(provider: ProviderPricing): Set<string> {
+    return new Set(
+        provider.provider_models
+            .filter((model) =>
+                isSiblingModelIdForPlan(model.model_id, "priority") ||
+                isSiblingModelIdForPlan(model.model_id, "flex"),
+            )
+            .map((model) => buildProviderModelKey(model)),
+    );
+}
+
+function getExplicitPricingRulesForPlan(
+    provider: ProviderPricing,
+    normalizedPlan: string,
+): PricingRule[] {
+    const explicitRules = provider.pricing_rules.filter(
+        (rule) => normalizePlan(rule.pricing_plan) === normalizedPlan,
+    );
+    if (normalizedPlan !== "standard" || explicitRules.length === 0) {
+        return explicitRules;
+    }
+
+    const siblingModelKeys = getSiblingModelKeys(provider);
+    if (!siblingModelKeys.size) return explicitRules;
+
+    const baseModelRules = explicitRules.filter(
+        (rule) => !siblingModelKeys.has(rule.model_key),
+    );
+    return baseModelRules.length > 0 ? baseModelRules : explicitRules;
+}
+
 function getDerivedSiblingPlanRules(
     provider: ProviderPricing,
     plan: string,
@@ -60,9 +91,7 @@ export function getProviderPricingRulesForPlan(
     plan: string,
 ): PricingRule[] {
     const normalizedPlan = normalizePlan(plan);
-    const explicitRules = provider.pricing_rules.filter(
-        (rule) => normalizePlan(rule.pricing_plan) === normalizedPlan,
-    );
+    const explicitRules = getExplicitPricingRulesForPlan(provider, normalizedPlan);
     if (explicitRules.length > 0) return explicitRules;
 
     if (normalizedPlan === "priority" || normalizedPlan === "flex") {

@@ -110,6 +110,14 @@ function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: Serv
     return hasPricingPlan(candidate.pricingCard, requestedPlan);
 }
 
+function hasConfiguredPricing(candidate: ProviderCandidate): boolean {
+    return Boolean(
+        candidate.pricingCard &&
+        Array.isArray(candidate.pricingCard.rules) &&
+        candidate.pricingCard.rules.length > 0,
+    );
+}
+
 async function remapToTierSibling(
     candidate: ProviderCandidate,
     capability: string,
@@ -240,6 +248,11 @@ export async function applyServiceTierRouting(args: {
     const remappedProviders: ServiceTierRoutingDiagnostics["remappedProviders"] = [];
 
     for (const candidate of args.candidates) {
+        if (!hasConfiguredPricing(candidate)) {
+            nextCandidates.push(candidate);
+            continue;
+        }
+
         if (supportsRequestedTier(candidate, requestedPlan)) {
             nextCandidates.push(candidate);
             continue;
