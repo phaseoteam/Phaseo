@@ -1022,6 +1022,7 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
     );
 
     let mentionsSent = false;
+    const shouldRunHfNotificationHook = shouldCheckHf && hfAdditionsTotal > 0 && Boolean(hooks.afterHfNotifications);
 
     if (shouldSendInternal && internalWebhookUrl) {
         const avatarUrl = options.discordAvatarUrl ?? null;
@@ -1059,6 +1060,10 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
         mentionsSent = true;
     }
 
+    if (shouldRunHfNotificationHook && shouldSendHf) {
+        await hooks.afterHfNotifications?.(hfAdditionsByOrg);
+    }
+
     let hfNotificationError: unknown = null;
     if (shouldSendHf && hfWebhookUrl) {
         const hfMessage = buildHfDiscordMessage(hfAdditionsByOrg);
@@ -1074,8 +1079,8 @@ export async function runInternalModelDiscovery(argv: string[], hooks: InternalM
         }
     }
 
-    if (shouldCheckHf && hfAdditionsTotal > 0 && hooks.afterHfNotifications) {
-        await hooks.afterHfNotifications(hfAdditionsByOrg);
+    if (shouldRunHfNotificationHook && !shouldSendHf) {
+        await hooks.afterHfNotifications?.(hfAdditionsByOrg);
     }
 
     if (hfNotificationError) {
