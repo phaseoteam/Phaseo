@@ -8004,7 +8004,7 @@
         "context_length":  262144,
         "max_output_tokens":  32000,
         "effective_from":  "2026-03-25T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-06-05T00:00:00Z",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -9543,6 +9543,29 @@
                                                     "provider_default":  null,
                                                     "notes":  null
                                                 }
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "xiaomi/mimo-v2.5",
+        "provider_api_model_id":  "novita:xiaomi/mimo-v2.5",
+        "provider_model_slug":  "xiaomimimo/mimo-v2.5",
+        "internal_model_id":  "xiaomi/mimo-v2.5",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  1048576,
+        "max_output_tokens":  131072,
+        "effective_from":  "2026-05-29T00:00:00Z",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
                                             ]
                              }
                          ]
