@@ -22,9 +22,12 @@ vi.mock("@/runtime/env", () => ({
                         builder.eq = (column: string, value: unknown) => {
                             queryState.providerFilters[column] = value;
                             if (column === "is_active_gateway") {
-                                const rows = queryState.providerRows.filter((row) => {
-                                    return row.is_active_gateway === value;
-                                });
+                                const rows = queryState.providerRows.filter((row) =>
+                                    Object.entries(queryState.providerFilters).every(
+                                        ([filterColumn, filterValue]) =>
+                                            row[filterColumn as keyof typeof row] === filterValue,
+                                    ),
+                                );
                                 return Promise.resolve({
                                     data: rows,
                                     error: null,
@@ -191,6 +194,8 @@ describe("applyServiceTierRouting", () => {
     it("remaps Venice priority requests to the hidden fast sibling slug while keeping the public model stable", async () => {
         queryState.providerRows = [
             {
+                provider_id: "venice",
+                api_model_id: "anthropic/claude-opus-4.8-fast",
                 provider_api_model_id: "venice-fast-pam",
                 provider_model_slug: "claude-opus-4-8-fast",
                 is_active_gateway: false,
@@ -250,6 +255,8 @@ describe("applyServiceTierRouting", () => {
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {
+                provider_id: "google-ai-studio",
+                api_model_id: "google/gemini-3-pro-image-flex",
                 provider_api_model_id: "provider-flex-pam",
                 provider_model_slug: "gemini-3-pro-image-flex",
                 is_active_gateway: true,

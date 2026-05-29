@@ -341,7 +341,12 @@ export async function applyServiceTierRouting(args: {
             continue;
         }
 
-        if (requestedPlan === "priority" || requestedPlan === "flex") {
+        const supportsPublicRequestedTier = supportsRequestedTier(candidate, requestedPlan);
+
+        if (
+            supportsPublicRequestedTier &&
+            (requestedPlan === "priority" || requestedPlan === "flex")
+        ) {
             const hiddenSiblingCandidate = await remapToHiddenTierSibling(
                 candidate,
                 args.capability,
@@ -362,7 +367,7 @@ export async function applyServiceTierRouting(args: {
             }
         }
 
-        if (supportsRequestedTier(candidate, requestedPlan)) {
+        if (supportsPublicRequestedTier) {
             nextCandidates.push(candidate);
             continue;
         }
