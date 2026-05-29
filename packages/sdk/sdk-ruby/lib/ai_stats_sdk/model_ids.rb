@@ -54,6 +54,9 @@ module AIStatsSdk
     # Model ID: anthropic/claude-opus-4.8
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
     ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8"
+    # Model ID: anthropic/claude-opus-4.8-fast
+    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast
+    ANTHROPIC_CLAUDE_OPUS_4_8_FAST = "anthropic/claude-opus-4.8-fast"
     # Model ID: anthropic/claude-sonnet-4
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
     ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4"
@@ -150,6 +153,18 @@ module AIStatsSdk
     # Model ID: crofai/greg
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg
     CROFAI_GREG = "crofai/greg"
+    # Model ID: crofai/greg-1
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1
+    CROFAI_GREG_1 = "crofai/greg-1"
+    # Model ID: crofai/greg-1-mini
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
+    CROFAI_GREG_1_MINI = "crofai/greg-1-mini"
+    # Model ID: crofai/greg-1-super
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super
+    CROFAI_GREG_1_SUPER = "crofai/greg-1-super"
+    # Model ID: crofai/greg-rp
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp
+    CROFAI_GREG_RP = "crofai/greg-rp"
     # Model ID: deepseek/deepseek-ocr
     # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr
     DEEPSEEK_DEEPSEEK_OCR = "deepseek/deepseek-ocr"
@@ -204,6 +219,9 @@ module AIStatsSdk
     # Model ID: deepseek/deepseek-v4-pro
     # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
     DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro"
+    # Model ID: deepseek/deepseek-v4-pro-lightning
+    # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning
+    DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING = "deepseek/deepseek-v4-pro-lightning"
     # Model ID: deepseek/deepseek-v4-pro-precision
     # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-precision
     DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION = "deepseek/deepseek-v4-pro-precision"
@@ -1381,6 +1399,7 @@ module AIStatsSdk
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_7,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_8,
+    ModelIds::ANTHROPIC_CLAUDE_OPUS_4_8_FAST,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_5,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_6,
@@ -1413,6 +1432,10 @@ module AIStatsSdk
     ModelIds::BYTEDANCE_SEEDANCE_2_0_FAST,
     ModelIds::COGITO_COGITO_671B_V2_1,
     ModelIds::CROFAI_GREG,
+    ModelIds::CROFAI_GREG_1,
+    ModelIds::CROFAI_GREG_1_MINI,
+    ModelIds::CROFAI_GREG_1_SUPER,
+    ModelIds::CROFAI_GREG_RP,
     ModelIds::DEEPSEEK_DEEPSEEK_OCR,
     ModelIds::DEEPSEEK_DEEPSEEK_OCR_2,
     ModelIds::DEEPSEEK_DEEPSEEK_PROVER_V2_671B,
@@ -1431,6 +1454,7 @@ module AIStatsSdk
     ModelIds::DEEPSEEK_DEEPSEEK_V3_2_THINKING,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_FLASH,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO,
+    ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION,
     ModelIds::ESSENTIAL_AI_RNJ_1,
     ModelIds::GOOGLE_GEMINI_2_0_FLASH,

@@ -58,6 +58,9 @@ public final class ModelIds {
     /** Model ID: <code>anthropic/claude-opus-4.8</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
     public static final String ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8";
 
+    /** Model ID: <code>anthropic/claude-opus-4.8-fast</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast */
+    public static final String ANTHROPIC_CLAUDE_OPUS_4_8_FAST = "anthropic/claude-opus-4.8-fast";
+
     /** Model ID: <code>anthropic/claude-sonnet-4</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
     public static final String ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4";
 
@@ -154,6 +157,18 @@ public final class ModelIds {
     /** Model ID: <code>crofai/greg</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg */
     public static final String CROFAI_GREG = "crofai/greg";
 
+    /** Model ID: <code>crofai/greg-1</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1 */
+    public static final String CROFAI_GREG_1 = "crofai/greg-1";
+
+    /** Model ID: <code>crofai/greg-1-mini</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini */
+    public static final String CROFAI_GREG_1_MINI = "crofai/greg-1-mini";
+
+    /** Model ID: <code>crofai/greg-1-super</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super */
+    public static final String CROFAI_GREG_1_SUPER = "crofai/greg-1-super";
+
+    /** Model ID: <code>crofai/greg-rp</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp */
+    public static final String CROFAI_GREG_RP = "crofai/greg-rp";
+
     /** Model ID: <code>deepseek/deepseek-ocr</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr */
     public static final String DEEPSEEK_DEEPSEEK_OCR = "deepseek/deepseek-ocr";
 
@@ -207,6 +222,9 @@ public final class ModelIds {
 
     /** Model ID: <code>deepseek/deepseek-v4-pro</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro */
     public static final String DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro";
+
+    /** Model ID: <code>deepseek/deepseek-v4-pro-lightning</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning */
+    public static final String DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING = "deepseek/deepseek-v4-pro-lightning";
 
     /** Model ID: <code>deepseek/deepseek-v4-pro-precision</code>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-precision */
     public static final String DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION = "deepseek/deepseek-v4-pro-precision";
