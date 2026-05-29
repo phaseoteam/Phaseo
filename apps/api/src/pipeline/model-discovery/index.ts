@@ -22,6 +22,7 @@ import {
 	toInt,
 	toPricingFingerprint,
 } from "./helpers";
+import { buildProviderIssueEntries, syncProviderDiscoveryIssues } from "./github-issues";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -166,6 +167,13 @@ type DiscoveryRunSummary = {
 	staleModelsDeleted: number;
 	results: ProviderResult[];
 	changes: ProviderChange[];
+	issueSync?: {
+		created: number;
+		updated: number;
+		skipped: boolean;
+		reason?: string | null;
+		error?: string | null;
+	};
 	pricingMonitor: PricingMonitorSummary;
 	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
@@ -609,6 +617,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	try {
 		const results: ProviderResult[] = [];
 		const changes: ProviderChange[] = [];
+		let issueSyncSummary: DiscoveryRunSummary["issueSync"] = {
+			created: 0,
+			updated: 0,
+			skipped: false,
+			reason: "not attempted",
+		};
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
@@ -727,6 +741,22 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					reason: error instanceof Error ? error.message : String(error),
 					durationMs: Date.now() - providerStarted,
 				});
+			}
+		}
+
+		if (changes.length > 0) {
+			const issueEntries = buildProviderIssueEntries({
+				changes,
+				detectedAt: new Date().toISOString(),
+				source: args.source,
+			});
+			issueSyncSummary = await syncProviderDiscoveryIssues(issueEntries);
+			if (issueSyncSummary.skipped) {
+				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason ?? "no reason provided");
+			} else {
+				console.log(
+					`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
+				);
 			}
 		}
 
@@ -876,6 +906,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted,
 			results,
 			changes,
+			issueSync: issueSyncSummary,
 			pricingMonitor,
 			providerApiPricingMonitor,
 			configuredModelCoverageMonitor,
@@ -908,6 +939,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted: 0,
 			results: [],
 			changes: [],
+			issueSync: {
+				created: 0,
+				updated: 0,
+				skipped: false,
+				error: reason,
+			},
 			pricingMonitor: {
 				enabled: pricingEnabled,
 				executed: false,
@@ -944,6 +981,4 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
-
-
 
