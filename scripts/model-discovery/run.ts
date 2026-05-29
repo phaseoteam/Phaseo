@@ -5,6 +5,9 @@ import { createAdminClient } from "../../apps/web/src/utils/supabase/admin";
 import { getProviderDiscoveryRule } from "./providers/discovery-policy";
 import type { ProviderDefinition, ProviderModel } from "./providers/_shared";
 import { asRecord, getMissingEnvVars, sortKeysDeep } from "./providers/_shared";
+import { syncProviderChangeIssues } from "./github-issues";
+
+type SupabaseAdminClient = ReturnType<typeof createAdminClient>;
 
 type ProviderSnapshot = {
     providerId: string;
@@ -111,6 +114,7 @@ const STATE_DIR = path.join(SCRIPT_DIR, "state");
 const STATE_PATH = path.join(STATE_DIR, "provider-model-snapshots.json");
 const REPORT_PATH = path.join(STATE_DIR, "last-run-report.json");
 const CHANGE_FEED_PATH = path.join(STATE_DIR, "provider-change-feed.jsonl");
+const ISSUE_STATE_PATH = path.join(STATE_DIR, "provider-change-issues.json");
 const MAX_CHANGE_FEED_ENTRIES = 5000;
 const MAX_DISCORD_EVENT_LINES = 25;
 const UPSERT_BATCH_SIZE = 500;
@@ -142,9 +146,13 @@ function canonicalModelKey(value: string): string {
     return value.trim().toLowerCase().replace(/\s+/g, "");
 }
 
-async function loadApiModelAllowlistByProvider(): Promise<Map<string, Set<string>>> {
-    const client = createAdminClient();
+async function loadApiModelAllowlistByProvider(
+    client: SupabaseAdminClient,
+    providerIds: string[]
+): Promise<Map<string, Set<string>>> {
     const map = new Map<string, Set<string>>();
+    const uniqueProviderIds = Array.from(new Set(providerIds));
+    if (uniqueProviderIds.length === 0) return map;
     const pageSize = 1000;
     let from = 0;
 
@@ -152,6 +160,7 @@ async function loadApiModelAllowlistByProvider(): Promise<Map<string, Set<string
         const { data, error } = await client
             .from("data_api_provider_models")
             .select("provider_id, provider_model_slug, api_model_id")
+            .in("provider_id", uniqueProviderIds)
             .range(from, from + pageSize - 1);
 
         if (error) {
@@ -392,7 +401,7 @@ function filterDiffByAllowlist(diff: ProviderDiff | null, allowlist: Set<string>
     }
 
     if (!allowlist || allowlist.size === 0) {
-        return diff;
+        return null;
     }
 
     const filterIds = (ids: string[]): string[] => ids.filter((id) => allowlist.has(canonicalModelKey(id)));
@@ -423,8 +432,12 @@ function extractPricingDetails(modelPayload: Record<string, unknown>): unknown {
     return null;
 }
 
-async function insertRunStart(runId: string, startedAtIso: string, providersTotal: number): Promise<void> {
-    const client = createAdminClient();
+async function insertRunStart(
+    client: SupabaseAdminClient,
+    runId: string,
+    startedAtIso: string,
+    providersTotal: number
+): Promise<void> {
     const { error } = await client.from("model_discovery_runs").insert({
         id: runId,
         trigger: "scheduled",
@@ -441,6 +454,7 @@ async function insertRunStart(runId: string, startedAtIso: string, providersTota
 }
 
 async function updateRunFinish(
+    client: SupabaseAdminClient,
     runId: string,
     status: RunStatus,
     summary: {
@@ -458,7 +472,6 @@ async function updateRunFinish(
     },
     errorMessage?: string
 ): Promise<void> {
-    const client = createAdminClient();
     const payload = {
         status,
         started_at: summary.startedAtIso,
@@ -483,7 +496,10 @@ async function updateRunFinish(
     }
 }
 
-async function loadSeenModelIdsByProvider(providerIds: string[]): Promise<Map<string, Set<string>>> {
+async function loadSeenModelIdsByProvider(
+    client: SupabaseAdminClient,
+    providerIds: string[]
+): Promise<Map<string, Set<string>>> {
     const out = new Map<string, Set<string>>();
     for (const providerId of providerIds) {
         out.set(providerId, new Set<string>());
@@ -493,7 +509,6 @@ async function loadSeenModelIdsByProvider(providerIds: string[]): Promise<Map<st
         return out;
     }
 
-    const client = createAdminClient();
     const pageSize = 1000;
     let from = 0;
 
@@ -530,10 +545,8 @@ async function loadSeenModelIdsByProvider(providerIds: string[]): Promise<Map<st
     return out;
 }
 
-async function upsertSeenModels(rows: SeenModelUpsertRow[]): Promise<void> {
+async function upsertSeenModels(client: SupabaseAdminClient, rows: SeenModelUpsertRow[]): Promise<void> {
     if (rows.length === 0) return;
-
-    const client = createAdminClient();
     for (let index = 0; index < rows.length; index += UPSERT_BATCH_SIZE) {
         const batch = rows.slice(index, index + UPSERT_BATCH_SIZE);
         const { error } = await client
@@ -545,10 +558,8 @@ async function upsertSeenModels(rows: SeenModelUpsertRow[]): Promise<void> {
     }
 }
 
-async function deleteSeenModels(rows: SeenModelDeleteRow[]): Promise<number> {
+async function deleteSeenModels(client: SupabaseAdminClient, rows: SeenModelDeleteRow[]): Promise<number> {
     if (rows.length === 0) return 0;
-
-    const client = createAdminClient();
     const grouped = new Map<string, string[]>();
 
     for (const row of rows) {
@@ -763,7 +774,6 @@ async function sendDiscordWebhook(message: string): Promise<void> {
 
 async function main(): Promise<void> {
     const loadedEnvFiles = loadLocalEnvFiles();
-    const apiModelAllowlistByProvider = await loadApiModelAllowlistByProvider();
 
     const previousState = readState(STATE_PATH);
     const nextState: DiscoveryState = {
@@ -803,13 +813,16 @@ async function main(): Promise<void> {
     }
     const missingKeys = Array.from(missingKeyTotals.keys()).sort((a, b) => a.localeCompare(b));
     const results: ProviderRunResult[] = [];
+    const rawChanges: ProviderChangeSet[] = [];
     const changes: ProviderChangeSet[] = [];
+    let apiModelAllowlistByProvider = new Map<string, Set<string>>();
     const upsertRows: SeenModelUpsertRow[] = [];
     const deleteRows: SeenModelDeleteRow[] = [];
     let staleModelsDeleted = 0;
     let runChangeEntries: ProviderChangeEntry[] = [];
     let mergedFeed: ProviderChangeEntry[] = [];
     let notificationError: string | null = null;
+    let issueSyncError: string | null = null;
     let finishedAtIso = runStartedAtIso;
     const readinessById = new Map<string, string[]>(providerReadiness.map((provider) => [provider.providerId, provider.missingEnv]));
     const platformInfoByProviderId = new Map(
@@ -826,8 +839,9 @@ async function main(): Promise<void> {
             .filter((provider) => provider.isInactiveByPolicy)
             .map((provider) => [provider.providerId, provider.inactiveReason])
     );
-    const seenModelIdsByProvider = await loadSeenModelIdsByProvider(providers.map((provider) => provider.id));
-    await insertRunStart(runId, runStartedAtIso, providers.length);
+    const db = createAdminClient();
+    const seenModelIdsByProvider = await loadSeenModelIdsByProvider(db, providers.map((provider) => provider.id));
+    await insertRunStart(db, runId, runStartedAtIso, providers.length);
 
     try {
         for (const provider of providers) {
@@ -867,15 +881,13 @@ async function main(): Promise<void> {
 
                 const previousSnapshot = previousState.providers[provider.id];
                 const rawDiff = diffSnapshots(previousSnapshot, currentSnapshot);
-                const allowlist = provider.id === "anthropic" ? undefined : apiModelAllowlistByProvider.get(provider.id);
-                const filteredDiff = filterDiffByAllowlist(rawDiff, allowlist);
-                if (filteredDiff) {
+                if (rawDiff) {
                     const platformInfo = platformInfoByProviderId.get(provider.id) ?? {
                         platformId: provider.id,
                         platformName: provider.name,
                     };
-                    changes.push({
-                        ...filteredDiff,
+                    rawChanges.push({
+                        ...rawDiff,
                         platformId: platformInfo.platformId,
                         platformName: platformInfo.platformName,
                     });
@@ -904,7 +916,6 @@ async function main(): Promise<void> {
                     }
                 }
                 seenModelIdsByProvider.set(provider.id, currentModelIds);
-
                 nextState.providers[provider.id] = currentSnapshot;
 
                 results.push({
@@ -913,7 +924,7 @@ async function main(): Promise<void> {
                     status: "success",
                     durationMs: Date.now() - started,
                     modelCount: models.length,
-                    diff: filteredDiff,
+                    diff: rawDiff,
                 });
             } catch (error) {
                 const reason = error instanceof Error ? error.message : String(error);
@@ -927,9 +938,31 @@ async function main(): Promise<void> {
             }
         }
 
+        if (rawChanges.length > 0) {
+            const changedProviderIds = Array.from(new Set(rawChanges.map((change) => change.providerId)));
+            apiModelAllowlistByProvider = await loadApiModelAllowlistByProvider(db, changedProviderIds);
+            const filteredChangesByProvider = new Map<string, ProviderChangeSet>();
+            for (const rawChange of rawChanges) {
+                const allowlist = apiModelAllowlistByProvider.get(rawChange.providerId);
+                const filteredDiff = filterDiffByAllowlist(rawChange, allowlist);
+                if (!filteredDiff) continue;
+                const filteredChange = {
+                    ...rawChange,
+                    ...filteredDiff,
+                } satisfies ProviderChangeSet;
+                changes.push(filteredChange);
+                filteredChangesByProvider.set(filteredChange.providerId, filteredChange);
+            }
+            for (const result of results) {
+                if (result.status === "success") {
+                    result.diff = filteredChangesByProvider.get(result.providerId) ?? null;
+                }
+            }
+        }
+
         writeJson(STATE_PATH, nextState);
-        await upsertSeenModels(upsertRows);
-        staleModelsDeleted = await deleteSeenModels(deleteRows);
+        await upsertSeenModels(db, upsertRows);
+        staleModelsDeleted = await deleteSeenModels(db, deleteRows);
 
         const runTimestamp = nowIso();
         runChangeEntries = buildProviderChangeEntries(changes, runTimestamp);
@@ -949,6 +982,7 @@ async function main(): Promise<void> {
             runId,
             statePath: path.relative(process.cwd(), STATE_PATH),
             changeFeedPath: path.relative(process.cwd(), CHANGE_FEED_PATH),
+            issueStatePath: path.relative(process.cwd(), ISSUE_STATE_PATH),
             changeFeedTotalEntries: mergedFeed.length,
             changeFeedNewEntries: runChangeEntries.length,
             providerCount: providers.length,
@@ -985,7 +1019,7 @@ async function main(): Promise<void> {
 
         console.log(`[model-discovery] Providers loaded: ${providers.length}`);
         console.log(
-            `[model-discovery] API model allowlist loaded from data_api_provider_models for ${apiModelAllowlistByProvider.size} provider(s).`
+            `[model-discovery] Known provider model allowlist loaded from data_api_provider_models for ${apiModelAllowlistByProvider.size} provider(s).`
         );
         if (loadedEnvFiles.length > 0) {
             console.log(`[model-discovery] Loaded local env files: ${loadedEnvFiles.join(", ")}`);
@@ -1014,13 +1048,31 @@ async function main(): Promise<void> {
                 notificationError = error instanceof Error ? error.message : String(error);
                 console.error(`[model-discovery] Discord notification failed: ${notificationError}`);
             }
+
+            console.log("[model-discovery] Syncing GitHub issues for detected provider model changes.");
+            try {
+                const issueSync = await syncProviderChangeIssues(runChangeEntries, {
+                    statePath: ISSUE_STATE_PATH,
+                    knownModelIdsByProvider: apiModelAllowlistByProvider,
+                    logger: console,
+                });
+                if (!issueSync.skipped) {
+                    console.log(
+                        `[model-discovery] GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
+                    );
+                }
+            } catch (error) {
+                issueSyncError = error instanceof Error ? error.message : String(error);
+                console.error(`[model-discovery] GitHub issue sync failed: ${issueSyncError}`);
+            }
         }
 
         finishedAtIso = nowIso();
         const providersError = results.filter((result) => result.status === "error").length;
         const changesCount = runChangeEntries.length;
-        const status: RunStatus = providersError > 0 || notificationError ? "completed_with_errors" : "completed";
+        const status: RunStatus = providersError > 0 || notificationError || issueSyncError ? "completed_with_errors" : "completed";
         await updateRunFinish(
+            db,
             runId,
             status,
             {
@@ -1036,7 +1088,7 @@ async function main(): Promise<void> {
                 changeFeedPath: path.relative(process.cwd(), CHANGE_FEED_PATH),
                 changeFeedNewEntries: runChangeEntries.length,
             },
-            notificationError ?? undefined
+            [notificationError, issueSyncError].filter(Boolean).join("; ") || undefined
         );
 
         if (notificationError) {
@@ -1047,6 +1099,7 @@ async function main(): Promise<void> {
         const message = error instanceof Error ? error.message : String(error);
         try {
             await updateRunFinish(
+                db,
                 runId,
                 "failed",
                 {

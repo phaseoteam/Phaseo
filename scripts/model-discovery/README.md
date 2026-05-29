@@ -17,8 +17,8 @@ On subsequent runs, the runner computes per-provider:
 - removed models
 - changed model payloads
 
-Discord alerts are filtered to models from the database table `data_api_provider_models` (`provider_model_slug` and `api_model_id` tail). This includes entries regardless of `is_active_gateway` status.
-If any filtered diff exists, the runner sends a Discord webhook notification.
+Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. Provider/model changes with no database mapping are ignored for notification and issue creation.
+If any known filtered diff exists, the runner sends a Discord webhook notification. It also syncs GitHub issues automatically when `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` are available. Issue state is stored in `scripts/model-discovery/state/provider-change-issues.json`, and issue threads are grouped by provider and action type so batched additions, changes, or deletions stay together instead of creating one issue per model. Deletion issues are only created for provider model IDs that still have a `data_api_provider_models` mapping, which avoids ghost issues for unknown upstream removals. Set `MODEL_DISCOVERY_GITHUB_ISSUES=false` to disable issue sync.
 
 Internal model file checks read from `packages/data/catalog/src/data/models`.
 Internal Discord alerts are sent as embed payloads when internal models are added or when lifecycle fields change:
@@ -65,8 +65,10 @@ pnpm run data:check-new-models:test
 - `DISCORD_ROLE_ID_DEV` (optional dev role mention for Hugging Face private notifications)
 - `DISCORD_USER_ID` (optional mention)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling internal runner scripts with `--discord-avatar-url`)
-- `NEXT_PUBLIC_SUPABASE_URL` (required for DB allowlist)
-- `SUPABASE_SERVICE_ROLE_KEY` (required for DB allowlist)
+- `GITHUB_TOKEN` or `GH_TOKEN` plus `GITHUB_REPOSITORY` (optional, enables automatic GitHub issues for external provider additions/changes/deletions)
+- `MODEL_DISCOVERY_GITHUB_ISSUES=false` (optional, disables automatic GitHub issue sync)
+- `NEXT_PUBLIC_SUPABASE_URL` (required for known provider model DB allowlist)
+- `SUPABASE_SERVICE_ROLE_KEY` (required for known provider model DB allowlist)
 - Provider-specific API keys declared in each provider module.
 
 For local runs, the runner also auto-loads env files (without overriding already-exported shell vars) in this order:
