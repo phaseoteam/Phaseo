@@ -9,13 +9,13 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.4,
+      "price_per_unit": 0.3,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00Z"
+      "effective_from": "2026-05-29T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -24,22 +24,22 @@
       "price_per_unit": 0.003,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Derived from CrofAI live pricing page model payload.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00Z"
+      "effective_from": "2026-05-29T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.85,
+      "price_per_unit": 0.5,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00Z"
+      "effective_from": "2026-05-29T00:00:00Z"
     }
   ]
 }

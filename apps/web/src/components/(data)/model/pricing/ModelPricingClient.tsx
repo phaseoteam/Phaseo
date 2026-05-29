@@ -36,8 +36,12 @@ import { cn } from "@/lib/utils";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
 import { mergeProviderPricingOffers } from "@/lib/providers/providerFamilyGroups";
-
-const PLAN_ORDER = ["free", "standard", "priority", "flex", "batch"] as const;
+import {
+    getProviderAvailablePlans,
+    getProviderModelScopeForPlan,
+    hasPricingForPlan,
+    isProviderVisibleForPlan,
+} from "@/components/(data)/model/pricing/providerPlanRouting";
 const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
@@ -131,16 +135,6 @@ function getPreferredPlan(plans: string[]): string {
     return plans[0] || "standard";
 }
 
-function getProviderAvailablePlans(provider: ProviderPricing): string[] {
-    const set = new Set<string>();
-    for (const rule of provider.pricing_rules) {
-        set.add(rule.pricing_plan || "standard");
-    }
-    const ordered = PLAN_ORDER.filter((plan) => set.has(plan));
-    const extras = Array.from(set).filter((plan) => !PLAN_ORDER.includes(plan as any)).sort();
-    return [...ordered, ...extras];
-}
-
 function normalizedRulePrice(
     rule: ProviderPricing["pricing_rules"][number]
 ): number | null {
@@ -172,23 +166,6 @@ function isSortDirection(value: string | null): value is SortDirection {
 function getDefaultSortDirection(sort: SortOption): SortDirection {
     if (sort === "default") return "desc";
     return DEFAULT_SORT_DIRECTIONS[sort];
-}
-
-function getProviderModelScopeForPlan(
-    provider: ProviderPricing,
-    plan: string
-): ProviderPricing["provider_models"] {
-    const planRules = provider.pricing_rules.filter(
-        (r) => (r.pricing_plan || "standard") === plan
-    );
-    if (!planRules.length) return provider.provider_models;
-    const planModelKeys = new Set(planRules.map((r) => r.model_key));
-    const matchingProviderModels = provider.provider_models.filter((pm) =>
-        planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
-    );
-    return matchingProviderModels.length > 0
-        ? matchingProviderModels
-        : provider.provider_models;
 }
 
 function getProviderDefaultPlan(provider: ProviderPricing): string {
@@ -239,17 +216,6 @@ function getIgnoredPrivacyReasons(
     }
 
     return reasons;
-}
-
-function hasPricingForPlan(provider: ProviderPricing, plan: string): boolean {
-    return provider.pricing_rules.some(
-        (rule) => (rule.pricing_plan || "standard") === plan
-    );
-}
-
-function isProviderVisibleForPlan(provider: ProviderPricing, plan: string): boolean {
-    if (!provider.pricing_rules.length) return provider.provider_models.length > 0;
-    return hasPricingForPlan(provider, plan);
 }
 
 function normalizePlanFrequency(value: string | null | undefined): string {

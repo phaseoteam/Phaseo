@@ -298,6 +298,9 @@ export type IRRequestResult = {
 	stream?: ReadableStream<Uint8Array> | null;
 	usageFinalizer?: (() => Promise<Bill | null>) | null;
 	provider: string;
+	apiModelId?: string | null;
+	pricingKey?: string | null;
+	providerModelSlug?: string | null;
 	generationTimeMs: number;
 	bill: Bill;
 	keySource?: "gateway" | "byok";
@@ -813,6 +816,13 @@ async function attemptProviderWithIR(
 			stream: executorResult.kind === "stream" ? executorResult.stream : undefined,
 			usageFinalizer: executorResult.kind === "stream" ? executorResult.usageFinalizer : undefined,
 			provider: candidate.providerId,
+			apiModelId: candidateApiModelId,
+			pricingKey:
+				candidate.pricingKey ??
+				(candidateApiModelId
+					? `${candidate.providerId}:${candidateApiModelId}`
+					: candidate.providerId),
+			providerModelSlug: providerModelSlug ?? null,
 			generationTimeMs,
 			bill: {
 				...executorResult.bill,
@@ -928,7 +938,6 @@ async function attemptProviderWithIR(
 		return { ok: false };
 	}
 }
-
 
 
 

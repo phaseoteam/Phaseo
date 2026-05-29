@@ -1,0 +1,33 @@
+{
+  "model_id": "deepseek/deepseek-v4-pro-lightning",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek V4 Pro Lightning",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "DeepSeek V4 Pro Lightning is a CrofAI-hosted high-speed deployment variant of DeepSeek V4 Pro with a 1M-token context window and 131,072 max output tokens.",
+  "announced_date": "2026-04-25T06:19:00",
+  "release_date": "2026-04-25T06:19:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-v4-pro-lightning",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://crof.ai/pricing"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    }
+  ],
+  "benchmarks": []
+}

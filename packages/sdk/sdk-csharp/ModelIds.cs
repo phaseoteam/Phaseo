@@ -40,6 +40,8 @@ namespace AiStatsSdk
         public const string AnthropicClaudeOpus47Fast = "anthropic/claude-opus-4.7-fast";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.8</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8</summary>
         public const string AnthropicClaudeOpus48 = "anthropic/claude-opus-4.8";
+        /// <summary>Model ID: <c>anthropic/claude-opus-4.8-fast</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast</summary>
+        public const string AnthropicClaudeOpus48Fast = "anthropic/claude-opus-4.8-fast";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4</summary>
         public const string AnthropicClaudeSonnet4 = "anthropic/claude-sonnet-4";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5</summary>
@@ -104,6 +106,14 @@ namespace AiStatsSdk
         public const string CogitoCogito671bV21 = "cogito/cogito-671b-v2.1";
         /// <summary>Model ID: <c>crofai/greg</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg</summary>
         public const string CrofaiGreg = "crofai/greg";
+        /// <summary>Model ID: <c>crofai/greg-1</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1</summary>
+        public const string CrofaiGreg1 = "crofai/greg-1";
+        /// <summary>Model ID: <c>crofai/greg-1-mini</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini</summary>
+        public const string CrofaiGreg1Mini = "crofai/greg-1-mini";
+        /// <summary>Model ID: <c>crofai/greg-1-super</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super</summary>
+        public const string CrofaiGreg1Super = "crofai/greg-1-super";
+        /// <summary>Model ID: <c>crofai/greg-rp</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp</summary>
+        public const string CrofaiGregRp = "crofai/greg-rp";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr</summary>
         public const string DeepseekDeepseekOcr = "deepseek/deepseek-ocr";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr-2</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr-2</summary>
@@ -140,6 +150,8 @@ namespace AiStatsSdk
         public const string DeepseekDeepseekV4Flash = "deepseek/deepseek-v4-flash";
         /// <summary>Model ID: <c>deepseek/deepseek-v4-pro</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro</summary>
         public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
+        /// <summary>Model ID: <c>deepseek/deepseek-v4-pro-lightning</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning</summary>
+        public const string DeepseekDeepseekV4ProLightning = "deepseek/deepseek-v4-pro-lightning";
         /// <summary>Model ID: <c>deepseek/deepseek-v4-pro-precision</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-precision</summary>
         public const string DeepseekDeepseekV4ProPrecision = "deepseek/deepseek-v4-pro-precision";
         /// <summary>Model ID: <c>essential-ai/rnj-1</c>. Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1</summary>

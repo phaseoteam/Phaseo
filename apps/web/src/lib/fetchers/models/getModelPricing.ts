@@ -321,16 +321,45 @@ export default async function getModelPricing(
     // context_length / max_output_tokens columns on data_api_provider_models.
     let pmRows: any[] | null = null;
     let pmError: any = null;
-    const fetchProviderRows = async (selectClause: string) => {
+    let usedLegacyProviderModelSelect = false;
+    const mergeProviderRowsById = (rows: any[]): any[] => {
+        const byProviderApiModelId = new Map<string, any>();
+        for (const row of rows) {
+            const key = String(row?.provider_api_model_id ?? "").trim();
+            if (!key) continue;
+            byProviderApiModelId.set(key, row);
+        }
+        return Array.from(byProviderApiModelId.values());
+    };
+
+    const fetchProviderRows = async (args: {
+        selectClause: string;
+        modelIds: string[];
+        providerIds?: string[];
+    }) => {
+        const modelIds = args.modelIds.filter(Boolean);
+        if (!modelIds.length) {
+            return {
+                rows: [] as any[],
+                error: null as any,
+            };
+        }
+
+        let byInternalQuery = supabase
+            .from("data_api_provider_models")
+            .select(args.selectClause);
+        let byApiQuery = supabase
+            .from("data_api_provider_models")
+            .select(args.selectClause);
+
+        if (args.providerIds?.length) {
+            byInternalQuery = byInternalQuery.in("provider_id", args.providerIds);
+            byApiQuery = byApiQuery.in("provider_id", args.providerIds);
+        }
+
         const [byInternalRes, byApiRes] = await Promise.all([
-            supabase
-                .from("data_api_provider_models")
-                .select(selectClause)
-                .eq("model_id", modelId),
-            supabase
-                .from("data_api_provider_models")
-                .select(selectClause)
-                .eq("api_model_id", modelId),
+            byInternalQuery.in("model_id", modelIds),
+            byApiQuery.in("api_model_id", modelIds),
         ]);
 
         if (byInternalRes.error && byApiRes.error) {
@@ -344,32 +373,58 @@ export default async function getModelPricing(
             ...((byInternalRes.data ?? []) as any[]),
             ...((byApiRes.data ?? []) as any[]),
         ];
-        const byProviderApiModelId = new Map<string, any>();
-        for (const row of mergedRows) {
-            const key = String(row?.provider_api_model_id ?? "").trim();
-            if (!key) continue;
-            byProviderApiModelId.set(key, row);
-        }
 
         return {
-            rows: Array.from(byProviderApiModelId.values()),
+            rows: mergeProviderRowsById(mergedRows),
             error: byInternalRes.error ?? byApiRes.error ?? null,
         };
     };
 
     {
-        const res = await fetchProviderRows(providerModelSelect);
+        const res = await fetchProviderRows({
+            selectClause: providerModelSelect,
+            modelIds: [modelId],
+        });
         pmRows = res.rows;
         pmError = res.error;
     }
 
     if (pmError && isMissingProviderModelColumnError(pmError)) {
-        const res = await fetchProviderRows(providerModelSelectLegacy);
+        usedLegacyProviderModelSelect = true;
+        const res = await fetchProviderRows({
+            selectClause: providerModelSelectLegacy,
+            modelIds: [modelId],
+        });
         pmRows = res.rows;
         pmError = res.error;
     }
 
     if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
+
+    const normalizedModelId = modelId.toLowerCase();
+    const siblingModelIds =
+        normalizedModelId.endsWith("-fast") || normalizedModelId.endsWith("-flex")
+            ? []
+            : [`${modelId}-fast`, `${modelId}-flex`];
+    const providerIdsForSiblingLookup = Array.from(
+        new Set(
+            ((pmRows ?? []) as any[])
+                .map((row) => (typeof row?.provider_id === "string" ? row.provider_id : ""))
+                .filter(Boolean)
+        )
+    );
+    if (siblingModelIds.length > 0 && providerIdsForSiblingLookup.length > 0) {
+        const siblingRes = await fetchProviderRows({
+            selectClause: usedLegacyProviderModelSelect
+                ? providerModelSelectLegacy
+                : providerModelSelect,
+            modelIds: siblingModelIds,
+            providerIds: providerIdsForSiblingLookup,
+        });
+        if (!siblingRes.error && siblingRes.rows?.length) {
+            pmRows = mergeProviderRowsById([...(pmRows ?? []), ...siblingRes.rows]);
+        }
+    }
 
     // console.log(`[getModelPricing] Fetched ${pmRows?.length || 0} provider model rows for providers: ${(pmRows ?? []).map(r => r.provider_id).join(', ')}`);
 

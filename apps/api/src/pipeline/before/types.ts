@@ -361,7 +361,11 @@ export type ProviderEnablementDiagnostics = {
     providersAfter: string[];
     dropped: Array<{
         providerId: string;
-        reason: "capability_disabled" | "adapter_missing" | "pricing_missing";
+        reason:
+            | "capability_disabled"
+            | "adapter_missing"
+            | "pricing_missing"
+            | "service_tier_unsupported";
     }>;
 };
 
@@ -600,5 +604,4 @@ export type PipelineContext = {
     keyId?: string | null;
     testingMode?: boolean;
 };
-
 

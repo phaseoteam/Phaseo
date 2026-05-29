@@ -406,6 +406,23 @@ export async function beforeRequest(
         }
         return hasAdapter;
     });
+    const { applyServiceTierRouting } = await import("./serviceTierRouting");
+    const serviceTierRoutingResult = await timer.span("applyServiceTierRouting", () =>
+        applyServiceTierRouting({
+            candidates: enabledProviders,
+            body: mergedBody,
+            capability: normalizedCapability,
+        })
+    );
+    if (serviceTierRoutingResult.diagnostics.droppedProviders.length) {
+        for (const droppedProvider of serviceTierRoutingResult.diagnostics.droppedProviders) {
+            providerEnablementDropped.push({
+                providerId: droppedProvider.providerId,
+                reason: "service_tier_unsupported",
+            });
+        }
+    }
+    enabledProviders = serviceTierRoutingResult.candidates;
     const missingPricingProviders = enabledProviders
         .filter((provider) =>
             !provider.pricingCard ||
@@ -455,8 +472,11 @@ export async function beforeRequest(
                 workspace_id: workspaceId,
                 provider_enablement: providerEnablementDiagnostics,
                 provider_candidate_diagnostics: candidateDiagnostics,
+                service_tier_routing: serviceTierRoutingResult.diagnostics,
                 reason: missingPricingProviders.length > 0
                     ? "pricing_not_configured"
+                    : serviceTierRoutingResult.diagnostics.requestedPlan
+                        ? "service_tier_not_supported"
                     : "no_enabled_providers",
                 missing_pricing_providers:
                     missingPricingProviders.length > 0
@@ -575,7 +595,6 @@ export async function beforeRequest(
 
     return { ok: true, ctx };
 }
-
 
 
 

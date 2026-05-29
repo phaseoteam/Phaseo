@@ -50,6 +50,10 @@ import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProvid
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
+import {
+	getProviderModelScopeForPlan,
+	getProviderPricingRulesForPlan,
+} from "@/components/(data)/model/pricing/providerPlanRouting";
 
 const SERVICE_TIERS_DOCS_HREF =
 	"https://docs.ai-stats.phaseo.app/v1/guides/service-tiers";
@@ -266,8 +270,8 @@ function derivePricingMultiplier(args: {
 	if (!baseProvider) return null;
 
 	const baseRuleMap = new Map<string, number>();
-	for (const rule of baseProvider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.selectedPlan) continue;
+	const basePlanRules = getProviderPricingRulesForPlan(baseProvider, args.selectedPlan);
+	for (const rule of basePlanRules) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -282,8 +286,8 @@ function derivePricingMultiplier(args: {
 	}
 
 	const ratios: number[] = [];
-	for (const rule of args.provider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.selectedPlan) continue;
+	const providerPlanRules = getProviderPricingRulesForPlan(args.provider, args.selectedPlan);
+	for (const rule of providerPlanRules) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -392,8 +396,7 @@ function derivePlanMultiplier(args: {
 	const baseRuleMap = new Map<string, number>();
 	const baseRuleMapIgnoringEndpoint = new Map<string, number>();
 	const activeBaseRules: ProviderPricing["pricing_rules"] = [];
-	for (const rule of args.provider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.basePlan) continue;
+	for (const rule of getProviderPricingRulesForPlan(args.provider, args.basePlan)) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -409,8 +412,7 @@ function derivePlanMultiplier(args: {
 	const fallbackRatios: number[] = [];
 	const inputRatios: number[] = [];
 	const outputRatios: number[] = [];
-	for (const rule of args.provider.pricing_rules) {
-		if ((rule.pricing_plan || "standard") !== args.targetPlan) continue;
+	for (const rule of getProviderPricingRulesForPlan(args.provider, args.targetPlan)) {
 		if (!isRuleActiveNow(rule, args.nowMs)) continue;
 		const normalizedPrice = normalizeRuleUnitPrice(rule);
 		if (normalizedPrice == null || normalizedPrice <= 0) continue;
@@ -960,18 +962,12 @@ export default function ProviderCard({
 
 	const now = new Date();
 
-	const planRules = provider.pricing_rules.filter(
-		(r) => (r.pricing_plan || "standard") === selectedPlan
-	);
+	const planRules = getProviderPricingRulesForPlan(provider, selectedPlan);
 	const hasPlanPricing = planRules.length > 0;
-	const planModelKeys = new Set(planRules.map((r) => r.model_key));
-	const matchingProviderModels = provider.provider_models.filter((pm) =>
-		planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
+	const providerModelsInScope = getProviderModelScopeForPlan(
+		provider,
+		selectedPlan,
 	);
-	const providerModelsInScope =
-		matchingProviderModels.length > 0
-			? matchingProviderModels
-			: provider.provider_models;
 
 	const leavingSoonRule = planRules
 		.filter((r) => {
@@ -1131,6 +1127,7 @@ export default function ProviderCard({
 	const showTokenGroupEyebrows = distinctTokenGroups.size > 1;
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
+	const providerApiModelIds = infoScope.map((pm) => pm.model_id);
 	const providerExecutionRegions = Array.isArray(
 		provider.provider.default_execution_regions
 	)
@@ -1462,6 +1459,7 @@ export default function ProviderCard({
 								<ProviderInfoHoverIcons
 									providerId={sec.providerId}
 									providerModelSlugs={providerModelSlugs}
+									apiModelIds={providerApiModelIds}
 									quantizationScheme={quantizationScheme}
 									residency={
 										[

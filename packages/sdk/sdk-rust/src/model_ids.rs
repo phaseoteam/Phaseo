@@ -54,6 +54,9 @@ pub mod model_ids {
     /// Model ID: `anthropic/claude-opus-4.8`.
     /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
     pub const ANTHROPIC_CLAUDE_OPUS_4_8: &str = "anthropic/claude-opus-4.8";
+    /// Model ID: `anthropic/claude-opus-4.8-fast`.
+    /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast
+    pub const ANTHROPIC_CLAUDE_OPUS_4_8_FAST: &str = "anthropic/claude-opus-4.8-fast";
     /// Model ID: `anthropic/claude-sonnet-4`.
     /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
     pub const ANTHROPIC_CLAUDE_SONNET_4: &str = "anthropic/claude-sonnet-4";
@@ -150,6 +153,18 @@ pub mod model_ids {
     /// Model ID: `crofai/greg`.
     /// Model page: https://ai-stats.phaseo.app/models/crofai/greg
     pub const CROFAI_GREG: &str = "crofai/greg";
+    /// Model ID: `crofai/greg-1`.
+    /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-1
+    pub const CROFAI_GREG_1: &str = "crofai/greg-1";
+    /// Model ID: `crofai/greg-1-mini`.
+    /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
+    pub const CROFAI_GREG_1_MINI: &str = "crofai/greg-1-mini";
+    /// Model ID: `crofai/greg-1-super`.
+    /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super
+    pub const CROFAI_GREG_1_SUPER: &str = "crofai/greg-1-super";
+    /// Model ID: `crofai/greg-rp`.
+    /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp
+    pub const CROFAI_GREG_RP: &str = "crofai/greg-rp";
     /// Model ID: `deepseek/deepseek-ocr`.
     /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr
     pub const DEEPSEEK_DEEPSEEK_OCR: &str = "deepseek/deepseek-ocr";
@@ -204,6 +219,9 @@ pub mod model_ids {
     /// Model ID: `deepseek/deepseek-v4-pro`.
     /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro
     pub const DEEPSEEK_DEEPSEEK_V4_PRO: &str = "deepseek/deepseek-v4-pro";
+    /// Model ID: `deepseek/deepseek-v4-pro-lightning`.
+    /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning
+    pub const DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING: &str = "deepseek/deepseek-v4-pro-lightning";
     /// Model ID: `deepseek/deepseek-v4-pro-precision`.
     /// Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-precision
     pub const DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION: &str = "deepseek/deepseek-v4-pro-precision";
@@ -1381,6 +1399,7 @@ pub mod model_ids {
         ANTHROPIC_CLAUDE_OPUS_4_7,
         ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
         ANTHROPIC_CLAUDE_OPUS_4_8,
+        ANTHROPIC_CLAUDE_OPUS_4_8_FAST,
         ANTHROPIC_CLAUDE_SONNET_4,
         ANTHROPIC_CLAUDE_SONNET_4_5,
         ANTHROPIC_CLAUDE_SONNET_4_6,
@@ -1413,6 +1432,10 @@ pub mod model_ids {
         BYTEDANCE_SEEDANCE_2_0_FAST,
         COGITO_COGITO_671B_V2_1,
         CROFAI_GREG,
+        CROFAI_GREG_1,
+        CROFAI_GREG_1_MINI,
+        CROFAI_GREG_1_SUPER,
+        CROFAI_GREG_RP,
         DEEPSEEK_DEEPSEEK_OCR,
         DEEPSEEK_DEEPSEEK_OCR_2,
         DEEPSEEK_DEEPSEEK_PROVER_V2_671B,
@@ -1431,6 +1454,7 @@ pub mod model_ids {
         DEEPSEEK_DEEPSEEK_V3_2_THINKING,
         DEEPSEEK_DEEPSEEK_V4_FLASH,
         DEEPSEEK_DEEPSEEK_V4_PRO,
+        DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING,
         DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION,
         ESSENTIAL_AI_RNJ_1,
         GOOGLE_GEMINI_2_0_FLASH,

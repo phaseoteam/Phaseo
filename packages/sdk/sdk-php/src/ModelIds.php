@@ -59,6 +59,9 @@ final class ModelIds
     /** Model ID: anthropic/claude-opus-4.8. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
     public const ANTHROPIC_CLAUDE_OPUS_4_8 = 'anthropic/claude-opus-4.8';
 
+    /** Model ID: anthropic/claude-opus-4.8-fast. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8-fast */
+    public const ANTHROPIC_CLAUDE_OPUS_4_8_FAST = 'anthropic/claude-opus-4.8-fast';
+
     /** Model ID: anthropic/claude-sonnet-4. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
     public const ANTHROPIC_CLAUDE_SONNET_4 = 'anthropic/claude-sonnet-4';
 
@@ -155,6 +158,18 @@ final class ModelIds
     /** Model ID: crofai/greg. Model page: https://ai-stats.phaseo.app/models/crofai/greg */
     public const CROFAI_GREG = 'crofai/greg';
 
+    /** Model ID: crofai/greg-1. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1 */
+    public const CROFAI_GREG_1 = 'crofai/greg-1';
+
+    /** Model ID: crofai/greg-1-mini. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini */
+    public const CROFAI_GREG_1_MINI = 'crofai/greg-1-mini';
+
+    /** Model ID: crofai/greg-1-super. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super */
+    public const CROFAI_GREG_1_SUPER = 'crofai/greg-1-super';
+
+    /** Model ID: crofai/greg-rp. Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp */
+    public const CROFAI_GREG_RP = 'crofai/greg-rp';
+
     /** Model ID: deepseek/deepseek-ocr. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr */
     public const DEEPSEEK_DEEPSEEK_OCR = 'deepseek/deepseek-ocr';
 
@@ -208,6 +223,9 @@ final class ModelIds
 
     /** Model ID: deepseek/deepseek-v4-pro. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro */
     public const DEEPSEEK_DEEPSEEK_V4_PRO = 'deepseek/deepseek-v4-pro';
+
+    /** Model ID: deepseek/deepseek-v4-pro-lightning. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning */
+    public const DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING = 'deepseek/deepseek-v4-pro-lightning';
 
     /** Model ID: deepseek/deepseek-v4-pro-precision. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-precision */
     public const DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION = 'deepseek/deepseek-v4-pro-precision';
