@@ -434,6 +434,7 @@ begin
     select distinct on (m.provider_api_model_id)
       m.provider_api_model_id,
       m.provider_id,
+      m.api_model_id,
       m.provider_model_slug,
       m.routing_status as model_status,
       m.input_modalities,
@@ -464,6 +465,8 @@ begin
       jsonb_agg(
         jsonb_build_object(
           'provider_id', pr.provider_id,
+          'api_model_id', pr.api_model_id,
+          'pricing_key', pr.provider_id,
           'provider_model_slug', pr.provider_model_slug,
           'model_status', pr.model_status,
           'input_modalities', pr.input_modalities,

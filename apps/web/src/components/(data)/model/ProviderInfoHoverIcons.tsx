@@ -297,6 +297,7 @@ function InfoBlock({
 export default function ProviderInfoHoverIcons({
 	providerId,
 	providerModelSlugs = [],
+	apiModelIds = [],
 	quantizationScheme,
 	quantizationSchemes = [],
 	promptTraining = [],
@@ -306,6 +307,7 @@ export default function ProviderInfoHoverIcons({
 }: {
 	providerId: string;
 	providerModelSlugs?: Array<string | null | undefined>;
+	apiModelIds?: Array<string | null | undefined>;
 	quantizationScheme?: string | null;
 	quantizationSchemes?: Array<string | null | undefined>;
 	promptTraining?: PromptTrainingEntryInput[];
@@ -314,6 +316,7 @@ export default function ProviderInfoHoverIcons({
 	className?: string;
 }) {
 	const slugs = uniqueDefined(providerModelSlugs);
+	const modelIds = uniqueDefined(apiModelIds);
 	const quantization = getFirstDefined([
 		normalizeQuantizationScheme(quantizationScheme),
 		...quantizationSchemes.map((value) => normalizeQuantizationScheme(value)),
@@ -403,7 +406,7 @@ export default function ProviderInfoHoverIcons({
 		),
 	);
 	const hasQuantization = Boolean(quantization);
-	const hasSlug = slugs.length > 0;
+	const hasSlug = slugs.length > 0 || modelIds.length > 0;
 	const hasPromptTraining = promptTrainingEntries.length > 0;
 	const hasResidency = residencyEntries.some(
 		(entry) =>
@@ -637,12 +640,20 @@ export default function ProviderInfoHoverIcons({
 					content={
 						<div className="space-y-2">
 							<p className="leading-relaxed text-muted-foreground">
-								This provider labels this model as:
+								This provider exposes this mapping as:
 							</p>
 							<div className="flex flex-col items-start gap-1">
+								{modelIds.map((modelId) => (
+									<code
+										key={`model:${modelId}`}
+										className="inline-flex max-w-full overflow-x-auto whitespace-nowrap rounded bg-muted px-1 py-0.5 text-foreground"
+									>
+										{modelId}
+									</code>
+								))}
 								{slugs.map((slug) => (
 									<code
-										key={slug}
+										key={`slug:${slug}`}
 										className="inline-flex max-w-full overflow-x-auto whitespace-nowrap rounded bg-muted px-1 py-0.5 text-foreground"
 									>
 										{slug}

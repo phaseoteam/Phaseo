@@ -50,6 +50,10 @@ import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProvid
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
+import {
+	getProviderModelScopeForPlan,
+	getProviderPricingRulesForPlan,
+} from "@/components/(data)/model/pricing/providerPlanRouting";
 
 const SERVICE_TIERS_DOCS_HREF =
 	"https://docs.ai-stats.phaseo.app/v1/guides/service-tiers";
@@ -960,18 +964,12 @@ export default function ProviderCard({
 
 	const now = new Date();
 
-	const planRules = provider.pricing_rules.filter(
-		(r) => (r.pricing_plan || "standard") === selectedPlan
-	);
+	const planRules = getProviderPricingRulesForPlan(provider, selectedPlan);
 	const hasPlanPricing = planRules.length > 0;
-	const planModelKeys = new Set(planRules.map((r) => r.model_key));
-	const matchingProviderModels = provider.provider_models.filter((pm) =>
-		planModelKeys.has(`${pm.api_provider_id}:${pm.model_id}:${pm.endpoint}`)
+	const providerModelsInScope = getProviderModelScopeForPlan(
+		provider,
+		selectedPlan,
 	);
-	const providerModelsInScope =
-		matchingProviderModels.length > 0
-			? matchingProviderModels
-			: provider.provider_models;
 
 	const leavingSoonRule = planRules
 		.filter((r) => {
@@ -1131,6 +1129,7 @@ export default function ProviderCard({
 	const showTokenGroupEyebrows = distinctTokenGroups.size > 1;
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
+	const providerApiModelIds = infoScope.map((pm) => pm.model_id);
 	const providerExecutionRegions = Array.isArray(
 		provider.provider.default_execution_regions
 	)
@@ -1462,6 +1461,7 @@ export default function ProviderCard({
 								<ProviderInfoHoverIcons
 									providerId={sec.providerId}
 									providerModelSlugs={providerModelSlugs}
+									apiModelIds={providerApiModelIds}
 									quantizationScheme={quantizationScheme}
 									residency={
 										[
