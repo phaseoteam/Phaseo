@@ -13,6 +13,7 @@ export type OrganisationIdList =
   | "deepseek"
   | "eleven-labs"
   | "essential-ai"
+  | "github"
   | "google"
   | "ibm"
   | "inception"
@@ -31,6 +32,7 @@ export type OrganisationIdList =
   | "nvidia"
   | "openai"
   | "perplexity"
+  | "poe"
   | "prime-intellect"
   | "qwen"
   | "relace"
@@ -40,6 +42,7 @@ export type OrganisationIdList =
   | "upstage"
   | "vercel"
   | "voyage"
+  | "windsurf"
   | "x-ai"
   | "xiaomi"
   | "z-ai"[];
