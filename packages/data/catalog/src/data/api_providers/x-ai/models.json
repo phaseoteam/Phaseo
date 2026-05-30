@@ -1173,6 +1173,32 @@
     ]
   },
   {
+    "api_model_id": "x-ai/grok-imagine-video-1.5-preview",
+    "provider_api_model_id": "x-ai:x-ai/grok-imagine-video-1.5-preview",
+    "provider_model_slug": "grok-imagine-video-1.5-preview",
+    "internal_model_id": "x-ai/grok-imagine-video-1.5-preview",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "video.generate",
+        "status": "coming_soon",
+        "params": []
+      },
+      {
+        "capability_id": "video.edit",
+        "status": "coming_soon",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "x-ai/grok-build-0.1",
     "provider_api_model_id": "x-ai:x-ai/grok-build-0.1",
     "provider_model_slug": "grok-build-0.1",
