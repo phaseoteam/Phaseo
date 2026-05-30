@@ -1,0 +1,33 @@
+{
+  "key": "moonshotai:moonshotai/moonshot-v1-128k-vision-preview:text.generate",
+  "api_provider_id": "moonshotai",
+  "provider_slug": "moonshotai",
+  "api_model_id": "moonshotai/moonshot-v1-128k-vision-preview",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": null
+    }
+  ]
+}

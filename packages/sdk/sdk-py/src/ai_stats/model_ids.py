@@ -138,18 +138,6 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-dev
     BLACK_FOREST_LABS_FLUX_1_DEV: Final[str] = "black-forest-labs/flux-1-dev"
 
-    # Model ID: black-forest-labs/flux-1-kontext-max
-    # Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-max
-    BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX: Final[str] = "black-forest-labs/flux-1-kontext-max"
-
-    # Model ID: black-forest-labs/flux-1-kontext-pro
-    # Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-pro
-    BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO: Final[str] = "black-forest-labs/flux-1-kontext-pro"
-
-    # Model ID: black-forest-labs/flux-1-schnell
-    # Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell
-    BLACK_FOREST_LABS_FLUX_1_SCHNELL: Final[str] = "black-forest-labs/flux-1-schnell"
-
     # Model ID: bytedance/seed-1.6
     # Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6
     BYTEDANCE_SEED_1_6: Final[str] = "bytedance/seed-1.6"
@@ -205,10 +193,6 @@ class ModelIds:
     # Model ID: bytedance/seedance-2.0-fast
     # Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast
     BYTEDANCE_SEEDANCE_2_0_FAST: Final[str] = "bytedance/seedance-2.0-fast"
-
-    # Model ID: cogito/cogito-671b-v2.1
-    # Model page: https://ai-stats.phaseo.app/models/cogito/cogito-671b-v2.1
-    COGITO_COGITO_671B_V2_1: Final[str] = "cogito/cogito-671b-v2.1"
 
     # Model ID: crofai/greg
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg
@@ -314,10 +298,6 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1
     ESSENTIAL_AI_RNJ_1: Final[str] = "essential-ai/rnj-1"
 
-    # Model ID: google/gemini-2.0-flash
-    # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash
-    GOOGLE_GEMINI_2_0_FLASH: Final[str] = "google/gemini-2.0-flash"
-
     # Model ID: google/gemini-2.0-flash-lite
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite
     GOOGLE_GEMINI_2_0_FLASH_LITE: Final[str] = "google/gemini-2.0-flash-lite"
@@ -325,10 +305,6 @@ class ModelIds:
     # Model ID: google/gemini-2.5-flash
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash
     GOOGLE_GEMINI_2_5_FLASH: Final[str] = "google/gemini-2.5-flash"
-
-    # Model ID: google/gemini-2.5-flash-image
-    # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image
-    GOOGLE_GEMINI_2_5_FLASH_IMAGE: Final[str] = "google/gemini-2.5-flash-image"
 
     # Model ID: google/gemini-2.5-flash-lite
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite
@@ -662,21 +638,9 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
     MISTRAL_DEVSTRAL_SMALL_1_1: Final[str] = "mistral/devstral-small-1.1"
 
-    # Model ID: mistral/devstral-small-2
-    # Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-2
-    MISTRAL_DEVSTRAL_SMALL_2: Final[str] = "mistral/devstral-small-2"
-
-    # Model ID: mistral/leanstral:free
-    # Model page: https://ai-stats.phaseo.app/models/mistral/leanstral%3Afree
-    MISTRAL_LEANSTRAL_FREE: Final[str] = "mistral/leanstral:free"
-
     # Model ID: mistral/magistral-medium-1.2
     # Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
     MISTRAL_MAGISTRAL_MEDIUM_1_2: Final[str] = "mistral/magistral-medium-1.2"
-
-    # Model ID: mistral/magistral-small-1.2
-    # Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.2
-    MISTRAL_MAGISTRAL_SMALL_1_2: Final[str] = "mistral/magistral-small-1.2"
 
     # Model ID: mistral/ministral-3-14b
     # Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b
@@ -742,10 +706,6 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-4
     MISTRAL_MISTRAL_SMALL_4: Final[str] = "mistral/mistral-small-4"
 
-    # Model ID: mistral/mistral-small-creative
-    # Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-creative
-    MISTRAL_MISTRAL_SMALL_CREATIVE: Final[str] = "mistral/mistral-small-creative"
-
     # Model ID: mistral/mixtral-8x7b
     # Model page: https://ai-stats.phaseo.app/models/mistral/mixtral-8x7b
     MISTRAL_MIXTRAL_8X7B: Final[str] = "mistral/mixtral-8x7b"
@@ -793,6 +753,30 @@ class ModelIds:
     # Model ID: moonshotai/kimi-k2.6-precision
     # Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6-precision
     MOONSHOTAI_KIMI_K2_6_PRECISION: Final[str] = "moonshotai/kimi-k2.6-precision"
+
+    # Model ID: moonshotai/moonshot-v1-128k
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-128k
+    MOONSHOTAI_MOONSHOT_V1_128K: Final[str] = "moonshotai/moonshot-v1-128k"
+
+    # Model ID: moonshotai/moonshot-v1-128k-vision-preview
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-128k-vision-preview
+    MOONSHOTAI_MOONSHOT_V1_128K_VISION_PREVIEW: Final[str] = "moonshotai/moonshot-v1-128k-vision-preview"
+
+    # Model ID: moonshotai/moonshot-v1-32k
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-32k
+    MOONSHOTAI_MOONSHOT_V1_32K: Final[str] = "moonshotai/moonshot-v1-32k"
+
+    # Model ID: moonshotai/moonshot-v1-32k-vision-preview
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-32k-vision-preview
+    MOONSHOTAI_MOONSHOT_V1_32K_VISION_PREVIEW: Final[str] = "moonshotai/moonshot-v1-32k-vision-preview"
+
+    # Model ID: moonshotai/moonshot-v1-8k
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-8k
+    MOONSHOTAI_MOONSHOT_V1_8K: Final[str] = "moonshotai/moonshot-v1-8k"
+
+    # Model ID: moonshotai/moonshot-v1-8k-vision-preview
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-8k-vision-preview
+    MOONSHOTAI_MOONSHOT_V1_8K_VISION_PREVIEW: Final[str] = "moonshotai/moonshot-v1-8k-vision-preview"
 
     # Model ID: morph/morph-v3-fast
     # Model page: https://ai-stats.phaseo.app/models/morph/morph-v3-fast
@@ -1892,9 +1876,6 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING,
         ModelIds.BAIDU_ERNIE_4_5_VL_424B_A47B,
         ModelIds.BLACK_FOREST_LABS_FLUX_1_DEV,
-        ModelIds.BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
-        ModelIds.BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
-        ModelIds.BLACK_FOREST_LABS_FLUX_1_SCHNELL,
         ModelIds.BYTEDANCE_SEED_1_6,
         ModelIds.BYTEDANCE_SEED_1_6_250915,
         ModelIds.BYTEDANCE_SEED_1_6_FLASH,
@@ -1909,7 +1890,6 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.BYTEDANCE_SEED_TRANSLATION,
         ModelIds.BYTEDANCE_SEEDANCE_2_0,
         ModelIds.BYTEDANCE_SEEDANCE_2_0_FAST,
-        ModelIds.COGITO_COGITO_671B_V2_1,
         ModelIds.CROFAI_GREG,
         ModelIds.CROFAI_GREG_1,
         ModelIds.CROFAI_GREG_1_MINI,
@@ -1936,10 +1916,8 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING,
         ModelIds.DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION,
         ModelIds.ESSENTIAL_AI_RNJ_1,
-        ModelIds.GOOGLE_GEMINI_2_0_FLASH,
         ModelIds.GOOGLE_GEMINI_2_0_FLASH_LITE,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH,
-        ModelIds.GOOGLE_GEMINI_2_5_FLASH_IMAGE,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
@@ -2023,10 +2001,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.MISTRAL_DEVSTRAL_2,
         ModelIds.MISTRAL_DEVSTRAL_MEDIUM_1_0,
         ModelIds.MISTRAL_DEVSTRAL_SMALL_1_1,
-        ModelIds.MISTRAL_DEVSTRAL_SMALL_2,
-        ModelIds.MISTRAL_LEANSTRAL_FREE,
         ModelIds.MISTRAL_MAGISTRAL_MEDIUM_1_2,
-        ModelIds.MISTRAL_MAGISTRAL_SMALL_1_2,
         ModelIds.MISTRAL_MINISTRAL_3_14B,
         ModelIds.MISTRAL_MINISTRAL_3_3B,
         ModelIds.MISTRAL_MINISTRAL_3_8B,
@@ -2043,7 +2018,6 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.MISTRAL_MISTRAL_SMALL_24B_2501,
         ModelIds.MISTRAL_MISTRAL_SMALL_3_2,
         ModelIds.MISTRAL_MISTRAL_SMALL_4,
-        ModelIds.MISTRAL_MISTRAL_SMALL_CREATIVE,
         ModelIds.MISTRAL_MIXTRAL_8X7B,
         ModelIds.MISTRAL_PIXTRAL_LARGE,
         ModelIds.MISTRALAI_MISTRAL_NEMO,
@@ -2056,6 +2030,12 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.MOONSHOTAI_KIMI_K2_5_LIGHTNING,
         ModelIds.MOONSHOTAI_KIMI_K2_6,
         ModelIds.MOONSHOTAI_KIMI_K2_6_PRECISION,
+        ModelIds.MOONSHOTAI_MOONSHOT_V1_128K,
+        ModelIds.MOONSHOTAI_MOONSHOT_V1_128K_VISION_PREVIEW,
+        ModelIds.MOONSHOTAI_MOONSHOT_V1_32K,
+        ModelIds.MOONSHOTAI_MOONSHOT_V1_32K_VISION_PREVIEW,
+        ModelIds.MOONSHOTAI_MOONSHOT_V1_8K,
+        ModelIds.MOONSHOTAI_MOONSHOT_V1_8K_VISION_PREVIEW,
         ModelIds.MORPH_MORPH_V3_FAST,
         ModelIds.MORPH_MORPH_V3_LARGE,
         ModelIds.NEX_AGI_DEEPSEEK_V3_1_NEX_N1,

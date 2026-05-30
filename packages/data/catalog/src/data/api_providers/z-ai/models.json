@@ -925,7 +925,7 @@
     "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-04-07T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
