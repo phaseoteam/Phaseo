@@ -7394,7 +7394,6 @@ components:
         - baidu/ernie-4.5-vl-28b-a3b
         - baidu/ernie-4.5-vl-28b-a3b-thinking
         - baidu/ernie-4.5-vl-424b-a47b
-        - black-forest-labs/flux-1-dev
         - bytedance/seed-1.6
         - bytedance/seed-1.6-250915
         - bytedance/seed-1.6-flash
