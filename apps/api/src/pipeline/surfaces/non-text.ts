@@ -94,8 +94,6 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 	const passthroughNumericKeys = [
 		"requests",
 		"input_characters",
-		"input_pages",
-		"input_audio_minutes",
 		"output_image",
 		"output_audio_count",
 		"output_audio_seconds",
