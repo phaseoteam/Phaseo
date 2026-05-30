@@ -33,6 +33,12 @@ inline constexpr std::string_view ALLENAI_MOLMO_2_8B = "allenai/molmo-2-8b";
 // Model ID: allenai/olmo-3.1-32b
 // Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b
 inline constexpr std::string_view ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b";
+// Model ID: anthropic/claude-3.5-haiku
+// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku
+inline constexpr std::string_view ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku";
+// Model ID: anthropic/claude-3.7-sonnet
+// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet
+inline constexpr std::string_view ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic/claude-3.7-sonnet";
 // Model ID: anthropic/claude-haiku-4.5
 // Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
 inline constexpr std::string_view ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5";
@@ -96,15 +102,6 @@ inline constexpr std::string_view BAIDU_ERNIE_4_5_VL_424B_A47B = "baidu/ernie-4.
 // Model ID: black-forest-labs/flux-1-dev
 // Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-dev
 inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_DEV = "black-forest-labs/flux-1-dev";
-// Model ID: black-forest-labs/flux-1-kontext-max
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-max
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX = "black-forest-labs/flux-1-kontext-max";
-// Model ID: black-forest-labs/flux-1-kontext-pro
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-kontext-pro
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO = "black-forest-labs/flux-1-kontext-pro";
-// Model ID: black-forest-labs/flux-1-schnell
-// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell
-inline constexpr std::string_view BLACK_FOREST_LABS_FLUX_1_SCHNELL = "black-forest-labs/flux-1-schnell";
 // Model ID: bytedance/seed-1.6
 // Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6
 inline constexpr std::string_view BYTEDANCE_SEED_1_6 = "bytedance/seed-1.6";
@@ -147,9 +144,6 @@ inline constexpr std::string_view BYTEDANCE_SEEDANCE_2_0 = "bytedance/seedance-2
 // Model ID: bytedance/seedance-2.0-fast
 // Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast
 inline constexpr std::string_view BYTEDANCE_SEEDANCE_2_0_FAST = "bytedance/seedance-2.0-fast";
-// Model ID: cogito/cogito-671b-v2.1
-// Model page: https://ai-stats.phaseo.app/models/cogito/cogito-671b-v2.1
-inline constexpr std::string_view COGITO_COGITO_671B_V2_1 = "cogito/cogito-671b-v2.1";
 // Model ID: crofai/greg
 // Model page: https://ai-stats.phaseo.app/models/crofai/greg
 inline constexpr std::string_view CROFAI_GREG = "crofai/greg";
@@ -228,15 +222,15 @@ inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION = "deepseek
 // Model ID: essential-ai/rnj-1
 // Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1
 inline constexpr std::string_view ESSENTIAL_AI_RNJ_1 = "essential-ai/rnj-1";
-// Model ID: google/gemini-2.0-flash
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash
-inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH = "google/gemini-2.0-flash";
 // Model ID: google/gemini-2.0-flash-lite
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite
 inline constexpr std::string_view GOOGLE_GEMINI_2_0_FLASH_LITE = "google/gemini-2.0-flash-lite";
-// Model ID: google/gemini-2.5-flash-image
-// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image
-inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_IMAGE = "google/gemini-2.5-flash-image";
+// Model ID: google/gemini-2.5-flash
+// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash
+inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH = "google/gemini-2.5-flash";
+// Model ID: google/gemini-2.5-flash-lite
+// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite
+inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_LITE = "google/gemini-2.5-flash-lite";
 // Model ID: google/gemini-2.5-flash-lite-preview-2025-06-17
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17
 inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17 = "google/gemini-2.5-flash-lite-preview-2025-06-17";
@@ -483,18 +477,9 @@ inline constexpr std::string_view MISTRAL_DEVSTRAL_MEDIUM_1_0 = "mistral/devstra
 // Model ID: mistral/devstral-small-1.1
 // Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
 inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_1_1 = "mistral/devstral-small-1.1";
-// Model ID: mistral/devstral-small-2
-// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-2
-inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_2 = "mistral/devstral-small-2";
-// Model ID: mistral/leanstral:free
-// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral%3Afree
-inline constexpr std::string_view MISTRAL_LEANSTRAL_FREE = "mistral/leanstral:free";
 // Model ID: mistral/magistral-medium-1.2
 // Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
 inline constexpr std::string_view MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2";
-// Model ID: mistral/magistral-small-1.2
-// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-small-1.2
-inline constexpr std::string_view MISTRAL_MAGISTRAL_SMALL_1_2 = "mistral/magistral-small-1.2";
 // Model ID: mistral/ministral-3-14b
 // Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b
 inline constexpr std::string_view MISTRAL_MINISTRAL_3_14B = "mistral/ministral-3-14b";
@@ -543,9 +528,6 @@ inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_3_2 = "mistral/mistral-s
 // Model ID: mistral/mistral-small-4
 // Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-4
 inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_4 = "mistral/mistral-small-4";
-// Model ID: mistral/mistral-small-creative
-// Model page: https://ai-stats.phaseo.app/models/mistral/mistral-small-creative
-inline constexpr std::string_view MISTRAL_MISTRAL_SMALL_CREATIVE = "mistral/mistral-small-creative";
 // Model ID: mistral/mixtral-8x7b
 // Model page: https://ai-stats.phaseo.app/models/mistral/mixtral-8x7b
 inline constexpr std::string_view MISTRAL_MIXTRAL_8X7B = "mistral/mixtral-8x7b";
@@ -582,6 +564,24 @@ inline constexpr std::string_view MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6";
 // Model ID: moonshotai/kimi-k2.6-precision
 // Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6-precision
 inline constexpr std::string_view MOONSHOTAI_KIMI_K2_6_PRECISION = "moonshotai/kimi-k2.6-precision";
+// Model ID: moonshotai/moonshot-v1-128k
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-128k
+inline constexpr std::string_view MOONSHOTAI_MOONSHOT_V1_128K = "moonshotai/moonshot-v1-128k";
+// Model ID: moonshotai/moonshot-v1-128k-vision-preview
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-128k-vision-preview
+inline constexpr std::string_view MOONSHOTAI_MOONSHOT_V1_128K_VISION_PREVIEW = "moonshotai/moonshot-v1-128k-vision-preview";
+// Model ID: moonshotai/moonshot-v1-32k
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-32k
+inline constexpr std::string_view MOONSHOTAI_MOONSHOT_V1_32K = "moonshotai/moonshot-v1-32k";
+// Model ID: moonshotai/moonshot-v1-32k-vision-preview
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-32k-vision-preview
+inline constexpr std::string_view MOONSHOTAI_MOONSHOT_V1_32K_VISION_PREVIEW = "moonshotai/moonshot-v1-32k-vision-preview";
+// Model ID: moonshotai/moonshot-v1-8k
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-8k
+inline constexpr std::string_view MOONSHOTAI_MOONSHOT_V1_8K = "moonshotai/moonshot-v1-8k";
+// Model ID: moonshotai/moonshot-v1-8k-vision-preview
+// Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-8k-vision-preview
+inline constexpr std::string_view MOONSHOTAI_MOONSHOT_V1_8K_VISION_PREVIEW = "moonshotai/moonshot-v1-8k-vision-preview";
 // Model ID: morph/morph-v3-fast
 // Model page: https://ai-stats.phaseo.app/models/morph/morph-v3-fast
 inline constexpr std::string_view MORPH_MORPH_V3_FAST = "morph/morph-v3-fast";
@@ -1390,6 +1390,8 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	AION_LABS_AION_RP_LLAMA_3_1_8B,
 	ALLENAI_MOLMO_2_8B,
 	ALLENAI_OLMO_3_1_32B,
+	ANTHROPIC_CLAUDE_3_5_HAIKU,
+	ANTHROPIC_CLAUDE_3_7_SONNET,
 	ANTHROPIC_CLAUDE_HAIKU_4_5,
 	ANTHROPIC_CLAUDE_OPUS_4,
 	ANTHROPIC_CLAUDE_OPUS_4_1,
@@ -1411,9 +1413,6 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING,
 	BAIDU_ERNIE_4_5_VL_424B_A47B,
 	BLACK_FOREST_LABS_FLUX_1_DEV,
-	BLACK_FOREST_LABS_FLUX_1_KONTEXT_MAX,
-	BLACK_FOREST_LABS_FLUX_1_KONTEXT_PRO,
-	BLACK_FOREST_LABS_FLUX_1_SCHNELL,
 	BYTEDANCE_SEED_1_6,
 	BYTEDANCE_SEED_1_6_250915,
 	BYTEDANCE_SEED_1_6_FLASH,
@@ -1428,7 +1427,6 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	BYTEDANCE_SEED_TRANSLATION,
 	BYTEDANCE_SEEDANCE_2_0,
 	BYTEDANCE_SEEDANCE_2_0_FAST,
-	COGITO_COGITO_671B_V2_1,
 	CROFAI_GREG,
 	CROFAI_GREG_1,
 	CROFAI_GREG_1_MINI,
@@ -1455,9 +1453,9 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING,
 	DEEPSEEK_DEEPSEEK_V4_PRO_PRECISION,
 	ESSENTIAL_AI_RNJ_1,
-	GOOGLE_GEMINI_2_0_FLASH,
 	GOOGLE_GEMINI_2_0_FLASH_LITE,
-	GOOGLE_GEMINI_2_5_FLASH_IMAGE,
+	GOOGLE_GEMINI_2_5_FLASH,
+	GOOGLE_GEMINI_2_5_FLASH_LITE,
 	GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
 	GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
 	GOOGLE_GEMINI_3_FLASH_PREVIEW,
@@ -1540,10 +1538,7 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	MISTRAL_DEVSTRAL_2,
 	MISTRAL_DEVSTRAL_MEDIUM_1_0,
 	MISTRAL_DEVSTRAL_SMALL_1_1,
-	MISTRAL_DEVSTRAL_SMALL_2,
-	MISTRAL_LEANSTRAL_FREE,
 	MISTRAL_MAGISTRAL_MEDIUM_1_2,
-	MISTRAL_MAGISTRAL_SMALL_1_2,
 	MISTRAL_MINISTRAL_3_14B,
 	MISTRAL_MINISTRAL_3_3B,
 	MISTRAL_MINISTRAL_3_8B,
@@ -1560,7 +1555,6 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	MISTRAL_MISTRAL_SMALL_24B_2501,
 	MISTRAL_MISTRAL_SMALL_3_2,
 	MISTRAL_MISTRAL_SMALL_4,
-	MISTRAL_MISTRAL_SMALL_CREATIVE,
 	MISTRAL_MIXTRAL_8X7B,
 	MISTRAL_PIXTRAL_LARGE,
 	MISTRALAI_MISTRAL_NEMO,
@@ -1573,6 +1567,12 @@ inline constexpr std::array<std::string_view, 457> ALL = {
 	MOONSHOTAI_KIMI_K2_5_LIGHTNING,
 	MOONSHOTAI_KIMI_K2_6,
 	MOONSHOTAI_KIMI_K2_6_PRECISION,
+	MOONSHOTAI_MOONSHOT_V1_128K,
+	MOONSHOTAI_MOONSHOT_V1_128K_VISION_PREVIEW,
+	MOONSHOTAI_MOONSHOT_V1_32K,
+	MOONSHOTAI_MOONSHOT_V1_32K_VISION_PREVIEW,
+	MOONSHOTAI_MOONSHOT_V1_8K,
+	MOONSHOTAI_MOONSHOT_V1_8K_VISION_PREVIEW,
 	MORPH_MORPH_V3_FAST,
 	MORPH_MORPH_V3_LARGE,
 	NEX_AGI_DEEPSEEK_V3_1_NEX_N1,

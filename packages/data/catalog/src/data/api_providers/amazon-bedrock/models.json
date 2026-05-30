@@ -179,7 +179,7 @@
     "context_length": 200000,
     "max_output_tokens": null,
     "effective_from": "2024-11-04T00:00:00",
-    "effective_to": "2026-02-19T00:00:00",
+    "effective_to": "2026-06-19T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -200,7 +200,7 @@
     "context_length": 200000,
     "max_output_tokens": null,
     "effective_from": "2025-02-24T00:00:00",
-    "effective_to": "2026-02-19T00:00:00",
+    "effective_to": "2026-04-28T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",

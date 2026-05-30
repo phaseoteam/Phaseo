@@ -15,7 +15,8 @@
       "note": "Free Endpoint",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-16T00:00:00Z"
+      "effective_from": "2026-03-16T00:00:00Z",
+      "effective_to": "2026-05-22T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +28,8 @@
       "note": "Free Endpoint",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-03-16T00:00:00Z"
+      "effective_from": "2026-03-16T00:00:00Z",
+      "effective_to": "2026-05-22T00:00:00Z"
     }
   ]
 }

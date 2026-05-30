@@ -1,0 +1,24 @@
+{
+  "model_id": "moonshotai/moonshot-v1-32k",
+  "organisation_id": "moonshotai",
+  "name": "Moonshot V1 32K",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Moonshot V1 32K is a text generation model with a 32,768-token context window.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "moonshotai/moonshot-v1-32k",
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://platform.kimi.ai/docs/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

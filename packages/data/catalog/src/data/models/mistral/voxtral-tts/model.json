@@ -1,0 +1,24 @@
+{
+  "model_id": "mistral/voxtral-tts",
+  "organisation_id": "mistral",
+  "name": "Voxtral TTS",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Voxtral TTS is Mistral's text-to-speech model with zero-shot voice cloning. It accepts text plus a short reference audio prompt and produces natural-sounding speech output.",
+  "announced_date": "2026-03-23T00:00:00",
+  "release_date": "2026-03-23T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,audio",
+  "output_types": "audio_tts",
+  "api_model_id": "mistral/voxtral-tts",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://docs.mistral.ai/studio-api/audio/text_to_speech"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

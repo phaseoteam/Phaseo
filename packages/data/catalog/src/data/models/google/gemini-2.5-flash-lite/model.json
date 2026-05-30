@@ -1,0 +1,38 @@
+{
+  "model_id": "google/gemini-2.5-flash-lite",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Flash-Lite",
+  "status": "Available",
+  "previous_model_id": "google/gemini-2.5-flash-lite-preview-2025-06-17",
+  "description": "Gemini 2.5 Flash-Lite is Google's stable ultra-fast multimodal model optimized for cost efficiency and high throughput. It is designed for large-scale text workloads across text, image, video, and audio inputs.",
+  "announced_date": "2025-07-22T00:00:00",
+  "release_date": "2025-07-22T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "google/gemini-2.5-flash-lite",
+  "family_id": "google/gemini-2.5",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-v2"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1048576
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-01-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    }
+  ],
+  "benchmarks": []
+}

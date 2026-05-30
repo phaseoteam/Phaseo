@@ -69,9 +69,9 @@
     "internal_model_id": "moonshotai/kimi-k2.5",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text,image",
+    "input_modalities": "text,image,video",
     "output_modalities": "text",
-    "context_length": null,
+    "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
     "effective_to": null,
@@ -90,11 +90,137 @@
     "internal_model_id": "moonshotai/kimi-k2.6",
     "is_active_gateway": true,
     "quantization_scheme": null,
-    "input_modalities": "text,image",
+    "input_modalities": "text,image,video",
     "output_modalities": "text",
-    "context_length": null,
+    "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": "2026-04-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/moonshot-v1-8k",
+    "provider_api_model_id": "moonshotai:moonshotai/moonshot-v1-8k",
+    "provider_model_slug": "moonshot-v1-8k",
+    "internal_model_id": "moonshotai/moonshot-v1-8k",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/moonshot-v1-32k",
+    "provider_api_model_id": "moonshotai:moonshotai/moonshot-v1-32k",
+    "provider_model_slug": "moonshot-v1-32k",
+    "internal_model_id": "moonshotai/moonshot-v1-32k",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/moonshot-v1-128k",
+    "provider_api_model_id": "moonshotai:moonshotai/moonshot-v1-128k",
+    "provider_model_slug": "moonshot-v1-128k",
+    "internal_model_id": "moonshotai/moonshot-v1-128k",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/moonshot-v1-8k-vision-preview",
+    "provider_api_model_id": "moonshotai:moonshotai/moonshot-v1-8k-vision-preview",
+    "provider_model_slug": "moonshot-v1-8k-vision-preview",
+    "internal_model_id": "moonshotai/moonshot-v1-8k-vision-preview",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 8192,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/moonshot-v1-32k-vision-preview",
+    "provider_api_model_id": "moonshotai:moonshotai/moonshot-v1-32k-vision-preview",
+    "provider_model_slug": "moonshot-v1-32k-vision-preview",
+    "internal_model_id": "moonshotai/moonshot-v1-32k-vision-preview",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 32768,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/moonshot-v1-128k-vision-preview",
+    "provider_api_model_id": "moonshotai:moonshotai/moonshot-v1-128k-vision-preview",
+    "provider_model_slug": "moonshot-v1-128k-vision-preview",
+    "internal_model_id": "moonshotai/moonshot-v1-128k-vision-preview",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 131072,
+    "max_output_tokens": null,
+    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

@@ -11,7 +11,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2026-03-25T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-05-25T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -181,7 +181,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-10-02T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-30T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -292,9 +292,108 @@
                          ]
     },
     {
+        "api_model_id":  "google/gemini-2.5-flash-lite",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-2.5-flash-lite",
+        "provider_model_slug":  "gemini-2.5-flash-lite",
+        "internal_model_id":  "google/gemini-2.5-flash-lite",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video,audio",
+        "output_modalities":  "text",
+        "context_length":  1048576,
+        "max_output_tokens":  65536,
+        "effective_from":  "2025-07-22T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+                                                {
+                                                    "param_id":  "include_reasoning",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "max_tokens",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "reasoning",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "response_format",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "seed",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "stop",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "structured_outputs",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "temperature",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "tool_choice",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "tools",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "top_p",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                }
+                                            ]
+                             }
+                         ]
+    },
+    {
         "api_model_id":  "google/gemini-2.5-flash-lite-preview-2025-09-25",
         "provider_api_model_id":  "google-ai-studio:google/gemini-2.5-flash-lite-preview-2025-09-25",
-        "provider_model_slug":  "gemini-2.5-flash-lite",
+        "provider_model_slug":  "gemini-2.5-flash-lite-preview-09-2025",
         "internal_model_id":  "google/gemini-2.5-flash-lite-preview-2025-09-25",
         "is_active_gateway":  true,
         "quantization_scheme":  null,
@@ -403,6 +502,105 @@
         "max_output_tokens":  null,
         "effective_from":  "2025-05-20T00:00:00",
         "effective_to":  "2025-07-15T00:00:00",
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+                                                {
+                                                    "param_id":  "include_reasoning",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "max_tokens",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "reasoning",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "response_format",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "seed",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "stop",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "structured_outputs",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "temperature",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "tool_choice",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "tools",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                },
+                                                {
+                                                    "param_id":  "top_p",
+                                                    "provider_min":  null,
+                                                    "provider_max":  null,
+                                                    "provider_default":  null,
+                                                    "notes":  null
+                                                }
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "google/gemini-2.5-flash",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-2.5-flash",
+        "provider_model_slug":  "gemini-2.5-flash",
+        "internal_model_id":  "google/gemini-2.5-flash",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video,audio",
+        "output_modalities":  "text",
+        "context_length":  1048576,
+        "max_output_tokens":  65536,
+        "effective_from":  "2025-06-17T00:00:00",
+        "effective_to":  null,
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
