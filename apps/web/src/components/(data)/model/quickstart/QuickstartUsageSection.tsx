@@ -64,6 +64,7 @@ export function QuickstartUsageSection({
 	anthropicNodeUsage,
 }: QuickstartUsageSectionProps) {
 	const shouldStream = supportsStreaming && streamingEnabled;
+	const compactCode = true;
 
 	return (
 		<div className={compactMode ? "space-y-2" : "space-y-3"}>
@@ -79,6 +80,7 @@ export function QuickstartUsageSection({
 						code={getInstallationCode(selectedLanguage)}
 						lang="bash"
 						label="bash"
+						compact={compactCode}
 					/>
 				</div>
 			)}
@@ -87,7 +89,12 @@ export function QuickstartUsageSection({
 					{compactMode ? null : (
 						<h4 className="text-sm font-medium">Streaming change</h4>
 					)}
-					<CodeBlock code={streamingDiff} lang="diff" label="diff" />
+					<CodeBlock
+						code={streamingDiff}
+						lang="diff"
+						label="diff"
+						compact={compactCode}
+					/>
 				</div>
 			) : null}
 			<div className="space-y-2">
@@ -97,52 +104,123 @@ export function QuickstartUsageSection({
 					</h4>
 				)}
 				{selectedLanguage === "curl" && (
-					<CodeBlock code={curlQuickstart} lang="bash" label="bash" />
+					<CodeBlock
+						code={curlQuickstart}
+						lang="bash"
+						label="bash"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "typescript-sdk" && typescriptSdkUsage && (
-					<CodeBlock code={typescriptSdkUsage} lang="ts" label="ts" />
+					<CodeBlock
+						code={typescriptSdkUsage}
+						lang="ts"
+						label="ts"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "ai-sdk" && aiSdkUsage && (
-					<CodeBlock code={aiSdkUsage} lang="ts" label="ts" />
+					<CodeBlock
+						code={aiSdkUsage}
+						lang="ts"
+						label="ts"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "agent-sdk-ts" && agentSdkTsUsage && (
-					<CodeBlock code={agentSdkTsUsage} lang="ts" label="ts" />
+					<CodeBlock
+						code={agentSdkTsUsage}
+						lang="ts"
+						label="ts"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "agent-sdk-python" && agentSdkPythonUsage && (
-					<CodeBlock code={agentSdkPythonUsage} lang="python" label="python" />
+					<CodeBlock
+						code={agentSdkPythonUsage}
+						lang="python"
+						label="python"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "agent-sdk-go" && agentSdkGoUsage && (
-					<CodeBlock code={agentSdkGoUsage} lang="go" label="go" />
+					<CodeBlock
+						code={agentSdkGoUsage}
+						lang="go"
+						label="go"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "agent-sdk-csharp" && agentSdkCsharpUsage && (
-					<CodeBlock code={agentSdkCsharpUsage} lang="csharp" label="csharp" />
+					<CodeBlock
+						code={agentSdkCsharpUsage}
+						lang="csharp"
+						label="csharp"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "agent-sdk-php" && agentSdkPhpUsage && (
-					<CodeBlock code={agentSdkPhpUsage} lang="php" label="php" />
+					<CodeBlock
+						code={agentSdkPhpUsage}
+						lang="php"
+						label="php"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "agent-sdk-ruby" && agentSdkRubyUsage && (
-					<CodeBlock code={agentSdkRubyUsage} lang="ruby" label="ruby" />
+					<CodeBlock
+						code={agentSdkRubyUsage}
+						lang="ruby"
+						label="ruby"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "python-sdk" && pythonSdkUsage && (
-					<CodeBlock code={pythonSdkUsage} lang="python" label="python" />
+					<CodeBlock
+						code={pythonSdkUsage}
+						lang="python"
+						label="python"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "go-sdk" && (
-					<CodeBlock code={goSdkUsage} lang="go" label="go" />
+					<CodeBlock
+						code={goSdkUsage}
+						lang="go"
+						label="go"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "csharp-sdk" && (
-					<CodeBlock code={csharpSdkUsage} lang="csharp" label="csharp" />
+					<CodeBlock
+						code={csharpSdkUsage}
+						lang="csharp"
+						label="csharp"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "php-sdk" && (
-					<CodeBlock code={phpSdkUsage} lang="php" label="php" />
+					<CodeBlock
+						code={phpSdkUsage}
+						lang="php"
+						label="php"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "ruby-sdk" && (
-					<CodeBlock code={rubySdkUsage} lang="ruby" label="ruby" />
+					<CodeBlock
+						code={rubySdkUsage}
+						lang="ruby"
+						label="ruby"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "node-fetch" && (
 					<CodeBlock
 						code={shouldStream ? nodeFetchStreamingQuickstart : nodeFetchQuickstart}
 						lang="ts"
 						label="ts"
+						compact={compactCode}
 					/>
 				)}
 				{selectedLanguage === "python-requests" && (
@@ -154,19 +232,40 @@ export function QuickstartUsageSection({
 						}
 						lang="python"
 						label="python"
+						compact={compactCode}
 					/>
 				)}
 				{selectedLanguage === "openai-python" && openaiPythonUsage && (
-					<CodeBlock code={openaiPythonUsage} lang="python" label="python" />
+					<CodeBlock
+						code={openaiPythonUsage}
+						lang="python"
+						label="python"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "openai-node" && openaiNodeUsage && (
-					<CodeBlock code={openaiNodeUsage} lang="ts" label="ts" />
+					<CodeBlock
+						code={openaiNodeUsage}
+						lang="ts"
+						label="ts"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "anthropic-python" && anthropicPythonUsage && (
-					<CodeBlock code={anthropicPythonUsage} lang="python" label="python" />
+					<CodeBlock
+						code={anthropicPythonUsage}
+						lang="python"
+						label="python"
+						compact={compactCode}
+					/>
 				)}
 				{selectedLanguage === "anthropic-node" && anthropicNodeUsage && (
-					<CodeBlock code={anthropicNodeUsage} lang="ts" label="ts" />
+					<CodeBlock
+						code={anthropicNodeUsage}
+						lang="ts"
+						label="ts"
+						compact={compactCode}
+					/>
 				)}
 			</div>
 		</div>

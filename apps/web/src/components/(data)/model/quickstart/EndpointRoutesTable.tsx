@@ -4,6 +4,7 @@ import { type KeyboardEvent } from "react";
 import { HttpMethodBadge } from "@/components/HttpMethodBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
 	ENDPOINT_ROUTE_PREVIEW_LIMIT,
 	getVisibleEndpointRoutes,
@@ -14,10 +15,12 @@ function EndpointRouteRow({
 	route,
 	active,
 	onSelect,
+	compact,
 }: {
 	route: EndpointRoute;
 	active: boolean;
 	onSelect: () => void;
+	compact: boolean;
 }) {
 	const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
 		if (event.key === "Enter" || event.key === " ") {
@@ -32,7 +35,10 @@ function EndpointRouteRow({
 			tabIndex={0}
 			onClick={onSelect}
 			onKeyDown={handleKeyDown}
-			className="grid w-full cursor-pointer grid-cols-[72px_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[72px_minmax(0,220px)_1fr_auto]"
+			className={cn(
+				"grid w-full cursor-pointer grid-cols-[72px_minmax(0,1fr)] items-center gap-3 px-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring md:grid-cols-[72px_minmax(0,220px)_1fr_auto]",
+				compact ? "py-2" : "py-3"
+			)}
 			aria-pressed={active}
 		>
 			<HttpMethodBadge method={route.method} />
@@ -75,12 +81,14 @@ export function EndpointRoutesTable({
 	showAllEndpointRoutes,
 	onToggleShowAllEndpointRoutes,
 	onSelectEndpoint,
+	compact = false,
 }: {
 	endpointRoutes: EndpointRoute[];
 	selectedEndpoint: string;
 	showAllEndpointRoutes: boolean;
 	onToggleShowAllEndpointRoutes: () => void;
 	onSelectEndpoint: (endpoint: string) => void;
+	compact?: boolean;
 }) {
 	const visibleEndpointRoutes = getVisibleEndpointRoutes(
 		endpointRoutes,
@@ -93,12 +101,14 @@ export function EndpointRoutesTable({
 	);
 
 	return (
-		<div className="space-y-3">
+		<div className={compact ? "space-y-2" : "space-y-3"}>
 			<div className="flex items-center justify-between gap-3">
 				<div>
-					<h3 className="text-base font-semibold">Available endpoints</h3>
+					<h3 className={compact ? "text-sm font-semibold" : "text-base font-semibold"}>
+						Supported endpoints
+					</h3>
 					<p className="text-xs text-muted-foreground">
-						Supported routes for this model. Select a row to update the quickstart code.
+						Select a route to update the quickstart code.
 					</p>
 				</div>
 				{endpointRoutes.length > ENDPOINT_ROUTE_PREVIEW_LIMIT ? (
@@ -128,6 +138,7 @@ export function EndpointRoutesTable({
 							route={route}
 							active={route.value === selectedEndpoint}
 							onSelect={() => onSelectEndpoint(route.value)}
+							compact={compact}
 						/>
 					))}
 				</div>

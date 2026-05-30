@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { codeToHtmlBoth } from "./shiki";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ShikiLang } from "./shiki";
+import { cn } from "@/lib/utils";
 
 function PlainBlock({ code }: { code: string }) {
 	return (
@@ -19,10 +20,12 @@ export default function CodeBlock({
 	code,
 	lang = "bash",
 	label,
+	compact = false,
 }: {
 	code: string;
 	lang?: ShikiLang;
 	label?: string;
+	compact?: boolean;
 }) {
 	const [lightHtml, setLightHtml] = useState<string | null>(null);
 	const [darkHtml, setDarkHtml] = useState<string | null>(null);
@@ -56,7 +59,12 @@ export default function CodeBlock({
 
 	return (
 		<div className="relative group rounded-xl border bg-primary/5">
-			<div className="flex items-center justify-between px-3 py-2">
+			<div
+				className={cn(
+					"flex items-center justify-between",
+					compact ? "px-3 py-1.5" : "px-3 py-2"
+				)}
+			>
 				<span className="text-[11px] uppercase tracking-wide text-muted-foreground">
 					{label ?? lang}
 				</span>
@@ -68,7 +76,12 @@ export default function CodeBlock({
 			</div>
 			<Separator />
 
-			<div className="p-4 overflow-x-auto text-sm rounded-b-xl">
+			<div
+				className={cn(
+					"overflow-auto rounded-b-xl text-sm",
+					compact ? "max-h-[340px] p-3" : "p-4"
+				)}
+			>
 				{!error && lightHtml && darkHtml ? (
 					<>
 						{/* Light */}
