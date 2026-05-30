@@ -576,7 +576,8 @@
       "mistral/voxtral-mini",
       "mistral/voxtral-mini-transcribe",
       "mistral/voxtral-mini-transcribe-2",
-      "mistral/voxtral-small"
+      "mistral/voxtral-small",
+      "mistral/voxtral-tts"
     ],
     "moonshotai": [
       "moonshotai/kimi-k1.5",
