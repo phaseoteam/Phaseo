@@ -1,12 +1,12 @@
 {
-  "key": "novita:baidu/ernie-4.5-21b-a3b:text.generate",
+  "key": "novita:baidu/ernie-4.5-21B-a3b:text.generate",
   "api_provider_id": "novita",
   "provider_slug": "novita",
-  "api_model_id": "baidu/ernie-4.5-21b-a3b",
+  "api_model_id": "baidu/ernie-4.5-21B-a3b",
   "capability_id": "text.generate",
   "rules": [
     {
-      "meter": "input_text_tokens",
+      "meter": "input_video_tokens",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 0.07,
