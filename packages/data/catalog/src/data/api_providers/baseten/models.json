@@ -299,7 +299,7 @@
     "context_length": 200000,
     "max_output_tokens": 200000,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-02T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -341,6 +341,27 @@
     "context_length": 202800,
     "max_output_tokens": 202800,
     "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.1",
+    "provider_api_model_id": "baseten:z-ai/glm-5.1",
+    "provider_model_slug": "zai-org/GLM-5.1",
+    "internal_model_id": "z-ai/glm-5.1",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202000,
+    "max_output_tokens": 202000,
+    "effective_from": "2026-05-27T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
