@@ -16,7 +16,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2025-02-24T00:00:00Z",
-      "effective_to": "2026-02-19T00:00:00Z"
+      "effective_to": null
     },
     {
       "meter": "output_text_tokens",
@@ -29,7 +29,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2025-02-24T00:00:00Z",
-      "effective_to": "2026-02-19T00:00:00Z"
+      "effective_to": null
     },
     {
       "meter": "cached_read_text_tokens",
@@ -42,7 +42,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2025-02-24T00:00:00Z",
-      "effective_to": "2026-02-19T00:00:00Z"
+      "effective_to": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -63,7 +63,7 @@
       ],
       "priority": 100,
       "effective_from": "2025-02-24T00:00:00Z",
-      "effective_to": "2026-02-19T00:00:00Z"
+      "effective_to": null
     },
     {
       "meter": "cached_write_text_tokens",
@@ -84,7 +84,7 @@
       ],
       "priority": 100,
       "effective_from": "2025-02-24T00:00:00Z",
-      "effective_to": "2026-02-19T00:00:00Z"
+      "effective_to": null
     },
     {
       "meter": "input_text_tokens",
