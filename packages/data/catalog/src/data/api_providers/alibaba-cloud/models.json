@@ -1095,7 +1095,7 @@
         "effective_to":  null,
         "capabilities":  [
                              {
-                                 "capability_id":  "image.generate",
+                                 "capability_id":  "text.embed",
                                  "status":  "active",
                                  "params":  [
 
@@ -1118,7 +1118,7 @@
         "effective_to":  null,
         "capabilities":  [
                              {
-                                 "capability_id":  "image.edit",
+                                 "capability_id":  "text.embed",
                                  "status":  "active",
                                  "params":  [
 

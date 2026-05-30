@@ -2,10 +2,8 @@
 const CORE_PRICING_METER_VALUES = [
   "input_tokens",
   "input_characters",
-  "input_pages",
   "input_text_tokens",
   "input_image_tokens",
-  "input_audio_minutes",
   "image_pixels",
   "video_pixels",
   "input_video_tokens",
@@ -41,3 +39,4 @@ export const PRICING_METER_OPTIONS = PRICING_METER_VALUES.map((value) => ({
   value,
   label: toTitleCase(value),
 }))
+
