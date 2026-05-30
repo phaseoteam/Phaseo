@@ -1992,6 +1992,7 @@
     "baseten:text.generate:z-ai-glm-4.6",
     "baseten:text.generate:z-ai-glm-4.7",
     "baseten:text.generate:z-ai-glm-5",
+    "baseten:text.generate:z-ai-glm-5.1",
     "black-forest-labs:image.edits:black-forest-labs-flux-2-klein-4b",
     "black-forest-labs:image.generate:black-forest-labs-flux-2-klein-4b",
     "byteplus:text.generate:bytedance-seed-1.6",
