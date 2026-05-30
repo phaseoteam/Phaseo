@@ -341,6 +341,14 @@
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-6",
       "rank": 7
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 28,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; effort max; 28% +/-4%; avg cost $5.39; avg time 30m; out tok 44k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 7
     }
   ]
 }
