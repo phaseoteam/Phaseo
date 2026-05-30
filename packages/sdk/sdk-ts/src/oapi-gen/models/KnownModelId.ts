@@ -133,7 +133,6 @@ export type KnownModelId =
   | "meta/llama-3.1-70b"
   | "meta/llama-3.1-8b"
   | "meta/llama-3.2-11b-vision"
-  | "meta/llama-3.2-1b-instruct"
   | "meta/llama-3.2-3b"
   | "meta/llama-3.3-70b"
   | "meta/llama-4-maverick"

@@ -1381,7 +1381,6 @@ const (
 	KnownModelIdMetaLlama3170b KnownModelId = "meta/llama-3.1-70b"
 	KnownModelIdMetaLlama318b KnownModelId = "meta/llama-3.1-8b"
 	KnownModelIdMetaLlama3211bVision KnownModelId = "meta/llama-3.2-11b-vision"
-	KnownModelIdMetaLlama321bInstruct KnownModelId = "meta/llama-3.2-1b-instruct"
 	KnownModelIdMetaLlama323b KnownModelId = "meta/llama-3.2-3b"
 	KnownModelIdMetaLlama3370b KnownModelId = "meta/llama-3.3-70b"
 	KnownModelIdMetaLlama4Maverick KnownModelId = "meta/llama-4-maverick"
