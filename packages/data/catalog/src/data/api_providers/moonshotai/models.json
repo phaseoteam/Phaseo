@@ -115,7 +115,7 @@
     "output_modalities": "text",
     "context_length": 8192,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2024-01-31T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -136,7 +136,7 @@
     "output_modalities": "text",
     "context_length": 32768,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2024-01-31T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -157,7 +157,7 @@
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2024-01-31T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
