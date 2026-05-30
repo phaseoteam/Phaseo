@@ -148,6 +148,7 @@ export type BenchmarkId =
   | "deepplanning-v1.1-travel-ps-score"
   | "deepresearchbench"
   | "deepsearchqa"
+  | "deepswe"
   | "der-2-bench"
   | "design2code"
   | "disco-x"
