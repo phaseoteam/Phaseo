@@ -4,7 +4,7 @@
     "provider_api_model_id": "fireworks:black-forest-labs/flux-1-dev",
     "provider_model_slug": "accounts/fireworks/models/flux-1-dev-fp8",
     "internal_model_id": "",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "image",
