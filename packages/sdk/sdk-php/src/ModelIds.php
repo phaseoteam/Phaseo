@@ -35,6 +35,12 @@ final class ModelIds
     /** Model ID: allenai/olmo-3.1-32b. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b */
     public const ALLENAI_OLMO_3_1_32B = 'allenai/olmo-3.1-32b';
 
+    /** Model ID: anthropic/claude-3.5-haiku. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku */
+    public const ANTHROPIC_CLAUDE_3_5_HAIKU = 'anthropic/claude-3.5-haiku';
+
+    /** Model ID: anthropic/claude-3.7-sonnet. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet */
+    public const ANTHROPIC_CLAUDE_3_7_SONNET = 'anthropic/claude-3.7-sonnet';
+
     /** Model ID: anthropic/claude-haiku-4.5. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5 */
     public const ANTHROPIC_CLAUDE_HAIKU_4_5 = 'anthropic/claude-haiku-4.5';
 
@@ -236,8 +242,14 @@ final class ModelIds
     /** Model ID: google/gemini-2.0-flash-lite. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite */
     public const GOOGLE_GEMINI_2_0_FLASH_LITE = 'google/gemini-2.0-flash-lite';
 
+    /** Model ID: google/gemini-2.5-flash. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash */
+    public const GOOGLE_GEMINI_2_5_FLASH = 'google/gemini-2.5-flash';
+
     /** Model ID: google/gemini-2.5-flash-image. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image */
     public const GOOGLE_GEMINI_2_5_FLASH_IMAGE = 'google/gemini-2.5-flash-image';
+
+    /** Model ID: google/gemini-2.5-flash-lite. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite */
+    public const GOOGLE_GEMINI_2_5_FLASH_LITE = 'google/gemini-2.5-flash-lite';
 
     /** Model ID: google/gemini-2.5-flash-lite-preview-2025-06-17. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17 */
     public const GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17 = 'google/gemini-2.5-flash-lite-preview-2025-06-17';

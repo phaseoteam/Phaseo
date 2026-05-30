@@ -34,6 +34,12 @@ public final class ModelIds {
     /** Model ID: <code>allenai/olmo-3.1-32b</code>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b */
     public static final String ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b";
 
+    /** Model ID: <code>anthropic/claude-3.5-haiku</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku */
+    public static final String ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku";
+
+    /** Model ID: <code>anthropic/claude-3.7-sonnet</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet */
+    public static final String ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic/claude-3.7-sonnet";
+
     /** Model ID: <code>anthropic/claude-haiku-4.5</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5 */
     public static final String ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5";
 
@@ -235,8 +241,14 @@ public final class ModelIds {
     /** Model ID: <code>google/gemini-2.0-flash-lite</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite */
     public static final String GOOGLE_GEMINI_2_0_FLASH_LITE = "google/gemini-2.0-flash-lite";
 
+    /** Model ID: <code>google/gemini-2.5-flash</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash */
+    public static final String GOOGLE_GEMINI_2_5_FLASH = "google/gemini-2.5-flash";
+
     /** Model ID: <code>google/gemini-2.5-flash-image</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image */
     public static final String GOOGLE_GEMINI_2_5_FLASH_IMAGE = "google/gemini-2.5-flash-image";
+
+    /** Model ID: <code>google/gemini-2.5-flash-lite</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite */
+    public static final String GOOGLE_GEMINI_2_5_FLASH_LITE = "google/gemini-2.5-flash-lite";
 
     /** Model ID: <code>google/gemini-2.5-flash-lite-preview-2025-06-17</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17 */
     public static final String GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17 = "google/gemini-2.5-flash-lite-preview-2025-06-17";

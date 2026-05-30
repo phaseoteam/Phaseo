@@ -30,6 +30,12 @@ module AIStatsSdk
     # Model ID: allenai/olmo-3.1-32b
     # Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b
     ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b"
+    # Model ID: anthropic/claude-3.5-haiku
+    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku
+    ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku"
+    # Model ID: anthropic/claude-3.7-sonnet
+    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet
+    ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic/claude-3.7-sonnet"
     # Model ID: anthropic/claude-haiku-4.5
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
     ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5"
@@ -231,9 +237,15 @@ module AIStatsSdk
     # Model ID: google/gemini-2.0-flash-lite
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite
     GOOGLE_GEMINI_2_0_FLASH_LITE = "google/gemini-2.0-flash-lite"
+    # Model ID: google/gemini-2.5-flash
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash
+    GOOGLE_GEMINI_2_5_FLASH = "google/gemini-2.5-flash"
     # Model ID: google/gemini-2.5-flash-image
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image
     GOOGLE_GEMINI_2_5_FLASH_IMAGE = "google/gemini-2.5-flash-image"
+    # Model ID: google/gemini-2.5-flash-lite
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite
+    GOOGLE_GEMINI_2_5_FLASH_LITE = "google/gemini-2.5-flash-lite"
     # Model ID: google/gemini-2.5-flash-lite-preview-2025-06-17
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17
     GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17 = "google/gemini-2.5-flash-lite-preview-2025-06-17"
@@ -1388,6 +1400,8 @@ module AIStatsSdk
     ModelIds::AION_LABS_AION_RP_LLAMA_3_1_8B,
     ModelIds::ALLENAI_MOLMO_2_8B,
     ModelIds::ALLENAI_OLMO_3_1_32B,
+    ModelIds::ANTHROPIC_CLAUDE_3_5_HAIKU,
+    ModelIds::ANTHROPIC_CLAUDE_3_7_SONNET,
     ModelIds::ANTHROPIC_CLAUDE_HAIKU_4_5,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_1,
@@ -1455,7 +1469,9 @@ module AIStatsSdk
     ModelIds::ESSENTIAL_AI_RNJ_1,
     ModelIds::GOOGLE_GEMINI_2_0_FLASH,
     ModelIds::GOOGLE_GEMINI_2_0_FLASH_LITE,
+    ModelIds::GOOGLE_GEMINI_2_5_FLASH,
     ModelIds::GOOGLE_GEMINI_2_5_FLASH_IMAGE,
+    ModelIds::GOOGLE_GEMINI_2_5_FLASH_LITE,
     ModelIds::GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
     ModelIds::GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
     ModelIds::GOOGLE_GEMINI_3_FLASH_PREVIEW,

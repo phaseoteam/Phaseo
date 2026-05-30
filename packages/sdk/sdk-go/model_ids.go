@@ -34,6 +34,12 @@ const (
 	// Model ID: allenai/olmo-3.1-32b
 	// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b
 	ModelIDAllenaiOlmo3132b gen.ModelId = "allenai/olmo-3.1-32b"
+	// Model ID: anthropic/claude-3.5-haiku
+	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku
+	ModelIDAnthropicClaude35Haiku gen.ModelId = "anthropic/claude-3.5-haiku"
+	// Model ID: anthropic/claude-3.7-sonnet
+	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet
+	ModelIDAnthropicClaude37Sonnet gen.ModelId = "anthropic/claude-3.7-sonnet"
 	// Model ID: anthropic/claude-haiku-4.5
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
 	ModelIDAnthropicClaudeHaiku45 gen.ModelId = "anthropic/claude-haiku-4.5"
@@ -235,9 +241,15 @@ const (
 	// Model ID: google/gemini-2.0-flash-lite
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite
 	ModelIDGoogleGemini20FlashLite gen.ModelId = "google/gemini-2.0-flash-lite"
+	// Model ID: google/gemini-2.5-flash
+	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash
+	ModelIDGoogleGemini25Flash gen.ModelId = "google/gemini-2.5-flash"
 	// Model ID: google/gemini-2.5-flash-image
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image
 	ModelIDGoogleGemini25FlashImage gen.ModelId = "google/gemini-2.5-flash-image"
+	// Model ID: google/gemini-2.5-flash-lite
+	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite
+	ModelIDGoogleGemini25FlashLite gen.ModelId = "google/gemini-2.5-flash-lite"
 	// Model ID: google/gemini-2.5-flash-lite-preview-2025-06-17
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17
 	ModelIDGoogleGemini25FlashLitePreview20250617 gen.ModelId = "google/gemini-2.5-flash-lite-preview-2025-06-17"
@@ -1392,6 +1404,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDAionLabsAionRpLlama318b,
 	ModelIDAllenaiMolmo28b,
 	ModelIDAllenaiOlmo3132b,
+	ModelIDAnthropicClaude35Haiku,
+	ModelIDAnthropicClaude37Sonnet,
 	ModelIDAnthropicClaudeHaiku45,
 	ModelIDAnthropicClaudeOpus4,
 	ModelIDAnthropicClaudeOpus41,
@@ -1459,7 +1473,9 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDEssentialAiRnj1,
 	ModelIDGoogleGemini20Flash,
 	ModelIDGoogleGemini20FlashLite,
+	ModelIDGoogleGemini25Flash,
 	ModelIDGoogleGemini25FlashImage,
+	ModelIDGoogleGemini25FlashLite,
 	ModelIDGoogleGemini25FlashLitePreview20250617,
 	ModelIDGoogleGemini25FlashLitePreview20250925,
 	ModelIDGoogleGemini3FlashPreview,

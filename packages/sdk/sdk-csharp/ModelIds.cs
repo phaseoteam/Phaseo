@@ -24,6 +24,10 @@ namespace AiStatsSdk
         public const string AllenaiMolmo28b = "allenai/molmo-2-8b";
         /// <summary>Model ID: <c>allenai/olmo-3.1-32b</c>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b</summary>
         public const string AllenaiOlmo3132b = "allenai/olmo-3.1-32b";
+        /// <summary>Model ID: <c>anthropic/claude-3.5-haiku</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku</summary>
+        public const string AnthropicClaude35Haiku = "anthropic/claude-3.5-haiku";
+        /// <summary>Model ID: <c>anthropic/claude-3.7-sonnet</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet</summary>
+        public const string AnthropicClaude37Sonnet = "anthropic/claude-3.7-sonnet";
         /// <summary>Model ID: <c>anthropic/claude-haiku-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5</summary>
         public const string AnthropicClaudeHaiku45 = "anthropic/claude-haiku-4.5";
         /// <summary>Model ID: <c>anthropic/claude-opus-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4</summary>
@@ -158,8 +162,12 @@ namespace AiStatsSdk
         public const string GoogleGemini20Flash = "google/gemini-2.0-flash";
         /// <summary>Model ID: <c>google/gemini-2.0-flash-lite</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite</summary>
         public const string GoogleGemini20FlashLite = "google/gemini-2.0-flash-lite";
+        /// <summary>Model ID: <c>google/gemini-2.5-flash</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash</summary>
+        public const string GoogleGemini25Flash = "google/gemini-2.5-flash";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image</summary>
         public const string GoogleGemini25FlashImage = "google/gemini-2.5-flash-image";
+        /// <summary>Model ID: <c>google/gemini-2.5-flash-lite</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite</summary>
+        public const string GoogleGemini25FlashLite = "google/gemini-2.5-flash-lite";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-lite-preview-2025-06-17</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17</summary>
         public const string GoogleGemini25FlashLitePreview20250617 = "google/gemini-2.5-flash-lite-preview-2025-06-17";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-lite-preview-2025-09-25</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25</summary>

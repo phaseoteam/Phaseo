@@ -30,6 +30,12 @@ pub mod model_ids {
     /// Model ID: `allenai/olmo-3.1-32b`.
     /// Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b
     pub const ALLENAI_OLMO_3_1_32B: &str = "allenai/olmo-3.1-32b";
+    /// Model ID: `anthropic/claude-3.5-haiku`.
+    /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku
+    pub const ANTHROPIC_CLAUDE_3_5_HAIKU: &str = "anthropic/claude-3.5-haiku";
+    /// Model ID: `anthropic/claude-3.7-sonnet`.
+    /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet
+    pub const ANTHROPIC_CLAUDE_3_7_SONNET: &str = "anthropic/claude-3.7-sonnet";
     /// Model ID: `anthropic/claude-haiku-4.5`.
     /// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
     pub const ANTHROPIC_CLAUDE_HAIKU_4_5: &str = "anthropic/claude-haiku-4.5";
@@ -231,9 +237,15 @@ pub mod model_ids {
     /// Model ID: `google/gemini-2.0-flash-lite`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.0-flash-lite
     pub const GOOGLE_GEMINI_2_0_FLASH_LITE: &str = "google/gemini-2.0-flash-lite";
+    /// Model ID: `google/gemini-2.5-flash`.
+    /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash
+    pub const GOOGLE_GEMINI_2_5_FLASH: &str = "google/gemini-2.5-flash";
     /// Model ID: `google/gemini-2.5-flash-image`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-image
     pub const GOOGLE_GEMINI_2_5_FLASH_IMAGE: &str = "google/gemini-2.5-flash-image";
+    /// Model ID: `google/gemini-2.5-flash-lite`.
+    /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite
+    pub const GOOGLE_GEMINI_2_5_FLASH_LITE: &str = "google/gemini-2.5-flash-lite";
     /// Model ID: `google/gemini-2.5-flash-lite-preview-2025-06-17`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17
     pub const GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17: &str = "google/gemini-2.5-flash-lite-preview-2025-06-17";
@@ -1388,6 +1400,8 @@ pub mod model_ids {
         AION_LABS_AION_RP_LLAMA_3_1_8B,
         ALLENAI_MOLMO_2_8B,
         ALLENAI_OLMO_3_1_32B,
+        ANTHROPIC_CLAUDE_3_5_HAIKU,
+        ANTHROPIC_CLAUDE_3_7_SONNET,
         ANTHROPIC_CLAUDE_HAIKU_4_5,
         ANTHROPIC_CLAUDE_OPUS_4,
         ANTHROPIC_CLAUDE_OPUS_4_1,
@@ -1455,7 +1469,9 @@ pub mod model_ids {
         ESSENTIAL_AI_RNJ_1,
         GOOGLE_GEMINI_2_0_FLASH,
         GOOGLE_GEMINI_2_0_FLASH_LITE,
+        GOOGLE_GEMINI_2_5_FLASH,
         GOOGLE_GEMINI_2_5_FLASH_IMAGE,
+        GOOGLE_GEMINI_2_5_FLASH_LITE,
         GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
         GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
         GOOGLE_GEMINI_3_FLASH_PREVIEW,
