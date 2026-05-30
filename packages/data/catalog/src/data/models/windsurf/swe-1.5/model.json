@@ -1,0 +1,28 @@
+{
+  "model_id": "windsurf/swe-1.5",
+  "organisation_id": "windsurf",
+  "name": "SWE-1.5",
+  "status": "Available",
+  "previous_model_id": "windsurf/swe-1",
+  "description": "SWE-1.5 is Windsurf's previous frontier agentic coding model for software engineering tasks.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "windsurf/swe-1.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://cognition.ai/blog/swe-1-5"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.windsurf.com/windsurf/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

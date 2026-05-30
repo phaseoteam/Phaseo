@@ -1,0 +1,78 @@
+{
+  "plan_id": "chatgpt-business-codex",
+  "name": "ChatGPT Business Codex",
+  "organisation_id": "openai",
+  "description": "Usage-priced Codex-only seat type for ChatGPT Business workspaces.",
+  "pricing_options": [
+    {
+      "frequency": "usage",
+      "usd_price": 0,
+      "link": "https://openai.com/business/chatgpt-pricing/",
+      "other_info": "No fixed seat fee; pay as you go based on Codex usage"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Seat Type",
+      "feature_value": "Codex seat",
+      "feature_description": "Provides Codex-only access in a ChatGPT Business workspace.",
+      "other_info": null
+    },
+    {
+      "feature_name": "ChatGPT Access",
+      "feature_value": "No",
+      "feature_description": "Codex seats do not include ChatGPT workspace access.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Minimum Seats",
+      "feature_value": "None",
+      "feature_description": "OpenAI states there is no minimum number of Codex seats.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Billing Model",
+      "feature_value": "Usage-based",
+      "feature_description": "Requires workspace credits; Codex usage is billed from usage rather than a fixed monthly seat price.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Workspace Controls",
+      "feature_value": "Admin controls, SAML SSO, and MFA",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "openai/gpt-5.3-codex",
+      "model_info": "Codex",
+      "rate_limit": "Usage-based",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.3-codex-spark",
+      "model_info": "Codex research preview",
+      "rate_limit": "Usage-based",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.2-codex",
+      "model_info": "Codex",
+      "rate_limit": "Usage-based",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.1-codex-max",
+      "model_info": "Codex Max",
+      "rate_limit": "Usage-based",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.1-codex-mini",
+      "model_info": "Codex Mini",
+      "rate_limit": "Usage-based",
+      "other_info": "Accessible through Codex"
+    }
+  ]
+}

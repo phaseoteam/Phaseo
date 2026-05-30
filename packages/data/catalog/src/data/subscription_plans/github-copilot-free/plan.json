@@ -1,0 +1,144 @@
+{
+  "plan_id": "github-copilot-free",
+  "name": "GitHub Copilot Free",
+  "organisation_id": "github",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://github.com/features/copilot/plans",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Premium Requests",
+      "feature_value": "50 / Month",
+      "feature_description": "Chat, agent mode, code review, cloud agent, and Copilot CLI usage varies by feature or model.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Inline Suggestions",
+      "feature_value": "2,000 / Month",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "openai/gpt-5-mini",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "openai/gpt-5.2",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "openai/gpt-5.2-codex",
+      "model_info": "Codex",
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "openai/gpt-5.3-codex",
+      "model_info": "Codex",
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "openai/gpt-5.4",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "openai/gpt-5.4-mini",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "openai/gpt-5.5",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-haiku-4.5",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.5",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.5",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.6",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.7",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "google/gemini-2.5-pro",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "google/gemini-3-flash-preview",
+      "model_info": "Preview",
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "google/gemini-3.1-pro-preview",
+      "model_info": "Preview",
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": null,
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    },
+    {
+      "model_id": "x-ai/grok-code-fast-1",
+      "model_info": "Grok Code Fast 1",
+      "rate_limit": "50 premium requests / month",
+      "other_info": "Listed under GitHub Copilot Free model access"
+    }
+  ]
+}

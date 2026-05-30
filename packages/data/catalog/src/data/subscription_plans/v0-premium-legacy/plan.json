@@ -1,0 +1,54 @@
+{
+  "plan_id": "v0-premium-legacy",
+  "name": "v0 Premium (Legacy)",
+  "organisation_id": "vercel",
+  "description": "Legacy v0 Premium plan. Vercel's pricing FAQ says Premium is being sunset and is no longer available to new users.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 20,
+      "link": "https://v0.dev/pricing",
+      "other_info": "Legacy plan; no longer available to new users"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Included Usage",
+      "feature_value": "$20 / Month",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Daily Credits",
+      "feature_value": "$2 / Day",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "On-Demand Credits",
+      "feature_value": "Available",
+      "feature_description": "Premium users can buy credits after included usage is exhausted.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "vercel/v0-1.5-sm",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage or on-demand credits",
+      "other_info": null
+    },
+    {
+      "model_id": "vercel/v0-1.5-md",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage or on-demand credits",
+      "other_info": null
+    },
+    {
+      "model_id": "vercel/v0-1.5-lg",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage or on-demand credits",
+      "other_info": null
+    }
+  ]
+}

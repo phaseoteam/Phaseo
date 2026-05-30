@@ -1,0 +1,35 @@
+{
+  "plan_id": "amazon-q-developer-free",
+  "name": "Amazon Q Developer Free",
+  "organisation_id": "amazon",
+  "description": "Free Amazon Q Developer plan for individual developer assistance in IDEs, the command line, and AWS surfaces.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://aws.amazon.com/q/developer/pricing/",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Agentic Requests",
+      "feature_value": "50 / Month",
+      "feature_description": "Monthly included allowance for Amazon Q Developer agentic requests.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Model Access",
+      "feature_value": "Latest Claude Models",
+      "feature_description": "AWS describes Amazon Q Developer as providing access to the latest Claude models, but does not publish stable underlying model IDs for the subscription plan.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Java Transformations",
+      "feature_value": "1,000 Lines / Month",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": []
+}

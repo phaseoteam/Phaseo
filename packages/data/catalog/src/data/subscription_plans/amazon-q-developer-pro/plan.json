@@ -1,0 +1,35 @@
+{
+  "plan_id": "amazon-q-developer-pro",
+  "name": "Amazon Q Developer Pro",
+  "organisation_id": "amazon",
+  "description": "Paid Amazon Q Developer plan for higher agentic usage, administrator controls, and organizational developer assistance.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 19,
+      "link": "https://aws.amazon.com/q/developer/pricing/",
+      "other_info": "Per user per month"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Agentic Requests",
+      "feature_value": "Included",
+      "feature_description": "Higher included agentic usage than Free; exact quotas can vary by AWS account and feature.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Model Access",
+      "feature_value": "Latest Claude Models",
+      "feature_description": "AWS describes Amazon Q Developer as providing access to the latest Claude models, but does not publish stable underlying model IDs for the subscription plan.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Administration",
+      "feature_value": "Included",
+      "feature_description": "Includes administrative controls and enterprise-oriented user management.",
+      "other_info": null
+    }
+  ],
+  "models": []
+}
