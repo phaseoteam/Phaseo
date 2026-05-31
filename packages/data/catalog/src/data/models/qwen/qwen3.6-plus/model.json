@@ -511,6 +511,14 @@
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
       "rank": 3
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 70.85,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 31
     }
   ]
 }

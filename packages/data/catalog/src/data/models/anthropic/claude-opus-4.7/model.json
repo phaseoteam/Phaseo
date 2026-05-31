@@ -225,6 +225,14 @@
       "other_info": "mini-swe-agent; effort max; 54% +/-5%; avg cost $18.19; avg time 39m; out tok 103k",
       "source_link": "https://deepswe.datacurve.ai/",
       "rank": 4
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 61.7,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/",
+      "rank": 12
     }
   ]
 }

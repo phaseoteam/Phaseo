@@ -342,6 +342,38 @@
       "other_info": "mini-swe-agent; effort xhigh; 70% +/-4%; avg cost $6.61; avg time 21m; out tok 47k",
       "source_link": "https://deepswe.datacurve.ai/",
       "rank": 1
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 69,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 80.71,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; xHigh effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 76.24,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; high effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 68.66,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; medium effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 41
     }
   ]
 }

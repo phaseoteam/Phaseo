@@ -80,6 +80,14 @@
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
       "rank": 24
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 53.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/",
+      "rank": 23
     }
   ]
 }
