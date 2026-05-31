@@ -157,6 +157,14 @@
       "other_info": null,
       "source_link": "https://www.alibabacloud.com/blog/qwen3-7-the-agent-frontier_603154",
       "rank": null
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 70.4,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/",
+      "rank": 5
     }
   ]
 }

@@ -115,6 +115,14 @@
       "rank": null
     },
     {
+      "benchmark_id": "simplebench",
+      "score": 64.8,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/",
+      "rank": 8
+    },
+    {
       "benchmark_id": "deepswe",
       "score": 58,
       "is_self_reported": false,
