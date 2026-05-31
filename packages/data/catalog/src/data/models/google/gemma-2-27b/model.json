@@ -60,14 +60,6 @@
   ],
   "benchmarks": [
     {
-      "benchmark_id": "confabulations",
-      "score": 27.24,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 43
-    },
-    {
       "benchmark_id": "lmarena-text",
       "score": 1285,
       "is_self_reported": false,
@@ -76,20 +68,12 @@
       "rank": 59
     },
     {
-      "benchmark_id": "nyt-connections",
-      "score": 0.122,
+      "benchmark_id": "confabulations",
+      "score": 27.12,
       "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 41
-    },
-    {
-      "benchmark_id": "thematic-generalisation",
-      "score": 2.6,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 42
+      "other_info": "Confab 47.0%; non-response 7.2%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 59
     }
   ]
 }

@@ -274,6 +274,22 @@
       "other_info": null,
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
       "rank": 15
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 26.85,
+      "is_self_reported": false,
+      "other_info": "Confab 24.3%; non-response 29.4%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 58
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 1.954,
+      "is_self_reported": false,
+      "other_info": "sigma 0.177; games 757; avg points 0.376",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 59
     }
   ]
 }

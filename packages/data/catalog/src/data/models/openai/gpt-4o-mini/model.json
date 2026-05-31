@@ -27,22 +27,6 @@
   ],
   "benchmarks": [
     {
-      "benchmark_id": "confabulations",
-      "score": 37.21,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 48
-    },
-    {
-      "benchmark_id": "elimination-game",
-      "score": 4.598,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 20
-    },
-    {
       "benchmark_id": "gpqa-diamond",
       "score": 40.2,
       "is_self_reported": true,
@@ -57,14 +41,6 @@
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
       "rank": 49
-    },
-    {
-      "benchmark_id": "nyt-connections",
-      "score": 0.099,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 47
     },
     {
       "benchmark_id": "simplebench",
@@ -83,12 +59,20 @@
       "rank": 131
     },
     {
-      "benchmark_id": "thematic-generalisation",
-      "score": 2.3,
+      "benchmark_id": "confabulations",
+      "score": 37.21,
       "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 41
+      "other_info": "Confab 60.9%; non-response 13.5%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 65
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 3.299,
+      "is_self_reported": false,
+      "other_info": "sigma 0.144; games 1114; avg points 0.462",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 48
     }
   ]
 }

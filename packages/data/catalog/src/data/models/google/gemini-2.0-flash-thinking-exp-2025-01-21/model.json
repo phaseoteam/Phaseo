@@ -40,6 +40,22 @@
       "other_info": "inferred alias from gemini-2.0-flash-thinking",
       "source_link": "https://ai.google.dev/gemini-api/docs/models/gemini#evaluation",
       "rank": 42
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 12.43,
+      "is_self_reported": false,
+      "other_info": "Confab 14.9%; non-response 10.0%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 2.811,
+      "is_self_reported": false,
+      "other_info": "sigma 0.213; games 522; avg points 0.449",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 54
     }
   ]
 }

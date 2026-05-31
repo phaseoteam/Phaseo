@@ -78,10 +78,18 @@
       "rank": 13
     },
     {
+      "benchmark_id": "deepswe",
+      "score": 28,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; effort medium; 28% +/-4%; avg cost $7.42; avg time 17m; out tok 189k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 6
+    },
+    {
       "benchmark_id": "creative-story-writing",
       "score": -1.2,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "win prob 0.33; 95% CI -1.3..-1.1",
       "source_link": "https://github.com/lechmazur/writing",
       "rank": 20
     },
@@ -89,17 +97,9 @@
       "benchmark_id": "nyt-connections",
       "score": 95.2,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 5
-    },
-    {
-      "benchmark_id": "deepswe",
-      "score": 28,
-      "is_self_reported": false,
-      "other_info": "mini-swe-agent; effort medium; 28% +/-4%; avg cost $7.42; avg time 17m; out tok 189k",
-      "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 6
     }
   ]
 }

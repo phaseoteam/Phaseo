@@ -46,7 +46,7 @@
       "benchmark_id": "creative-story-writing",
       "score": 0.5,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "win prob 0.58; 95% CI 0.3..0.6",
       "source_link": "https://github.com/lechmazur/writing",
       "rank": 13
     },
@@ -54,7 +54,7 @@
       "benchmark_id": "nyt-connections",
       "score": 48,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 48
     }

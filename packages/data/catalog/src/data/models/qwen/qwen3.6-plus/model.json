@@ -524,7 +524,7 @@
       "benchmark_id": "creative-story-writing",
       "score": -2.2,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "win prob 0.20; 95% CI -2.5..-1.7",
       "source_link": "https://github.com/lechmazur/writing",
       "rank": 28
     },
@@ -532,9 +532,17 @@
       "benchmark_id": "nyt-connections",
       "score": 71.3,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 34
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 59.5,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 81.5%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 17
     }
   ]
 }

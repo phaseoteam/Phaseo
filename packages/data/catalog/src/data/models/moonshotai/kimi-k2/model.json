@@ -65,30 +65,6 @@
       "rank": 1
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 20.38,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 38
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 8.56,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 2
-    },
-    {
-      "benchmark_id": "elimination-game",
-      "score": 3.772,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 28
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1563.3,
       "is_self_reported": false,
@@ -297,20 +273,28 @@
       "rank": 22
     },
     {
-      "benchmark_id": "thematic-generalisation",
-      "score": 1.94,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 26
-    },
-    {
       "benchmark_id": "zebralogic",
       "score": 89,
       "is_self_reported": true,
       "other_info": "Acc",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Instruct",
       "rank": 4
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 20.38,
+      "is_self_reported": false,
+      "other_info": "Confab 30.2%; non-response 10.6%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 47
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 3.405,
+      "is_self_reported": false,
+      "other_info": "sigma 0.252; games 378; avg points 0.455",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 45
     }
   ]
 }

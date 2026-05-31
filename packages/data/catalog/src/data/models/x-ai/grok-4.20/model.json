@@ -108,6 +108,54 @@
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/grok-4-20",
       "rank": 1
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 90.4,
+      "is_self_reported": false,
+      "other_info": "Reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 16
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 89.5,
+      "is_self_reported": false,
+      "other_info": "Reasoning beta 0304; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 19.2,
+      "is_self_reported": false,
+      "other_info": "Non-reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 74
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 17.6,
+      "is_self_reported": false,
+      "other_info": "Non-reasoning beta 0304; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 77
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 63.8,
+      "is_self_reported": false,
+      "other_info": "Reasoning; Top-1 accuracy 81.5%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 22,
+      "is_self_reported": false,
+      "other_info": "Non-reasoning; Top-1 accuracy 33.4%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 29
     }
   ]
 }

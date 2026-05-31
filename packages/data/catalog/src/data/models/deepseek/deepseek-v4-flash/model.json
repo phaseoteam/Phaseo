@@ -134,7 +134,7 @@
       "benchmark_id": "nyt-connections",
       "score": 53.2,
       "is_self_reported": false,
-      "other_info": null,
+      "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
       "rank": 45
     }

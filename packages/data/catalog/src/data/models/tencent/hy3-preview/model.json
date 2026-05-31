@@ -29,5 +29,14 @@
       "value": 295000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 30.2,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 60
+    }
+  ]
 }

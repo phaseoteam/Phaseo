@@ -55,6 +55,22 @@
       "other_info": null,
       "source_link": "https://www.baidu.com/",
       "rank": 5
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 21.2,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 72
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 41.7,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 65.3%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 24
     }
   ]
 }
