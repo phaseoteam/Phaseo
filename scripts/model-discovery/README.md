@@ -17,9 +17,9 @@ On subsequent runs, the runner computes per-provider:
 - removed models
 - changed model payloads
 
-## Private upstream discovery
+## Upstream model discovery
 
-Private upstream discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. These checks send private Discord notifications and can create or update GitHub triage issues when `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` are available.
+Upstream model discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. These checks can send Discord notifications and create or update GitHub triage issues when `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` are available.
 
 Provider `/models` Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. GitHub issue sync is intentionally not filtered by that allowlist: unknown upstream models are included in triage issues so newly exposed provider or Hugging Face models are not silently discarded.
 
