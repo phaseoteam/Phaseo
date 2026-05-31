@@ -178,6 +178,14 @@
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
       "rank": 9
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 24,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; effort xhigh; 24% +/-4%; avg cost $2.08; avg time 33m; out tok 135k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 8
     }
   ]
 }

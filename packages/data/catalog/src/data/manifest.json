@@ -1032,6 +1032,7 @@
       "x-ai/grok-code-fast-1",
       "x-ai/grok-imagine-image",
       "x-ai/grok-imagine-image-pro",
+      "x-ai/grok-imagine-video-1.5-preview",
       "x-ai/grok-imagine-video"
     ],
     "xiaomi": [
@@ -2554,7 +2555,9 @@
     "x-ai:text.generate:x-ai-grok-4.20-multi-agent-beta-0309",
     "x-ai:text.generate:x-ai-grok-code-fast-1",
     "x-ai:text.generate:x-ai-grok-imagine-image-pro",
+    "x-ai:video.edit:x-ai-grok-imagine-video-1.5-preview",
     "x-ai:video.edit:x-ai-grok-imagine-video",
+    "x-ai:video.generate:x-ai-grok-imagine-video-1.5-preview",
     "x-ai:video.generate:x-ai-grok-imagine-video",
     "xiaomi:audio.speech:xiaomi-mimo-v2-tts-free",
     "xiaomi:text.generate:xiaomi-mimo-v2-flash",

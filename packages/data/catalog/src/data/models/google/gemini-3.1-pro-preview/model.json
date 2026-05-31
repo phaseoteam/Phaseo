@@ -270,6 +270,14 @@
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
       "rank": 4
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 10,
+      "is_self_reported": false,
+      "other_info": "DeepSWE label: gemini-3.1-pro; mini-swe-agent; 10% +/-3%; avg cost $1.84; avg time 36m; out tok 53k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 13
     }
   ]
 }

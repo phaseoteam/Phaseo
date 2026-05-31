@@ -217,6 +217,14 @@
       "other_info": null,
       "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf",
       "rank": 4
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 54,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; effort max; 54% +/-5%; avg cost $18.19; avg time 39m; out tok 103k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 4
     }
   ]
 }

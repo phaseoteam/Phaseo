@@ -410,6 +410,7 @@ const (
 	BenchmarkIdDeepplanningV11TravelPsScore BenchmarkId = "deepplanning-v1.1-travel-ps-score"
 	BenchmarkIdDeepresearchbench BenchmarkId = "deepresearchbench"
 	BenchmarkIdDeepsearchqa BenchmarkId = "deepsearchqa"
+	BenchmarkIdDeepswe BenchmarkId = "deepswe"
 	BenchmarkIdDer2Bench BenchmarkId = "der-2-bench"
 	BenchmarkIdDesign2code BenchmarkId = "design2code"
 	BenchmarkIdDiscoX BenchmarkId = "disco-x"

@@ -15,5 +15,14 @@
   "api_model_id": "google/gemini-3.5-flash",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "deepswe",
+      "score": 28,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; effort medium; 28% +/-4%; avg cost $7.42; avg time 17m; out tok 189k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 6
+    }
+  ]
 }

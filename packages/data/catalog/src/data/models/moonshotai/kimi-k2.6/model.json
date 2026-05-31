@@ -16,5 +16,14 @@
   "family_id": "moonshotai/kimi-k2",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "deepswe",
+      "score": 24,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; 24% +/-4%; avg cost $3.16; avg time 56m; out tok 84k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 9
+    }
+  ]
 }

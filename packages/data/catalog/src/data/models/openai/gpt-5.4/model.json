@@ -266,6 +266,14 @@
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
       "rank": 15
+    },
+    {
+      "benchmark_id": "deepswe",
+      "score": 56,
+      "is_self_reported": false,
+      "other_info": "mini-swe-agent; effort xhigh; 56% +/-5%; avg cost $4.38; avg time 27m; out tok 71k",
+      "source_link": "https://deepswe.datacurve.ai/",
+      "rank": 3
     }
   ]
 }
