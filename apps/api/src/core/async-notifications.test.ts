@@ -35,6 +35,19 @@ describe("parseAsyncWebhookConfig", () => {
 		});
 	});
 
+	it("accepts workspace-managed webhook endpoint references", () => {
+		expect(
+			parseAsyncWebhookConfig("batch", {
+				endpoint_id: "we_123",
+				events: ["batch.completed"],
+			}),
+		).toEqual({
+			endpointId: "we_123",
+			secret: null,
+			events: ["batch.completed"],
+		});
+	});
+
 	it("rejects unsupported schemes and malformed payloads", () => {
 		expect(parseAsyncWebhookConfig("video", null)).toBeNull();
 		expect(

@@ -12,6 +12,7 @@ import {
 	setBatchJobStatus,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
+import { saveBatchRequestRows, type BatchRequestRowInput } from "@core/batch-requests";
 import { computeBill } from "@pipeline/pricing/engine";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { recordUsageAndCharge } from "@pipeline/pricing/persist";
@@ -219,6 +220,17 @@ function extractResponseBody(entry: any): any | null {
 	return body && typeof body === "object" ? body : null;
 }
 
+function extractCustomId(entry: any, fallbackIndex: number): string {
+	return normalizeText(entry?.custom_id ?? entry?.customId) ?? `response-${fallbackIndex + 1}`;
+}
+
+function extractErrorBody(entry: any): Record<string, unknown> | null {
+	const candidate = entry?.error ?? entry?.response?.body?.error ?? entry?.response?.error;
+	return candidate && typeof candidate === "object" && !Array.isArray(candidate)
+		? candidate as Record<string, unknown>
+		: null;
+}
+
 async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promise<BatchSettlementComputation> {
 	const completedCount = meta.requestCounts?.completed ?? null;
 	const outputFileId = normalizeText(meta.outputFileId);
@@ -248,9 +260,12 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string): Promi
 	let pricedResponses = 0;
 	let missingUsageResponses = 0;
 
-	for (const entry of entries) {
+	for (let index = 0; index < entries.length; index += 1) {
+		const entry = entries[index];
 		const body = extractResponseBody(entry);
-		if (!body) continue;
+		if (!body) {
+			continue;
+		}
 		successfulResponses += 1;
 		const usage = body.usage;
 		if (!usage || typeof usage !== "object") {
@@ -386,6 +401,41 @@ export async function finalizeBatchJob(args: FinalizeBatchJobArgs): Promise<Fina
 		pricedUsage: settlement.pricedUsage,
 		pricingBreakdown: settlement.pricingBreakdown,
 	});
+	if (record.meta?.outputFileId) {
+		const text = await fetchOpenAiFileText(record.meta.outputFileId).catch(() => null);
+		if (text) {
+			const rows = parseJsonLines(text).map((entry, index): BatchRequestRowInput => {
+				const body = extractResponseBody(entry);
+				const responseStatus = Number(entry?.response?.status_code ?? entry?.status_code ?? 0);
+				const errorBody = extractErrorBody(entry);
+				return {
+					provider: OPENAI_PROVIDER_ID,
+					nativeBatchId: record.meta?.nativeBatchId ?? args.batchId,
+					customId: extractCustomId(entry, index),
+					requestIndex: index,
+					model: normalizeText(body?.model) ?? normalizeText(record.meta?.model),
+					status: body ? "completed" : errorBody ? "failed" : status,
+					responseStatus: Number.isFinite(responseStatus) && responseStatus > 0 ? responseStatus : null,
+					responseBody: body && typeof body === "object" ? body as Record<string, unknown> : null,
+					errorBody,
+					usage: body?.usage && typeof body.usage === "object" ? body.usage as Record<string, unknown> : null,
+					meta: { finalized_from_output_file: true },
+					completedAt: new Date().toISOString(),
+				};
+			});
+			await saveBatchRequestRows({
+				workspaceId: args.workspaceId,
+				batchId: args.batchId,
+				rows,
+			}).catch((error) => {
+				console.error("batch_request_rows_finalize_failed", {
+					error,
+					workspaceId: args.workspaceId,
+					batchId: args.batchId,
+				});
+			});
+		}
+	}
 	await markBatchJobBilled(args.workspaceId, args.batchId);
 	return {
 		status,

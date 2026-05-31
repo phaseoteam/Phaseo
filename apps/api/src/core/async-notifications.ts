@@ -13,6 +13,7 @@ import {
 	toPublicVideoProviderId,
 	toPublicVideoStatus,
 } from "@core/video-public";
+import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 
 export type SupportedAsyncNotificationKind = "video" | "batch";
 export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled";
@@ -311,13 +312,14 @@ function resolveAsyncErrorMeta(meta: AsyncNotificationMeta) {
 function sanitizePublicWebhookConfig(
 	kind: SupportedAsyncNotificationKind,
 	value: unknown,
-): { url: string; events: AsyncNotificationEventType[]; has_secret: boolean } | null {
+): { endpoint_id?: string | null; url: string | null; events: AsyncNotificationEventType[]; has_secret: boolean } | null {
 	const parsed = parseAsyncWebhookConfig(kind, value);
 	if (!parsed) return null;
 	return {
-		url: parsed.url,
+		endpoint_id: parsed.endpointId ?? null,
+		url: parsed.url ?? null,
 		events: parsed.events,
-		has_secret: Boolean(parsed.secret),
+		has_secret: Boolean(parsed.secret) || Boolean(parsed.endpointId),
 	};
 }
 
@@ -378,6 +380,7 @@ export function buildPublicAsyncWebhook(
 		return null;
 	}
 	return {
+		endpoint_id: config?.endpoint_id ?? null,
 		url: config?.url ?? null,
 		events: config?.events ?? [],
 		has_secret: config?.has_secret ?? false,
@@ -394,23 +397,62 @@ export function parseAsyncWebhookConfig(
 	kind: SupportedAsyncNotificationKind,
 	value: unknown,
 ): {
-	url: string;
+	endpointId?: string | null;
+	url?: string | null;
 	secret?: string | null;
 	events: AsyncNotificationEventType[];
 } | null {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 	const record = value as Record<string, unknown>;
+	const endpointId = normalizeText(record.endpoint_id ?? record.endpointId);
 	const url = resolveWebhookUrl(record.url);
-	if (!url) return null;
+	if (!url && !endpointId) return null;
 	const secret = normalizeText(record.secret);
 	const rawEvents = Array.isArray(record.events) ? record.events : [];
 	const normalizedEvents = rawEvents
 		.map((entry) => normalizeWebhookEvent(kind, entry))
 		.filter((entry): entry is AsyncNotificationEventType => Boolean(entry));
-	return {
-		url,
+	const out: {
+		endpointId?: string | null;
+		url?: string | null;
+		secret?: string | null;
+		events: AsyncNotificationEventType[];
+	} = {
 		secret,
 		events: normalizedEvents.length > 0 ? normalizedEvents : ["job.completed", "job.failed", "job.cancelled"],
+	};
+	if (endpointId) out.endpointId = endpointId;
+	if (url) out.url = url;
+	return out;
+}
+
+async function resolveAsyncWebhookConfig(args: {
+	workspaceId: string;
+	kind: SupportedAsyncNotificationKind;
+	value: unknown;
+}): Promise<{ url: string; secret?: string | null; events: AsyncNotificationEventType[] } | null> {
+	const parsed = parseAsyncWebhookConfig(args.kind, args.value);
+	if (!parsed) return null;
+	if (parsed.endpointId) {
+		const endpoint = await getWebhookEndpointSigningConfig({
+			workspaceId: args.workspaceId,
+			endpointId: parsed.endpointId,
+		});
+		if (!endpoint) return null;
+		const endpointEvents = endpoint.events
+			.map((entry) => normalizeWebhookEvent(args.kind, entry))
+			.filter((entry): entry is AsyncNotificationEventType => Boolean(entry));
+		return {
+			url: endpoint.url,
+			secret: endpoint.secret,
+			events: parsed.events.length > 0 ? parsed.events : endpointEvents,
+		};
+	}
+	if (!parsed.url) return null;
+	return {
+		url: parsed.url,
+		secret: parsed.secret,
+		events: parsed.events,
 	};
 }
 
@@ -835,7 +877,11 @@ export async function dispatchAsyncWebhookEvent(args: {
 	const record = await getAsyncOperation(args.workspaceId, args.kind, args.internalId);
 	if (!record) return false;
 	const meta = (record.meta ?? {}) as AsyncNotificationMeta;
-	const webhook = parseAsyncWebhookConfig(args.kind, meta.webhook);
+	const webhook = await resolveAsyncWebhookConfig({
+		workspaceId: args.workspaceId,
+		kind: args.kind,
+		value: meta.webhook,
+	});
 	if (!webhook) return false;
 	if (!isWebhookEventSubscribed({ kind: args.kind, phase: args.phase, configuredEvents: webhook.events })) {
 		return false;

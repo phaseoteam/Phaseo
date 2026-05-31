@@ -19,6 +19,7 @@ import { currentKeyRoutes, keysRoutes } from "./keys";
 import { securityRoutes } from "./security";
 import { workspacesRoutes } from "./workspaces";
 import oauthClientsRoutes from "./oauth-clients";
+import webhookEndpointsRoutes from "./webhook-endpoints";
 
 export const platformRouter = new Hono<Env>();
 
@@ -37,10 +38,10 @@ platformRouter.route("/key", currentKeyRoutes);
 platformRouter.route("/keys", keysRoutes);
 platformRouter.route("/workspaces", workspacesRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
+platformRouter.route("/webhook-endpoints", webhookEndpointsRoutes);
 platformRouter.route("/", placeholdersRoutes);
 
 // Backward-compatible alias for existing imports.
 export const controlRouter = platformRouter;
-
 
 

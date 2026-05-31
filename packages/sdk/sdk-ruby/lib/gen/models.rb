@@ -307,6 +307,30 @@ module AiStats
     # @!attribute [rw] reason
     #   @return [String, nil]
     BatchBillingSummary = Struct.new(:billed, :charged, :cost_nanos, :cost_usd, :finalized_at, :pricing_breakdown, :reason, keyword_init: true)
+    # @!attribute [rw] body
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] custom_id
+    #   @return [String, nil]
+    # @!attribute [rw] method
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    BatchInlineRequest = Struct.new(:body, :custom_id, :method, :url, keyword_init: true)
+    # @!attribute [rw] documentation_url
+    #   @return [String, nil]
+    # @!attribute [rw] gateway_input_modes
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] native_input_modes
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] notes
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    BatchProviderCapability = Struct.new(:documentation_url, :gateway_input_modes, :id, :name, :native_input_modes, :notes, :status, keyword_init: true)
     # @!attribute [rw] completion_window
     #   @return [String, nil]
     # @!attribute [rw] debug
@@ -314,16 +338,20 @@ module AiStats
     # @!attribute [rw] endpoint
     #   @return [String]
     # @!attribute [rw] input_file_id
-    #   @return [String]
+    #   @return [String, nil]
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] requests
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] session_id
     #   @return [String, nil]
     # @!attribute [rw] webhook
     #   @return [Hash{String => Object}, nil]
-    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :metadata, :provider, :session_id, :webhook, keyword_init: true)
+    # @!attribute [rw] webhook_endpoint_id
+    #   @return [String, nil]
+    BatchRequest = Struct.new(:completion_window, :debug, :endpoint, :input_file_id, :metadata, :provider, :requests, :session_id, :webhook, :webhook_endpoint_id, keyword_init: true)
     # @!attribute [rw] completed
     #   @return [Integer, nil]
     # @!attribute [rw] failed
@@ -331,6 +359,47 @@ module AiStats
     # @!attribute [rw] total
     #   @return [Integer, nil]
     BatchRequestCounts = Struct.new(:completed, :failed, :total, keyword_init: true)
+    # @!attribute [rw] completed_at
+    #   @return [String, nil]
+    # @!attribute [rw] cost_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] cost_usd
+    #   @return [Float, nil]
+    # @!attribute [rw] created_at
+    #   @return [String, nil]
+    # @!attribute [rw] custom_id
+    #   @return [String, nil]
+    # @!attribute [rw] endpoint
+    #   @return [String, nil]
+    # @!attribute [rw] error_body
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] meta
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] method
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] native_batch_id
+    #   @return [String, nil]
+    # @!attribute [rw] provider
+    #   @return [String, nil]
+    # @!attribute [rw] request_body_hash
+    #   @return [String, nil]
+    # @!attribute [rw] request_index
+    #   @return [Integer, nil]
+    # @!attribute [rw] response_body
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] response_status
+    #   @return [Integer, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] updated_at
+    #   @return [String, nil]
+    # @!attribute [rw] usage
+    #   @return [Hash{String => Object}, nil]
+    BatchRequestRow = Struct.new(:completed_at, :cost_nanos, :cost_usd, :created_at, :custom_id, :endpoint, :error_body, :id, :meta, :method, :model, :native_batch_id, :provider, :request_body_hash, :request_index, :response_body, :response_status, :status, :updated_at, :usage, keyword_init: true)
     # @!attribute [rw] billing
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] cancelled_at
@@ -1704,6 +1773,70 @@ module AiStats
     # @!attribute [rw] access
     #   @return [String, nil]
     VideoOutputConfig = Struct.new(:access, keyword_init: true)
+    # @!attribute [rw] createdAt
+    #   @return [String, nil]
+    # @!attribute [rw] createdBy
+    #   @return [String, nil]
+    # @!attribute [rw] deletedAt
+    #   @return [String, nil]
+    # @!attribute [rw] events
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] hasSecret
+    #   @return [Boolean, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] updatedAt
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    # @!attribute [rw] workspaceId
+    #   @return [String, nil]
+    WebhookEndpoint = Struct.new(:createdAt, :createdBy, :deletedAt, :events, :hasSecret, :id, :name, :status, :updatedAt, :url, :workspaceId, keyword_init: true)
+    # @!attribute [rw] events
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String]
+    WebhookEndpointCreateRequest = Struct.new(:events, :name, :url, keyword_init: true)
+    # @!attribute [rw] createdAt
+    #   @return [String, nil]
+    # @!attribute [rw] createdBy
+    #   @return [String, nil]
+    # @!attribute [rw] deletedAt
+    #   @return [String, nil]
+    # @!attribute [rw] events
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] hasSecret
+    #   @return [Boolean, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] signing_secret
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] updatedAt
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    # @!attribute [rw] workspaceId
+    #   @return [String, nil]
+    WebhookEndpointCreateResponse = Struct.new(:createdAt, :createdBy, :deletedAt, :events, :hasSecret, :id, :name, :signing_secret, :status, :updatedAt, :url, :workspaceId, keyword_init: true)
+    # @!attribute [rw] events
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    WebhookEndpointUpdateRequest = Struct.new(:events, :name, :status, :url, keyword_init: true)
     # @!attribute [rw] created_at
     #   @return [String, nil]
     # @!attribute [rw] created_by

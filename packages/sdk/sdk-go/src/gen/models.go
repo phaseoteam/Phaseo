@@ -215,21 +215,63 @@ type BatchBillingSummary struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+type BatchInlineRequest struct {
+	Body map[string]interface{} `json:"body"`
+	CustomId *string `json:"custom_id,omitempty"`
+	Method *string `json:"method,omitempty"`
+	Url *string `json:"url,omitempty"`
+}
+
+type BatchProviderCapability struct {
+	DocumentationUrl *string `json:"documentation_url,omitempty"`
+	GatewayInputModes *[]string `json:"gateway_input_modes,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	NativeInputModes *[]string `json:"native_input_modes,omitempty"`
+	Notes *string `json:"notes,omitempty"`
+	Status *string `json:"status,omitempty"`
+}
+
 type BatchRequest struct {
 	CompletionWindow *string `json:"completion_window,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	Endpoint string `json:"endpoint"`
-	InputFileId string `json:"input_file_id"`
+	InputFileId *string `json:"input_file_id,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Requests *[]map[string]interface{} `json:"requests,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	Webhook *map[string]interface{} `json:"webhook,omitempty"`
+	WebhookEndpointId *string `json:"webhook_endpoint_id,omitempty"`
 }
 
 type BatchRequestCounts struct {
 	Completed *int `json:"completed,omitempty"`
 	Failed *int `json:"failed,omitempty"`
 	Total *int `json:"total,omitempty"`
+}
+
+type BatchRequestRow struct {
+	CompletedAt *string `json:"completed_at,omitempty"`
+	CostNanos *int `json:"cost_nanos,omitempty"`
+	CostUsd *float64 `json:"cost_usd,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
+	CustomId *string `json:"custom_id,omitempty"`
+	Endpoint *string `json:"endpoint,omitempty"`
+	ErrorBody *map[string]interface{} `json:"error_body,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+	Method *string `json:"method,omitempty"`
+	Model *string `json:"model,omitempty"`
+	NativeBatchId *string `json:"native_batch_id,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+	RequestBodyHash *string `json:"request_body_hash,omitempty"`
+	RequestIndex *int `json:"request_index,omitempty"`
+	ResponseBody *map[string]interface{} `json:"response_body,omitempty"`
+	ResponseStatus *int `json:"response_status,omitempty"`
+	Status *string `json:"status,omitempty"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
 }
 
 type BatchResponse struct {
@@ -2309,6 +2351,48 @@ type VideoOutput struct {
 
 type VideoOutputConfig struct {
 	Access *string `json:"access,omitempty"`
+}
+
+type WebhookEndpoint struct {
+	CreatedAt *string `json:"createdAt,omitempty"`
+	CreatedBy *string `json:"createdBy,omitempty"`
+	DeletedAt *string `json:"deletedAt,omitempty"`
+	Events *[]string `json:"events,omitempty"`
+	HasSecret *bool `json:"hasSecret,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Status *string `json:"status,omitempty"`
+	UpdatedAt *string `json:"updatedAt,omitempty"`
+	Url *string `json:"url,omitempty"`
+	WorkspaceId *string `json:"workspaceId,omitempty"`
+}
+
+type WebhookEndpointCreateRequest struct {
+	Events *[]string `json:"events,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Url string `json:"url"`
+}
+
+type WebhookEndpointCreateResponse struct {
+	CreatedAt *string `json:"createdAt,omitempty"`
+	CreatedBy *string `json:"createdBy,omitempty"`
+	DeletedAt *string `json:"deletedAt,omitempty"`
+	Events *[]string `json:"events,omitempty"`
+	HasSecret *bool `json:"hasSecret,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+	SigningSecret *string `json:"signing_secret,omitempty"`
+	Status *string `json:"status,omitempty"`
+	UpdatedAt *string `json:"updatedAt,omitempty"`
+	Url *string `json:"url,omitempty"`
+	WorkspaceId *string `json:"workspaceId,omitempty"`
+}
+
+type WebhookEndpointUpdateRequest struct {
+	Events *[]string `json:"events,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Status *string `json:"status,omitempty"`
+	Url *string `json:"url,omitempty"`
 }
 
 type Workspace struct {

@@ -496,7 +496,7 @@ export type CreateBatchParams = {
       trace_level?: "summary" | "full";
     };
     endpoint: string;
-    input_file_id: string;
+    input_file_id?: string;
     metadata?: {
       [key: string]: unknown;
     };
@@ -537,12 +537,22 @@ export type CreateBatchParams = {
           };
       zdr?: boolean | null;
     };
+    requests?: {
+      body: {
+        [key: string]: unknown;
+      };
+      custom_id?: string;
+      method?: string;
+      url?: string;
+    }[];
     session_id?: string;
     webhook?: {
+      endpoint_id?: string;
       events?: string[];
       secret?: string;
       url?: string;
     };
+    webhook_endpoint_id?: string;
   };
 };
 
@@ -595,6 +605,7 @@ export async function createBatch(
   session_id?: string;
   status?: string;
   webhook?: {
+    endpoint_id?: string;
     events?: string[];
     secret?: string;
     url?: string;
@@ -645,6 +656,7 @@ export async function createBatch(
     session_id?: string;
     status?: string;
     webhook?: {
+      endpoint_id?: string;
       events?: string[];
       secret?: string;
       url?: string;
@@ -672,7 +684,7 @@ export type CreateBatchAliasParams = {
       trace_level?: "summary" | "full";
     };
     endpoint: string;
-    input_file_id: string;
+    input_file_id?: string;
     metadata?: {
       [key: string]: unknown;
     };
@@ -713,12 +725,22 @@ export type CreateBatchAliasParams = {
           };
       zdr?: boolean | null;
     };
+    requests?: {
+      body: {
+        [key: string]: unknown;
+      };
+      custom_id?: string;
+      method?: string;
+      url?: string;
+    }[];
     session_id?: string;
     webhook?: {
+      endpoint_id?: string;
       events?: string[];
       secret?: string;
       url?: string;
     };
+    webhook_endpoint_id?: string;
   };
 };
 
@@ -771,6 +793,7 @@ export async function createBatchAlias(
   session_id?: string;
   status?: string;
   webhook?: {
+    endpoint_id?: string;
     events?: string[];
     secret?: string;
     url?: string;
@@ -821,6 +844,7 @@ export async function createBatchAlias(
     session_id?: string;
     status?: string;
     webhook?: {
+      endpoint_id?: string;
       events?: string[];
       secret?: string;
       url?: string;
@@ -4404,6 +4428,150 @@ export async function listApiKeys(
   });
 }
 
+export type ListBatchCapabilitiesParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns provider-level batch input mode support for file upload and inline batch creation.
+ */
+export async function listBatchCapabilities(
+  client: Client,
+  args: ListBatchCapabilitiesParams = {},
+): Promise<{
+  data?: {
+    documentation_url?: string;
+    gateway_input_modes?: "file" | "inline"[];
+    id?: string;
+    name?: string;
+    native_input_modes?: "file" | "inline"[];
+    notes?: string | null;
+    status?: "active" | "planned";
+  }[];
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batches/capabilities";
+  return client.request<{
+    data?: {
+      documentation_url?: string;
+      gateway_input_modes?: "file" | "inline"[];
+      id?: string;
+      name?: string;
+      native_input_modes?: "file" | "inline"[];
+      notes?: string | null;
+      status?: "active" | "planned";
+    }[];
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchRequestsParams = {
+  path?: {
+    batch_id: string;
+  };
+  query?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists tracked per-request rows for a batch job.
+ */
+export async function listBatchRequests(
+  client: Client,
+  args: ListBatchRequestsParams = {},
+): Promise<{
+  batch_id?: string;
+  data?: {
+    completed_at?: string | null;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    created_at?: string | null;
+    custom_id?: string;
+    endpoint?: string | null;
+    error_body?: {
+      [key: string]: unknown;
+    } | null;
+    id?: string;
+    meta?: {
+      [key: string]: unknown;
+    };
+    method?: string | null;
+    model?: string | null;
+    native_batch_id?: string | null;
+    provider?: string;
+    request_body_hash?: string | null;
+    request_index?: number;
+    response_body?: {
+      [key: string]: unknown;
+    } | null;
+    response_status?: number | null;
+    status?: string;
+    updated_at?: string | null;
+    usage?: {
+      [key: string]: unknown;
+    } | null;
+  }[];
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}/requests`;
+  return client.request<{
+    batch_id?: string;
+    data?: {
+      completed_at?: string | null;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      created_at?: string | null;
+      custom_id?: string;
+      endpoint?: string | null;
+      error_body?: {
+        [key: string]: unknown;
+      } | null;
+      id?: string;
+      meta?: {
+        [key: string]: unknown;
+      };
+      method?: string | null;
+      model?: string | null;
+      native_batch_id?: string | null;
+      provider?: string;
+      request_body_hash?: string | null;
+      request_index?: number;
+      response_body?: {
+        [key: string]: unknown;
+      } | null;
+      response_status?: number | null;
+      status?: string;
+      updated_at?: string | null;
+      usage?: {
+        [key: string]: unknown;
+      } | null;
+    }[];
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListDataModelsParams = {
   path?: Record<string, never>;
   query?: {
@@ -5855,6 +6023,7 @@ export async function retrieveBatch(
   session_id?: string;
   status?: string;
   webhook?: {
+    endpoint_id?: string;
     events?: string[];
     secret?: string;
     url?: string;
@@ -5905,6 +6074,7 @@ export async function retrieveBatch(
     session_id?: string;
     status?: string;
     webhook?: {
+      endpoint_id?: string;
       events?: string[];
       secret?: string;
       url?: string;
@@ -5976,6 +6146,7 @@ export async function retrieveBatchAlias(
   session_id?: string;
   status?: string;
   webhook?: {
+    endpoint_id?: string;
     events?: string[];
     secret?: string;
     url?: string;
@@ -6026,6 +6197,7 @@ export async function retrieveBatchAlias(
     session_id?: string;
     status?: string;
     webhook?: {
+      endpoint_id?: string;
       events?: string[];
       secret?: string;
       url?: string;

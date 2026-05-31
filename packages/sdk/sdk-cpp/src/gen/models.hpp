@@ -221,6 +221,23 @@ struct BatchBillingSummary {
 	std::string reason;
 };
 
+struct BatchInlineRequest {
+	std::map<std::string, std::any> body;
+	std::string custom_id;
+	std::string method;
+	std::string url;
+};
+
+struct BatchProviderCapability {
+	std::string documentation_url;
+	std::vector<std::any> gateway_input_modes;
+	std::string id;
+	std::string name;
+	std::vector<std::any> native_input_modes;
+	std::optional<std::string> notes;
+	std::any status;
+};
+
 struct BatchRequest {
 	std::string completion_window;
 	std::map<std::string, std::any> debug;
@@ -228,14 +245,39 @@ struct BatchRequest {
 	std::string input_file_id;
 	std::map<std::string, std::any> metadata;
 	std::map<std::string, std::any> provider;
+	std::vector<std::map<std::string, std::any>> requests;
 	std::string session_id;
 	std::map<std::string, std::any> webhook;
+	std::string webhook_endpoint_id;
 };
 
 struct BatchRequestCounts {
 	std::optional<int> completed;
 	std::optional<int> failed;
 	std::optional<int> total;
+};
+
+struct BatchRequestRow {
+	std::optional<std::string> completed_at;
+	std::optional<int> cost_nanos;
+	std::optional<double> cost_usd;
+	std::optional<std::string> created_at;
+	std::string custom_id;
+	std::optional<std::string> endpoint;
+	std::optional<std::map<std::string, std::any>> error_body;
+	std::string id;
+	std::map<std::string, std::any> meta;
+	std::optional<std::string> method;
+	std::optional<std::string> model;
+	std::optional<std::string> native_batch_id;
+	std::string provider;
+	std::optional<std::string> request_body_hash;
+	std::optional<int> request_index;
+	std::optional<std::map<std::string, std::any>> response_body;
+	std::optional<int> response_status;
+	std::string status;
+	std::optional<std::string> updated_at;
+	std::optional<std::map<std::string, std::any>> usage;
 };
 
 struct BatchResponse {
@@ -1184,6 +1226,48 @@ struct VideoOutput {
 
 struct VideoOutputConfig {
 	std::any access;
+};
+
+struct WebhookEndpoint {
+	std::optional<std::string> createdAt;
+	std::optional<std::string> createdBy;
+	std::optional<std::string> deletedAt;
+	std::vector<std::string> events;
+	std::optional<bool> hasSecret;
+	std::string id;
+	std::string name;
+	std::any status;
+	std::optional<std::string> updatedAt;
+	std::string url;
+	std::string workspaceId;
+};
+
+struct WebhookEndpointCreateRequest {
+	std::vector<std::string> events;
+	std::string name;
+	std::string url;
+};
+
+struct WebhookEndpointCreateResponse {
+	std::optional<std::string> createdAt;
+	std::optional<std::string> createdBy;
+	std::optional<std::string> deletedAt;
+	std::vector<std::string> events;
+	std::optional<bool> hasSecret;
+	std::string id;
+	std::string name;
+	std::string signing_secret;
+	std::any status;
+	std::optional<std::string> updatedAt;
+	std::string url;
+	std::string workspaceId;
+};
+
+struct WebhookEndpointUpdateRequest {
+	std::vector<std::string> events;
+	std::string name;
+	std::any status;
+	std::string url;
 };
 
 struct Workspace {

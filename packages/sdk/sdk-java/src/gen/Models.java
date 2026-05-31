@@ -219,6 +219,23 @@ public final class Models {
 		public String reason;
 	}
 
+	public static class BatchInlineRequest {
+		public Object body;
+		public String custom_id;
+		public String method;
+		public String url;
+	}
+
+	public static class BatchProviderCapability {
+		public String documentation_url;
+		public java.util.List<Object> gateway_input_modes;
+		public String id;
+		public String name;
+		public java.util.List<Object> native_input_modes;
+		public String notes;
+		public Object status;
+	}
+
 	public static class BatchRequest {
 		public String completion_window;
 		public Object debug;
@@ -226,14 +243,39 @@ public final class Models {
 		public String input_file_id;
 		public Object metadata;
 		public Object provider;
+		public java.util.List<Object> requests;
 		public String session_id;
 		public Object webhook;
+		public String webhook_endpoint_id;
 	}
 
 	public static class BatchRequestCounts {
 		public Integer completed;
 		public Integer failed;
 		public Integer total;
+	}
+
+	public static class BatchRequestRow {
+		public String completed_at;
+		public Integer cost_nanos;
+		public Double cost_usd;
+		public String created_at;
+		public String custom_id;
+		public String endpoint;
+		public Object error_body;
+		public String id;
+		public Object meta;
+		public String method;
+		public String model;
+		public String native_batch_id;
+		public String provider;
+		public String request_body_hash;
+		public Integer request_index;
+		public Object response_body;
+		public Integer response_status;
+		public String status;
+		public String updated_at;
+		public Object usage;
 	}
 
 	public static class BatchResponse {
@@ -1193,6 +1235,48 @@ public final class Models {
 
 	public static class VideoOutputConfig {
 		public Object access;
+	}
+
+	public static class WebhookEndpoint {
+		public String createdAt;
+		public String createdBy;
+		public String deletedAt;
+		public java.util.List<String> events;
+		public Boolean hasSecret;
+		public String id;
+		public String name;
+		public Object status;
+		public String updatedAt;
+		public String url;
+		public String workspaceId;
+	}
+
+	public static class WebhookEndpointCreateRequest {
+		public java.util.List<String> events;
+		public String name;
+		public String url;
+	}
+
+	public static class WebhookEndpointCreateResponse {
+		public String createdAt;
+		public String createdBy;
+		public String deletedAt;
+		public java.util.List<String> events;
+		public Boolean hasSecret;
+		public String id;
+		public String name;
+		public String signing_secret;
+		public Object status;
+		public String updatedAt;
+		public String url;
+		public String workspaceId;
+	}
+
+	public static class WebhookEndpointUpdateRequest {
+		public java.util.List<String> events;
+		public String name;
+		public Object status;
+		public String url;
 	}
 
 	public static class Workspace {

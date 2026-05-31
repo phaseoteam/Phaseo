@@ -1,1 +1,2 @@
-export * from "./default.js";
+export * from "./gateway.js";
+export * from "./platform.js";

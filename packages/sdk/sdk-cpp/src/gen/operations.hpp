@@ -124,6 +124,11 @@ inline Response CreateVideoDownloadUrlAlias(Client& client, const std::map<std::
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CreateWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/workspaces";
 	return client.request("POST", resolved_path, body);
@@ -141,6 +146,11 @@ inline Response DeleteVideo(Client& client, const std::map<std::string, std::str
 
 inline Response DeleteVideoAlias(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/video/generations/" + (path.count("video_id") ? path.at("video_id") : std::string{});
+	return client.request("DELETE", resolved_path, body);
+}
+
+inline Response DeleteWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints/" + (path.count("endpoint_id") ? path.at("endpoint_id") : std::string{});
 	return client.request("DELETE", resolved_path, body);
 }
 
@@ -229,6 +239,11 @@ inline Response GetVideoContentAlias(Client& client, const std::map<std::string,
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response GetWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints/" + (path.count("endpoint_id") ? path.at("endpoint_id") : std::string{});
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response GetWorkspace(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/workspaces/" + (path.count("id") ? path.at("id") : std::string{});
 	return client.request("GET", resolved_path, body);
@@ -236,6 +251,16 @@ inline Response GetWorkspace(Client& client, const std::map<std::string, std::st
 
 inline Response ListApiKeys(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/keys";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchCapabilities(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/capabilities";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response ListBatchRequests(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/batches/" + (path.count("batch_id") ? path.at("batch_id") : std::string{}) + "/requests";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -299,6 +324,11 @@ inline Response ListVideosAlias(Client& client, const std::map<std::string, std:
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response ListWebhookEndpoints(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints";
+	return client.request("GET", resolved_path, body);
+}
+
 inline Response ListWorkspaces(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/workspaces";
 	return client.request("GET", resolved_path, body);
@@ -329,8 +359,18 @@ inline Response RetrieveFileContent(Client& client, const std::map<std::string, 
 	return client.request("GET", resolved_path, body);
 }
 
+inline Response RotateWebhookEndpointSecret(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints/" + (path.count("endpoint_id") ? path.at("endpoint_id") : std::string{}) + "/rotate-secret";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response UpdateApiKey(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/keys/" + (path.count("id") ? path.at("id") : std::string{});
+	return client.request("PATCH", resolved_path, body);
+}
+
+inline Response UpdateWebhookEndpoint(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/webhook-endpoints/" + (path.count("endpoint_id") ? path.at("endpoint_id") : std::string{});
 	return client.request("PATCH", resolved_path, body);
 }
 

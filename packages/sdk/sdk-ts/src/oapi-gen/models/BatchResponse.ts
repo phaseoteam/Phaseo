@@ -41,6 +41,7 @@ export interface BatchResponse {
   session_id?: string;
   status?: string;
   webhook?: {
+    endpoint_id?: string;
     events?: string[];
     secret?: string;
     url?: string;

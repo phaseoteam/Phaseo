@@ -43,4 +43,26 @@ describe("splitGatewayBatchCreatePayload", () => {
 			webhook: null,
 		});
 	});
+
+	it("strips inline requests and preserves webhook endpoint aliases for gateway handling", () => {
+		expect(
+			splitGatewayBatchCreatePayload({
+				requests: [
+					{
+						custom_id: "row_1",
+						body: { model: "gpt-5.4-nano", input: "Hello" },
+					},
+				],
+				endpoint: "/v1/responses",
+				webhook_endpoint_id: "we_123",
+			}),
+		).toEqual({
+			upstreamPayload: {
+				endpoint: "/v1/responses",
+			},
+			webhook: {
+				endpoint_id: "we_123",
+			},
+		});
+	});
 });

@@ -8,7 +8,7 @@ export interface BatchRequest {
     trace_level?: "summary" | "full";
   };
   endpoint: string;
-  input_file_id: string;
+  input_file_id?: string;
   metadata?: {
     [key: string]: unknown;
   };
@@ -49,10 +49,20 @@ export interface BatchRequest {
         };
     zdr?: boolean | null;
   };
+  requests?: {
+    body: {
+      [key: string]: unknown;
+    };
+    custom_id?: string;
+    method?: string;
+    url?: string;
+  }[];
   session_id?: string;
   webhook?: {
+    endpoint_id?: string;
     events?: string[];
     secret?: string;
     url?: string;
   };
+  webhook_endpoint_id?: string;
 }

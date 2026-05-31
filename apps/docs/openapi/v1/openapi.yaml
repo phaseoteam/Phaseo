@@ -1258,6 +1258,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /batches/capabilities:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchCapabilities
+      summary: List batch provider capabilities
+      description: >-
+        Returns provider-level batch input mode support for file upload and
+        inline batch creation.
+      responses:
+        '200':
+          description: Batch provider capability list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchProviderCapability'
   /batches/{batch_id}:
     get:
       x-beta: true
@@ -1280,6 +1305,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/{batch_id}/requests:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchRequests
+      summary: List batch request rows
+      description: Lists tracked per-request rows for a batch job.
+      parameters:
+        - name: batch_id
+          in: path
+          required: true
+          description: The ID of the batch.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch request row list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  batch_id:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchRequestRow'
         '401':
           description: Unauthorized
           content:
@@ -1327,6 +1410,136 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /webhook-endpoints:
+    get:
+      x-beta: true
+      tags:
+        - Platform
+      operationId: listWebhookEndpoints
+      summary: List webhook endpoints
+      description: Lists workspace-managed async webhook endpoints.
+      responses:
+        '200':
+          description: Webhook endpoint list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    example: list
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookEndpoint'
+    post:
+      x-beta: true
+      tags:
+        - Platform
+      operationId: createWebhookEndpoint
+      summary: Create webhook endpoint
+      description: >-
+        Creates a workspace-managed async webhook endpoint and returns the
+        signing secret once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEndpointCreateRequest'
+      responses:
+        '201':
+          description: Created webhook endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpointCreateResponse'
+  /webhook-endpoints/{endpoint_id}:
+    get:
+      x-beta: true
+      tags:
+        - Platform
+      operationId: getWebhookEndpoint
+      summary: Get webhook endpoint
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+    patch:
+      x-beta: true
+      tags:
+        - Platform
+      operationId: updateWebhookEndpoint
+      summary: Update webhook endpoint
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEndpointUpdateRequest'
+      responses:
+        '200':
+          description: Updated webhook endpoint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpoint'
+    delete:
+      x-beta: true
+      tags:
+        - Platform
+      operationId: deleteWebhookEndpoint
+      summary: Delete webhook endpoint
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delete response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /webhook-endpoints/{endpoint_id}/rotate-secret:
+    post:
+      x-beta: true
+      tags:
+        - Platform
+      operationId: rotateWebhookEndpointSecret
+      summary: Rotate webhook endpoint secret
+      parameters:
+        - name: endpoint_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Webhook endpoint with new signing secret
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookEndpointCreateResponse'
   /analytics:
     get:
       x-beta: true
@@ -5258,11 +5471,18 @@ components:
     BatchRequest:
       type: object
       required:
-        - input_file_id
         - endpoint
       properties:
         input_file_id:
           type: string
+          description: Existing provider file ID for file-upload batch creation.
+        requests:
+          type: array
+          description: >-
+            Inline batch requests. Provide either requests or input_file_id, not
+            both.
+          items:
+            $ref: '#/components/schemas/BatchInlineRequest'
         endpoint:
           type: string
         completion_window:
@@ -5279,6 +5499,9 @@ components:
         webhook:
           type: object
           properties:
+            endpoint_id:
+              type: string
+              description: Workspace-managed webhook endpoint ID.
             url:
               type: string
               format: uri
@@ -5288,10 +5511,61 @@ components:
               type: array
               items:
                 type: string
+        webhook_endpoint_id:
+          type: string
+          description: Convenience alias for webhook.endpoint_id.
         debug:
           $ref: '#/components/schemas/DebugOptions'
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
+    BatchInlineRequest:
+      type: object
+      required:
+        - body
+      properties:
+        custom_id:
+          type: string
+        method:
+          type: string
+          default: POST
+        url:
+          type: string
+          description: Provider endpoint path. Defaults to the parent batch endpoint.
+        body:
+          type: object
+          additionalProperties: true
+    BatchProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+        gateway_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - inline
+        native_input_modes:
+          type: array
+          items:
+            type: string
+            enum:
+              - file
+              - inline
+        documentation_url:
+          type: string
+          format: uri
+        notes:
+          type: string
+          nullable: true
     BatchResponse:
       type: object
       properties:
@@ -5344,6 +5618,8 @@ components:
         webhook:
           type: object
           properties:
+            endpoint_id:
+              type: string
             url:
               type: string
               format: uri
@@ -5360,6 +5636,67 @@ components:
             additionalProperties: true
         billing:
           $ref: '#/components/schemas/BatchBillingSummary'
+    BatchRequestRow:
+      type: object
+      properties:
+        id:
+          type: string
+        custom_id:
+          type: string
+        request_index:
+          type: integer
+        provider:
+          type: string
+        native_batch_id:
+          type: string
+          nullable: true
+        method:
+          type: string
+          nullable: true
+        endpoint:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        status:
+          type: string
+        request_body_hash:
+          type: string
+          nullable: true
+        response_status:
+          type: integer
+          nullable: true
+        response_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        error_body:
+          type: object
+          nullable: true
+          additionalProperties: true
+        usage:
+          type: object
+          nullable: true
+          additionalProperties: true
+        cost_nanos:
+          type: integer
+          nullable: true
+        cost_usd:
+          type: number
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          nullable: true
+        completed_at:
+          type: string
+          nullable: true
     BatchRequestCounts:
       type: object
       properties:
@@ -5387,6 +5724,81 @@ components:
         pricing_breakdown:
           type: object
           additionalProperties: true
+    WebhookEndpoint:
+      type: object
+      properties:
+        id:
+          type: string
+        workspaceId:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+            - deleted
+        events:
+          type: array
+          items:
+            type: string
+        hasSecret:
+          type: boolean
+        createdBy:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          nullable: true
+        deletedAt:
+          type: string
+          nullable: true
+    WebhookEndpointCreateRequest:
+      type: object
+      required:
+        - url
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+    WebhookEndpointUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum:
+            - active
+            - disabled
+    WebhookEndpointCreateResponse:
+      allOf:
+        - $ref: '#/components/schemas/WebhookEndpoint'
+        - type: object
+          properties:
+            signing_secret:
+              type: string
+              description: Returned once when the endpoint is created or rotated.
     FileUploadRequest:
       type: object
       required:

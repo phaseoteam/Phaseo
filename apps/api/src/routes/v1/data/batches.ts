@@ -18,11 +18,25 @@ import {
 	toAsyncLifecycleStatus,
 } from "@core/async-notifications";
 import {
+	buildUnsupportedBatchModePayload,
+	listBatchProviderCapabilities,
+	resolveBatchInputMode,
+	resolveBatchProvidersForMode,
+	resolveRequestedBatchProviders,
+	type BatchInputMode,
+} from "@core/batch-capabilities";
+import {
 	getBatchJobMeta,
 	saveBatchFileMeta,
 	saveBatchJobMeta,
 	type BatchJobMeta,
 } from "@core/batch-jobs";
+import {
+	hashBatchRequestBody,
+	listBatchRequestRows,
+	saveBatchRequestRows,
+	type BatchRequestRowInput,
+} from "@core/batch-requests";
 import { finalizeBatchJob, type FinalizeBatchJobResult } from "@core/batch-finalization";
 
 const OPENAI_PROVIDER_ID = "openai";
@@ -61,6 +75,151 @@ async function parseUpstreamJson(response: Response): Promise<any | null> {
 	const contentType = response.headers.get("content-type") ?? "";
 	if (!contentType.toLowerCase().includes("application/json")) return null;
 	return response.clone().json().catch(() => null);
+}
+
+function jsonPayload(payload: unknown, status = 200): Response {
+	return new Response(JSON.stringify(payload), {
+		status,
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": "no-store",
+		},
+	});
+}
+
+function resolveBatchProviderForCurrentAdapter(args: {
+	mode: BatchInputMode;
+	provider: unknown;
+}): { ok: true; providerId: string } | { ok: false; response: Response } {
+	const requestedProviders = resolveRequestedBatchProviders(args.provider);
+	const providersForMode = resolveBatchProvidersForMode({
+		mode: args.mode,
+		requestedProviders,
+	});
+	if (providersForMode.length === 0) {
+		return {
+			ok: false,
+			response: jsonPayload(buildUnsupportedBatchModePayload({
+				mode: args.mode,
+				requestedProviders,
+			}), 400),
+		};
+	}
+	const activeProvidersForMode = resolveBatchProvidersForMode({
+		mode: args.mode,
+		requestedProviders,
+		activeOnly: true,
+	});
+	const openAi = activeProvidersForMode.find((provider) => provider.providerId === OPENAI_PROVIDER_ID);
+	if (openAi) return { ok: true, providerId: OPENAI_PROVIDER_ID };
+	return {
+		ok: false,
+		response: jsonPayload({
+			error: {
+				type: "not_implemented",
+				reason: "batch_provider_adapter_not_ready",
+				message: "This batch input mode is recognised, but the selected provider adapter is not enabled yet.",
+				input_mode: args.mode,
+				requested_providers: requestedProviders,
+				providers: providersForMode.map((provider) => ({
+					id: provider.providerId,
+					name: provider.displayName,
+					status: provider.status,
+					gateway_input_modes: provider.gatewayInputModes,
+					native_input_modes: provider.nativeInputModes,
+					documentation_url: provider.documentationUrl,
+				})),
+			},
+		}, 501),
+	};
+}
+
+type InlineBatchRequest = {
+	customId: string;
+	method: string;
+	url: string;
+	body: unknown;
+	index: number;
+	requestBodyHash: string;
+};
+
+async function normalizeInlineBatchRequests(payload: Record<string, unknown>): Promise<InlineBatchRequest[]> {
+	const requests = Array.isArray(payload.requests) ? payload.requests : [];
+	const endpoint = toText(payload.endpoint);
+	if (!endpoint) throw new Error("missing_endpoint");
+	const out: InlineBatchRequest[] = [];
+	for (let index = 0; index < requests.length; index += 1) {
+		const raw = requests[index];
+		if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+			throw new Error("invalid_inline_request");
+		}
+		const record = raw as Record<string, unknown>;
+		const body = record.body && typeof record.body === "object" && !Array.isArray(record.body)
+			? record.body
+			: record.request && typeof record.request === "object" && !Array.isArray(record.request)
+				? record.request
+				: null;
+		if (!body) throw new Error("invalid_inline_request_body");
+		const customId = toText(record.custom_id) ?? toText(record.customId) ?? `request-${index + 1}`;
+		out.push({
+			customId,
+			method: (toText(record.method) ?? "POST").toUpperCase(),
+			url: toText(record.url) ?? endpoint,
+			body,
+			index,
+			requestBodyHash: await hashBatchRequestBody(body),
+		});
+	}
+	const seen = new Set<string>();
+	for (const row of out) {
+		if (seen.has(row.customId)) throw new Error("duplicate_custom_id");
+		seen.add(row.customId);
+	}
+	return out;
+}
+
+function toOpenAiJsonl(rows: InlineBatchRequest[]): string {
+	return rows
+		.map((row) => JSON.stringify({
+			custom_id: row.customId,
+			method: row.method,
+			url: row.url,
+			body: row.body,
+		}))
+		.join("\n");
+}
+
+async function uploadOpenAiBatchInputFile(args: {
+	requestId: string;
+	rows: InlineBatchRequest[];
+}): Promise<{ ok: true; fileId: string; payload: any } | { ok: false; response: Response }> {
+	const form = new FormData();
+	form.append("purpose", "batch");
+	form.append(
+		"file",
+		new Blob([toOpenAiJsonl(args.rows)], { type: "application/jsonl" }),
+		`aistats-batch-${args.requestId}.jsonl`,
+	);
+	const upstream = await fetchOpenAiBatches({
+		endpointPath: "/files",
+		method: "POST",
+		body: form,
+	});
+	const upstreamJson = await parseUpstreamJson(upstream);
+	if (!upstream.ok) return { ok: false, response: toJsonResponse(upstream) };
+	const fileId = toText(upstreamJson?.id);
+	if (!fileId) {
+		return {
+			ok: false,
+			response: jsonPayload({
+				error: {
+					type: "upstream_error",
+					reason: "batch_file_upload_missing_id",
+				},
+			}, 502),
+		};
+	}
+	return { ok: true, fileId, payload: upstreamJson };
 }
 
 function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
@@ -218,6 +377,8 @@ export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>)
 	const upstreamPayload = { ...payload };
 	const rawWebhook = upstreamPayload.webhook;
 	delete upstreamPayload.webhook;
+	delete upstreamPayload.webhook_endpoint_id;
+	delete upstreamPayload.requests;
 	delete upstreamPayload.session_id;
 	delete upstreamPayload.sessionId;
 	return {
@@ -225,6 +386,8 @@ export function splitGatewayBatchCreatePayload(payload: Record<string, unknown>)
 		webhook:
 			rawWebhook && typeof rawWebhook === "object" && !Array.isArray(rawWebhook)
 				? (rawWebhook as Record<string, unknown>)
+				: typeof payload.webhook_endpoint_id === "string" && payload.webhook_endpoint_id.trim().length > 0
+					? { endpoint_id: payload.webhook_endpoint_id }
 				: null,
 	};
 }
@@ -302,12 +465,54 @@ async function handleCreate(req: Request) {
 		});
 	}
 	const { upstreamPayload, webhook } = splitGatewayBatchCreatePayload(payload);
+	const inputMode = resolveBatchInputMode(payload);
+	if (inputMode.ok === false) {
+		return err("validation_error", {
+			reason: inputMode.reason,
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
+	}
+	const providerResolution = resolveBatchProviderForCurrentAdapter({
+		mode: inputMode.mode,
+		provider: payload.provider,
+	});
+	if (providerResolution.ok === false) return providerResolution.response;
 	const normalizedWebhook = webhook ? parseAsyncWebhookConfig("batch", webhook) : null;
 	if (webhook && !normalizedWebhook) {
 		return err("validation_error", {
 			reason: "invalid_batch_webhook",
 			request_id: requestId,
 			workspace_id: auth.workspaceId,
+		});
+	}
+	let inlineRows: InlineBatchRequest[] | null = null;
+	if (inputMode.mode === "inline") {
+		try {
+			inlineRows = await normalizeInlineBatchRequests(payload);
+		} catch (error) {
+			return err("validation_error", {
+				reason: error instanceof Error ? error.message : "invalid_inline_requests",
+				request_id: requestId,
+				workspace_id: auth.workspaceId,
+			});
+		}
+		const upload = await uploadOpenAiBatchInputFile({ requestId, rows: inlineRows });
+		if (upload.ok === false) return upload.response;
+		upstreamPayload.input_file_id = upload.fileId;
+		await saveBatchFileMeta(auth.workspaceId, upload.fileId, {
+			provider: OPENAI_PROVIDER_ID,
+			status: "uploaded",
+			purpose: "batch",
+			filename: `aistats-batch-${requestId}.jsonl`,
+			keySource: "gateway",
+			byokKeyId: null,
+		}).catch((lookupErr) => {
+			console.error("batch_inline_input_file_meta_store_failed", {
+				error: lookupErr,
+				workspaceId: auth.workspaceId,
+				fileId: upload.fileId,
+			});
 		});
 	}
 	const upstreamBody = JSON.stringify(upstreamPayload);
@@ -339,13 +544,41 @@ async function handleCreate(req: Request) {
 				nativeBatchId: batchId,
 				endpoint: toText(payload.endpoint),
 				completionWindow: toText(payload.completion_window),
-				inputFileId: toText(payload.input_file_id),
+				inputFileId: toText(upstreamPayload.input_file_id) ?? toText(payload.input_file_id),
+				inputMode: inputMode.mode,
 				webhook: normalizedWebhook,
 				keySource,
 				byokKeyId: null,
 			});
 			await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta).catch((lookupErr) => {
 				console.error("batch_job_meta_store_failed", {
+					error: lookupErr,
+					workspaceId: auth.workspaceId,
+					batchId,
+				});
+			});
+		}
+		if (batchId && inlineRows?.length) {
+			const requestRows: BatchRequestRowInput[] = inlineRows.map((row) => ({
+				provider: OPENAI_PROVIDER_ID,
+				nativeBatchId: batchId,
+				customId: row.customId,
+				requestIndex: row.index,
+				method: row.method,
+				endpoint: row.url,
+				model: toText((row.body as any)?.model) ?? toText(payload.model),
+				status: "queued",
+				requestBodyHash: row.requestBodyHash,
+				meta: {
+					input_mode: "inline",
+				},
+			}));
+			await saveBatchRequestRows({
+				workspaceId: auth.workspaceId,
+				batchId,
+				rows: requestRows,
+			}).catch((lookupErr) => {
+				console.error("batch_request_rows_store_failed", {
 					error: lookupErr,
 					workspaceId: auth.workspaceId,
 					batchId,
@@ -585,9 +818,81 @@ async function handleCancel(req: Request, id: string) {
 	return toJsonResponse(upstream);
 }
 
+async function handleCapabilities(_req: Request) {
+	return jsonPayload({
+		object: "list",
+		data: listBatchProviderCapabilities().map((provider) => ({
+			id: provider.providerId,
+			name: provider.displayName,
+			status: provider.status,
+			gateway_input_modes: provider.gatewayInputModes,
+			native_input_modes: provider.nativeInputModes,
+			documentation_url: provider.documentationUrl,
+			notes: provider.notes ?? null,
+		})),
+	});
+}
+
+async function handleListRequests(req: Request, id: string) {
+	const requestId = generatePublicId();
+	const auth = await authenticate(req);
+	if (!auth.ok) {
+		const reason = (auth as AuthFailure).reason;
+		return err("unauthorised", { reason, request_id: requestId });
+	}
+	const batchId = String(id ?? "").trim();
+	if (!batchId) {
+		return err("validation_error", { reason: "missing_batch_id", request_id: requestId, workspace_id: auth.workspaceId });
+	}
+	const meta = await getBatchJobMeta(auth.workspaceId, batchId);
+	if (!meta) {
+		return err("not_found", {
+			reason: "batch_not_found_or_not_owned",
+			request_id: requestId,
+			batch_id: batchId,
+			workspace_id: auth.workspaceId,
+		});
+	}
+	const url = new URL(req.url);
+	const rows = await listBatchRequestRows({
+		workspaceId: auth.workspaceId,
+		batchId,
+		limit: Number(url.searchParams.get("limit") ?? 100),
+		offset: Number(url.searchParams.get("offset") ?? 0),
+		status: url.searchParams.get("status"),
+	});
+	return jsonPayload({
+		object: "list",
+		batch_id: batchId,
+		data: rows.map((row) => ({
+			id: row.id,
+			custom_id: row.customId,
+			request_index: row.requestIndex,
+			provider: row.provider,
+			native_batch_id: row.nativeBatchId,
+			method: row.method,
+			endpoint: row.endpoint,
+			model: row.model,
+			status: row.status,
+			request_body_hash: row.requestBodyHash,
+			response_status: row.responseStatus,
+			response_body: row.responseBody,
+			error_body: row.errorBody,
+			usage: row.usage,
+			cost_nanos: row.costNanos,
+			cost_usd: row.costUsd,
+			meta: row.meta,
+			created_at: row.createdAt,
+			updated_at: row.updatedAt,
+			completed_at: row.completedAt,
+		})),
+	});
+}
+
 export const batchRoutes = new Hono<Env>();
 
 batchRoutes.post("/", withRuntime(handleCreate));
+batchRoutes.get("/capabilities", withRuntime(handleCapabilities));
+batchRoutes.get("/:id/requests", withRuntime((req) => handleListRequests(req, (req as any).param?.("id") ?? req.url.split("/").slice(-2, -1)[0] ?? "")));
 batchRoutes.get("/:id", withRuntime((req) => handleRetrieve(req, (req as any).param?.("id") ?? req.url.split("/").pop() ?? "")));
 batchRoutes.post("/:id/cancel", withRuntime((req) => handleCancel(req, (req as any).param?.("id") ?? req.url.split("/").slice(-2, -1)[0] ?? "")));
-

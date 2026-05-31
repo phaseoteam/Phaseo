@@ -217,21 +217,63 @@ pub struct BatchBillingSummary {
 	pub reason: Option<String>,
 }
 
+pub struct BatchInlineRequest {
+	pub body: HashMap<String, String>,
+	pub custom_id: Option<String>,
+	pub method: Option<String>,
+	pub url: Option<String>,
+}
+
+pub struct BatchProviderCapability {
+	pub documentation_url: Option<String>,
+	pub gateway_input_modes: Option<Vec<String>>,
+	pub id: Option<String>,
+	pub name: Option<String>,
+	pub native_input_modes: Option<Vec<String>>,
+	pub notes: Option<Option<String>>,
+	pub status: Option<String>,
+}
+
 pub struct BatchRequest {
 	pub completion_window: Option<String>,
 	pub debug: Option<HashMap<String, String>>,
 	pub endpoint: String,
-	pub input_file_id: String,
+	pub input_file_id: Option<String>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub provider: Option<HashMap<String, String>>,
+	pub requests: Option<Vec<HashMap<String, String>>>,
 	pub session_id: Option<String>,
 	pub webhook: Option<HashMap<String, String>>,
+	pub webhook_endpoint_id: Option<String>,
 }
 
 pub struct BatchRequestCounts {
 	pub completed: Option<i64>,
 	pub failed: Option<i64>,
 	pub total: Option<i64>,
+}
+
+pub struct BatchRequestRow {
+	pub completed_at: Option<Option<String>>,
+	pub cost_nanos: Option<Option<i64>>,
+	pub cost_usd: Option<Option<f64>>,
+	pub created_at: Option<Option<String>>,
+	pub custom_id: Option<String>,
+	pub endpoint: Option<Option<String>>,
+	pub error_body: Option<Option<HashMap<String, String>>>,
+	pub id: Option<String>,
+	pub meta: Option<HashMap<String, String>>,
+	pub method: Option<Option<String>>,
+	pub model: Option<Option<String>>,
+	pub native_batch_id: Option<Option<String>>,
+	pub provider: Option<String>,
+	pub request_body_hash: Option<Option<String>>,
+	pub request_index: Option<i64>,
+	pub response_body: Option<Option<HashMap<String, String>>>,
+	pub response_status: Option<Option<i64>>,
+	pub status: Option<String>,
+	pub updated_at: Option<Option<String>>,
+	pub usage: Option<Option<HashMap<String, String>>>,
 }
 
 pub struct BatchResponse {
@@ -1180,6 +1222,48 @@ pub struct VideoOutput {
 
 pub struct VideoOutputConfig {
 	pub access: Option<String>,
+}
+
+pub struct WebhookEndpoint {
+	pub createdAt: Option<Option<String>>,
+	pub createdBy: Option<Option<String>>,
+	pub deletedAt: Option<Option<String>>,
+	pub events: Option<Vec<String>>,
+	pub hasSecret: Option<bool>,
+	pub id: Option<String>,
+	pub name: Option<String>,
+	pub status: Option<String>,
+	pub updatedAt: Option<Option<String>>,
+	pub url: Option<String>,
+	pub workspaceId: Option<String>,
+}
+
+pub struct WebhookEndpointCreateRequest {
+	pub events: Option<Vec<String>>,
+	pub name: Option<String>,
+	pub url: String,
+}
+
+pub struct WebhookEndpointCreateResponse {
+	pub createdAt: Option<Option<String>>,
+	pub createdBy: Option<Option<String>>,
+	pub deletedAt: Option<Option<String>>,
+	pub events: Option<Vec<String>>,
+	pub hasSecret: Option<bool>,
+	pub id: Option<String>,
+	pub name: Option<String>,
+	pub signing_secret: Option<String>,
+	pub status: Option<String>,
+	pub updatedAt: Option<Option<String>>,
+	pub url: Option<String>,
+	pub workspaceId: Option<String>,
+}
+
+pub struct WebhookEndpointUpdateRequest {
+	pub events: Option<Vec<String>>,
+	pub name: Option<String>,
+	pub status: Option<String>,
+	pub url: Option<String>,
 }
 
 pub struct Workspace {

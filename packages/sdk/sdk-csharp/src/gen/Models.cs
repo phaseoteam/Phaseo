@@ -525,6 +525,47 @@ public sealed class BatchBillingSummary
 
 }
 
+public sealed class BatchInlineRequest
+{
+	[JsonPropertyName("body")]
+	public Dictionary<string, object> Body { get; set; }
+
+	[JsonPropertyName("custom_id")]
+	public string? CustomId { get; set; }
+
+	[JsonPropertyName("method")]
+	public string? Method { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
+
+}
+
+public sealed class BatchProviderCapability
+{
+	[JsonPropertyName("documentation_url")]
+	public string? DocumentationUrl { get; set; }
+
+	[JsonPropertyName("gateway_input_modes")]
+	public List<string>? GatewayInputModes { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("native_input_modes")]
+	public List<string>? NativeInputModes { get; set; }
+
+	[JsonPropertyName("notes")]
+	public string? Notes { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+}
+
 public sealed class BatchRequest
 {
 	[JsonPropertyName("completion_window")]
@@ -537,7 +578,7 @@ public sealed class BatchRequest
 	public string Endpoint { get; set; }
 
 	[JsonPropertyName("input_file_id")]
-	public string InputFileId { get; set; }
+	public string? InputFileId { get; set; }
 
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
@@ -545,11 +586,17 @@ public sealed class BatchRequest
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
 
+	[JsonPropertyName("requests")]
+	public List<Dictionary<string, object>>? Requests { get; set; }
+
 	[JsonPropertyName("session_id")]
 	public string? SessionId { get; set; }
 
 	[JsonPropertyName("webhook")]
 	public Dictionary<string, object>? Webhook { get; set; }
+
+	[JsonPropertyName("webhook_endpoint_id")]
+	public string? WebhookEndpointId { get; set; }
 
 }
 
@@ -563,6 +610,70 @@ public sealed class BatchRequestCounts
 
 	[JsonPropertyName("total")]
 	public int? Total { get; set; }
+
+}
+
+public sealed class BatchRequestRow
+{
+	[JsonPropertyName("completed_at")]
+	public string? CompletedAt { get; set; }
+
+	[JsonPropertyName("cost_nanos")]
+	public int? CostNanos { get; set; }
+
+	[JsonPropertyName("cost_usd")]
+	public double? CostUsd { get; set; }
+
+	[JsonPropertyName("created_at")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("custom_id")]
+	public string? CustomId { get; set; }
+
+	[JsonPropertyName("endpoint")]
+	public string? Endpoint { get; set; }
+
+	[JsonPropertyName("error_body")]
+	public Dictionary<string, object>? ErrorBody { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("meta")]
+	public Dictionary<string, object>? Meta { get; set; }
+
+	[JsonPropertyName("method")]
+	public string? Method { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("native_batch_id")]
+	public string? NativeBatchId { get; set; }
+
+	[JsonPropertyName("provider")]
+	public string? Provider { get; set; }
+
+	[JsonPropertyName("request_body_hash")]
+	public string? RequestBodyHash { get; set; }
+
+	[JsonPropertyName("request_index")]
+	public int? RequestIndex { get; set; }
+
+	[JsonPropertyName("response_body")]
+	public Dictionary<string, object>? ResponseBody { get; set; }
+
+	[JsonPropertyName("response_status")]
+	public int? ResponseStatus { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("updated_at")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
 
 }
 
@@ -2873,6 +2984,112 @@ public sealed class VideoOutputConfig
 {
 	[JsonPropertyName("access")]
 	public string? Access { get; set; }
+
+}
+
+public sealed class WebhookEndpoint
+{
+	[JsonPropertyName("createdAt")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("createdBy")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("deletedAt")]
+	public string? DeletedAt { get; set; }
+
+	[JsonPropertyName("events")]
+	public List<string>? Events { get; set; }
+
+	[JsonPropertyName("hasSecret")]
+	public bool? HasSecret { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("updatedAt")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
+
+	[JsonPropertyName("workspaceId")]
+	public string? WorkspaceId { get; set; }
+
+}
+
+public sealed class WebhookEndpointCreateRequest
+{
+	[JsonPropertyName("events")]
+	public List<string>? Events { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("url")]
+	public string Url { get; set; }
+
+}
+
+public sealed class WebhookEndpointCreateResponse
+{
+	[JsonPropertyName("createdAt")]
+	public string? CreatedAt { get; set; }
+
+	[JsonPropertyName("createdBy")]
+	public string? CreatedBy { get; set; }
+
+	[JsonPropertyName("deletedAt")]
+	public string? DeletedAt { get; set; }
+
+	[JsonPropertyName("events")]
+	public List<string>? Events { get; set; }
+
+	[JsonPropertyName("hasSecret")]
+	public bool? HasSecret { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("signing_secret")]
+	public string? SigningSecret { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("updatedAt")]
+	public string? UpdatedAt { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
+
+	[JsonPropertyName("workspaceId")]
+	public string? WorkspaceId { get; set; }
+
+}
+
+public sealed class WebhookEndpointUpdateRequest
+{
+	[JsonPropertyName("events")]
+	public List<string>? Events { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
 
 }
 

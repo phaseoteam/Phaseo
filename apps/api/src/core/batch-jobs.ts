@@ -23,6 +23,7 @@ export type BatchJobMeta = {
 	endpoint?: string | null;
 	completionWindow?: string | null;
 	inputFileId?: string | null;
+	inputMode?: "file" | "inline" | null;
 	outputFileId?: string | null;
 	errorFileId?: string | null;
 	requestCounts?: {
@@ -97,6 +98,8 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.endpoint === "string") out.endpoint = source.endpoint;
 	if (typeof source.completionWindow === "string") out.completionWindow = source.completionWindow;
 	if (typeof source.inputFileId === "string") out.inputFileId = source.inputFileId;
+	if (source.inputMode === "file" || source.inputMode === "inline") out.inputMode = source.inputMode;
+	if (source.input_mode === "file" || source.input_mode === "inline") out.inputMode = source.input_mode;
 	if (typeof source.outputFileId === "string") out.outputFileId = source.outputFileId;
 	if (typeof source.errorFileId === "string") out.errorFileId = source.errorFileId;
 	const requestCountsRaw =
