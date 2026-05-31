@@ -43,6 +43,78 @@
   ],
   "benchmarks": [
     {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 61.4,
+      "is_self_reported": false,
+      "other_info": "Adaptive reasoning, max effort; Artificial Analysis Intelligence Index v4",
+      "source_link": "https://artificialanalysis.ai/articles/claude-opus-4-8-analysis-and-benchmarks",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1890,
+      "is_self_reported": false,
+      "other_info": "Adaptive reasoning, max effort; Elo",
+      "source_link": "https://artificialanalysis.ai/articles/claude-opus-4-8-analysis-and-benchmarks",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "aa-omniscience",
+      "score": 27.4,
+      "is_self_reported": false,
+      "other_info": "Adaptive reasoning, max effort; Artificial Analysis Omniscience Index",
+      "source_link": "https://artificialanalysis.ai/articles/claude-opus-4-8-analysis-and-benchmarks",
+      "rank": 2
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 69.2,
+      "is_self_reported": true,
+      "other_info": "Max effort; avg 5 trials",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "swe-bench",
+      "score": 88.6,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Verified; max effort; avg 5 trials",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 74.6,
+      "is_self_reported": true,
+      "other_info": "Terminus-2 public harness; max effort",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 93.6,
+      "is_self_reported": true,
+      "other_info": "Max effort",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "usamo-2026",
+      "score": 96.7,
+      "is_self_reported": true,
+      "other_info": "Max effort",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
+      "rank": null
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 83.4,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified; updated Anthropic evaluation setup",
+      "source_link": "https://cdn.sanity.io/files/4zrzovbb/website/c886650a2e96fc0925c805a1a7ca77314ccbf4a6.pdf",
+      "rank": null
+    },
+    {
       "benchmark_id": "deepswe",
       "score": 58,
       "is_self_reported": false,
