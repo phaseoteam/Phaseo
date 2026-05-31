@@ -569,6 +569,83 @@ describe("buildServerToolContinuation", () => {
 		});
 	});
 
+	it("limits gateway tool search results and ranks matching tool categories", async () => {
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_tool_search",
+									name: "gateway_tool_search",
+									arguments: JSON.stringify({
+										query: "web grounding",
+										max_results: 1,
+									}),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				...baseServerToolConfig,
+				toolSearchEnabled: true,
+			},
+		);
+
+		expect(continuation?.usage.toolSearchRequests).toBe(1);
+		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+		expect(parsed.query).toBe("web grounding");
+		expect(parsed.results).toHaveLength(1);
+		expect(parsed.results[0]).toMatchObject({
+			category: "web",
+		});
+		expect(["gateway:web_search", "gateway:web_fetch"]).toContain(parsed.results[0].type);
+	});
+
+	it("returns an error result for gateway tool search without a query", async () => {
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_tool_search",
+									name: "gateway_tool_search",
+									arguments: JSON.stringify({ max_results: 3 }),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				...baseServerToolConfig,
+				toolSearchEnabled: true,
+			},
+		);
+
+		expect(continuation?.usage.toolSearchRequests).toBe(1);
+		expect(continuation?.toolResults[0]).toMatchObject({
+			toolCallId: "call_tool_search",
+			isError: true,
+		});
+		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+		expect(parsed).toMatchObject({
+			error: "invalid_query",
+			message: "query is required for gateway tool search",
+		});
+	});
+
 	it("executes gateway image generation through the normal image endpoint", async () => {
 		const internalRequests: Array<{ url: string; headers: Record<string, string>; body: any }> = [];
 		makeEndpointHandlerMock.mockImplementation(({ endpoint }) => {
