@@ -5693,6 +5693,7 @@ components:
         - csimpleqa
         - ct-dataset-1-macro-accuracy
         - ctf-challenge-tasks
+        - cursorbench-3.1
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
@@ -6094,6 +6095,7 @@ components:
         - tempcompass
         - terminal-bench
         - terminal-bench-2.0
+        - terminal-bench-2.1
         - terminal-bench-hard
         - textvqa
         - thematic-generalisation
@@ -6111,6 +6113,7 @@ components:
         - uniform-bar-exam
         - us-dermmcqa-accuracy
         - usamo-2025
+        - usamo-2026
         - usamo25
         - v-star
         - vcr-en-easy
