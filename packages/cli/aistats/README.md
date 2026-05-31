@@ -9,10 +9,21 @@ aistats login
 aistats whoami
 aistats keys create --name "Codex"
 aistats keys create --name "Codex" --json
+aistats keys list
+aistats keys update <id-or-hash> --disabled true
+aistats workspaces list
+aistats workspaces create --name "Agent Sandbox"
+aistats presets create --name "@support-bot" --model "openai/gpt-5.4-mini"
+aistats models list --limit 20
+aistats providers list
+aistats credits get
+aistats activity list --days 7
+aistats generation get --id <request-id>
+aistats api get /v1/models
 aistats logout
 ```
 
-All commands support `--json`. Pretty output hides newly-created API key secrets unless `--show-secret` is passed; JSON output includes the raw key once for agent workflows.
+All first-class commands support `--json`. Pretty output hides newly-created API key secrets unless `--show-secret` is passed; JSON output includes the raw key once for agent workflows. The `aistats api ...` escape hatch always prints JSON and is intended for agents or newly-added endpoints before a polished command exists.
 
 The CLI stores its session at `~/.config/aistats/session.json` with restrictive file permissions. Set `AI_STATS_CONFIG_DIR` to override this location for tests or agent sandboxes.
 
@@ -43,7 +54,11 @@ Supported grants:
 OAuth access tokens are accepted by selected management routes alongside existing management keys. The initial CLI flow uses:
 
 - `GET /v1/me` for user and workspace introspection.
-- `POST /v1/keys` for API key creation.
+- `/v1/keys` for API key lifecycle operations.
+- `/v1/workspaces` for workspace lifecycle operations.
+- `/v1/presets` for preset lifecycle operations.
+- `/v1/credits`, `/v1/activity`, `/v1/analytics`, and `/v1/generations` for usage and observability.
+- `/v1/gateway/models`, `/v1/providers`, and `/v1/pricing/models` for discovery.
 
 Creating keys with OAuth requires:
 
@@ -53,6 +68,16 @@ Creating keys with OAuth requires:
 - Workspace `owner` or `admin` membership.
 
 Existing management-key behavior remains supported.
+
+## OpenRouter-Inspired Parity Notes
+
+The CLI intentionally mirrors the useful parts of OpenRouter's programmatic dashboard surface:
+
+- Key CRUD with limits and disable/delete controls.
+- Current account/workspace introspection.
+- Credits, recent activity, generation lookup, models, providers, and pricing discovery.
+- Workspace and preset management as AI Stats-specific additions.
+- A generic authenticated API escape hatch for agent workflows.
 
 ## Production Setup Notes
 

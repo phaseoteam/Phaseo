@@ -18,11 +18,19 @@ export const CLI_DEFAULT_SCOPES = [
 	"profile",
 	"email",
 	"workspaces:read",
+	"workspaces:write",
 	"keys:read",
 	"keys:write",
 	"keys:delete",
 	"models:read",
+	"providers:read",
+	"pricing:read",
 	"usage:read",
+	"analytics:read",
+	"generations:read",
+	"presets:read",
+	"presets:write",
+	"presets:delete",
 ] as const;
 
 type OAuthClient = {

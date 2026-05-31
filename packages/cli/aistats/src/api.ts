@@ -6,11 +6,19 @@ const DEFAULT_SCOPE = [
 	"profile",
 	"email",
 	"workspaces:read",
+	"workspaces:write",
 	"keys:read",
 	"keys:write",
 	"keys:delete",
 	"models:read",
+	"providers:read",
+	"pricing:read",
 	"usage:read",
+	"analytics:read",
+	"generations:read",
+	"presets:read",
+	"presets:write",
+	"presets:delete",
 ].join(" ");
 
 export function normalizeApiRoot(input?: string): string {
