@@ -69,6 +69,15 @@ function normalizeAutoOption(value: string | undefined): string | undefined {
 	return value.toLowerCase() === "auto" ? undefined : value;
 }
 
+function normalizeProviderImageSize(value: string | undefined): string | undefined {
+	if (!value) return undefined;
+	const normalized = value.trim().toUpperCase();
+	if (normalized === "512" || normalized === "1K" || normalized === "2K" || normalized === "4K") {
+		return normalized;
+	}
+	return undefined;
+}
+
 export function resolveImageSize(input: ImageOptionInput): string | undefined {
 	return (
 		toNonEmptyString(input.size) ??
@@ -104,6 +113,7 @@ export function buildImagePricingRequestOptions(
 			toNonEmptyString(responseInput.quality) ?? toNonEmptyString(responseInput.image_params?.quality),
 		) ??
 		inferredVariant?.quality;
+	const providerImageSize = normalizeProviderImageSize(quality);
 	const out: Record<string, unknown> = {};
 
 	if (size) {
@@ -111,6 +121,16 @@ export function buildImagePricingRequestOptions(
 		// Keep legacy aliases while pricing migrates fully to canonical size.
 		out.resolution = size;
 		out.image_params = { resolution: size };
+	}
+
+	if (providerImageSize) {
+		out.resolution = providerImageSize;
+		const imageParams =
+			out.image_params && typeof out.image_params === "object"
+				? (out.image_params as Record<string, unknown>)
+				: {};
+		imageParams.resolution = providerImageSize;
+		out.image_params = imageParams;
 	}
 
 	if (quality) {

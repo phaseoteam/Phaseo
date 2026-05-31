@@ -75,6 +75,8 @@ const BetaOptionsSchema = z.object({
     }).optional(),
 }).passthrough().optional();
 
+const ServiceTierSchema = z.enum(["standard", "priority", "flex", "batch"]);
+
 const ImageConfigSchema = z.object({
     aspect_ratio: z.string().optional(),
     image_size: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
@@ -223,7 +225,7 @@ export const ResponsesSchema = z.object({
         max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
 
-    service_tier: z.enum(["auto", "default", "flex", "standard", "priority"]).optional(),
+    service_tier: ServiceTierSchema.optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
     n: z.never().optional(),
@@ -599,7 +601,7 @@ export const ChatCompletionsSchema = z.object({
     user: z.string().optional(),
     user_id: z.string().optional(),
 
-    service_tier: z.enum(["auto", "default", "flex", "standard", "priority"]).optional(),
+    service_tier: ServiceTierSchema.optional(),
     prompt_cache_key: z.string().nullable().optional(),
     provider_options: ResponsesProviderOptionsSchema.optional(),
     safety_identifier: z.string().nullable().optional(),
@@ -691,6 +693,7 @@ export const AnthropicMessagesSchema = z.object({
     metadata: z.object({
         user_id: z.string().optional(),
     }).passthrough().optional(),
+    service_tier: ServiceTierSchema.optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
         enabled: z.boolean().optional(),

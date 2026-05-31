@@ -17,7 +17,7 @@ import { extractToolNameOrType, isNativeWebSearchTool } from "@core/nativeTools"
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
 import {
 	normalizeProviderGeoPreferences,
-	resolveServiceTierFromSpeedAndTier,
+	resolveTextServiceTier,
 } from "../shared/text-normalizers";
 
 /**
@@ -37,7 +37,6 @@ export type AnthropicMessagesRequest = {
 	tool_choice?: AnthropicToolChoice;
 	metadata?: Record<string, any>;
 	service_tier?: string;
-	speed?: string;
 	inference_geo?: "global" | "us" | string;
 	web_search_options?: Record<string, any>;
 	webSearchOptions?: Record<string, any>;
@@ -244,10 +243,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
-		speed: typeof req.speed === "string" ? req.speed : undefined,
-		serviceTier: resolveServiceTierFromSpeedAndTier({
+		serviceTier: resolveTextServiceTier({
 			service_tier: req.service_tier,
-			speed: req.speed,
 		}),
 		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
@@ -425,4 +422,3 @@ function decodeAnthropicTool(
 		parameters: (tool as AnthropicTool).input_schema,
 	};
 }
-

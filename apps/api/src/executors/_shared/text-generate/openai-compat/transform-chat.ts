@@ -173,7 +173,6 @@ export function irToOpenAIChat(
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.background !== undefined) request.background = ir.background;
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
-	if (ir.speed !== undefined) request.speed = ir.speed;
 	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
@@ -576,7 +575,6 @@ function mapFinishReason(reason: string | undefined): any {
 			return "stop";
 	}
 }
-
 
 
 

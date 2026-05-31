@@ -518,7 +518,6 @@ export function irToAnthropicMessages(
 	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
 	applyAnthropicServiceControls(request, {
 		serviceTier: ir.serviceTier,
-		speed: ir.speed,
 		model: resolvedModel,
 	});
 
@@ -635,15 +634,8 @@ function applyAnthropicCacheControlDefaults(
 }
 function applyAnthropicServiceControls(
 	request: any,
-	controls: { serviceTier?: string; speed?: string; model?: string | null },
+	controls: { serviceTier?: string; model?: string | null },
 ) {
-	const speed = typeof controls.speed === "string" ? controls.speed.toLowerCase() : undefined;
-	if (speed === "fast") {
-		request.speed = "fast";
-		// Fast mode cannot be combined with Priority Tier controls.
-		return;
-	}
-
 	if (typeof controls.serviceTier !== "string") return;
 	const tier = controls.serviceTier.toLowerCase();
 
@@ -819,5 +811,4 @@ function createUsageFinalizer(res: Response, args: ExecutorExecuteArgs): () => P
 }
 
 export const executor: ProviderExecutor = async (args) => executeAnthropic(args);
-
 

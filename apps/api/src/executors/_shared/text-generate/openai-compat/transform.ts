@@ -249,7 +249,6 @@ export function irToOpenAIResponses(
 	if (ir.maxToolCalls !== undefined) request.max_tool_calls = ir.maxToolCalls;
 	if (ir.background !== undefined) request.background = ir.background;
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
-	if (ir.speed !== undefined) request.speed = ir.speed;
 	if (ir.store !== undefined) request.store = ir.store;
 	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
 	if (ir.truncation !== undefined) request.truncation = ir.truncation;
@@ -804,6 +803,5 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 		},
 	};
 }
-
 
 
