@@ -78,6 +78,7 @@ jobs:
                   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
                   ARCEE_AI_API_KEY: ${{ secrets.ARCEE_AI_API_KEY }}
                   GITHUB_TOKEN: ${{ github.token }}
+                  MODEL_DISCOVERY_GITHUB_ISSUE_MODEL_IDS: ${{ vars.MODEL_DISCOVERY_GITHUB_ISSUE_MODEL_IDS }}
               run: |
                   if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ]; then
                     echo "Skipping external provider model check: missing Supabase secrets."
@@ -91,6 +92,7 @@ jobs:
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
                   DISCORD_ROLE_ID_DEV: ${{ env.DISCORD_ROLE_ID_DEV }}
                   GITHUB_TOKEN: ${{ github.token }}
+                  MODEL_DISCOVERY_GITHUB_ISSUE_MODEL_IDS: ${{ vars.MODEL_DISCOVERY_GITHUB_ISSUE_MODEL_IDS }}
               run: |
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts \
                     --discord-role-id "${{ env.DISCORD_ROLE_ID_DEV }}" \

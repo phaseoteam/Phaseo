@@ -59,6 +59,7 @@ type GitHubIssueSyncOptions = {
     apiBaseUrl?: string | null;
     statePath: string;
     runUrl?: string | null;
+    exposeModelDetails?: boolean;
     logger?: Pick<Console, "log" | "warn">;
     requestImpl?: typeof fetch;
 };
@@ -230,24 +231,36 @@ function formatModelLink(event: Pick<UpstreamDiscoveryIssueEntry, "modelId" | "m
     return `\`${event.modelId}\``;
 }
 
-function formatEventLine(event: UpstreamIssueHistoryEvent): string {
-    const runSuffix = event.runUrl ? ` ([workflow run](${event.runUrl}))` : "";
-    const reasonSuffix = event.reason ? ` — ${event.reason}` : "";
-    return `- ${formatDateTime(event.ts)}: ${actionVerb(event.action)} ${formatModelLink(event)} from ${sourceLabel(event.source)} ${event.providerName} (${event.providerId})${reasonSuffix}${runSuffix}`;
+function formatModelReference(event: Pick<UpstreamDiscoveryIssueEntry, "modelId" | "modelUrl">, exposeModelDetails: boolean): string {
+    if (exposeModelDetails) return formatModelLink(event);
+    return "`[redacted upstream model id]`";
 }
 
-function formatModelList(entries: UpstreamDiscoveryIssueEntry[]): string[] {
-    return entries.map((entry) => `- ${formatModelLink(entry)}`);
+function formatEventLine(event: UpstreamIssueHistoryEvent, exposeModelDetails: boolean): string {
+    const runSuffix = event.runUrl ? ` ([workflow run](${event.runUrl}))` : "";
+    const reasonSuffix = event.reason ? ` — ${event.reason}` : "";
+    return `- ${formatDateTime(event.ts)}: ${actionVerb(event.action)} ${formatModelReference(event, exposeModelDetails)} from ${sourceLabel(event.source)} ${event.providerName} (${event.providerId})${reasonSuffix}${runSuffix}`;
+}
+
+function formatModelList(entries: UpstreamDiscoveryIssueEntry[], exposeModelDetails: boolean): string[] {
+    if (exposeModelDetails) return entries.map((entry) => `- ${formatModelLink(entry)}`);
+    return [
+        `- ${entries.length} upstream model identifier${entries.length === 1 ? "" : "s"} detected. Details are redacted from public GitHub issue output.`,
+    ];
 }
 
 function buildIssueBody(args: {
     group: UpstreamIssueGroup;
     recentEvents: UpstreamIssueHistoryEvent[];
+    exposeModelDetails?: boolean;
 }): string {
     const { group, recentEvents } = args;
+    const exposeModelDetails = args.exposeModelDetails === true;
     const marker = markerForKey(group.key);
     const latestEvent = recentEvents[0] ?? group.entries[0];
-    const eventLines = recentEvents.length > 0 ? recentEvents.map(formatEventLine) : group.entries.map(formatEventLine);
+    const eventLines = recentEvents.length > 0
+        ? recentEvents.map((event) => formatEventLine(event, exposeModelDetails))
+        : group.entries.map((event) => formatEventLine(event, exposeModelDetails));
 
     return [
         `<!-- ${marker} -->`,
@@ -262,9 +275,10 @@ function buildIssueBody(args: {
         `- Latest action: ${actionNoun(group.action)}`,
         `- Latest detected at: ${latestEvent ? formatDateTime(latestEvent.ts) : "Unknown"}`,
         `- Models in this signal: ${group.entries.length}`,
+        `- Model identifiers: ${exposeModelDetails ? "included" : "redacted from this GitHub issue"}`,
         "",
         "## Models in this signal",
-        ...formatModelList(group.entries),
+        ...formatModelList(group.entries, exposeModelDetails),
         "",
         "## Recent detections",
         ...eventLines,
@@ -274,21 +288,23 @@ function buildIssueBody(args: {
         "",
         "## Triage notes",
         "- Check whether each upstream model should be added to AI Stats or mapped to an existing catalog entry.",
-        "- Unknown upstream models are intentionally included for triage instead of being filtered out.",
+        exposeModelDetails
+            ? "- Unknown upstream models are intentionally included for triage instead of being filtered out."
+            : "- Raw upstream model identifiers are intentionally redacted from GitHub issues; use the private discovery channels or rerun with explicit model-detail exposure when safe.",
         "- Reuse this issue for repeated signals with the same source, provider/org, and action type.",
         "- Close this issue once the upstream signal has been triaged.",
     ].join("\n");
 }
 
-function buildIssueComment(group: UpstreamIssueGroup, events: UpstreamIssueHistoryEvent[]): string {
+function buildIssueComment(group: UpstreamIssueGroup, events: UpstreamIssueHistoryEvent[], exposeModelDetails = false): string {
     return [
         `Upstream discovery detected another ${sourceLabel(group.source)} ${actionNoun(group.action)} signal for ${group.providerName}.`,
         "",
         "Models in this signal:",
-        ...formatModelList(events),
+        ...formatModelList(events, exposeModelDetails),
         "",
         "Events:",
-        ...events.map(formatEventLine),
+        ...events.map((event) => formatEventLine(event, exposeModelDetails)),
     ].join("\n");
 }
 
@@ -333,6 +349,11 @@ function resolveRunUrl(): string | null {
     const runId = trimOrNull(process.env.GITHUB_RUN_ID);
     if (!repository || !runId) return null;
     return `${serverUrl}/${repository}/actions/runs/${runId}`;
+}
+
+function resolveExposeModelDetails(options: GitHubIssueSyncOptions): boolean {
+    if (typeof options.exposeModelDetails === "boolean") return options.exposeModelDetails;
+    return process.env.MODEL_DISCOVERY_GITHUB_ISSUE_MODEL_IDS === "true";
 }
 
 function createGitHubIssueClient(args: {
@@ -571,6 +592,7 @@ export async function syncUpstreamDiscoveryIssues(
     const state = readIssueState(options.statePath);
     const timestamp = nowIso();
     const runUrl = trimOrNull(options.runUrl) ?? resolveRunUrl() ?? undefined;
+    const exposeModelDetails = resolveExposeModelDetails(options);
     let created = 0;
     let updated = 0;
 
@@ -579,13 +601,13 @@ export async function syncUpstreamDiscoveryIssues(
         const existingRecord = state.issues[group.key] ?? (legacyKey ? state.issues[legacyKey] : undefined);
         const events: UpstreamIssueHistoryEvent[] = group.entries.map((entry) => ({ ...entry, runUrl }));
         const recentEvents = [...events, ...(existingRecord?.recentEvents ?? [])].slice(0, MAX_RECENT_EVENTS);
-        const body = buildIssueBody({ group, recentEvents });
+        const body = buildIssueBody({ group, recentEvents, exposeModelDetails });
         const title = issueTitleForGroup(group);
         const existingIssue = await findOpenIssue({ client, repository, key: group.key, legacyKey, existingRecord });
 
         if (existingIssue) {
             const issue = await client.updateIssue(existingIssue.number, { title, body });
-            await client.createComment(issue.number, buildIssueComment(group, events));
+            await client.createComment(issue.number, buildIssueComment(group, events, exposeModelDetails));
             state.issues[group.key] = {
                 issueNumber: issue.number,
                 issueUrl: issue.html_url,
