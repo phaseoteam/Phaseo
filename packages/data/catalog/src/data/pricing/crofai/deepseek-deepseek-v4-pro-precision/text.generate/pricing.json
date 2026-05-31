@@ -16,7 +16,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-29T00:00:00Z",
-      "effective_to": "2026-05-31T22:00:00Z"
+      "effective_to": "2026-06-01T05:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -29,7 +29,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-29T00:00:00Z",
-      "effective_to": "2026-05-31T22:00:00Z"
+      "effective_to": "2026-06-01T05:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -42,7 +42,7 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-05-29T00:00:00Z",
-      "effective_to": "2026-05-31T22:00:00Z"
+      "effective_to": "2026-06-01T05:00:00Z"
     }
   ]
 }
