@@ -14,6 +14,11 @@ aistats keys update <id-or-hash> --disabled true
 aistats workspaces list
 aistats workspaces create --name "Agent Sandbox"
 aistats presets create --name "@support-bot" --model "openai/gpt-5.4-mini"
+aistats settings get
+aistats settings update --routing-mode price
+aistats guardrails create --name "Production safety" --body-json '{"enabled":true}'
+aistats guardrails set-keys <guardrail-id> --key-ids <key-id,key-id>
+aistats management-keys create --name "Automation"
 aistats models list --limit 20
 aistats providers list
 aistats credits get
@@ -57,6 +62,9 @@ OAuth access tokens are accepted by selected management routes alongside existin
 - `/v1/keys` for API key lifecycle operations.
 - `/v1/workspaces` for workspace lifecycle operations.
 - `/v1/presets` for preset lifecycle operations.
+- `/v1/settings` for workspace routing, privacy, response healing, and BYOK fallback settings.
+- `/v1/guardrails` for guardrail lifecycle operations and key assignment.
+- `/v1/management-keys` for management API key lifecycle operations.
 - `/v1/credits`, `/v1/activity`, `/v1/analytics`, and `/v1/generations` for usage and observability.
 - `/v1/gateway/models`, `/v1/providers`, and `/v1/pricing/models` for discovery.
 
@@ -74,9 +82,10 @@ Existing management-key behavior remains supported.
 The CLI is intended to cover the useful parts of the AI Stats dashboard as a programmatic surface:
 
 - Key CRUD with limits and disable/delete controls.
+- Management key CRUD for automation/admin workflows.
 - Current account/workspace introspection.
 - Credits, recent activity, generation lookup, models, providers, and pricing discovery.
-- Workspace and preset management as AI Stats-specific additions.
+- Workspace, settings, preset, and guardrail management.
 - A generic authenticated API escape hatch for agent workflows.
 
 ## Production Setup Notes

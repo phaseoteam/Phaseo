@@ -62,7 +62,15 @@ insert into public.oauth_clients (
     'generations:read',
     'presets:read',
     'presets:write',
-    'presets:delete'
+    'presets:delete',
+    'settings:read',
+    'settings:write',
+    'guardrails:read',
+    'guardrails:write',
+    'guardrails:delete',
+    'management_keys:read',
+    'management_keys:write',
+    'management_keys:delete'
   ],
   true,
   'private',

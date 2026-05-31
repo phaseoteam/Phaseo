@@ -21,6 +21,9 @@ import { workspacesRoutes } from "./workspaces";
 import oauthClientsRoutes from "./oauth-clients";
 import { meRoutes } from "./me";
 import { presetsRoutes } from "./presets";
+import { settingsRoutes } from "./settings";
+import { guardrailsRoutes } from "./guardrails";
+import { managementKeysRoutes } from "./management-keys";
 
 export const platformRouter = new Hono<Env>();
 
@@ -40,9 +43,11 @@ platformRouter.route("/keys", keysRoutes);
 platformRouter.route("/workspaces", workspacesRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
 platformRouter.route("/presets", presetsRoutes);
+platformRouter.route("/settings", settingsRoutes);
+platformRouter.route("/guardrails", guardrailsRoutes);
+platformRouter.route("/management-keys", managementKeysRoutes);
 platformRouter.route("/me", meRoutes);
 platformRouter.route("/", placeholdersRoutes);
 
 // Backward-compatible alias for existing imports.
 export const controlRouter = platformRouter;
-

@@ -19,6 +19,14 @@ const DEFAULT_SCOPE = [
 	"presets:read",
 	"presets:write",
 	"presets:delete",
+	"settings:read",
+	"settings:write",
+	"guardrails:read",
+	"guardrails:write",
+	"guardrails:delete",
+	"management_keys:read",
+	"management_keys:write",
+	"management_keys:delete",
 ].join(" ");
 
 export function normalizeApiRoot(input?: string): string {

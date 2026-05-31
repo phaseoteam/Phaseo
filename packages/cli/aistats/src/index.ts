@@ -8,7 +8,7 @@ type ParsedArgs = {
 	flags: Record<string, string | boolean>;
 };
 
-type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
+type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 function parseArgs(argv: string[]): ParsedArgs {
 	const command: string[] = [];
@@ -113,6 +113,22 @@ Usage:
   aistats presets update <id-or-slug-or-name> [--config-json <json>] [--json]
   aistats presets delete <id-or-slug-or-name> [--json]
 
+  aistats settings get [--json]
+  aistats settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]
+
+  aistats guardrails list [--json]
+  aistats guardrails create --name <name> [--body-json <json>] [--json]
+  aistats guardrails get <id> [--json]
+  aistats guardrails update <id> --body-json <json> [--json]
+  aistats guardrails delete <id> [--json]
+  aistats guardrails set-keys <id> --key-ids <id,id> [--json]
+
+  aistats management-keys list [--json]
+  aistats management-keys create --name <name> [--show-secret] [--json]
+  aistats management-keys get <id> [--json]
+  aistats management-keys update <id> [--name <name>] [--paused true|false] [--json]
+  aistats management-keys delete <id> [--json]
+
   aistats models list [--limit <n>] [--offset <n>] [--all] [--json]
   aistats providers list [--json]
   aistats pricing models [--json]
@@ -123,6 +139,7 @@ Usage:
 
   aistats api get <v1-path> [--json]
   aistats api post <v1-path> --body-json <json> [--json]
+  aistats api put <v1-path> --body-json <json> [--json]
   aistats api patch <v1-path> --body-json <json> [--json]
   aistats api delete <v1-path> [--json]
 
@@ -379,6 +396,135 @@ async function deletePreset(id: string | undefined, flags: Record<string, string
 	process.stdout.write("Deleted preset.\n");
 }
 
+async function settingsGet(flags: Record<string, string | boolean>) {
+	const body = await request("/settings");
+	if (flagBool(flags, "json")) return printJson(body);
+	const settings = body.data ?? {};
+	process.stdout.write(`Routing: ${settings.routing_mode ?? "balanced"}\n`);
+	process.stdout.write(`Beta channel: ${Boolean(settings.beta_channel_enabled)}\n`);
+	process.stdout.write(`Alpha channel: ${Boolean(settings.alpha_channel_enabled)}\n`);
+	process.stdout.write(`Response healing: ${Boolean(settings.response_healing_enabled)}\n`);
+	process.stdout.write(`BYOK fallback: ${Boolean(settings.byok_fallback_enabled)}\n`);
+}
+
+async function settingsUpdate(flags: Record<string, string | boolean>) {
+	const patch = parseJsonFlag(flags, "body-json");
+	const routingMode = flagString(flags, "routing-mode");
+	if (routingMode) patch.routing_mode = routingMode;
+	if (flags["beta-channel"] !== undefined) patch.beta_channel_enabled = flagBool(flags, "beta-channel");
+	if (flags["alpha-channel"] !== undefined) patch.alpha_channel_enabled = flagBool(flags, "alpha-channel");
+	if (flags["response-healing"] !== undefined) patch.response_healing_enabled = flagBool(flags, "response-healing");
+	if (flags["byok-fallback"] !== undefined) patch.byok_fallback_enabled = flagBool(flags, "byok-fallback");
+	if (Object.keys(patch).length === 0) throw new Error("Provide --routing-mode, another settings flag, or --body-json");
+	const body = await request("/settings", { method: "PATCH", body: patch });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write("Updated workspace settings.\n");
+}
+
+async function listGuardrails(flags: Record<string, string | boolean>) {
+	const body = await request(appendQuery("/guardrails", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (guardrail) => `${guardrail.enabled === false ? "off" : "on"} ${guardrail.name ?? guardrail.id} ${guardrail.id}`);
+}
+
+async function createGuardrail(flags: Record<string, string | boolean>) {
+	const name = flagString(flags, "name");
+	if (!name) throw new Error("`--name` is required");
+	const payload = parseJsonFlag(flags, "body-json");
+	payload.name = name;
+	if (flagString(flags, "description")) payload.description = flagString(flags, "description");
+	const body = await request("/guardrails", { method: "POST", body: payload });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Created guardrail: ${body.data.name ?? body.data.id} (${body.data.id})\n`);
+}
+
+async function getGuardrail(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}`);
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`${body.data.name ?? body.data.id}\nEnabled: ${body.data.enabled !== false}\nID: ${body.data.id}\nKeys: ${(body.data.key_ids ?? []).join(", ")}\n`);
+}
+
+async function updateGuardrail(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const payload = parseJsonFlag(flags, "body-json");
+	if (flagString(flags, "name")) payload.name = flagString(flags, "name");
+	if (flags.enabled !== undefined) payload.enabled = flagBool(flags, "enabled");
+	if (Object.keys(payload).length === 0) throw new Error("Provide --body-json or a supported flag");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Updated guardrail: ${body.data.name ?? body.data.id}\n`);
+}
+
+async function deleteGuardrail(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}`, { method: "DELETE" });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write("Deleted guardrail.\n");
+}
+
+async function setGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const keyIds = (flagString(flags, "key-ids") ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/keys`, { method: "PUT", body: { key_ids: keyIds } });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Assigned ${keyIds.length} key(s) to guardrail.\n`);
+}
+
+async function listManagementKeys(flags: Record<string, string | boolean>) {
+	const body = await request(appendQuery("/management-keys", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (key) => `${key.status ?? "unknown"} ${key.name ?? key.id} ${key.id} ${key.prefix ?? ""}`.trim());
+}
+
+async function createManagementKey(flags: Record<string, string | boolean>) {
+	const name = flagString(flags, "name");
+	if (!name) throw new Error("`--name` is required");
+	const body = await request("/management-keys", {
+		method: "POST",
+		body: compact({
+			name,
+			scopes: flagString(flags, "scopes")?.split(",").map((scope) => scope.trim()).filter(Boolean),
+			expires_at: flagString(flags, "expires-at"),
+			paused: flagBool(flags, "paused") || undefined,
+		}),
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Created management key: ${body.data.name ?? name}\nID: ${body.data.id}\nPrefix: ${body.data.prefix ?? "unknown"}\n`);
+	if (flagBool(flags, "show-secret")) process.stdout.write(`Key: ${body.data.key}\n`);
+	else process.stdout.write("Secret hidden. Re-run with --json or --show-secret if an agent needs to capture it.\n");
+}
+
+async function getManagementKey(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Management key id is required");
+	const body = await request(`/management-keys/${encodeURIComponent(id)}`);
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`${body.data.name ?? body.data.id}\nStatus: ${body.data.status}\nID: ${body.data.id}\nPrefix: ${body.data.prefix ?? "unknown"}\n`);
+}
+
+async function updateManagementKey(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Management key id is required");
+	const payload: Record<string, unknown> = {};
+	if (flagString(flags, "name")) payload.name = flagString(flags, "name");
+	if (flags.paused !== undefined) payload.paused = flagBool(flags, "paused");
+	if (flagString(flags, "expires-at")) payload.expires_at = flagString(flags, "expires-at");
+	Object.assign(payload, parseJsonFlag(flags, "body-json"));
+	if (Object.keys(payload).length === 0) throw new Error("Provide a supported flag or --body-json");
+	const body = await request(`/management-keys/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Updated management key: ${body.data.name ?? body.data.id}\n`);
+}
+
+async function deleteManagementKey(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Management key id is required");
+	const body = await request(`/management-keys/${encodeURIComponent(id)}`, { method: "DELETE" });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write("Deleted management key.\n");
+}
+
 async function listModels(flags: Record<string, string | boolean>) {
 	const mine = flagBool(flags, "mine");
 	const body = await request(appendQuery(mine ? "/gateway/models/me" : "/gateway/models", {
@@ -482,6 +628,19 @@ async function main() {
 		if (first === "presets" && second === "get") return getPreset(third, parsed.flags);
 		if (first === "presets" && second === "update") return updatePreset(third, parsed.flags);
 		if (first === "presets" && second === "delete") return deletePreset(third, parsed.flags);
+		if (first === "settings" && second === "get") return settingsGet(parsed.flags);
+		if (first === "settings" && second === "update") return settingsUpdate(parsed.flags);
+		if (first === "guardrails" && second === "list") return listGuardrails(parsed.flags);
+		if (first === "guardrails" && second === "create") return createGuardrail(parsed.flags);
+		if (first === "guardrails" && second === "get") return getGuardrail(third, parsed.flags);
+		if (first === "guardrails" && second === "update") return updateGuardrail(third, parsed.flags);
+		if (first === "guardrails" && second === "delete") return deleteGuardrail(third, parsed.flags);
+		if (first === "guardrails" && second === "set-keys") return setGuardrailKeys(third, parsed.flags);
+		if (first === "management-keys" && second === "list") return listManagementKeys(parsed.flags);
+		if (first === "management-keys" && second === "create") return createManagementKey(parsed.flags);
+		if (first === "management-keys" && second === "get") return getManagementKey(third, parsed.flags);
+		if (first === "management-keys" && second === "update") return updateManagementKey(third, parsed.flags);
+		if (first === "management-keys" && second === "delete") return deleteManagementKey(third, parsed.flags);
 		if (first === "models" && second === "list") return listModels(parsed.flags);
 		if (first === "providers" && second === "list") return listProviders(parsed.flags);
 		if (first === "pricing" && second === "models") return pricingModels(parsed.flags);
@@ -492,6 +651,7 @@ async function main() {
 		if (first === "generation" && second === "get") return generationGet(parsed.flags);
 		if (first === "api" && second === "get") return rawApi("GET", third, parsed.flags);
 		if (first === "api" && second === "post") return rawApi("POST", third, parsed.flags);
+		if (first === "api" && second === "put") return rawApi("PUT", third, parsed.flags);
 		if (first === "api" && second === "patch") return rawApi("PATCH", third, parsed.flags);
 		if (first === "api" && second === "delete") return rawApi("DELETE", third, parsed.flags);
 		throw new Error(`Unknown command: ${parsed.command.join(" ")}`);
