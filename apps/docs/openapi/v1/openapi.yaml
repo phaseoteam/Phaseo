@@ -5699,6 +5699,7 @@ components:
         - cybergym
         - cybersecurity-ctfs
         - da-2k
+        - dailyomni
         - deep-planning
         - deepconsult
         - deepplanning-v1.1-avg-acc
@@ -5802,6 +5803,7 @@ components:
         - hmmt-feb-2026
         - hmmt-feb-26
         - hmmt-nov-2025
+        - hr-bench-4k
         - humaneval
         - humaneval-average
         - humaneval-mul
@@ -5894,6 +5896,7 @@ components:
         - mgsm
         - miabench
         - mimic-cxr-top5-macro-f1
+        - mimo-coding-bench
         - minedojo-verified
         - minerva
         - misguided-attention
