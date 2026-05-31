@@ -69,9 +69,9 @@ Creating keys with OAuth requires:
 
 Existing management-key behavior remains supported.
 
-## OpenRouter-Inspired Parity Notes
+## Programmatic Dashboard Parity Notes
 
-The CLI intentionally mirrors the useful parts of OpenRouter's programmatic dashboard surface:
+The CLI is intended to cover the useful parts of the AI Stats dashboard as a programmatic surface:
 
 - Key CRUD with limits and disable/delete controls.
 - Current account/workspace introspection.
