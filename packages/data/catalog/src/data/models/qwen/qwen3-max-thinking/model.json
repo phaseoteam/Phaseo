@@ -119,6 +119,22 @@
       "other_info": "DeepPlanning v1.1 | Alibaba/Qwen3-Max (w/ thinking)",
       "source_link": "https://qwenlm.github.io/Qwen-Agent/en/benchmarks/deepplanning/",
       "rank": 2
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.49,
+      "is_self_reported": false,
+      "other_info": "sigma 0.285; games 286; avg points 0.516",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 24.2,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 70
     }
   ]
 }

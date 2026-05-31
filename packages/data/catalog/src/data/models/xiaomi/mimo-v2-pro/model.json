@@ -88,6 +88,30 @@
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
       "rank": 21
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": -0.4,
+      "is_self_reported": false,
+      "other_info": "win prob 0.45; 95% CI -0.7..-0.2",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 41,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 53
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 45.9,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 68.8%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 22
     }
   ]
 }

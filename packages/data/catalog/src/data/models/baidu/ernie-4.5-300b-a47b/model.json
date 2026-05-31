@@ -176,6 +176,14 @@
       "other_info": "inferred version-family alias from ernie-4.5",
       "source_link": "https://cloud.baidu.com/doc/WENXINWORKSHOP/s/clntwmv7t",
       "rank": 14
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 15.97,
+      "is_self_reported": false,
+      "other_info": "Confab 25.2%; non-response 6.7%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 30
     }
   ]
 }

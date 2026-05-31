@@ -1356,6 +1356,30 @@
       "other_info": "Seed2 official benchmark table | NL2Repo (Pass@1)",
       "source_link": "https://seed.bytedance.com/en/seed2",
       "rank": 1
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": -1.4,
+      "is_self_reported": false,
+      "other_info": "win prob 0.30; 95% CI -1.6..-1.2",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 21
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 42.1,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 51
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 57.1,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 77.0%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 18
     }
   ]
 }

@@ -154,6 +154,22 @@
       "other_info": null,
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
       "rank": 3
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 19.7,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 73
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 63.3,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 82.1%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 15
     }
   ]
 }

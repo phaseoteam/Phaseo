@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "terminal-bench-2.1",
+  "benchmark_name": "Terminal Bench 2.1",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://www.tbench.ai/",
+  "total_models": 1
+}

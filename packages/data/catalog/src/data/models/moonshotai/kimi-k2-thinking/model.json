@@ -198,6 +198,14 @@
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
       "rank": 28
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.325,
+      "is_self_reported": false,
+      "other_info": "64K thinking; sigma 0.311; games 238; avg points 0.504",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 27
     }
   ]
 }

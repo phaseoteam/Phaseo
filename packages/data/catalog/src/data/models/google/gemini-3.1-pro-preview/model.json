@@ -278,6 +278,38 @@
       "other_info": "DeepSWE label: gemini-3.1-pro; mini-swe-agent; 10% +/-3%; avg cost $1.84; avg time 36m; out tok 53k",
       "source_link": "https://deepswe.datacurve.ai/",
       "rank": 13
+    },
+    {
+      "benchmark_id": "lisanbench",
+      "score": 6445,
+      "is_self_reported": false,
+      "other_info": "High thinking; path length avg; difficulty-weighted 1929.1071; max 11728; avg validity 95.98%; 50 starting words",
+      "source_link": "https://lisanbench.com/?tab=leaderboard&models=claude-opus-4.7%3Athinking-xhigh%2Cgpt-5.5%3Athinking-medium%2Cgemini-3.1-pro-preview%3Athinking-high",
+      "rank": 6
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": -1.5,
+      "is_self_reported": false,
+      "other_info": "win prob 0.29; 95% CI -1.7..-1.3",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 22
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 98.4,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 79.4,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 91.5%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 3
     }
   ]
 }

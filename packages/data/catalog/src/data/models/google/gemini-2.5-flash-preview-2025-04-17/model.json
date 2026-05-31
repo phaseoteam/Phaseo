@@ -170,6 +170,14 @@
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
       "rank": 51
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 16.81,
+      "is_self_reported": false,
+      "other_info": "24K; Confab 4.5%; non-response 29.2%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 33
     }
   ]
 }

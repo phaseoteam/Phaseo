@@ -101,6 +101,22 @@
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
       "rank": 68
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 29.5,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 63
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 41.6,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 66.1%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 25
     }
   ]
 }

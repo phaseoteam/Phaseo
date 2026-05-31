@@ -143,6 +143,14 @@
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
       "rank": 3
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 31,
+      "is_self_reported": false,
+      "other_info": "Thinking; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 59
     }
   ]
 }

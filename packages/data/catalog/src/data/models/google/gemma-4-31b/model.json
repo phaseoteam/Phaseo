@@ -111,6 +111,38 @@
       "other_info": "Average",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
       "rank": 4
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": -1.7,
+      "is_self_reported": false,
+      "other_info": "Reasoning; win prob 0.26; 95% CI -1.9..-1.5",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 79.5,
+      "is_self_reported": false,
+      "other_info": "Reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 28
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 30.1,
+      "is_self_reported": false,
+      "other_info": "IT; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 61
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 53,
+      "is_self_reported": false,
+      "other_info": "Reasoning; Top-1 accuracy 76.1%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 19
     }
   ]
 }
