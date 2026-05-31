@@ -2,9 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildServerToolContinuation, prepareServerToolsForTextRequest } from "./server-tools";
 
 const getBindingsMock = vi.fn();
+const makeEndpointHandlerMock = vi.hoisted(() => vi.fn());
+const schemaForMock = vi.hoisted(() => vi.fn((endpoint: string) => ({ endpoint })));
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: (...args: any[]) => getBindingsMock(...args),
+}));
+
+vi.mock("@pipeline/index", () => ({
+	makeEndpointHandler: (...args: any[]) => makeEndpointHandlerMock(...args),
+}));
+
+vi.mock("@core/schemas", () => ({
+	schemaFor: (...args: any[]) => schemaForMock(...args),
 }));
 
 const baseServerToolConfig = {
@@ -41,6 +51,8 @@ describe("prepareServerToolsForTextRequest", () => {
 			EXA_API_KEY: "exa_test_key",
 			EXA_BASE_URL: "https://api.exa.ai",
 		});
+		makeEndpointHandlerMock.mockReset();
+		schemaForMock.mockClear();
 	});
 
 	it("passes native web search tools through unchanged", () => {
@@ -555,5 +567,212 @@ describe("buildServerToolContinuation", () => {
 			type: "gateway:image_generation",
 			function_name: "gateway_image_generation",
 		});
+	});
+
+	it("executes gateway image generation through the normal image endpoint", async () => {
+		const internalRequests: Array<{ url: string; headers: Record<string, string>; body: any }> = [];
+		makeEndpointHandlerMock.mockImplementation(({ endpoint }) => {
+			expect(endpoint).toBe("images.generations");
+			return async (req: Request) => {
+				const body = await req.json();
+				internalRequests.push({
+					url: req.url,
+					headers: Object.fromEntries(req.headers.entries()),
+					body,
+				});
+				return new Response(
+					JSON.stringify({
+						created: 1780245600,
+						model: body.model,
+						data: [{ url: "https://cdn.example.test/image.png" }],
+						usage: { output_image: 1 },
+					}),
+					{ status: 200, headers: { "Content-Type": "application/json" } },
+				);
+			};
+		});
+
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_image",
+									name: "gateway_image_generation",
+									arguments: JSON.stringify({
+										prompt: "A tiny brass robot watering a windowsill basil plant",
+										model: "openai/gpt-image-latest",
+										size: "1024x1024",
+										n: 1,
+									}),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				...baseServerToolConfig,
+				imageGenerationEnabled: true,
+				imageGenerationModel: "openai/gpt-image-latest",
+			},
+			{
+				sourceRequest: new Request("https://api.example.test/v1/chat/completions", {
+					method: "POST",
+					headers: {
+						Authorization: "Bearer test_key",
+						"X-Request-Id": "req_test",
+					},
+				}),
+				outerModel: "openai/gpt-5.4-nano",
+			},
+		);
+
+		expect(schemaForMock).toHaveBeenCalledWith("images.generations");
+		expect(makeEndpointHandlerMock).toHaveBeenCalledTimes(1);
+		expect(internalRequests).toHaveLength(1);
+		expect(new URL(internalRequests[0]?.url ?? "").pathname).toBe("/v1/images/generations");
+		expect(internalRequests[0]?.headers.authorization).toBe("Bearer test_key");
+		expect(internalRequests[0]?.headers["x-ai-stats-server-tool"]).toBe("true");
+		expect(internalRequests[0]?.body).toMatchObject({
+			model: "openai/gpt-image-latest",
+			prompt: "A tiny brass robot watering a windowsill basil plant",
+			size: "1024x1024",
+			n: 1,
+		});
+		expect(continuation?.usage).toEqual({
+			datetimeRequests: 0,
+			webSearchRequests: 0,
+			webFetchRequests: 0,
+			applyPatchRequests: 0,
+			imageGenerationRequests: 1,
+			fusionRequests: 0,
+			toolSearchRequests: 0,
+		});
+		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+		expect(parsed).toMatchObject({
+			type: "image_generation",
+			model: "openai/gpt-image-latest",
+			data: [{ url: "https://cdn.example.test/image.png" }],
+			usage: { output_image: 1 },
+		});
+	});
+
+	it("executes gateway fusion through bounded internal chat requests", async () => {
+		const chatBodies: any[] = [];
+		makeEndpointHandlerMock.mockImplementation(({ endpoint }) => {
+			expect(endpoint).toBe("chat.completions");
+			return async (req: Request) => {
+				const body = await req.json();
+				chatBodies.push(body);
+				const isJudgeCall = body.messages?.[0]?.content?.includes("Return concise JSON");
+				const content = isJudgeCall
+					? JSON.stringify({
+						consensus: "The panel agrees on the short answer.",
+						contradictions: [],
+						partial_coverage: [],
+						unique_insights: ["Model-specific caveat"],
+						blind_spots: [],
+					})
+					: `Panel note from ${body.model}`;
+				return new Response(
+					JSON.stringify({
+						id: `chatcmpl_${chatBodies.length}`,
+						object: "chat.completion",
+						model: body.model,
+						choices: [
+							{
+								index: 0,
+								message: { role: "assistant", content },
+								finish_reason: "stop",
+							},
+						],
+						usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+					}),
+					{ status: 200, headers: { "Content-Type": "application/json" } },
+				);
+			};
+		});
+
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_fusion",
+									name: "gateway_fusion",
+									arguments: JSON.stringify({
+										input: "Compare the tradeoffs of two cache invalidation strategies.",
+										analysis_models: [
+											"openai/gpt-5.4-nano",
+										],
+										model: "openai/gpt-5.4-nano",
+										include_web: false,
+									}),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				...baseServerToolConfig,
+				fusionEnabled: true,
+				fusionAnalysisModels: ["openai/gpt-5.4-nano"],
+				fusionModel: "openai/gpt-5.4-nano",
+				fusionIncludeWeb: false,
+			},
+			{
+				sourceRequest: new Request("https://api.example.test/v1/responses", {
+					method: "POST",
+					headers: { Authorization: "Bearer test_key" },
+				}),
+				outerModel: "openai/gpt-5.4-nano",
+			},
+		);
+
+		expect(schemaForMock).toHaveBeenCalledWith("chat.completions");
+		expect(makeEndpointHandlerMock).toHaveBeenCalledWith({
+			endpoint: "chat.completions",
+			schema: { endpoint: "chat.completions" },
+		});
+		expect(chatBodies).toHaveLength(2);
+		expect(chatBodies.map((body) => body.model)).toEqual([
+			"openai/gpt-5.4-nano",
+			"openai/gpt-5.4-nano",
+		]);
+		expect(chatBodies[0]?.tools).toBeUndefined();
+		expect(chatBodies[0]?.messages?.[1]?.content).toBe(
+			"Compare the tradeoffs of two cache invalidation strategies.",
+		);
+		expect(chatBodies[1]?.messages?.[0]?.content).toContain("Return concise JSON");
+		expect(continuation?.usage).toEqual({
+			datetimeRequests: 0,
+			webSearchRequests: 0,
+			webFetchRequests: 0,
+			applyPatchRequests: 0,
+			imageGenerationRequests: 0,
+			fusionRequests: 1,
+			toolSearchRequests: 0,
+		});
+		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+		expect(parsed).toMatchObject({
+			status: "ok",
+			model: "openai/gpt-5.4-nano",
+			analysis: {
+				consensus: "The panel agrees on the short answer.",
+			},
+		});
+		expect(parsed.responses).toHaveLength(1);
 	});
 });
