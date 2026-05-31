@@ -13,12 +13,23 @@ import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 
 function normalizeRequestedServiceTier(body: any, usage: any): string {
-    const tierRaw =
-        (typeof body?.service_tier === "string" ? body.service_tier : undefined) ??
-        (typeof body?.serviceTier === "string" ? body.serviceTier : undefined) ??
-        (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
-        (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
-    return typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
+    const speed = typeof body?.speed === "string" ? body.speed.trim().toLowerCase() : "";
+    if (speed === "fast") return "priority";
+
+    const tiers = [
+        usage?.service_tier,
+        usage?.serviceTier,
+        body?.service_tier,
+        body?.serviceTier,
+    ]
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+
+    const nonStandardTier = tiers.find((tier) => tier === "priority" || tier === "batch" || tier === "flex");
+    if (nonStandardTier) return nonStandardTier;
+
+    return tiers.find((tier) => tier === "standard" || tier === "default") ?? "";
 }
 
 function derivePricingPlan(body: any, usage: any): string {

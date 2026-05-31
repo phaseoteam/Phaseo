@@ -186,6 +186,89 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.totalNanos).toBe(12_000_000_000);
 	});
 
+	it("bills priority when speed fast conflicts with a standard service tier", () => {
+		const priorityCard: PriceCard = {
+			...TTS_CARD,
+			provider: "venice",
+			model: "anthropic/claude-opus-4.8",
+			endpoint: "text.generate",
+			rules: [
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "6",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "12",
+					currency: "USD",
+					pricing_plan: "priority",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ input_text_tokens: 1_000_000, service_tier: "priority" },
+			priorityCard,
+			{ speed: "fast", service_tier: "standard" },
+		);
+
+		expect(result.totalNanos).toBe(12_000_000_000);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.unit_price_usd).toBe("12.000000000");
+	});
+
+	it("prefers a non-standard usage service tier over a conflicting standard request tier", () => {
+		const priorityCard: PriceCard = {
+			...TTS_CARD,
+			provider: "venice",
+			model: "anthropic/claude-opus-4.8",
+			endpoint: "text.generate",
+			rules: [
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "6",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "12",
+					currency: "USD",
+					pricing_plan: "priority",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ input_text_tokens: 1_000_000, service_tier: "priority" },
+			priorityCard,
+			{ service_tier: "standard" },
+		);
+
+		expect(result.totalNanos).toBe(12_000_000_000);
+	});
+
 	it("prefers the remapped provider-model pricing card when present in context", async () => {
 		const ctx = {
 			model: "anthropic/claude-opus-4.8",
