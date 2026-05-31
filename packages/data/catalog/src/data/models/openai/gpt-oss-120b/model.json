@@ -224,14 +224,6 @@
       "rank": 16
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 15.65,
-      "is_self_reported": false,
-      "other_info": "Medium Reasoning Effort",
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 23
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1152.1,
       "is_self_reported": false,
@@ -550,6 +542,30 @@
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
       "rank": 60
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 15.65,
+      "is_self_reported": false,
+      "other_info": "Medium reasoning; Confab 23.3%; non-response 8.0%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 27
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": -3.2,
+      "is_self_reported": false,
+      "other_info": "win prob 0.10; 95% CI -3.5..-2.9",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 3.794,
+      "is_self_reported": false,
+      "other_info": "sigma 0.210; games 519; avg points 0.462",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 35
     }
   ]
 }

@@ -24,6 +24,22 @@
       "other_info": "mini-swe-agent; 24% +/-4%; avg cost $3.16; avg time 56m; out tok 84k",
       "source_link": "https://deepswe.datacurve.ai/",
       "rank": 9
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": 1.2,
+      "is_self_reported": false,
+      "other_info": "win prob 0.68; 95% CI 1.1..1.4",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 91.4,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 15
     }
   ]
 }

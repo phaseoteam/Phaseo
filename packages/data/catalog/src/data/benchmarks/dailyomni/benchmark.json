@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "dailyomni",
+  "benchmark_name": "DailyOmni",
+  "category": "multimodal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+  "total_models": 1
+}

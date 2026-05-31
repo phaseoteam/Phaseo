@@ -42,14 +42,6 @@
       "rank": 83
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 10.62,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 2
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1247,
       "is_self_reported": false,
@@ -98,14 +90,6 @@
       "rank": 30
     },
     {
-      "benchmark_id": "nyt-connections",
-      "score": 0.425,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 15
-    },
-    {
       "benchmark_id": "simpleqa",
       "score": 50.8,
       "is_self_reported": true,
@@ -122,12 +106,12 @@
       "rank": 71
     },
     {
-      "benchmark_id": "thematic-generalisation",
-      "score": 1.75,
+      "benchmark_id": "confabulations",
+      "score": 10.62,
       "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 7
+      "other_info": "Confab 5.9%; non-response 15.3%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 2
     }
   ]
 }

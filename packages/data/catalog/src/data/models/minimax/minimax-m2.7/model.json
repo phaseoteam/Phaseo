@@ -117,6 +117,30 @@
       "other_info": null,
       "source_link": "https://www.minimax.io/models/text/m27",
       "rank": 1
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": -3.1,
+      "is_self_reported": false,
+      "other_info": "win prob 0.11; 95% CI -3.3..-2.9",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 29
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 35.3,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 57
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 39.3,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 63.4%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 26
     }
   ]
 }

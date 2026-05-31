@@ -207,6 +207,14 @@
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/nemotron-3-super-120b-a12b/modelcard",
       "rank": 13
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 26.9,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 66
     }
   ]
 }

@@ -96,22 +96,6 @@
       "rank": 3
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 13.28,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 12
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 8.31,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 5
-    },
-    {
       "benchmark_id": "erqa",
       "score": 62.9,
       "is_self_reported": true,
@@ -350,6 +334,22 @@
       "other_info": "High Reasoning Effort",
       "source_link": "https://matharena.ai/?comp=apex--apex_2025",
       "rank": 9
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 13.28,
+      "is_self_reported": false,
+      "other_info": "Medium reasoning; Confab 21.8%; non-response 4.8%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 14
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.732,
+      "is_self_reported": false,
+      "other_info": "Medium reasoning; sigma 0.226; games 465; avg points 0.603",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 3
     }
   ]
 }
