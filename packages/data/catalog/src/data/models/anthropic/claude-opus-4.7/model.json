@@ -235,6 +235,14 @@
       "rank": 12
     },
     {
+      "benchmark_id": "lisanbench",
+      "score": 14400,
+      "is_self_reported": false,
+      "other_info": "xHigh thinking; path length avg; difficulty-weighted 5122.5986; max 19112; avg validity 99.70%; 50 starting words",
+      "source_link": "https://lisanbench.com/?tab=leaderboard&models=claude-opus-4.7%3Athinking-xhigh%2Cgpt-5.5%3Athinking-medium%2Cgemini-3.1-pro-preview%3Athinking-high",
+      "rank": 1
+    },
+    {
       "benchmark_id": "creative-story-writing",
       "score": 3,
       "is_self_reported": false,

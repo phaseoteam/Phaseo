@@ -376,6 +376,14 @@
       "rank": 41
     },
     {
+      "benchmark_id": "lisanbench",
+      "score": 9844.67,
+      "is_self_reported": false,
+      "other_info": "Medium thinking; path length avg; difficulty-weighted 3315.5211; max 15635; avg validity 99.45%; 50 starting words",
+      "source_link": "https://lisanbench.com/?tab=leaderboard&models=claude-opus-4.7%3Athinking-xhigh%2Cgpt-5.5%3Athinking-medium%2Cgemini-3.1-pro-preview%3Athinking-high",
+      "rank": 4
+    },
+    {
       "benchmark_id": "creative-story-writing",
       "score": 3.5,
       "is_self_reported": false,
