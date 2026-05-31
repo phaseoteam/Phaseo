@@ -506,6 +506,11 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class GatewayApplyPatchToolDefinition {
+		public Object parameters;
+		public Object type;
+	}
+
 	public static class GatewayDatetimeToolDefinition {
 		public Object parameters;
 		public String timezone;
@@ -1072,6 +1077,7 @@ public final class Models {
 	}
 
 	public static class ServerToolUsage {
+		public Integer apply_patch_requests;
 		public Integer datetime_requests;
 		public Integer web_fetch_requests;
 		public Integer web_search_requests;

@@ -14,6 +14,8 @@ export const WEB_SEARCH_SERVER_TOOL_TYPE = "gateway:web_search";
 export const WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME = "gateway_web_search";
 export const WEB_FETCH_SERVER_TOOL_TYPE = "gateway:web_fetch";
 export const WEB_FETCH_SERVER_TOOL_FUNCTION_NAME = "gateway_web_fetch";
+export const APPLY_PATCH_SERVER_TOOL_TYPE = "gateway:apply_patch";
+export const APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME = "gateway_apply_patch";
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_WEB_SEARCH_MAX_RESULTS = 5;
 const MAX_WEB_SEARCH_RESULTS = 10;
@@ -78,6 +80,24 @@ const WEB_FETCH_TOOL_PARAMETERS = {
 	additionalProperties: false,
 } as const;
 
+const APPLY_PATCH_TOOL_DESCRIPTION =
+	"Capture a proposed file edit as a Codex-style apply_patch block. The gateway validates the patch envelope and returns it as an artifact; it does not apply files.";
+const APPLY_PATCH_TOOL_PARAMETERS = {
+	type: "object",
+	properties: {
+		patch: {
+			type: "string",
+			description: "Complete patch block beginning with *** Begin Patch and ending with *** End Patch.",
+		},
+		summary: {
+			type: "string",
+			description: "Optional short human-readable summary of the intended change.",
+		},
+	},
+	required: ["patch"],
+	additionalProperties: false,
+} as const;
+
 export type ServerToolConfig = {
 	enabled: boolean;
 	datetimeDefaultTimezone: string;
@@ -87,6 +107,7 @@ export type ServerToolConfig = {
 	webSearchIncludeHighlights: boolean;
 	webFetchEnabled: boolean;
 	webFetchMaxChars: number;
+	applyPatchEnabled: boolean;
 };
 
 type PrepareRequestResult =
@@ -104,6 +125,7 @@ export type ServerToolExecutionMetrics = {
 	datetimeRequests: number;
 	webSearchRequests: number;
 	webFetchRequests: number;
+	applyPatchRequests: number;
 };
 
 export type ServerToolContinuation = {
@@ -251,6 +273,15 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 				function: { name: WEB_FETCH_SERVER_TOOL_FUNCTION_NAME },
 			};
 		}
+		if (toolChoice === APPLY_PATCH_SERVER_TOOL_TYPE) {
+			if (protocol === "anthropic.messages") {
+				return { type: "tool", name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME };
+			}
+			return {
+				type: "function",
+				function: { name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME },
+			};
+		}
 		return toolChoice;
 	}
 	if (!toolChoice || typeof toolChoice !== "object") return toolChoice;
@@ -302,6 +333,20 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 		};
 	}
 
+	if (choiceName === APPLY_PATCH_SERVER_TOOL_TYPE) {
+		if (protocol === "anthropic.messages") {
+			return {
+				type: "tool",
+				name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+			};
+		}
+
+		return {
+			type: "function",
+			function: { name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME },
+		};
+	}
+
 	return toolChoice;
 }
 
@@ -320,6 +365,7 @@ export function prepareServerToolsForTextRequest(
 	let webSearchIncludeHighlights = true;
 	let webFetchEnabled = false;
 	let webFetchMaxChars = DEFAULT_WEB_FETCH_MAX_CHARS;
+	let applyPatchEnabled = false;
 	const filteredTools: any[] = [];
 
 	for (const tool of tools) {
@@ -359,12 +405,15 @@ export function prepareServerToolsForTextRequest(
 			continue;
 		}
 
-		if (tool.type !== DATETIME_SERVER_TOOL_TYPE) {
-			filteredTools.push(tool);
+		if (tool.type === APPLY_PATCH_SERVER_TOOL_TYPE) {
+			applyPatchEnabled = true;
+			continue;
 		}
+
+		filteredTools.push(tool);
 	}
 
-	if (!datetimeEnabled && !webSearchEnabled && !webFetchEnabled) {
+	if (!datetimeEnabled && !webSearchEnabled && !webFetchEnabled && !applyPatchEnabled) {
 		return {
 			ok: true,
 			body: nextBody,
@@ -377,6 +426,7 @@ export function prepareServerToolsForTextRequest(
 				webSearchIncludeHighlights: true,
 				webFetchEnabled: false,
 				webFetchMaxChars: DEFAULT_WEB_FETCH_MAX_CHARS,
+				applyPatchEnabled: false,
 			},
 		};
 	}
@@ -401,6 +451,13 @@ export function prepareServerToolsForTextRequest(
 				name: WEB_FETCH_SERVER_TOOL_FUNCTION_NAME,
 				description: WEB_FETCH_TOOL_DESCRIPTION,
 				input_schema: WEB_FETCH_TOOL_PARAMETERS,
+			});
+		}
+		if (applyPatchEnabled && !hasAnthropicToolNamed(filteredTools, APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME)) {
+			filteredTools.push({
+				name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+				description: APPLY_PATCH_TOOL_DESCRIPTION,
+				input_schema: APPLY_PATCH_TOOL_PARAMETERS,
 			});
 		}
 	} else {
@@ -434,6 +491,16 @@ export function prepareServerToolsForTextRequest(
 				},
 			});
 		}
+		if (applyPatchEnabled && !hasOpenAIFunctionToolNamed(filteredTools, APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME)) {
+			filteredTools.push({
+				type: "function",
+				function: {
+					name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+					description: APPLY_PATCH_TOOL_DESCRIPTION,
+					parameters: APPLY_PATCH_TOOL_PARAMETERS,
+				},
+			});
+		}
 	}
 
 	nextBody.tools = filteredTools;
@@ -443,7 +510,7 @@ export function prepareServerToolsForTextRequest(
 		ok: true,
 		body: nextBody,
 		config: {
-			enabled: datetimeEnabled || webSearchEnabled || webFetchEnabled,
+			enabled: datetimeEnabled || webSearchEnabled || webFetchEnabled || applyPatchEnabled,
 			datetimeDefaultTimezone,
 			webSearchEnabled,
 			webSearchMaxResults,
@@ -451,6 +518,7 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights,
 			webFetchEnabled,
 			webFetchMaxChars,
+			applyPatchEnabled,
 		},
 	};
 }
@@ -872,6 +940,73 @@ async function executeWebSearchToolCall(
 	}
 }
 
+function validateApplyPatchBlock(patch: string): { ok: true; patch: string } | { ok: false; message: string } {
+	const normalized = patch.replace(/\r\n/g, "\n").trim();
+	if (!normalized.startsWith("*** Begin Patch")) {
+		return {
+			ok: false,
+			message: "patch must begin with *** Begin Patch",
+		};
+	}
+	if (!normalized.endsWith("*** End Patch")) {
+		return {
+			ok: false,
+			message: "patch must end with *** End Patch",
+		};
+	}
+	if (
+		!normalized.includes("\n*** Add File: ") &&
+		!normalized.includes("\n*** Update File: ") &&
+		!normalized.includes("\n*** Delete File: ")
+	) {
+		return {
+			ok: false,
+			message: "patch must contain at least one Add File, Update File, or Delete File section",
+		};
+	}
+	return { ok: true, patch: normalized };
+}
+
+function executeApplyPatchToolCall(
+	call: { id: string; arguments: string },
+): IRToolResult {
+	const args = parseJsonObject(call.arguments);
+	const patch = toNonEmptyString(args.patch);
+	if (!patch) {
+		return {
+			toolCallId: call.id,
+			isError: true,
+			content: JSON.stringify({
+				error: "invalid_patch",
+				message: "patch is required for gateway apply patch",
+			}),
+		};
+	}
+
+	const validation = validateApplyPatchBlock(patch);
+	if (validation.ok === false) {
+		return {
+			toolCallId: call.id,
+			isError: true,
+			content: JSON.stringify({
+				error: "invalid_patch",
+				message: validation.message,
+			}),
+		};
+	}
+
+	return {
+		toolCallId: call.id,
+		content: JSON.stringify({
+			type: "apply_patch",
+			format: "codex_v4a",
+			applied: false,
+			summary: toNonEmptyString(args.summary),
+			patch: validation.patch,
+		}),
+	};
+}
+
 export async function buildServerToolContinuation(
 	irResponse: IRChatResponse,
 	config: ServerToolConfig,
@@ -888,7 +1023,8 @@ export async function buildServerToolContinuation(
 		(call) =>
 			call?.name === DATETIME_SERVER_TOOL_FUNCTION_NAME ||
 			call?.name === WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === WEB_FETCH_SERVER_TOOL_FUNCTION_NAME,
+			call?.name === WEB_FETCH_SERVER_TOOL_FUNCTION_NAME ||
+			call?.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
 	);
 	if (serverToolCalls.length === 0) return null;
 
@@ -900,6 +1036,7 @@ export async function buildServerToolContinuation(
 		datetimeRequests: 0,
 		webSearchRequests: 0,
 		webFetchRequests: 0,
+		applyPatchRequests: 0,
 	};
 	for (const call of serverToolCalls) {
 		if (call.name === DATETIME_SERVER_TOOL_FUNCTION_NAME) {
@@ -931,6 +1068,17 @@ export async function buildServerToolContinuation(
 			);
 			toolResults.push(executed.toolResult);
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
+			continue;
+		}
+
+		if (call.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME) {
+			toolResults.push(
+				executeApplyPatchToolCall({
+					id: call.id,
+					arguments: call.arguments,
+				}),
+			);
+			usage.applyPatchRequests += 1;
 		}
 	}
 
@@ -998,6 +1146,9 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 					web_fetch_requests:
 						(base._ext?.serverToolUse?.web_fetch_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.web_fetch_requests ?? 0),
+					apply_patch_requests:
+						(base._ext?.serverToolUse?.apply_patch_requests ?? 0) +
+						(incoming._ext?.serverToolUse?.apply_patch_requests ?? 0),
 				},
 			}
 			: {
@@ -1011,6 +1162,9 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 					web_fetch_requests:
 						(base._ext?.serverToolUse?.web_fetch_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.web_fetch_requests ?? 0),
+					apply_patch_requests:
+						(base._ext?.serverToolUse?.apply_patch_requests ?? 0) +
+						(incoming._ext?.serverToolUse?.apply_patch_requests ?? 0),
 				},
 			},
 	};
@@ -1024,7 +1178,8 @@ export function attachServerToolUsage(
 		!usage &&
 		args.datetimeRequests <= 0 &&
 		args.webSearchRequests <= 0 &&
-		args.webFetchRequests <= 0
+		args.webFetchRequests <= 0 &&
+		args.applyPatchRequests <= 0
 	) return usage;
 	const baseUsage: IRUsage = usage
 		? { ...usage, _ext: usage._ext ? { ...usage._ext } : undefined }
@@ -1041,6 +1196,7 @@ export function attachServerToolUsage(
 			datetime_requests: (existing?.datetime_requests ?? 0) + Math.max(0, args.datetimeRequests),
 			web_search_requests: (existing?.web_search_requests ?? 0) + Math.max(0, args.webSearchRequests),
 			web_fetch_requests: (existing?.web_fetch_requests ?? 0) + Math.max(0, args.webFetchRequests),
+			apply_patch_requests: (existing?.apply_patch_requests ?? 0) + Math.max(0, args.applyPatchRequests),
 		},
 	};
 	return baseUsage;
@@ -1054,7 +1210,8 @@ export function attachServerToolUsageToRawUsage(
 		!usage &&
 		args.datetimeRequests <= 0 &&
 		args.webSearchRequests <= 0 &&
-		args.webFetchRequests <= 0
+		args.webFetchRequests <= 0 &&
+		args.applyPatchRequests <= 0
 	) return usage;
 	const base = { ...(usage ?? {}) };
 	const existing = base?.server_tool_use ?? {};
@@ -1064,8 +1221,10 @@ export function attachServerToolUsageToRawUsage(
 			(Number(existing?.datetime_requests ?? 0) || 0) + Math.max(0, args.datetimeRequests),
 		web_search_requests:
 			(Number(existing?.web_search_requests ?? 0) || 0) + Math.max(0, args.webSearchRequests),
-		web_fetch_requests:
-			(Number(existing?.web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests),
+	web_fetch_requests:
+		(Number(existing?.web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests),
+	apply_patch_requests:
+		(Number(existing?.apply_patch_requests ?? 0) || 0) + Math.max(0, args.applyPatchRequests),
 	};
 	return base;
 }

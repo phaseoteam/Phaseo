@@ -320,6 +320,10 @@ export type CreateAnthropicMessageParams = {
             max_chars?: number;
           };
           type: "gateway:web_fetch";
+        }
+      | {
+          parameters?: {};
+          type: "gateway:apply_patch";
         }[];
     top_k?: number;
     top_p?: number;
@@ -1038,6 +1042,7 @@ export type CreateChatCompletionParams = {
       | "gateway:datetime"
       | "gateway:web_search"
       | "gateway:web_fetch"
+      | "gateway:apply_patch"
       | {};
     tools?:
       | {
@@ -1073,6 +1078,10 @@ export type CreateChatCompletionParams = {
             max_chars?: number;
           };
           type: "gateway:web_fetch";
+        }
+      | {
+          parameters?: {};
+          type: "gateway:apply_patch";
         }[];
     top_logprobs?: number;
     top_p?: number;
@@ -1171,6 +1180,7 @@ export async function createChatCompletion(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      apply_patch_requests?: number;
       datetime_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
@@ -1263,6 +1273,7 @@ export async function createChatCompletion(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        apply_patch_requests?: number;
         datetime_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
@@ -1448,6 +1459,7 @@ export async function createEmbedding(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      apply_patch_requests?: number;
       datetime_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
@@ -1469,6 +1481,7 @@ export async function createEmbedding(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        apply_patch_requests?: number;
         datetime_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
@@ -1976,6 +1989,7 @@ export async function createRerank(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      apply_patch_requests?: number;
       datetime_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
@@ -2003,6 +2017,7 @@ export async function createRerank(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        apply_patch_requests?: number;
         datetime_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
@@ -2150,6 +2165,7 @@ export type CreateResponseParams = {
       | "gateway:datetime"
       | "gateway:web_search"
       | "gateway:web_fetch"
+      | "gateway:apply_patch"
       | {};
     tools?:
       | {
@@ -2185,6 +2201,10 @@ export type CreateResponseParams = {
             max_chars?: number;
           };
           type: "gateway:web_fetch";
+        }
+      | {
+          parameters?: {};
+          type: "gateway:apply_patch";
         }[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -2272,6 +2292,7 @@ export async function createResponse(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      apply_patch_requests?: number;
       datetime_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
@@ -2354,6 +2375,7 @@ export async function createResponse(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        apply_patch_requests?: number;
         datetime_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;

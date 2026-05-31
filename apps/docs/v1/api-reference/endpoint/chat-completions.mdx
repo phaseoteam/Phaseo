@@ -11,6 +11,7 @@ description: "Generate chat-based completions using the OpenAI-compatible chat e
 - `gateway:datetime`
 - `gateway:web_search`
 - `gateway:web_fetch`
+- `gateway:apply_patch`
 
 ### Datetime example
 
@@ -49,9 +50,8 @@ When a server tool is used, usage includes:
 }
 ```
 
-`gateway:web_search` adds `server_tool_use.web_search_requests` and may also add `server_tool_use.web_fetch_requests` when fetched result content is returned. `gateway:web_fetch` adds `server_tool_use.web_fetch_requests`.
+`gateway:web_search` adds `server_tool_use.web_search_requests` and may also add `server_tool_use.web_fetch_requests` when fetched result content is returned. `gateway:web_fetch` adds `server_tool_use.web_fetch_requests`. `gateway:apply_patch` adds `server_tool_use.apply_patch_requests` and returns a validated Codex-style patch artifact without applying files on the server.
 
 ## Streaming note
 
 `stream: true` is also supported. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn and re-emit a synthetic stream after continuing the loop.
-

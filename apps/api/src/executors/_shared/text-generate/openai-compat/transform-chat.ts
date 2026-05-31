@@ -528,12 +528,17 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 		typeof serverToolUseRaw?.web_fetch_requests === "number"
 			? serverToolUseRaw.web_fetch_requests
 			: undefined;
+	const applyPatchRequests =
+		typeof serverToolUseRaw?.apply_patch_requests === "number"
+			? serverToolUseRaw.apply_patch_requests
+			: undefined;
 	const serverToolUse =
-		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null
+		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null || applyPatchRequests != null
 			? {
 				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
 				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+				...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
 			}
 			: undefined;
 
@@ -576,7 +581,6 @@ function mapFinishReason(reason: string | undefined): any {
 			return "stop";
 	}
 }
-
 
 
 

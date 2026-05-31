@@ -3316,7 +3316,8 @@ components:
           description: >
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch`.
+            `gateway:web_search`, `gateway:web_fetch`, and
+            `gateway:apply_patch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
@@ -3703,17 +3704,35 @@ components:
           minimum: 1
           maximum: 50000
       additionalProperties: false
+    GatewayApplyPatchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway validates a proposed
+        Codex-style apply_patch block and returns it as an artifact without
+        applying files on the server.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:apply_patch
+        parameters:
+          type: object
+          additionalProperties: false
+      additionalProperties: false
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
         - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
         - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
         - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
+        - $ref: '#/components/schemas/GatewayApplyPatchToolDefinition'
     TextToolChoice:
       description: >
-        Tool selection strategy. `gateway:datetime`, `gateway:web_search`, and
-        `gateway:web_fetch` are accepted and rewritten by the gateway into
-        upstream function/tool targets.
+        Tool selection strategy. `gateway:datetime`, `gateway:web_search`,
+        `gateway:web_fetch`, and `gateway:apply_patch` are accepted and
+        rewritten by the gateway into upstream function/tool targets.
       oneOf:
         - type: string
           enum:
@@ -3723,6 +3742,7 @@ components:
             - gateway:datetime
             - gateway:web_search
             - gateway:web_fetch
+            - gateway:apply_patch
         - type: object
     ServerToolUsage:
       type: object
@@ -3734,6 +3754,9 @@ components:
           type: integer
           minimum: 0
         web_fetch_requests:
+          type: integer
+          minimum: 0
+        apply_patch_requests:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -3891,18 +3914,20 @@ components:
           description: >
             Anthropic-compatible tools plus gateway server tools. The only
             built-in gateway server tools are `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch`.
+            `gateway:web_search`, `gateway:web_fetch`, and
+            `gateway:apply_patch`.
           items:
             oneOf:
               - $ref: '#/components/schemas/AnthropicTool'
               - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
               - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
               - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
+              - $ref: '#/components/schemas/GatewayApplyPatchToolDefinition'
         tool_choice:
           description: >
             Anthropic tool choice object/string. `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch` are also accepted and
-            rewritten by the gateway.
+            `gateway:web_search`, `gateway:web_fetch`, and `gateway:apply_patch`
+            are also accepted and rewritten by the gateway.
           oneOf:
             - type: object
             - type: string
@@ -4095,7 +4120,8 @@ components:
           description: >
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch`.
+            `gateway:web_search`, `gateway:web_fetch`, and
+            `gateway:apply_patch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         top_p:

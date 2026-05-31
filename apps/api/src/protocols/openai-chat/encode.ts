@@ -183,7 +183,8 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	if (
 		typeof serverToolUse?.datetime_requests === "number" ||
 		typeof serverToolUse?.web_search_requests === "number" ||
-		typeof serverToolUse?.web_fetch_requests === "number"
+		typeof serverToolUse?.web_fetch_requests === "number" ||
+		typeof serverToolUse?.apply_patch_requests === "number"
 	) {
 		(result as any).server_tool_use = {
 			...(typeof serverToolUse?.datetime_requests === "number"
@@ -195,9 +196,11 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 			...(typeof serverToolUse?.web_fetch_requests === "number"
 				? { web_fetch_requests: serverToolUse.web_fetch_requests }
 				: {}),
+			...(typeof serverToolUse?.apply_patch_requests === "number"
+				? { apply_patch_requests: serverToolUse.apply_patch_requests }
+				: {}),
 		};
 	}
 
 	return result;
 }
-

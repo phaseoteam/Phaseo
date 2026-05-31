@@ -122,6 +122,32 @@ describe("prepareServerToolsForTextRequest", () => {
 			),
 		).toBe(true);
 	});
+
+	it("rewrites gateway apply patch into a callable function tool", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "openai/gpt-5-codex",
+				tools: [{ type: "gateway:apply_patch" }],
+				tool_choice: "gateway:apply_patch",
+			},
+			"openai.responses",
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		}
+		expect(result.config.enabled).toBe(true);
+		expect(result.config.applyPatchEnabled).toBe(true);
+		expect(result.body.tool_choice).toEqual({
+			type: "function",
+			function: { name: "gateway_apply_patch" },
+		});
+		expect(
+			(result.body.tools as Array<{ function?: { name?: string } }>).some(
+				(tool) => tool.function?.name === "gateway_apply_patch",
+			),
+		).toBe(true);
+	});
 });
 
 describe("buildServerToolContinuation", () => {
@@ -195,6 +221,7 @@ describe("buildServerToolContinuation", () => {
 					webSearchIncludeHighlights: true,
 					webFetchEnabled: false,
 					webFetchMaxChars: 12000,
+					applyPatchEnabled: false,
 				},
 			);
 
@@ -212,6 +239,7 @@ describe("buildServerToolContinuation", () => {
 				datetimeRequests: 0,
 				webSearchRequests: 1,
 				webFetchRequests: 2,
+				applyPatchRequests: 0,
 			});
 			expect(continuation?.toolResults).toHaveLength(1);
 			expect(continuation?.toolResults[0]).toMatchObject({
@@ -271,11 +299,12 @@ describe("buildServerToolContinuation", () => {
 					webSearchEnabled: false,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
-					webSearchIncludeHighlights: true,
-					webFetchEnabled: true,
-					webFetchMaxChars: 12000,
-				},
-			);
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: true,
+				webFetchMaxChars: 12000,
+				applyPatchEnabled: false,
+			},
+		);
 
 			expect(fetchMock).toHaveBeenCalledTimes(1);
 			expect(fetchMock).toHaveBeenCalledWith(
@@ -289,6 +318,7 @@ describe("buildServerToolContinuation", () => {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
 				webFetchRequests: 1,
+				applyPatchRequests: 0,
 			});
 			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
 			expect(parsed).toMatchObject({
@@ -303,5 +333,64 @@ describe("buildServerToolContinuation", () => {
 			vi.unstubAllGlobals();
 		}
 	});
-});
 
+	it("captures gateway apply patch calls without applying files", async () => {
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_patch",
+									name: "gateway_apply_patch",
+									arguments: JSON.stringify({
+										summary: "Update greeting",
+										patch: [
+											"*** Begin Patch",
+											"*** Update File: hello.txt",
+											"@@",
+											"-hello",
+											"+hello world",
+											"*** End Patch",
+										].join("\n"),
+									}),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezone: "UTC",
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				applyPatchEnabled: true,
+			},
+		);
+
+		expect(continuation?.usage).toEqual({
+			datetimeRequests: 0,
+			webSearchRequests: 0,
+			webFetchRequests: 0,
+			applyPatchRequests: 1,
+		});
+		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+		expect(parsed).toMatchObject({
+			type: "apply_patch",
+			format: "codex_v4a",
+			applied: false,
+			summary: "Update greeting",
+		});
+		expect(parsed.patch).toContain("*** Begin Patch");
+		expect(parsed.patch).toContain("*** End Patch");
+	});
+});

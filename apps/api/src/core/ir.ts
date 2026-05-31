@@ -731,6 +731,7 @@ export type IRUsage = {
 			datetime_requests?: number;
 			web_search_requests?: number;
 			web_fetch_requests?: number;
+			apply_patch_requests?: number;
 		};
 	};
 };
@@ -901,7 +902,6 @@ export function hasToolCalls(message: IRMessage): boolean {
 export function countTotalTokens(usage?: IRUsage): number {
 	return usage?.totalTokens ?? 0;
 }
-
 
 
 

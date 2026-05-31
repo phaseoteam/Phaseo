@@ -165,6 +165,7 @@ describe("runTextGeneratePipeline server tools", () => {
 				webSearchIncludeHighlights: true,
 				webFetchEnabled: false,
 				webFetchMaxChars: 12000,
+				applyPatchEnabled: false,
 			},
 		}));
 		getResponseCacheMock.mockReturnValue(null);
@@ -250,6 +251,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					datetimeRequests: 1,
 					webSearchRequests: 0,
 					webFetchRequests: 0,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -339,6 +341,7 @@ describe("runTextGeneratePipeline server tools", () => {
 			datetimeRequests: 1,
 			webSearchRequests: 0,
 			webFetchRequests: 0,
+			applyPatchRequests: 0,
 		});
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			1,
@@ -351,6 +354,7 @@ describe("runTextGeneratePipeline server tools", () => {
 				datetimeRequests: 1,
 				webSearchRequests: 0,
 				webFetchRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
@@ -364,6 +368,7 @@ describe("runTextGeneratePipeline server tools", () => {
 				datetimeRequests: 1,
 				webSearchRequests: 0,
 				webFetchRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 
@@ -438,6 +443,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					datetimeRequests: 1,
 					webSearchRequests: 0,
 					webFetchRequests: 0,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -632,6 +638,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					datetimeRequests: 0,
 					webSearchRequests: 1,
 					webFetchRequests: 2,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -748,6 +755,7 @@ describe("runTextGeneratePipeline server tools", () => {
 			datetimeRequests: 0,
 			webSearchRequests: 1,
 			webFetchRequests: 2,
+			applyPatchRequests: 0,
 		});
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			1,
@@ -760,6 +768,7 @@ describe("runTextGeneratePipeline server tools", () => {
 				datetimeRequests: 0,
 				webSearchRequests: 1,
 				webFetchRequests: 2,
+				applyPatchRequests: 0,
 			},
 		);
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
@@ -773,6 +782,7 @@ describe("runTextGeneratePipeline server tools", () => {
 				datetimeRequests: 0,
 				webSearchRequests: 1,
 				webFetchRequests: 2,
+				applyPatchRequests: 0,
 			},
 		);
 
@@ -859,6 +869,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					datetimeRequests: 0,
 					webSearchRequests: 0,
 					webFetchRequests: 1,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -989,6 +1000,7 @@ describe("runTextGeneratePipeline server tools", () => {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
 				webFetchRequests: 1,
+				applyPatchRequests: 0,
 			},
 		);
 

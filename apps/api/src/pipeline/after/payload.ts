@@ -24,6 +24,7 @@ function buildServerToolUsePayload(
 			datetime_requests?: number;
 			web_search_requests?: number;
 			web_fetch_requests?: number;
+			apply_patch_requests?: number;
 		}
 		| undefined,
 ) {
@@ -37,6 +38,9 @@ function buildServerToolUsePayload(
 			: {}),
 		...(typeof serverToolUse.web_fetch_requests === "number"
 			? { web_fetch_requests: serverToolUse.web_fetch_requests }
+			: {}),
+		...(typeof serverToolUse.apply_patch_requests === "number"
+			? { apply_patch_requests: serverToolUse.apply_patch_requests }
 			: {}),
 	};
 	return Object.keys(payload).length > 0 ? payload : undefined;
@@ -870,7 +874,6 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
 
 
 

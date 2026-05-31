@@ -1232,6 +1232,16 @@ public sealed class FunctionToolDefinition
 
 }
 
+public sealed class GatewayApplyPatchToolDefinition
+{
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class GatewayDatetimeToolDefinition
 {
 	[JsonPropertyName("parameters")]
@@ -2585,6 +2595,9 @@ public sealed class ResponsesWebSocketUpgradeRequiredResponse
 
 public sealed class ServerToolUsage
 {
+	[JsonPropertyName("apply_patch_requests")]
+	public int? ApplyPatchRequests { get; set; }
+
 	[JsonPropertyName("datetime_requests")]
 	public int? DatetimeRequests { get; set; }
 

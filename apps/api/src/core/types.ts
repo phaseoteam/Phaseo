@@ -239,6 +239,7 @@ export type GatewayUsage = {
         datetime_requests?: number;
         web_search_requests?: number;
         web_fetch_requests?: number;
+        apply_patch_requests?: number;
     };
 
 }

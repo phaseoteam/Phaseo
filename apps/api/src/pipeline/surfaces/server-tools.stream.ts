@@ -371,11 +371,15 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	const webFetchRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.web_fetch_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.web_fetch_requests);
-	if (datetimeRequests != null || webSearchRequests != null || webFetchRequests != null) {
+	const applyPatchRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.apply_patch_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.apply_patch_requests);
+	if (datetimeRequests != null || webSearchRequests != null || webFetchRequests != null || applyPatchRequests != null) {
 		ext.serverToolUse = {
 			...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 			...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
 			...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+			...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
 		};
 	}
 

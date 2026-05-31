@@ -84,6 +84,7 @@ The gateway currently exposes these built-in server tools:
 - `gateway:datetime`
 - `gateway:web_search`
 - `gateway:web_fetch`
+- `gateway:apply_patch`
 
 This tool runs on the gateway side (no client-side executor required). The gateway rewrites it into an upstream tool/function call, executes it, and feeds the tool result back into the model loop.
 
@@ -153,6 +154,25 @@ Notes:
 - Only HTTP(S) URLs and text-like content types are supported.
 - HTML content is reduced to bounded plain text before being injected back into the model loop.
 - Usage includes `usage.server_tool_use.web_fetch_requests`.
+
+### Apply patch example
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:apply_patch"
+    }
+  ]
+}
+```
+
+Notes:
+
+- The model supplies a `patch` string when it calls the tool.
+- The patch must use the Codex-style `*** Begin Patch` / `*** End Patch` envelope.
+- AI Stats validates and returns the patch as an artifact, but does not apply files on the server.
+- Usage includes `usage.server_tool_use.apply_patch_requests`.
 
 ## Streaming behavior
 

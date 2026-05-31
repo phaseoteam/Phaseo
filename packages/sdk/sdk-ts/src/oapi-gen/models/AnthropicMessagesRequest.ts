@@ -156,6 +156,10 @@ export interface AnthropicMessagesRequest {
           max_chars?: number;
         };
         type: "gateway:web_fetch";
+      }
+    | {
+        parameters?: {};
+        type: "gateway:apply_patch";
       }[];
   top_k?: number;
   top_p?: number;

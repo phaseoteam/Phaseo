@@ -492,6 +492,11 @@ const GatewayWebFetchToolSchema = z.object({
 	max_chars: z.number().int().positive().max(50000).optional(),
 });
 
+const GatewayApplyPatchToolSchema = z.object({
+	type: z.literal("gateway:apply_patch"),
+	parameters: z.object({}).optional(),
+});
+
 const OpenAINativeWebSearchToolSchema = z.object({
 	type: z.enum(OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES),
 }).passthrough();
@@ -579,6 +584,7 @@ export const ChatCompletionsSchema = z.object({
 			GatewayDatetimeToolSchema,
 			GatewayWebSearchToolSchema,
 			GatewayWebFetchToolSchema,
+			GatewayApplyPatchToolSchema,
 			OpenAINativeWebSearchToolSchema,
 		]),
 	).optional(),
@@ -685,6 +691,7 @@ export const AnthropicMessagesSchema = z.object({
 		GatewayDatetimeToolSchema,
 		GatewayWebSearchToolSchema,
 		GatewayWebFetchToolSchema,
+		GatewayApplyPatchToolSchema,
 		AnthropicNativeWebSearchToolSchema,
 	])).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),

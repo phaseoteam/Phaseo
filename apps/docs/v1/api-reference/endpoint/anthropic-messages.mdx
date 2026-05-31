@@ -24,8 +24,10 @@ Set `stream: true` to receive server-sent events in Anthropic format (`message_s
 - `gateway:datetime`
 - `gateway:web_search`
 - `gateway:web_fetch`
+- `gateway:apply_patch`
 
 AI Stats rewrites these tools to Anthropic-compatible format upstream, executes them server-side, and continues the tool loop.
+`gateway:apply_patch` captures a validated Codex-style patch artifact without applying files on the server.
 
 ## Native provider web search
 
@@ -79,4 +81,3 @@ curl https://api.phaseo.app/v1/messages \
 ```
 
 When used, the `usage.server_tool_use.*` counters report server-tool invocations.
-

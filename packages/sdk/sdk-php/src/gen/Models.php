@@ -893,6 +893,14 @@ class FunctionToolDefinition
 	public $type;
 }
 
+class GatewayApplyPatchToolDefinition
+{
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string */
+	public $type;
+}
+
 class GatewayDatetimeToolDefinition
 {
 	/** @var array<string, mixed>|null */
@@ -1879,6 +1887,8 @@ class ResponsesWebSocketUpgradeRequiredResponse
 
 class ServerToolUsage
 {
+	/** @var int|null */
+	public $apply_patch_requests;
 	/** @var int|null */
 	public $datetime_requests;
 	/** @var int|null */

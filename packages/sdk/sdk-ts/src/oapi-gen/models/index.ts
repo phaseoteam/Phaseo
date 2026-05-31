@@ -53,6 +53,7 @@ export type { ErrorUpstreamError } from "./ErrorUpstreamError.js";
 export type { FileResponse } from "./FileResponse.js";
 export type { FileUploadRequest } from "./FileUploadRequest.js";
 export type { FunctionToolDefinition } from "./FunctionToolDefinition.js";
+export type { GatewayApplyPatchToolDefinition } from "./GatewayApplyPatchToolDefinition.js";
 export type { GatewayDatetimeToolDefinition } from "./GatewayDatetimeToolDefinition.js";
 export type { GatewayModelsResponse } from "./GatewayModelsResponse.js";
 export type { GatewayWebFetchToolDefinition } from "./GatewayWebFetchToolDefinition.js";

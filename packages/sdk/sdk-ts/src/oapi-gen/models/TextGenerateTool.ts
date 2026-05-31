@@ -32,4 +32,8 @@ export type TextGenerateTool =
         max_chars?: number;
       };
       type: "gateway:web_fetch";
+    }
+  | {
+      parameters?: {};
+      type: "gateway:apply_patch";
     };

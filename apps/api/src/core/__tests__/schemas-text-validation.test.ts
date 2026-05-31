@@ -68,6 +68,17 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("accepts gateway apply patch server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "prepare a patch" }],
+			tools: [{ type: "gateway:apply_patch" }],
+			tool_choice: "gateway:apply_patch",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
 	it("rejects chat n", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
@@ -137,6 +148,17 @@ describe("text request schema validation", () => {
 				},
 			}],
 			tool_choice: "gateway:web_fetch",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway apply patch server tool on responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "prepare a patch",
+			tools: [{ type: "gateway:apply_patch" }],
+			tool_choice: "gateway:apply_patch",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -241,6 +263,16 @@ describe("text request schema validation", () => {
 				type: "gateway:datetime",
 				parameters: { timezone: "Europe/London" },
 			}],
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts gateway apply patch server tool on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "prepare a patch" }],
+			tools: [{ type: "gateway:apply_patch" }],
 		});
 		expect(parsed.success).toBe(true);
 	});
@@ -421,4 +453,3 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(false);
 	});
 });
-

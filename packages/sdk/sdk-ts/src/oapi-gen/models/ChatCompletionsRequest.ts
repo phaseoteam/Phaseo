@@ -191,6 +191,7 @@ export interface ChatCompletionsRequest {
     | "gateway:datetime"
     | "gateway:web_search"
     | "gateway:web_fetch"
+    | "gateway:apply_patch"
     | {};
   tools?:
     | {
@@ -226,6 +227,10 @@ export interface ChatCompletionsRequest {
           max_chars?: number;
         };
         type: "gateway:web_fetch";
+      }
+    | {
+        parameters?: {};
+        type: "gateway:apply_patch";
       }[];
   top_logprobs?: number;
   top_p?: number;

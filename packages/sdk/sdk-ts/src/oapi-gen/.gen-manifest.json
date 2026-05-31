@@ -58,6 +58,7 @@
     "models/FileResponse.ts",
     "models/FileUploadRequest.ts",
     "models/FunctionToolDefinition.ts",
+    "models/GatewayApplyPatchToolDefinition.ts",
     "models/GatewayDatetimeToolDefinition.ts",
     "models/GatewayModelsResponse.ts",
     "models/GatewayWebFetchToolDefinition.ts",

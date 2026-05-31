@@ -506,6 +506,11 @@ struct FunctionToolDefinition {
 	std::any type;
 };
 
+struct GatewayApplyPatchToolDefinition {
+	std::map<std::string, std::any> parameters;
+	std::any type;
+};
+
 struct GatewayDatetimeToolDefinition {
 	std::map<std::string, std::any> parameters;
 	std::string timezone;
@@ -1065,6 +1070,7 @@ struct ResponsesWebSocketUpgradeRequiredResponse {
 };
 
 struct ServerToolUsage {
+	std::optional<int> apply_patch_requests;
 	std::optional<int> datetime_requests;
 	std::optional<int> web_fetch_requests;
 	std::optional<int> web_search_requests;

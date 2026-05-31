@@ -502,6 +502,11 @@ pub struct FunctionToolDefinition {
 	pub r#type: String,
 }
 
+pub struct GatewayApplyPatchToolDefinition {
+	pub parameters: Option<HashMap<String, String>>,
+	pub r#type: String,
+}
+
 pub struct GatewayDatetimeToolDefinition {
 	pub parameters: Option<HashMap<String, String>>,
 	pub timezone: Option<String>,
@@ -1061,6 +1066,7 @@ pub struct ResponsesWebSocketUpgradeRequiredResponse {
 }
 
 pub struct ServerToolUsage {
+	pub apply_patch_requests: Option<i64>,
 	pub datetime_requests: Option<i64>,
 	pub web_fetch_requests: Option<i64>,
 	pub web_search_requests: Option<i64>,

@@ -733,6 +733,11 @@ module AiStats
     FunctionToolDefinition = Struct.new(:function, :type, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayApplyPatchToolDefinition = Struct.new(:parameters, :type, keyword_init: true)
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] timezone
     #   @return [String, nil]
     # @!attribute [rw] type
@@ -1531,13 +1536,15 @@ module AiStats
     # @!attribute [rw] error
     #   @return [Hash{String => Object}, nil]
     ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
+    # @!attribute [rw] apply_patch_requests
+    #   @return [Integer, nil]
     # @!attribute [rw] datetime_requests
     #   @return [Integer, nil]
     # @!attribute [rw] web_fetch_requests
     #   @return [Integer, nil]
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
-    ServerToolUsage = Struct.new(:datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    ServerToolUsage = Struct.new(:apply_patch_requests, :datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type

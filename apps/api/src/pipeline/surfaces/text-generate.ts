@@ -441,6 +441,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				datetimeRequests: 0,
 				webSearchRequests: 0,
 				webFetchRequests: 0,
+				applyPatchRequests: 0,
 			};
 			let aggregateUsage = (exec.result.ir as IRChatResponse).usage;
 			let latestIrResponse = exec.result.ir as IRChatResponse;
@@ -476,6 +477,7 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests;
 				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests;
 				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests;
+				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests;
 				searchObservability = mergeSearchObservability(
 					searchObservability,
 					buildManagedSearchObservabilityFromToolResults(continuation.toolResults),
@@ -576,7 +578,8 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			if (
 				serverToolUsage.datetimeRequests > 0 ||
 				serverToolUsage.webSearchRequests > 0 ||
-				serverToolUsage.webFetchRequests > 0
+				serverToolUsage.webFetchRequests > 0 ||
+				serverToolUsage.applyPatchRequests > 0
 			) {
 				const mergedUsage = attachServerToolUsage(aggregateUsage, {
 					...serverToolUsage,

@@ -210,7 +210,8 @@ function encodeUsage(
 		server_tool_use:
 			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||
 			typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number" ||
-			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
+			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number"
 				? {
 					...(typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
 						? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
@@ -220,6 +221,9 @@ function encodeUsage(
 						: {}),
 					...(typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
 						? { web_fetch_requests: anyUsage._ext.serverToolUse.web_fetch_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number"
+						? { apply_patch_requests: anyUsage._ext.serverToolUse.apply_patch_requests }
 						: {}),
 				}
 				: null,
@@ -259,4 +263,3 @@ function splitContentParts(
 	>;
 	return { text, reasoningParts, imageParts };
 }
-
