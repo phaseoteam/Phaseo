@@ -13,9 +13,54 @@
   "input_types": "text,video",
   "output_types": "text",
   "api_model_id": "google/gemini-3.5-flash",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://blog.google/intl/en-africa/products/explore-get-answers/gemini-3-5/"
+    }
+  ],
   "details": [],
   "benchmarks": [
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 76.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/intl/en-africa/products/explore-get-answers/gemini-3-5/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1656,
+      "is_self_reported": true,
+      "other_info": "Elo",
+      "source_link": "https://blog.google/intl/en-africa/products/explore-get-answers/gemini-3-5/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 83.6,
+      "is_self_reported": true,
+      "other_info": "MCP Atlas",
+      "source_link": "https://blog.google/intl/en-africa/products/explore-get-answers/gemini-3-5/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 84.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://blog.google/intl/en-africa/products/explore-get-answers/gemini-3-5/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "cursorbench-3.1",
+      "score": 49.8,
+      "is_self_reported": false,
+      "other_info": "Avg cost $1.94/task",
+      "source_link": "https://cursor.com/cursorbench",
+      "rank": 15
+    },
     {
       "benchmark_id": "deepswe",
       "score": 28,

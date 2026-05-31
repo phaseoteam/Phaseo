@@ -20,5 +20,14 @@
     }
   ],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "cursorbench-3.1",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": "Avg cost $0.55/task",
+      "source_link": "https://cursor.com/cursorbench",
+      "rank": 4
+    }
+  ]
 }
