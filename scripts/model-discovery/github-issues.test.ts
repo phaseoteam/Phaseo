@@ -64,7 +64,6 @@ const body = testingExports.buildIssueBody({
         { ...providerEntry, runUrl: "https://github.com/AI-Stats/AI-Stats/actions/runs/1" },
         providerSiblingEntry,
     ],
-    exposeModelDetails: true,
 });
 assert.match(body, /Tracking key: `ai-stats-upstream-discovery:/);
 assert.match(body, /Source: provider API/);
@@ -77,25 +76,12 @@ assert.match(body, /Unknown upstream models are intentionally included/);
 const hfBody = testingExports.buildIssueBody({
     group: hfAdditionGroup,
     recentEvents: [hfEntry],
-    exposeModelDetails: true,
 });
 assert.match(hfBody, /Source: Hugging Face/);
 assert.match(hfBody, /Provider\/org: openai/);
 assert.match(hfBody, /https:\/\/huggingface\.co\/openai\/example-hf-model/);
 
-const redactedBody = testingExports.buildIssueBody({
-    group: providerAdditionGroup,
-    recentEvents: [providerEntry],
-});
-assert.doesNotMatch(redactedBody, /gpt-5\.4-preview/);
-assert.match(redactedBody, /Model identifiers: redacted from this GitHub issue/);
-assert.match(redactedBody, /2 upstream model identifiers detected/);
-
-const redactedComment = testingExports.buildIssueComment(providerAdditionGroup, [providerEntry]);
-assert.doesNotMatch(redactedComment, /gpt-5\.4-preview/);
-assert.match(redactedComment, /\[redacted upstream model id\]/);
-
-const comment = testingExports.buildIssueComment(providerAdditionGroup, [providerEntry, providerSiblingEntry], true);
+const comment = testingExports.buildIssueComment(providerAdditionGroup, [providerEntry, providerSiblingEntry]);
 assert.match(comment, /another provider API additions signal/);
 assert.match(comment, /gpt-5\.4-mini-preview/);
 
@@ -189,8 +175,6 @@ async function main(): Promise<void> {
     assert.equal(issueTitle, "[upstream-discovery] OpenAI: provider model additions");
     assert.match(issueBody, /Latest action: additions/);
     assert.match(issueBody, /Models in this signal: 2/);
-    assert.doesNotMatch(issueBody, /gpt-5\.4-preview/);
-    assert.match(issueBody, /Model identifiers: redacted from this GitHub issue/);
 
     const secondProviderSync = await syncUpstreamDiscoveryIssues([{ ...providerEntry, ts: "2026-05-28T12:15:00.000Z" }], {
         token: "test-token",
