@@ -121,6 +121,14 @@
       "other_info": "Pass@1; DeepSeek-V4-Flash Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
       "rank": null
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 67.25,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 46
     }
   ]
 }

@@ -123,6 +123,38 @@
       "rank": 8
     },
     {
+      "benchmark_id": "livebench",
+      "score": 77.22,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; xHigh effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 75.88,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; high effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 74.15,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; medium effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 18
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 70.24,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release; low effort",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 34
+    },
+    {
       "benchmark_id": "deepswe",
       "score": 58,
       "is_self_reported": false,

@@ -57,6 +57,14 @@
       "other_info": null,
       "source_link": "https://artificialanalysis.ai/articles/xai-launches-grok-4-3-with-improved-agentic-performance-and-lower-pricing",
       "rank": null
+    },
+    {
+      "benchmark_id": "livebench",
+      "score": 66.74,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 47
     }
   ]
 }
