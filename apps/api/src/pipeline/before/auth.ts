@@ -175,6 +175,9 @@ export type AuthSuccess = {
     apiKeyKid: string;
     userId?: string | null;
     internal?: boolean;
+    authMethod?: "api_key" | "oauth";
+    oauthClientId?: string | null;
+    oauthScopes?: string[];
 };
 
 type AuthenticateOptions = {
@@ -492,6 +495,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
             workspaceId,
             userId: null,
             internal,
+            authMethod: "api_key",
         } as AuthSuccess;
     };
 
@@ -512,7 +516,10 @@ export async function authenticateManagement(
         return { ok: false, reason: "missing_or_invalid_authorization_header" };
     }
     if (isJWTFormat(token)) {
-        return { ok: false, reason: "management_key_required" };
+        if (!isGatewayOAuthJwt(token)) {
+            return { ok: false, reason: "management_key_required" };
+        }
+        return authenticateOAuth(req, token, options);
     }
 
     const parsed = parseV2(token);
@@ -592,6 +599,7 @@ export async function authenticateManagement(
         apiKeyKid: parsed.kid,
         userId: null,
         internal,
+        authMethod: "api_key",
     };
 }
 
@@ -606,6 +614,56 @@ export async function authenticateManagement(
 async function authenticateOAuth(req: Request, token: string, options: AuthenticateOptions = {}): Promise<AuthSuccess | AuthFailure> {
     const bindings = getBindings();
     const useKvCache = options.useKvCache ?? true;
+
+    try {
+        const { validateLocalAccessToken } = await import("@/lib/oauth/service");
+        const localValidation = await validateLocalAccessToken(token);
+        if (localValidation.valid && localValidation.claims) {
+            const claims = localValidation.claims;
+            const supabase = getSupabaseAdmin();
+            const { data: authorization, error: authError } = await supabase
+                .from("oauth_authorizations")
+                .select("revoked_at")
+                .eq("user_id", claims.user_id)
+                .eq("client_id", claims.client_id)
+                .eq("workspace_id", claims.workspace_id)
+                .maybeSingle();
+
+            if (authError) return { ok: false, reason: "oauth_db_error" };
+            if (!authorization || authorization.revoked_at !== null) {
+                return { ok: false, reason: "oauth_authorization_revoked" };
+            }
+
+            dispatchBackground((async () => {
+                configureRuntime(bindings);
+                try {
+                    await supabase
+                        .from("oauth_authorizations")
+                        .update({ last_used_at: new Date().toISOString() })
+                        .eq("user_id", claims.user_id)
+                        .eq("client_id", claims.client_id)
+                        .eq("workspace_id", claims.workspace_id);
+                } finally {
+                    clearRuntime();
+                }
+            })());
+
+            return {
+                ok: true,
+                workspaceId: claims.workspace_id,
+                apiKeyId: claims.client_id,
+                apiKeyRef: `oauth_${claims.client_id}`,
+                apiKeyKid: claims.client_id,
+                userId: claims.user_id,
+                internal: isInternalRequestAuthorized(req, bindings),
+                authMethod: "oauth",
+                oauthClientId: claims.client_id,
+                oauthScopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
+            } as AuthSuccess;
+        }
+    } catch {
+        // Fall through to the legacy Supabase OAuth validator below.
+    }
 
     // Check if SUPABASE_URL is configured
     const supabaseUrl = bindings.SUPABASE_URL;
@@ -710,6 +768,9 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
             apiKeyKid: claims.client_id,
             userId: claims.user_id,
             internal: isInternalRequestAuthorized(req, bindings),
+            authMethod: "oauth",
+            oauthClientId: claims.client_id,
+            oauthScopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
         } as AuthSuccess;
     } catch (error: any) {
         const message = String(error?.message ?? "");
@@ -751,5 +812,3 @@ function isGatewayOAuthJwt(token: string): boolean {
         typeof payload.client_id === "string"
     );
 }
-
-

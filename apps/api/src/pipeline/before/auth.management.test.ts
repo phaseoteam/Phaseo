@@ -13,32 +13,63 @@ type ManagementKeyRow = {
 const runtime = vi.hoisted(() => {
 	const backgroundTasks: Promise<unknown>[] = [];
 	const dbRow = { value: null as ManagementKeyRow | null };
+	const oauthAuthorizationRow = {
+		value: null as { revoked_at: string | null } | null,
+	};
 	const updatePayloads: Array<Record<string, unknown>> = [];
 
 	const maybeSingle = vi.fn(async () => ({
 		data: dbRow.value,
 		error: null,
 	}));
+	const oauthMaybeSingle = vi.fn(async () => ({
+		data: oauthAuthorizationRow.value,
+		error: null,
+	}));
 	const updateEq = vi.fn(async () => ({ error: null }));
+	const oauthUpdateEq = vi.fn(() => ({
+		eq: vi.fn(() => ({
+			eq: vi.fn(async () => ({ error: null })),
+		})),
+	}));
 
 	const supabase = {
 		from: vi.fn((table: string) => {
-			if (table !== "management_keys") {
-				throw new Error(`Unexpected table: ${table}`);
-			}
-			return {
-				select: () => ({
-					eq: () => ({
-						maybeSingle,
+			if (table === "oauth_authorizations") {
+				return {
+					select: () => ({
+						eq: () => ({
+							eq: () => ({
+								eq: () => ({
+									maybeSingle: oauthMaybeSingle,
+								}),
+							}),
+						}),
 					}),
-				}),
-				update: (payload: Record<string, unknown>) => {
-					updatePayloads.push(payload);
-					return {
-						eq: updateEq,
-					};
-				},
-			};
+					update: (payload: Record<string, unknown>) => {
+						updatePayloads.push(payload);
+						return {
+							eq: oauthUpdateEq,
+						};
+					},
+				};
+			}
+			if (table === "management_keys") {
+				return {
+					select: () => ({
+						eq: () => ({
+							maybeSingle,
+						}),
+					}),
+					update: (payload: Record<string, unknown>) => {
+						updatePayloads.push(payload);
+						return {
+							eq: updateEq,
+						};
+					},
+				};
+			}
+			throw new Error(`Unexpected table: ${table}`);
 		}),
 	};
 
@@ -46,6 +77,8 @@ const runtime = vi.hoisted(() => {
 		backgroundTasks,
 		dbRow,
 		maybeSingle,
+		oauthAuthorizationRow,
+		oauthMaybeSingle,
 		updateEq,
 		supabase,
 		updatePayloads,
@@ -69,6 +102,18 @@ vi.mock("@/runtime/env", () => ({
 	},
 	configureRuntime: () => undefined,
 	clearRuntime: () => undefined,
+}));
+
+vi.mock("@/lib/oauth/service", () => ({
+	validateLocalAccessToken: vi.fn(async () => ({
+		valid: true,
+		claims: {
+			user_id: "u1",
+			workspace_id: "w1",
+			client_id: "c1",
+			scope: "keys:read keys:write",
+		},
+	})),
 }));
 
 function buildRequest(token: string): Request {
@@ -95,12 +140,14 @@ describe("authenticateManagement", () => {
 	beforeEach(() => {
 		runtime.backgroundTasks.length = 0;
 		runtime.dbRow.value = null;
+		runtime.oauthAuthorizationRow.value = null;
 		runtime.updatePayloads.length = 0;
 		runtime.bindings.KEY_PEPPER = "pepper_test_value";
 		runtime.bindings.KEY_PEPPER_ACTIVE = undefined;
 		runtime.bindings.KEY_PEPPER_PREVIOUS = undefined;
 		runtime.supabase.from.mockClear();
 		runtime.maybeSingle.mockClear();
+		runtime.oauthMaybeSingle.mockClear();
 		runtime.updateEq.mockClear();
 		vi.resetModules();
 	});
@@ -172,8 +219,30 @@ describe("authenticateManagement", () => {
 		expect(result).toEqual({ ok: false, reason: "key_expired" });
 	});
 
-	it("rejects OAuth bearer tokens for management auth", async () => {
+	it("accepts active OAuth bearer tokens for management auth", async () => {
 		const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoidTEiLCJ3b3Jrc3BhY2VfaWQiOiJ3MSIsImNsaWVudF9pZCI6ImMxIn0.sig";
+		runtime.oauthAuthorizationRow.value = { revoked_at: null };
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(buildRequest(jwt));
+		await flushBackground();
+
+		expect(result).toMatchObject({
+			ok: true,
+			workspaceId: "w1",
+			apiKeyId: "c1",
+			authMethod: "oauth",
+			oauthClientId: "c1",
+			oauthScopes: ["keys:read", "keys:write"],
+		});
+		expect(runtime.updatePayloads).toContainEqual(
+			expect.objectContaining({
+				last_used_at: expect.any(String),
+			}),
+		);
+	});
+
+	it("rejects non-gateway JWT bearer tokens for management auth", async () => {
+		const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1MSJ9.sig";
 		const { authenticateManagement } = await import("./auth");
 		const result = await authenticateManagement(buildRequest(jwt));
 

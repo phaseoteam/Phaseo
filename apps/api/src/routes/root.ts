@@ -6,6 +6,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "./utils";
+import { getApiBaseUrl, getIssuer, getLocalJwks } from "@/lib/oauth/service";
 
 export const rootRouter = new Hono<Env>();
 
@@ -20,6 +21,36 @@ rootRouter.get(
     )
 );
 
+rootRouter.get(
+    "/.well-known/openid-configuration",
+    withRuntime(async () =>
+        json(
+            {
+                issuer: getIssuer(),
+                authorization_endpoint: `${getApiBaseUrl()}/oauth/authorize`,
+                token_endpoint: `${getApiBaseUrl()}/oauth/token`,
+                device_authorization_endpoint: `${getApiBaseUrl()}/oauth/device/code`,
+                revocation_endpoint: `${getApiBaseUrl()}/oauth/revoke`,
+                userinfo_endpoint: `${getApiBaseUrl()}/oauth/userinfo`,
+                jwks_uri: `${getApiBaseUrl()}/oauth/.well-known/jwks.json`,
+                response_types_supported: ["code"],
+                grant_types_supported: [
+                    "authorization_code",
+                    "refresh_token",
+                    "urn:ietf:params:oauth:grant-type:device_code",
+                ],
+                code_challenge_methods_supported: ["S256"],
+            },
+            200,
+            { "Cache-Control": "public, max-age=300" },
+        )
+    )
+);
+
+rootRouter.get(
+    "/.well-known/jwks.json",
+    withRuntime(async () => json(await getLocalJwks(), 200, { "Cache-Control": "public, max-age=300" }))
+);
 
 
 

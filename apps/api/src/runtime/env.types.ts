@@ -203,6 +203,9 @@ export type GatewayBindings = {
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
+    AI_STATS_WEB_BASE_URL?: string;
+    AI_STATS_OAUTH_PRIVATE_JWK?: string;
+    AI_STATS_OAUTH_TOKEN_PEPPER?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
     KEY_PEPPER_PREVIOUS?: string;

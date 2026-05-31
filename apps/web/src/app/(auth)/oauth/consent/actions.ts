@@ -2,6 +2,14 @@
 
 import { createClient } from "@/utils/supabase/server";
 
+function apiBaseUrl(): string {
+	return (
+		process.env.NEXT_PUBLIC_API_URL ??
+		process.env.NEXT_PUBLIC_GATEWAY_API_URL?.replace(/\/v1\/?$/, "") ??
+		"https://api.phaseo.app"
+	).replace(/\/+$/, "");
+}
+
 /**
  * OAuth Consent Server Actions
  *
@@ -204,19 +212,44 @@ export async function approveAuthorizationAction(
 			};
 		}
 
-		// Legacy fallback for older direct consent links.
-		const redirectUrl = new URL(input.redirect_uri);
-		redirectUrl.searchParams.set("error", "invalid_request");
-		redirectUrl.searchParams.set(
-			"error_description",
-			"Missing authorization_id. Please restart the OAuth flow."
-		);
-		if (input.state) {
-			redirectUrl.searchParams.set("state", input.state);
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+		if (!session?.access_token) {
+			return { error: "Unauthorized" };
 		}
+
+		const response = await fetch(`${apiBaseUrl()}/oauth/authorize/approve`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${session.access_token}`,
+			},
+			body: JSON.stringify({
+				client_id: resolvedClientId,
+				workspace_id: input.workspace_id,
+				scopes,
+				redirect_uri: input.redirect_uri,
+				state: input.state,
+				code_challenge: input.code_challenge,
+				code_challenge_method: input.code_challenge_method,
+			}),
+			cache: "no-store",
+		});
+		const payload = await response.json().catch(() => null);
+		if (!response.ok || !payload?.redirect_url) {
+			return {
+				error: String(
+					payload?.error_description ??
+						payload?.message ??
+						"Failed to finalize OAuth authorization"
+				),
+			};
+		}
+
 		return {
 			data: {
-				redirect_url: redirectUrl.toString(),
+				redirect_url: payload.redirect_url,
 			},
 		};
 	} catch (error: any) {
