@@ -3376,11 +3376,10 @@ components:
         service_tier:
           type: string
           enum:
-            - auto
-            - default
-            - flex
             - standard
             - priority
+            - flex
+            - batch
         prompt_cache_key:
           type: string
           nullable: true
@@ -4073,11 +4072,10 @@ components:
         service_tier:
           type: string
           enum:
-            - auto
-            - default
-            - flex
             - standard
             - priority
+            - flex
+            - batch
         store:
           type: boolean
         stream:

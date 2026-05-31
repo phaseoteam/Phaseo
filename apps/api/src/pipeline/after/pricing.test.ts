@@ -186,7 +186,7 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.totalNanos).toBe(12_000_000_000);
 	});
 
-	it("bills priority when speed fast conflicts with a standard service tier", () => {
+	it("uses standard pricing for explicit standard service tier", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
 			provider: "venice",
@@ -219,13 +219,13 @@ describe("after/pricing calculatePricing", () => {
 		};
 
 		const result = calculatePricing(
-			{ input_text_tokens: 1_000_000, service_tier: "priority" },
+			{ input_text_tokens: 1_000_000, service_tier: "standard" },
 			priorityCard,
-			{ speed: "fast", service_tier: "standard" },
+			{ service_tier: "standard" },
 		);
 
-		expect(result.totalNanos).toBe(12_000_000_000);
-		expect(result.pricedUsage?.pricing?.lines?.[0]?.unit_price_usd).toBe("12.000000000");
+		expect(result.totalNanos).toBe(6_000_000_000);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.unit_price_usd).toBe("6.000000000");
 	});
 
 	it("prefers a non-standard usage service tier over a conflicting standard request tier", () => {

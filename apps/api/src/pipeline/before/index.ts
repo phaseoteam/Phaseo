@@ -19,6 +19,7 @@ import type { ProviderEnablementDiagnostics } from "./types";
 import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
+import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
 
 function resolveRequestRoutingModeOverride(
     body: any,
@@ -87,6 +88,16 @@ export async function beforeRequest(
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
     if (!v.ok) return v as { ok: false; response: Response };
     const body = v.value;
+
+    const serviceTierValidation = validateSynchronousTextServiceTierRequest({
+        endpoint,
+        body,
+        requestId,
+        workspaceId,
+    });
+    if (serviceTierValidation.ok === false) {
+        return serviceTierValidation;
+    }
 
     // 4) Model + stream (required for provider selection)
     const m = await timer.span("guardModel", () => guardModel(body, workspaceId, requestId));
@@ -595,8 +606,6 @@ export async function beforeRequest(
 
     return { ok: true, ctx };
 }
-
-
 
 
 

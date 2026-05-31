@@ -11,25 +11,22 @@ import { deriveCachePricingContext } from "../pricing/cache-context";
 import { getBaseModel } from "../execute/utils";
 import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 
 function normalizeRequestedServiceTier(body: any, usage: any): string {
-    const speed = typeof body?.speed === "string" ? body.speed.trim().toLowerCase() : "";
-    if (speed === "fast") return "priority";
-
     const tiers = [
         usage?.service_tier,
         usage?.serviceTier,
-        body?.service_tier,
-        body?.serviceTier,
+        readRequestedServiceTier(body).value,
     ]
         .filter((value): value is string => typeof value === "string")
-        .map((value) => value.trim().toLowerCase())
+        .map((value) => normalizeTextServiceTier(value))
         .filter(Boolean);
 
     const nonStandardTier = tiers.find((tier) => tier === "priority" || tier === "batch" || tier === "flex");
     if (nonStandardTier) return nonStandardTier;
 
-    return tiers.find((tier) => tier === "standard" || tier === "default") ?? "";
+    return tiers.find((tier) => tier === "standard") ?? "";
 }
 
 function derivePricingPlan(body: any, usage: any): string {

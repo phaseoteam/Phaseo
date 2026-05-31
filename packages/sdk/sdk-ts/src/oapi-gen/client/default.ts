@@ -1024,7 +1024,7 @@ export type CreateChatCompletionParams = {
         };
     safety_identifier?: string | null;
     seed?: number;
-    service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+    service_tier?: "standard" | "priority" | "flex" | "batch";
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -2137,7 +2137,7 @@ export type CreateResponseParams = {
       summary?: "auto" | "concise" | "detailed";
     };
     safety_identifier?: string | null;
-    service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+    service_tier?: "standard" | "priority" | "flex" | "batch";
     session_id?: string;
     store?: boolean;
     stream?: boolean;

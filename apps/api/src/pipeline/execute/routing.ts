@@ -4,6 +4,7 @@
 // How: Captures routing snapshots for analytics and debugging.
 
 import type { Endpoint } from "@core/types";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import type {
     CapabilityRoutingStatus,
     ProviderCandidate,
@@ -409,10 +410,7 @@ function hasGlobalOfferSibling(
 }
 
 function normalizeRequestedServiceTier(body: any): string | null {
-	const speed = String(body?.speed ?? "").trim().toLowerCase();
-	if (speed === "fast") return "priority";
-	const tier = String(body?.service_tier ?? body?.serviceTier ?? "").trim().toLowerCase();
-	return tier || null;
+	return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
 }
 
 function hasSpecializedTierSibling(args: {
@@ -1045,4 +1043,3 @@ export async function routeProviders(
         diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
     };
 }
-
