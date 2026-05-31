@@ -139,7 +139,13 @@ async function main(): Promise<void> {
         const issueMatch = url.match(/\/repos\/AI-Stats\/AI-Stats\/issues\/(\d+)$/);
         if (issueMatch && method === "GET") {
             const issueNumber = Number(issueMatch[1]);
-            return Response.json({ number: issueNumber, html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`, state: "open" });
+            return Response.json({
+                number: issueNumber,
+                html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`,
+                state: "open",
+                title: issueTitle,
+                body: issueBody,
+            });
         }
 
         if (issueMatch && method === "PATCH") {
@@ -205,8 +211,53 @@ async function main(): Promise<void> {
     assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
 
 
-    const legacyRequests: Array<{ url: string; method: string; body?: unknown }> = [];
+    const maliciousSearchRequests: Array<{ url: string; method: string; body?: unknown }> = [];
     const legacyKey = testingExports.legacyProviderIssueKeyForGroup(providerEntry);
+    const maliciousSearchRequestImpl: typeof fetch = async (input, init) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+        const bodyText = typeof init?.body === "string" ? init.body : undefined;
+        const parsedBody = bodyText ? JSON.parse(bodyText) : undefined;
+        maliciousSearchRequests.push({ url, method, body: parsedBody });
+
+        if (url.includes("/search/issues") && url.includes(encodeURIComponent(testingExports.legacyMarkerForKey(legacyKey)))) {
+            return Response.json({ items: [{ number: 777, html_url: "https://github.com/AI-Stats/AI-Stats/issues/777", state: "open" }] });
+        }
+        if (url.includes("/search/issues")) {
+            return Response.json({ items: [] });
+        }
+        if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && method === "GET") {
+            return Response.json({
+                number: 777,
+                html_url: "https://github.com/AI-Stats/AI-Stats/issues/777",
+                state: "open",
+                title: "Unrelated issue",
+                body: "This issue only matched because an untrusted comment contained the marker.",
+            });
+        }
+        if (url.endsWith("/repos/AI-Stats/AI-Stats/issues") && method === "POST") {
+            return Response.json({ number: 778, html_url: "https://github.com/AI-Stats/AI-Stats/issues/778", state: "open" });
+        }
+        if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && method === "PATCH") {
+            return Response.json({ number: 777, html_url: "https://github.com/AI-Stats/AI-Stats/issues/777", state: "open" });
+        }
+        if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777/comments") && method === "POST") {
+            return Response.json({ id: 778 });
+        }
+        return new Response("not found", { status: 404 });
+    };
+    const maliciousSearchSync = await syncUpstreamDiscoveryIssues([providerEntry], {
+        token: "test-token",
+        repository: "AI-Stats/AI-Stats",
+        statePath: path.join(tempDir, "malicious-search-state.json"),
+        requestImpl: maliciousSearchRequestImpl,
+        logger,
+    });
+    assert.deepEqual(maliciousSearchSync, { created: 1, updated: 0, skipped: false });
+    assert.ok(!maliciousSearchRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && request.method === "PATCH"));
+    assert.ok(maliciousSearchRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
+
+    const legacyRequests: Array<{ url: string; method: string; body?: unknown }> = [];
     const legacyRequestImpl: typeof fetch = async (input, init) => {
         const url = String(input);
         const method = init?.method ?? "GET";
@@ -219,6 +270,16 @@ async function main(): Promise<void> {
         }
         if (url.includes("/search/issues")) {
             return Response.json({ items: [] });
+        }
+        if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && method === "GET") {
+            const legacyMarker = testingExports.legacyMarkerForKey(legacyKey);
+            return Response.json({
+                number: 777,
+                html_url: "https://github.com/AI-Stats/AI-Stats/issues/777",
+                state: "open",
+                title: "[model-discovery] OpenAI: provider model additions",
+                body: `<!-- ${legacyMarker} -->\nTracking key: \`${legacyMarker}\``,
+            });
         }
         if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && method === "PATCH") {
             return Response.json({ number: 777, html_url: "https://github.com/AI-Stats/AI-Stats/issues/777", state: "open" });

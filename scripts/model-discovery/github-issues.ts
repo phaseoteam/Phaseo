@@ -184,6 +184,16 @@ function legacyMarkerForKey(key: string): string {
     return `ai-stats-model-discovery:${key}`;
 }
 
+function issueBodyHasMarker(issue: GitHubIssue | null | undefined, marker: string): issue is GitHubIssue {
+    if (!issue || issue.state !== "open") return false;
+    const body = typeof issue.body === "string" ? issue.body : "";
+    return body.includes(`<!-- ${marker} -->`) || body.includes(`Tracking key: \`${marker}\``);
+}
+
+function issueBodyHasAnyMarker(issue: GitHubIssue | null | undefined, markers: string[]): issue is GitHubIssue {
+    return markers.some((marker) => issueBodyHasMarker(issue, marker));
+}
+
 function actionNoun(action: UpstreamDiscoveryIssueAction): string {
     if (action === "create") return "additions";
     if (action === "delete") return "deletions";
@@ -405,19 +415,30 @@ async function findOpenIssue(args: {
     legacyKey?: string;
     existingRecord?: UpstreamIssueRecord;
 }): Promise<GitHubIssue | null> {
+    const markers = [
+        markerForKey(args.key),
+        ...(args.legacyKey ? [legacyMarkerForKey(args.legacyKey)] : []),
+    ];
     const issueNumber = args.existingRecord?.issueNumber;
     if (typeof issueNumber === "number") {
         const issue = await args.client.getIssue(issueNumber);
-        if (issue?.state === "open") return issue;
+        if (issueBodyHasAnyMarker(issue, markers)) return issue;
     }
 
-    const marker = markerForKey(args.key);
-    const currentIssue = await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${marker}"`);
-    if (currentIssue) return currentIssue;
+    const marker = markers[0];
+    const currentIssue = await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open in:body "${marker}"`);
+    if (currentIssue) {
+        const issue = await args.client.getIssue(currentIssue.number);
+        if (issueBodyHasMarker(issue, marker)) return issue;
+    }
 
     if (args.legacyKey) {
         const legacyMarker = legacyMarkerForKey(args.legacyKey);
-        return await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open "${legacyMarker}"`);
+        const legacyIssue = await args.client.searchOpenIssue(`repo:${args.repository} is:issue is:open in:body "${legacyMarker}"`);
+        if (legacyIssue) {
+            const issue = await args.client.getIssue(legacyIssue.number);
+            if (issueBodyHasMarker(issue, legacyMarker)) return issue;
+        }
     }
 
     return null;
@@ -625,6 +646,7 @@ export const testingExports = {
     groupUpstreamIssueEntries,
     issueKeyForGroup,
     issueTitleForGroup,
+    issueBodyHasMarker,
     legacyMarkerForKey,
     legacyProviderIssueKeyForGroup,
     markerForKey,
