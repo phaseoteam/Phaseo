@@ -326,4 +326,42 @@ describe("after/pricing calculatePricing", () => {
 		);
 		expect(card?.model).toBe("anthropic/claude-opus-4.8-fast");
 	});
+
+	it("loads remapped api model pricing before provider-level base pricing fallback", async () => {
+		loadPriceCardMock.mockResolvedValue({
+			...TTS_CARD,
+			provider: "venice",
+			model: "anthropic/claude-opus-4.8-fast",
+		});
+
+		const card = await loadProviderPricing(
+			{
+				model: "anthropic/claude-opus-4.8",
+				capability: "text.generate",
+				pricing: {
+					venice: {
+						...TTS_CARD,
+						provider: "venice",
+						model: "anthropic/claude-opus-4.8",
+					},
+				},
+			} as any,
+			{
+				provider: "venice",
+				apiModelId: "anthropic/claude-opus-4.8-fast",
+				pricingKey: "venice:anthropic/claude-opus-4.8-fast",
+				generationTimeMs: 0,
+				kind: "completed",
+				bill: { usage: {} } as any,
+				upstream: new Response(null, { status: 200 }),
+			},
+		);
+
+		expect(loadPriceCardMock).toHaveBeenCalledWith(
+			"venice",
+			"anthropic/claude-opus-4.8-fast",
+			"text.generate",
+		);
+		expect(card?.model).toBe("anthropic/claude-opus-4.8-fast");
+	});
 });

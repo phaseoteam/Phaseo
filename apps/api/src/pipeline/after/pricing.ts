@@ -72,16 +72,19 @@ export async function loadProviderPricing(
                     : result.provider;
 
         let card = ctx.pricing?.[pricingKey] ?? null;
+        if (!card && pricingKey !== result.provider && apiModelId) {
+            card = await loadPriceCard(
+                result.provider,
+                apiModelId,
+                ctx.capability,
+            );
+        }
         if (!card && pricingKey !== result.provider) {
             card = ctx.pricing?.[result.provider] ?? null;
         }
 
         if (!card) {
-            card = await loadPriceCard(
-                result.provider,
-                apiModelId ?? getBaseModel(ctx.model),
-                ctx.capability,
-            );
+            card = await loadPriceCard(result.provider, getBaseModel(ctx.model), ctx.capability);
         }
 
         return card;
