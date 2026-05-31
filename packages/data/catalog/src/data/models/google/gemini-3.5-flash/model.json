@@ -78,6 +78,22 @@
       "rank": 13
     },
     {
+      "benchmark_id": "creative-story-writing",
+      "score": -1.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 95.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 5
+    },
+    {
       "benchmark_id": "deepswe",
       "score": 28,
       "is_self_reported": false,

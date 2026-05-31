@@ -32,6 +32,22 @@
       "other_info": null,
       "source_link": "https://simple-bench.com/",
       "rank": 9
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": 0.1,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 15
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 82.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 25
     }
   ]
 }

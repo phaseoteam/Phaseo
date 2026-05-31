@@ -129,6 +129,14 @@
       "other_info": "2026-01-08 release",
       "source_link": "https://livebench.ai/#/",
       "rank": 46
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 53.2,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 45
     }
   ]
 }

@@ -88,6 +88,14 @@
       "other_info": null,
       "source_link": "https://simple-bench.com/",
       "rank": 23
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 81.8,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 26
     }
   ]
 }

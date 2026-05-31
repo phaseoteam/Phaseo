@@ -351,12 +351,36 @@
       "rank": 7
     },
     {
+      "benchmark_id": "creative-story-writing",
+      "score": 2.2,
+      "is_self_reported": false,
+      "other_info": "16K thinking",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 6
+    },
+    {
       "benchmark_id": "simplebench",
       "score": 67.6,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/",
       "rank": 7
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 94.7,
+      "is_self_reported": false,
+      "other_info": "High reasoning",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 56.8,
+      "is_self_reported": false,
+      "other_info": "No reasoning",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 43
     }
   ]
 }

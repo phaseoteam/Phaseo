@@ -155,6 +155,38 @@
       "rank": 34
     },
     {
+      "benchmark_id": "creative-story-writing",
+      "score": 1.7,
+      "is_self_reported": false,
+      "other_info": "xHigh reasoning",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 7
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": 1.1,
+      "is_self_reported": false,
+      "other_info": "High reasoning",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 10
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 94.1,
+      "is_self_reported": false,
+      "other_info": "xHigh reasoning",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 92.2,
+      "is_self_reported": false,
+      "other_info": "High reasoning",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 12
+    },
+    {
       "benchmark_id": "deepswe",
       "score": 58,
       "is_self_reported": false,
