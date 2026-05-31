@@ -304,19 +304,33 @@ export type CreateAnthropicMessageParams = {
           type: "gateway:datetime";
         }
       | {
+          allowed_domains?: string[];
+          engine?: "auto" | "exa";
+          excluded_domains?: string[];
           include_highlights?: boolean;
           include_text?: boolean;
           max_results?: number;
+          max_total_results?: number;
           parameters?: {
+            allowed_domains?: string[];
+            engine?: "auto" | "exa";
+            excluded_domains?: string[];
             include_highlights?: boolean;
             include_text?: boolean;
             max_results?: number;
+            max_total_results?: number;
+            search_context_size?: "low" | "medium" | "high";
           };
+          search_context_size?: "low" | "medium" | "high";
           type: "gateway:web_search";
         }
       | {
+          allowed_domains?: string[];
+          excluded_domains?: string[];
           max_chars?: number;
           parameters?: {
+            allowed_domains?: string[];
+            excluded_domains?: string[];
             max_chars?: number;
           };
           type: "gateway:web_fetch";
@@ -324,6 +338,34 @@ export type CreateAnthropicMessageParams = {
       | {
           parameters?: {};
           type: "gateway:apply_patch";
+        }
+      | {
+          model?: string;
+          parameters?: {
+            background?: string;
+            model?: string;
+            n?: number;
+            output_format?: string;
+            quality?: string;
+            response_format?: string;
+            size?: string;
+          };
+          type: "gateway:image_generation";
+        }
+      | {
+          analysis_models?: string[];
+          include_web?: boolean;
+          model?: string;
+          parameters?: {
+            analysis_models?: string[];
+            include_web?: boolean;
+            model?: string;
+          };
+          type: "gateway:fusion";
+        }
+      | {
+          parameters?: {};
+          type: "gateway:tool_search";
         }[];
     top_k?: number;
     top_p?: number;
@@ -1043,6 +1085,9 @@ export type CreateChatCompletionParams = {
       | "gateway:web_search"
       | "gateway:web_fetch"
       | "gateway:apply_patch"
+      | "gateway:image_generation"
+      | "gateway:fusion"
+      | "gateway:tool_search"
       | {};
     tools?:
       | {
@@ -1062,19 +1107,33 @@ export type CreateChatCompletionParams = {
           type: "gateway:datetime";
         }
       | {
+          allowed_domains?: string[];
+          engine?: "auto" | "exa";
+          excluded_domains?: string[];
           include_highlights?: boolean;
           include_text?: boolean;
           max_results?: number;
+          max_total_results?: number;
           parameters?: {
+            allowed_domains?: string[];
+            engine?: "auto" | "exa";
+            excluded_domains?: string[];
             include_highlights?: boolean;
             include_text?: boolean;
             max_results?: number;
+            max_total_results?: number;
+            search_context_size?: "low" | "medium" | "high";
           };
+          search_context_size?: "low" | "medium" | "high";
           type: "gateway:web_search";
         }
       | {
+          allowed_domains?: string[];
+          excluded_domains?: string[];
           max_chars?: number;
           parameters?: {
+            allowed_domains?: string[];
+            excluded_domains?: string[];
             max_chars?: number;
           };
           type: "gateway:web_fetch";
@@ -1082,6 +1141,34 @@ export type CreateChatCompletionParams = {
       | {
           parameters?: {};
           type: "gateway:apply_patch";
+        }
+      | {
+          model?: string;
+          parameters?: {
+            background?: string;
+            model?: string;
+            n?: number;
+            output_format?: string;
+            quality?: string;
+            response_format?: string;
+            size?: string;
+          };
+          type: "gateway:image_generation";
+        }
+      | {
+          analysis_models?: string[];
+          include_web?: boolean;
+          model?: string;
+          parameters?: {
+            analysis_models?: string[];
+            include_web?: boolean;
+            model?: string;
+          };
+          type: "gateway:fusion";
+        }
+      | {
+          parameters?: {};
+          type: "gateway:tool_search";
         }[];
     top_logprobs?: number;
     top_p?: number;
@@ -1182,6 +1269,9 @@ export async function createChatCompletion(
     server_tool_use?: {
       apply_patch_requests?: number;
       datetime_requests?: number;
+      fusion_requests?: number;
+      image_generation_requests?: number;
+      tool_search_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
     };
@@ -1275,6 +1365,9 @@ export async function createChatCompletion(
       server_tool_use?: {
         apply_patch_requests?: number;
         datetime_requests?: number;
+        fusion_requests?: number;
+        image_generation_requests?: number;
+        tool_search_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
       };
@@ -1461,6 +1554,9 @@ export async function createEmbedding(
     server_tool_use?: {
       apply_patch_requests?: number;
       datetime_requests?: number;
+      fusion_requests?: number;
+      image_generation_requests?: number;
+      tool_search_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
     };
@@ -1483,6 +1579,9 @@ export async function createEmbedding(
       server_tool_use?: {
         apply_patch_requests?: number;
         datetime_requests?: number;
+        fusion_requests?: number;
+        image_generation_requests?: number;
+        tool_search_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
       };
@@ -1991,6 +2090,9 @@ export async function createRerank(
     server_tool_use?: {
       apply_patch_requests?: number;
       datetime_requests?: number;
+      fusion_requests?: number;
+      image_generation_requests?: number;
+      tool_search_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
     };
@@ -2019,6 +2121,9 @@ export async function createRerank(
       server_tool_use?: {
         apply_patch_requests?: number;
         datetime_requests?: number;
+        fusion_requests?: number;
+        image_generation_requests?: number;
+        tool_search_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
       };
@@ -2166,6 +2271,9 @@ export type CreateResponseParams = {
       | "gateway:web_search"
       | "gateway:web_fetch"
       | "gateway:apply_patch"
+      | "gateway:image_generation"
+      | "gateway:fusion"
+      | "gateway:tool_search"
       | {};
     tools?:
       | {
@@ -2185,19 +2293,33 @@ export type CreateResponseParams = {
           type: "gateway:datetime";
         }
       | {
+          allowed_domains?: string[];
+          engine?: "auto" | "exa";
+          excluded_domains?: string[];
           include_highlights?: boolean;
           include_text?: boolean;
           max_results?: number;
+          max_total_results?: number;
           parameters?: {
+            allowed_domains?: string[];
+            engine?: "auto" | "exa";
+            excluded_domains?: string[];
             include_highlights?: boolean;
             include_text?: boolean;
             max_results?: number;
+            max_total_results?: number;
+            search_context_size?: "low" | "medium" | "high";
           };
+          search_context_size?: "low" | "medium" | "high";
           type: "gateway:web_search";
         }
       | {
+          allowed_domains?: string[];
+          excluded_domains?: string[];
           max_chars?: number;
           parameters?: {
+            allowed_domains?: string[];
+            excluded_domains?: string[];
             max_chars?: number;
           };
           type: "gateway:web_fetch";
@@ -2205,6 +2327,34 @@ export type CreateResponseParams = {
       | {
           parameters?: {};
           type: "gateway:apply_patch";
+        }
+      | {
+          model?: string;
+          parameters?: {
+            background?: string;
+            model?: string;
+            n?: number;
+            output_format?: string;
+            quality?: string;
+            response_format?: string;
+            size?: string;
+          };
+          type: "gateway:image_generation";
+        }
+      | {
+          analysis_models?: string[];
+          include_web?: boolean;
+          model?: string;
+          parameters?: {
+            analysis_models?: string[];
+            include_web?: boolean;
+            model?: string;
+          };
+          type: "gateway:fusion";
+        }
+      | {
+          parameters?: {};
+          type: "gateway:tool_search";
         }[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -2294,6 +2444,9 @@ export async function createResponse(
     server_tool_use?: {
       apply_patch_requests?: number;
       datetime_requests?: number;
+      fusion_requests?: number;
+      image_generation_requests?: number;
+      tool_search_requests?: number;
       web_fetch_requests?: number;
       web_search_requests?: number;
     };
@@ -2377,6 +2530,9 @@ export async function createResponse(
       server_tool_use?: {
         apply_patch_requests?: number;
         datetime_requests?: number;
+        fusion_requests?: number;
+        image_generation_requests?: number;
+        tool_search_requests?: number;
         web_fetch_requests?: number;
         web_search_requests?: number;
       };

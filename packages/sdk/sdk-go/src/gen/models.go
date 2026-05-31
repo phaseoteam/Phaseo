@@ -1134,6 +1134,20 @@ type GatewayDatetimeToolDefinition struct {
 	Type string `json:"type"`
 }
 
+type GatewayFusionToolDefinition struct {
+	AnalysisModels *[]string `json:"analysis_models,omitempty"`
+	IncludeWeb *bool `json:"include_web,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
+type GatewayImageGenerationToolDefinition struct {
+	Model *string `json:"model,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
 type GatewayModelsResponse struct {
 	AvailabilityMode string `json:"availability_mode"`
 	Limit int `json:"limit"`
@@ -1144,17 +1158,29 @@ type GatewayModelsResponse struct {
 	Total int `json:"total"`
 }
 
+type GatewayToolSearchToolDefinition struct {
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Type string `json:"type"`
+}
+
 type GatewayWebFetchToolDefinition struct {
+	AllowedDomains *[]string `json:"allowed_domains,omitempty"`
+	ExcludedDomains *[]string `json:"excluded_domains,omitempty"`
 	MaxChars *int `json:"max_chars,omitempty"`
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 	Type string `json:"type"`
 }
 
 type GatewayWebSearchToolDefinition struct {
+	AllowedDomains *[]string `json:"allowed_domains,omitempty"`
+	Engine *string `json:"engine,omitempty"`
+	ExcludedDomains *[]string `json:"excluded_domains,omitempty"`
 	IncludeHighlights *bool `json:"include_highlights,omitempty"`
 	IncludeText *bool `json:"include_text,omitempty"`
 	MaxResults *int `json:"max_results,omitempty"`
+	MaxTotalResults *int `json:"max_total_results,omitempty"`
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	SearchContextSize *string `json:"search_context_size,omitempty"`
 	Type string `json:"type"`
 }
 
@@ -2197,6 +2223,9 @@ type ResponsesWebSocketUpgradeRequiredResponse struct {
 type ServerToolUsage struct {
 	ApplyPatchRequests *int `json:"apply_patch_requests,omitempty"`
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
+	FusionRequests *int `json:"fusion_requests,omitempty"`
+	ImageGenerationRequests *int `json:"image_generation_requests,omitempty"`
+	ToolSearchRequests *int `json:"tool_search_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
 }

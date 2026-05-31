@@ -3,13 +3,23 @@
  *
  */
 export interface GatewayWebSearchToolDefinition {
+  allowed_domains?: string[];
+  engine?: "auto" | "exa";
+  excluded_domains?: string[];
   include_highlights?: boolean;
   include_text?: boolean;
   max_results?: number;
+  max_total_results?: number;
   parameters?: {
+    allowed_domains?: string[];
+    engine?: "auto" | "exa";
+    excluded_domains?: string[];
     include_highlights?: boolean;
     include_text?: boolean;
     max_results?: number;
+    max_total_results?: number;
+    search_context_size?: "low" | "medium" | "high";
   };
+  search_context_size?: "low" | "medium" | "high";
   type: "gateway:web_search";
 }

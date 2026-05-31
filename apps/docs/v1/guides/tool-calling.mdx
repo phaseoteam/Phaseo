@@ -119,8 +119,13 @@ Notes:
     {
       "type": "gateway:web_search",
       "parameters": {
+        "engine": "exa",
         "max_results": 5,
-        "include_highlights": true
+        "max_total_results": 20,
+        "search_context_size": "medium",
+        "include_highlights": true,
+        "allowed_domains": ["example.com"],
+        "excluded_domains": ["reddit.com"]
       }
     }
   ]
@@ -173,6 +178,55 @@ Notes:
 - The patch must use the Codex-style `*** Begin Patch` / `*** End Patch` envelope.
 - AI Stats validates and returns the patch as an artifact, but does not apply files on the server.
 - Usage includes `usage.server_tool_use.apply_patch_requests`.
+
+### Image generation example
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-latest"
+      }
+    }
+  ]
+}
+```
+
+The model supplies the image prompt when it calls the tool. AI Stats runs the image request through the normal image generation endpoint, so provider routing, pricing, billing, and audit behavior match a direct `/v1/images/generations` request. Usage includes `usage.server_tool_use.image_generation_requests`.
+
+### Fusion example
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:fusion",
+      "parameters": {
+        "analysis_models": ["openai/gpt-5.5"],
+        "include_web": true
+      }
+    }
+  ]
+}
+```
+
+Fusion lets the model request a bounded multi-model analysis panel when the task needs a second opinion or structured critique. Inner analysis calls are normal gateway requests and may use gateway web search/fetch when enabled. Usage includes `usage.server_tool_use.fusion_requests`.
+
+### Tool search example
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:tool_search"
+    }
+  ]
+}
+```
+
+Tool search returns matching AI Stats server-tool definitions from the local gateway catalog. Usage includes `usage.server_tool_use.tool_search_requests`.
 
 ## Streaming behavior
 

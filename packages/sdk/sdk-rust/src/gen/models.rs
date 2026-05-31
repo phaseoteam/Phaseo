@@ -513,6 +513,20 @@ pub struct GatewayDatetimeToolDefinition {
 	pub r#type: String,
 }
 
+pub struct GatewayFusionToolDefinition {
+	pub analysis_models: Option<Vec<String>>,
+	pub include_web: Option<bool>,
+	pub model: Option<String>,
+	pub parameters: Option<HashMap<String, String>>,
+	pub r#type: String,
+}
+
+pub struct GatewayImageGenerationToolDefinition {
+	pub model: Option<String>,
+	pub parameters: Option<HashMap<String, String>>,
+	pub r#type: String,
+}
+
 pub struct GatewayModelsResponse {
 	pub availability_mode: String,
 	pub limit: i64,
@@ -523,17 +537,29 @@ pub struct GatewayModelsResponse {
 	pub total: i64,
 }
 
+pub struct GatewayToolSearchToolDefinition {
+	pub parameters: Option<HashMap<String, String>>,
+	pub r#type: String,
+}
+
 pub struct GatewayWebFetchToolDefinition {
+	pub allowed_domains: Option<Vec<String>>,
+	pub excluded_domains: Option<Vec<String>>,
 	pub max_chars: Option<i64>,
 	pub parameters: Option<HashMap<String, String>>,
 	pub r#type: String,
 }
 
 pub struct GatewayWebSearchToolDefinition {
+	pub allowed_domains: Option<Vec<String>>,
+	pub engine: Option<String>,
+	pub excluded_domains: Option<Vec<String>>,
 	pub include_highlights: Option<bool>,
 	pub include_text: Option<bool>,
 	pub max_results: Option<i64>,
+	pub max_total_results: Option<i64>,
 	pub parameters: Option<HashMap<String, String>>,
+	pub search_context_size: Option<String>,
 	pub r#type: String,
 }
 
@@ -1068,6 +1094,9 @@ pub struct ResponsesWebSocketUpgradeRequiredResponse {
 pub struct ServerToolUsage {
 	pub apply_patch_requests: Option<i64>,
 	pub datetime_requests: Option<i64>,
+	pub fusion_requests: Option<i64>,
+	pub image_generation_requests: Option<i64>,
+	pub tool_search_requests: Option<i64>,
 	pub web_fetch_requests: Option<i64>,
 	pub web_search_requests: Option<i64>,
 }

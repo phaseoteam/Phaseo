@@ -517,6 +517,20 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class GatewayFusionToolDefinition {
+		public java.util.List<String> analysis_models;
+		public Boolean include_web;
+		public String model;
+		public Object parameters;
+		public Object type;
+	}
+
+	public static class GatewayImageGenerationToolDefinition {
+		public String model;
+		public Object parameters;
+		public Object type;
+	}
+
 	public static class GatewayModelsResponse {
 		public Object availability_mode;
 		public Integer limit;
@@ -527,17 +541,29 @@ public final class Models {
 		public Integer total;
 	}
 
+	public static class GatewayToolSearchToolDefinition {
+		public Object parameters;
+		public Object type;
+	}
+
 	public static class GatewayWebFetchToolDefinition {
+		public java.util.List<String> allowed_domains;
+		public java.util.List<String> excluded_domains;
 		public Integer max_chars;
 		public Object parameters;
 		public Object type;
 	}
 
 	public static class GatewayWebSearchToolDefinition {
+		public java.util.List<String> allowed_domains;
+		public Object engine;
+		public java.util.List<String> excluded_domains;
 		public Boolean include_highlights;
 		public Boolean include_text;
 		public Integer max_results;
+		public Integer max_total_results;
 		public Object parameters;
+		public Object search_context_size;
 		public Object type;
 	}
 
@@ -1079,6 +1105,9 @@ public final class Models {
 	public static class ServerToolUsage {
 		public Integer apply_patch_requests;
 		public Integer datetime_requests;
+		public Integer fusion_requests;
+		public Integer image_generation_requests;
+		public Integer tool_search_requests;
 		public Integer web_fetch_requests;
 		public Integer web_search_requests;
 	}

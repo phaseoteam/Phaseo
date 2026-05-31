@@ -474,26 +474,73 @@ const GatewayDatetimeToolSchema = z.object({
 const GatewayWebSearchToolSchema = z.object({
 	type: z.literal("gateway:web_search"),
 	parameters: z.object({
-		max_results: z.number().int().positive().max(10).optional(),
+		engine: z.enum(["auto", "exa"]).optional(),
+		max_results: z.number().int().positive().max(25).optional(),
+		max_total_results: z.number().int().positive().max(100).optional(),
+		search_context_size: z.enum(["low", "medium", "high"]).optional(),
 		include_text: z.boolean().optional(),
 		include_highlights: z.boolean().optional(),
+		allowed_domains: z.array(z.string().min(1)).optional(),
+		excluded_domains: z.array(z.string().min(1)).optional(),
+		user_location: z.record(z.string(), z.any()).optional(),
 	}).optional(),
-	max_results: z.number().int().positive().max(10).optional(),
+	engine: z.enum(["auto", "exa"]).optional(),
+	max_results: z.number().int().positive().max(25).optional(),
+	max_total_results: z.number().int().positive().max(100).optional(),
+	search_context_size: z.enum(["low", "medium", "high"]).optional(),
 	include_text: z.boolean().optional(),
 	include_highlights: z.boolean().optional(),
+	allowed_domains: z.array(z.string().min(1)).optional(),
+	excluded_domains: z.array(z.string().min(1)).optional(),
+	user_location: z.record(z.string(), z.any()).optional(),
 });
 
 const GatewayWebFetchToolSchema = z.object({
 	type: z.literal("gateway:web_fetch"),
 	parameters: z.object({
 		max_chars: z.number().int().positive().max(50000).optional(),
+		allowed_domains: z.array(z.string().min(1)).optional(),
+		excluded_domains: z.array(z.string().min(1)).optional(),
 	}).optional(),
 	url: z.string().url().optional(),
 	max_chars: z.number().int().positive().max(50000).optional(),
+	allowed_domains: z.array(z.string().min(1)).optional(),
+	excluded_domains: z.array(z.string().min(1)).optional(),
 });
 
 const GatewayApplyPatchToolSchema = z.object({
 	type: z.literal("gateway:apply_patch"),
+	parameters: z.object({}).optional(),
+});
+
+const GatewayImageGenerationToolSchema = z.object({
+	type: z.literal("gateway:image_generation"),
+	parameters: z.object({
+		model: z.string().min(1).optional(),
+		size: z.string().min(1).optional(),
+		quality: z.string().min(1).optional(),
+		n: z.number().int().positive().max(10).optional(),
+		response_format: z.string().min(1).optional(),
+		output_format: z.string().min(1).optional(),
+		background: z.string().min(1).optional(),
+	}).optional(),
+	model: z.string().min(1).optional(),
+});
+
+const GatewayFusionToolSchema = z.object({
+	type: z.literal("gateway:fusion"),
+	parameters: z.object({
+		analysis_models: z.array(z.string().min(1)).max(5).optional(),
+		model: z.string().min(1).optional(),
+		include_web: z.boolean().optional(),
+	}).optional(),
+	analysis_models: z.array(z.string().min(1)).max(5).optional(),
+	model: z.string().min(1).optional(),
+	include_web: z.boolean().optional(),
+});
+
+const GatewayToolSearchToolSchema = z.object({
+	type: z.literal("gateway:tool_search"),
 	parameters: z.object({}).optional(),
 });
 
@@ -585,6 +632,9 @@ export const ChatCompletionsSchema = z.object({
 			GatewayWebSearchToolSchema,
 			GatewayWebFetchToolSchema,
 			GatewayApplyPatchToolSchema,
+			GatewayImageGenerationToolSchema,
+			GatewayFusionToolSchema,
+			GatewayToolSearchToolSchema,
 			OpenAINativeWebSearchToolSchema,
 		]),
 	).optional(),
@@ -692,6 +742,9 @@ export const AnthropicMessagesSchema = z.object({
 		GatewayWebSearchToolSchema,
 		GatewayWebFetchToolSchema,
 		GatewayApplyPatchToolSchema,
+		GatewayImageGenerationToolSchema,
+		GatewayFusionToolSchema,
+		GatewayToolSearchToolSchema,
 		AnthropicNativeWebSearchToolSchema,
 	])).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),

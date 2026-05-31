@@ -517,6 +517,20 @@ struct GatewayDatetimeToolDefinition {
 	std::any type;
 };
 
+struct GatewayFusionToolDefinition {
+	std::vector<std::string> analysis_models;
+	std::optional<bool> include_web;
+	std::string model;
+	std::map<std::string, std::any> parameters;
+	std::any type;
+};
+
+struct GatewayImageGenerationToolDefinition {
+	std::string model;
+	std::map<std::string, std::any> parameters;
+	std::any type;
+};
+
 struct GatewayModelsResponse {
 	std::any availability_mode;
 	int limit;
@@ -527,17 +541,29 @@ struct GatewayModelsResponse {
 	int total;
 };
 
+struct GatewayToolSearchToolDefinition {
+	std::map<std::string, std::any> parameters;
+	std::any type;
+};
+
 struct GatewayWebFetchToolDefinition {
+	std::vector<std::string> allowed_domains;
+	std::vector<std::string> excluded_domains;
 	std::optional<int> max_chars;
 	std::map<std::string, std::any> parameters;
 	std::any type;
 };
 
 struct GatewayWebSearchToolDefinition {
+	std::vector<std::string> allowed_domains;
+	std::any engine;
+	std::vector<std::string> excluded_domains;
 	std::optional<bool> include_highlights;
 	std::optional<bool> include_text;
 	std::optional<int> max_results;
+	std::optional<int> max_total_results;
 	std::map<std::string, std::any> parameters;
+	std::any search_context_size;
 	std::any type;
 };
 
@@ -1072,6 +1098,9 @@ struct ResponsesWebSocketUpgradeRequiredResponse {
 struct ServerToolUsage {
 	std::optional<int> apply_patch_requests;
 	std::optional<int> datetime_requests;
+	std::optional<int> fusion_requests;
+	std::optional<int> image_generation_requests;
+	std::optional<int> tool_search_requests;
 	std::optional<int> web_fetch_requests;
 	std::optional<int> web_search_requests;
 };

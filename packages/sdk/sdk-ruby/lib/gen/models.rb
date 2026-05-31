@@ -743,6 +743,24 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     GatewayDatetimeToolDefinition = Struct.new(:parameters, :timezone, :type, keyword_init: true)
+    # @!attribute [rw] analysis_models
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] include_web
+    #   @return [Boolean, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayFusionToolDefinition = Struct.new(:analysis_models, :include_web, :model, :parameters, :type, keyword_init: true)
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayImageGenerationToolDefinition = Struct.new(:model, :parameters, :type, keyword_init: true)
     # @!attribute [rw] availability_mode
     #   @return [String]
     # @!attribute [rw] limit
@@ -758,24 +776,43 @@ module AiStats
     # @!attribute [rw] total
     #   @return [Integer]
     GatewayModelsResponse = Struct.new(:availability_mode, :limit, :models, :offset, :ok, :privacy_scope, :total, keyword_init: true)
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayToolSearchToolDefinition = Struct.new(:parameters, :type, keyword_init: true)
+    # @!attribute [rw] allowed_domains
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] excluded_domains
+    #   @return [Array<String>, nil]
     # @!attribute [rw] max_chars
     #   @return [Integer, nil]
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] type
     #   @return [String]
-    GatewayWebFetchToolDefinition = Struct.new(:max_chars, :parameters, :type, keyword_init: true)
+    GatewayWebFetchToolDefinition = Struct.new(:allowed_domains, :excluded_domains, :max_chars, :parameters, :type, keyword_init: true)
+    # @!attribute [rw] allowed_domains
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] engine
+    #   @return [String, nil]
+    # @!attribute [rw] excluded_domains
+    #   @return [Array<String>, nil]
     # @!attribute [rw] include_highlights
     #   @return [Boolean, nil]
     # @!attribute [rw] include_text
     #   @return [Boolean, nil]
     # @!attribute [rw] max_results
     #   @return [Integer, nil]
+    # @!attribute [rw] max_total_results
+    #   @return [Integer, nil]
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] search_context_size
+    #   @return [String, nil]
     # @!attribute [rw] type
     #   @return [String]
-    GatewayWebSearchToolDefinition = Struct.new(:include_highlights, :include_text, :max_results, :parameters, :type, keyword_init: true)
+    GatewayWebSearchToolDefinition = Struct.new(:allowed_domains, :engine, :excluded_domains, :include_highlights, :include_text, :max_results, :max_total_results, :parameters, :search_context_size, :type, keyword_init: true)
     # @!attribute [rw] app_id
     #   @return [String, nil]
     # @!attribute [rw] byok
@@ -1540,11 +1577,17 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] datetime_requests
     #   @return [Integer, nil]
+    # @!attribute [rw] fusion_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] image_generation_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] tool_search_requests
+    #   @return [Integer, nil]
     # @!attribute [rw] web_fetch_requests
     #   @return [Integer, nil]
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
-    ServerToolUsage = Struct.new(:apply_patch_requests, :datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    ServerToolUsage = Struct.new(:apply_patch_requests, :datetime_requests, :fusion_requests, :image_generation_requests, :tool_search_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type

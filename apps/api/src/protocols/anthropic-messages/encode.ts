@@ -211,7 +211,10 @@ function encodeUsage(
 			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||
 			typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number" ||
 			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number" ||
-			typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number"
+			typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.image_generation_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.fusion_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.tool_search_requests === "number"
 				? {
 					...(typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
 						? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
@@ -224,6 +227,15 @@ function encodeUsage(
 						: {}),
 					...(typeof anyUsage?._ext?.serverToolUse?.apply_patch_requests === "number"
 						? { apply_patch_requests: anyUsage._ext.serverToolUse.apply_patch_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.image_generation_requests === "number"
+						? { image_generation_requests: anyUsage._ext.serverToolUse.image_generation_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.fusion_requests === "number"
+						? { fusion_requests: anyUsage._ext.serverToolUse.fusion_requests }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.tool_search_requests === "number"
+						? { tool_search_requests: anyUsage._ext.serverToolUse.tool_search_requests }
 						: {}),
 				}
 				: null,

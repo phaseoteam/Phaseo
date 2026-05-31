@@ -7,6 +7,33 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: (...args: any[]) => getBindingsMock(...args),
 }));
 
+const baseServerToolConfig = {
+	enabled: true,
+	datetimeDefaultTimezone: "UTC",
+	webSearchEnabled: false,
+	webSearchEngine: "exa" as const,
+	webSearchMaxResults: 5,
+	webSearchMaxTotalResults: null,
+	webSearchResultsUsed: 0,
+	webSearchContextSize: "medium" as const,
+	webSearchIncludeText: false,
+	webSearchIncludeHighlights: true,
+	webSearchAllowedDomains: [],
+	webSearchExcludedDomains: [],
+	webFetchEnabled: false,
+	webFetchMaxChars: 12000,
+	webFetchAllowedDomains: [],
+	webFetchExcludedDomains: [],
+	applyPatchEnabled: false,
+	imageGenerationEnabled: false,
+	imageGenerationModel: "openai/gpt-image-latest",
+	fusionEnabled: false,
+	fusionAnalysisModels: [],
+	fusionModel: null,
+	fusionIncludeWeb: true,
+	toolSearchEnabled: false,
+};
+
 describe("prepareServerToolsForTextRequest", () => {
 	beforeEach(() => {
 		getBindingsMock.mockReset();
@@ -148,6 +175,41 @@ describe("prepareServerToolsForTextRequest", () => {
 			),
 		).toBe(true);
 	});
+
+	it("rewrites image generation, fusion, and tool search server tools", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "anthropic/claude-opus-4.8",
+				tools: [
+					{ type: "gateway:image_generation", parameters: { model: "openai/gpt-image-latest" } },
+					{ type: "gateway:fusion", parameters: { analysis_models: ["openai/gpt-5.5"], include_web: false } },
+					{ type: "gateway:tool_search" },
+				],
+				tool_choice: "gateway:tool_search",
+			},
+			"openai.chat",
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		}
+		expect(result.config.imageGenerationEnabled).toBe(true);
+		expect(result.config.fusionEnabled).toBe(true);
+		expect(result.config.toolSearchEnabled).toBe(true);
+		expect(result.config.fusionIncludeWeb).toBe(false);
+		expect(result.body.tool_choice).toEqual({
+			type: "function",
+			function: { name: "gateway_tool_search" },
+		});
+		const functionNames = (result.body.tools as Array<{ function?: { name?: string } }>)
+			.map((tool) => tool.function?.name)
+			.filter(Boolean);
+		expect(functionNames).toEqual([
+			"gateway_image_generation",
+			"gateway_fusion",
+			"gateway_tool_search",
+		]);
+	});
 });
 
 describe("buildServerToolContinuation", () => {
@@ -213,15 +275,8 @@ describe("buildServerToolContinuation", () => {
 					],
 				} as any,
 				{
-					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					...baseServerToolConfig,
 					webSearchEnabled: true,
-					webSearchMaxResults: 5,
-					webSearchIncludeText: false,
-					webSearchIncludeHighlights: true,
-					webFetchEnabled: false,
-					webFetchMaxChars: 12000,
-					applyPatchEnabled: false,
 				},
 			);
 
@@ -235,11 +290,20 @@ describe("buildServerToolContinuation", () => {
 					}),
 				}),
 			);
+			const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+			expect(body).toMatchObject({
+				query: "latest AI policy",
+				numResults: 2,
+				type: "auto",
+			});
 			expect(continuation?.usage).toEqual({
 				datetimeRequests: 0,
 				webSearchRequests: 1,
 				webFetchRequests: 2,
 				applyPatchRequests: 0,
+				imageGenerationRequests: 0,
+				fusionRequests: 0,
+				toolSearchRequests: 0,
 			});
 			expect(continuation?.toolResults).toHaveLength(1);
 			expect(continuation?.toolResults[0]).toMatchObject({
@@ -253,6 +317,68 @@ describe("buildServerToolContinuation", () => {
 				query: "latest AI policy",
 			});
 			expect(parsed.results).toHaveLength(2);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("applies gateway web search domain filters and cumulative result limits", async () => {
+		const fetchMock = vi.fn(async () =>
+			new Response(
+				JSON.stringify({
+					requestId: "exa_req_filters",
+					results: [
+						{ title: "A", url: "https://example.com/a", highlights: ["A"] },
+						{ title: "B", url: "https://example.com/b", highlights: ["B"] },
+					],
+				}),
+				{ status: 200, headers: { "Content-Type": "application/json" } },
+			),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [
+						{
+							message: {
+								role: "assistant",
+								content: [],
+								toolCalls: [
+									{
+										id: "call_search",
+										name: "gateway_web_search",
+										arguments: JSON.stringify({
+											query: "agent search tools",
+											max_results: 5,
+										}),
+									},
+								],
+							},
+							finishReason: "tool_calls",
+						},
+					],
+				} as any,
+				{
+					...baseServerToolConfig,
+					webSearchEnabled: true,
+					webSearchMaxResults: 5,
+					webSearchMaxTotalResults: 2,
+					webSearchAllowedDomains: ["example.com"],
+					webSearchExcludedDomains: ["reddit.com"],
+				},
+			);
+
+			const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+			expect(body).toMatchObject({
+				numResults: 2,
+				includeDomains: ["example.com"],
+				excludeDomains: ["reddit.com"],
+			});
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed.results).toHaveLength(2);
+			expect(parsed.results_used).toBe(2);
 		} finally {
 			vi.unstubAllGlobals();
 		}
@@ -293,16 +419,9 @@ describe("buildServerToolContinuation", () => {
 						},
 					],
 				} as any,
-				{
-					enabled: true,
-					datetimeDefaultTimezone: "UTC",
-					webSearchEnabled: false,
-					webSearchMaxResults: 5,
-					webSearchIncludeText: false,
-				webSearchIncludeHighlights: true,
+			{
+				...baseServerToolConfig,
 				webFetchEnabled: true,
-				webFetchMaxChars: 12000,
-				applyPatchEnabled: false,
 			},
 		);
 
@@ -319,6 +438,9 @@ describe("buildServerToolContinuation", () => {
 				webSearchRequests: 0,
 				webFetchRequests: 1,
 				applyPatchRequests: 0,
+				imageGenerationRequests: 0,
+				fusionRequests: 0,
+				toolSearchRequests: 0,
 			});
 			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
 			expect(parsed).toMatchObject({
@@ -365,14 +487,7 @@ describe("buildServerToolContinuation", () => {
 				],
 			} as any,
 			{
-				enabled: true,
-				datetimeDefaultTimezone: "UTC",
-				webSearchEnabled: false,
-				webSearchMaxResults: 5,
-				webSearchIncludeText: false,
-				webSearchIncludeHighlights: true,
-				webFetchEnabled: false,
-				webFetchMaxChars: 12000,
+				...baseServerToolConfig,
 				applyPatchEnabled: true,
 			},
 		);
@@ -382,6 +497,9 @@ describe("buildServerToolContinuation", () => {
 			webSearchRequests: 0,
 			webFetchRequests: 0,
 			applyPatchRequests: 1,
+			imageGenerationRequests: 0,
+			fusionRequests: 0,
+			toolSearchRequests: 0,
 		});
 		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
 		expect(parsed).toMatchObject({
@@ -392,5 +510,50 @@ describe("buildServerToolContinuation", () => {
 		});
 		expect(parsed.patch).toContain("*** Begin Patch");
 		expect(parsed.patch).toContain("*** End Patch");
+	});
+
+	it("executes gateway tool search calls from the local server-tool catalog", async () => {
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_tool_search",
+									name: "gateway_tool_search",
+									arguments: JSON.stringify({
+										query: "image generation",
+										max_results: 3,
+									}),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				...baseServerToolConfig,
+				toolSearchEnabled: true,
+			},
+		);
+
+		expect(continuation?.usage).toEqual({
+			datetimeRequests: 0,
+			webSearchRequests: 0,
+			webFetchRequests: 0,
+			applyPatchRequests: 0,
+			imageGenerationRequests: 0,
+			fusionRequests: 0,
+			toolSearchRequests: 1,
+		});
+		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+		expect(parsed.results[0]).toMatchObject({
+			type: "gateway:image_generation",
+			function_name: "gateway_image_generation",
+		});
 	});
 });

@@ -911,6 +911,30 @@ class GatewayDatetimeToolDefinition
 	public $type;
 }
 
+class GatewayFusionToolDefinition
+{
+	/** @var array|null */
+	public $analysis_models;
+	/** @var bool|null */
+	public $include_web;
+	/** @var string|null */
+	public $model;
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string */
+	public $type;
+}
+
+class GatewayImageGenerationToolDefinition
+{
+	/** @var string|null */
+	public $model;
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string */
+	public $type;
+}
+
 class GatewayModelsResponse
 {
 	/** @var string */
@@ -929,8 +953,20 @@ class GatewayModelsResponse
 	public $total;
 }
 
+class GatewayToolSearchToolDefinition
+{
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string */
+	public $type;
+}
+
 class GatewayWebFetchToolDefinition
 {
+	/** @var array|null */
+	public $allowed_domains;
+	/** @var array|null */
+	public $excluded_domains;
 	/** @var int|null */
 	public $max_chars;
 	/** @var array<string, mixed>|null */
@@ -941,14 +977,24 @@ class GatewayWebFetchToolDefinition
 
 class GatewayWebSearchToolDefinition
 {
+	/** @var array|null */
+	public $allowed_domains;
+	/** @var string|null */
+	public $engine;
+	/** @var array|null */
+	public $excluded_domains;
 	/** @var bool|null */
 	public $include_highlights;
 	/** @var bool|null */
 	public $include_text;
 	/** @var int|null */
 	public $max_results;
+	/** @var int|null */
+	public $max_total_results;
 	/** @var array<string, mixed>|null */
 	public $parameters;
+	/** @var string|null */
+	public $search_context_size;
 	/** @var string */
 	public $type;
 }
@@ -1891,6 +1937,12 @@ class ServerToolUsage
 	public $apply_patch_requests;
 	/** @var int|null */
 	public $datetime_requests;
+	/** @var int|null */
+	public $fusion_requests;
+	/** @var int|null */
+	public $image_generation_requests;
+	/** @var int|null */
+	public $tool_search_requests;
 	/** @var int|null */
 	public $web_fetch_requests;
 	/** @var int|null */

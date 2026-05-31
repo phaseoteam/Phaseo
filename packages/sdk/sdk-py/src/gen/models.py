@@ -60,7 +60,7 @@ class AnthropicMessagesRequest(TypedDict):
 	system: NotRequired[Union[str, List[Dict[str, Any]]]]
 	temperature: NotRequired[float]
 	tool_choice: NotRequired[Union[Dict[str, Any], str]]
-	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
 	top_k: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
@@ -286,8 +286,8 @@ class ChatCompletionsRequest(TypedDict):
 	stream: NotRequired[bool]
 	stream_options: NotRequired[Dict[str, Any]]
 	temperature: NotRequired[float]
-	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch", "gateway:apply_patch"], Dict[str, Any]]]
-	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch", "gateway:apply_patch", "gateway:image_generation", "gateway:fusion", "gateway:tool_search"], Dict[str, Any]]]
+	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
 	top_logprobs: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
@@ -460,6 +460,18 @@ class GatewayDatetimeToolDefinition(TypedDict):
 	timezone: NotRequired[str]
 	type: Literal["gateway:datetime"]
 
+class GatewayFusionToolDefinition(TypedDict):
+	analysis_models: NotRequired[List[str]]
+	include_web: NotRequired[bool]
+	model: NotRequired[str]
+	parameters: NotRequired[Dict[str, Any]]
+	type: Literal["gateway:fusion"]
+
+class GatewayImageGenerationToolDefinition(TypedDict):
+	model: NotRequired[str]
+	parameters: NotRequired[Dict[str, Any]]
+	type: Literal["gateway:image_generation"]
+
 class GatewayModelsResponse(TypedDict):
 	availability_mode: Literal["active", "all"]
 	limit: int
@@ -469,16 +481,27 @@ class GatewayModelsResponse(TypedDict):
 	privacy_scope: Literal["shared", "team"]
 	total: int
 
+class GatewayToolSearchToolDefinition(TypedDict):
+	parameters: NotRequired[Dict[str, Any]]
+	type: Literal["gateway:tool_search"]
+
 class GatewayWebFetchToolDefinition(TypedDict):
+	allowed_domains: NotRequired[List[str]]
+	excluded_domains: NotRequired[List[str]]
 	max_chars: NotRequired[int]
 	parameters: NotRequired[Dict[str, Any]]
 	type: Literal["gateway:web_fetch"]
 
 class GatewayWebSearchToolDefinition(TypedDict):
+	allowed_domains: NotRequired[List[str]]
+	engine: NotRequired[Literal["auto", "exa"]]
+	excluded_domains: NotRequired[List[str]]
 	include_highlights: NotRequired[bool]
 	include_text: NotRequired[bool]
 	max_results: NotRequired[int]
+	max_total_results: NotRequired[int]
 	parameters: NotRequired[Dict[str, Any]]
+	search_context_size: NotRequired[Literal["low", "medium", "high"]]
 	type: Literal["gateway:web_search"]
 
 class GenerationResponse(TypedDict):
@@ -918,8 +941,8 @@ class ResponsesRequest(TypedDict):
 	stream: NotRequired[bool]
 	temperature: NotRequired[float]
 	text: NotRequired[Dict[str, Any]]
-	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch", "gateway:apply_patch"], Dict[str, Any]]]
-	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch", "gateway:apply_patch", "gateway:image_generation", "gateway:fusion", "gateway:tool_search"], Dict[str, Any]]]
+	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
 	top_p: NotRequired[float]
 	truncation: NotRequired[Literal["auto", "disabled"]]
 	usage: NotRequired[bool]
@@ -959,6 +982,9 @@ class ResponsesWebSocketUpgradeRequiredResponse(TypedDict):
 class ServerToolUsage(TypedDict):
 	apply_patch_requests: NotRequired[int]
 	datetime_requests: NotRequired[int]
+	fusion_requests: NotRequired[int]
+	image_generation_requests: NotRequired[int]
+	tool_search_requests: NotRequired[int]
 	web_fetch_requests: NotRequired[int]
 	web_search_requests: NotRequired[int]
 
@@ -966,13 +992,13 @@ class TextContentPart(TypedDict):
 	text: str
 	type: Literal["text"]
 
-TextGenerateTool = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]
+TextGenerateTool = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]
 
 class TextModerationInput(TypedDict):
 	text: str
 	type: Literal["text"]
 
-TextToolChoice = Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch", "gateway:apply_patch"], Dict[str, Any]]
+TextToolChoice = Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch", "gateway:apply_patch", "gateway:image_generation", "gateway:fusion", "gateway:tool_search"], Dict[str, Any]]
 
 class ToolCall(TypedDict):
 	function: Dict[str, Any]
@@ -1108,4 +1134,4 @@ class WorkspaceUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	slug: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayApplyPatchToolDefinition", "GatewayDatetimeToolDefinition", "GatewayModelsResponse", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "ServerToolUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]
+models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayApplyPatchToolDefinition", "GatewayDatetimeToolDefinition", "GatewayFusionToolDefinition", "GatewayImageGenerationToolDefinition", "GatewayModelsResponse", "GatewayToolSearchToolDefinition", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "ServerToolUsage", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]

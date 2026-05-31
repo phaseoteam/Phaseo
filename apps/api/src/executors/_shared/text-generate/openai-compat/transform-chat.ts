@@ -532,13 +532,34 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 		typeof serverToolUseRaw?.apply_patch_requests === "number"
 			? serverToolUseRaw.apply_patch_requests
 			: undefined;
+	const imageGenerationRequests =
+		typeof serverToolUseRaw?.image_generation_requests === "number"
+			? serverToolUseRaw.image_generation_requests
+			: undefined;
+	const fusionRequests =
+		typeof serverToolUseRaw?.fusion_requests === "number"
+			? serverToolUseRaw.fusion_requests
+			: undefined;
+	const toolSearchRequests =
+		typeof serverToolUseRaw?.tool_search_requests === "number"
+			? serverToolUseRaw.tool_search_requests
+			: undefined;
 	const serverToolUse =
-		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null || applyPatchRequests != null
+		datetimeRequests != null ||
+		webSearchRequests != null ||
+		webFetchRequests != null ||
+		applyPatchRequests != null ||
+		imageGenerationRequests != null ||
+		fusionRequests != null ||
+		toolSearchRequests != null
 			? {
 				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
 				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
 				...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
+				...(imageGenerationRequests != null ? { image_generation_requests: imageGenerationRequests } : {}),
+				...(fusionRequests != null ? { fusion_requests: fusionRequests } : {}),
+				...(toolSearchRequests != null ? { tool_search_requests: toolSearchRequests } : {}),
 			}
 			: undefined;
 
@@ -581,6 +602,5 @@ function mapFinishReason(reason: string | undefined): any {
 			return "stop";
 	}
 }
-
 
 

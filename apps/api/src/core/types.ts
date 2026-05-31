@@ -240,6 +240,9 @@ export type GatewayUsage = {
         web_search_requests?: number;
         web_fetch_requests?: number;
         apply_patch_requests?: number;
+        image_generation_requests?: number;
+        fusion_requests?: number;
+        tool_search_requests?: number;
     };
 
 }

@@ -1255,6 +1255,38 @@ public sealed class GatewayDatetimeToolDefinition
 
 }
 
+public sealed class GatewayFusionToolDefinition
+{
+	[JsonPropertyName("analysis_models")]
+	public List<string>? AnalysisModels { get; set; }
+
+	[JsonPropertyName("include_web")]
+	public bool? IncludeWeb { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class GatewayImageGenerationToolDefinition
+{
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class GatewayModelsResponse
 {
 	[JsonPropertyName("availability_mode")]
@@ -1280,8 +1312,24 @@ public sealed class GatewayModelsResponse
 
 }
 
+public sealed class GatewayToolSearchToolDefinition
+{
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class GatewayWebFetchToolDefinition
 {
+	[JsonPropertyName("allowed_domains")]
+	public List<string>? AllowedDomains { get; set; }
+
+	[JsonPropertyName("excluded_domains")]
+	public List<string>? ExcludedDomains { get; set; }
+
 	[JsonPropertyName("max_chars")]
 	public int? MaxChars { get; set; }
 
@@ -1295,6 +1343,15 @@ public sealed class GatewayWebFetchToolDefinition
 
 public sealed class GatewayWebSearchToolDefinition
 {
+	[JsonPropertyName("allowed_domains")]
+	public List<string>? AllowedDomains { get; set; }
+
+	[JsonPropertyName("engine")]
+	public string? Engine { get; set; }
+
+	[JsonPropertyName("excluded_domains")]
+	public List<string>? ExcludedDomains { get; set; }
+
 	[JsonPropertyName("include_highlights")]
 	public bool? IncludeHighlights { get; set; }
 
@@ -1304,8 +1361,14 @@ public sealed class GatewayWebSearchToolDefinition
 	[JsonPropertyName("max_results")]
 	public int? MaxResults { get; set; }
 
+	[JsonPropertyName("max_total_results")]
+	public int? MaxTotalResults { get; set; }
+
 	[JsonPropertyName("parameters")]
 	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("search_context_size")]
+	public string? SearchContextSize { get; set; }
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
@@ -2600,6 +2663,15 @@ public sealed class ServerToolUsage
 
 	[JsonPropertyName("datetime_requests")]
 	public int? DatetimeRequests { get; set; }
+
+	[JsonPropertyName("fusion_requests")]
+	public int? FusionRequests { get; set; }
+
+	[JsonPropertyName("image_generation_requests")]
+	public int? ImageGenerationRequests { get; set; }
+
+	[JsonPropertyName("tool_search_requests")]
+	public int? ToolSearchRequests { get; set; }
 
 	[JsonPropertyName("web_fetch_requests")]
 	public int? WebFetchRequests { get; set; }

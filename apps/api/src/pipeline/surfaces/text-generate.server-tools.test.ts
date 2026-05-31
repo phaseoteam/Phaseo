@@ -337,12 +337,12 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(consumeTextProtocolStreamToIRMock).toHaveBeenCalledTimes(1);
 		expect(buildServerToolContinuationMock).toHaveBeenCalledTimes(2);
 		expect(mergeIRUsageTotalsMock).toHaveBeenCalledWith(initialUsage, finalUsage);
-		expect(attachServerToolUsageMock).toHaveBeenCalledWith(mergedUsage, {
+		expect(attachServerToolUsageMock).toHaveBeenCalledWith(mergedUsage, expect.objectContaining({
 			datetimeRequests: 1,
 			webSearchRequests: 0,
 			webFetchRequests: 0,
 			applyPatchRequests: 0,
-		});
+		}));
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			1,
 			{
@@ -350,12 +350,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				completion_tokens: 5,
 				total_tokens: 11,
 			},
-			{
+			expect.objectContaining({
 				datetimeRequests: 1,
 				webSearchRequests: 0,
 				webFetchRequests: 0,
 				applyPatchRequests: 0,
-			},
+			}),
 		);
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			2,
@@ -364,12 +364,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				output_tokens: 5,
 				total_tokens: 11,
 			},
-			{
+			expect.objectContaining({
 				datetimeRequests: 1,
 				webSearchRequests: 0,
 				webFetchRequests: 0,
 				applyPatchRequests: 0,
-			},
+			}),
 		);
 
 		const followUpRequest = doRequestWithIRMock.mock.calls[1]?.[1];
@@ -751,12 +751,12 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(consumeTextProtocolStreamToIRMock).toHaveBeenCalledTimes(1);
 		expect(buildServerToolContinuationMock).toHaveBeenCalledTimes(2);
 		expect(mergeIRUsageTotalsMock).toHaveBeenCalledWith(initialUsage, finalUsage);
-		expect(attachServerToolUsageMock).toHaveBeenCalledWith(mergedUsage, {
+		expect(attachServerToolUsageMock).toHaveBeenCalledWith(mergedUsage, expect.objectContaining({
 			datetimeRequests: 0,
 			webSearchRequests: 1,
 			webFetchRequests: 2,
 			applyPatchRequests: 0,
-		});
+		}));
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			1,
 			{
@@ -764,12 +764,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				completion_tokens: 9,
 				total_tokens: 16,
 			},
-			{
+			expect.objectContaining({
 				datetimeRequests: 0,
 				webSearchRequests: 1,
 				webFetchRequests: 2,
 				applyPatchRequests: 0,
-			},
+			}),
 		);
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			2,
@@ -778,12 +778,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				output_tokens: 9,
 				total_tokens: 16,
 			},
-			{
+			expect.objectContaining({
 				datetimeRequests: 0,
 				webSearchRequests: 1,
 				webFetchRequests: 2,
 				applyPatchRequests: 0,
-			},
+			}),
 		);
 
 		const followUpRequest = doRequestWithIRMock.mock.calls[1]?.[1];
@@ -996,12 +996,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				outputTokens: 8,
 				totalTokens: 19,
 			},
-			{
+			expect.objectContaining({
 				datetimeRequests: 0,
 				webSearchRequests: 0,
 				webFetchRequests: 1,
 				applyPatchRequests: 0,
-			},
+			}),
 		);
 
 		const finalizeArgs = finalizeRequestMock.mock.calls[0]?.[0];

@@ -25,6 +25,9 @@ function buildServerToolUsePayload(
 			web_search_requests?: number;
 			web_fetch_requests?: number;
 			apply_patch_requests?: number;
+			image_generation_requests?: number;
+			fusion_requests?: number;
+			tool_search_requests?: number;
 		}
 		| undefined,
 ) {
@@ -41,6 +44,15 @@ function buildServerToolUsePayload(
 			: {}),
 		...(typeof serverToolUse.apply_patch_requests === "number"
 			? { apply_patch_requests: serverToolUse.apply_patch_requests }
+			: {}),
+		...(typeof serverToolUse.image_generation_requests === "number"
+			? { image_generation_requests: serverToolUse.image_generation_requests }
+			: {}),
+		...(typeof serverToolUse.fusion_requests === "number"
+			? { fusion_requests: serverToolUse.fusion_requests }
+			: {}),
+		...(typeof serverToolUse.tool_search_requests === "number"
+			? { tool_search_requests: serverToolUse.tool_search_requests }
 			: {}),
 	};
 	return Object.keys(payload).length > 0 ? payload : undefined;
@@ -874,7 +886,6 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
 
 
 

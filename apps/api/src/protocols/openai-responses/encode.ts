@@ -27,13 +27,16 @@ export type OpenAIResponsesResponse = {
 		completion_tokens: number;
 		total_tokens: number;
 		reasoning_tokens?: number;
-		server_tool_use?: {
-			datetime_requests?: number;
-			web_search_requests?: number;
-			web_fetch_requests?: number;
-			apply_patch_requests?: number;
-		};
+	server_tool_use?: {
+		datetime_requests?: number;
+		web_search_requests?: number;
+		web_fetch_requests?: number;
+		apply_patch_requests?: number;
+		image_generation_requests?: number;
+		fusion_requests?: number;
+		tool_search_requests?: number;
 	};
+};
 	status: "completed" | "failed" | "incomplete";
 	status_details?: {
 		type: string;
@@ -221,7 +224,10 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 			typeof usage._ext?.serverToolUse?.datetime_requests === "number" ||
 			typeof usage._ext?.serverToolUse?.web_search_requests === "number" ||
 			typeof usage._ext?.serverToolUse?.web_fetch_requests === "number" ||
-			typeof usage._ext?.serverToolUse?.apply_patch_requests === "number"
+			typeof usage._ext?.serverToolUse?.apply_patch_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.image_generation_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.fusion_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.tool_search_requests === "number"
 				? {
 					...(typeof usage._ext?.serverToolUse?.datetime_requests === "number"
 						? { datetime_requests: usage._ext?.serverToolUse?.datetime_requests }
@@ -234,6 +240,15 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 						: {}),
 					...(typeof usage._ext?.serverToolUse?.apply_patch_requests === "number"
 						? { apply_patch_requests: usage._ext?.serverToolUse?.apply_patch_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.image_generation_requests === "number"
+						? { image_generation_requests: usage._ext?.serverToolUse?.image_generation_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.fusion_requests === "number"
+						? { fusion_requests: usage._ext?.serverToolUse?.fusion_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.tool_search_requests === "number"
+						? { tool_search_requests: usage._ext?.serverToolUse?.tool_search_requests }
 						: {}),
 				}
 				: undefined,

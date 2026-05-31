@@ -374,12 +374,32 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	const applyPatchRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.apply_patch_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.apply_patch_requests);
-	if (datetimeRequests != null || webSearchRequests != null || webFetchRequests != null || applyPatchRequests != null) {
+	const imageGenerationRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.image_generation_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.image_generation_requests);
+	const fusionRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.fusion_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.fusion_requests);
+	const toolSearchRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.tool_search_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.tool_search_requests);
+	if (
+		datetimeRequests != null ||
+		webSearchRequests != null ||
+		webFetchRequests != null ||
+		applyPatchRequests != null ||
+		imageGenerationRequests != null ||
+		fusionRequests != null ||
+		toolSearchRequests != null
+	) {
 		ext.serverToolUse = {
 			...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 			...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
 			...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
 			...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
+			...(imageGenerationRequests != null ? { image_generation_requests: imageGenerationRequests } : {}),
+			...(fusionRequests != null ? { fusion_requests: fusionRequests } : {}),
+			...(toolSearchRequests != null ? { tool_search_requests: toolSearchRequests } : {}),
 		};
 	}
 

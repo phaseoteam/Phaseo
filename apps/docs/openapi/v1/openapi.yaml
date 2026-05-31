@@ -3317,7 +3317,8 @@ components:
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
             `gateway:web_search`, `gateway:web_fetch`, and
-            `gateway:apply_patch`.
+            `gateway:apply_patch`, `gateway:image_generation`, `gateway:fusion`,
+            and `gateway:tool_search`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
@@ -3663,20 +3664,66 @@ components:
             max_results:
               type: integer
               minimum: 1
-              maximum: 10
+              maximum: 25
+            max_total_results:
+              type: integer
+              minimum: 1
+              maximum: 100
+            engine:
+              type: string
+              enum:
+                - auto
+                - exa
+            search_context_size:
+              type: string
+              enum:
+                - low
+                - medium
+                - high
             include_text:
               type: boolean
             include_highlights:
               type: boolean
+            allowed_domains:
+              type: array
+              items:
+                type: string
+            excluded_domains:
+              type: array
+              items:
+                type: string
           additionalProperties: false
         max_results:
           type: integer
           minimum: 1
-          maximum: 10
+          maximum: 25
+        max_total_results:
+          type: integer
+          minimum: 1
+          maximum: 100
+        engine:
+          type: string
+          enum:
+            - auto
+            - exa
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         include_text:
           type: boolean
         include_highlights:
           type: boolean
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        excluded_domains:
+          type: array
+          items:
+            type: string
       additionalProperties: false
     GatewayWebFetchToolDefinition:
       type: object
@@ -3698,11 +3745,27 @@ components:
               type: integer
               minimum: 1
               maximum: 50000
+            allowed_domains:
+              type: array
+              items:
+                type: string
+            excluded_domains:
+              type: array
+              items:
+                type: string
           additionalProperties: false
         max_chars:
           type: integer
           minimum: 1
           maximum: 50000
+        allowed_domains:
+          type: array
+          items:
+            type: string
+        excluded_domains:
+          type: array
+          items:
+            type: string
       additionalProperties: false
     GatewayApplyPatchToolDefinition:
       type: object
@@ -3721,6 +3784,94 @@ components:
           type: object
           additionalProperties: false
       additionalProperties: false
+    GatewayImageGenerationToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway generates an image through the
+        normal image generation endpoint and returns generated image data to the
+        model tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:image_generation
+        parameters:
+          type: object
+          properties:
+            model:
+              type: string
+            size:
+              type: string
+            quality:
+              type: string
+            'n':
+              type: integer
+              minimum: 1
+              maximum: 10
+            response_format:
+              type: string
+            output_format:
+              type: string
+            background:
+              type: string
+          additionalProperties: false
+        model:
+          type: string
+      additionalProperties: false
+    GatewayFusionToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway runs a bounded multi-model
+        analysis panel and returns structured synthesis context to the model
+        tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:fusion
+        parameters:
+          type: object
+          properties:
+            analysis_models:
+              type: array
+              maxItems: 5
+              items:
+                type: string
+            model:
+              type: string
+            include_web:
+              type: boolean
+          additionalProperties: false
+        analysis_models:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+        model:
+          type: string
+        include_web:
+          type: boolean
+      additionalProperties: false
+    GatewayToolSearchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed server tool. The gateway searches the local AI Stats
+        server-tool catalog and returns matching tool definitions.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - gateway:tool_search
+        parameters:
+          type: object
+          additionalProperties: false
+      additionalProperties: false
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
@@ -3728,11 +3879,15 @@ components:
         - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
         - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
         - $ref: '#/components/schemas/GatewayApplyPatchToolDefinition'
+        - $ref: '#/components/schemas/GatewayImageGenerationToolDefinition'
+        - $ref: '#/components/schemas/GatewayFusionToolDefinition'
+        - $ref: '#/components/schemas/GatewayToolSearchToolDefinition'
     TextToolChoice:
       description: >
         Tool selection strategy. `gateway:datetime`, `gateway:web_search`,
-        `gateway:web_fetch`, and `gateway:apply_patch` are accepted and
-        rewritten by the gateway into upstream function/tool targets.
+        `gateway:web_fetch`, `gateway:apply_patch`, `gateway:image_generation`,
+        `gateway:fusion`, and `gateway:tool_search` are accepted and rewritten
+        by the gateway into upstream function/tool targets.
       oneOf:
         - type: string
           enum:
@@ -3743,6 +3898,9 @@ components:
             - gateway:web_search
             - gateway:web_fetch
             - gateway:apply_patch
+            - gateway:image_generation
+            - gateway:fusion
+            - gateway:tool_search
         - type: object
     ServerToolUsage:
       type: object
@@ -3757,6 +3915,15 @@ components:
           type: integer
           minimum: 0
         apply_patch_requests:
+          type: integer
+          minimum: 0
+        image_generation_requests:
+          type: integer
+          minimum: 0
+        fusion_requests:
+          type: integer
+          minimum: 0
+        tool_search_requests:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -3915,7 +4082,8 @@ components:
             Anthropic-compatible tools plus gateway server tools. The only
             built-in gateway server tools are `gateway:datetime`,
             `gateway:web_search`, `gateway:web_fetch`, and
-            `gateway:apply_patch`.
+            `gateway:apply_patch`, `gateway:image_generation`, `gateway:fusion`,
+            and `gateway:tool_search`.
           items:
             oneOf:
               - $ref: '#/components/schemas/AnthropicTool'
@@ -3923,11 +4091,16 @@ components:
               - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
               - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
               - $ref: '#/components/schemas/GatewayApplyPatchToolDefinition'
+              - $ref: '#/components/schemas/GatewayImageGenerationToolDefinition'
+              - $ref: '#/components/schemas/GatewayFusionToolDefinition'
+              - $ref: '#/components/schemas/GatewayToolSearchToolDefinition'
         tool_choice:
           description: >
             Anthropic tool choice object/string. `gateway:datetime`,
-            `gateway:web_search`, `gateway:web_fetch`, and `gateway:apply_patch`
-            are also accepted and rewritten by the gateway.
+            `gateway:web_search`, `gateway:web_fetch`, `gateway:apply_patch`,
+            `gateway:image_generation`, `gateway:fusion`, and
+            `gateway:tool_search` are also accepted and rewritten by the
+            gateway.
           oneOf:
             - type: object
             - type: string
@@ -4121,7 +4294,8 @@ components:
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
             `gateway:web_search`, `gateway:web_fetch`, and
-            `gateway:apply_patch`.
+            `gateway:apply_patch`, `gateway:image_generation`, `gateway:fusion`,
+            and `gateway:tool_search`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         top_p:

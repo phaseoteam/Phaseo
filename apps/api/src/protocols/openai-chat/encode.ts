@@ -184,7 +184,10 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		typeof serverToolUse?.datetime_requests === "number" ||
 		typeof serverToolUse?.web_search_requests === "number" ||
 		typeof serverToolUse?.web_fetch_requests === "number" ||
-		typeof serverToolUse?.apply_patch_requests === "number"
+		typeof serverToolUse?.apply_patch_requests === "number" ||
+		typeof serverToolUse?.image_generation_requests === "number" ||
+		typeof serverToolUse?.fusion_requests === "number" ||
+		typeof serverToolUse?.tool_search_requests === "number"
 	) {
 		(result as any).server_tool_use = {
 			...(typeof serverToolUse?.datetime_requests === "number"
@@ -198,6 +201,15 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 				: {}),
 			...(typeof serverToolUse?.apply_patch_requests === "number"
 				? { apply_patch_requests: serverToolUse.apply_patch_requests }
+				: {}),
+			...(typeof serverToolUse?.image_generation_requests === "number"
+				? { image_generation_requests: serverToolUse.image_generation_requests }
+				: {}),
+			...(typeof serverToolUse?.fusion_requests === "number"
+				? { fusion_requests: serverToolUse.fusion_requests }
+				: {}),
+			...(typeof serverToolUse?.tool_search_requests === "number"
+				? { tool_search_requests: serverToolUse.tool_search_requests }
 				: {}),
 		};
 	}

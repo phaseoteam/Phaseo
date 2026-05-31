@@ -442,6 +442,9 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				webSearchRequests: 0,
 				webFetchRequests: 0,
 				applyPatchRequests: 0,
+				imageGenerationRequests: 0,
+				fusionRequests: 0,
+				toolSearchRequests: 0,
 			};
 			let aggregateUsage = (exec.result.ir as IRChatResponse).usage;
 			let latestIrResponse = exec.result.ir as IRChatResponse;
@@ -453,6 +456,10 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
+					{
+						sourceRequest: req,
+						outerModel: pre.ctx.model,
+					},
 				);
 				if (!continuation) break;
 				if (serverToolRounds >= maxServerToolRounds) {
@@ -478,6 +485,9 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests;
 				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests;
 				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests;
+				serverToolUsage.imageGenerationRequests += continuation.usage.imageGenerationRequests;
+				serverToolUsage.fusionRequests += continuation.usage.fusionRequests;
+				serverToolUsage.toolSearchRequests += continuation.usage.toolSearchRequests;
 				searchObservability = mergeSearchObservability(
 					searchObservability,
 					buildManagedSearchObservabilityFromToolResults(continuation.toolResults),
@@ -579,7 +589,10 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				serverToolUsage.datetimeRequests > 0 ||
 				serverToolUsage.webSearchRequests > 0 ||
 				serverToolUsage.webFetchRequests > 0 ||
-				serverToolUsage.applyPatchRequests > 0
+				serverToolUsage.applyPatchRequests > 0 ||
+				serverToolUsage.imageGenerationRequests > 0 ||
+				serverToolUsage.fusionRequests > 0 ||
+				serverToolUsage.toolSearchRequests > 0
 			) {
 				const mergedUsage = attachServerToolUsage(aggregateUsage, {
 					...serverToolUsage,
