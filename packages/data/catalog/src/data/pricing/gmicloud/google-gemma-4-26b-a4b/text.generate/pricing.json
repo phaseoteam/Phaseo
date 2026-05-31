@@ -1,31 +1,33 @@
 {
-  "key": "atlascloud:deepseek/deepseek-ocr:text.generate",
-  "api_provider_id": "atlascloud",
-  "provider_slug": "atlascloud",
-  "api_model_id": "deepseek/deepseek-ocr",
+  "key": "gmicloud:google/gemma-4-26b-a4b:text.generate",
+  "api_provider_id": "gmicloud",
+  "provider_slug": "gmicloud",
+  "api_model_id": "google/gemma-4-26b-a4b",
   "capability_id": "text.generate",
   "rules": [
     {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.04,
+      "price_per_unit": 0.13,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.08,
+      "price_per_unit": 0.4,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-04-07T00:00:00Z"
     }
   ]
 }

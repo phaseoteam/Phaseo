@@ -1288,7 +1288,6 @@ const (
 	KnownModelIdBaiduErnie45Vl28bA3b KnownModelId = "baidu/ernie-4.5-vl-28b-a3b"
 	KnownModelIdBaiduErnie45Vl28bA3bThinking KnownModelId = "baidu/ernie-4.5-vl-28b-a3b-thinking"
 	KnownModelIdBaiduErnie45Vl424bA47b KnownModelId = "baidu/ernie-4.5-vl-424b-a47b"
-	KnownModelIdBlackForestLabsFlux1Dev KnownModelId = "black-forest-labs/flux-1-dev"
 	KnownModelIdBytedanceSeed16 KnownModelId = "bytedance/seed-1.6"
 	KnownModelIdBytedanceSeed16250915 KnownModelId = "bytedance/seed-1.6-250915"
 	KnownModelIdBytedanceSeed16Flash KnownModelId = "bytedance/seed-1.6-flash"

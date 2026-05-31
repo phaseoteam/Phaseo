@@ -634,6 +634,7 @@ export type IROcrResponse = {
 	model: string;
 	provider: string;
 	text: string;
+	usage?: IRUsage;
 	rawResponse?: any;
 };
 

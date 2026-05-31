@@ -1,0 +1,21 @@
+{
+  "key": "mistral:mistral/voxtral-mini:audio.transcribe",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/voxtral-mini",
+  "capability_id": "audio.transcribe",
+  "rules": [
+    {
+      "meter": "input_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.002,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Mistral pricing lists Voxtral Mini Transcribe at $0.002 per minute.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2025-07-15T00:00:00Z"
+    }
+  ]
+}
