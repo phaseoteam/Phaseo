@@ -117,7 +117,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup PHP
-        uses: shivammathur/setup-php@728c6c6b8cf02c2e48117716a91ee48313958a19
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc
         with:
           php-version: "8.2"
       - name: Validate composer package
