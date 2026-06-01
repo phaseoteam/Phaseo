@@ -258,17 +258,17 @@ importers:
         specifier: ^9.4.0
         version: 9.5.0(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(three@0.184.0)
       '@statsig/js-client':
-        specifier: ^3.32.6
-        version: 3.32.6
+        specifier: ^3.33.0
+        version: 3.33.1
       '@statsig/react-bindings':
-        specifier: ^3.32.6
-        version: 3.32.6(react@19.2.6)
+        specifier: ^3.33.0
+        version: 3.33.1(react@19.2.6)
       '@statsig/session-replay':
-        specifier: ^3.32.6
-        version: 3.32.6
+        specifier: ^3.33.0
+        version: 3.33.1
       '@statsig/web-analytics':
-        specifier: ^3.32.6
-        version: 3.32.6
+        specifier: ^3.33.0
+        version: 3.33.1
       '@stripe/react-stripe-js':
         specifier: ^6.3.0
         version: 6.3.0(@stripe/stripe-js@9.4.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -4176,22 +4176,22 @@ packages:
   '@standard-schema/utils@0.3.0':
     resolution: {integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==}
 
-  '@statsig/client-core@3.32.6':
-    resolution: {integrity: sha512-VailldiMHr5GSI18tBB3yiqrVNMim9b5iE38JZJYSywJcb5WclJkbJMOAf2ql+g1OtIS0QzrjEQ7dP3Vf6sYAw==}
+  '@statsig/client-core@3.33.1':
+    resolution: {integrity: sha512-xz8wO/Kc7PzmWPFTptblX4DycbCceJdaa2AAXnmxw53OWDcYvRcgFZgcjymXsxli9cwkp2zkLtMSay4SCw2xFw==}
 
-  '@statsig/js-client@3.32.6':
-    resolution: {integrity: sha512-F6yRAgzFuboVsgsRnxcr7hJrSZu4TK7B5I9DRkQKGxk+Em3oSLFz53SkzWgUcPqtt3htsFjic2aNhIfpeBFEqg==}
+  '@statsig/js-client@3.33.1':
+    resolution: {integrity: sha512-512h014fLkIXf7remo8iBd6pyuqkD1oWTOPbmsd1xj2BnqZ8ETRmHh8owJsc3kvie042yGb8LgnwFxv+NnPAaQ==}
 
-  '@statsig/react-bindings@3.32.6':
-    resolution: {integrity: sha512-MQ+cqFPWEwkbM90T8Rr3XZg3VKSuyPaysFCl94sUVJpKOCmMkPbD8qnBuC7zs6ROo4oKmotXQKOH9NdFJ7GV6g==}
+  '@statsig/react-bindings@3.33.1':
+    resolution: {integrity: sha512-Zn+/OmILUFKDz2iutqkZGiX/1KeBab8iwBmO0UknwsgY2q/dgaxnoCEYse5DzQbJUmVBp2EQYG2SetrenNSA/g==}
     peerDependencies:
       react: ^16.6.3 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  '@statsig/session-replay@3.32.6':
-    resolution: {integrity: sha512-BWiR7juEKi+so6Q53MNP+y79hJ8gVQmBq3GctmMwjaVKdHZ20b4yEsB/HZRHoqWSXG3Fz4ApnxOAZ5MHTb6+pQ==}
+  '@statsig/session-replay@3.33.1':
+    resolution: {integrity: sha512-XcZ2LJLvTe8vvXcdftYmkRKxFZiFiq8dHx7SZDprzsOChhScLB0/dng7m1QZuYS2JY30xB2x0tn9vMWRro+8mg==}
 
-  '@statsig/web-analytics@3.32.6':
-    resolution: {integrity: sha512-TztjGKxfKjNrr/csmF3rec3b0a02Tq+eytYO6l1+5LzHeNrPrcx832iBVFyy1K6uVD+g5BvjitC84WOcQthgLw==}
+  '@statsig/web-analytics@3.33.1':
+    resolution: {integrity: sha512-Kd0yOohtIVWQLcmudguJCg6hcOdQ7ioaY5MGgmEduza9UgfMrx3eN0VaR1UqJoT0Kz/sUvxm6dyQkK+hmSXgCA==}
 
   '@stoplight/better-ajv-errors@1.0.3':
     resolution: {integrity: sha512-0p9uXkuB22qGdNfy3VeEhxkU5uwvp/KrBTAbrLBURv6ilxIVwanKwjMc41lQfIVgPGcOkmLbTolfFrSsueu7zA==}
@@ -15128,28 +15128,28 @@ snapshots:
 
   '@standard-schema/utils@0.3.0': {}
 
-  '@statsig/client-core@3.32.6': {}
+  '@statsig/client-core@3.33.1': {}
 
-  '@statsig/js-client@3.32.6':
+  '@statsig/js-client@3.33.1':
     dependencies:
-      '@statsig/client-core': 3.32.6
+      '@statsig/client-core': 3.33.1
 
-  '@statsig/react-bindings@3.32.6(react@19.2.6)':
+  '@statsig/react-bindings@3.33.1(react@19.2.6)':
     dependencies:
-      '@statsig/client-core': 3.32.6
-      '@statsig/js-client': 3.32.6
+      '@statsig/client-core': 3.33.1
+      '@statsig/js-client': 3.33.1
       react: 19.2.6
 
-  '@statsig/session-replay@3.32.6':
+  '@statsig/session-replay@3.33.1':
     dependencies:
       '@rrweb/record': 2.0.0-alpha.17
-      '@statsig/client-core': 3.32.6
+      '@statsig/client-core': 3.33.1
       rrweb: 2.0.0-alpha.17
 
-  '@statsig/web-analytics@3.32.6':
+  '@statsig/web-analytics@3.33.1':
     dependencies:
-      '@statsig/client-core': 3.32.6
-      '@statsig/js-client': 3.32.6
+      '@statsig/client-core': 3.33.1
+      '@statsig/js-client': 3.33.1
       web-vitals: 5.0.3
 
   '@stoplight/better-ajv-errors@1.0.3(ajv@8.20.0)':
