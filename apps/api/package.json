@@ -45,7 +45,7 @@
 		"report:missing-discovered-models": "tsx scripts/report-missing-discovered-models.ts"
 	},
 	"dependencies": {
-		"@supabase/supabase-js": "^2.102.1",
+		"@supabase/supabase-js": "^2.106.2",
 		"@upstash/redis": "^1.38.0",
 		"@visulima/tabular": "^3.1.0",
 		"hono": "^4.12.18",

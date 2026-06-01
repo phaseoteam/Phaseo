@@ -73,7 +73,7 @@
 		"@stripe/react-stripe-js": "^6.3.0",
 		"@stripe/stripe-js": "^9.4.0",
 		"@supabase/ssr": "^0.10.2",
-		"@supabase/supabase-js": "^2.102.1",
+		"@supabase/supabase-js": "^2.106.2",
 		"@tanstack/react-table": "^8.21.3",
 		"@tanstack/react-virtual": "^3.13.21",
 		"@upstash/ratelimit": "^2.0.6",
