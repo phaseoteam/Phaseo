@@ -671,7 +671,7 @@ importers:
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^1.0.11
-        version: 1.0.11(eslint@10.1.0(jiti@2.6.1))(prettier@3.8.1)(typescript@6.0.3)
+        version: 1.0.11(eslint@10.1.0(jiti@2.6.1))(prettier@3.8.3)(typescript@6.0.3)
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
@@ -682,8 +682,8 @@ importers:
         specifier: ^10.0.3
         version: 10.1.0(jiti@2.6.1)
       prettier:
-        specifier: ^3.5.3
-        version: 3.8.1
+        specifier: ^3.8.3
+        version: 3.8.3
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -829,8 +829,8 @@ importers:
         specifier: workspace:*
         version: link:../../openapi/oapi-core
       prettier:
-        specifier: ^3.3.3
-        version: 3.8.1
+        specifier: ^3.8.3
+        version: 3.8.3
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
@@ -9331,8 +9331,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prettier@3.8.1:
-    resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
+  prettier@3.8.3:
+    resolution: {integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -14743,7 +14743,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@raycast/eslint-config@1.0.11(eslint@10.1.0(jiti@2.6.1))(prettier@3.8.1)(typescript@6.0.3)':
+  '@raycast/eslint-config@1.0.11(eslint@10.1.0(jiti@2.6.1))(prettier@3.8.3)(typescript@6.0.3)':
     dependencies:
       '@raycast/eslint-plugin': 1.0.16(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.3)
       '@rushstack/eslint-patch': 1.16.1
@@ -14751,7 +14751,7 @@ snapshots:
       '@typescript-eslint/parser': 6.21.0(eslint@10.1.0(jiti@2.6.1))(typescript@6.0.3)
       eslint: 10.1.0(jiti@2.6.1)
       eslint-config-prettier: 9.1.2(eslint@10.1.0(jiti@2.6.1))
-      prettier: 3.8.1
+      prettier: 3.8.3
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
@@ -17989,7 +17989,7 @@ snapshots:
       eslint: 10.4.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.4.0(jiti@2.6.1))
@@ -18026,7 +18026,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -18040,7 +18040,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -21658,7 +21658,7 @@ snapshots:
 
   prettier@2.8.8: {}
 
-  prettier@3.8.1: {}
+  prettier@3.8.3: {}
 
   pretty-format@30.3.0:
     dependencies:
