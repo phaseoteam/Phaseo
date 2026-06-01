@@ -491,6 +491,7 @@
     "quantization_scheme": "FP16",
     "input_modalities": "text",
     "output_modalities": "text",
+    "notes": "Nebius currently exposes this endpoint as text-to-text despite the canonical model supporting text, image, and video inputs.",
     "context_length": 256000,
     "max_output_tokens": null,
     "effective_from": "2026-06-01T00:00:00",

@@ -282,16 +282,16 @@ const choosePreferredProviderModelRow = <
     current: T,
     candidate: T
 ): T => {
-    const currentIsOpenEnded = current.effective_to == null;
-    const candidateIsOpenEnded = candidate.effective_to == null;
-    if (currentIsOpenEnded !== candidateIsOpenEnded) {
-        return candidateIsOpenEnded ? candidate : current;
-    }
-
     const currentFrom = toTimestampMs(current.effective_from);
     const candidateFrom = toTimestampMs(candidate.effective_from);
     if (currentFrom !== candidateFrom) {
         return candidateFrom > currentFrom ? candidate : current;
+    }
+
+    const currentIsOpenEnded = current.effective_to == null;
+    const candidateIsOpenEnded = candidate.effective_to == null;
+    if (currentIsOpenEnded !== candidateIsOpenEnded) {
+        return candidateIsOpenEnded ? candidate : current;
     }
 
     const currentTo = toTimestampMs(current.effective_to);
