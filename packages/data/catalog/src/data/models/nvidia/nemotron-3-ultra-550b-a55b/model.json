@@ -1,0 +1,45 @@
+{
+  "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "organisation_id": "nvidia",
+  "name": "Nemotron 3 Ultra",
+  "status": "Announced",
+  "previous_model_id": null,
+  "description": "Nemotron 3 Ultra is NVIDIA's largest open base model, a 550B total-parameter hybrid Mamba-Transformer mixture-of-experts model with up to 55B active parameters per token and up to 1M tokens of context. This entry tracks the announced base checkpoint ahead of full release.",
+  "announced_date": "2026-03-16T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://docs.nvidia.com/nemotron/nightly/usage-cookbook/Nemotron-3-Ultra-Base/README.html"
+    },
+    {
+      "platform": "website",
+      "url": "https://research.nvidia.com/labs/nemotron/Nemotron-3/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "parameter_count",
+      "value": 550000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 55000000000
+    },
+    {
+      "name": "availability",
+      "value": "NVIDIA documents Nemotron 3 Ultra as an announced pre-training base checkpoint and says weights are expected with the full release in 1H 2026."
+    }
+  ],
+  "benchmarks": []
+}
