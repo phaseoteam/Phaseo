@@ -194,8 +194,13 @@ export type GatewayBindings = {
     RESEND_TEMPLATE_WELCOME_ID?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
     DISCORD_WEBHOOK_URL?: string;
+    DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
     DISCORD_ROLE_ID?: string;
+    DISCORD_ROLE_ID_MODEL_UPDATES?: string;
     DISCORD_USER_ID?: string;
+    DISCORD_MODEL_DISCOVERY_AVATAR_URL?: string;
+    HF_WATCH_ORGS?: string;
+    HF_TOKEN?: string;
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;
     GITHUB_REPOSITORY?: string;
@@ -208,6 +213,9 @@ export type GatewayBindings = {
     GATEWAY_INTERNAL_TEST_TOKEN?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;
     MODEL_DISCOVERY_ENABLED?: string;
+    MODEL_DISCOVERY_HF_ENABLED?: string;
+    MODEL_DISCOVERY_HF_GITHUB_ISSUES?: string;
+    MODEL_DISCOVERY_INTERNAL_ENABLED?: string;
     MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;

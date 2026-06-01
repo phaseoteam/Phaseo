@@ -22,7 +22,7 @@ import {
 	toInt,
 	toPricingFingerprint,
 } from "./helpers";
-import { buildProviderIssueEntries, syncProviderDiscoveryIssues } from "./github-issues";
+import { buildProviderIssueEntries, syncUpstreamDiscoveryIssues } from "./github-issues";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -748,9 +748,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			const issueEntries = buildProviderIssueEntries({
 				changes,
 				detectedAt: new Date().toISOString(),
-				source: args.source,
+				detectionSource: args.source,
 			});
-			issueSyncSummary = await syncProviderDiscoveryIssues(issueEntries);
+			issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
 			if (issueSyncSummary.skipped) {
 				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason ?? "no reason provided");
 			} else {

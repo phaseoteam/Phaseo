@@ -11,6 +11,8 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { runHuggingFaceDiscovery } from "@/pipeline/model-discovery/huggingface";
+import { runInternalCatalogDiscovery } from "@/pipeline/model-discovery/internal-catalog";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
@@ -54,6 +56,38 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 			notify: true,
 			prune: shardIndex === 0,
 		});
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleHuggingFaceDiscoveryScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) {
+		return;
+	}
+
+	configureRuntime(env);
+	try {
+		const summary = await runHuggingFaceDiscovery();
+		if (summary.executed) {
+			console.log("model_discovery_huggingface_completed", summary);
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleInternalCatalogDiscoveryScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) {
+		return;
+	}
+
+	configureRuntime(env);
+	try {
+		const summary = await runInternalCatalogDiscovery();
+		if (summary.executed) {
+			console.log("model_discovery_internal_completed", summary);
+		}
 	} finally {
 		clearRuntime();
 	}
@@ -154,5 +188,15 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		await handleModelDiscoveryScheduledEvent(event, env);
 	} catch (error) {
 		console.error("model_discovery_scheduled_failed", { error });
+	}
+	try {
+		await handleHuggingFaceDiscoveryScheduledEvent(event, env);
+	} catch (error) {
+		console.error("model_discovery_huggingface_scheduled_failed", { error });
+	}
+	try {
+		await handleInternalCatalogDiscoveryScheduledEvent(event, env);
+	} catch (error) {
+		console.error("model_discovery_internal_scheduled_failed", { error });
 	}
 }

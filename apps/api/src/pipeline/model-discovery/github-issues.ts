@@ -1,14 +1,18 @@
 import { readBindingEnv } from "./helpers";
 
-export type ProviderIssueAction = "create" | "delete";
+export type UpstreamDiscoveryIssueSource = "provider-api" | "huggingface";
+export type UpstreamDiscoveryIssueAction = "create" | "delete";
 
-export type ProviderIssueEntry = {
+export type UpstreamDiscoveryIssueEntry = {
+	source: UpstreamDiscoveryIssueSource;
 	providerId: string;
 	providerName: string;
-	action: ProviderIssueAction;
+	action: UpstreamDiscoveryIssueAction;
 	modelId: string;
 	detectedAt: string;
-	source: string;
+	detectionSource: string;
+	modelUrl?: string | null;
+	reason?: string | null;
 };
 
 type GitHubIssue = {
@@ -30,10 +34,11 @@ type GitHubIssueSyncSummary = {
 
 type GitHubIssueGroup = {
 	key: string;
-	action: ProviderIssueAction;
+	source: UpstreamDiscoveryIssueSource;
+	action: UpstreamDiscoveryIssueAction;
 	providerId: string;
 	providerName: string;
-	entries: ProviderIssueEntry[];
+	entries: UpstreamDiscoveryIssueEntry[];
 };
 
 type GitHubIssueClient = {
@@ -50,19 +55,23 @@ function markerForKey(key: string): string {
 	return `ai-stats-upstream-discovery:${key}`;
 }
 
-function issueKeyForGroup(input: Pick<ProviderIssueEntry, "providerId" | "action">): string {
-	return btoa(`${input.providerId.trim().toLowerCase()}\n${input.action}`)
+function issueKeyForGroup(input: Pick<GitHubIssueGroup, "source" | "providerId" | "action">): string {
+	return btoa(`${input.source}\n${input.providerId.trim().toLowerCase()}\n${input.action}`)
 		.replace(/\+/g, "-")
 		.replace(/\//g, "_")
 		.replace(/=+$/g, "");
 }
 
-function actionNoun(action: ProviderIssueAction): string {
+function actionNoun(action: UpstreamDiscoveryIssueAction): string {
 	return action === "create" ? "additions" : "deletions";
 }
 
-function actionVerb(action: ProviderIssueAction): string {
+function actionVerb(action: UpstreamDiscoveryIssueAction): string {
 	return action === "create" ? "added" : "removed";
+}
+
+function sourceLabel(source: UpstreamDiscoveryIssueSource): string {
+	return source === "huggingface" ? "Hugging Face" : "provider API";
 }
 
 function formatDateTime(value: string): string {
@@ -72,11 +81,22 @@ function formatDateTime(value: string): string {
 }
 
 function issueTitleForGroup(group: GitHubIssueGroup): string {
+	if (group.source === "huggingface") {
+		return `[upstream-discovery] Hugging Face: model ${actionNoun(group.action)} for ${group.providerName}`.slice(0, 250);
+	}
+
 	return `[upstream-discovery] ${group.providerName}: provider model ${actionNoun(group.action)}`.slice(0, 250);
 }
 
-function formatModelList(entries: ProviderIssueEntry[]): string[] {
-	return entries.map((entry) => `- \`${entry.modelId}\``);
+function formatModelReference(entry: Pick<UpstreamDiscoveryIssueEntry, "modelId" | "modelUrl">): string {
+	if (entry.modelUrl?.trim()) {
+		return `\`${entry.modelId}\` (${entry.modelUrl.trim()})`;
+	}
+	return `\`${entry.modelId}\``;
+}
+
+function formatModelList(entries: UpstreamDiscoveryIssueEntry[]): string[] {
+	return entries.map((entry) => `- ${formatModelReference(entry)}`);
 }
 
 function buildIssueBody(group: GitHubIssueGroup): string {
@@ -87,45 +107,50 @@ function buildIssueBody(group: GitHubIssueGroup): string {
 		`<!-- ${marker} -->`,
 		`Tracking key: \`${marker}\``,
 		"",
-		`The Cloudflare Worker model discovery cron detected provider model ${actionNoun(group.action)} for ${group.providerName}.`,
+		`The Cloudflare Worker model discovery cron detected ${sourceLabel(group.source)} model ${actionNoun(group.action)} for ${group.providerName}.`,
 		"",
 		"## Current signal",
-		`- Provider: ${group.providerName} (\`${group.providerId}\`)`,
+		`- Source family: ${sourceLabel(group.source)}`,
+		`- Provider/org: ${group.providerName} (\`${group.providerId}\`)`,
 		`- Action: ${actionNoun(group.action)}`,
 		`- Latest detected at: ${latest ? formatDateTime(latest.detectedAt) : "Unknown"}`,
-		`- Source: \`${latest?.source ?? "unknown"}\``,
+		`- Detection source: \`${latest?.detectionSource ?? "unknown"}\``,
 		`- Models in this signal: ${group.entries.length}`,
 		"",
 		"## Models in this signal",
 		...formatModelList(group.entries),
 		"",
 		"## Triage notes",
-		"- Check whether each upstream provider model should be added to AI Stats or mapped to an existing catalog entry.",
-		"- Reuse this issue for repeated signals with the same provider and action type.",
+		"- Check whether each upstream model should be added to AI Stats or mapped to an existing catalog entry.",
+		"- Reuse this issue for repeated signals with the same source family, provider/org, and action type.",
 		"- Close this issue once the upstream signal has been triaged.",
 	].join("\n");
 }
 
 function buildIssueComment(group: GitHubIssueGroup): string {
 	return [
-		`Cloudflare model discovery detected another provider model ${actionNoun(group.action)} signal for ${group.providerName}.`,
+		`Cloudflare model discovery detected another ${sourceLabel(group.source)} model ${actionNoun(group.action)} signal for ${group.providerName}.`,
 		"",
 		"Models in this signal:",
 		...formatModelList(group.entries),
 		"",
 		"Events:",
-		...group.entries.map(
-			(entry) =>
-				`- ${formatDateTime(entry.detectedAt)}: ${actionVerb(entry.action)} \`${entry.modelId}\` from ${entry.providerName} (\`${entry.providerId}\`) via \`${entry.source}\``
-		),
+		...group.entries.map((entry) => {
+			const reason = entry.reason?.trim() ? ` (${entry.reason.trim()})` : "";
+			return `- ${formatDateTime(entry.detectedAt)}: ${actionVerb(entry.action)} ${formatModelReference(entry)} from ${entry.providerName} (\`${entry.providerId}\`) via \`${entry.detectionSource}\`${reason}`;
+		}),
 	].join("\n");
 }
 
-function groupProviderIssueEntries(entries: ProviderIssueEntry[]): GitHubIssueGroup[] {
+function groupIssueEntries(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssueGroup[] {
 	const grouped = new Map<string, GitHubIssueGroup>();
 
 	for (const entry of entries) {
-		const key = issueKeyForGroup(entry);
+		const key = issueKeyForGroup({
+			source: entry.source,
+			providerId: entry.providerId,
+			action: entry.action,
+		});
 		const existing = grouped.get(key);
 		if (existing) {
 			existing.entries.push(entry);
@@ -133,6 +158,7 @@ function groupProviderIssueEntries(entries: ProviderIssueEntry[]): GitHubIssueGr
 		}
 		grouped.set(key, {
 			key,
+			source: entry.source,
 			action: entry.action,
 			providerId: entry.providerId,
 			providerName: entry.providerName,
@@ -141,6 +167,8 @@ function groupProviderIssueEntries(entries: ProviderIssueEntry[]): GitHubIssueGr
 	}
 
 	return Array.from(grouped.values()).sort((left, right) => {
+		const sourceComparison = sourceLabel(left.source).localeCompare(sourceLabel(right.source));
+		if (sourceComparison !== 0) return sourceComparison;
 		const providerComparison = left.providerName.localeCompare(right.providerName);
 		if (providerComparison !== 0) return providerComparison;
 		return actionNoun(left.action).localeCompare(actionNoun(right.action));
@@ -209,13 +237,29 @@ function createGitHubIssueClient(args: {
 	};
 }
 
-function shouldSkipIssueSync(): GitHubIssueSyncSummary | null {
-	if ((readBindingEnv(["MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES"]) ?? "").trim().toLowerCase() === "false") {
+function isIssueSyncDisabledForSource(source: UpstreamDiscoveryIssueSource): string | null {
+	if (source === "provider-api") {
+		if ((readBindingEnv(["MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES"]) ?? "").trim().toLowerCase() === "false") {
+			return "disabled by MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false";
+		}
+		return null;
+	}
+
+	if ((readBindingEnv(["MODEL_DISCOVERY_HF_GITHUB_ISSUES"]) ?? "").trim().toLowerCase() === "false") {
+		return "disabled by MODEL_DISCOVERY_HF_GITHUB_ISSUES=false";
+	}
+
+	return null;
+}
+
+function shouldSkipIssueSync(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssueSyncSummary | null {
+	const enabledEntries = entries.filter((entry) => !isIssueSyncDisabledForSource(entry.source));
+	if (enabledEntries.length === 0) {
 		return {
 			created: 0,
 			updated: 0,
 			skipped: true,
-			reason: "disabled by MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false",
+			reason: "all issue sync sources disabled by environment flags",
 		};
 	}
 
@@ -236,29 +280,31 @@ function shouldSkipIssueSync(): GitHubIssueSyncSummary | null {
 export function buildProviderIssueEntries(args: {
 	changes: Array<{ providerId: string; providerName: string; added: string[]; removed: string[] }>;
 	detectedAt: string;
-	source: string;
-}): ProviderIssueEntry[] {
-	const out: ProviderIssueEntry[] = [];
+	detectionSource: string;
+}): UpstreamDiscoveryIssueEntry[] {
+	const out: UpstreamDiscoveryIssueEntry[] = [];
 
 	for (const change of args.changes) {
 		for (const modelId of change.added) {
 			out.push({
+				source: "provider-api",
 				providerId: change.providerId,
 				providerName: change.providerName,
 				action: "create",
 				modelId,
 				detectedAt: args.detectedAt,
-				source: args.source,
+				detectionSource: args.detectionSource,
 			});
 		}
 		for (const modelId of change.removed) {
 			out.push({
+				source: "provider-api",
 				providerId: change.providerId,
 				providerName: change.providerName,
 				action: "delete",
 				modelId,
 				detectedAt: args.detectedAt,
-				source: args.source,
+				detectionSource: args.detectionSource,
 			});
 		}
 	}
@@ -266,12 +312,22 @@ export function buildProviderIssueEntries(args: {
 	return out;
 }
 
-export async function syncProviderDiscoveryIssues(entries: ProviderIssueEntry[]): Promise<GitHubIssueSyncSummary> {
+export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssueEntry[]): Promise<GitHubIssueSyncSummary> {
 	if (entries.length === 0) {
 		return { created: 0, updated: 0, skipped: false, reason: "no entries" };
 	}
 
-	const skipped = shouldSkipIssueSync();
+	const filteredEntries = entries.filter((entry) => !isIssueSyncDisabledForSource(entry.source));
+	if (filteredEntries.length === 0) {
+		return {
+			created: 0,
+			updated: 0,
+			skipped: true,
+			reason: "all issue sync sources disabled by environment flags",
+		};
+	}
+
+	const skipped = shouldSkipIssueSync(filteredEntries);
 	if (skipped) return skipped;
 
 	const token = readBindingEnv(["GITHUB_TOKEN", "GH_TOKEN"])!.trim();
@@ -281,7 +337,7 @@ export async function syncProviderDiscoveryIssues(entries: ProviderIssueEntry[])
 
 	let created = 0;
 	let updated = 0;
-	for (const group of groupProviderIssueEntries(entries)) {
+	for (const group of groupIssueEntries(filteredEntries)) {
 		const marker = markerForKey(group.key);
 		const existing = await client.searchOpenIssue(`repo:${repository} is:issue is:open "${marker}"`);
 		const title = issueTitleForGroup(group);
