@@ -36,8 +36,8 @@
     "clsx": "^2.1.1",
     "hono": "^4.12.18",
     "lucide-react": "^0.544.0",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.3.1"
   },
