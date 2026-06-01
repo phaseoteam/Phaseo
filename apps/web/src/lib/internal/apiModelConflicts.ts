@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 function resolveDataRoot(): string {
-	const cwd = /* turbopackIgnore: true */ process.cwd();
 	const candidates = [
-		path.join(cwd, "..", "..", "packages", "data", "catalog", "src", "data"),
-		path.join(cwd, "packages", "data", "catalog", "src", "data"),
-		path.join(cwd, "src", "data"),
-		path.join(cwd, "apps", "web", "src", "data"),
+		fileURLToPath(
+			new URL("../../../../../packages/data/catalog/src/data/", import.meta.url),
+		),
+		fileURLToPath(new URL("../../data/", import.meta.url)),
 	];
 	for (const candidate of candidates) {
 		if (fs.existsSync(candidate)) return candidate;
