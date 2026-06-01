@@ -50,6 +50,7 @@ type GitHubIssueClient = {
 
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
+const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
 
 function markerForKey(key: string): string {
 	return `ai-stats-upstream-discovery:${key}`;
@@ -178,19 +179,17 @@ function groupIssueEntries(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssueG
 function createGitHubIssueClient(args: {
 	token: string;
 	repository: string;
-	apiBaseUrl: string;
 	requestImpl?: typeof fetch;
 }): GitHubIssueClient {
 	const [owner, repo] = args.repository.split("/", 2);
 	if (!owner || !repo) {
-		throw new Error("GITHUB_REPOSITORY must be in owner/repo format.");
+		throw new Error("Configured GitHub repository must be in owner/repo format.");
 	}
 
-	const apiBaseUrl = args.apiBaseUrl.replace(/\/+$/g, "");
 	const requestImpl = args.requestImpl ?? fetch;
 
 	const requestJson = async <T>(pathName: string, init: RequestInit = {}): Promise<T> => {
-		const response = await requestImpl(`${apiBaseUrl}${pathName}`, {
+		const response = await requestImpl(`${DEFAULT_GITHUB_API_BASE_URL}${pathName}`, {
 			...init,
 			signal: init.signal ?? AbortSignal.timeout(DEFAULT_GITHUB_REQUEST_TIMEOUT_MS),
 			headers: {
@@ -237,40 +236,14 @@ function createGitHubIssueClient(args: {
 	};
 }
 
-function isIssueSyncDisabledForSource(source: UpstreamDiscoveryIssueSource): string | null {
-	if (source === "provider-api") {
-		if ((readBindingEnv(["MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES"]) ?? "").trim().toLowerCase() === "false") {
-			return "disabled by MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false";
-		}
-		return null;
-	}
-
-	if ((readBindingEnv(["MODEL_DISCOVERY_HF_GITHUB_ISSUES"]) ?? "").trim().toLowerCase() === "false") {
-		return "disabled by MODEL_DISCOVERY_HF_GITHUB_ISSUES=false";
-	}
-
-	return null;
-}
-
 function shouldSkipIssueSync(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssueSyncSummary | null {
-	const enabledEntries = entries.filter((entry) => !isIssueSyncDisabledForSource(entry.source));
-	if (enabledEntries.length === 0) {
-		return {
-			created: 0,
-			updated: 0,
-			skipped: true,
-			reason: "all issue sync sources disabled by environment flags",
-		};
-	}
-
 	const token = readBindingEnv(["GITHUB_TOKEN", "GH_TOKEN"]);
-	const repository = readBindingEnv(["GITHUB_REPOSITORY"]);
-	if (!token || !repository) {
+	if (!token) {
 		return {
 			created: 0,
 			updated: 0,
 			skipped: true,
-			reason: "missing GITHUB_TOKEN/GH_TOKEN or GITHUB_REPOSITORY",
+			reason: "missing GITHUB_TOKEN/GH_TOKEN",
 		};
 	}
 
@@ -317,27 +290,16 @@ export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssu
 		return { created: 0, updated: 0, skipped: false, reason: "no entries" };
 	}
 
-	const filteredEntries = entries.filter((entry) => !isIssueSyncDisabledForSource(entry.source));
-	if (filteredEntries.length === 0) {
-		return {
-			created: 0,
-			updated: 0,
-			skipped: true,
-			reason: "all issue sync sources disabled by environment flags",
-		};
-	}
-
-	const skipped = shouldSkipIssueSync(filteredEntries);
+	const skipped = shouldSkipIssueSync(entries);
 	if (skipped) return skipped;
 
 	const token = readBindingEnv(["GITHUB_TOKEN", "GH_TOKEN"])!.trim();
-	const repository = readBindingEnv(["GITHUB_REPOSITORY"])!.trim();
-	const apiBaseUrl = readBindingEnv(["GITHUB_API_URL"]) ?? DEFAULT_GITHUB_API_BASE_URL;
-	const client = createGitHubIssueClient({ token, repository, apiBaseUrl });
+	const repository = DEFAULT_GITHUB_REPOSITORY;
+	const client = createGitHubIssueClient({ token, repository });
 
 	let created = 0;
 	let updated = 0;
-	for (const group of groupIssueEntries(filteredEntries)) {
+	for (const group of groupIssueEntries(entries)) {
 		const marker = markerForKey(group.key);
 		const existing = await client.searchOpenIssue(`repo:${repository} is:issue is:open "${marker}"`);
 		const title = issueTitleForGroup(group);

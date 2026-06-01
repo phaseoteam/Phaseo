@@ -90,14 +90,6 @@ function selectAutoShard(args: {
 
 async function handleRunModelDiscovery(req: Request) {
 	const bindings = getBindings();
-	if (!toBool(bindings.MODEL_DISCOVERY_ENABLED, true)) {
-		return json(
-			{ ok: false, error: "disabled", message: "Model discovery is disabled" },
-			503,
-			{ "Cache-Control": "no-store" },
-		);
-	}
-
 	const configuredToken = bindings.MODEL_DISCOVERY_INTERNAL_TOKEN?.trim() || "";
 	if (!configuredToken) {
 		return json(

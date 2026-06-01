@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { sendDiscordTextMessage } from "./discord";
-import { readBindingEnv, toBool } from "./helpers";
+import { readBindingEnv } from "./helpers";
 import { syncUpstreamDiscoveryIssues, type UpstreamDiscoveryIssueEntry } from "./github-issues";
 
 type HuggingFaceSeenRow = {
@@ -53,21 +53,42 @@ const PAGE_SIZE = 100;
 const MAX_PAGES = 50;
 const UPSERT_BATCH_SIZE = 500;
 const HUGGING_FACE_BASE_URL = "https://huggingface.co";
+const WATCHED_HF_ORGS = [
+	"primeintellect",
+	"voyageai",
+	"arcee-ai",
+	"apple",
+	"baidu",
+	"suno",
+	"perplexity-ai",
+	"moonshotai",
+	"elevenlabs",
+	"cohere",
+	"anthropic",
+	"amazon",
+	"ai21labs",
+	"ai-stats",
+	"ibm-granite",
+	"nousresearch",
+	"bytedance-seed",
+	"minimaxai",
+	"microsoft",
+	"xai-org",
+	"zai-org",
+	"lgai-exaone",
+	"mistralai",
+	"meta-llama",
+	"nvidia",
+	"google",
+	"openai",
+	"deepseek-ai",
+	"qwen",
+];
 
 function trimOrNull(value: string | null | undefined): string | null {
 	if (typeof value !== "string") return null;
 	const trimmed = value.trim();
 	return trimmed || null;
-}
-
-function parseWatchedOrgs(raw: string | null | undefined): string[] {
-	const out = new Set<string>();
-	for (const part of (raw ?? "").split(/[,\s]+/g)) {
-		const normalized = part.trim().toLowerCase();
-		if (!normalized) continue;
-		out.add(normalized);
-	}
-	return Array.from(out.values()).sort((left, right) => left.localeCompare(right));
 }
 
 function parseNextLink(linkHeader: string | null): string | null {
@@ -261,23 +282,7 @@ function buildIssueEntries(diffs: HuggingFaceOrgDiff[], detectedAt: string, dete
 }
 
 export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySummary> {
-	if (!toBool(readBindingEnv(["MODEL_DISCOVERY_HF_ENABLED"]) ?? "true", true)) {
-		return {
-			enabled: false,
-			executed: false,
-			baselineInitialized: false,
-			orgsConfigured: 0,
-			orgsSucceeded: 0,
-			orgsError: 0,
-			additionsDetected: 0,
-			removalsDetected: 0,
-			notified: false,
-			skippedReason: "disabled by MODEL_DISCOVERY_HF_ENABLED=false",
-			results: [],
-		};
-	}
-
-	const orgIds = parseWatchedOrgs(readBindingEnv(["HF_WATCH_ORGS"]));
+	const orgIds = WATCHED_HF_ORGS;
 	if (orgIds.length === 0) {
 		return {
 			enabled: true,
@@ -289,7 +294,7 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 			additionsDetected: 0,
 			removalsDetected: 0,
 			notified: false,
-			skippedReason: "no HF_WATCH_ORGS configured",
+			skippedReason: "no watched Hugging Face orgs configured",
 			results: [],
 		};
 	}
@@ -400,8 +405,6 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 			await sendDiscordTextMessage({
 				webhookUrl,
 				message: buildDiscordMessage(diffs),
-				roleId: trimOrNull(readBindingEnv(["DISCORD_ROLE_ID"])),
-				userId: trimOrNull(readBindingEnv(["DISCORD_USER_ID"])),
 			});
 			summary.notified = true;
 		} catch (error) {

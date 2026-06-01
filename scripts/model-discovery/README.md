@@ -19,7 +19,7 @@ On subsequent runs, the runner computes per-provider:
 
 ## Private upstream discovery
 
-External upstream discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. In production these checks now run from the Cloudflare Worker scheduled runner. They send Discord notifications and can create or update GitHub triage issues when `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` are available.
+External upstream discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. In production these checks run from the Cloudflare Worker scheduled runner. They send Discord notifications and can create or update GitHub triage issues when `GITHUB_TOKEN` or `GH_TOKEN` is available.
 
 Provider `/models` Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. GitHub issue sync is intentionally not filtered by that allowlist: unknown upstream models are included in triage issues so newly exposed provider or Hugging Face models are not silently discarded.
 
@@ -42,7 +42,7 @@ Already-announced model IDs are persisted to:
 - `scripts/model-discovery/state/internal-announced-models.json`
 
 This avoids duplicate notifications across runs while the GitHub Actions cache is retained.
-The legacy script state files under `scripts/model-discovery/state` are still useful for local/manual runs, but production scheduled discovery now persists state in Supabase so it does not depend on GitHub Actions cache behavior.
+The legacy script state files under `scripts/model-discovery/state` are still useful for local/manual runs.
 
 Providers marked inactive in `discovery-policy.ts` are skipped explicitly with an `Inactive by policy` reason. Use this for providers without a stable/public models endpoint.
 Providers not present in `discovery-policy.ts` are also treated as inactive by default.
@@ -50,11 +50,11 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
 ## Script entrypoints
 
 - `scripts/model-discovery/run.ts`
-  - Local/manual external upstream provider `/models` API discovery. The production scheduled equivalent now lives in the Cloudflare Worker.
+  - Local/manual external upstream provider `/models` API discovery. The production scheduled equivalent lives in the Cloudflare Worker.
 - `scripts/model-discovery/run-hf-private.ts`
-  - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent now lives in the Cloudflare Worker.
+  - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent lives in the Cloudflare Worker.
 - `scripts/model-discovery/run-internal-public.ts`
-  - Local/manual internal catalog/database discovery helper. The production scheduled equivalent now lives in the Cloudflare Worker.
+  - Local/manual internal catalog/database discovery helper. Production runs from `.github/workflows/check-new-models.yml` on pushes to `main`.
 
 ## Local run
 
@@ -70,19 +70,10 @@ pnpm run data:check-new-models:test
 
 - `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for internal website model additions)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
-- `DISCORD_ROLE_ID` (optional role mention)
-- `DISCORD_ROLE_ID_MODEL_UPDATES` (optional role mention for internal catalog additions/updates; production defaults to the Model Updates role)
-- `DISCORD_ROLE_ID_DEV` (optional dev role mention for Hugging Face private notifications)
-- `DISCORD_USER_ID` (optional mention)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling internal runner scripts with `--discord-avatar-url`)
-- `HF_WATCH_ORGS` (comma/space separated Hugging Face org list for the Cloudflare scheduled runner)
+- Watched Hugging Face orgs for the Cloudflare scheduled runner are hardcoded in `apps/api/src/pipeline/model-discovery/huggingface.ts`
 - `HF_TOKEN` (optional Hugging Face token for orgs/models that require authenticated API access)
-- `GITHUB_TOKEN` or `GH_TOKEN` plus `GITHUB_REPOSITORY` (optional, enables automatic GitHub issues for private upstream provider and Hugging Face additions/changes/deletions)
-- `MODEL_DISCOVERY_HF_ENABLED=false` (optional, disables Cloudflare Worker Hugging Face discovery)
-- `MODEL_DISCOVERY_GITHUB_ISSUES=false` (optional, disables all private upstream GitHub issue sync)
-- `MODEL_DISCOVERY_PROVIDER_GITHUB_ISSUES=false` (optional, disables provider `/models` API GitHub issue sync only)
-- `MODEL_DISCOVERY_HF_GITHUB_ISSUES=false` (optional, disables Hugging Face GitHub issue sync only)
-- `MODEL_DISCOVERY_INTERNAL_ENABLED=false` (optional, disables Cloudflare Worker internal catalog discovery)
+- `GITHUB_TOKEN` or `GH_TOKEN` (optional, enables automatic GitHub issues for external provider and Hugging Face additions/changes/deletions)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for known provider model DB allowlist)
 - `SUPABASE_SERVICE_ROLE_KEY` (required for known provider model DB allowlist)
 - Provider-specific API keys declared in each provider module.

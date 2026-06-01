@@ -1,0 +1,71 @@
+name: Check Internal Models
+
+on:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+
+concurrency:
+    group: check-internal-models
+    cancel-in-progress: false
+
+env:
+    NODE_VERSION: 22
+    DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
+
+permissions:
+    contents: read
+
+jobs:
+    check-internal-models:
+        name: Check internal models
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                  fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              with:
+                  version: 10.33.0
+                  run_install: false
+
+            - name: Setup Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Restore lockfile (guard setup-node cache mutation)
+              run: git checkout -- pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Ensure state directory exists
+              run: mkdir -p scripts/model-discovery/state
+
+            - name: Restore internal model state cache
+              id: internal-model-state-cache
+              uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              with:
+                  path: scripts/model-discovery/state
+                  key: internal-model-state-${{ github.ref_name }}-${{ github.run_id }}
+                  restore-keys: |
+                      internal-model-state-${{ github.ref_name }}-
+
+            - name: Check for internal models
+              run: |
+                  pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
+                    --discord-role-id "1377690778478055584" \
+                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png" \
+                    --skip-hf
+
+            - name: Save internal model state cache
+              if: always()
+              uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              with:
+                  path: scripts/model-discovery/state
+                  key: ${{ steps.internal-model-state-cache.outputs.cache-primary-key }}

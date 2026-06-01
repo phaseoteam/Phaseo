@@ -1053,22 +1053,9 @@ export async function sendDiscordNotification(args: {
 
 	const message = buildDiscordMessage(args);
 	if (!message.trim()) return;
-	const roleId = readBindingEnv(["DISCORD_ROLE_ID"]);
-	const userId = readBindingEnv(["DISCORD_USER_ID"]);
-	const mentions: string[] = [];
-	if (roleId) mentions.push(`<@&${roleId}>`);
-	if (userId) mentions.push(`<@${userId}>`);
-
 	const payload: Record<string, unknown> = {
-		content: mentions.length ? `${mentions.join(" ")}\n${message}` : message,
+		content: message,
 	};
-	if (roleId || userId) {
-		payload.allowed_mentions = {
-			parse: [],
-			roles: roleId ? [roleId] : [],
-			users: userId ? [userId] : [],
-		};
-	}
 
 	const response = await fetch(parsedUrl.toString(), {
 		method: "POST",
