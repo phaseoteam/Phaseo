@@ -666,8 +666,8 @@ importers:
         specifier: ^1.104.11
         version: 1.104.12(@types/node@25.6.0)(@types/react@19.2.14)
       '@raycast/utils':
-        specifier: ^2.2.2
-        version: 2.2.3(@raycast/api@1.104.12(@types/node@25.6.0)(@types/react@19.2.14))(react@19.2.6)
+        specifier: ^2.2.5
+        version: 2.2.5(@raycast/api@1.104.12(@types/node@25.6.0)(@types/react@19.2.14))(react@19.2.6)
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^1.0.11
@@ -3737,8 +3737,8 @@ packages:
     peerDependencies:
       eslint: '>=7'
 
-  '@raycast/utils@2.2.3':
-    resolution: {integrity: sha512-YwqleVl0Wk/FOq+672gtvswuwMqjNqIr+c63FhouTEHc1LJ3zaohLSkW4+UcfBjPU8HySKQm+kJqZW1iOM9fnA==}
+  '@raycast/utils@2.2.5':
+    resolution: {integrity: sha512-1o6zGRECh1KNe6CBx68iMPOrNYbV56opqs4zUtDr6Wmq4F7Ww3d8uLTXKVzXlGyJmpAys/Eliw6cKIP7dPdFfw==}
     peerDependencies:
       '@raycast/api': '>=1.99.4'
       react: '>=19.0.0'
@@ -14764,7 +14764,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@raycast/utils@2.2.3(@raycast/api@1.104.12(@types/node@25.6.0)(@types/react@19.2.14))(react@19.2.6)':
+  '@raycast/utils@2.2.5(@raycast/api@1.104.12(@types/node@25.6.0)(@types/react@19.2.14))(react@19.2.6)':
     dependencies:
       '@raycast/api': 1.104.12(@types/node@25.6.0)(@types/react@19.2.14)
       dequal: 2.0.3
@@ -17989,7 +17989,7 @@ snapshots:
       eslint: 10.4.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.4.0(jiti@2.6.1))
@@ -18026,7 +18026,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -18040,7 +18040,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
