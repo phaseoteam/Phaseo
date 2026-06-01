@@ -212,7 +212,9 @@ function toCompatibilityPricing(pricing: PricingSummary): CompatibilityPricing {
         image: meterToUnitPrice(
             meters.output_image ?? meters.input_image ?? meters.input_image_tokens ?? meters.output_image_tokens
         ),
-        input_cache_read: meterToUnitPrice(meters.cached_read_text_tokens),
+        input_cache_read: meterToUnitPrice(
+            meters.implicit_cached_input_text_tokens ?? meters.cached_read_text_tokens
+        ),
         input_cache_write: meterToUnitPrice(meters.cached_write_text_tokens),
         web_search: meterToUnitPrice(meters.web_search),
     };

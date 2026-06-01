@@ -1632,6 +1632,8 @@ const (
 	KnownModelIdQwenQwen36Plus2 KnownModelId = "qwen/qwen3.6-plus"
 	KnownModelIdQwenQwen37Max KnownModelId = "qwen/qwen3.7-max"
 	KnownModelIdQwenQwen37Max20260517 KnownModelId = "qwen/qwen3.7-max-2026-05-17"
+	KnownModelIdQwenQwen37Plus KnownModelId = "qwen/qwen3.7-plus"
+	KnownModelIdQwenQwen37Plus20260526 KnownModelId = "qwen/qwen3.7-plus-2026-05-26"
 	KnownModelIdQwenQwq32b KnownModelId = "qwen/qwq-32b"
 	KnownModelIdQwenQwqPlus KnownModelId = "qwen/qwq-plus"
 	KnownModelIdQwenTextEmbeddingV3 KnownModelId = "qwen/text-embedding-v3"
