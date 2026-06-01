@@ -14,6 +14,7 @@ const KNOWN_METERS = new Set<string>([
     "output_tokens",
     "output_text_tokens", "output_reasoning_tokens", "output_image_tokens", "output_audio_tokens", "output_video_tokens",
     "output_image", "output_video", "output_video_seconds",
+    "implicit_cached_input_text_tokens",
     "cached_write_text_tokens", "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
     "embedding_tokens", "bfl_credits", "requests",
@@ -203,6 +204,13 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     if (typeof cachedReadTokens === "number" && meters.cached_read_text_tokens == null) {
         meters.cached_read_text_tokens = cachedReadTokens;
     }
+    if (
+        typeof cachedReadTokens === "number" &&
+        card.rules.some((rule) => rule.meter === "implicit_cached_input_text_tokens") &&
+        meters.implicit_cached_input_text_tokens == null
+    ) {
+        meters.implicit_cached_input_text_tokens = cachedReadTokens;
+    }
     if (typeof cachedWriteTokens === "number" && meters.cached_write_text_tokens == null) {
         meters.cached_write_text_tokens = cachedWriteTokens;
     }
@@ -259,6 +267,7 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     // Anthropic 1M pricing thresholds are based on input + cache read + cache write tokens.
     context.long_context_input_tokens =
         (meters.input_text_tokens ?? 0) +
+        (meters.implicit_cached_input_text_tokens ?? 0) +
         (meters.cached_read_text_tokens ?? 0) +
         (meters.cached_write_text_tokens ?? 0);
 

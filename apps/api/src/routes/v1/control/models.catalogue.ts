@@ -249,6 +249,7 @@ const PRICING_METERS = [
     "output_audio_tokens",
     "output_audio_seconds",
     "web_search",
+    "implicit_cached_input_text_tokens",
     "cached_read_text_tokens",
     "cached_write_text_tokens",
 ];
