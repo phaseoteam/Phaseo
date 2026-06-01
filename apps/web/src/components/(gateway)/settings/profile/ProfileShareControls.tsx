@@ -1,12 +1,13 @@
 "use client"
 
-import { Download, Linkedin, Share2, Twitter } from "lucide-react"
+import { Download, Share2 } from "lucide-react"
 
 import type { ProfileShareCardPayload } from "@/lib/profileShare"
 import {
 	buildProfileShareCardImageUrl,
 	buildProfileShareCardPageUrl,
 } from "@/lib/profileShare"
+import { LinkedInBrandIcon, XBrandIcon } from "@/components/icons/SocialBrandIcons"
 import { Button } from "@/components/ui/button"
 import { CopyButton } from "@/components/ui/copy-button"
 import {
@@ -72,14 +73,14 @@ export default function ProfileShareControls({ payload }: Props) {
 
 					<Button asChild variant="outline" className="justify-center rounded-full border-zinc-200">
 						<a href={twitterIntentUrl} target="_blank" rel="noreferrer">
-							<Twitter className="h-4 w-4" />
+							<XBrandIcon className="h-4 w-4" />
 							X
 						</a>
 					</Button>
 
 					<Button asChild variant="outline" className="justify-center rounded-full border-zinc-200">
 						<a href={linkedInIntentUrl} target="_blank" rel="noreferrer">
-							<Linkedin className="h-4 w-4" />
+							<LinkedInBrandIcon className="h-4 w-4" />
 							LinkedIn
 						</a>
 					</Button>
