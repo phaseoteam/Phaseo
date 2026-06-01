@@ -1,48 +1,45 @@
 {
-  "key": "crofai:qwen/qwen3.5-9b-chat:text.generate",
-  "api_provider_id": "crofai",
-  "provider_slug": "crofai",
-  "api_model_id": "qwen/qwen3.5-9b-chat",
+  "key": "venice:minimax/minimax-m3:text.generate",
+  "api_provider_id": "venice",
+  "provider_slug": "venice",
+  "api_model_id": "minimax/minimax-m3",
   "capability_id": "text.generate",
   "rules": [
     {
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.04,
+      "price_per_unit": 0.3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Venice public models API returned this pricing metadata on 2026-06-01.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00Z",
-      "effective_to": "2026-06-01T00:00:00Z"
+      "effective_from": "2026-06-01T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.008,
+      "price_per_unit": 0.06,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Derived from CrofAI pricing page cache pricing display.",
+      "note": "Venice public models API returned this pricing metadata on 2026-06-01.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00Z",
-      "effective_to": "2026-06-01T00:00:00Z"
+      "effective_from": "2026-06-01T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.15,
+      "price_per_unit": 1.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Venice public models API returned this pricing metadata on 2026-06-01.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00Z",
-      "effective_to": "2026-06-01T00:00:00Z"
+      "effective_from": "2026-06-01T00:00:00Z"
     }
   ]
 }

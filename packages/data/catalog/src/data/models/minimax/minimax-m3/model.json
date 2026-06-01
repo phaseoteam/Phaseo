@@ -2,19 +2,37 @@
   "model_id": "minimax/minimax-m3",
   "organisation_id": "minimax",
   "name": "MiniMax M3",
-  "status": "Rumoured",
+  "status": "Available",
   "previous_model_id": "minimax/minimax-m2.7",
-  "description": "MiniMax M3 is a rumoured next-generation MiniMax flagship language model expected to succeed the M2 series.",
-  "announced_date": null,
-  "release_date": null,
+  "description": "MiniMax M3 is MiniMax's frontier multimodal coding and agentic model. It supports up to 1M of input context for long documents, codebases, and multi-step workflows across text, image, and video inputs.",
+  "announced_date": "2026-06-01T00:00:00",
+  "release_date": "2026-06-01T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
-  "input_types": "text",
+  "input_types": "text,image,video",
   "output_types": "text",
   "api_model_id": "minimax/minimax-m3",
   "family_id": "minimax/minimax-m3",
-  "links": [],
-  "details": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.minimax.io/blog/minimax-m3"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://platform.minimax.io/docs/guides/text-generation"
+    },
+    {
+      "platform": "website",
+      "url": "https://www.minimax.io/models/text/m3"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    }
+  ],
   "benchmarks": []
 }
