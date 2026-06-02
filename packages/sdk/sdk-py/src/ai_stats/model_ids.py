@@ -302,6 +302,10 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25
     GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25: Final[str] = "google/gemini-2.5-flash-lite-preview-2025-09-25"
 
+    # Model ID: google/gemini-2.5-pro
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro
+    GOOGLE_GEMINI_2_5_PRO: Final[str] = "google/gemini-2.5-pro"
+
     # Model ID: google/gemini-3-flash-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
     GOOGLE_GEMINI_3_FLASH_PREVIEW: Final[str] = "google/gemini-3-flash-preview"
@@ -1897,6 +1901,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
         ModelIds.GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
+        ModelIds.GOOGLE_GEMINI_2_5_PRO,
         ModelIds.GOOGLE_GEMINI_3_FLASH_PREVIEW,
         ModelIds.GOOGLE_GEMINI_3_PRO_IMAGE,
         ModelIds.GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,

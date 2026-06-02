@@ -80,6 +80,7 @@ function monthlyMultiplier(freq: string): number | null {
 function toMonthlyPrice(price: PlanPrice): number | null {
 	if (price.price == null || !Number.isFinite(price.price)) return null;
 	const freq = normalizeFrequency(price.frequency);
+	if (freq.toLowerCase() === "usage" || freq.toLowerCase() === "custom") return null;
 	const mult = monthlyMultiplier(freq);
 	if (mult == null) return null;
 	return price.price * mult;
@@ -92,7 +93,11 @@ function planSortKey(prices: PlanPrice[] | null | undefined): number {
 		.filter((v): v is number => v != null && Number.isFinite(v));
 	if (monthly.length > 0) return Math.min(...monthly);
 	const raw = prices
-		.map((p) => (p.price != null && Number.isFinite(p.price) ? p.price : null))
+		.map((p) => {
+			const freq = normalizeFrequency(p.frequency).toLowerCase();
+			if (freq === "usage" || freq === "custom") return null;
+			return p.price != null && Number.isFinite(p.price) ? p.price : null;
+		})
 		.filter((v): v is number => v != null && Number.isFinite(v));
 	return raw.length > 0 ? Math.min(...raw) : Number.POSITIVE_INFINITY;
 }
@@ -105,6 +110,8 @@ function formatCurrencyAmount(amount: number, currency: string | null | undefine
 
 function formatPriceLine(p: PlanPrice): string {
 	const freq = normalizeFrequency(p.frequency);
+	if (freq.toLowerCase() === "usage") return "Usage-based";
+	if (freq.toLowerCase() === "custom") return "Custom pricing";
 	if (p.price == null || !Number.isFinite(p.price)) return `Custom / ${freq}`;
 	return `${formatCurrencyAmount(p.price, p.currency)} / ${freq}`;
 }
@@ -112,6 +119,12 @@ function formatPriceLine(p: PlanPrice): string {
 function getSortedPlanPrices(prices: PlanPrice[] | null | undefined): PlanPrice[] {
 	if (!prices || prices.length === 0) return [];
 	return [...prices].sort((a, b) => {
+		const aFrequency = normalizeFrequency(a.frequency).toLowerCase();
+		const bFrequency = normalizeFrequency(b.frequency).toLowerCase();
+		const aNonFixed = aFrequency === "usage" || aFrequency === "custom";
+		const bNonFixed = bFrequency === "usage" || bFrequency === "custom";
+		if (aNonFixed !== bNonFixed) return aNonFixed ? 1 : -1;
+
 		const am = toMonthlyPrice(a);
 		const bm = toMonthlyPrice(b);
 		const aKey =

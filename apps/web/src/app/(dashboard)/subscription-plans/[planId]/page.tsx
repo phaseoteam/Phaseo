@@ -53,7 +53,12 @@ export async function generateMetadata(props: {
 				: primaryPrice.frequency === "yearly"
 				? "per year"
 				: primaryPrice.frequency;
-		priceSnippet = `Typical pricing from ${primaryPrice.currency} ${primaryPrice.price} ${frequency}.`;
+		priceSnippet =
+			primaryPrice.frequency === "usage"
+				? "Typical pricing is usage-based."
+				: primaryPrice.frequency === "custom"
+				? "Typical pricing is custom; contact sales."
+				: `Typical pricing from ${primaryPrice.currency} ${primaryPrice.price} ${frequency}.`;
 	}
 
 	const descriptionParts = [

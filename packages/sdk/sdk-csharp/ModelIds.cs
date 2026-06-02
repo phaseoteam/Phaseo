@@ -152,6 +152,8 @@ namespace AiStatsSdk
         public const string GoogleGemini25FlashLitePreview20250617 = "google/gemini-2.5-flash-lite-preview-2025-06-17";
         /// <summary>Model ID: <c>google/gemini-2.5-flash-lite-preview-2025-09-25</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25</summary>
         public const string GoogleGemini25FlashLitePreview20250925 = "google/gemini-2.5-flash-lite-preview-2025-09-25";
+        /// <summary>Model ID: <c>google/gemini-2.5-pro</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro</summary>
+        public const string GoogleGemini25Pro = "google/gemini-2.5-pro";
         /// <summary>Model ID: <c>google/gemini-3-flash-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview</summary>
         public const string GoogleGemini3FlashPreview = "google/gemini-3-flash-preview";
         /// <summary>Model ID: <c>google/gemini-3-pro-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image</summary>

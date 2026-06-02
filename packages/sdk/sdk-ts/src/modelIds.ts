@@ -149,6 +149,8 @@ export const ModelIds = {
   GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17: "google/gemini-2.5-flash-lite-preview-2025-06-17",
   /** Model ID: `google/gemini-2.5-flash-lite-preview-2025-09-25`. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25 */
   GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25: "google/gemini-2.5-flash-lite-preview-2025-09-25",
+  /** Model ID: `google/gemini-2.5-pro`. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro */
+  GOOGLE_GEMINI_2_5_PRO: "google/gemini-2.5-pro",
   /** Model ID: `google/gemini-3-flash-preview`. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview */
   GOOGLE_GEMINI_3_FLASH_PREVIEW: "google/gemini-3-flash-preview",
   /** Model ID: `google/gemini-3-pro-image`. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image */

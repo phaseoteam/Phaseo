@@ -1,0 +1,24 @@
+{
+  "model_id": "windsurf/swe-1-mini",
+  "organisation_id": "windsurf",
+  "name": "SWE-1 Mini",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "SWE-1 Mini powers passive code suggestions in Windsurf Tab and is optimized for real-time latency.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "windsurf/swe-1-mini",
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://docs.windsurf.com/windsurf/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

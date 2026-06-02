@@ -52,14 +52,8 @@
     },
     {
       "model_id": "google/gemini-3.1-pro-preview",
-      "model_info": "Pro",
-      "rate_limit": "Up To 30 Prompts / Day",
-      "other_info": null
-    },
-    {
-      "model_id": "google/gemini-3.1-pro-preview",
-      "model_info": "Thinking",
-      "rate_limit": "Up To 90 Prompts / Day",
+      "model_info": "Pro / Thinking",
+      "rate_limit": "Up To 30 Pro Prompts / Day; Up To 90 Thinking Prompts / Day",
       "other_info": null
     }
   ]

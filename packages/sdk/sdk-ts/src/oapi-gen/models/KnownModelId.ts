@@ -75,6 +75,7 @@ export type KnownModelId =
   | "google/gemini-2.5-flash-lite"
   | "google/gemini-2.5-flash-lite-preview-2025-06-17"
   | "google/gemini-2.5-flash-lite-preview-2025-09-25"
+  | "google/gemini-2.5-pro"
   | "google/gemini-3-flash-preview"
   | "google/gemini-3-pro-image"
   | "google/gemini-3-pro-image-preview"

@@ -1,0 +1,24 @@
+{
+  "model_id": "windsurf/swe-1",
+  "organisation_id": "windsurf",
+  "name": "SWE-1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "SWE-1 is Windsurf's first in-house agentic coding model.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "windsurf/swe-1",
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://docs.windsurf.com/windsurf/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

@@ -226,6 +226,9 @@ public final class ModelIds {
     /** Model ID: <code>google/gemini-2.5-flash-lite-preview-2025-09-25</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25 */
     public static final String GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25 = "google/gemini-2.5-flash-lite-preview-2025-09-25";
 
+    /** Model ID: <code>google/gemini-2.5-pro</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro */
+    public static final String GOOGLE_GEMINI_2_5_PRO = "google/gemini-2.5-pro";
+
     /** Model ID: <code>google/gemini-3-flash-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview */
     public static final String GOOGLE_GEMINI_3_FLASH_PREVIEW = "google/gemini-3-flash-preview";
 

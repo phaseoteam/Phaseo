@@ -39,8 +39,6 @@ import { mergeProviderPricingOffers } from "@/lib/providers/providerFamilyGroups
 import {
     getProviderAvailablePlans,
     getProviderModelScopeForPlan,
-    hasPricingForPlan,
-    isProviderVisibleForPlan,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
 const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
 const SORT_QUERY_KEY = "sort";
@@ -121,6 +119,8 @@ const PLAN_FREQUENCY_SORT_ORDER: Record<string, number> = {
     yearly: 2,
     weekly: 3,
     daily: 4,
+    usage: 98,
+    custom: 99,
 };
 
 type SubscriptionPrice = {
@@ -223,26 +223,22 @@ function normalizePlanFrequency(value: string | null | undefined): string {
     return PLAN_FREQUENCY_ALIASES[normalized] ?? normalized;
 }
 
-function getFrequencySuffix(value: string): string {
-    const normalized = normalizePlanFrequency(value);
-    if (normalized === "monthly") return "/mo";
-    if (normalized === "quarterly") return "/qtr";
-    if (normalized === "yearly") return "/yr";
-    if (normalized === "weekly") return "/wk";
-    if (normalized === "daily") return "/day";
-    return normalized ? `/${normalized}` : "";
-}
-
 function getFrequencyLabel(value: string): string {
     const normalized = normalizePlanFrequency(value);
     if (!normalized) return "Other";
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
+function isNonFixedPlanFrequency(value: string): boolean {
+    const normalized = normalizePlanFrequency(value);
+    return normalized === "usage" || normalized === "custom";
+}
+
 function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
     const raw = Number(price.price);
     if (!Number.isFinite(raw) || raw < 0) return null;
     const normalized = normalizePlanFrequency(price.frequency);
+    if (normalized === "usage" || normalized === "custom") return null;
     const multiplier = PLAN_FREQUENCY_MONTH_MULTIPLIERS[normalized];
     if (typeof multiplier !== "number") return raw;
     return raw * multiplier;
@@ -255,6 +251,10 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 }
 
 function formatPlanPriceValue(price: SubscriptionPrice): string {
+    const normalized = normalizePlanFrequency(price.frequency);
+    if (normalized === "usage") return "Usage-based";
+    if (normalized === "custom") return "Custom pricing";
+
     const currency = String(price.currency || "USD").toUpperCase();
     return new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -266,6 +266,10 @@ function formatPlanPriceValue(price: SubscriptionPrice): string {
 
 function sortSubscriptionPlanPrices(prices: SubscriptionPrice[]): SubscriptionPrice[] {
     return [...prices].sort((a, b) => {
+        const aNonFixed = isNonFixedPlanFrequency(a.frequency);
+        const bNonFixed = isNonFixedPlanFrequency(b.frequency);
+        if (aNonFixed !== bNonFixed) return aNonFixed ? 1 : -1;
+
         const currencyRank = getCurrencySortRank(a.currency) - getCurrencySortRank(b.currency);
         if (currencyRank !== 0) return currencyRank;
 
@@ -300,7 +304,8 @@ function getPlanSortKey(prices: SubscriptionPrice[]): {
             (price) =>
                 Number.isFinite(Number(price.price)) &&
                 Number(price.price) >= 0 &&
-                Boolean(String(price.currency ?? "").trim())
+                Boolean(String(price.currency ?? "").trim()) &&
+                !isNonFixedPlanFrequency(price.frequency)
         )
     );
     const first = sorted[0];

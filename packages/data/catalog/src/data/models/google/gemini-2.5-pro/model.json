@@ -1,0 +1,46 @@
+{
+  "model_id": "google/gemini-2.5-pro",
+  "organisation_id": "google",
+  "name": "Gemini 2.5 Pro",
+  "status": "Available",
+  "previous_model_id": "google/gemini-2.5-pro-preview-2025-06-05",
+  "description": "Gemini 2.5 Pro is Google's stable state-of-the-art multipurpose model for advanced coding, complex reasoning, mathematics, science, and multimodal understanding tasks. It supports text, image, video, and audio inputs with a 1M token context window.",
+  "announced_date": "2025-06-17T00:00:00",
+  "release_date": "2025-06-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "google/gemini-2.5-pro",
+  "family_id": "google/gemini-2.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://blog.google/products-and-platforms/products/gemini/gemini-2-5-model-family-expands/"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://ai.google.dev/gemini-api/docs/models"
+    },
+    {
+      "platform": "pricing",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1048576
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-01-01T00:00:00"
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    }
+  ],
+  "benchmarks": []
+}

@@ -225,6 +225,9 @@ inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_1
 // Model ID: google/gemini-2.5-flash-lite-preview-2025-09-25
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25
 inline constexpr std::string_view GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25 = "google/gemini-2.5-flash-lite-preview-2025-09-25";
+// Model ID: google/gemini-2.5-pro
+// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro
+inline constexpr std::string_view GOOGLE_GEMINI_2_5_PRO = "google/gemini-2.5-pro";
 // Model ID: google/gemini-3-flash-preview
 // Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
 inline constexpr std::string_view GOOGLE_GEMINI_3_FLASH_PREVIEW = "google/gemini-3-flash-preview";
@@ -1365,7 +1368,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 452> ALL = {
+inline constexpr std::array<std::string_view, 453> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_1_0,
@@ -1439,6 +1442,7 @@ inline constexpr std::array<std::string_view, 452> ALL = {
 	GOOGLE_GEMINI_2_5_FLASH_LITE,
 	GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
 	GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
+	GOOGLE_GEMINI_2_5_PRO,
 	GOOGLE_GEMINI_3_FLASH_PREVIEW,
 	GOOGLE_GEMINI_3_PRO_IMAGE,
 	GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,

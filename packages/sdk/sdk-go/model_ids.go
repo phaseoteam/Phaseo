@@ -226,6 +226,9 @@ const (
 	// Model ID: google/gemini-2.5-flash-lite-preview-2025-09-25
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25
 	ModelIDGoogleGemini25FlashLitePreview20250925 gen.ModelId = "google/gemini-2.5-flash-lite-preview-2025-09-25"
+	// Model ID: google/gemini-2.5-pro
+	// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro
+	ModelIDGoogleGemini25Pro gen.ModelId = "google/gemini-2.5-pro"
 	// Model ID: google/gemini-3-flash-preview
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
 	ModelIDGoogleGemini3FlashPreview gen.ModelId = "google/gemini-3-flash-preview"
@@ -1441,6 +1444,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDGoogleGemini25FlashLite,
 	ModelIDGoogleGemini25FlashLitePreview20250617,
 	ModelIDGoogleGemini25FlashLitePreview20250925,
+	ModelIDGoogleGemini25Pro,
 	ModelIDGoogleGemini3FlashPreview,
 	ModelIDGoogleGemini3ProImage,
 	ModelIDGoogleGemini3ProImagePreview,

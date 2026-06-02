@@ -45,7 +45,7 @@
       "other_info": null
     },
     {
-      "model_id": "mistral/devstral-small-2.0",
+      "model_id": "mistral/devstral-2.0",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

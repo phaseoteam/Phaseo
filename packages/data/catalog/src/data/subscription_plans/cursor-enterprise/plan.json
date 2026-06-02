@@ -1,0 +1,78 @@
+{
+  "plan_id": "cursor-enterprise",
+  "name": "Cursor Enterprise",
+  "organisation_id": "cursor",
+  "description": "Custom Cursor plan for larger organizations that need invoicing, pooled usage, and advanced security.",
+  "pricing_options": [
+    {
+      "frequency": "custom",
+      "usd_price": 0,
+      "link": "https://cursor.com/pricing",
+      "other_info": "Custom pricing; contact Cursor sales"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Pricing",
+      "feature_value": "Custom",
+      "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with custom-pricing metadata.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Pooled Usage",
+      "feature_value": "Included",
+      "feature_description": "Pooled usage to maximize budget efficiency.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Enterprise Billing",
+      "feature_value": "Invoice/PO billing",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Identity Management",
+      "feature_value": "SCIM seat management and SAML/OIDC SSO",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Controls",
+      "feature_value": "Repository, model, MCP, auto-run, browser, and network controls",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Audit and Support",
+      "feature_value": "Audit logs, service accounts, priority support, and account management",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "cursor/composer-2.5",
+      "model_info": "Cursor native agent model",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.5",
+      "model_info": "Frontier model access",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": "Representative OpenAI frontier model; exact availability may vary"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": "Frontier model access",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": "Representative Anthropic frontier model; exact availability may vary"
+    },
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": "Frontier model access",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": "Representative Gemini frontier model; exact availability may vary"
+    }
+  ]
+}

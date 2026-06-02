@@ -222,6 +222,9 @@ pub mod model_ids {
     /// Model ID: `google/gemini-2.5-flash-lite-preview-2025-09-25`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25
     pub const GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25: &str = "google/gemini-2.5-flash-lite-preview-2025-09-25";
+    /// Model ID: `google/gemini-2.5-pro`.
+    /// Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-pro
+    pub const GOOGLE_GEMINI_2_5_PRO: &str = "google/gemini-2.5-pro";
     /// Model ID: `google/gemini-3-flash-preview`.
     /// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-flash-preview
     pub const GOOGLE_GEMINI_3_FLASH_PREVIEW: &str = "google/gemini-3-flash-preview";
@@ -1437,6 +1440,7 @@ pub mod model_ids {
         GOOGLE_GEMINI_2_5_FLASH_LITE,
         GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17,
         GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25,
+        GOOGLE_GEMINI_2_5_PRO,
         GOOGLE_GEMINI_3_FLASH_PREVIEW,
         GOOGLE_GEMINI_3_PRO_IMAGE,
         GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,
