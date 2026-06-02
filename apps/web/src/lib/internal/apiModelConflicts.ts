@@ -1,15 +1,44 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const API_PROVIDERS_ROOT = path.resolve(
-	CURRENT_DIR,
-	"../../../../../packages/data/catalog/src/data/api_providers",
+function resolveRepoRoot(): string {
+	const configured = process.env.REPO_ROOT?.trim();
+	if (configured) return configured;
+
+	let current = process.cwd();
+	while (true) {
+		const packageJsonPath = path.join(current, "package.json");
+		const pnpmWorkspacePath = path.join(current, "pnpm-workspace.yaml");
+		if (fs.existsSync(packageJsonPath) && fs.existsSync(pnpmWorkspacePath)) {
+			return current;
+		}
+
+		const parent = path.dirname(current);
+		if (parent === current) break;
+		current = parent;
+	}
+
+	return process.cwd();
+}
+
+const REPO_ROOT = resolveRepoRoot();
+const API_PROVIDERS_ROOT = path.join(
+	REPO_ROOT,
+	"packages",
+	"data",
+	"catalog",
+	"src",
+	"data",
+	"api_providers",
 );
-const PRICING_ROOT = path.resolve(
-	CURRENT_DIR,
-	"../../../../../packages/data/catalog/src/data/pricing",
+const PRICING_ROOT = path.join(
+	REPO_ROOT,
+	"packages",
+	"data",
+	"catalog",
+	"src",
+	"data",
+	"pricing",
 );
 
 const MODEL_ALIAS_STOPWORDS = new Set([

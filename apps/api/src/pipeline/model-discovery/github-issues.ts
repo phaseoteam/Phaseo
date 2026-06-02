@@ -51,6 +51,14 @@ const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
 
+function resolveGitHubRepository(): string {
+	return readBindingEnv(["GITHUB_REPOSITORY"]) ?? DEFAULT_GITHUB_REPOSITORY;
+}
+
+function resolveGitHubApiBaseUrl(): string {
+	return readBindingEnv(["GITHUB_API_URL"]) ?? DEFAULT_GITHUB_API_BASE_URL;
+}
+
 function markerForKey(key: string): string {
 	return `ai-stats-upstream-discovery:${key}`;
 }
@@ -157,6 +165,7 @@ function groupIssueEntries(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssueG
 }
 
 function createGitHubIssueClient(args: {
+	apiBaseUrl: string;
 	token: string;
 	repository: string;
 	requestImpl?: typeof fetch;
@@ -167,9 +176,10 @@ function createGitHubIssueClient(args: {
 	}
 
 	const requestImpl = args.requestImpl ?? fetch;
+	const apiBaseUrl = args.apiBaseUrl.replace(/\/+$/, "");
 
 	const requestJson = async <T>(pathName: string, init: RequestInit = {}): Promise<T> => {
-		const response = await requestImpl(`${DEFAULT_GITHUB_API_BASE_URL}${pathName}`, {
+		const response = await requestImpl(`${apiBaseUrl}${pathName}`, {
 			...init,
 			signal: init.signal ?? AbortSignal.timeout(DEFAULT_GITHUB_REQUEST_TIMEOUT_MS),
 			headers: {
@@ -268,8 +278,9 @@ export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssu
 	if (skipped) return skipped;
 
 	const token = readBindingEnv(["GITHUB_TOKEN", "GH_TOKEN"])!.trim();
-	const repository = DEFAULT_GITHUB_REPOSITORY;
-	const client = createGitHubIssueClient({ token, repository });
+	const repository = resolveGitHubRepository();
+	const apiBaseUrl = resolveGitHubApiBaseUrl();
+	const client = createGitHubIssueClient({ token, repository, apiBaseUrl });
 
 	let created = 0;
 	let updated = 0;
