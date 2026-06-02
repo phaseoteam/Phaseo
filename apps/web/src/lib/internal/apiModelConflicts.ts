@@ -2,22 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-function resolveDataRoot(): string {
-	const candidates = [
-		fileURLToPath(
-			new URL("../../../../../packages/data/catalog/src/data/", import.meta.url),
-		),
-		fileURLToPath(new URL("../../data/", import.meta.url)),
-	];
-	for (const candidate of candidates) {
-		if (fs.existsSync(candidate)) return candidate;
-	}
-	return candidates[0];
-}
-
-const DATA_ROOT = resolveDataRoot();
-const API_PROVIDERS_ROOT = path.join(DATA_ROOT, "api_providers");
-const PRICING_ROOT = path.join(DATA_ROOT, "pricing");
+const CURRENT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const API_PROVIDERS_ROOT = path.resolve(
+	CURRENT_DIR,
+	"../../../../../packages/data/catalog/src/data/api_providers",
+);
+const PRICING_ROOT = path.resolve(
+	CURRENT_DIR,
+	"../../../../../packages/data/catalog/src/data/pricing",
+);
 
 const MODEL_ALIAS_STOPWORDS = new Set([
 	"instruct",
