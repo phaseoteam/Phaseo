@@ -52,6 +52,7 @@ export type HuggingFaceDiscoverySummary = {
 const PAGE_SIZE = 100;
 const MAX_PAGES = 50;
 const UPSERT_BATCH_SIZE = 500;
+const HUGGING_FACE_FETCH_TIMEOUT_MS = 30_000;
 const HUGGING_FACE_BASE_URL = "https://huggingface.co";
 const WATCHED_HF_ORGS = [
 	"primeintellect",
@@ -115,7 +116,10 @@ async function fetchHuggingFaceOrgModelIds(orgId: string, hfToken: string | null
 	let pageCount = 0;
 
 	while (nextUrl && pageCount < MAX_PAGES) {
-		const response = await fetch(nextUrl, { headers });
+		const response = await fetch(nextUrl, {
+			headers,
+			signal: AbortSignal.timeout(HUGGING_FACE_FETCH_TIMEOUT_MS),
+		});
 		if (!response.ok) {
 			const body = await response.text().catch(() => "");
 			throw new Error(`Hugging Face API HTTP ${response.status}${body ? `: ${body.slice(0, 300)}` : ""}`);
@@ -405,6 +409,8 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 			await sendDiscordTextMessage({
 				webhookUrl,
 				message: buildDiscordMessage(diffs),
+				roleId: trimOrNull(readBindingEnv(["DISCORD_ROLE_ID"])),
+				userId: trimOrNull(readBindingEnv(["DISCORD_USER_ID"])),
 			});
 			summary.notified = true;
 		} catch (error) {

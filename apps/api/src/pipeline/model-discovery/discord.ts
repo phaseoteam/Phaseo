@@ -54,6 +54,7 @@ const DEFAULT_MAX_MODEL_EMBEDS = 10;
 const DEFAULT_LATEST_MODELS_URL = "https://ai-stats.phaseo.app/models";
 const DEFAULT_ASSET_BASE_URL = "https://ai-stats.phaseo.app";
 const DEFAULT_AVATAR_PATH = "/png_logo_light.png";
+const DISCORD_WEBHOOK_TIMEOUT_MS = 30_000;
 
 function trimOrNull(value: string | null | undefined): string | null {
 	if (typeof value !== "string") return null;
@@ -248,6 +249,7 @@ export async function sendDiscordWebhookPayload(webhookUrl: string, payload: Dis
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(payload),
+		signal: AbortSignal.timeout(DISCORD_WEBHOOK_TIMEOUT_MS),
 	});
 
 	if (!response.ok) {

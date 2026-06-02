@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { sendDiscordTextMessage } from "./discord";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -1053,18 +1054,10 @@ export async function sendDiscordNotification(args: {
 
 	const message = buildDiscordMessage(args);
 	if (!message.trim()) return;
-	const payload: Record<string, unknown> = {
-		content: message,
-	};
-
-	const response = await fetch(parsedUrl.toString(), {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(payload),
+	await sendDiscordTextMessage({
+		webhookUrl: parsedUrl.toString(),
+		message,
+		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
+		userId: readBindingEnv(["DISCORD_USER_ID"]),
 	});
-
-	if (!response.ok) {
-		const body = await response.text().catch(() => "");
-		throw new Error(`Discord webhook failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`);
-	}
 }
