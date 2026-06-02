@@ -1213,6 +1213,14 @@
 		{
 			"source": "/v1/:slug*.mdx",
 			"destination": "/v1/:slug*"
+		},
+		{
+			"source": "/v1/sdk-changelog",
+			"destination": "/v1/changelog"
+		},
+		{
+			"source": "/v1/data-changelog",
+			"destination": "/v1/changelog"
 		}
 	],
 	"contextual": {
