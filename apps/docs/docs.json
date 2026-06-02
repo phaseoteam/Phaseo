@@ -1154,9 +1154,7 @@
 							{
 								"group": "Latest updates",
 								"pages": [
-									"v1/changelog",
-									"v1/sdk-changelog",
-									"v1/data-changelog"
+									"v1/changelog"
 								]
 							}
 						]

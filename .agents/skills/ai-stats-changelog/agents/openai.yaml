@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Stats Changelog"
+  short_description: "Write AI Stats changelog entries and combined timelines"
+  default_prompt: "Use $ai-stats-changelog to update AI Stats changelog pages with concise date-grouped Product and New Models entries."
