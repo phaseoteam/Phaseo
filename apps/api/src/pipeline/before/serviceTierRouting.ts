@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { loadPriceCard } from "@pipeline/pricing";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import type { PriceCard } from "../pricing/types";
 import { ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
 import type { ProviderCandidate } from "./types";
@@ -44,18 +45,14 @@ type TierSiblingCapabilityRow = {
 };
 
 function normalizeRequestedServiceTier(body: any): string | null {
-    const speed = String(body?.speed ?? "").trim().toLowerCase();
-    if (speed === "fast") return "priority";
-
-    const tier = String(body?.service_tier ?? body?.serviceTier ?? "").trim().toLowerCase();
-    return tier || null;
+    return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
 }
 
 function normalizeRequestedPlan(tier: string | null): ServiceTierPlan | null {
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
-    if (tier === "standard" || tier === "default") return "standard";
+    if (tier === "standard") return "standard";
     return null;
 }
 

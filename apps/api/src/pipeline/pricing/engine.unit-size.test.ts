@@ -91,4 +91,39 @@ describe("pricing engine unit_size handling", () => {
 		expect(priced.pricing.lines[0].dimension).toBe("output_image_tokens");
 		expect(priced.pricing.lines[0].line_nanos).toBe(134_400_000);
 	});
+
+	it("prices page-based OCR meters", () => {
+		const ocrCard: PriceCard = {
+			provider: "mistral",
+			model: "mistral/ocr-3",
+			endpoint: "ocr",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					pricing_plan: "standard",
+					meter: "input_pages",
+					unit: "page",
+					unit_size: 1000,
+					price_per_unit: "2.0",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const priced = computeBill(
+			{ input_pages: 3 },
+			ocrCard,
+			{},
+			"standard",
+		);
+
+		expect(priced.pricing.total_nanos).toBe(6_000_000);
+		expect(priced.pricing.lines[0].dimension).toBe("input_pages");
+		expect(priced.pricing.lines[0].billable_units).toBeCloseTo(0.003, 12);
+	});
 });

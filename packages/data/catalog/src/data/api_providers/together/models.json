@@ -256,7 +256,7 @@
     "provider_api_model_id": "together:moonshotai/kimi-k2.5",
     "provider_model_slug": "moonshotai/Kimi-K2.5",
     "internal_model_id": "moonshotai/kimi-k2.5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",

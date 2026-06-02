@@ -31,7 +31,148 @@
     {
       "name": "output_context_length",
       "value": 128000
+    },
+    {
+      "name": "parameter_count",
+      "value": 310000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 15000000000
+    },
+    {
+      "name": "training_tokens",
+      "value": 48000000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "mimo-coding-bench",
+      "score": 71.8,
+      "is_self_reported": true,
+      "other_info": "Coding agent benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-coding-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "claw-eval",
+      "score": 62.1,
+      "is_self_reported": true,
+      "other_info": "General; Hugging Face evaluation result",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "claw-eval",
+      "score": 23.8,
+      "is_self_reported": true,
+      "other_info": "Multimodal; Hugging Face evaluation result",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "claw-eval",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": "Multi Turn; Hugging Face evaluation result",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 65.8,
+      "is_self_reported": true,
+      "other_info": "Hugging Face evaluation result",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 56.1,
+      "is_self_reported": true,
+      "other_info": "Hugging Face evaluation result",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-rq",
+      "score": 81,
+      "is_self_reported": true,
+      "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 77.9,
+      "is_self_reported": true,
+      "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "hr-bench-4k",
+      "score": 88.5,
+      "is_self_reported": true,
+      "other_info": "Image understanding benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "video-mme",
+      "score": 87.7,
+      "is_self_reported": true,
+      "other_info": "Video understanding benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "dailyomni",
+      "score": 83.5,
+      "is_self_reported": true,
+      "other_info": "Video understanding benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "videoholmes",
+      "score": 64,
+      "is_self_reported": true,
+      "other_info": "Video understanding benchmark from official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-multimodal-bench.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-256k-f1",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": "256K input tokens; official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-graphwalks.jpeg",
+      "rank": null
+    },
+    {
+      "benchmark_id": "graphwalks-bfs-1m-f1",
+      "score": 54,
+      "is_self_reported": true,
+      "other_info": "1M input tokens; official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-graphwalks.jpeg",
+      "rank": null
+    },
+    {
+      "benchmark_id": "graphwalks-parents-256k-f1",
+      "score": 98,
+      "is_self_reported": true,
+      "other_info": "256K input tokens; official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-graphwalks.jpeg",
+      "rank": null
+    },
+    {
+      "benchmark_id": "graphwalks-parents-1m-f1",
+      "score": 87,
+      "is_self_reported": true,
+      "other_info": "1M input tokens; official MiMo-V2.5 model card image",
+      "source_link": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5/blob/main/assets/mimo-v2.5-graphwalks.jpeg",
+      "rank": null
+    }
+  ]
 }

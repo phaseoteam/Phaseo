@@ -18,8 +18,10 @@ export type PriceBand = {
 export type PricingDimensionKey =
     | "input_tokens"
     | "input_characters"
+    | "input_pages"
     | "input_text_tokens"
     | "input_image_tokens"
+    | "input_audio_minutes"
     | "input_audio_tokens"
     | "input_video_tokens"
     | "output_tokens"
@@ -31,6 +33,7 @@ export type PricingDimensionKey =
     | "output_image"
     | "output_video"
     | "output_video_seconds"
+    | "implicit_cached_input_text_tokens"
     | "cached_write_text_tokens"
     | "cached_write_image_tokens"
     | "cached_write_audio_tokens"
@@ -104,7 +107,6 @@ export type PricingResult = {
     currency: "USD";
     lines: PricingBreakdownLine[];
 };
-
 
 
 

@@ -27,11 +27,9 @@ Parameter support varies by endpoint and model.
 - [Chat Completions](./endpoint/chat-completions.mdx)
 - [Responses](./endpoint/responses.mdx)
 
-Use `priority` or `flex` when the model/provider combination supports those tiers. `Standard` is the default when `service_tier` is omitted. `Batch` uses the Batch API rather than this field.
+Accepted values are `standard`, `priority`, `flex`, and `batch`. For synchronous text requests, `batch` returns a validation error with a pointer to the Batch API because batch pricing applies to deferred batch execution, not normal request/response calls.
 
-For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. AI Stats may normalize or map these values across providers while preserving Anthropic-compatible request behavior on `/v1/messages`.
-
-If you are using an official Anthropic SDK with a custom base URL pointed at AI Stats, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, prefer raw HTTP requests or the gateway-native/OpenAI-style text APIs.
+AI Stats maps these gateway-normalized tier values to provider-native controls internally, such as OpenAI or Anthropic provider-specific fields, so callers can use the same `service_tier` values across supported text surfaces.
 
 ## Provider routing parameters
 

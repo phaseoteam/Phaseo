@@ -1,0 +1,249 @@
+{
+  "key": "minimax:minimax/minimax-m3:text.generate",
+  "api_provider_id": "minimax",
+  "provider_slug": "minimax",
+  "api_model_id": "minimax/minimax-m3",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "MiniMax pay-as-you-go pricing page showed a 7-day 50% launch discount on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "MiniMax pay-as-you-go pricing page showed a 7-day 50% launch discount on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.06,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "MiniMax pay-as-you-go pricing page showed a 7-day 50% launch discount on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "MiniMax documented this long-context tier as limited-availability at release on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.8,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "MiniMax documented this long-context tier as limited-availability at release on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.24,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "MiniMax documented this long-context tier as limited-availability at release on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.45,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "MiniMax pay-as-you-go pricing page showed a 7-day 50% launch discount on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.8,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "MiniMax pay-as-you-go pricing page showed a 7-day 50% launch discount on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.09,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "MiniMax pay-as-you-go pricing page showed a 7-day 50% launch discount on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.8,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "MiniMax documented this long-context tier as limited-availability at release on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 7.2,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "MiniMax documented this long-context tier as limited-availability at release on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.36,
+      "currency": "USD",
+      "pricing_plan": "priority",
+      "note": "MiniMax documented this long-context tier as limited-availability at release on 2026-06-01.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 512000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-01T00:00:00Z"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
+import { runHuggingFaceDiscovery } from "@/pipeline/model-discovery/huggingface";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
@@ -32,10 +33,6 @@ function toInt(value: string | undefined, fallback: number): number {
 }
 
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
-	if (!toBool(env.MODEL_DISCOVERY_ENABLED, true)) {
-		return;
-	}
-
 	const shardSize = normalizeModelDiscoveryShardSize(
 		toInt(env.MODEL_DISCOVERY_SHARD_SIZE, DEFAULT_MODEL_DISCOVERY_SHARD_SIZE),
 	);
@@ -54,6 +51,18 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 			notify: true,
 			prune: shardIndex === 0,
 		});
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleHuggingFaceDiscoveryScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const summary = await runHuggingFaceDiscovery();
+		if (summary.executed) {
+			console.log("model_discovery_huggingface_completed", summary);
+		}
 	} finally {
 		clearRuntime();
 	}
@@ -154,5 +163,10 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		await handleModelDiscoveryScheduledEvent(event, env);
 	} catch (error) {
 		console.error("model_discovery_scheduled_failed", { error });
+	}
+	try {
+		await handleHuggingFaceDiscoveryScheduledEvent(event, env);
+	} catch (error) {
+		console.error("model_discovery_huggingface_scheduled_failed", { error });
 	}
 }

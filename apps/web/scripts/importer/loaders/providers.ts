@@ -266,6 +266,47 @@ const toNullableIsoTimestamp = (value: unknown): string | null => {
     return null;
 };
 
+const toTimestampMs = (value: string | null): number => {
+    if (!value) return Number.NEGATIVE_INFINITY;
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+};
+
+const choosePreferredProviderModelRow = <
+    T extends {
+        effective_from: string | null;
+        effective_to: string | null;
+        is_active_gateway: boolean;
+    },
+>(
+    current: T,
+    candidate: T
+): T => {
+    const currentFrom = toTimestampMs(current.effective_from);
+    const candidateFrom = toTimestampMs(candidate.effective_from);
+    if (currentFrom !== candidateFrom) {
+        return candidateFrom > currentFrom ? candidate : current;
+    }
+
+    const currentIsOpenEnded = current.effective_to == null;
+    const candidateIsOpenEnded = candidate.effective_to == null;
+    if (currentIsOpenEnded !== candidateIsOpenEnded) {
+        return candidateIsOpenEnded ? candidate : current;
+    }
+
+    const currentTo = toTimestampMs(current.effective_to);
+    const candidateTo = toTimestampMs(candidate.effective_to);
+    if (currentTo !== candidateTo) {
+        return candidateTo > currentTo ? candidate : current;
+    }
+
+    if (current.is_active_gateway !== candidate.is_active_gateway) {
+        return candidate.is_active_gateway ? candidate : current;
+    }
+
+    return candidate;
+};
+
 const parseProviderStatus = (value: unknown): ProviderStatus | null => {
     const raw = value == null ? "" : String(value).trim();
     if (!raw) return null;
@@ -820,6 +861,7 @@ export async function loadProviders(
         string,
         (typeof providerModelsToUpsert)[number]
     >();
+    let collapsedProviderModelRows = 0;
     for (const row of providerModelsToUpsert) {
         const key = row.provider_api_model_id;
         const previous = dedupedProviderModelMap.get(key);
@@ -827,18 +869,20 @@ export async function loadProviders(
             dedupedProviderModelMap.set(key, row);
             continue;
         }
-        if (JSON.stringify(previous) !== JSON.stringify(row)) {
-            console.warn(
-                `[importer] Conflicting duplicate provider model row for key=${key}; keeping first row.\n` +
-                    `first=${JSON.stringify(previous)}\n` +
-                    `duplicate=${JSON.stringify(row)}`
-            );
+        collapsedProviderModelRows += 1;
+        if (JSON.stringify(previous) === JSON.stringify(row)) {
+            continue;
         }
+        dedupedProviderModelMap.set(
+            key,
+            choosePreferredProviderModelRow(previous, row)
+        );
     }
     const dedupedProviderModels = Array.from(dedupedProviderModelMap.values());
-    if (dedupedProviderModels.length !== providerModelsToUpsert.length) {
+    if (collapsedProviderModelRows > 0) {
         console.warn(
-            `[importer] Deduped ${providerModelsToUpsert.length - dedupedProviderModels.length} duplicate provider model row(s) before upsert.`
+            `[importer] Collapsed ${collapsedProviderModelRows} duplicate provider model row(s) to the most current snapshot before upsert. ` +
+                `data_api_provider_models currently stores one row per provider_api_model_id.`
         );
     }
 
@@ -846,6 +890,7 @@ export async function loadProviders(
         string,
         (typeof capabilityRowsToUpsert)[number]
     >();
+    let collapsedCapabilityRows = 0;
     for (const row of capabilityRowsToUpsert) {
         const key = `${row.provider_api_model_id}::${row.capability_id}`;
         const previous = dedupedCapabilityRowMap.get(key);
@@ -853,18 +898,16 @@ export async function loadProviders(
             dedupedCapabilityRowMap.set(key, row);
             continue;
         }
-        if (JSON.stringify(previous) !== JSON.stringify(row)) {
-            console.warn(
-                `[importer] Conflicting duplicate provider capability row for key=${key}; keeping first row.\n` +
-                    `first=${JSON.stringify(previous)}\n` +
-                    `duplicate=${JSON.stringify(row)}`
-            );
+        collapsedCapabilityRows += 1;
+        if (JSON.stringify(previous) === JSON.stringify(row)) {
+            continue;
         }
+        dedupedCapabilityRowMap.set(key, row);
     }
     const dedupedCapabilityRows = Array.from(dedupedCapabilityRowMap.values());
-    if (dedupedCapabilityRows.length !== capabilityRowsToUpsert.length) {
+    if (collapsedCapabilityRows > 0) {
         console.warn(
-            `[importer] Deduped ${capabilityRowsToUpsert.length - dedupedCapabilityRows.length} duplicate provider capability row(s) before upsert.`
+            `[importer] Collapsed ${collapsedCapabilityRows} duplicate provider capability row(s) to the latest snapshot before upsert.`
         );
     }
 

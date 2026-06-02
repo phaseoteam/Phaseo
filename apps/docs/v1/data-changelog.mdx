@@ -3,6 +3,34 @@ title: "Data Changelog"
 description: "Updates to our model and organisation database."
 rss: true
 ---
+<Update label="1st June 2026">
+# CrofAI Source Sync and Announced Model Tracking
+
+We reconciled CrofAI's live pricing page and `/v1/models` feed against the catalog, and added a newly announced NVIDIA base model in pre-release tracking.
+
+This update includes:
+
+- CrofAI pricing and quantization refreshes for currently listed DeepSeek and GLM routes, based on CrofAI's live pricing page payload on 1st June 2026.
+- Retired tracking for [Greg](https://ai-stats.phaseo.app/models/crofai/greg) and end-dated CrofAI-specific provider rows that no longer appear in CrofAI's live model feed.
+- Added [Nemotron 3 Ultra](https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b) in `Announced` state using NVIDIA's public pre-release documentation for the base checkpoint.
+
+</Update>
+
+<Update label="1st June 2026">
+# MiniMax M3 Release
+
+We promoted MiniMax M3 from placeholder tracking to live catalog coverage after MiniMax's official release on 1st June 2026.
+
+This update includes:
+
+- [MiniMax M3](https://ai-stats.phaseo.app/models/minimax/minimax-m3) moved from `Rumoured` to `Available`.
+- Official MiniMax API routing and pricing coverage for `MiniMax-M3`, including the launch pricing split for requests at or below 512K input tokens and the separate long-context tier above 512K tokens.
+- Updated modality and context metadata so the model is tracked as a long-context multimodal text model with text, image, and video input support.
+- Added provider-specific MiniMax M3 routing and pricing coverage for NovitaAI and Venice, including Novita's published context-based pricing split and Venice's reduced-context 500K route.
+- Added Nebius Token Factory pricing and routing coverage for `nvidia/Cosmos3-Super-Reasoner` from the live endpoint information card.
+
+</Update>
+
 <Update label="16th May 2026">
 # Provider Activation and Regional Coverage Refresh
 

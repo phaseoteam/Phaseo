@@ -46,7 +46,7 @@ describe('pricing safety checks', () => {
     });
 
     test('new canonical pricing meters are accepted', () => {
-        const allowed = ['input_characters', 'output_reasoning_tokens', 'bfl_credits', 'output_video'] as const;
+        const allowed = ['input_characters', 'input_pages', 'input_audio_minutes', 'output_reasoning_tokens', 'bfl_credits', 'output_video'] as const;
         for (const meter of allowed) {
             const entry = {
                 key: 'foo:bar:baz',

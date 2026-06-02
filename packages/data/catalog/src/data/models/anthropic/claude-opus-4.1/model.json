@@ -56,38 +56,6 @@
       "rank": 105
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 18.51,
-      "is_self_reported": false,
-      "other_info": "No Reasoning",
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 32
-    },
-    {
-      "benchmark_id": "confabulations",
-      "score": 17.08,
-      "is_self_reported": false,
-      "other_info": "16k Thinking",
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 28
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 8.47,
-      "is_self_reported": false,
-      "other_info": "No Reasoning",
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 3
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 8.45,
-      "is_self_reported": false,
-      "other_info": "16k Thinking",
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 4
-    },
-    {
       "benchmark_id": "gpqa-diamond",
       "score": 80.9,
       "is_self_reported": true,
@@ -150,6 +118,30 @@
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
       "rank": 5
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 17.08,
+      "is_self_reported": false,
+      "other_info": "16K thinking; Confab 2.5%; non-response 31.7%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 35
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 18.51,
+      "is_self_reported": false,
+      "other_info": "No reasoning; Confab 4.0%; non-response 33.1%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 41
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.208,
+      "is_self_reported": false,
+      "other_info": "No reasoning; sigma 0.290; games 276; avg points 0.578",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 10
     }
   ]
 }

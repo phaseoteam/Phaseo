@@ -17,22 +17,6 @@
   "details": [],
   "benchmarks": [
     {
-      "benchmark_id": "confabulations",
-      "score": 11.3,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 4
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 7.34,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 8
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1311.7,
       "is_self_reported": false,
@@ -159,6 +143,22 @@
       "other_info": null,
       "source_link": "https://z.ai/blog/glm-4.5",
       "rank": 13
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 11.3,
+      "is_self_reported": false,
+      "other_info": "Confab 7.9%; non-response 14.7%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 5
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.247,
+      "is_self_reported": false,
+      "other_info": "sigma 0.251; games 368; avg points 0.505",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 29
     }
   ]
 }

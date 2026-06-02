@@ -1,8 +1,8 @@
 {
-  "key": "novita:baidu/ernie-4.5-21B-a3b-thinking:text.generate",
+  "key": "novita:baidu/ernie-4.5-21b-a3b-thinking:text.generate",
   "api_provider_id": "novita",
   "provider_slug": "novita",
-  "api_model_id": "baidu/ernie-4.5-21B-a3b-thinking",
+  "api_model_id": "baidu/ernie-4.5-21b-a3b-thinking",
   "capability_id": "text.generate",
   "rules": [
     {

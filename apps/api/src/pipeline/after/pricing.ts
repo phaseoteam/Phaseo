@@ -11,14 +11,22 @@ import { deriveCachePricingContext } from "../pricing/cache-context";
 import { getBaseModel } from "../execute/utils";
 import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 
 function normalizeRequestedServiceTier(body: any, usage: any): string {
-    const tierRaw =
-        (typeof body?.service_tier === "string" ? body.service_tier : undefined) ??
-        (typeof body?.serviceTier === "string" ? body.serviceTier : undefined) ??
-        (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
-        (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
-    return typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
+    const tiers = [
+        usage?.service_tier,
+        usage?.serviceTier,
+        readRequestedServiceTier(body).value,
+    ]
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => normalizeTextServiceTier(value))
+        .filter(Boolean);
+
+    const nonStandardTier = tiers.find((tier) => tier === "priority" || tier === "batch" || tier === "flex");
+    if (nonStandardTier) return nonStandardTier;
+
+    return tiers.find((tier) => tier === "standard") ?? "";
 }
 
 function derivePricingPlan(body: any, usage: any): string {
@@ -64,16 +72,19 @@ export async function loadProviderPricing(
                     : result.provider;
 
         let card = ctx.pricing?.[pricingKey] ?? null;
+        if (!card && pricingKey !== result.provider && apiModelId) {
+            card = await loadPriceCard(
+                result.provider,
+                apiModelId,
+                ctx.capability,
+            );
+        }
         if (!card && pricingKey !== result.provider) {
             card = ctx.pricing?.[result.provider] ?? null;
         }
 
         if (!card) {
-            card = await loadPriceCard(
-                result.provider,
-                apiModelId ?? getBaseModel(ctx.model),
-                ctx.capability,
-            );
+            card = await loadPriceCard(result.provider, getBaseModel(ctx.model), ctx.capability);
         }
 
         return card;

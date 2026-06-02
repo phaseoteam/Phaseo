@@ -143,6 +143,22 @@
       "other_info": null,
       "source_link": null,
       "rank": 3
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 4.565,
+      "is_self_reported": false,
+      "other_info": "sigma 0.280; games 291; avg points 0.522",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 20
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 27,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 65
     }
   ]
 }

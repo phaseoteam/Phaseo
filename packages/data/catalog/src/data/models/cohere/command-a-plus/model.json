@@ -16,7 +16,7 @@
   "links": [
     {
       "platform": "announcement",
-      "url": "https://docs.cohere.com/changelog"
+      "url": "https://cohere.com/blog/command-a-plus"
     },
     {
       "platform": "docs",
@@ -33,5 +33,62 @@
       "value": 64000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "aa-intelligence-index-v4",
+      "score": 37,
+      "is_self_reported": true,
+      "other_info": "Artificial Analysis Intelligence Index score reported by Cohere",
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    },
+    {
+      "benchmark_id": "tau-2-telecom",
+      "score": 85,
+      "is_self_reported": true,
+      "other_info": "Compared with Command A Reasoning at 37%",
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-hard",
+      "score": 0.25,
+      "is_self_reported": true,
+      "other_info": "Terminus-2 harness; 25%",
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 63,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mmmu",
+      "score": 75.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    },
+    {
+      "benchmark_id": "mathvista",
+      "score": 80.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 52.7,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://cohere.com/blog/command-a-plus",
+      "rank": null
+    }
+  ]
 }

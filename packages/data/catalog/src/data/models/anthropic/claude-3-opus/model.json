@@ -56,14 +56,6 @@
       "rank": 14
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 22.7,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 40
-    },
-    {
       "benchmark_id": "gpqa-diamond",
       "score": 50.4,
       "is_self_reported": true,
@@ -88,20 +80,20 @@
       "rank": 45
     },
     {
-      "benchmark_id": "nyt-connections",
-      "score": 0.192,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 29
-    },
-    {
       "benchmark_id": "simplebench",
       "score": 23.5,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
       "rank": 26
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 22.7,
+      "is_self_reported": false,
+      "other_info": "Confab 28.2%; non-response 17.2%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 53
     }
   ]
 }

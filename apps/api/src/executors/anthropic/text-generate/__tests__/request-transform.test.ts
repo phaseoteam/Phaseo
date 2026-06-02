@@ -59,16 +59,6 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBeUndefined();
 	});
 
-	it("maps speed fast to Anthropic fast mode without service tier override", () => {
-		const request = createBaseRequest();
-		request.speed = "fast";
-		request.serviceTier = "priority";
-
-		const payload = irToAnthropicMessages(request);
-		expect(payload.speed).toBe("fast");
-		expect(payload.service_tier).toBeUndefined();
-	});
-
 	it("maps standard tier to standard_only service tier", () => {
 		const request = createBaseRequest();
 		request.serviceTier = "standard";
@@ -102,7 +92,7 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.service_tier).toBeUndefined();
 	});
 
-	it("maps Anthropic surface speed=fast to Anthropic speed=fast", () => {
+	it("does not expose Anthropic surface speed as a public text control", () => {
 		const request = decodeAnthropicMessagesRequest({
 			model: "anthropic/claude-3-7-sonnet",
 			max_tokens: 256,
@@ -111,7 +101,7 @@ describe("irToAnthropicMessages service controls", () => {
 		});
 
 		const payload = irToAnthropicMessages(request);
-		expect(payload.speed).toBe("fast");
+		expect(payload.speed).toBeUndefined();
 		expect(payload.service_tier).toBeUndefined();
 	});
 

@@ -52,7 +52,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"user_id",
 			"user",
 			"service_tier",
-			"speed",
 			"prompt_cache_key",
 			"prompt_cache_retention",
 			"provider_options",
@@ -95,7 +94,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			reasoning: "reasoning",
 			thinking: "reasoning",
 			service_tier: "service_tier",
-			speed: "speed",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
 			provider_options: "provider_options",
@@ -143,7 +141,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"thinking",
 			"safety_identifier",
 			"service_tier",
-			"speed",
 			"store",
 			"stream",
 			"stream_options",
@@ -197,7 +194,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			reasoning: "reasoning",
 			thinking: "reasoning",
 			service_tier: "service_tier",
-			speed: "speed",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
 			provider_options: "provider_options",
@@ -225,7 +221,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"tool_choice",
 			"metadata",
 			"service_tier",
-			"speed",
 			"modalities",
 			"response_modalities",
 			"responseModalities",
@@ -257,7 +252,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			imageConfig: "image_config",
 			thinking: "reasoning",
 			service_tier: "service_tier",
-			speed: "speed",
 			web_search_options: "web_search_options",
 			webSearchOptions: "web_search_options",
 			prompt_cache_key: "prompt_cache_key",
@@ -331,6 +325,5 @@ export function resolveProviderParamSupportOverride(
 		paramPathCandidates: candidates,
 	});
 }
-
 
 

@@ -46,7 +46,7 @@
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.102.1",
-		"@upstash/redis": "^1.35.3",
+		"@upstash/redis": "^1.38.0",
 		"@visulima/tabular": "^3.1.0",
 		"hono": "^4.12.18",
 		"ink": "^7.0.0",
@@ -55,16 +55,16 @@
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"@anthropic-ai/sdk": "^0.90.0",
-		"@cloudflare/workers-types": "^4.20260507.1",
+		"@anthropic-ai/sdk": "^0.91.1",
+		"@cloudflare/workers-types": "^4.20260523.1",
 		"@copilotkit/aimock": "1.15.1",
 		"dotenv": "^17.4.2",
-		"eslint": "^10.0.3",
-		"openai": "^6.34.0",
+		"eslint": "^10.4.0",
+		"openai": "^6.39.0",
 		"tsx": "^4.20.6",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.58.1",
-		"vitest": "^4.1.4",
-		"wrangler": "^4.66.0"
+		"vitest": "^4.1.7",
+		"wrangler": "^4.94.0"
 	}
 }

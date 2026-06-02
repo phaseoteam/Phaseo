@@ -663,6 +663,22 @@
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
       "rank": 5
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 60.8,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 40
+    },
+    {
+      "benchmark_id": "thematic-generalisation",
+      "score": 45.5,
+      "is_self_reported": false,
+      "other_info": "Top-1 accuracy 71.3%; cases 703",
+      "source_link": "https://github.com/lechmazur/generalization",
+      "rank": 23
     }
   ]
 }

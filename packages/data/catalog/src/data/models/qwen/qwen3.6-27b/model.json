@@ -37,5 +37,14 @@
       "value": 27000000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "livebench",
+      "score": 65.56,
+      "is_self_reported": false,
+      "other_info": "2026-01-08 release",
+      "source_link": "https://livebench.ai/#/",
+      "rank": 50
+    }
+  ]
 }

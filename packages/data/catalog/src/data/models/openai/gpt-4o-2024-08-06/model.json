@@ -48,28 +48,12 @@
       "rank": 107
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 17.21,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 29
-    },
-    {
       "benchmark_id": "gpqa-diamond",
       "score": 46,
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
       "rank": 135
-    },
-    {
-      "benchmark_id": "nyt-connections",
-      "score": 0.187,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 32
     },
     {
       "benchmark_id": "swe-bench",
@@ -389,6 +373,14 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
+      "rank": 24
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 15.34,
+      "is_self_reported": false,
+      "other_info": "Confab 22.3%; non-response 8.4%",
+      "source_link": "https://github.com/lechmazur/confabulations",
       "rank": 24
     }
   ]

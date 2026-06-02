@@ -49,14 +49,6 @@
       "other_info": null,
       "source_link": "https://lmarena.ai/leaderboard/text",
       "rank": 35
-    },
-    {
-      "benchmark_id": "nyt-connections",
-      "score": 0.136,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 39
     }
   ]
 }

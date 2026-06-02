@@ -16,12 +16,14 @@ import {
 	readBindingEnv,
 	runPricingMonitorCheck,
 	sendDiscordNotification,
+	shouldNotifyConfiguredModelCoverage,
 	shouldRunPricingMonitor,
 	summarizeMissingConfiguredProviderModels,
 	toBool,
 	toInt,
 	toPricingFingerprint,
 } from "./helpers";
+import { buildProviderIssueEntries, syncUpstreamDiscoveryIssues } from "./github-issues";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -166,6 +168,15 @@ type DiscoveryRunSummary = {
 	staleModelsDeleted: number;
 	results: ProviderResult[];
 	changes: ProviderChange[];
+	issueSync?: {
+		created: number;
+		updated: number;
+		skipped: boolean;
+		reason?: string | null;
+		error?: string | null;
+	};
+	statePersisted: boolean;
+	persistenceDeferredReason?: string | null;
 	pricingMonitor: PricingMonitorSummary;
 	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
@@ -356,6 +367,8 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
 	return {
+		statePersisted: summary.statePersisted,
+		persistenceDeferredReason: summary.persistenceDeferredReason ?? undefined,
 		results: summary.results.map((result) => ({
 			providerId: result.providerId,
 			status: result.status,
@@ -609,6 +622,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	try {
 		const results: ProviderResult[] = [];
 		const changes: ProviderChange[] = [];
+		let issueSyncSummary: DiscoveryRunSummary["issueSync"] = {
+			created: 0,
+			updated: 0,
+			skipped: false,
+			reason: "not attempted",
+		};
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
@@ -730,13 +749,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		await upsertCurrentModels(upsertRows);
-		await deleteRemovedModels(deleteRows);
-		let staleModelsDeleted = 0;
-		if (shouldPrune) {
-			staleModelsDeleted = await pruneOldRows(staleCutoff);
-			if (shouldPruneRunsDaily(args, startedAt)) {
-				await pruneOldRuns(runsCutoff);
+		if (changes.length > 0) {
+			const issueEntries = buildProviderIssueEntries({
+				changes,
+				detectedAt: new Date().toISOString(),
+				detectionSource: args.source,
+			});
+			issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
+			if (issueSyncSummary.skipped) {
+				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason ?? "no reason provided");
+			} else {
+				console.log(
+					`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
+				);
 			}
 		}
 
@@ -847,9 +872,18 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		}
 
 		let notificationError: string | null = null;
+		let notificationSummary: {
+			delivered: boolean;
+			skipped: boolean;
+			reason?: string | null;
+		} = {
+			delivered: false,
+			skipped: true,
+			reason: shouldNotify ? "not attempted" : "notifications disabled",
+		};
 		if (shouldNotify) {
 			try {
-				await sendDiscordNotification({
+				notificationSummary = await sendDiscordNotification({
 					modelChanges: changes,
 					pricing: pricingMonitor,
 					providerApiPricing: providerApiPricingMonitor,
@@ -858,6 +892,38 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			} catch (error) {
 				notificationError = error instanceof Error ? error.message : String(error);
 				console.error("[model-discovery] Discord notification failed:", notificationError);
+			}
+		}
+
+		const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
+		const hasNotifiableChanges =
+			changes.length > 0 ||
+			pricingMonitor.updatesDetected > 0 ||
+			providerApiPricingMonitor.updatesDetected > 0 ||
+			(includeConfiguredCoverageNotifications &&
+				configuredModelCoverageNotificationSummary.updatesDetected > 0);
+		const requiresIssueSyncDelivery = changes.length > 0;
+		const issueSyncDelivered =
+			!requiresIssueSyncDelivery ||
+			issueSyncSummary.skipped ||
+			(!issueSyncSummary.error && issueSyncSummary.reason !== "not attempted");
+		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
+		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
+		const persistenceDeferredReason = !issueSyncDelivered
+			? issueSyncSummary.reason ?? issueSyncSummary.error ?? "provider GitHub issue sync not delivered"
+			: !notificationDelivered
+				? notificationError ?? notificationSummary.reason ?? "Discord notification not delivered"
+				: null;
+
+		let staleModelsDeleted = 0;
+		if (!persistenceDeferredReason) {
+			await upsertCurrentModels(upsertRows);
+			await deleteRemovedModels(deleteRows);
+			if (shouldPrune) {
+				staleModelsDeleted = await pruneOldRows(staleCutoff);
+				if (shouldPruneRunsDaily(args, startedAt)) {
+					await pruneOldRuns(runsCutoff);
+				}
 			}
 		}
 
@@ -876,6 +942,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted,
 			results,
 			changes,
+			issueSync: issueSyncSummary,
+			statePersisted: !persistenceDeferredReason,
+			persistenceDeferredReason,
 			pricingMonitor,
 			providerApiPricingMonitor,
 			configuredModelCoverageMonitor,
@@ -884,6 +953,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const status: RunStatus =
 			summary.providersError > 0 ||
 			notificationError ||
+			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
 			Boolean(summary.configuredModelCoverageMonitor.error)
@@ -908,6 +978,14 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted: 0,
 			results: [],
 			changes: [],
+			issueSync: {
+				created: 0,
+				updated: 0,
+				skipped: false,
+				error: reason,
+			},
+			statePersisted: false,
+			persistenceDeferredReason: null,
 			pricingMonitor: {
 				enabled: pricingEnabled,
 				executed: false,
@@ -944,6 +1022,4 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
-
-
 

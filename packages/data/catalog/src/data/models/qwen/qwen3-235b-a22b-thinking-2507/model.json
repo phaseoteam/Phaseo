@@ -42,22 +42,6 @@
       "rank": 46
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 16.77,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 26
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 8.24,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 6
-    },
-    {
       "benchmark_id": "gpqa-diamond",
       "score": 81.1,
       "is_self_reported": true,
@@ -288,6 +272,14 @@
       "other_info": "Raw score: 2134",
       "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
       "rank": 2
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 16.77,
+      "is_self_reported": false,
+      "other_info": "Thinking 2507; Confab 13.9%; non-response 19.7%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 32
     }
   ]
 }

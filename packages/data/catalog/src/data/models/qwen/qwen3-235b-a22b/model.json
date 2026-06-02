@@ -54,22 +54,6 @@
       "rank": 91
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 15.41,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 22
-    },
-    {
-      "benchmark_id": "elimination-game",
-      "score": 4.48,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 22
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1275.3,
       "is_self_reported": false,
@@ -110,28 +94,12 @@
       "rank": 13
     },
     {
-      "benchmark_id": "nyt-connections",
-      "score": 0.556,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 11
-    },
-    {
       "benchmark_id": "simplebench",
       "score": 31,
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
       "rank": 18
-    },
-    {
-      "benchmark_id": "thematic-generalisation",
-      "score": 1.9,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 22
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -316,6 +284,22 @@
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
       "rank": 44
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 15.61,
+      "is_self_reported": false,
+      "other_info": "Confab 23.3%; non-response 8.0%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 26
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 3.517,
+      "is_self_reported": false,
+      "other_info": "sigma 0.205; games 558; avg points 0.464",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 42
     }
   ]
 }

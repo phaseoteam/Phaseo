@@ -26,7 +26,7 @@ jobs:
 
       - name: Create GitHub App token (AI Stats Bot)
         id: app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
           app-id: ${{ secrets.AI_STATS_APP_ID }}
           private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
@@ -43,7 +43,7 @@ jobs:
           package-manager-cache: false
 
       - name: Setup Ruby
-        uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f
+        uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f
         with:
           ruby-version: "3.2"
 

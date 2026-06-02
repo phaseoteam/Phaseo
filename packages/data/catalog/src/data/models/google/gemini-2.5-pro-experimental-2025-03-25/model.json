@@ -144,6 +144,14 @@
       "other_info": "inferred alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
       "rank": 5
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 10.8,
+      "is_self_reported": false,
+      "other_info": "2025-03-25; Confab 4.0%; non-response 17.6%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 4
     }
   ]
 }

@@ -194,8 +194,9 @@ export type GatewayBindings = {
     RESEND_TEMPLATE_WELCOME_ID?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
     DISCORD_WEBHOOK_URL?: string;
-    DISCORD_ROLE_ID?: string;
-    DISCORD_USER_ID?: string;
+    HF_TOKEN?: string;
+    GITHUB_TOKEN?: string;
+    GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
@@ -203,10 +204,8 @@ export type GatewayBindings = {
     VIDEO_DOWNLOAD_SIGNING_SECRET?: string;
     GATEWAY_INTERNAL_TEST_TOKEN?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;
-    MODEL_DISCOVERY_ENABLED?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;
-    MODEL_DISCOVERY_INTERNAL_TOKEN?: string;
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;
     VIDEO_RECONCILIATION_CONCURRENCY?: string;

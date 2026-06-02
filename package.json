@@ -102,7 +102,7 @@
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.6.0",
 		"@changesets/cli": "^2.31.0",
-		"@stoplight/spectral-cli": "^6.11.1",
+		"@stoplight/spectral-cli": "^6.16.0",
 		"ajv": "^8.20.0",
 		"dotenv-cli": "^11.0.0",
 		"js-yaml": "^4.1.1",
@@ -110,32 +110,39 @@
 		"rimraf": "^6.0.0",
 		"supabase": "^2.89.1",
 		"tsx": "^4.21.0",
-		"turbo": "^2.9.4"
+		"turbo": "^2.9.14"
 	},
 	"pnpm": {
 		"overrides": {
-			"axios": "^1.15.0",
+			"axios": "^1.16.1",
 			"basic-ftp@^5": "^5.2.0",
 			"body-parser": "^1.20.3",
 			"cookie": "^0.7.0",
-			"dompurify": "^3.3.2",
+			"dompurify": "3.4.0",
 			"esbuild": "^0.25.0",
 			"express": "^4.20.0",
+			"fast-uri": "^3.1.2",
 			"js-yaml": "^4.1.1",
-			"lodash": "^4.17.23",
+			"lodash": "^4.18.1",
+			"lodash-es": "^4.18.1",
 			"minimatch@^10": "^10.2.3",
-			"path-to-regexp": "0.1.12",
-			"protobufjs": "^7.5.5",
-			"qs": "^6.14.1",
+			"minimatch@^9": "^9.0.7",
+			"path-to-regexp": "0.1.13",
+			"postcss": "^8.5.15",
+			"protobufjs": "^7.5.8",
+			"qs": "^6.15.2",
 			"rollup@^2": "^2.80.0",
 			"send": "^0.19.0",
 			"serve-static": "^1.16.0",
-			"tar": "^7.5.11",
-			"front-matter>js-yaml": "3.14.1",
+			"tar": "^7.5.15",
+			"front-matter>js-yaml": "3.14.2",
 			"undici@^6": "^6.24.0",
 			"undici@^7": "^7.24.0",
+			"uuid": "^11.1.1",
+			"ws": "^8.21.0",
+			"yaml": "^2.9.0",
 			"zod@^3": "^3.22.3",
-			"@mintlify/previewing>tar": "^6.2.1"
+			"@mintlify/previewing>tar": "^7.5.15"
 		}
 	}
 }

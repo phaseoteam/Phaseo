@@ -1,0 +1,21 @@
+{
+  "key": "mistral:mistral/voxtral-tts:audio.speech",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/voxtral-tts",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000,
+      "price_per_unit": 0.016,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Mistral pricing lists Voxtral TTS at $0.016 per 1,000 characters.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-03-23T00:00:00Z"
+    }
+  ]
+}

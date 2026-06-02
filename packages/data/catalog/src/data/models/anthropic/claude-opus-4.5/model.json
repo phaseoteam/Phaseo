@@ -302,6 +302,30 @@
       "other_info": "Avg@5, 64k Thinking, With Tools",
       "source_link": "https://assets.anthropic.com/m/64823ba7485345a7/Claude-Opus-4-5-System-Card.pdf",
       "rank": 1
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.661,
+      "is_self_reported": false,
+      "other_info": "16K thinking; sigma 0.264; games 341; avg points 0.594",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 4
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 62.6,
+      "is_self_reported": false,
+      "other_info": "16K thinking; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 39
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 60.3,
+      "is_self_reported": false,
+      "other_info": "No reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 41
     }
   ]
 }

@@ -15,7 +15,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00Z"
+      "effective_from": "2026-04-27T00:00:00Z",
+      "effective_to": "2026-06-01T05:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +28,8 @@
       "note": "Derived from CrofAI pricing page cache pricing display.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00Z"
+      "effective_from": "2026-04-27T00:00:00Z",
+      "effective_to": "2026-06-01T05:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +41,44 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-27T00:00:00Z"
+      "effective_from": "2026-04-27T00:00:00Z",
+      "effective_to": "2026-06-01T05:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-01T05:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.05,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Updated from CrofAI pricing changes effective 2026-06-01T05:00:00Z.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-01T05:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.99,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-01T05:00:00Z"
     }
   ]
 }

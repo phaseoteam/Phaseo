@@ -49,6 +49,14 @@
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
       "rank": 23
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 13.54,
+      "is_self_reported": false,
+      "other_info": "Confab 16.8%; non-response 10.2%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 15
     }
   ]
 }

@@ -21,7 +21,7 @@ import {
 	normalizeOpenAIToolChoice,
 	normalizeProviderGeoPreferences,
 	normalizeResponseFormat,
-	resolveServiceTierFromSpeedAndTier,
+	resolveTextServiceTier,
 	normalizeProviderCacheOptions,
 } from "../shared/text-normalizers";
 
@@ -262,10 +262,8 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 		previousResponseId: (req as any).previous_response_id,
 		metadata,
 		background: (req as any).background,
-		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
-		serviceTier: resolveServiceTierFromSpeedAndTier({
+		serviceTier: resolveTextServiceTier({
 			service_tier: (req as any).service_tier,
-			speed: (req as any).speed,
 		}),
 		geo: normalizeProviderGeoPreferences(req as any),
 		userId: (req as any).user,
@@ -303,7 +301,6 @@ function decodeOpenAITool(tool: any): IRTool {
 		parameters: tool.parameters || tool.function?.parameters || {},
 	};
 }
-
 
 
 
