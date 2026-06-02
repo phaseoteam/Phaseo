@@ -457,8 +457,7 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 
 	const issueSyncDelivered =
 		summary.issueSync !== undefined &&
-		summary.issueSync.skipped === false &&
-		!summary.issueSync.error;
+		(summary.issueSync.skipped || !summary.issueSync.error);
 	const notificationDelivered = summary.notified;
 	const persistenceDeferredReason = !notificationDelivered
 		? summary.notificationError ?? summary.skippedReason ?? "Hugging Face Discord notification not delivered"

@@ -3,7 +3,17 @@ import path from "node:path";
 
 function resolveRepoRoot(): string {
 	const configured = process.env.REPO_ROOT?.trim();
-	if (configured) return configured;
+	if (configured) {
+		const repoRoot = path.resolve(configured);
+		const packageJsonPath = path.join(repoRoot, "package.json");
+		const pnpmWorkspacePath = path.join(repoRoot, "pnpm-workspace.yaml");
+		if (!fs.existsSync(packageJsonPath) || !fs.existsSync(pnpmWorkspacePath)) {
+			throw new Error(
+				`Invalid REPO_ROOT: ${repoRoot}. Expected workspace markers package.json and pnpm-workspace.yaml.`,
+			);
+		}
+		return repoRoot;
+	}
 
 	let current = process.cwd();
 	while (true) {
@@ -18,7 +28,9 @@ function resolveRepoRoot(): string {
 		current = parent;
 	}
 
-	return process.cwd();
+	throw new Error(
+		"Unable to resolve repository root for apiModelConflicts.ts. Missing workspace markers package.json and pnpm-workspace.yaml.",
+	);
 }
 
 const REPO_ROOT = resolveRepoRoot();

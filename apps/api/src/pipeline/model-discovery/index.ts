@@ -16,6 +16,7 @@ import {
 	readBindingEnv,
 	runPricingMonitorCheck,
 	sendDiscordNotification,
+	shouldNotifyConfiguredModelCoverage,
 	shouldRunPricingMonitor,
 	summarizeMissingConfiguredProviderModels,
 	toBool,
@@ -894,14 +895,18 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
+		const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
 		const hasNotifiableChanges =
 			changes.length > 0 ||
 			pricingMonitor.updatesDetected > 0 ||
 			providerApiPricingMonitor.updatesDetected > 0 ||
-			configuredModelCoverageNotificationSummary.updatesDetected > 0;
+			(includeConfiguredCoverageNotifications &&
+				configuredModelCoverageNotificationSummary.updatesDetected > 0);
 		const requiresIssueSyncDelivery = changes.length > 0;
 		const issueSyncDelivered =
-			!requiresIssueSyncDelivery || (issueSyncSummary.skipped === false && !issueSyncSummary.error);
+			!requiresIssueSyncDelivery ||
+			issueSyncSummary.skipped ||
+			(!issueSyncSummary.error && issueSyncSummary.reason !== "not attempted");
 		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
 		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
 		const persistenceDeferredReason = !issueSyncDelivered
