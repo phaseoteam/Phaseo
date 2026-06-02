@@ -374,6 +374,21 @@ function looksLikeDateKey(name: string): boolean {
     return DETAIL_DATE_HINTS.some((hint) => lower.includes(hint));
 }
 
+const ALLOWED_ORGANISATION_LINK_PLATFORMS = new Set([
+    'website',
+    'x',
+    'github',
+    'hugging_face',
+    'linkedin',
+    'discord',
+    'facebook',
+    'instagram',
+    'youtube',
+    'tiktok',
+    'threads',
+    'reddit',
+]);
+
 function checkOrganisations(state: ValidationState): string[] {
     const errors: string[] = [];
     const organisationsDir = path.join(DATA_ROOT, 'organisations');
@@ -393,6 +408,36 @@ function checkOrganisations(state: ValidationState): string[] {
         state.organisationIds.set(organisationId, filePath);
         if (typeof data.name !== 'string' || !data.name.trim()) {
             errors.push(`Organisation ${organisationId} missing name`);
+        }
+        const links = Array.isArray(data.organisation_links) ? data.organisation_links : [];
+        const seenPlatforms = new Set<string>();
+        for (const [index, link] of links.entries()) {
+            const rawPlatform = typeof link?.platform === 'string' ? link.platform : '';
+            const platform = rawPlatform.trim();
+            const url = typeof link?.url === 'string' ? link.url.trim() : '';
+            if (!platform) {
+                errors.push(`Organisation ${organisationId} link ${index} missing platform`);
+                continue;
+            }
+            if (rawPlatform !== platform) {
+                errors.push(
+                    `Organisation ${organisationId} link ${index} has non-canonical platform '${rawPlatform}'`
+                );
+            }
+            if (!ALLOWED_ORGANISATION_LINK_PLATFORMS.has(platform)) {
+                errors.push(
+                    `Organisation ${organisationId} link ${index} has unsupported platform '${platform}'`
+                );
+            }
+            if (seenPlatforms.has(platform)) {
+                errors.push(
+                    `Organisation ${organisationId} has duplicate organisation_links platform '${platform}'`
+                );
+            }
+            seenPlatforms.add(platform);
+            if (!url) {
+                errors.push(`Organisation ${organisationId} link ${index} missing url`);
+            }
         }
     }
     return errors;
