@@ -412,11 +412,17 @@ function checkOrganisations(state: ValidationState): string[] {
         const links = Array.isArray(data.organisation_links) ? data.organisation_links : [];
         const seenPlatforms = new Set<string>();
         for (const [index, link] of links.entries()) {
-            const platform = typeof link?.platform === 'string' ? link.platform.trim() : '';
+            const rawPlatform = typeof link?.platform === 'string' ? link.platform : '';
+            const platform = rawPlatform.trim();
             const url = typeof link?.url === 'string' ? link.url.trim() : '';
             if (!platform) {
                 errors.push(`Organisation ${organisationId} link ${index} missing platform`);
                 continue;
+            }
+            if (rawPlatform !== platform) {
+                errors.push(
+                    `Organisation ${organisationId} link ${index} has non-canonical platform '${rawPlatform}'`
+                );
             }
             if (!ALLOWED_ORGANISATION_LINK_PLATFORMS.has(platform)) {
                 errors.push(
