@@ -174,6 +174,8 @@ type DiscoveryRunSummary = {
 		reason?: string | null;
 		error?: string | null;
 	};
+	statePersisted: boolean;
+	persistenceDeferredReason?: string | null;
 	pricingMonitor: PricingMonitorSummary;
 	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
@@ -364,6 +366,8 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
 	return {
+		statePersisted: summary.statePersisted,
+		persistenceDeferredReason: summary.persistenceDeferredReason ?? undefined,
 		results: summary.results.map((result) => ({
 			providerId: result.providerId,
 			status: result.status,
@@ -760,16 +764,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		await upsertCurrentModels(upsertRows);
-		await deleteRemovedModels(deleteRows);
-		let staleModelsDeleted = 0;
-		if (shouldPrune) {
-			staleModelsDeleted = await pruneOldRows(staleCutoff);
-			if (shouldPruneRunsDaily(args, startedAt)) {
-				await pruneOldRuns(runsCutoff);
-			}
-		}
-
 		let pricingMonitor: PricingMonitorSummary = {
 			enabled: pricingEnabled,
 			executed: pricingExecuted,
@@ -877,9 +871,18 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		}
 
 		let notificationError: string | null = null;
+		let notificationSummary: {
+			delivered: boolean;
+			skipped: boolean;
+			reason?: string | null;
+		} = {
+			delivered: false,
+			skipped: true,
+			reason: shouldNotify ? "not attempted" : "notifications disabled",
+		};
 		if (shouldNotify) {
 			try {
-				await sendDiscordNotification({
+				notificationSummary = await sendDiscordNotification({
 					modelChanges: changes,
 					pricing: pricingMonitor,
 					providerApiPricing: providerApiPricingMonitor,
@@ -888,6 +891,34 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			} catch (error) {
 				notificationError = error instanceof Error ? error.message : String(error);
 				console.error("[model-discovery] Discord notification failed:", notificationError);
+			}
+		}
+
+		const hasNotifiableChanges =
+			changes.length > 0 ||
+			pricingMonitor.updatesDetected > 0 ||
+			providerApiPricingMonitor.updatesDetected > 0 ||
+			configuredModelCoverageNotificationSummary.updatesDetected > 0;
+		const requiresIssueSyncDelivery = changes.length > 0;
+		const issueSyncDelivered =
+			!requiresIssueSyncDelivery || (issueSyncSummary.skipped === false && !issueSyncSummary.error);
+		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
+		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
+		const persistenceDeferredReason = !issueSyncDelivered
+			? issueSyncSummary.reason ?? issueSyncSummary.error ?? "provider GitHub issue sync not delivered"
+			: !notificationDelivered
+				? notificationError ?? notificationSummary.reason ?? "Discord notification not delivered"
+				: null;
+
+		let staleModelsDeleted = 0;
+		if (!persistenceDeferredReason) {
+			await upsertCurrentModels(upsertRows);
+			await deleteRemovedModels(deleteRows);
+			if (shouldPrune) {
+				staleModelsDeleted = await pruneOldRows(staleCutoff);
+				if (shouldPruneRunsDaily(args, startedAt)) {
+					await pruneOldRuns(runsCutoff);
+				}
 			}
 		}
 
@@ -907,6 +938,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			results,
 			changes,
 			issueSync: issueSyncSummary,
+			statePersisted: !persistenceDeferredReason,
+			persistenceDeferredReason,
 			pricingMonitor,
 			providerApiPricingMonitor,
 			configuredModelCoverageMonitor,
@@ -915,6 +948,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const status: RunStatus =
 			summary.providersError > 0 ||
 			notificationError ||
+			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
 			Boolean(summary.configuredModelCoverageMonitor.error)
@@ -945,6 +979,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				skipped: false,
 				error: reason,
 			},
+			statePersisted: false,
+			persistenceDeferredReason: null,
 			pricingMonitor: {
 				enabled: pricingEnabled,
 				executed: false,

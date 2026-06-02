@@ -46,6 +46,8 @@ export type HuggingFaceDiscoverySummary = {
 	};
 	skippedReason?: string | null;
 	notificationError?: string | null;
+	statePersisted: boolean;
+	persistenceDeferredReason?: string | null;
 	results: HuggingFaceDiscoveryResult[];
 };
 
@@ -299,6 +301,8 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 			removalsDetected: 0,
 			notified: false,
 			skippedReason: "no watched Hugging Face orgs configured",
+			statePersisted: false,
+			persistenceDeferredReason: null,
 			results: [],
 		};
 	}
@@ -314,8 +318,23 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 	for (const orgId of orgIds) {
 		try {
 			const currentModelIds = await fetchHuggingFaceOrgModelIds(orgId, hfToken);
-			currentByOrg.set(orgId, currentModelIds);
 			const previousModelIds = previousByOrg.get(orgId) ?? new Set<string>();
+			const previousSorted = Array.from(previousModelIds.values()).sort((left, right) => left.localeCompare(right));
+			if (currentModelIds.length === 0 && previousSorted.length > 0) {
+				console.warn(
+					`[model-discovery][hf] ${orgId}: received an empty model list; preserving previous state to avoid false removals.`
+				);
+				currentByOrg.set(orgId, previousSorted);
+				results.push({
+					orgId,
+					status: "success",
+					modelCount: previousSorted.length,
+					diff: null,
+				});
+				continue;
+			}
+
+			currentByOrg.set(orgId, currentModelIds);
 			if (previousModelIds.size === 0 && currentModelIds.length > 0) {
 				baselineInitialized = true;
 				results.push({
@@ -327,7 +346,6 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 				continue;
 			}
 
-			const previousSorted = Array.from(previousModelIds.values()).sort((left, right) => left.localeCompare(right));
 			const previousSet = new Set(previousSorted);
 			const currentSet = new Set(currentModelIds);
 			const addedModelIds = currentModelIds.filter((modelId) => !previousSet.has(modelId));
@@ -362,23 +380,6 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 		}
 	}
 
-	const upsertRows = Array.from(currentByOrg.entries()).flatMap(([orgId, modelIds]) =>
-		modelIds.map((modelId) => ({
-			org_id: orgId,
-			model_id: modelId,
-			last_seen_at: detectedAt,
-		}))
-	);
-	await upsertCurrentHuggingFaceState(upsertRows);
-
-	const deleteRows = Array.from(currentByOrg.entries()).flatMap(([orgId, currentModelIds]) => {
-		const previousModelIds = previousByOrg.get(orgId) ?? new Set<string>();
-		const currentSet = new Set(currentModelIds);
-		const removed = Array.from(previousModelIds.values()).filter((modelId) => !currentSet.has(modelId));
-		return removed.length > 0 ? [{ orgId, modelIds: removed }] : [];
-	});
-	await deleteRemovedHuggingFaceState(deleteRows);
-
 	const additionsDetected = diffs.reduce((sum, diff) => sum + diff.addedModelIds.length, 0);
 	const removalsDetected = diffs.reduce((sum, diff) => sum + diff.removedModelIds.length, 0);
 	const summary: HuggingFaceDiscoverySummary = {
@@ -391,11 +392,45 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 		additionsDetected,
 		removalsDetected,
 		notified: false,
+		statePersisted: false,
+		persistenceDeferredReason: null,
 		results,
 	};
 
 	if (diffs.length === 0) {
+		const upsertRows = Array.from(currentByOrg.entries()).flatMap(([orgId, modelIds]) =>
+			modelIds.map((modelId) => ({
+				org_id: orgId,
+				model_id: modelId,
+				last_seen_at: detectedAt,
+			}))
+		);
+		await upsertCurrentHuggingFaceState(upsertRows);
+
+		const deleteRows = Array.from(currentByOrg.entries()).flatMap(([orgId, currentModelIds]) => {
+			const previousModelIds = previousByOrg.get(orgId) ?? new Set<string>();
+			const currentSet = new Set(currentModelIds);
+			const removed = Array.from(previousModelIds.values()).filter((modelId) => !currentSet.has(modelId));
+			return removed.length > 0 ? [{ orgId, modelIds: removed }] : [];
+		});
+		await deleteRemovedHuggingFaceState(deleteRows);
+		summary.statePersisted = true;
 		return summary;
+	}
+
+	try {
+		summary.issueSync = await syncUpstreamDiscoveryIssues(
+			buildIssueEntries(diffs, detectedAt, "cloudflare_cron:huggingface")
+		);
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		console.error(`[model-discovery][hf] GitHub issue sync failed: ${message}`);
+		summary.issueSync = {
+			created: 0,
+			updated: 0,
+			skipped: false,
+			error: message,
+		};
 	}
 
 	const webhookUrl = trimOrNull(readBindingEnv(["DISCORD_WEBHOOK_URL"]));
@@ -420,19 +455,37 @@ export async function runHuggingFaceDiscovery(): Promise<HuggingFaceDiscoverySum
 		}
 	}
 
-	try {
-		summary.issueSync = await syncUpstreamDiscoveryIssues(
-			buildIssueEntries(diffs, detectedAt, "cloudflare_cron:huggingface")
+	const issueSyncDelivered =
+		summary.issueSync !== undefined &&
+		summary.issueSync.skipped === false &&
+		!summary.issueSync.error;
+	const notificationDelivered = summary.notified;
+	const persistenceDeferredReason = !notificationDelivered
+		? summary.notificationError ?? summary.skippedReason ?? "Hugging Face Discord notification not delivered"
+		: !issueSyncDelivered
+			? summary.issueSync?.reason ?? summary.issueSync?.error ?? "Hugging Face GitHub issue sync not delivered"
+			: null;
+
+	if (!persistenceDeferredReason) {
+		const upsertRows = Array.from(currentByOrg.entries()).flatMap(([orgId, modelIds]) =>
+			modelIds.map((modelId) => ({
+				org_id: orgId,
+				model_id: modelId,
+				last_seen_at: detectedAt,
+			}))
 		);
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		console.error(`[model-discovery][hf] GitHub issue sync failed: ${message}`);
-		summary.issueSync = {
-			created: 0,
-			updated: 0,
-			skipped: false,
-			error: message,
-		};
+		await upsertCurrentHuggingFaceState(upsertRows);
+
+		const deleteRows = Array.from(currentByOrg.entries()).flatMap(([orgId, currentModelIds]) => {
+			const previousModelIds = previousByOrg.get(orgId) ?? new Set<string>();
+			const currentSet = new Set(currentModelIds);
+			const removed = Array.from(previousModelIds.values()).filter((modelId) => !currentSet.has(modelId));
+			return removed.length > 0 ? [{ orgId, modelIds: removed }] : [];
+		});
+		await deleteRemovedHuggingFaceState(deleteRows);
+		summary.statePersisted = true;
+	} else {
+		summary.persistenceDeferredReason = persistenceDeferredReason;
 	}
 
 	return summary;

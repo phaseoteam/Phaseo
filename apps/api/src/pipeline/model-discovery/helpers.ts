@@ -1027,7 +1027,7 @@ export async function sendDiscordNotification(args: {
 	pricing: PricingMonitorSummary;
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): Promise<void> {
+}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
 	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
 	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
 		? args.configuredModelCoverage.updatesDetected
@@ -1039,25 +1039,30 @@ export async function sendDiscordNotification(args: {
 		args.providerApiPricing.updatesDetected === 0 &&
 		configuredCoverageUpdatesForNotifications === 0
 	) {
-		return;
+		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
-	if (!webhookUrl) return;
+	if (!webhookUrl) {
+		return { delivered: false, skipped: true, reason: "missing DISCORD_WEBHOOK_URL" };
+	}
 
 	let parsedUrl: URL;
 	try {
 		parsedUrl = new URL(webhookUrl);
 	} catch {
 		console.warn("[model-discovery] invalid DISCORD_WEBHOOK_URL; skipping notification");
-		return;
+		return { delivered: false, skipped: true, reason: "invalid DISCORD_WEBHOOK_URL" };
 	}
 
 	const message = buildDiscordMessage(args);
-	if (!message.trim()) return;
+	if (!message.trim()) {
+		return { delivered: false, skipped: true, reason: "empty Discord message" };
+	}
 	await sendDiscordTextMessage({
 		webhookUrl: parsedUrl.toString(),
 		message,
 		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
 		userId: readBindingEnv(["DISCORD_USER_ID"]),
 	});
+	return { delivered: true, skipped: false };
 }

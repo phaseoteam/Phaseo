@@ -45,7 +45,6 @@ type GitHubIssueClient = {
 	searchOpenIssue(query: string): Promise<GitHubIssue | null>;
 	createIssue(input: { title: string; body: string }): Promise<GitHubIssue>;
 	updateIssue(issueNumber: number, input: { title?: string; body?: string }): Promise<GitHubIssue>;
-	createComment(issueNumber: number, body: string): Promise<void>;
 };
 
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
@@ -65,10 +64,6 @@ function issueKeyForGroup(input: Pick<GitHubIssueGroup, "source" | "providerId" 
 
 function actionNoun(action: UpstreamDiscoveryIssueAction): string {
 	return action === "create" ? "additions" : "deletions";
-}
-
-function actionVerb(action: UpstreamDiscoveryIssueAction): string {
-	return action === "create" ? "added" : "removed";
 }
 
 function sourceLabel(source: UpstreamDiscoveryIssueSource): string {
@@ -125,21 +120,6 @@ function buildIssueBody(group: GitHubIssueGroup): string {
 		"- Check whether each upstream model should be added to AI Stats or mapped to an existing catalog entry.",
 		"- Reuse this issue for repeated signals with the same source family, provider/org, and action type.",
 		"- Close this issue once the upstream signal has been triaged.",
-	].join("\n");
-}
-
-function buildIssueComment(group: GitHubIssueGroup): string {
-	return [
-		`Cloudflare model discovery detected another ${sourceLabel(group.source)} model ${actionNoun(group.action)} signal for ${group.providerName}.`,
-		"",
-		"Models in this signal:",
-		...formatModelList(group.entries),
-		"",
-		"Events:",
-		...group.entries.map((entry) => {
-			const reason = entry.reason?.trim() ? ` (${entry.reason.trim()})` : "";
-			return `- ${formatDateTime(entry.detectedAt)}: ${actionVerb(entry.action)} ${formatModelReference(entry)} from ${entry.providerName} (\`${entry.providerId}\`) via \`${entry.detectionSource}\`${reason}`;
-		}),
 	].join("\n");
 }
 
@@ -227,12 +207,6 @@ function createGitHubIssueClient(args: {
 				body: JSON.stringify(input),
 			});
 		},
-		async createComment(issueNumber, body) {
-			await requestJson(`/repos/${owner}/${repo}/issues/${issueNumber}/comments`, {
-				method: "POST",
-				body: JSON.stringify({ body }),
-			});
-		},
 	};
 }
 
@@ -307,7 +281,6 @@ export async function syncUpstreamDiscoveryIssues(entries: UpstreamDiscoveryIssu
 
 		if (existing) {
 			await client.updateIssue(existing.number, { title, body });
-			await client.createComment(existing.number, buildIssueComment(group));
 			updated += 1;
 			continue;
 		}
