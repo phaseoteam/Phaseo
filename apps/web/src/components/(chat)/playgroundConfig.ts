@@ -5,5 +5,5 @@ export const FEATURED_MODEL_IDS = [
 	"x-ai/grok-4.20-beta-0309",
 	"anthropic/claude-sonnet-4.6",
 	"anthropic/claude-opus-4.6",
-	"minimax/minimax-m2.7",
+	"minimax/minimax-m3",
 ];

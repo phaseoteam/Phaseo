@@ -594,8 +594,8 @@ const BETA_OPEN_MODEL_INTEL: LandingOpenModelIntelEntry[] = [
 	},
 	{
 		providerId: "minimax",
-		name: "MiniMax M2.7",
-		model: "minimax/minimax-m2.7",
+		name: "MiniMax M3",
+		model: "minimax/minimax-m3",
 		latencyMs: 388,
 		throughputTps: 108,
 		inputPrice: 0.3,

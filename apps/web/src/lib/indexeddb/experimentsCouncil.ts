@@ -78,9 +78,9 @@ const DEFAULT_INTELLIGENCE_CANDIDATES = [
 ];
 
 const DEFAULT_BUDGET_CANDIDATES = [
-	"minimax/minimax-m2.7",
-	"deepseek/deepseek-v3.2",
-	"moonshotai/kimi-k2.5",
+	"minimax/minimax-m3",
+	"deepseek/deepseek-v4-flash",
+	"moonshotai/kimi-k2.6",
 ];
 
 const LEGACY_INTELLIGENCE_CANDIDATES = [
@@ -330,9 +330,9 @@ export async function ensureExperimentsCouncilPresets(
 		"anthropic/claude-opus-4.6",
 		"openai/gpt-5.4",
 		"google/gemini-3.1-pro-preview",
-		"minimax/minimax-m2.7",
-		"deepseek/deepseek-v3.2",
-		"moonshotai/kimi-k2.5",
+		"minimax/minimax-m3",
+		"deepseek/deepseek-v4-flash",
+		"moonshotai/kimi-k2.6",
 	],
 ): Promise<ExperimentsCouncilPresetRecord[]> {
 	const available = modelOptions.length > 0 ? modelOptions : fallbackModels;
