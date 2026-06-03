@@ -110,7 +110,7 @@
     },
     {
       "benchmark_id": "omnidocbench-1.5",
-      "score": 0.164,
+      "score": 16.4,
       "is_self_reported": true,
       "other_info": "Average edit distance (lower is better)",
       "source_link": "https://huggingface.co/google/gemma-4-12B-it"
