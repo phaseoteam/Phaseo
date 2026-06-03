@@ -26,11 +26,11 @@
   "details": [
     {
       "name": "input_context_length",
-      "value": 131072
+      "value": 262144
     },
     {
       "name": "output_context_length",
-      "value": 131072
+      "value": 262144
     },
     {
       "name": "parameter_count",
