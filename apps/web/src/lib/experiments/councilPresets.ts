@@ -14,8 +14,8 @@ const INTELLIGENCE_CANDIDATES = [
 
 const BUDGET_CANDIDATES = [
 	"minimax/minimax-m3",
-	"deepseek/deepseek-v3.2",
-	"moonshotai/kimi-k2.5",
+	"deepseek/deepseek-v4-flash",
+	"moonshotai/kimi-k2.6",
 ];
 
 function pickPresetModels(candidates: string[], available: string[]): string[] {
