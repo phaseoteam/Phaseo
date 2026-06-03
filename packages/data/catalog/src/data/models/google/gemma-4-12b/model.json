@@ -1,0 +1,41 @@
+{
+  "model_id": "google/gemma-4-12b",
+  "organisation_id": "google",
+  "name": "Gemma 4 12B",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Gemma 4 12B is a dense, encoder-free multimodal model from Google DeepMind built for local AI workloads. It accepts text, image, audio, and video inputs and produces text outputs.",
+  "announced_date": "2026-06-03T00:00:00",
+  "release_date": "2026-06-03T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image,audio,video",
+  "output_types": "text",
+  "api_model_id": "google/gemma-4-12b",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://developers.googleblog.com/gemma-4-12b-the-developer-guide/"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/google/gemma-4-12B-it"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 131072
+    },
+    {
+      "name": "output_context_length",
+      "value": 131072
+    },
+    {
+      "name": "parameter_count",
+      "value": 12000000000
+    }
+  ],
+  "benchmarks": []
+}
