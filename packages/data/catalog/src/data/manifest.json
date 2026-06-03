@@ -470,6 +470,17 @@
       "meta/llama-4-scout"
     ],
     "microsoft": [
+      "microsoft/mai-code-1-flash",
+      "microsoft/mai-image-2",
+      "microsoft/mai-image-2.5",
+      "microsoft/mai-image-2.5-flash",
+      "microsoft/mai-image-2e",
+      "microsoft/mai-thinking-1",
+      "microsoft/mai-transcribe-1",
+      "microsoft/mai-transcribe-1.5",
+      "microsoft/mai-voice-1",
+      "microsoft/mai-voice-2",
+      "microsoft/mai-voice-2-flash",
       "microsoft/phi-1",
       "microsoft/phi-1.5",
       "microsoft/phi-2",

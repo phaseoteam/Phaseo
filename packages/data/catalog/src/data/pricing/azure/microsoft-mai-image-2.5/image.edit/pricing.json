@@ -1,0 +1,33 @@
+{
+  "key": "azure:microsoft/mai-image-2.5:image.edit",
+  "api_provider_id": "azure",
+  "provider_slug": "azure",
+  "api_model_id": "microsoft/mai-image-2.5",
+  "capability_id": "image.edit",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-02T00:00:00Z"
+    },
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 33,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-02T00:00:00Z"
+    }
+  ]
+}

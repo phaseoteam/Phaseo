@@ -1,0 +1,25 @@
+{
+  "model_id": "microsoft/mai-voice-1",
+  "organisation_id": "microsoft",
+  "name": "MAI Voice 1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MAI Voice 1 is Microsoft's text-to-speech model for fast, natural spoken output in production voice experiences.",
+  "announced_date": "2026-04-02T00:00:00",
+  "release_date": "2026-04-02T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "audio_tts",
+  "api_model_id": "microsoft/mai-voice-1",
+  "family_id": "microsoft/mai",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://microsoft.ai/news/today-were-announcing-3-new-world-class-mai-models-available-in-foundry/"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}
