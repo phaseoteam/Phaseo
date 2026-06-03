@@ -140,7 +140,7 @@ const DEFAULT_MODEL_OPTIONS = [
 	"anthropic/claude-opus-4.6",
 	"openai/gpt-5.4",
 	"google/gemini-3.1-pro-preview",
-	"minimax/minimax-m2.7",
+	"minimax/minimax-m3",
 ];
 
 function clampModels(models: string[]) {

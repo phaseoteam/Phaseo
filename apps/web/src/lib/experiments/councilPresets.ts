@@ -13,7 +13,7 @@ const INTELLIGENCE_CANDIDATES = [
 ];
 
 const BUDGET_CANDIDATES = [
-	"minimax/minimax-m2.7",
+	"minimax/minimax-m3",
 	"deepseek/deepseek-v3.2",
 	"moonshotai/kimi-k2.5",
 ];
