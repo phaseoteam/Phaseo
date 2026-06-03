@@ -83,12 +83,6 @@ const DEFAULT_BUDGET_CANDIDATES = [
 	"moonshotai/kimi-k2.6",
 ];
 
-const PREVIOUS_BUDGET_CANDIDATES = [
-	"minimax/minimax-m2.7",
-	"deepseek/deepseek-v3.2",
-	"moonshotai/kimi-k2.5",
-];
-
 const LEGACY_INTELLIGENCE_CANDIDATES = [
 	"openai/gpt-5-mini",
 	"anthropic/claude-3.7-sonnet",
@@ -116,13 +110,6 @@ function clampModelList(models: string[]): string[] {
 		if (deduped.length >= 4) break;
 	}
 	return deduped;
-}
-
-function matchesExactModelList(models: string[], expected: string[]): boolean {
-	return (
-		models.length === expected.length &&
-		models.every((model, index) => model === expected[index])
-	);
 }
 
 function isConstraintError(error: unknown): boolean {
@@ -398,8 +385,10 @@ export async function ensureExperimentsCouncilPresets(
 				);
 			const budgetIsLegacy =
 				preset.key === "budget" &&
-				(matchesExactModelList(existing.sourceModels, LEGACY_BUDGET_CANDIDATES) ||
-					matchesExactModelList(existing.sourceModels, PREVIOUS_BUDGET_CANDIDATES));
+				existing.sourceModels.length > 0 &&
+				existing.sourceModels.every((modelId) =>
+					LEGACY_BUDGET_CANDIDATES.includes(modelId),
+				);
 			const customIsLegacy =
 				preset.key === "custom" &&
 				existing.sourceModels.length === 1 &&
