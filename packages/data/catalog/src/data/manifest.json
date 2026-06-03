@@ -470,20 +470,10 @@
       "meta/llama-4-scout"
     ],
     "microsoft": [
-      "microsoft/mai-code-1-flash",
-      "microsoft/mai-image-2",
-      "microsoft/mai-image-2.5",
-      "microsoft/mai-image-2.5-flash",
-      "microsoft/mai-image-2e",
-      "microsoft/mai-thinking-1",
-      "microsoft/mai-transcribe-1",
-      "microsoft/mai-transcribe-1.5",
-      "microsoft/mai-voice-1",
-      "microsoft/mai-voice-2",
-      "microsoft/mai-voice-2-flash",
       "microsoft/phi-1",
       "microsoft/phi-1.5",
       "microsoft/phi-2",
+      "microsoft/phi-3-mini-4k-instruct",
       "microsoft/phi-3-medium-128k-instruct",
       "microsoft/phi-3-medium-4k-instruct",
       "microsoft/phi-3-mini-128k-instruct",
@@ -499,7 +489,12 @@
       "microsoft/phi-4-mini-reasoning",
       "microsoft/phi-4-multimodal-instruct",
       "microsoft/phi-4-reasoning",
-      "microsoft/phi-4-reasoning-plus"
+      "microsoft/phi-4-reasoning-plus",
+      "microsoft/phi-4-reasoning-vision-15b",
+      "microsoft/phi-ground",
+      "microsoft/phi-ground-any",
+      "microsoft/phi-mini-moe-instruct",
+      "microsoft/phi-tiny-moe-instruct"
     ],
     "minimax": [
       "minimax/hailuo-02",
