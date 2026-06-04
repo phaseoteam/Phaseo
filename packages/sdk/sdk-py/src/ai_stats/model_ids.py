@@ -822,6 +822,10 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
     NVIDIA_NEMOTRON_3_SUPER_120B_A12B: Final[str] = "nvidia/nemotron-3-super-120b-a12b"
 
+    # Model ID: nvidia/nemotron-3-ultra-550b-a55b
+    # Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b
+    NVIDIA_NEMOTRON_3_ULTRA_550B_A55B: Final[str] = "nvidia/nemotron-3-ultra-550b-a55b"
+
     # Model ID: nvidia/nvidia-nemotron-3-nano-30b-a3b
     # Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
     NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B: Final[str] = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
@@ -2031,6 +2035,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.NVIDIA_NEMOTRON_3_NANO_30B_A3B,
         ModelIds.NVIDIA_NEMOTRON_3_NANO_OMNI_30B_A3B_REASONING,
         ModelIds.NVIDIA_NEMOTRON_3_SUPER_120B_A12B,
+        ModelIds.NVIDIA_NEMOTRON_3_ULTRA_550B_A55B,
         ModelIds.NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
         ModelIds.NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
         ModelIds.NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,
