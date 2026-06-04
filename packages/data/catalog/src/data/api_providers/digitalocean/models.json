@@ -1,7 +1,7 @@
 [
   {
     "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
-    "provider_api_model_id": "digitalocean:nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_api_model_id": "digitalocean:nvidia-nemotron-3-ultra-550b",
     "provider_model_slug": "nemotron-3-ultra-550b",
     "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
     "is_active_gateway": false,
