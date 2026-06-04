@@ -1,0 +1,19 @@
+{
+  "model_id": "mistral/mistral-7b-instruct-v0.2-lora",
+  "organisation_id": "mistral",
+  "name": "Mistral 7B Instruct v0.2 LoRA",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "The Mistral-7B-Instruct-v0.2 Large Language Model (LLM) is an instruct fine-tuned version of the Mistral-7B-v0.2.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "mistral/mistral-7b-instruct-v0.2-lora",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

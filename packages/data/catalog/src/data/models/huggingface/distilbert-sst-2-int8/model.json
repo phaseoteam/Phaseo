@@ -1,0 +1,24 @@
+{
+  "model_id": "huggingface/distilbert-sst-2-int8",
+  "organisation_id": "huggingface",
+  "name": "Distilbert SST 2 Int8",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Distilled BERT model that was finetuned on SST-2 for sentiment classification",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "huggingface/distilbert-sst-2-int8",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://huggingface.co/Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

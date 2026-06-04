@@ -1,0 +1,24 @@
+{
+  "model_id": "stabilityai/stable-diffusion-xl-base-1.0",
+  "organisation_id": "stabilityai",
+  "name": "Stable Diffusion XL Base 1.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Diffusion-based text-to-image generative model by Stability AI. Generates and modify images based on text prompts.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "stabilityai/stable-diffusion-xl-base-1.0",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://stability.ai/stable-diffusion"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

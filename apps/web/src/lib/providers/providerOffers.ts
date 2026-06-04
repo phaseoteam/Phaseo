@@ -4,7 +4,7 @@ const PRIORITY_SUFFIXES = ["-lightning", "-turbo", "-fast"] as const;
 const REGIONAL_SUFFIXES = ["-eu", "-us"] as const;
 const KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES = new Map<string, string>([
     ["anthropic-aws", "Anthropic on AWS"],
-    ["anthropic-aws-us", "Anthropic on AWS US"],
+    ["anthropic-aws-us", "Anthropic on AWS"],
 ]);
 const KNOWN_PROVIDER_LOGO_ID_OVERRIDES = new Map<string, string>([
     ["anthropic-aws", "aws"],
@@ -23,6 +23,25 @@ function normalizeOfferLabel(value?: string | null): string {
     return String(value ?? "").trim();
 }
 
+function normalizeRegionalOfferLabel(
+    providerName: string,
+    offerLabel: string,
+): string {
+    const normalizedProviderWords = new Set(
+        providerName
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]+/g, " ")
+            .split(/\s+/)
+            .filter(Boolean),
+    );
+    const remainingWords = offerLabel
+        .split(/\s+/)
+        .filter(Boolean)
+        .filter((word) => !normalizedProviderWords.has(word.toLowerCase()));
+
+    return remainingWords.join(" ").trim() || offerLabel.trim();
+}
+
 export function formatProviderOfferDisplayName(args: {
     providerId?: string | null;
     providerName: string;
@@ -37,6 +56,12 @@ export function formatProviderOfferDisplayName(args: {
     const offerScope = args.offerScope ?? null;
 
     if (!providerName) return "";
+    if (!offerLabel) return providerName;
+    if (offerScope === "global") return providerName;
+    if (offerScope === "regional") {
+        const regionalLabel = normalizeRegionalOfferLabel(providerName, offerLabel);
+        return regionalLabel ? `${providerName} (${regionalLabel})` : providerName;
+    }
     if (
         args.providerId &&
         KNOWN_PROVIDER_DISPLAY_NAME_OVERRIDES.has(
@@ -45,8 +70,6 @@ export function formatProviderOfferDisplayName(args: {
     ) {
         return providerName;
     }
-    if (!offerLabel) return providerName;
-    if (offerScope === "global") return providerName;
 
     return `${providerName} ${offerLabel}`;
 }

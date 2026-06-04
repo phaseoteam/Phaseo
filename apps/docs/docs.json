@@ -66,6 +66,7 @@
 								"pages": [
 									"v1/guides/routing-and-fallbacks",
 									"v1/guides/service-tiers",
+									"v1/guides/provider-statuses",
 									"v1/guides/presets",
 									"v1/guides/multimodality",
 									{

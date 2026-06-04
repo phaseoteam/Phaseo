@@ -40,6 +40,7 @@ import {
     getProviderAvailablePlans,
     getProviderModelScopeForPlan,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
+import { getPricingProviderVariantLabels } from "@/components/(data)/model/pricing/pricingProviderVariants";
 const PRICING_VIEW_STORAGE_KEY = "ai-stats:model-pricing-view";
 const SORT_QUERY_KEY = "sort";
 const SORT_DIRECTION_QUERY_KEY = "dir";
@@ -352,6 +353,19 @@ export default function ModelPricingClient({
         () => mergeProviderPricingOffers(providers),
         [providers]
     );
+    const providerVariantLabelsById = useMemo(() => {
+        const map = new Map<string, string[]>();
+        for (const provider of displayProviders) {
+            map.set(
+                provider.provider.api_provider_id,
+                getPricingProviderVariantLabels({
+                    displayProvider: provider,
+                    sourceProviders: providers,
+                })
+            );
+        }
+        return map;
+    }, [displayProviders, providers]);
     const hasApiProviders = displayProviders.some(
         (provider) =>
             provider.provider_models.length > 0 || provider.pricing_rules.length > 0
@@ -899,6 +913,11 @@ export default function ModelPricingClient({
                                         routingStatus={
                                             routingHealth[prov.provider.api_provider_id] ?? null
                                         }
+                                        variantLabels={
+                                            providerVariantLabelsById.get(
+                                                prov.provider.api_provider_id
+                                            ) ?? null
+                                        }
                                     />
                                 ))}
                             </div>
@@ -936,6 +955,11 @@ export default function ModelPricingClient({
                                                                 routingHealth[
                                                                     prov.provider.api_provider_id
                                                                 ] ?? null
+                                                            }
+                                                            variantLabels={
+                                                                providerVariantLabelsById.get(
+                                                                    prov.provider.api_provider_id
+                                                                ) ?? null
                                                             }
                                                         />
                                                     ))}

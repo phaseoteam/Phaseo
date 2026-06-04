@@ -1,0 +1,19 @@
+{
+  "model_id": "baai/bge-reranker-v2-m3",
+  "organisation_id": "baai",
+  "name": "BGE Reranker v2 M3",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "BGE Reranker v2 M3 is available through DigitalOcean Knowledge Bases for reranking retrieval results.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "baai/bge-reranker-v2-m3",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

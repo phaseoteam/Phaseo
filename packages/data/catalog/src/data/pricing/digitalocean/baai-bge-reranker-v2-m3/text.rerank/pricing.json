@@ -1,0 +1,21 @@
+{
+  "key": "digitalocean:baai/bge-reranker-v2-m3:text.rerank",
+  "api_provider_id": "digitalocean",
+  "provider_slug": "digitalocean",
+  "api_model_id": "baai/bge-reranker-v2-m3",
+  "capability_id": "text.rerank",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.01,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-29T00:00:00Z"
+    }
+  ]
+}

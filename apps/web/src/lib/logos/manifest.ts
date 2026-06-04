@@ -117,6 +117,9 @@ export const logoManifest = {
 	deepseek: {
 		color: "/logos/deepseek.svg",
 	},
+	digitalocean: {
+		color: "/logos/digitalocean.svg",
+	},
 	"eleven-labs": {
 		light: "/logos/eleven-labs_light.svg",
 		dark: "/logos/eleven-labs_dark.svg",

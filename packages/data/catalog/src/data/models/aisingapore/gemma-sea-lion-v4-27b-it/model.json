@@ -1,0 +1,19 @@
+{
+  "model_id": "aisingapore/gemma-sea-lion-v4-27b-it",
+  "organisation_id": "aisingapore",
+  "name": "Gemma SEA Lion v4 27B IT",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "SEA-LION stands for Southeast Asian Languages In One Network, which is a collection of Large Language Models (LLMs) which have been pretrained and instruct-tuned for the Southeast Asia (SEA) region.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "aisingapore/gemma-sea-lion-v4-27b-it",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,19 @@
+{
+  "model_id": "myshell-ai/melotts",
+  "organisation_id": "myshell-ai",
+  "name": "Melotts",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "MeloTTS is a high-quality multi-lingual text-to-speech library by MyShell.ai.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "audio",
+  "api_model_id": "myshell-ai/melotts",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

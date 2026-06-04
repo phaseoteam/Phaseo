@@ -1,0 +1,19 @@
+{
+  "model_id": "sentence-transformers/multi-qa-mpnet-base-dot-v1",
+  "organisation_id": "sentence-transformers",
+  "name": "Multi QA mpnet base dot v1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Multi QA mpnet base dot v1 is available through DigitalOcean Knowledge Bases for embedding and retrieval workflows.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "embeddings",
+  "api_model_id": "sentence-transformers/multi-qa-mpnet-base-dot-v1",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
