@@ -13,9 +13,14 @@ export type EndpointType =
   | "video.list"
   | "video.retrieve"
   | "video.cancel"
+  | "music.generations"
+  | "music.retrieve"
   | "embeddings"
+  | "ocr"
+  | "rerank"
   | "moderations"
   | "responses"
+  | "responses.websocket"
   | "batches.create"
   | "batches.retrieve"
   | "batches.cancel"
@@ -28,8 +33,10 @@ export type EndpointType =
   | "pricing.calculate"
   | "key.current"
   | "models.list"
+  | "models.data"
   | "models.team"
   | "providers"
+  | "providers.derank"
   | "credits"
   | "activity"
   | "health"
@@ -44,7 +51,9 @@ export type EndpointType =
   | "provisioning.workspaces.get"
   | "provisioning.workspaces.create"
   | "provisioning.workspaces.update"
-  | "provisioning.workspaces.delete";
+  | "provisioning.workspaces.delete"
+  | "agent.run"
+  | "agent.continue";
 
 export type SdkIdentifier =
   | "typescript"
@@ -120,6 +129,11 @@ export type Metadata = {
   finish_reason?: string;
   pricing_lines?: Array<Record<string, any> | string | number | boolean | null>;
   provider_attempts?: ProviderAttempt[];
+  agent_id?: string;
+  run_id?: string;
+  run_status?: string;
+  step_count?: number;
+  tool_count?: number;
   headers?: Record<string, string>;
 };
 

@@ -48,6 +48,65 @@ function resolveRequestRoutingModeOverride(
     return fallback;
 }
 
+function hasItems(value: unknown): boolean {
+    return Array.isArray(value) && value.length > 0;
+}
+
+function classifyWorkspaceProviderFilterFailure(diagnostics: {
+    providerAllowlist: string[];
+    providerBlocklist: string[];
+    requestProviderOnly: string[];
+    requestProviderIgnore: string[];
+    activeGuardrailIds: string[];
+    allowedApiModels: string[];
+    beforeCount: number;
+}): {
+    errorType: "user" | "system";
+    errorOrigin: "user" | "gateway";
+    operationalKind: string;
+    reason: string;
+} {
+    const hasRequestProviderFilter =
+        hasItems(diagnostics.requestProviderOnly) ||
+        hasItems(diagnostics.requestProviderIgnore);
+    const hasWorkspaceProviderFilter =
+        hasItems(diagnostics.providerAllowlist) ||
+        hasItems(diagnostics.providerBlocklist) ||
+        hasItems(diagnostics.activeGuardrailIds) ||
+        hasItems(diagnostics.allowedApiModels);
+
+    if (hasRequestProviderFilter && !hasWorkspaceProviderFilter) {
+        return {
+            errorType: "user",
+            errorOrigin: "user",
+            operationalKind: "request_provider_filter_no_match",
+            reason: "request_provider_filter_no_match",
+        };
+    }
+
+    if (hasWorkspaceProviderFilter) {
+        return {
+            errorType: "user",
+            errorOrigin: "user",
+            operationalKind: "workspace_policy_no_providers",
+            reason: "workspace_policy_no_providers",
+        };
+    }
+
+    return {
+        errorType: "system",
+        errorOrigin: "gateway",
+        operationalKind:
+            diagnostics.beforeCount > 0
+                ? "gateway_provider_availability_gap"
+                : "gateway_provider_candidate_gap",
+        reason:
+            diagnostics.beforeCount > 0
+                ? "gateway_provider_availability_gap"
+                : "gateway_provider_candidate_gap",
+    };
+}
+
 /**
  * BEFORE STAGE
  * - AuthN + team lookup
@@ -287,6 +346,10 @@ export async function beforeRequest(
             return {
                 ok: false,
                 response: err("validation_error", {
+                    model: resolvedModel || model,
+                    reason: "workspace_model_not_allowed",
+                    description: `Model "${resolvedModel || model}" is not allowed by workspace policy`,
+                    error_operational_kind: "workspace_model_not_allowed",
                     details: [{
                         message: `Model "${resolvedModel || model}" is not allowed by workspace policy`,
                         path: ["model"],
@@ -302,9 +365,17 @@ export async function beforeRequest(
             };
         }
 
+        const providerFilterClassification =
+            classifyWorkspaceProviderFilterFailure(workspacePolicyFailure.diagnostics);
         return {
             ok: false,
             response: err("validation_error", {
+                model: resolvedModel || model,
+                reason: providerFilterClassification.reason,
+                description: "Workspace and request provider filters resulted in no available providers",
+                error_type: providerFilterClassification.errorType,
+                error_origin: providerFilterClassification.errorOrigin,
+                error_operational_kind: providerFilterClassification.operationalKind,
                 details: [{
                     message: "Workspace and request provider filters resulted in no available providers",
                     path: ["provider"],

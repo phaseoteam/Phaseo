@@ -662,4 +662,48 @@ describe("DevToolsEntrySchema", () => {
     expect(deleted.type).toBe("provisioning.workspaces.delete");
     expect(deleted.response?.data.deleted).toBe(true);
   });
+
+  it("accepts agent run entries", () => {
+    const parsed = DevToolsEntrySchema.parse({
+      id: "agent_run_123",
+      type: "agent.run",
+      timestamp: Date.now(),
+      duration_ms: 45,
+      request: {
+        agent_id: "support-agent",
+        input: "Summarize the ticket",
+        model: "openai/gpt-5-mini",
+        max_steps: 4,
+        tool_count: 1,
+      },
+      response: {
+        run: {
+          id: "run_123",
+          status: "completed",
+        },
+        output: "Done",
+        steps: [],
+        messages: [],
+      },
+      error: null,
+      metadata: {
+        sdk: "typescript",
+        sdk_version: "0.1.0",
+        stream: false,
+        model: "openai/gpt-5-mini",
+        provider: "openai",
+        request_id: "req_123",
+        native_response_id: "resp_123",
+        agent_id: "support-agent",
+        run_id: "run_123",
+        run_status: "completed",
+        step_count: 1,
+        tool_count: 0,
+      },
+    });
+
+    expect(parsed.type).toBe("agent.run");
+    expect(parsed.metadata.agent_id).toBe("support-agent");
+    expect(parsed.metadata.run_status).toBe("completed");
+  });
 });

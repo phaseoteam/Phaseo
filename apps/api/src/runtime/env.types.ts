@@ -194,6 +194,9 @@ export type GatewayBindings = {
     RESEND_TEMPLATE_WELCOME_ID?: string;
     RESEND_TEMPLATE_LOW_BALANCE_ID?: string;
     DISCORD_WEBHOOK_URL?: string;
+    DISCORD_ROLE_ID?: string;
+    DISCORD_USER_ID?: string;
+    ENV?: string;
     HF_TOKEN?: string;
     GITHUB_TOKEN?: string;
     GH_TOKEN?: string;

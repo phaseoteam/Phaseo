@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { extractUpstreamUnsupportedParamSignal, handleError } from "./error-handler";
+import {
+	classifyErrorOrigin,
+	classifyErrorType,
+	extractUpstreamUnsupportedParamSignal,
+	handleError,
+} from "./error-handler";
 
 describe("extractUpstreamUnsupportedParamSignal", () => {
 	it("returns null for before-stage errors", () => {
@@ -85,6 +90,27 @@ describe("extractUpstreamUnsupportedParamSignal", () => {
 });
 
 describe("handleError", () => {
+	it("preserves before-stage system labels from provider candidate gaps", async () => {
+		expect(classifyErrorType({
+			stage: "before",
+			status: 400,
+			errorCode: "unsupported_model_or_endpoint",
+			body: {
+				error_type: "system",
+				error_origin: "gateway",
+			},
+		})).toBe("system");
+		expect(classifyErrorOrigin({
+			stage: "before",
+			status: 400,
+			errorCode: "unsupported_model_or_endpoint",
+			body: {
+				error_type: "system",
+				error_origin: "gateway",
+			},
+		})).toBe("gateway");
+	});
+
 	it("preserves execute upstream diagnostics for client debugging", async () => {
 		let capturedAuditArgs: any = null;
 		const upstream = new Response(
@@ -263,6 +289,9 @@ describe("handleError", () => {
 		const upstream = new Response(
 			JSON.stringify({
 				error: "unsupported_model_or_endpoint",
+				error_type: "system",
+				error_origin: "gateway",
+				error_operational_kind: "gateway_provider_availability_gap",
 				reason: "pricing_not_configured",
 				description: "Unsupported model or endpoint.",
 				provider_candidate_diagnostics: {
@@ -302,7 +331,9 @@ describe("handleError", () => {
 		});
 			const payload = await res.json();
 			expect(payload.error).toBe("unsupported_model_or_endpoint");
-			expect(payload.error_origin).toBe("user");
+			expect(payload.error_type).toBe("system");
+			expect(payload.error_origin).toBe("gateway");
+			expect(payload.error_operational_kind).toBe("gateway_provider_availability_gap");
 			expect(payload.reason).toBe("pricing_not_configured");
 			expect(payload.provider_candidate_diagnostics).toEqual({
 				totalProviders: 1,
@@ -325,6 +356,9 @@ describe("handleError", () => {
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
 		expect(capturedAuditArgs?.errorPayload).toMatchObject({
 			error: "unsupported_model_or_endpoint",
+			error_type: "system",
+			error_origin: "gateway",
+			error_operational_kind: "gateway_provider_availability_gap",
 			reason: "pricing_not_configured",
 			provider_candidate_diagnostics: {
 				totalProviders: 1,

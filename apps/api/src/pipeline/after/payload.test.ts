@@ -171,6 +171,8 @@ describe("enrichSuccessPayload model selection", () => {
 		const payload = await enrichSuccessPayload(ctx, result);
 
 		expect(payload.model).toBe("openai/gpt-5-nano");
+		expect(payload.provider).toBe("openai");
+		expect(payload.provider_id).toBe("openai");
 	});
 
 	it("preserves server tool usage meters on responses payload usage", async () => {
@@ -388,5 +390,54 @@ describe("enrichSuccessPayload model selection", () => {
 		expect(body.currency).toBe("USD");
 		expect(body.pricing_lines).toEqual([{ dimension: "input_text_tokens" }]);
 		expect(body.usage?.pricing_breakdown?.total_nanos).toBe(123_000);
+	});
+
+	it("includes the selected provider on chat completions payloads", () => {
+		const body = formatClientPayload({
+			ctx: {
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+				requestId: "req_provider_chat",
+				model: "minimax/minimax-m3",
+				body: {},
+				meta: {},
+			} as any,
+			result: {
+				provider: "minimax",
+				ir: {
+					choices: [{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: [{ type: "text", text: "OK" }],
+						},
+						finishReason: "stop",
+					}],
+					usage: {
+						inputTokens: 1,
+						outputTokens: 1,
+						totalTokens: 2,
+					},
+				},
+			} as any,
+			payload: {
+				id: "req_provider_chat",
+				model: "minimax/minimax-m3",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "OK" },
+					finish_reason: "stop",
+				}],
+				usage: {
+					input_tokens: 1,
+					output_tokens: 1,
+					total_tokens: 2,
+				},
+			},
+			includeMeta: false,
+		});
+
+		expect(body.provider).toBe("minimax");
+		expect(body.provider_id).toBe("minimax");
 	});
 });

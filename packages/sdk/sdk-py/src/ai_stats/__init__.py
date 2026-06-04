@@ -1207,19 +1207,19 @@ class AIStats:
         )
 
     def list_provisioning_keys(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.listProvisioningKeys(self._client, query=params or {})
+        return self.list_api_keys(params)
 
     def create_provisioning_key(self, body: dict[str, Any]) -> dict[str, Any]:
-        return ops.createProvisioningKey(self._client, body=body)
+        return self.create_api_key(body)
 
     def get_provisioning_key(self, key_id: str) -> dict[str, Any]:
-        return ops.getProvisioningKey(self._client, path={"id": key_id})
+        return self.get_api_key(key_id)
 
     def update_provisioning_key(self, key_id: str, body: dict[str, Any]) -> dict[str, Any]:
-        return ops.updateProvisioningKey(self._client, path={"id": key_id}, body=body)
+        return self.update_api_key(key_id, body)
 
     def delete_provisioning_key(self, key_id: str) -> dict[str, Any]:
-        return ops.deleteProvisioningKey(self._client, path={"id": key_id})
+        return self.delete_api_key(key_id)
 
 
 def _extract_model_id_from_payload(payload: dict[str, Any] | None) -> Optional[str]:

@@ -25,6 +25,7 @@
 		"db-progress": "cd ../../packages/data/catalog/src/data && python -X utf8 progressCalc.py",
 		"oauth:e2e:playwright": "tsx scripts/oauth-e2e-playwright.ts",
 		"resend:provision:onboarding": "tsx scripts/resend/provision-onboarding-automations.ts",
+		"resend:incident:outreach": "tsx scripts/resend/send-incident-outreach.ts",
 		"test:live:playground-text": "tsx scripts/live-playground-text-smoke.ts",
 		"test": "jest --runInBand"
 	},

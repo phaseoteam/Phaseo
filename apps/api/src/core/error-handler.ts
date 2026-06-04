@@ -433,6 +433,11 @@ export function classifyErrorType(args: {
 }): "system" | "user" {
     const code = String(args.errorCode ?? "").toLowerCase();
     const status = Number(args.status ?? 0);
+    const bodyErrorType = String(args.body?.error_type ?? "").toLowerCase();
+
+    if (bodyErrorType === "system" || bodyErrorType === "user") {
+        return bodyErrorType;
+    }
 
     if (code.startsWith("user:")) return "user";
     if (code.startsWith("upstream:")) return "system";
@@ -498,6 +503,15 @@ export function classifyErrorOrigin(args: {
 }): "upstream" | "gateway" | "user" {
     const code = String(args.errorCode ?? "").toLowerCase();
     const status = Number(args.status ?? 0);
+    const bodyErrorOrigin = String(args.body?.error_origin ?? "").toLowerCase();
+
+    if (
+        bodyErrorOrigin === "upstream" ||
+        bodyErrorOrigin === "gateway" ||
+        bodyErrorOrigin === "user"
+    ) {
+        return bodyErrorOrigin;
+    }
 
     if (args.stage === "before") {
         if (status >= 500) return "gateway";
@@ -576,6 +590,9 @@ export async function handleError({
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
     let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
     let errorOrigin = classifyErrorOrigin({ stage, status: res.status, errorCode: errCode, body });
+    if (errorType === "system" || errorOrigin === "gateway" || errorOrigin === "upstream") {
+        attribution = "upstream";
+    }
     if (upstreamUnsupportedParamSignal) {
         // Unsupported-param failures returned by upstream are generally a gateway/provider
         // capability-mapping issue, not caller behavior.
@@ -672,6 +689,7 @@ export async function handleError({
         (typeof body?.error === "string" ? body.error : null) ??
         res.statusText ??
         "An error occurred while processing the request.";
+    const operationalKind = normalizeBoundedString(body?.error_operational_kind, 128);
     const errorPayload: Record<string, unknown> = {
         generation_id: generationId,
         status_code: statusCode,
@@ -680,6 +698,9 @@ export async function handleError({
         error_origin: errorOrigin,
         description: fallbackDescription,
     };
+    if (operationalKind) {
+        errorPayload.error_operational_kind = operationalKind;
+    }
     if (
         stage === "execute" &&
         (errCode === "upstream_error" || errCode === "provider_payment_required")

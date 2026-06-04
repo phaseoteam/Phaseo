@@ -61,6 +61,7 @@ export async function enrichSuccessPayload(ctx: PipelineContext, result: Request
     if (ctx.endpoint === "responses") {
         const fullPayload = buildResponsesPayload(ctx, result);
         fullPayload.provider = result.provider;
+        fullPayload.provider_id = result.provider;
         fullPayload.meta = {
             ...fullPayload.meta,
         };
@@ -589,6 +590,8 @@ function buildChatCompletionsPayload(
         object: "chat.completion",
         created,
         model: payload?.model ?? ctx.model,
+        provider: payload?.provider ?? result.provider,
+        provider_id: payload?.provider_id ?? payload?.provider ?? result.provider,
         choices,
         ...(usage ? { usage } : {}),
     };

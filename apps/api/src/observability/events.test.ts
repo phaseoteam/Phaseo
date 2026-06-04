@@ -155,7 +155,6 @@ describe("emitGatewayRequestEvent", () => {
 			attempt_count: 1,
 			attempted_providers_count: 1,
 			cost_total_nanos: 150000000,
-			cost_total_cents: 15,
 			cost_currency: "USD",
 			provider_status_code: 200,
 		});
@@ -242,6 +241,22 @@ describe("emitGatewayRequestEvent", () => {
 
 		await emitGatewayRequestEvent({
 			ctx,
+			mappedRequest: JSON.stringify({
+				model: "gemini-2.5-pro",
+				input: "hello upstream",
+				temperature: 0.2,
+			}),
+			providerResponse: {
+				error: {
+					code: "PERMISSION_DENIED",
+					message: "The caller does not have permission.",
+					param: "model",
+				},
+			},
+			providerResponseHeaders: {
+				"x-request-id": "upstream-request-123",
+				"authorization": "Bearer should-not-leak",
+			},
 			statusCode: 502,
 			success: false,
 			errorCode: "upstream_error",
@@ -304,6 +319,7 @@ describe("emitGatewayRequestEvent", () => {
 		expect(event).toMatchObject({
 			event_type: "gateway.request",
 			request_id: "req_error_obs_123",
+			generation_id: "req_error_obs_123",
 			workspace_id: "ws_error_obs_123",
 			endpoint: "responses",
 			model: "google/gemini-2.5-pro",
@@ -363,6 +379,275 @@ describe("emitGatewayRequestEvent", () => {
 			providersBefore: ["google-ai-studio", "openai"],
 			providersAfter: ["google-ai-studio"],
 			dropped: [{ providerId: "openai", reason: "pricing_missing" }],
+		});
+
+		const requestPayload = JSON.parse(String(event.request_payload_redacted_json ?? "{}"));
+		expect(String(requestPayload.input)).toContain("[redacted");
+		expect(requestPayload.model).toBe("google/gemini-2.5-pro");
+
+		const upstreamRequest = JSON.parse(String(event.upstream_request_redacted_json ?? "{}"));
+		expect(String(upstreamRequest.input)).toContain("[redacted");
+		expect(upstreamRequest.temperature).toBe(0.2);
+
+		const providerResponse = JSON.parse(String(event.provider_response_redacted_json ?? "{}"));
+		expect(providerResponse.error.code).toBe("PERMISSION_DENIED");
+
+		const providerHeaders = JSON.parse(String(event.provider_response_headers_json ?? "{}"));
+		expect(providerHeaders["x-request-id"]).toBe("upstream-request-123");
+		expect(String(providerHeaders.authorization)).toContain("[redacted");
+	});
+
+	it("emits provider/model and service-tier dimensions for monitor grouping", async () => {
+		const ctx = {
+			endpoint: "responses",
+			capability: "responses",
+			requestId: "req_monitor_dims_123",
+			protocol: "openai",
+			meta: {
+				requestPath: "/v1/responses",
+			},
+			rawBody: {
+				model: "minimax/minimax-m3",
+				input: "hello",
+				service_tier: "priority",
+			},
+			body: {
+				model: "minimax/minimax-m3",
+				input: "hello",
+				service_tier: "priority",
+			},
+			model: "minimax/minimax-m3",
+			workspaceId: "ws_monitor_dims_123",
+			stream: false,
+			providers: [
+				{
+					providerId: "novita",
+					providerModelSlug: "MiniMax-M3",
+					pricingCard: { id: "price_novita_minimax_m3" },
+					providerStatus: "active",
+					capabilityStatus: "active",
+				},
+			],
+			pricing: {},
+			gating: {
+				key: { ok: true, reason: null },
+				keyLimit: { ok: true, reason: null },
+				credit: { ok: true, reason: null },
+			},
+			providerAttempts: [
+				{
+					attempt_number: 1,
+					provider: "novita",
+					endpoint: "responses",
+					model: "minimax/minimax-m3",
+					provider_model_slug: "MiniMax-M3",
+					outcome: "upstream_non_2xx",
+					duration_ms: 120,
+					status: 502,
+				},
+			],
+		} as unknown as PipelineContext;
+
+		await emitGatewayRequestEvent({
+			ctx,
+			provider: "novita",
+			statusCode: 502,
+			success: false,
+			errorCode: "upstream_error",
+			errorMessage: "Provider failed.",
+			errorStage: "execute",
+			usage: {
+				service_tier: "priority",
+			},
+		});
+
+		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			provider: "novita",
+			model: "minimax/minimax-m3",
+			service_tier_requested: "priority",
+			service_tier: "priority",
+			service_tier_observed: "priority",
+			provider_model_slug: "MiniMax-M3",
+			provider_model: "novita:minimax/minimax-m3",
+			provider_model_service_tier: "novita:minimax/minimax-m3:priority",
+			success: false,
+			status_code: 502,
+		});
+	});
+
+	it("omits null values and duplicate diagnostic fields from compact success events", async () => {
+		clearRuntime();
+		configureRuntime({
+			SUPABASE_URL: "https://example.supabase.co",
+			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+			GATEWAY_CACHE: {} as KVNamespace,
+			NODE_ENV: "test",
+			AXIOM_API_KEY: "axiom_test_key",
+			AXIOM_DATASET: "gateway-wide",
+			AXIOM_SUCCESS_SAMPLE_RATE: "1",
+			AXIOM_DETAIL_SAMPLE_RATE: "0",
+			AXIOM_SLOW_REQUEST_MS: "999999",
+		} as any);
+
+		await emitGatewayRequestEvent({
+			requestId: "req_compact_obs_123",
+			workspaceId: "ws_compact_obs_123",
+			endpoint: "responses",
+			model: "minimax/minimax-m3",
+			statusCode: 200,
+			success: true,
+			gatewayResponse: {
+				id: "req_compact_obs_123",
+				output_text: "OK",
+			},
+		});
+
+		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			event_schema_version: "2026-06-04.2",
+			event_type: "gateway.request",
+			observability_detail_level: "compact",
+			request_id: "req_compact_obs_123",
+			generation_id: "req_compact_obs_123",
+			workspace_id: "ws_compact_obs_123",
+			model: "minimax/minimax-m3",
+			status_code: 200,
+			success: true,
+		});
+		expect(Object.values(event)).not.toContain(null);
+		expect(Object.values(event)).not.toContain("null");
+		expect(event.model_resolved).toBeUndefined();
+		expect(event.observability_success_sample_rate).toBeUndefined();
+		expect(event.observability_detail_sample_rate).toBeUndefined();
+		expect(event.observability_slow_request_ms).toBeUndefined();
+		expect(event.mapping_snapshot_json).toBeUndefined();
+		expect(event.generation_context_json).toBeUndefined();
+		expect(event.provider_candidates_status_json).toBeUndefined();
+		expect(event.request_payload_redacted_json).toBeUndefined();
+		expect(event.gateway_response_redacted_json).toBeUndefined();
+	});
+
+	it("emits compact success events by default without raw IP addresses", async () => {
+		clearRuntime();
+		configureRuntime({
+			SUPABASE_URL: "https://example.supabase.co",
+			SUPABASE_SERVICE_ROLE_KEY: "service-role-key",
+			GATEWAY_CACHE: {} as KVNamespace,
+			NODE_ENV: "test",
+			AXIOM_API_KEY: "axiom_test_key",
+			AXIOM_DATASET: "gateway-wide",
+		} as any);
+
+		await emitGatewayRequestEvent({
+			requestId: "req_default_success_obs_123",
+			workspaceId: "ws_default_success_obs_123",
+			endpoint: "responses",
+			model: "openai/gpt-5-mini",
+			statusCode: 200,
+			success: true,
+			clientIp: "203.0.113.10",
+			cfRay: "test-ray-123",
+		});
+
+		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			observability_detail_level: "compact",
+			observability_emit_reason: "sampled_success",
+			request_id: "req_default_success_obs_123",
+			generation_id: "req_default_success_obs_123",
+			cf_ray: "test-ray-123",
+			success: true,
+		});
+		expect(event.client_ip).toBeUndefined();
+		expect(event.request_payload_redacted_json).toBeUndefined();
+	});
+
+	it("classifies request provider locks that exclude candidates as caller-owned", async () => {
+		await emitGatewayRequestEvent({
+			requestId: "req_provider_lock_obs_123",
+			workspaceId: "ws_provider_lock_obs_123",
+			endpoint: "responses",
+			model: "minimax/minimax-m3",
+			statusCode: 400,
+			success: false,
+			errorCode: "user:validation_error",
+			errorMessage: "Workspace and request provider filters resulted in no available providers",
+			errorStage: "before",
+			gatewayResponse: {
+				error: "validation_error",
+				error_type: "user",
+				error_origin: "user",
+				error_operational_kind: "request_provider_filter_no_match",
+				details: [{
+					keyword: "no_providers_after_workspace_policy_filter",
+					path: ["provider"],
+				}],
+				routing_diagnostics: {
+					workspacePolicy: {
+						resolvedModel: "minimax/minimax-m3",
+						allowedApiModels: [],
+						providerAllowlist: [],
+						providerBlocklist: [],
+						requestProviderOnly: ["novita"],
+						requestProviderIgnore: [],
+						activeGuardrailIds: [],
+						beforeCount: 1,
+						afterCount: 0,
+					},
+				},
+			},
+		});
+
+		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			error_type: "user",
+			error_origin: "user",
+			error_operational_kind: "request_provider_filter_no_match",
+			error_action_owner: "caller",
+			error_requires_investigation: false,
+		});
+	});
+
+	it("classifies known model provider-candidate gaps as gateway-owned", async () => {
+		await emitGatewayRequestEvent({
+			requestId: "req_candidate_gap_obs_123",
+			workspaceId: "ws_candidate_gap_obs_123",
+			endpoint: "responses",
+			model: "openai/gpt-5.4-nano",
+			statusCode: 400,
+			success: false,
+			errorCode: "upstream:unsupported_model_or_endpoint",
+			errorMessage: "Unsupported model or endpoint.",
+			errorStage: "before",
+			gatewayResponse: {
+				error: "unsupported_model_or_endpoint",
+				error_type: "system",
+				error_origin: "gateway",
+				error_operational_kind: "gateway_provider_availability_gap",
+				reason: "provider_candidates_unavailable",
+				provider_candidate_diagnostics: {
+					totalProviders: 2,
+					supportsEndpointCount: 2,
+					candidateCount: 0,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+				},
+			},
+		});
+
+		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event).toMatchObject({
+			error_type: "system",
+			error_origin: "gateway",
+			error_operational_kind: "gateway_provider_availability_gap",
+			error_action_owner: "gateway",
+			error_requires_investigation: true,
 		});
 	});
 });
