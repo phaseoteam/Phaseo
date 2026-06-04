@@ -1,0 +1,19 @@
+{
+  "model_id": "pipecat-ai/smart-turn-v2",
+  "organisation_id": "pipecat-ai",
+  "name": "Smart Turn v2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "An open source, community-driven, native audio turn detection model in 2nd version",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "audio",
+  "output_types": null,
+  "api_model_id": "pipecat-ai/smart-turn-v2",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -1,0 +1,19 @@
+{
+  "model_id": "leonardo/phoenix-1.0",
+  "organisation_id": "leonardo",
+  "name": "Phoenix 1.0",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Phoenix 1.0 is a model by Leonardo.Ai that generates images with exceptional prompt adherence and coherent text.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "leonardo/phoenix-1.0",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

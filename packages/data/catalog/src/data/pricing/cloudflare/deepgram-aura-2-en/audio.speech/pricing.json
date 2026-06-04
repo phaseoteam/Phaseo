@@ -1,0 +1,20 @@
+{
+  "key": "cloudflare:deepgram/aura-2-en:audio.speech",
+  "api_provider_id": "cloudflare",
+  "provider_slug": "cloudflare",
+  "api_model_id": "deepgram/aura-2-en",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000,
+      "price_per_unit": 0.03,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

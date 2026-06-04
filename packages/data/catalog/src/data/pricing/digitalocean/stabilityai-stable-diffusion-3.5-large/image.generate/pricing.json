@@ -1,0 +1,21 @@
+{
+  "key": "digitalocean:stabilityai/stable-diffusion-3.5-large:image.generate",
+  "api_provider_id": "digitalocean",
+  "provider_slug": "digitalocean",
+  "api_model_id": "stabilityai/stable-diffusion-3.5-large",
+  "capability_id": "image.generate",
+  "rules": [
+    {
+      "meter": "output_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.08,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-29T00:00:00Z"
+    }
+  ]
+}

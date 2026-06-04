@@ -1,0 +1,20 @@
+{
+  "key": "cloudflare:openai/whisper-1:audio.transcribe",
+  "api_provider_id": "cloudflare",
+  "provider_slug": "cloudflare",
+  "api_model_id": "openai/whisper-1",
+  "capability_id": "audio.transcribe",
+  "rules": [
+    {
+      "meter": "input_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.000453,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "model_id": "meta/m2m100-1.2b",
+  "organisation_id": "meta",
+  "name": "M2m100 1.2b",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Multilingual encoder-decoder (seq-to-seq) model trained for Many-to-Many multilingual translation",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "meta/m2m100-1.2b",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://github.com/facebookresearch/fairseq/tree/main/examples/m2m_100"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

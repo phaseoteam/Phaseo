@@ -34,6 +34,7 @@ import {
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
+import { formatProviderOfferDisplayName } from "@/lib/providers/providerOffers";
 
 const INPUT_METER_PREFERENCE = ["input_text_tokens", "input_tokens"] as const;
 const OUTPUT_METER_PREFERENCE = ["output_text_tokens", "output_tokens"] as const;
@@ -732,6 +733,26 @@ export default function PricingInsights({
 	runtimeStats: ProviderRuntimeStatsMap;
 	historyRules: ModelPricingHistoryRule[];
 }) {
+	const providerDisplayNameById = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const provider of providers) {
+			const providerId = provider.provider.api_provider_id;
+			if (!providerId) continue;
+			map.set(
+				providerId,
+				formatProviderOfferDisplayName({
+					providerId,
+					providerName:
+						provider.provider.api_provider_name ||
+						provider.provider.api_provider_id,
+					offerLabel: provider.provider.offer_label ?? null,
+					offerScope: provider.provider.offer_scope ?? null,
+				}) || providerId,
+			);
+		}
+		return map;
+	}, [providers]);
+
 	const providerColourById = useMemo(() => {
 		const map = new Map<string, string>();
 		for (const provider of providers) {
@@ -771,7 +792,7 @@ export default function PricingInsights({
 				return {
 					providerId,
 					providerName:
-						provider.provider.api_provider_name || provider.provider.api_provider_id,
+						providerDisplayNameById.get(providerId) ?? provider.provider.api_provider_id,
 					providerColour:
 						providerColourById.get(providerId) ??
 						fallbackProviderColours[providerId]?.stroke ??
@@ -786,7 +807,14 @@ export default function PricingInsights({
 				} satisfies EffectiveRow;
 			})
 			.sort((a, b) => a.providerName.localeCompare(b.providerName));
-	}, [plan, providers, runtimeStats, providerColourById, fallbackProviderColours]);
+	}, [
+		plan,
+		providers,
+		runtimeStats,
+		providerColourById,
+		fallbackProviderColours,
+		providerDisplayNameById,
+	]);
 
 	const effectiveSummary = useMemo(() => {
 		let inputCostUsd = 0;
@@ -986,7 +1014,10 @@ export default function PricingInsights({
 
 		const providerNameById = new Map<string, string>();
 		for (const rule of scopedHistoryRules) {
-			providerNameById.set(rule.providerId, rule.providerName);
+			providerNameById.set(
+				rule.providerId,
+				providerDisplayNameById.get(rule.providerId) ?? rule.providerName,
+			);
 		}
 
 		let providerIds: string[] = [];
@@ -1167,6 +1198,7 @@ export default function PricingInsights({
 		selectedMeter,
 		selectedConditionValues,
 		providerColourById,
+		providerDisplayNameById,
 		providers,
 	]);
 
@@ -1328,6 +1360,10 @@ export default function PricingInsights({
 									xAxisId="days"
 									dataKey="day"
 									tickFormatter={(value) => formatDayNumber(String(value))}
+									tick={{
+										fill: "var(--chart-axis-color)",
+										fontSize: 12,
+									}}
 									tickLine={false}
 									axisLine={false}
 									minTickGap={16}
@@ -1341,6 +1377,10 @@ export default function PricingInsights({
 									tickFormatter={(value) =>
 										historyChartState.monthLabelByTick[String(value)] ?? ""
 									}
+									tick={{
+										fill: "var(--chart-axis-color)",
+										fontSize: 12,
+									}}
 									interval={0}
 									tickLine={false}
 									axisLine={false}
@@ -1351,6 +1391,10 @@ export default function PricingInsights({
 								/>
 								<YAxis
 									tickFormatter={(value) => formatUsdAdaptive(Number(value))}
+									tick={{
+										fill: "var(--chart-axis-color)",
+										fontSize: 12,
+									}}
 									tickLine={false}
 									axisLine={false}
 									width={128}
@@ -1360,7 +1404,7 @@ export default function PricingInsights({
 										position: "insideLeft",
 										style: {
 											textAnchor: "middle",
-											fill: "hsl(var(--muted-foreground))",
+											fill: "var(--chart-axis-color)",
 											fontSize: 12,
 										},
 									}}
@@ -1402,7 +1446,7 @@ export default function PricingInsights({
 																key={key}
 																className="flex items-center justify-between gap-3"
 															>
-																<div className="flex items-center gap-2 text-muted-foreground">
+																<div className="flex items-center gap-2 text-foreground">
 																	<span
 																		className="size-2 rounded-full"
 																		style={{

@@ -1,0 +1,21 @@
+{
+  "key": "digitalocean:qwen/qwen3-tts-voicedesign:audio.speech",
+  "api_provider_id": "digitalocean",
+  "provider_slug": "digitalocean",
+  "api_model_id": "qwen/qwen3-tts-voicedesign",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_characters",
+      "unit": "character",
+      "unit_size": 1000000,
+      "price_per_unit": 20,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-29T00:00:00Z"
+    }
+  ]
+}

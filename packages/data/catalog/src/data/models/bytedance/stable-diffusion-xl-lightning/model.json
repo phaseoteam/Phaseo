@@ -1,0 +1,24 @@
+{
+  "model_id": "bytedance/stable-diffusion-xl-lightning",
+  "organisation_id": "bytedance",
+  "name": "Stable Diffusion XL Lightning",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "SDXL-Lightning is a lightning-fast text-to-image generation model. It can generate high-quality 1024px images in a few steps.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "image",
+  "api_model_id": "bytedance/stable-diffusion-xl-lightning",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://huggingface.co/ByteDance/SDXL-Lightning"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

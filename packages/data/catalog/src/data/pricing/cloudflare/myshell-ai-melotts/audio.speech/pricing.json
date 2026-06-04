@@ -1,0 +1,20 @@
+{
+  "key": "cloudflare:myshell-ai/melotts:audio.speech",
+  "api_provider_id": "cloudflare",
+  "provider_slug": "cloudflare",
+  "api_model_id": "myshell-ai/melotts",
+  "capability_id": "audio.speech",
+  "rules": [
+    {
+      "meter": "input_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.000205,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "key": "cloudflare:deepgram/nova-3:audio.transcribe",
+  "api_provider_id": "cloudflare",
+  "provider_slug": "cloudflare",
+  "api_model_id": "deepgram/nova-3",
+  "capability_id": "audio.transcribe",
+  "rules": [
+    {
+      "meter": "input_audio_minutes",
+      "unit": "minute",
+      "unit_size": 1,
+      "price_per_unit": 0.0052,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+---
+title: "Provider Statuses"
+description: "What Active, Coming Soon, Deranked, Not Active, and Disabled mean on AI Stats model pages."
+---
+
+Provider status explains whether a provider is currently routable for a model and, if it is routable, whether routing health is deprioritizing it.
+
+You will see these labels on model pages, provider pricing cards, and related availability UI.
+
+## Status overview
+
+| Status | Meaning | Routing behavior |
+| --- | --- | --- |
+| `Active` | The provider/model mapping is live and healthy enough to route normally. | Routable now. |
+| `Deranked L1` | The provider is still live, but routing health is slightly deprioritizing it. | Routable now, with mild deprioritization. |
+| `Deranked L2` | The provider is live, but routing health is currently deprioritizing it more clearly. | Routable now, but less preferred than healthy providers. |
+| `Deranked L3` | The provider is live, but routing health is heavily deprioritizing it. | Routable now, but strongly deprioritized. |
+| `Coming Soon` | The provider/model mapping is listed in the catalog, but it is not active for normal routing yet. | Not routable yet. |
+| `Not Active` | AI Stats knows about the provider or mapping, but it is not currently available for public routing. | Not routable now. |
+| `Disabled` | The mapping is explicitly disabled. | Never routed while disabled. |
+
+## How deranking works
+
+Deranked states are not the same as disabled states.
+
+- `Deranked L1`, `Deranked L2`, and `Deranked L3` are still routable states.
+- Higher derank levels mean the provider is less likely to be selected ahead of healthier alternatives.
+- Deranking is usually driven by recent routing health, such as elevated failures or degraded behavior on some route pairs.
+
+If a provider is deranked, a model page may also show extra hover-card detail about current routing health. That extra note explains why the provider is being deprioritized right now.
+
+## Not Active vs Disabled
+
+Use this distinction when reading model pages:
+
+- `Not Active` means the mapping exists in the catalog, but AI Stats is not routing to it right now.
+- `Disabled` means the mapping has been explicitly switched off.
+
+In practice, `Not Active` can cover several underlying rollout or access states, while `Disabled` is an intentional hard-off state.
+
+## Coming Soon
+
+`Coming Soon` is used when AI Stats has catalog coverage for a provider/model mapping before that mapping is publicly routable.
+
+Common reasons include:
+
+- pricing or metadata is ready before rollout finishes
+- a provider integration exists but is not yet enabled for production traffic
+- staged launches where visibility lands before routing
+
+## Notes
+
+- Status is provider-specific and model-specific.
+- A single model can be `Active` on one provider and `Coming Soon` or `Not Active` on another.
+- Some internal or low-level catalog states are normalized into these user-facing labels in the product UI.
+
+## Related pages
+
+- [Routing and Fallbacks](./routing-and-fallbacks.mdx)
+- [Service Tiers](./service-tiers.mdx)
+- [Models API reference](../api-reference/endpoint/models.mdx)

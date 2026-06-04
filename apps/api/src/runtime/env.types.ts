@@ -63,6 +63,7 @@ export type GatewayBindings = {
     CLARIFAI_PAT?: string;
     CLARIFAI_BASE_URL?: string;
     CLOUDFLARE_API_TOKEN?: string;
+    CLOUDFLARE_ACCOUNT_ID?: string;
     CLOUDFLARE_AI_GATEWAY_BASE_URL?: string;
     COHERE_API_KEY?: string;
     COHERE_BASE_URL?: string;
@@ -78,6 +79,7 @@ export type GatewayBindings = {
     DEEPINFRA_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
     DEEPSEEK_BASE_URL?: string;
+    DIGITALOCEAN_TOKEN?: string;
     EXA_API_KEY?: string;
     EXA_BASE_URL?: string;
     FEATHERLESS_API_KEY?: string;
