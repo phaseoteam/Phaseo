@@ -106,8 +106,12 @@ function hasCanonicalModelModalities(row?: CanonicalModelRow | null): boolean {
 
 const catalogModelModalitiesCache = new Map<string, CanonicalModelRow | null>();
 const catalogProviderMetaCache = new Map<string, CatalogProviderMeta | null>();
+const ENABLE_CATALOG_FILESYSTEM_FALLBACK =
+	process.env.NODE_ENV !== "production" ||
+	process.env.ENABLE_CATALOG_FILESYSTEM_FALLBACK === "1";
 
 function loadCatalogModelModalities(modelId: string): CanonicalModelRow | null {
+	if (!ENABLE_CATALOG_FILESYSTEM_FALLBACK) return null;
 	const normalizedModelId = String(modelId ?? "").trim();
 	if (!normalizedModelId) return null;
 	const cached = catalogModelModalitiesCache.get(normalizedModelId);
@@ -145,6 +149,7 @@ function loadCatalogModelModalities(modelId: string): CanonicalModelRow | null {
 }
 
 function loadCatalogProviderMeta(providerId: string): CatalogProviderMeta | null {
+	if (!ENABLE_CATALOG_FILESYSTEM_FALLBACK) return null;
 	const normalizedProviderId = String(providerId ?? "").trim();
 	if (!normalizedProviderId) return null;
 	const cached = catalogProviderMetaCache.get(normalizedProviderId);

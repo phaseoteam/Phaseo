@@ -1,5 +1,26 @@
 [
   {
+    "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_api_model_id": "digitalocean:nvidia-nemotron-3-ultra-550b",
+    "provider_model_slug": "nemotron-3-ultra-550b",
+    "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-06-04T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "coming_soon",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwen3-32b",
     "provider_api_model_id": "digitalocean:alibaba-qwen3-32b",
     "provider_model_slug": "alibaba-qwen3-32b",

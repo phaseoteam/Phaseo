@@ -2,11 +2,11 @@
   "model_id": "nvidia/nemotron-3-ultra-550b-a55b",
   "organisation_id": "nvidia",
   "name": "Nemotron 3 Ultra",
-  "status": "Announced",
+  "status": "Available",
   "previous_model_id": null,
-  "description": "Nemotron 3 Ultra is NVIDIA's largest open base model, a 550B total-parameter hybrid Mamba-Transformer mixture-of-experts model with up to 55B active parameters per token and up to 1M tokens of context. This entry tracks the announced base checkpoint ahead of full release.",
+  "description": "Nemotron 3 Ultra is NVIDIA's largest Nemotron 3 model, a 550B total-parameter hybrid Mamba-Transformer mixture-of-experts model with up to 55B active parameters per token and up to 1M tokens of context, built for coding, research, and long-running agentic workflows.",
   "announced_date": "2026-03-16T00:00:00",
-  "release_date": null,
+  "release_date": "2026-06-01T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
@@ -16,11 +16,15 @@
   "links": [
     {
       "platform": "announcement",
-      "url": "https://docs.nvidia.com/nemotron/nightly/usage-cookbook/Nemotron-3-Ultra-Base/README.html"
+      "url": "https://investor.nvidia.com/news/press-release-details/2026/Enterprise-Software-Leaders-Build-AI-Agents-With-NVIDIA/default.aspx"
     },
     {
       "platform": "website",
-      "url": "https://research.nvidia.com/labs/nemotron/Nemotron-3/"
+      "url": "https://developer.nvidia.com/nemotron"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://docs.nvidia.com/nemotron/nightly/usage-cookbook/Nemotron-3-Ultra-Base/README.html"
     }
   ],
   "details": [
@@ -38,7 +42,7 @@
     },
     {
       "name": "availability",
-      "value": "NVIDIA documents Nemotron 3 Ultra as an announced pre-training base checkpoint and says weights are expected with the full release in 1H 2026."
+      "value": "NVIDIA unveiled Nemotron 3 Ultra on June 1, 2026 as a new open model for long-running agents, and DigitalOcean now lists hosted inference support for the model."
     }
   ],
   "benchmarks": []
