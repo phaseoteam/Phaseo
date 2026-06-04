@@ -11,7 +11,7 @@
   "retirement_date": null,
   "license": null,
   "input_types": "audio",
-  "output_types": "audio",
+  "output_types": null,
   "api_model_id": "pipecat-ai/smart-turn-v2",
   "links": [],
   "details": [],

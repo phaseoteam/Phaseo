@@ -209,6 +209,15 @@ function toTokenCount(value: unknown): number {
     return Math.max(0, Math.round(sumTokens(value)));
 }
 
+function chunkValues<T>(values: readonly T[], size: number): T[][] {
+	const normalizedSize = Math.max(1, Math.floor(size));
+	const chunks: T[][] = [];
+	for (let index = 0; index < values.length; index += normalizedSize) {
+		chunks.push(values.slice(index, index + normalizedSize));
+	}
+	return chunks;
+}
+
 export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     let supabase: ReturnType<typeof createAdminClient> | null = null;
     try {
@@ -269,20 +278,20 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     );
     const canonicalModelsById = new Map<string, CanonicalModelRow>();
     if (canonicalModelIds.length > 0) {
-        const canonicalModelsRes = await supabase
-            .from("data_models")
-            .select(
-                "model_id, input_types, output_types"
-            )
-            .in("model_id", canonicalModelIds);
-        if (canonicalModelsRes.error) {
-            throw canonicalModelsRes.error;
-        }
-        for (const row of (canonicalModelsRes.data ?? []) as CanonicalModelRow[]) {
-            const modelId = String(row.model_id ?? "").trim();
-            if (!modelId) continue;
-            canonicalModelsById.set(modelId, row);
-        }
+		for (const modelIdChunk of chunkValues(canonicalModelIds, 100)) {
+			const canonicalModelsRes = await supabase
+				.from("data_models")
+				.select("model_id, input_types, output_types")
+				.in("model_id", modelIdChunk);
+			if (canonicalModelsRes.error) {
+				throw canonicalModelsRes.error;
+			}
+			for (const row of (canonicalModelsRes.data ?? []) as CanonicalModelRow[]) {
+				const modelId = String(row.model_id ?? "").trim();
+				if (!modelId) continue;
+				canonicalModelsById.set(modelId, row);
+			}
+		}
     }
 
     const now = Date.now();

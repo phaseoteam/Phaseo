@@ -4,7 +4,7 @@
   "name": "Nova 3",
   "status": "Available",
   "previous_model_id": null,
-  "description": "Transcribe audio using Deepgram�s speech-to-text model",
+  "description": "Transcribe audio using Deepgram's speech-to-text model",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
