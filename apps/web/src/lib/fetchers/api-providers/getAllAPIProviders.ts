@@ -1,6 +1,4 @@
 // lib/fetchers/api-providers/getAllAPIProviders.ts
-import fs from "node:fs";
-import path from "node:path";
 import { cacheLife, cacheTag } from "next/cache";
 import { filterVisibleAPIProviders } from "./visibility";
 import {
@@ -59,10 +57,6 @@ type CanonicalModelRow = {
 	output_modalities?: string[] | string | null;
 };
 
-type CatalogProviderMeta = {
-	colour?: string | null;
-};
-
 const MODALITY_KEYS: ProviderModalityKey[] = [
     "text",
     "image",
@@ -102,80 +96,6 @@ function hasCanonicalModelModalities(row?: CanonicalModelRow | null): boolean {
         row?.output_types ?? row?.output_modalities ?? "",
     ).trim();
     return inputValue.length > 0 || outputValue.length > 0;
-}
-
-const catalogModelModalitiesCache = new Map<string, CanonicalModelRow | null>();
-const catalogProviderMetaCache = new Map<string, CatalogProviderMeta | null>();
-const ENABLE_CATALOG_FILESYSTEM_FALLBACK =
-	process.env.NODE_ENV !== "production" ||
-	process.env.ENABLE_CATALOG_FILESYSTEM_FALLBACK === "1";
-
-function loadCatalogModelModalities(modelId: string): CanonicalModelRow | null {
-	if (!ENABLE_CATALOG_FILESYSTEM_FALLBACK) return null;
-	const normalizedModelId = String(modelId ?? "").trim();
-	if (!normalizedModelId) return null;
-	const cached = catalogModelModalitiesCache.get(normalizedModelId);
-	if (cached !== undefined) return cached;
-
-	const segments = normalizedModelId.split("/").filter(Boolean);
-	if (segments.length < 2) {
-		catalogModelModalitiesCache.set(normalizedModelId, null);
-		return null;
-	}
-
-	const organisationId = segments[0];
-	const modelSlug = segments.slice(1).join("/");
-	const candidateRoots = [
-		path.resolve(process.cwd(), "packages/data/catalog/src/data/models"),
-		path.resolve(process.cwd(), "../../packages/data/catalog/src/data/models"),
-	];
-
-	for (const root of candidateRoots) {
-		const filePath = path.join(root, organisationId, modelSlug, "model.json");
-		if (!fs.existsSync(filePath)) continue;
-		try {
-			const parsed = JSON.parse(
-				fs.readFileSync(filePath, "utf-8"),
-			) as CanonicalModelRow;
-			catalogModelModalitiesCache.set(normalizedModelId, parsed);
-			return parsed;
-		} catch {
-			continue;
-		}
-	}
-
-	catalogModelModalitiesCache.set(normalizedModelId, null);
-	return null;
-}
-
-function loadCatalogProviderMeta(providerId: string): CatalogProviderMeta | null {
-	if (!ENABLE_CATALOG_FILESYSTEM_FALLBACK) return null;
-	const normalizedProviderId = String(providerId ?? "").trim();
-	if (!normalizedProviderId) return null;
-	const cached = catalogProviderMetaCache.get(normalizedProviderId);
-	if (cached !== undefined) return cached;
-
-	const candidateRoots = [
-		path.resolve(process.cwd(), "packages/data/catalog/src/data/api_providers"),
-		path.resolve(process.cwd(), "../../packages/data/catalog/src/data/api_providers"),
-	];
-
-	for (const root of candidateRoots) {
-		const filePath = path.join(root, normalizedProviderId, "api_provider.json");
-		if (!fs.existsSync(filePath)) continue;
-		try {
-			const parsed = JSON.parse(
-				fs.readFileSync(filePath, "utf-8"),
-			) as CatalogProviderMeta;
-			catalogProviderMetaCache.set(normalizedProviderId, parsed);
-			return parsed;
-		} catch {
-			continue;
-		}
-	}
-
-	catalogProviderMetaCache.set(normalizedProviderId, null);
-	return null;
 }
 
 function normalizeModality(raw: string): ProviderModalityKey | null {
@@ -330,15 +250,10 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         const outputModalitySets =
             outputModalityModelSetsByProvider.get(providerId) ??
             createModalitySetMap();
-        const modelLookupId =
-            String(row.model_id ?? "").trim() || String(row.api_model_id ?? "").trim();
         const dbCanonicalModel = canonicalModelsById.get(
             String(row.model_id ?? "").trim(),
         );
-        const canonicalModel =
-            hasCanonicalModelModalities(dbCanonicalModel)
-                ? dbCanonicalModel
-                : loadCatalogModelModalities(modelLookupId) ?? dbCanonicalModel;
+        const canonicalModel = dbCanonicalModel;
         const { inputModalities, outputModalities } =
             resolveEffectiveProviderModalities({
                 providerModel: row,
@@ -442,13 +357,6 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             .map((row): APIProviderIndexVariant | null => {
 				const providerId = String(row.api_provider_id ?? "").trim();
 				if (!providerId) return null;
-				const catalogMeta = loadCatalogProviderMeta(providerId);
-				const catalogColour =
-					typeof catalogMeta?.colour === "string" &&
-					catalogMeta.colour.trim().length > 0
-						? catalogMeta.colour.trim()
-						: null;
-
 				const inputModalitySets =
 					inputModalityModelSetsByProvider.get(providerId) ??
 					createModalitySetMap();
@@ -460,10 +368,9 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
 					api_provider_id: providerId,
 					api_provider_name: row.api_provider_name ?? "",
 					colour:
-						catalogColour ??
-						(typeof row.colour === "string" && row.colour.trim().length > 0
+						typeof row.colour === "string" && row.colour.trim().length > 0
 							? row.colour.trim()
-							: null),
+							: null,
                     country_code: row.country_code ?? "",
                     provider_family_id: row.provider_family_id ?? null,
                     offer_label: row.offer_label ?? null,

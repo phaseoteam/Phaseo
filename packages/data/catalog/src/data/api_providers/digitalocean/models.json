@@ -462,27 +462,6 @@
     ]
   },
   {
-    "api_model_id": "stabilityai/stable-diffusion-3.5-large",
-    "provider_api_model_id": "digitalocean:stable-diffusion-3.5-large",
-    "provider_model_slug": "stable-diffusion-3.5-large",
-    "internal_model_id": "stabilityai/stable-diffusion-3.5-large",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "z-ai/glm-5",
     "provider_api_model_id": "digitalocean:glm-5",
     "provider_model_slug": "glm-5",
@@ -504,27 +483,6 @@
     ]
   },
   {
-    "api_model_id": "alibaba-nlp/gte-large-en-v1.5",
-    "provider_api_model_id": "digitalocean:gte-large-en-v1.5",
-    "provider_model_slug": "gte-large-en-v1.5",
-    "internal_model_id": "alibaba-nlp/gte-large-en-v1.5",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3-embedding-0.6b",
     "provider_api_model_id": "digitalocean:qwen3-embedding-0.6b",
     "provider_model_slug": "qwen3-embedding-0.6b",
@@ -540,132 +498,6 @@
     "capabilities": [
       {
         "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "baai/bge-m3",
-    "provider_api_model_id": "digitalocean:bge-m3",
-    "provider_model_slug": "bge-m3",
-    "internal_model_id": "baai/bge-m3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "intfloat/multilingual-e5-large",
-    "provider_api_model_id": "digitalocean:multilingual-e5-large",
-    "provider_model_slug": "multilingual-e5-large",
-    "internal_model_id": "intfloat/multilingual-e5-large",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "intfloat/e5-large-v2",
-    "provider_api_model_id": "digitalocean:e5-large-v2",
-    "provider_model_slug": "e5-large-v2",
-    "internal_model_id": "intfloat/e5-large-v2",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "sentence-transformers/all-minilm-l6-v2",
-    "provider_api_model_id": "digitalocean:all-minilm-l6-v2",
-    "provider_model_slug": "all-minilm-l6-v2",
-    "internal_model_id": "sentence-transformers/all-minilm-l6-v2",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "sentence-transformers/multi-qa-mpnet-base-dot-v1",
-    "provider_api_model_id": "digitalocean:multi-qa-mpnet-base-dot-v1",
-    "provider_model_slug": "multi-qa-mpnet-base-dot-v1",
-    "internal_model_id": "sentence-transformers/multi-qa-mpnet-base-dot-v1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embeddings",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "baai/bge-reranker-v2-m3",
-    "provider_api_model_id": "digitalocean:bge-reranker-v2-m3",
-    "provider_model_slug": "bge-reranker-v2-m3",
-    "internal_model_id": "baai/bge-reranker-v2-m3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-05-29T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.rerank",
         "status": "coming_soon",
         "params": []
       }
