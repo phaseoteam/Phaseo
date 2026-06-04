@@ -412,8 +412,6 @@ namespace AiStatsSdk
         public const string NvidiaNemotron3NanoOmni30bA3bReasoning = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning";
         /// <summary>Model ID: <c>nvidia/nemotron-3-super-120b-a12b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b</summary>
         public const string NvidiaNemotron3Super120bA12b = "nvidia/nemotron-3-super-120b-a12b";
-        /// <summary>Model ID: <c>nvidia/nemotron-3-ultra-550b-a55b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b</summary>
-        public const string NvidiaNemotron3Ultra550bA55b = "nvidia/nemotron-3-ultra-550b-a55b";
         /// <summary>Model ID: <c>nvidia/nvidia-nemotron-3-nano-30b-a3b</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b</summary>
         public const string NvidiaNvidiaNemotron3Nano30bA3b = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
         /// <summary>Model ID: <c>nvidia/nvidia-nemotron-nano-12b-v2-vl</c>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl</summary>

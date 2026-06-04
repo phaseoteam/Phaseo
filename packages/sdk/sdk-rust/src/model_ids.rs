@@ -612,9 +612,6 @@ pub mod model_ids {
     /// Model ID: `nvidia/nemotron-3-super-120b-a12b`.
     /// Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
     pub const NVIDIA_NEMOTRON_3_SUPER_120B_A12B: &str = "nvidia/nemotron-3-super-120b-a12b";
-    /// Model ID: `nvidia/nemotron-3-ultra-550b-a55b`.
-    /// Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b
-    pub const NVIDIA_NEMOTRON_3_ULTRA_550B_A55B: &str = "nvidia/nemotron-3-ultra-550b-a55b";
     /// Model ID: `nvidia/nvidia-nemotron-3-nano-30b-a3b`.
     /// Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
     pub const NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B: &str = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
@@ -1573,7 +1570,6 @@ pub mod model_ids {
         NVIDIA_NEMOTRON_3_NANO_30B_A3B,
         NVIDIA_NEMOTRON_3_NANO_OMNI_30B_A3B_REASONING,
         NVIDIA_NEMOTRON_3_SUPER_120B_A12B,
-        NVIDIA_NEMOTRON_3_ULTRA_550B_A55B,
         NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
         NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
         NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,

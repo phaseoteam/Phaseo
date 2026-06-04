@@ -615,9 +615,6 @@ inline constexpr std::string_view NVIDIA_NEMOTRON_3_NANO_OMNI_30B_A3B_REASONING 
 // Model ID: nvidia/nemotron-3-super-120b-a12b
 // Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
 inline constexpr std::string_view NVIDIA_NEMOTRON_3_SUPER_120B_A12B = "nvidia/nemotron-3-super-120b-a12b";
-// Model ID: nvidia/nemotron-3-ultra-550b-a55b
-// Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b
-inline constexpr std::string_view NVIDIA_NEMOTRON_3_ULTRA_550B_A55B = "nvidia/nemotron-3-ultra-550b-a55b";
 // Model ID: nvidia/nvidia-nemotron-3-nano-30b-a3b
 // Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
 inline constexpr std::string_view NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
@@ -1371,7 +1368,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 454> ALL = {
+inline constexpr std::array<std::string_view, 453> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_1_0,
@@ -1575,7 +1572,6 @@ inline constexpr std::array<std::string_view, 454> ALL = {
 	NVIDIA_NEMOTRON_3_NANO_30B_A3B,
 	NVIDIA_NEMOTRON_3_NANO_OMNI_30B_A3B_REASONING,
 	NVIDIA_NEMOTRON_3_SUPER_120B_A12B,
-	NVIDIA_NEMOTRON_3_ULTRA_550B_A55B,
 	NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
 	NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
 	NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,

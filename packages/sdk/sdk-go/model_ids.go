@@ -616,9 +616,6 @@ const (
 	// Model ID: nvidia/nemotron-3-super-120b-a12b
 	// Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
 	ModelIDNvidiaNemotron3Super120bA12b gen.ModelId = "nvidia/nemotron-3-super-120b-a12b"
-	// Model ID: nvidia/nemotron-3-ultra-550b-a55b
-	// Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b
-	ModelIDNvidiaNemotron3Ultra550bA55b gen.ModelId = "nvidia/nemotron-3-ultra-550b-a55b"
 	// Model ID: nvidia/nvidia-nemotron-3-nano-30b-a3b
 	// Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
 	ModelIDNvidiaNvidiaNemotron3Nano30bA3b gen.ModelId = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
@@ -1577,7 +1574,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDNvidiaNemotron3Nano30bA3b,
 	ModelIDNvidiaNemotron3NanoOmni30bA3bReasoning,
 	ModelIDNvidiaNemotron3Super120bA12b,
-	ModelIDNvidiaNemotron3Ultra550bA55b,
 	ModelIDNvidiaNvidiaNemotron3Nano30bA3b,
 	ModelIDNvidiaNvidiaNemotronNano12bV2Vl,
 	ModelIDNvidiaNvidiaNemotronNano9bV2,
