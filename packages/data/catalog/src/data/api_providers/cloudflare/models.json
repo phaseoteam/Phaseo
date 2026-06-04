@@ -86,49 +86,6 @@
     ]
   },
   {
-    "api_model_id": "meta/llama-3.1-8b-instruct-fp8-fast",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct-fp8-fast",
-    "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct-fp8-fast",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3.2-11b-vision-instruct",
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3.2-11b-vision-instruct",
     "provider_model_slug": "@cf/meta/llama-3.2-11b-vision-instruct",
@@ -344,92 +301,6 @@
     ]
   },
   {
-    "api_model_id": "meta/llama-3.1-8b-instruct",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct",
-    "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta/llama-3.1-8b-instruct-fp8",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct-fp8",
-    "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct-fp8",
-    "internal_model_id": "meta/llama-3.1-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP8",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3.1-8b-instruct-awq",
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3.1-8b-instruct-awq",
     "provider_model_slug": "@cf/meta/llama-3.1-8b-instruct-awq",
@@ -473,98 +344,12 @@
     ]
   },
   {
-    "api_model_id": "meta/llama-3-8b-instruct",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-3-8b-instruct",
-    "provider_model_slug": "@cf/meta/llama-3-8b-instruct",
-    "internal_model_id": "meta/llama-3-8b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/llama-3-8b-instruct-awq",
     "provider_api_model_id": "cloudflare:@cf/meta/llama-3-8b-instruct-awq",
     "provider_model_slug": "@cf/meta/llama-3-8b-instruct-awq",
     "internal_model_id": "meta/llama-3-8b",
     "is_active_gateway": false,
     "quantization_scheme": "AWQ",
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "meta/llama-2-7b-chat-fp16",
-    "provider_api_model_id": "cloudflare:@cf/meta/llama-2-7b-chat-fp16",
-    "provider_model_slug": "@cf/meta/llama-2-7b-chat-fp16",
-    "internal_model_id": "meta/llama-2-7b-chat",
-    "is_active_gateway": false,
-    "quantization_scheme": "FP16",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": null,
@@ -1812,49 +1597,6 @@
     "provider_api_model_id": "cloudflare:@cf/meta/m2m100-1.2b",
     "provider_model_slug": "@cf/meta/m2m100-1.2b",
     "internal_model_id": "meta/m2m100-1.2b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "ai4bharat/indictrans2-en-indic-1B",
-    "provider_api_model_id": "cloudflare:@cf/ai4bharat/indictrans2-en-indic-1B",
-    "provider_model_slug": "@cf/ai4bharat/indictrans2-en-indic-1B",
-    "internal_model_id": "ai4bharat/indictrans2-en-indic-1B",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
