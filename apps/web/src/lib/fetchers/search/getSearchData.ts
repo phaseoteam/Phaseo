@@ -166,30 +166,45 @@ function transformAPIProviders(providers: APIProviderCard[]): SearchableAPIProvi
 
 async function transformSubscriptionPlans(): Promise<SearchableSubscriptionPlan[]> {
     const supabase = await createClient();
+    const pageSize = 1000;
+    const rows: any[] = [];
 
-    const { data, error } = await supabase
-        .from("data_subscription_plans")
-        .select(`
-            plan_uuid,
-            plan_id,
-            name,
-            frequency,
-            price,
-            currency,
-            organisation_id,
-            data_organisations!inner (
+    for (let from = 0; ; from += pageSize) {
+        const to = from + pageSize - 1;
+        const { data, error } = await supabase
+            .from("data_subscription_plans")
+            .select(`
+                plan_uuid,
+                plan_id,
+                name,
+                frequency,
+                price,
+                currency,
                 organisation_id,
-                name
-            )
-        `)
-        .limit(100);
+                data_organisations!inner (
+                    organisation_id,
+                    name
+                )
+            `)
+            .range(from, to);
 
-    if (error || !data) {
-        console.warn("[getSearchData] Error fetching subscription plans:", error);
-        return [];
+        if (error) {
+            console.warn("[getSearchData] Error fetching subscription plans:", error);
+            return [];
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            break;
+        }
+
+        rows.push(...data);
+
+        if (data.length < pageSize) {
+            break;
+        }
     }
 
-    return data.map((plan: any) => {
+    return rows.map((plan: any) => {
         // Format frequency for display (e.g., "monthly" -> "Monthly", "annual" -> "Annual")
         const frequencyLabel = plan.frequency
             ? plan.frequency.charAt(0).toUpperCase() + plan.frequency.slice(1)

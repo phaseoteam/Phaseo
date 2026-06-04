@@ -2104,6 +2104,52 @@
                          ]
     },
     {
+        "api_model_id":  "qwen/qwen3.7-plus",
+        "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.7-plus",
+        "provider_model_slug":  "qwen3.7-plus",
+        "internal_model_id":  "qwen/qwen3.7-plus",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  1000000,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-06-01T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "qwen/qwen3.7-plus-2026-05-26",
+        "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.7-plus-2026-05-26",
+        "provider_model_slug":  "qwen3.7-plus-2026-05-26",
+        "internal_model_id":  "qwen/qwen3.7-plus-2026-05-26",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  1000000,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-06-01T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
         "api_model_id":  "qwen/qwen3.7-max",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.7-max",
         "provider_model_slug":  "qwen3.7-max",

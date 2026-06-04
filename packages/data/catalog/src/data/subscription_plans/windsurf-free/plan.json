@@ -1,0 +1,60 @@
+{
+  "plan_id": "windsurf-free",
+  "name": "Windsurf Free",
+  "organisation_id": "windsurf",
+  "description": "Free Windsurf plan with light agent usage, unlimited inline edits, and unlimited Tab completions.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://windsurf.com/pricing",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Agent Usage",
+      "feature_value": "Light",
+      "feature_description": "Windsurf says Free includes a light quota to code with agents and limited model availability.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Tab Completions",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Inline Edits",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "windsurf/swe-1.6",
+      "model_info": "Windsurf native agent model",
+      "rate_limit": "Light included quota",
+      "other_info": "Exact availability and pricing can vary in the live Cascade model selector."
+    },
+    {
+      "model_id": "windsurf/swe-1.5",
+      "model_info": "Windsurf native agent model",
+      "rate_limit": "Light included quota",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1-mini",
+      "model_info": "Tab completion model",
+      "rate_limit": "Unlimited Tab completions",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-grep",
+      "model_info": "Context retrieval model",
+      "rate_limit": "Included",
+      "other_info": null
+    }
+  ]
+}

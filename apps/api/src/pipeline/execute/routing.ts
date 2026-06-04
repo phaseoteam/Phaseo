@@ -290,7 +290,9 @@ function shouldApplyStickyRoutingBoost(
     }
 
     const meterPrices = extractMeterPrices(candidate.pricingCard ?? null);
-    const cachedReadPrice = meterPrices.get("cached_read_text_tokens");
+    const cachedReadPrice =
+        meterPrices.get("implicit_cached_input_text_tokens") ??
+        meterPrices.get("cached_read_text_tokens");
     const inputPrice = meterPrices.get("input_text_tokens");
 
     // If both prices are present, only boost when cache reads are cheaper than standard input.

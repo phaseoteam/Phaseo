@@ -1,0 +1,102 @@
+{
+  "plan_id": "github-copilot-business",
+  "name": "GitHub Copilot Business",
+  "organisation_id": "github",
+  "description": "GitHub Copilot plan for organizations with policy controls and organization management.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 19,
+      "link": "https://github.com/features/copilot/plans",
+      "other_info": "Per user per month"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Premium Requests",
+      "feature_value": "500 / Month",
+      "feature_description": "Monthly premium request allowance shown for Copilot Business.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Agent Mode With GPT-5 Mini",
+      "feature_value": "Unlimited",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Organisation Controls",
+      "feature_value": "Policy management, public code matching controls, audit logs, and organisation-level settings",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Model Access",
+      "feature_value": "Broad model catalog",
+      "feature_description": "Model availability varies by feature, editor, and organisation policy.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "openai/gpt-5-mini",
+      "model_info": null,
+      "rate_limit": "Unlimited agent mode and chats with GPT-5 mini",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.2",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.3-codex",
+      "model_info": "Codex",
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.5",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.7",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "google/gemini-2.5-pro",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "google/gemini-3.5-flash",
+      "model_info": null,
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    },
+    {
+      "model_id": "x-ai/grok-code-fast-1",
+      "model_info": "Grok Code Fast 1",
+      "rate_limit": "Subject to monthly allowance",
+      "other_info": null
+    }
+  ]
+}

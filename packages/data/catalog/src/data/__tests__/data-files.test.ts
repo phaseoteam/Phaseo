@@ -66,6 +66,7 @@ for (const b of listDirs(benchmarksDir)) {
 type ModelIndex = {
   model_id: string;
   organisation_id: string;
+  status?: string | null;
   family_id?: string | null;
   previous_model_id?: string | null;
   filePath: string;
@@ -85,6 +86,7 @@ for (const org of listDirs(modelsDir)) {
       models.push({
         model_id: j.model_id,
         organisation_id: j.organisation_id,
+        status: j.status ?? null,
         family_id: j.family_id ?? null,
         previous_model_id: j.previous_model_id ?? null,
         filePath: p,
@@ -101,6 +103,7 @@ for (const ap of listDirs(apiProvidersDir)) {
     try { apiProviderIds.add(readJson(p).provider_id); } catch {}
   }
 }
+const modelStatusById = new Map(models.map((m) => [m.model_id, m.status]));
 
 // Pretty print helpers for CLI-like output ------------------------------
 const ok = (msg: string) => `✅ ${msg}`;
@@ -254,8 +257,12 @@ describe('Subscription Plans', () => {
       // Provider here refers to an organisation (consumer subscription provider like OpenAI/Anthropic)
       if (j.provider_id) expect(organisationIds.has(j.provider_id)).toBe(true);
       const modelsList = Array.isArray(j.models) ? j.models : [];
+      const seenModels = new Set<string>();
       for (const m of modelsList) {
         expect(modelIds.has(m.model_id)).toBe(true);
+        expect(seenModels.has(m.model_id)).toBe(false);
+        seenModels.add(m.model_id);
+        expect(modelStatusById.get(m.model_id)).not.toBe('Retired');
       }
     });
   }

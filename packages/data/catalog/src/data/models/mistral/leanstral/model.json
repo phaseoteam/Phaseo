@@ -8,7 +8,7 @@
   "announced_date": "2026-03-16T00:00:00",
   "release_date": "2026-03-16T00:00:00",
   "deprecation_date": "2026-05-22T00:00:00",
-  "retirement_date": null,
+  "retirement_date": "2026-06-30T00:00:00",
   "license": "Apache 2.0",
   "input_types": "text,image",
   "output_types": "text",

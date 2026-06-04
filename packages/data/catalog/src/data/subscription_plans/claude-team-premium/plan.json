@@ -1,0 +1,84 @@
+{
+  "plan_id": "claude-team-premium",
+  "name": "Claude Team Premium",
+  "organisation_id": "anthropic",
+  "description": "Higher-usage Claude Team seat for collaborative workspaces.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 125,
+      "link": "https://claude.com/pricing",
+      "other_info": "Per seat per month; 5-seat minimum"
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 1200,
+      "link": "https://claude.com/pricing",
+      "other_info": "$100 per seat per month, billed annually; 5-seat minimum"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Minimum Seats",
+      "feature_value": "5",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Usage",
+      "feature_value": "6.25x Claude Pro",
+      "feature_description": "Anthropic describes Team Premium as providing 6.25x the usage of Claude Pro.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Team Features",
+      "feature_value": "Team workspace, shared projects, shared artifacts, and document collaboration",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Admin Controls",
+      "feature_value": "User management, role-based access, analytics, and domain capture",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Claude Code",
+      "feature_value": "Included",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "anthropic/claude-sonnet-4.6",
+      "model_info": null,
+      "rate_limit": "6.25x Claude Pro usage",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.5",
+      "model_info": null,
+      "rate_limit": "6.25x Claude Pro usage",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-haiku-4.5",
+      "model_info": null,
+      "rate_limit": "6.25x Claude Pro usage",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.6",
+      "model_info": null,
+      "rate_limit": "Included subject to Team Premium usage limits",
+      "other_info": null
+    },
+    {
+      "model_id": "anthropic/claude-opus-4.5",
+      "model_info": null,
+      "rate_limit": "Included subject to Team Premium usage limits",
+      "other_info": null
+    }
+  ]
+}

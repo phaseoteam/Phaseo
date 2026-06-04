@@ -5448,6 +5448,7 @@ components:
         - deepseek
         - eleven-labs
         - essential-ai
+        - github
         - google
         - ibm
         - inception
@@ -5466,6 +5467,7 @@ components:
         - nvidia
         - openai
         - perplexity
+        - poe
         - prime-intellect
         - qwen
         - relace
@@ -5475,6 +5477,7 @@ components:
         - upstage
         - vercel
         - voyage
+        - windsurf
         - x-ai
         - xiaomi
         - z-ai
@@ -7441,6 +7444,7 @@ components:
         - google/gemini-2.5-flash-lite
         - google/gemini-2.5-flash-lite-preview-2025-06-17
         - google/gemini-2.5-flash-lite-preview-2025-09-25
+        - google/gemini-2.5-pro
         - google/gemini-3-flash-preview
         - google/gemini-3-pro-image
         - google/gemini-3-pro-image-preview
@@ -7743,6 +7747,8 @@ components:
         - qwen/qwen3.6-plus
         - qwen/qwen3.7-max
         - qwen/qwen3.7-max-2026-05-17
+        - qwen/qwen3.7-plus
+        - qwen/qwen3.7-plus-2026-05-26
         - qwen/qwq-32b
         - qwen/qwq-plus
         - qwen/text-embedding-v3
