@@ -1018,65 +1018,6 @@
     ]
   },
   {
-    "api_model_id": "pipecat-ai/smart-turn-v2",
-    "provider_api_model_id": "cloudflare:@cf/pipecat-ai/smart-turn-v2",
-    "provider_model_slug": "@cf/pipecat-ai/smart-turn-v2",
-    "internal_model_id": "pipecat-ai/smart-turn-v2",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "audio",
-    "output_modalities": "audio",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
-    "api_model_id": "baai/bge-m3",
-    "provider_api_model_id": "cloudflare:@cf/baai/bge-m3",
-    "provider_model_slug": "@cf/baai/bge-m3",
-    "internal_model_id": "baai/bge-m3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embedding",
-    "context_length": 60000,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "input",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "huggingface/distilbert-sst-2-int8",
-    "provider_api_model_id": "cloudflare:@cf/huggingface/distilbert-sst-2-int8",
-    "provider_model_slug": "@cf/huggingface/distilbert-sst-2-int8",
-    "internal_model_id": "huggingface/distilbert-sst-2-int8",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": []
-  },
-  {
     "api_model_id": "google/gemma-2b-it-lora",
     "provider_api_model_id": "cloudflare:@cf/google/gemma-2b-it-lora",
     "provider_model_slug": "@cf/google/gemma-2b-it-lora",
@@ -1141,27 +1082,6 @@
     ]
   },
   {
-    "api_model_id": "myshell-ai/melotts",
-    "provider_api_model_id": "cloudflare:@cf/myshell-ai/melotts",
-    "provider_model_slug": "@cf/myshell-ai/melotts",
-    "internal_model_id": "myshell-ai/melotts",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "audio",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "audio.speech",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "mistral/mistral-7b-instruct-v0.2-lora",
     "provider_api_model_id": "cloudflare:@cf/mistral/mistral-7b-instruct-v0.2-lora",
     "provider_model_slug": "@cf/mistral/mistral-7b-instruct-v0.2-lora",
@@ -1205,27 +1125,6 @@
     ]
   },
   {
-    "api_model_id": "deepgram/aura-2-es",
-    "provider_api_model_id": "cloudflare:@cf/deepgram/aura-2-es",
-    "provider_model_slug": "@cf/deepgram/aura-2-es",
-    "internal_model_id": "deepgram/aura-2-es",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "audio",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "audio.speech",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "openai/whisper-1",
     "provider_api_model_id": "cloudflare:@cf/openai/whisper",
     "provider_model_slug": "@cf/openai/whisper",
@@ -1243,78 +1142,6 @@
         "capability_id": "audio.transcribe",
         "status": "active",
         "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "pfnet/plamo-embedding-1b",
-    "provider_api_model_id": "cloudflare:@cf/pfnet/plamo-embedding-1b",
-    "provider_model_slug": "@cf/pfnet/plamo-embedding-1b",
-    "internal_model_id": "pfnet/plamo-embedding-1b",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embedding",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "input",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "llava-hf/llava-1.5-7b-hf",
-    "provider_api_model_id": "cloudflare:@cf/llava-hf/llava-1.5-7b-hf",
-    "provider_model_slug": "@cf/llava-hf/llava-1.5-7b-hf",
-    "internal_model_id": "llava-hf/llava-1.5-7b-hf",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
       }
     ]
   },
@@ -1358,74 +1185,6 @@
             "notes": null
           }
         ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "runwayml/stable-diffusion-v1-5-inpainting",
-    "provider_api_model_id": "cloudflare:@cf/runwayml/stable-diffusion-v1-5-inpainting",
-    "provider_model_slug": "@cf/runwayml/stable-diffusion-v1-5-inpainting",
-    "internal_model_id": "runwayml/stable-diffusion-v1-5-inpainting",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": []
-      },
-      {
-        "capability_id": "image.edit",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepgram/flux",
-    "provider_api_model_id": "cloudflare:@cf/deepgram/flux",
-    "provider_model_slug": "@cf/deepgram/flux",
-    "internal_model_id": "deepgram/flux",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "audio",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "audio.transcribe",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepgram/nova-3",
-    "provider_api_model_id": "cloudflare:@cf/deepgram/nova-3",
-    "provider_model_slug": "@cf/deepgram/nova-3",
-    "internal_model_id": "deepgram/nova-3",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "audio",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "audio.transcribe",
-        "status": "active",
-        "params": []
       }
     ]
   },
@@ -1530,69 +1289,6 @@
     ]
   },
   {
-    "api_model_id": "lykon/dreamshaper-8-lcm",
-    "provider_api_model_id": "cloudflare:@cf/lykon/dreamshaper-8-lcm",
-    "provider_model_slug": "@cf/lykon/dreamshaper-8-lcm",
-    "internal_model_id": "lykon/dreamshaper-8-lcm",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "leonardo/phoenix-1.0",
-    "provider_api_model_id": "cloudflare:@cf/leonardo/phoenix-1.0",
-    "provider_model_slug": "@cf/leonardo/phoenix-1.0",
-    "internal_model_id": "leonardo/phoenix-1.0",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "stabilityai/stable-diffusion-xl-base-1.0",
-    "provider_api_model_id": "cloudflare:@cf/stabilityai/stable-diffusion-xl-base-1.0",
-    "provider_model_slug": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
-    "internal_model_id": "stabilityai/stable-diffusion-xl-base-1.0",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "meta/m2m100-1.2b",
     "provider_api_model_id": "cloudflare:@cf/meta/m2m100-1.2b",
     "provider_model_slug": "@cf/meta/m2m100-1.2b",
@@ -1653,107 +1349,6 @@
         "capability_id": "image.generate",
         "status": "active",
         "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "baai/bge-small-en-v1.5",
-    "provider_api_model_id": "cloudflare:@cf/baai/bge-small-en-v1.5",
-    "provider_model_slug": "@cf/baai/bge-small-en-v1.5",
-    "internal_model_id": "baai/bge-small-en-v1.5",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embedding",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "input",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "baai/bge-base-en-v1.5",
-    "provider_api_model_id": "cloudflare:@cf/baai/bge-base-en-v1.5",
-    "provider_model_slug": "@cf/baai/bge-base-en-v1.5",
-    "internal_model_id": "baai/bge-base-en-v1.5",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embedding",
-    "context_length": 153600,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "input",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "aisingapore/gemma-sea-lion-v4-27b-it",
-    "provider_api_model_id": "cloudflare:@cf/aisingapore/gemma-sea-lion-v4-27b-it",
-    "provider_model_slug": "@cf/aisingapore/gemma-sea-lion-v4-27b-it",
-    "internal_model_id": "aisingapore/gemma-sea-lion-v4-27b-it",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 128000,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
       }
     ]
   },
@@ -1864,53 +1459,6 @@
     ]
   },
   {
-    "api_model_id": "deepgram/aura-1",
-    "provider_api_model_id": "cloudflare:@cf/deepgram/aura-1",
-    "provider_model_slug": "@cf/deepgram/aura-1",
-    "internal_model_id": "deepgram/aura-1",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "audio",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "audio.speech",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "runwayml/stable-diffusion-v1-5-img2img",
-    "provider_api_model_id": "cloudflare:@cf/runwayml/stable-diffusion-v1-5-img2img",
-    "provider_model_slug": "@cf/runwayml/stable-diffusion-v1-5-img2img",
-    "internal_model_id": "runwayml/stable-diffusion-v1-5-img2img",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": []
-      },
-      {
-        "capability_id": "image.edit",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "google/embeddinggemma-300m",
     "provider_api_model_id": "cloudflare:@cf/google/embeddinggemma-300m",
     "provider_model_slug": "@cf/google/embeddinggemma-300m",
@@ -1936,98 +1484,6 @@
             "notes": null
           }
         ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "baai/bge-reranker-base",
-    "provider_api_model_id": "cloudflare:@cf/baai/bge-reranker-base",
-    "provider_model_slug": "@cf/baai/bge-reranker-base",
-    "internal_model_id": "baai/bge-reranker-base",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.rerank",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "leonardo/lucid-origin",
-    "provider_api_model_id": "cloudflare:@cf/leonardo/lucid-origin",
-    "provider_model_slug": "@cf/leonardo/lucid-origin",
-    "internal_model_id": "leonardo/lucid-origin",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "image",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "image.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "baai/bge-large-en-v1.5",
-    "provider_api_model_id": "cloudflare:@cf/baai/bge-large-en-v1.5",
-    "provider_model_slug": "@cf/baai/bge-large-en-v1.5",
-    "internal_model_id": "baai/bge-large-en-v1.5",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "embedding",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.embed",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "input",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "deepgram/aura-2-en",
-    "provider_api_model_id": "cloudflare:@cf/deepgram/aura-2-en",
-    "provider_model_slug": "@cf/deepgram/aura-2-en",
-    "internal_model_id": "deepgram/aura-2-en",
-    "is_active_gateway": false,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "audio",
-    "context_length": null,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-04T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "audio.speech",
-        "status": "active",
-        "params": []
       }
     ]
   }
