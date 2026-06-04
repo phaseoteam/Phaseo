@@ -87,6 +87,24 @@ const RULES: SensitiveInfoDetectorConfig[] = [
 				.split(".")
 				.every((part) => Number(part) >= 0 && Number(part) <= 255),
 	},
+	{
+		id: "person_name",
+		label: "Person name",
+		description: "Detect contextual person names.",
+		placeholder: "[PERSON_NAME]",
+		addsLatency: true,
+		defaultEnabled: false,
+		regex: /$^/g,
+	},
+	{
+		id: "physical_address",
+		label: "Physical address",
+		description: "Detect contextual postal addresses.",
+		placeholder: "[ADDRESS]",
+		addsLatency: true,
+		defaultEnabled: false,
+		regex: /$^/g,
+	},
 ];
 
 const RULE_BY_ID = new Map(RULES.map((rule) => [rule.id, rule] as const));

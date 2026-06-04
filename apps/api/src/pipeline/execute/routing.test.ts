@@ -364,6 +364,34 @@ describe("routeProviders testing mode", () => {
 		]);
 	});
 
+	it("normalizes provider.only aliases before routing", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "novita",
+				}),
+				candidate({
+					providerId: "openai",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "deepseek/deepseek-r1-turbo",
+				workspaceId: "team_123",
+				body: {
+					provider: {
+						only: ["novitaai"],
+					},
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["novita"]);
+		const onlyStage = result.diagnostics.filterStages.find((stage) => stage.stage === "hints.only");
+		expect(onlyStage?.afterCount).toBe(1);
+	});
+
 	it("routes priority-tier requests to specialized provider offers", async () => {
 		const result = await routeProviders(
 			[

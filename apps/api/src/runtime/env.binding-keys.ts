@@ -199,6 +199,7 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "DISCORD_WEBHOOK_URL",
     "DISCORD_ROLE_ID",
     "DISCORD_USER_ID",
+    "ENV",
     "GATEWAY_PUBLIC_BASE_URL",
     "NODE_ENV",
     "VIDEO_DOWNLOAD_SIGNING_SECRET",

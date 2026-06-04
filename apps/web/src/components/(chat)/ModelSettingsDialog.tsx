@@ -101,6 +101,13 @@ export function ModelSettingsDialog({
               supportedProvidersForModel.includes(provider.id)
           )
         : providerOptions;
+    const providerValue =
+        settings.providerId &&
+        filteredProviderOptions.some(
+            (provider) => provider.id === settings.providerId
+        )
+            ? settings.providerId
+            : "auto";
     const groupedModelChoices = useMemo(() => {
         const grouped = new Map<string, typeof modelChoices>();
         for (const choice of modelChoices) {
@@ -190,7 +197,7 @@ export function ModelSettingsDialog({
                         <div className="grid gap-1.5">
                             <Label>Provider</Label>
                             <Select
-                                value={settings.providerId ?? "auto"}
+                                value={providerValue}
                                 onValueChange={(value) =>
                                     onUpdate({ providerId: value })
                                 }

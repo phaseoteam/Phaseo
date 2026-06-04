@@ -1,4 +1,5 @@
 import type { AgentGatewayErrorDetails } from "./errors";
+import type { AgentDevtoolsConfig } from "./devtools";
 
 export type AgentToolCall = {
 	id: string;
@@ -242,6 +243,7 @@ export type AgentRunOptions<TInput = unknown, TContext = unknown> = {
 	toolExecution?: AgentToolExecutionConfig;
 	signal?: AbortSignal;
 	onEvent?: AgentEventHandler;
+	devtools?: Partial<AgentDevtoolsConfig>;
 };
 
 export type AgentContinueOptions<TInput = unknown, TOutput = unknown, TContext = unknown> = {
@@ -256,6 +258,7 @@ export type AgentContinueOptions<TInput = unknown, TOutput = unknown, TContext =
 	signal?: AbortSignal;
 	humanInput?: string;
 	onEvent?: AgentEventHandler;
+	devtools?: Partial<AgentDevtoolsConfig>;
 };
 
 export type AgentRunResult<TOutput = unknown, TInput = unknown, TContext = unknown> = {

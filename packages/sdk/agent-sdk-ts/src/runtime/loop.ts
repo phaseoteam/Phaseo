@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { captureAgentRunDevtools } from "../devtools";
 import { AgentGatewayError, toAgentGatewayErrorDetails } from "../errors";
 import type {
 	AgentContinueOptions,
@@ -1182,6 +1183,7 @@ export async function runAgent<TInput, TOutput, TContext>(
 	definition: AgentDefinition<TInput, TOutput, TContext>,
 	options: AgentRunOptions<TInput, TContext>,
 ): Promise<AgentRunResult<TOutput, TInput, TContext>> {
+	const startedAt = Date.now();
 	const runId = randomUUID();
 	const createdAt = nowIso();
 	const store = defaultStore<TInput, TContext>();
@@ -1214,29 +1216,51 @@ export async function runAgent<TInput, TOutput, TContext>(
 		status: run.status,
 	});
 
-	return resumeAgentInternal(
-		definition,
-		runId,
-		{
-			client: options.client,
-			store,
-			context: options.context,
-			model: options.model,
-			preset: options.preset,
-			maxSteps: options.maxSteps,
-			modelRetry: options.modelRetry,
-			toolExecution: options.toolExecution,
-			signal: options.signal,
-			onEvent: options.onEvent,
-		},
-		false,
-	);
+	try {
+		const result = await resumeAgentInternal(
+			definition,
+			runId,
+			{
+				client: options.client,
+				store,
+				context: options.context,
+				model: options.model,
+				preset: options.preset,
+				maxSteps: options.maxSteps,
+				modelRetry: options.modelRetry,
+				toolExecution: options.toolExecution,
+				signal: options.signal,
+				onEvent: options.onEvent,
+			},
+			false,
+		);
+		captureAgentRunDevtools({
+			type: "agent.run",
+			definition,
+			options,
+			startedAt,
+			result,
+			runId,
+		});
+		return result;
+	} catch (error) {
+		captureAgentRunDevtools({
+			type: "agent.run",
+			definition,
+			options,
+			startedAt,
+			error,
+			runId,
+		});
+		throw error;
+	}
 }
 
 export async function continueAgent<TInput, TOutput, TContext>(
 	definition: AgentDefinition<TInput, TOutput, TContext>,
 	options: AgentContinueOptions<TInput, TOutput, TContext>,
 ): Promise<AgentRunResult<TOutput, TInput, TContext>> {
+	const startedAt = Date.now();
 	if (options.run.run.agentId !== definition.id) {
 		throw new Error(
 			`Cannot continue run ${options.run.run.id} with agent ${definition.id}; it belongs to ${options.run.run.agentId}`,
@@ -1249,27 +1273,60 @@ export async function continueAgent<TInput, TOutput, TContext>(
 		await store.appendStep(step);
 	}
 
-	return resumeAgentInternal(
-		definition,
-		options.run.run.id,
-		{
-			client: options.client,
-			store,
-			context:
-				options.context === undefined
-					? (options.run.run.context as TContext | undefined)
-					: options.context,
-			model: options.model,
-			preset: options.preset,
-			maxSteps: options.maxSteps,
-			modelRetry: options.modelRetry,
-			toolExecution: options.toolExecution,
-			signal: options.signal,
-			humanInput: options.humanInput,
-			onEvent: options.onEvent,
-		},
-		true,
-	);
+	const captureOptions = {
+		input: options.run.run.input,
+		context:
+			options.context === undefined
+				? (options.run.run.context as TContext | undefined)
+				: options.context,
+		model: options.model,
+		preset: options.preset,
+		maxSteps: options.maxSteps,
+		devtools: options.devtools,
+	};
+
+	try {
+		const result = await resumeAgentInternal(
+			definition,
+			options.run.run.id,
+			{
+				client: options.client,
+				store,
+				context:
+					options.context === undefined
+						? (options.run.run.context as TContext | undefined)
+						: options.context,
+				model: options.model,
+				preset: options.preset,
+				maxSteps: options.maxSteps,
+				modelRetry: options.modelRetry,
+				toolExecution: options.toolExecution,
+				signal: options.signal,
+				humanInput: options.humanInput,
+				onEvent: options.onEvent,
+			},
+			true,
+		);
+		captureAgentRunDevtools({
+			type: "agent.continue",
+			definition,
+			options: captureOptions,
+			startedAt,
+			result,
+			runId: options.run.run.id,
+		});
+		return result;
+	} catch (error) {
+		captureAgentRunDevtools({
+			type: "agent.continue",
+			definition,
+			options: captureOptions,
+			startedAt,
+			error,
+			runId: options.run.run.id,
+		});
+		throw error;
+	}
 }
 
 

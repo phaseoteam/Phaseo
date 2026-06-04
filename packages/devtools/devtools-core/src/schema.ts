@@ -15,9 +15,14 @@ export const EndpointTypeSchema = z.enum([
   "video.list",
   "video.retrieve",
   "video.cancel",
+  "music.generations",
+  "music.retrieve",
   "embeddings",
+  "ocr",
+  "rerank",
   "moderations",
   "responses",
+  "responses.websocket",
   "batches.create",
   "batches.retrieve",
   "batches.cancel",
@@ -30,8 +35,10 @@ export const EndpointTypeSchema = z.enum([
   "pricing.calculate",
   "key.current",
   "models.list",
+  "models.data",
   "models.team",
   "providers",
+  "providers.derank",
   "credits",
   "activity",
   "health",
@@ -46,7 +53,9 @@ export const EndpointTypeSchema = z.enum([
   "provisioning.workspaces.get",
   "provisioning.workspaces.create",
   "provisioning.workspaces.update",
-  "provisioning.workspaces.delete"
+  "provisioning.workspaces.delete",
+  "agent.run",
+  "agent.continue"
 ]);
 
 export type EndpointType = z.infer<typeof EndpointTypeSchema>;
@@ -155,6 +164,11 @@ export const MetadataSchema = z.object({
   finish_reason: z.string().optional(),
   pricing_lines: z.array(z.any()).optional(),
   provider_attempts: z.array(ProviderAttemptSchema).optional(),
+  agent_id: z.string().optional(),
+  run_id: z.string().optional(),
+  run_status: z.string().optional(),
+  step_count: z.number().optional(),
+  tool_count: z.number().optional(),
   headers: z.record(z.string(), z.string()).optional()
 });
 

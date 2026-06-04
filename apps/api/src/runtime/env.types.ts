@@ -196,6 +196,7 @@ export type GatewayBindings = {
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
+    ENV?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;

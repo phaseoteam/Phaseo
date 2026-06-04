@@ -29,6 +29,15 @@ export function applyExplicitProviderModelRouting(args: {
 
 	const scoped = splitProviderScopedModel(args.requestedModel);
 	if (!scoped) return args.parsed;
+	const normalizedRequestedModel = normalizeValue(args.requestedModel);
+	const normalizedResolvedModel = normalizeValue(args.parsed.resolvedModel);
+	if (
+		normalizedRequestedModel &&
+		normalizedResolvedModel &&
+		normalizedRequestedModel === normalizedResolvedModel
+	) {
+		return args.parsed;
+	}
 
 	const requestedSlug = normalizeValue(scoped.providerModelSlug);
 	const exactMatches = providers.filter((provider) =>

@@ -55,6 +55,41 @@ function allowsNoCreditForFreeRequest(args: { model: string; context: any; provi
     return pricedCards.every((card) => isFreePriceCard(card));
 }
 
+function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDiagnostics): {
+    errorType: "user" | "system";
+    errorOrigin: "user" | "gateway";
+    operationalKind: string;
+    reason: string;
+} {
+    if (diagnostics.totalProviders <= 0) {
+        return {
+            errorType: "user",
+            errorOrigin: "user",
+            operationalKind: "invalid_model_slug",
+            reason: "model_not_found_or_inactive",
+        };
+    }
+
+    if (diagnostics.supportsEndpointCount <= 0) {
+        return {
+            errorType: "user",
+            errorOrigin: "user",
+            operationalKind: "unsupported_endpoint_for_model",
+            reason: "unsupported_endpoint_for_model",
+        };
+    }
+
+    return {
+        errorType: "system",
+        errorOrigin: "gateway",
+        operationalKind: "gateway_provider_availability_gap",
+        reason:
+            diagnostics.candidateCount <= 0
+                ? "provider_candidates_unavailable"
+                : "provider_candidate_selection_failed",
+    };
+}
+
 function describeKeyLimitExceeded(args: {
 	reason: string | null;
 	limitWindow?: "daily" | "weekly" | "monthly" | null;
@@ -364,9 +399,14 @@ export async function guardContext(args: {
 
         const { candidates: providers, diagnostics: candidateDiagnostics } = buildProviderCandidatesWithDiagnostics(context);
         if (!providers.length) {
+            const classification = classifyProviderCandidateFailure(candidateDiagnostics);
             return {
                 ok: false,
                 response: err("unsupported_model_or_endpoint", {
+                    reason: classification.reason,
+                    error_type: classification.errorType,
+                    error_origin: classification.errorOrigin,
+                    error_operational_kind: classification.operationalKind,
                     model: args.model,
                     endpoint: args.endpoint,
                     request_id: args.requestId,

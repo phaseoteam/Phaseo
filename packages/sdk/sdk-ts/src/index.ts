@@ -19,6 +19,12 @@ import type {
   ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  MusicGenerateResponse,
+  OcrRequest,
+  OcrResponse,
+  RerankRequest,
+  RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
   VideoGenerationRequest,
@@ -201,6 +207,12 @@ export type {
   ImagesGenerationResponse,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  MusicGenerateResponse,
+  OcrRequest,
+  OcrResponse,
+  RerankRequest,
+  RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
   VideoGenerationRequest,
@@ -235,7 +247,9 @@ export class AIStats {
         return this.streamResponse(req);
       }
       return this.generateResponse(req);
-    }
+    },
+    websocketUrl: (options: { model?: string; sessionId?: string } = {}): string =>
+      this.getResponsesWebSocketUrl(options),
   };
 
   readonly chat = {
@@ -279,6 +293,31 @@ export class AIStats {
     listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
     websocketUrl: (videoId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("video", videoId, options),
+  };
+
+  readonly music = {
+    create: async (req: MusicGenerateRequest): Promise<MusicGenerateResponse> => this.generateMusic(req),
+    get: async (musicId: string): Promise<MusicGenerateResponse> => this.getMusicGeneration(musicId),
+  };
+
+  readonly ocr = {
+    create: async (req: OcrRequest): Promise<OcrResponse> => this.createOcr(req),
+  };
+
+  readonly rerank = {
+    create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
+  };
+
+  readonly dataModels = {
+    list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listDataModels(params),
+  };
+
+  readonly providers = {
+    list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),
+    derankStatus: async (
+      providerId: string,
+      params: Record<string, string | number | boolean> = {},
+    ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
   };
 
   readonly asyncJobs = {
@@ -467,7 +506,7 @@ export class AIStats {
     const body = JSON.stringify(payload);
 
     const generator = async function* (this: AIStats) {
-      const res = await fetch(`${this.basePath}/chat/completions`, {
+      const res = await this.fetchImpl(`${this.basePath}/chat/completions`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
         body
@@ -511,7 +550,7 @@ export class AIStats {
             form.append(key, value as string | Blob);
           }
         });
-        const res = await fetch(`${this.basePath}/images/edits`, {
+        const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
           method: "POST",
           headers: this.headers,
           body: form
@@ -547,6 +586,27 @@ export class AIStats {
         () => req,
         extractVideoMetadata
       )
+    );
+  }
+
+  generateMusic(req: MusicGenerateRequest): Promise<MusicGenerateResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "music.generations",
+        () => ops.generateMusic(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
+  getMusicGeneration(musicId: string): Promise<MusicGenerateResponse> {
+    return this.telemetry.wrap(
+      "music.retrieve",
+      () => ops.getMusicGeneration(this.client, { path: { music_id: musicId } as any }) as Promise<MusicGenerateResponse>,
+      () => ({ music_id: musicId }),
+      extractGatewayMetadata
     );
   }
 
@@ -615,6 +675,30 @@ export class AIStats {
     );
   }
 
+  createOcr(req: OcrRequest): Promise<OcrResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "ocr",
+        () => ops.createOcr(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
+  createRerank(req: RerankRequest): Promise<RerankResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "rerank",
+        () => ops.createRerank(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
   generateResponse(req: ResponsesRequest): Promise<ResponsesResponse> {
     return this.withLifecycleGuard(
       req,
@@ -632,7 +716,7 @@ export class AIStats {
     await this.maybeWarnForPayload(payload);
 
     const generator = async function* (this: AIStats) {
-      const res = await fetch(`${this.basePath}/responses`, {
+      const res = await this.fetchImpl(`${this.basePath}/responses`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -718,7 +802,7 @@ export class AIStats {
         if (params.purpose) {
           form.append("purpose", params.purpose);
         }
-        const res = await fetch(`${this.basePath}/files`, {
+        const res = await this.fetchImpl(`${this.basePath}/files`, {
           method: "POST",
           headers: this.headers,
           body: form
@@ -741,6 +825,14 @@ export class AIStats {
     );
   }
 
+  listDataModels(params: Record<string, unknown> = {}): Promise<unknown> {
+    return this.telemetry.wrap(
+      "models.data",
+      () => ops.listDataModels(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
   listTeamModels(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "models.team",
@@ -754,6 +846,20 @@ export class AIStats {
       "providers",
       () => ops.listProviders(this.client, { query: params as any }),
       () => params
+    );
+  }
+
+  getProviderDerankStatus(
+    providerId: string,
+    params: Record<string, string | number | boolean> = {},
+  ): Promise<unknown> {
+    return this.telemetry.wrap(
+      "providers.derank",
+      () => ops.getProviderDerankStatus(this.client, {
+        path: { provider_id: providerId } as any,
+        query: params as any,
+      }),
+      () => ({ provider_id: providerId, ...params })
     );
   }
 
@@ -914,7 +1020,7 @@ export class AIStats {
     return this.telemetry.wrap(
       "audio.speech",
       async () => {
-        const res = await fetch(`${this.basePath}/audio/speech`, {
+        const res = await this.fetchImpl(`${this.basePath}/audio/speech`, {
           method: "POST",
           headers: { ...this.headers, "Content-Type": "application/json" },
           body: JSON.stringify(body)
@@ -963,6 +1069,18 @@ export class AIStats {
       () => ({ id }),
       extractGatewayMetadata
     );
+  }
+
+  getResponsesWebSocketUrl(options: { model?: string; sessionId?: string } = {}): string {
+    const url = new URL("responses/ws", `${this.basePath}/`);
+    if (options.model) {
+      url.searchParams.set("model", options.model);
+    }
+    if (options.sessionId) {
+      url.searchParams.set("session_id", options.sessionId);
+    }
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    return url.toString();
   }
 }
 
