@@ -101,6 +101,14 @@
       "other_info": "High Reasoning Effort",
       "source_link": null,
       "rank": 12
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 85.7,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 21
     }
   ]
 }

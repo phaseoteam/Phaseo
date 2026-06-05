@@ -1,0 +1,24 @@
+{
+  "model_id": "microsoft/resnet-50",
+  "organisation_id": "microsoft",
+  "name": "Resnet 50",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "50 layers deep image classification CNN trained on more than 1M images from ImageNet",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "image",
+  "output_types": "text",
+  "api_model_id": "microsoft/resnet-50",
+  "links": [
+    {
+      "platform": "website",
+      "url": "https://www.microsoft.com/en-us/research/blog/microsoft-vision-model-resnet-50-combines-web-scale-data-and-multi-task-learning-to-achieve-state-of-the-art/"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

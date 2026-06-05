@@ -96,4 +96,21 @@ describe("image-request-options", () => {
 			},
 		});
 	});
+
+	it("uses Gemini image size quality as pricing resolution while preserving aspect ratio size", () => {
+		const options = buildImagePricingRequestOptions({
+			size: "1:1",
+			quality: "1K",
+		});
+
+		expect(options).toEqual({
+			size: "1:1",
+			resolution: "1K",
+			quality: "1K",
+			image_params: {
+				resolution: "1K",
+				quality: "1K",
+			},
+		});
+	});
 });

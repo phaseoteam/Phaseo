@@ -3376,11 +3376,10 @@ components:
         service_tier:
           type: string
           enum:
-            - auto
-            - default
-            - flex
             - standard
             - priority
+            - flex
+            - batch
         prompt_cache_key:
           type: string
           nullable: true
@@ -4073,11 +4072,10 @@ components:
         service_tier:
           type: string
           enum:
-            - auto
-            - default
-            - flex
             - standard
             - priority
+            - flex
+            - batch
         store:
           type: boolean
         stream:
@@ -5450,6 +5448,7 @@ components:
         - deepseek
         - eleven-labs
         - essential-ai
+        - github
         - google
         - ibm
         - inception
@@ -5468,6 +5467,7 @@ components:
         - nvidia
         - openai
         - perplexity
+        - poe
         - prime-intellect
         - qwen
         - relace
@@ -5477,6 +5477,7 @@ components:
         - upstage
         - vercel
         - voyage
+        - windsurf
         - x-ai
         - xiaomi
         - z-ai
@@ -5693,11 +5694,13 @@ components:
         - csimpleqa
         - ct-dataset-1-macro-accuracy
         - ctf-challenge-tasks
+        - cursorbench-3.1
         - cxr14-3cond-macro-f1
         - cybench
         - cybergym
         - cybersecurity-ctfs
         - da-2k
+        - dailyomni
         - deep-planning
         - deepconsult
         - deepplanning-v1.1-avg-acc
@@ -5709,6 +5712,7 @@ components:
         - deepplanning-v1.1-travel-ps-score
         - deepresearchbench
         - deepsearchqa
+        - deepswe
         - der-2-bench
         - design2code
         - disco-x
@@ -5800,6 +5804,7 @@ components:
         - hmmt-feb-2026
         - hmmt-feb-26
         - hmmt-nov-2025
+        - hr-bench-4k
         - humaneval
         - humaneval-average
         - humaneval-mul
@@ -5892,6 +5897,7 @@ components:
         - mgsm
         - miabench
         - mimic-cxr-top5-macro-f1
+        - mimo-coding-bench
         - minedojo-verified
         - minerva
         - misguided-attention
@@ -6093,6 +6099,7 @@ components:
         - tempcompass
         - terminal-bench
         - terminal-bench-2.0
+        - terminal-bench-2.1
         - terminal-bench-hard
         - textvqa
         - thematic-generalisation
@@ -6110,6 +6117,7 @@ components:
         - uniform-bar-exam
         - us-dermmcqa-accuracy
         - usamo-2025
+        - usamo-2026
         - usamo25
         - v-star
         - vcr-en-easy
@@ -7394,7 +7402,6 @@ components:
         - baidu/ernie-4.5-vl-28b-a3b
         - baidu/ernie-4.5-vl-28b-a3b-thinking
         - baidu/ernie-4.5-vl-424b-a47b
-        - black-forest-labs/flux-1-dev
         - bytedance/seed-1.6
         - bytedance/seed-1.6-250915
         - bytedance/seed-1.6-flash
@@ -7409,7 +7416,6 @@ components:
         - bytedance/seed-translation
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
-        - crofai/greg
         - crofai/greg-1
         - crofai/greg-1-mini
         - crofai/greg-1-super
@@ -7433,13 +7439,12 @@ components:
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-lightning
-        - deepseek/deepseek-v4-pro-precision
         - essential-ai/rnj-1
-        - google/gemini-2.0-flash-lite
         - google/gemini-2.5-flash
         - google/gemini-2.5-flash-lite
         - google/gemini-2.5-flash-lite-preview-2025-06-17
         - google/gemini-2.5-flash-lite-preview-2025-09-25
+        - google/gemini-2.5-pro
         - google/gemini-3-flash-preview
         - google/gemini-3-pro-image
         - google/gemini-3-pro-image-preview
@@ -7513,6 +7518,7 @@ components:
         - minimax/minimax-m2.5
         - minimax/minimax-m2.5-highspeed
         - minimax/minimax-m2.7
+        - minimax/minimax-m3
         - minimax/music-2.6
         - minimax/music-2.6-free
         - mistral/codestral-embed
@@ -7547,7 +7553,6 @@ components:
         - moonshotai/kimi-k2.5
         - moonshotai/kimi-k2.5-lightning
         - moonshotai/kimi-k2.6
-        - moonshotai/kimi-k2.6-precision
         - moonshotai/moonshot-v1-128k
         - moonshotai/moonshot-v1-128k-vision-preview
         - moonshotai/moonshot-v1-32k
@@ -7562,6 +7567,7 @@ components:
         - nousresearch/hermes-3-llama-3.1-70b
         - nousresearch/hermes-4-405b
         - nousresearch/hermes-4-70b
+        - nvidia/cosmos3-super-reasoner
         - nvidia/llama-3.1-nemotron-70b-instruct
         - nvidia/llama-3.1-nemotron-ultra-253b
         - nvidia/llama-3.3-nemotron-super-49b-v1.5
@@ -7731,7 +7737,6 @@ components:
         - qwen/qwen3.5-397b-a17b
         - qwen/qwen3.5-4b
         - qwen/qwen3.5-9b
-        - qwen/qwen3.5-9b-chat
         - qwen/qwen3.5-flash
         - qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19
         - qwen/qwen3.5-plus
@@ -7742,6 +7747,8 @@ components:
         - qwen/qwen3.6-plus
         - qwen/qwen3.7-max
         - qwen/qwen3.7-max-2026-05-17
+        - qwen/qwen3.7-plus
+        - qwen/qwen3.7-plus-2026-05-26
         - qwen/qwq-32b
         - qwen/qwq-plus
         - qwen/text-embedding-v3
@@ -7797,7 +7804,6 @@ components:
         - xiaomi/mimo-v2-tts:free
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro
-        - xiaomi/mimo-v2.5-pro-precision
         - xiaomi/mimo-v2.5-tts:free
         - z-ai/glm-4-32b
         - z-ai/glm-4-7-flash:free
@@ -7815,7 +7821,6 @@ components:
         - z-ai/glm-5-code
         - z-ai/glm-5-turbo
         - z-ai/glm-5.1
-        - z-ai/glm-5.1-precision
         - z-ai/glm-5v-turbo
         - zai-org/glm-4.5-air
         - zai/glm-5

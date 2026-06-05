@@ -450,8 +450,7 @@ begin
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
       and coalesce(dm.hidden, false) = false
-      and (dm.status is null or lower(dm.status) in ('active', 'available'))
-      and (dm.deprecation_date is null or dm.deprecation_date > now() at time zone 'utc')
+      and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated'))
       and (dm.retirement_date is null or dm.retirement_date > now() at time zone 'utc')
       and c.capability_id = gateway_fetch_request_context.endpoint
       and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')

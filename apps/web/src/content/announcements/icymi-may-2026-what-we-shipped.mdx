@@ -1,0 +1,66 @@
+---
+title: "ICYMI: What We Shipped in May 2026"
+description: From video rollout and provider activation to the TypeScript Agent SDK and major May model launches, here is what shipped in May 2026.
+publishedAt: 2026-05-31
+author: AI Stats Team
+tags:
+  - ICYMI
+  - Monthly Recap
+  - Product
+  - API
+draft: false
+---
+
+May was one of our busiest release months so far.
+
+This recap covers shipping from **May 1, 2026** through **May 31, 2026**, across gateway capabilities, SDKs, product UX, and model coverage.
+
+## What Shipped
+
+### Video, async jobs, and observability rolled out
+
+We pushed AI Stats further into production-ready async workflows in May.
+
+Video support expanded across status, cancellation, content, and download flows. We also completed more of the batch lifecycle and made request, session, and async-job details much easier to inspect when you need to debug real traffic instead of toy examples.
+
+For teams operating through the gateway, this means fewer blind spots when something goes wrong and better visibility into what actually happened on a request.
+
+### Provider activation and pricing got clearer
+
+We made provider availability much easier to read across the product.
+
+Provider activation states are now surfaced more consistently across model pages and discovery flows, region-aware filtering makes it easier to narrow models by execution geography, and pricing summaries are clearer at a glance. We also refreshed realtime minute pricing, improved hover-card summaries, and fixed homepage token and monthly request metrics so public numbers line up more closely with current activity.
+
+### TypeScript Agent SDK launched
+
+We launched the first public version of `@ai-stats/agent-sdk`.
+
+This release adds a TypeScript-first runtime for bounded, resumable agent loops on AI Stats Gateway, with docs, installation guides, and cookbook examples for coding review, research, support triage, and parallel local tools. It is an important step toward making AI Stats easier to use for longer-running application workflows, not just single request-response integrations.
+
+### May model coverage kept moving
+
+May also brought a steady stream of new model additions and promotions across text, realtime, image, video, and coding.
+
+Highlights included `chat-latest`, `GPT Realtime 2`, `GPT Realtime Translate`, `GPT Realtime Whisper`, `Grok Imagine Image Quality`, `Grok Build 0.1`, `Gemini 3.5 Flash`, `Command A Plus`, `Qwen 3.7 Max`, `Claude Opus 4.8`, the GA Gemini image models, and the late-month Grok Imagine Video 1.5 Preview placeholder ahead of fuller rollout work.
+
+Explore models here:
+
+- [Explore models here](/models)
+- [Explore recent updates here](/updates)
+
+### Late-May catalog and reliability refresh
+
+We closed the month with a dense round of cleanup and release tracking work.
+
+That included provider pricing refreshes, benchmark backfills, Baseten and provider deprecation sync work, CrofAI scheduling, timestamp normalization, and dependency refreshes. A lot of this work is less visible than a new feature launch, but it keeps the catalog, changelogs, and gateway behavior aligned as releases accelerate.
+
+## Shipping Snapshot (May 1-31)
+
+- **82 pull requests** merged to `main`
+- **60 human-authored pull requests**
+- **2 Version Packages** release PRs
+- **1 new public SDK launch**: `@ai-stats/agent-sdk`
+
+## Next Up
+
+June picks up from here with more model releases, provider refreshes, and follow-through on the new agent tooling.

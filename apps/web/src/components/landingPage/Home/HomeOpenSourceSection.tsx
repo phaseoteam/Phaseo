@@ -7,7 +7,6 @@ import {
 	Check,
 	ChevronDown,
 	Copy,
-	Github,
 	MessageSquare,
 	TerminalSquare,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import {
 	type ShikiLang,
 } from "@/components/(data)/model/quickstart/shiki";
 import { Logo } from "@/components/Logo";
+import { GitHubBrandIcon } from "@/components/icons/SocialBrandIcons";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -771,7 +771,7 @@ export default function HomeOpenSourceSection({
 						</Button>
 						<Button asChild variant="outline" className="h-10 rounded-xl px-5 text-sm font-semibold">
 							<Link href="https://github.com/AI-Stats/AI-Stats">
-								<Github className="h-4 w-4" />
+								<GitHubBrandIcon className="h-4 w-4" />
 								View GitHub
 							</Link>
 						</Button>

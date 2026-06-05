@@ -1,9 +1,9 @@
 {
   "benchmark_id": "elimination-game",
-  "benchmark_name": "Elimation Game",
+  "benchmark_name": "Elimination Game",
   "category": null,
   "ascending_order": null,
   "type": "numerical",
   "link": "https://github.com/lechmazur/elimination_game",
-  "total_models": 26
+  "total_models": 61
 }

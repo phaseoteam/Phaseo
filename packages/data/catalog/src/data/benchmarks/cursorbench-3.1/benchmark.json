@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "cursorbench-3.1",
+  "benchmark_name": "CursorBench 3.1",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": "https://cursor.com/cursorbench",
+  "total_models": 2
+}

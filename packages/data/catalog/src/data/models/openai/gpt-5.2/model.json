@@ -189,6 +189,62 @@
       "other_info": "Extra High Reasoning Effort",
       "source_link": null,
       "rank": 13
+    },
+    {
+      "benchmark_id": "creative-story-writing",
+      "score": 1.5,
+      "is_self_reported": false,
+      "other_info": "Medium reasoning; win prob 0.72; 95% CI 1.3..1.7",
+      "source_link": "https://github.com/lechmazur/writing",
+      "rank": 8
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 7.517,
+      "is_self_reported": false,
+      "other_info": "Medium reasoning; sigma 0.276; games 331; avg points 0.705",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 88.6,
+      "is_self_reported": false,
+      "other_info": "xHigh reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 19
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 77.5,
+      "is_self_reported": false,
+      "other_info": "High reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 30
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 71.4,
+      "is_self_reported": false,
+      "other_info": "Medium reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 33
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 66.8,
+      "is_self_reported": false,
+      "other_info": "Low reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 37
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 28.1,
+      "is_self_reported": false,
+      "other_info": "No reasoning; 940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 64
     }
   ]
 }

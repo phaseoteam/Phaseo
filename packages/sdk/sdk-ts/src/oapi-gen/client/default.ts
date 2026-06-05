@@ -1024,7 +1024,7 @@ export type CreateChatCompletionParams = {
         };
     safety_identifier?: string | null;
     seed?: number;
-    service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+    service_tier?: "standard" | "priority" | "flex" | "batch";
     session_id?: string;
     stop?: string | string[];
     store?: boolean;
@@ -2137,7 +2137,7 @@ export type CreateResponseParams = {
       summary?: "auto" | "concise" | "detailed";
     };
     safety_identifier?: string | null;
-    service_tier?: "auto" | "default" | "flex" | "standard" | "priority";
+    service_tier?: "standard" | "priority" | "flex" | "batch";
     session_id?: string;
     store?: boolean;
     stream?: boolean;
@@ -4429,6 +4429,7 @@ export type ListDataModelsParams = {
       | "deepseek"
       | "eleven-labs"
       | "essential-ai"
+      | "github"
       | "google"
       | "ibm"
       | "inception"
@@ -4447,6 +4448,7 @@ export type ListDataModelsParams = {
       | "nvidia"
       | "openai"
       | "perplexity"
+      | "poe"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -4456,6 +4458,7 @@ export type ListDataModelsParams = {
       | "upstage"
       | "vercel"
       | "voyage"
+      | "windsurf"
       | "x-ai"
       | "xiaomi"
       | "z-ai"
@@ -4473,6 +4476,7 @@ export type ListDataModelsParams = {
       | "deepseek"
       | "eleven-labs"
       | "essential-ai"
+      | "github"
       | "google"
       | "ibm"
       | "inception"
@@ -4491,6 +4495,7 @@ export type ListDataModelsParams = {
       | "nvidia"
       | "openai"
       | "perplexity"
+      | "poe"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -4500,6 +4505,7 @@ export type ListDataModelsParams = {
       | "upstage"
       | "vercel"
       | "voyage"
+      | "windsurf"
       | "x-ai"
       | "xiaomi"
       | "z-ai"[];
@@ -4672,6 +4678,7 @@ export type ListModelsParams = {
       | "deepseek"
       | "eleven-labs"
       | "essential-ai"
+      | "github"
       | "google"
       | "ibm"
       | "inception"
@@ -4690,6 +4697,7 @@ export type ListModelsParams = {
       | "nvidia"
       | "openai"
       | "perplexity"
+      | "poe"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -4699,6 +4707,7 @@ export type ListModelsParams = {
       | "upstage"
       | "vercel"
       | "voyage"
+      | "windsurf"
       | "x-ai"
       | "xiaomi"
       | "z-ai"
@@ -4716,6 +4725,7 @@ export type ListModelsParams = {
       | "deepseek"
       | "eleven-labs"
       | "essential-ai"
+      | "github"
       | "google"
       | "ibm"
       | "inception"
@@ -4734,6 +4744,7 @@ export type ListModelsParams = {
       | "nvidia"
       | "openai"
       | "perplexity"
+      | "poe"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -4743,6 +4754,7 @@ export type ListModelsParams = {
       | "upstage"
       | "vercel"
       | "voyage"
+      | "windsurf"
       | "x-ai"
       | "xiaomi"
       | "z-ai"[];
@@ -5213,6 +5225,7 @@ export type ListTeamModelsParams = {
       | "deepseek"
       | "eleven-labs"
       | "essential-ai"
+      | "github"
       | "google"
       | "ibm"
       | "inception"
@@ -5231,6 +5244,7 @@ export type ListTeamModelsParams = {
       | "nvidia"
       | "openai"
       | "perplexity"
+      | "poe"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -5240,6 +5254,7 @@ export type ListTeamModelsParams = {
       | "upstage"
       | "vercel"
       | "voyage"
+      | "windsurf"
       | "x-ai"
       | "xiaomi"
       | "z-ai"
@@ -5257,6 +5272,7 @@ export type ListTeamModelsParams = {
       | "deepseek"
       | "eleven-labs"
       | "essential-ai"
+      | "github"
       | "google"
       | "ibm"
       | "inception"
@@ -5275,6 +5291,7 @@ export type ListTeamModelsParams = {
       | "nvidia"
       | "openai"
       | "perplexity"
+      | "poe"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -5284,6 +5301,7 @@ export type ListTeamModelsParams = {
       | "upstage"
       | "vercel"
       | "voyage"
+      | "windsurf"
       | "x-ai"
       | "xiaomi"
       | "z-ai"[];

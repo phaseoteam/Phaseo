@@ -261,7 +261,6 @@ export type IRChatRequest = {
 	};
 	background?: boolean;
 	serviceTier?: string;
-	speed?: string;
 	geo?: IRGeoPreferences;
 	promptCacheKey?: string;
 	promptCacheRetention?: string;
@@ -635,6 +634,7 @@ export type IROcrResponse = {
 	model: string;
 	provider: string;
 	text: string;
+	usage?: IRUsage;
 	rawResponse?: any;
 };
 
@@ -901,7 +901,6 @@ export function hasToolCalls(message: IRMessage): boolean {
 export function countTotalTokens(usage?: IRUsage): number {
 	return usage?.totalTokens ?? 0;
 }
-
 
 
 

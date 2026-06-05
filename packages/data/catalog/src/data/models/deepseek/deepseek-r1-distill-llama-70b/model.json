@@ -1,0 +1,19 @@
+{
+  "model_id": "deepseek/deepseek-r1-distill-llama-70b",
+  "organisation_id": "deepseek",
+  "name": "DeepSeek R1 Distill Llama 70B",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "DeepSeek R1 Distill Llama 70B is a DigitalOcean-hosted reasoning model exposed through DigitalOcean Inference.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "deepseek/deepseek-r1-distill-llama-70b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

@@ -32,6 +32,7 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	image_pixels: { long: "Image pixels", short: "img px" },
 	video_pixels: { long: "Video pixels", short: "vid px" },
 	output_video_seconds: { long: "Video seconds", short: "video sec" },
+	output_video_tokens: { long: "Video tokens", short: "video tok" },
 	output_audio_seconds: { long: "Audio seconds", short: "audio sec" },
 	output_reasoning_tokens: { long: "Output reasoning tokens", short: "reasoning out" },
 	output_video: { long: "Output videos", short: "out video" },

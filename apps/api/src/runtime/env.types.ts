@@ -63,6 +63,7 @@ export type GatewayBindings = {
     CLARIFAI_PAT?: string;
     CLARIFAI_BASE_URL?: string;
     CLOUDFLARE_API_TOKEN?: string;
+    CLOUDFLARE_ACCOUNT_ID?: string;
     CLOUDFLARE_AI_GATEWAY_BASE_URL?: string;
     COHERE_API_KEY?: string;
     COHERE_BASE_URL?: string;
@@ -78,6 +79,7 @@ export type GatewayBindings = {
     DEEPINFRA_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
     DEEPSEEK_BASE_URL?: string;
+    DIGITALOCEAN_TOKEN?: string;
     EXA_API_KEY?: string;
     EXA_BASE_URL?: string;
     FEATHERLESS_API_KEY?: string;
@@ -196,6 +198,10 @@ export type GatewayBindings = {
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
+    ENV?: string;
+    HF_TOKEN?: string;
+    GITHUB_TOKEN?: string;
+    GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
@@ -203,10 +209,8 @@ export type GatewayBindings = {
     VIDEO_DOWNLOAD_SIGNING_SECRET?: string;
     GATEWAY_INTERNAL_TEST_TOKEN?: string;
     GATEWAY_LOCAL_TESTING_MODE?: string;
-    MODEL_DISCOVERY_ENABLED?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;
-    MODEL_DISCOVERY_INTERNAL_TOKEN?: string;
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;
     VIDEO_RECONCILIATION_CONCURRENCY?: string;

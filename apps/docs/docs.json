@@ -66,6 +66,7 @@
 								"pages": [
 									"v1/guides/routing-and-fallbacks",
 									"v1/guides/service-tiers",
+									"v1/guides/provider-statuses",
 									"v1/guides/presets",
 									"v1/guides/multimodality",
 									{
@@ -1154,9 +1155,7 @@
 							{
 								"group": "Latest updates",
 								"pages": [
-									"v1/changelog",
-									"v1/sdk-changelog",
-									"v1/data-changelog"
+									"v1/changelog"
 								]
 							}
 						]
@@ -1215,6 +1214,14 @@
 		{
 			"source": "/v1/:slug*.mdx",
 			"destination": "/v1/:slug*"
+		},
+		{
+			"source": "/v1/sdk-changelog",
+			"destination": "/v1/changelog"
+		},
+		{
+			"source": "/v1/data-changelog",
+			"destination": "/v1/changelog"
 		}
 	],
 	"contextual": {

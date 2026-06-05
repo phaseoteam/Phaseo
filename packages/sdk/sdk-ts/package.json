@@ -43,7 +43,7 @@
 		"build": "rimraf dist && tsc -p tsconfig.build.json",
 		"prepublishOnly": "pnpm run build",
 		"postinstall": "node scripts/postinstall.cjs",
-		"test:unit": "pnpm exec vitest run tests/client-async-jobs.test.ts tests/client-batches.test.ts tests/client-chat.test.ts tests/client-files.test.ts tests/client-video.test.ts tests/devtools.test.ts",
+		"test:unit": "pnpm exec vitest run tests/client-async-jobs.test.ts tests/client-batches.test.ts tests/client-chat.test.ts tests/client-endpoints.test.ts tests/client-files.test.ts tests/client-video.test.ts tests/devtools.test.ts",
 		"test:smoke": "pnpm smoke:all",
 		"smoke:chat": "dotenv -e .env.local -- tsx tests/smoke.ts --operation chat",
 		"smoke:responses": "dotenv -e .env.local -- tsx tests/smoke.ts --operation responses",

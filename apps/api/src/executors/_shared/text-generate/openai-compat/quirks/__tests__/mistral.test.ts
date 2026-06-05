@@ -61,7 +61,6 @@ describe("Mistral quirks", () => {
 			model: "mistral-large-latest",
 			messages: [{ role: "user", content: "hello" }],
 			service_tier: "default",
-			speed: "fast",
 			prompt_cache_key: "cache_1",
 			safety_identifier: "safe_1",
 			background: true,
@@ -72,7 +71,6 @@ describe("Mistral quirks", () => {
 		mistralQuirks.transformRequest?.({ request, ir: {} as any });
 
 		expect(request.service_tier).toBeUndefined();
-		expect(request.speed).toBeUndefined();
 		expect(request.prompt_cache_key).toBeUndefined();
 		expect(request.safety_identifier).toBeUndefined();
 		expect(request.background).toBeUndefined();

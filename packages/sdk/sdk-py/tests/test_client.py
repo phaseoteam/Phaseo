@@ -1021,3 +1021,56 @@ def test_api_key_mutation_helpers_use_generated_operations(monkeypatch):
         ("updateApiKey", {"id": "key_123", "name": "Renamed Key", "disabled": True}),
         ("deleteApiKey", {"id": "key_123"}),
     ]
+
+
+def test_provisioning_key_aliases_delegate_to_api_key_helpers(monkeypatch):
+    captured: list[tuple[str, dict[str, object] | dict[str, str] | None]] = []
+
+    def fake_list_api_keys(_client, **kwargs):
+        captured.append(("listApiKeys", kwargs.get("query")))
+        return {"object": "list", "data": [{"id": "key_123"}]}
+
+    def fake_get_api_key(_client, **kwargs):
+        captured.append(("getApiKey", kwargs.get("path")))
+        return {"data": {"id": "key_123"}}
+
+    def fake_create_api_key(_client, **kwargs):
+        captured.append(("createApiKey", kwargs.get("body")))
+        return {"data": {"id": "key_123", "name": "Agent Key"}}
+
+    def fake_update_api_key(_client, **kwargs):
+        path = kwargs.get("path") or {}
+        body = kwargs.get("body") or {}
+        captured.append(("updateApiKey", {"id": path.get("id"), **body}))
+        return {"data": {"id": path.get("id"), "name": body.get("name")}}
+
+    def fake_delete_api_key(_client, **kwargs):
+        captured.append(("deleteApiKey", kwargs.get("path")))
+        return {"data": {"id": "key_123", "deleted": True}}
+
+    monkeypatch.setattr(ops, "listApiKeys", fake_list_api_keys)
+    monkeypatch.setattr(ops, "getApiKey", fake_get_api_key)
+    monkeypatch.setattr(ops, "createApiKey", fake_create_api_key)
+    monkeypatch.setattr(ops, "updateApiKey", fake_update_api_key)
+    monkeypatch.setattr(ops, "deleteApiKey", fake_delete_api_key)
+
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+
+    listed = client.list_provisioning_keys({"limit": "1"})
+    created = client.create_provisioning_key({"name": "Agent Key"})
+    fetched = client.get_provisioning_key("key_123")
+    updated = client.update_provisioning_key("key_123", {"name": "Renamed Key"})
+    deleted = client.delete_provisioning_key("key_123")
+
+    assert listed["data"][0]["id"] == "key_123"
+    assert created["data"]["name"] == "Agent Key"
+    assert fetched["data"]["id"] == "key_123"
+    assert updated["data"]["name"] == "Renamed Key"
+    assert deleted["data"]["deleted"] is True
+    assert captured == [
+        ("listApiKeys", {"limit": "1"}),
+        ("createApiKey", {"name": "Agent Key"}),
+        ("getApiKey", {"id": "key_123"}),
+        ("updateApiKey", {"id": "key_123", "name": "Renamed Key"}),
+        ("deleteApiKey", {"id": "key_123"}),
+    ]

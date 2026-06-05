@@ -509,7 +509,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		});
 	});
 
-	it("should map speed fast to priority service tier", () => {
+	it("should ignore text speed because service_tier is the public control", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
@@ -518,8 +518,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.speed).toBe("fast");
-		expect(ir.serviceTier).toBe("priority");
+		expect(ir.serviceTier).toBeUndefined();
 	});
 
 	it("should decode reasoning.effort=max into IR reasoning effort xhigh", () => {
@@ -568,16 +567,16 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.reasoning?.maxTokens).toBe(512);
 	});
 
-	it("should preserve service_tier on decode", () => {
+	it("should preserve supported service_tier on decode", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
-			service_tier: "standard_only",
+			service_tier: "standard",
 			messages: [{ role: "user", content: "Hello" }],
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.serviceTier).toBe("standard_only");
+		expect(ir.serviceTier).toBe("standard");
 	});
 
 	it("should decode inference geo controls into IR", () => {
@@ -730,4 +729,3 @@ describe("decodeAnthropicMessagesRequest cache control", () => {
 		}
 	});
 });
-

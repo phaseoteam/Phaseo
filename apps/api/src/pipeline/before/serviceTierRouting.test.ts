@@ -165,6 +165,39 @@ describe("applyServiceTierRouting", () => {
         expect(loadPriceCardMock).not.toHaveBeenCalled();
     });
 
+    it("does not treat text speed as a service tier alias", async () => {
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "anthropic",
+                    apiModelId: "anthropic/claude-opus-4.8",
+                    pricingCard: makeCard({
+                        provider: "anthropic",
+                        model: "anthropic/claude-opus-4.8",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+                makeCandidate({
+                    providerId: "anthropic-aws",
+                    apiModelId: "anthropic/claude-opus-4.8",
+                    pricingCard: makeCard({
+                        provider: "anthropic-aws",
+                        model: "anthropic/claude-opus-4.8",
+                        plans: ["standard"],
+                    }),
+                }),
+            ],
+            body: { speed: "fast" },
+            capability: "text.generate",
+        });
+
+        expect(result.candidates.map((candidate) => candidate.providerId)).toEqual([
+            "anthropic",
+            "anthropic-aws",
+        ]);
+        expect(result.diagnostics.requestedTier).toBeNull();
+    });
+
     it("keeps dedicated priority offers even when they use standard-priced sibling cards", async () => {
         const result = await applyServiceTierRouting({
             candidates: [

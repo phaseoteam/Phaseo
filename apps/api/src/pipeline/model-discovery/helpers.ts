@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { sendDiscordTextMessage } from "./discord";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -1026,7 +1027,7 @@ export async function sendDiscordNotification(args: {
 	pricing: PricingMonitorSummary;
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
-}): Promise<void> {
+}): Promise<{ delivered: boolean; skipped: boolean; reason?: string | null }> {
 	const configuredCoverageNotificationsEnabled = shouldNotifyConfiguredModelCoverage();
 	const configuredCoverageUpdatesForNotifications = configuredCoverageNotificationsEnabled
 		? args.configuredModelCoverage.updatesDetected
@@ -1038,46 +1039,30 @@ export async function sendDiscordNotification(args: {
 		args.providerApiPricing.updatesDetected === 0 &&
 		configuredCoverageUpdatesForNotifications === 0
 	) {
-		return;
+		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const webhookUrl = readBindingEnv(["DISCORD_WEBHOOK_URL"]);
-	if (!webhookUrl) return;
+	if (!webhookUrl) {
+		return { delivered: false, skipped: true, reason: "missing DISCORD_WEBHOOK_URL" };
+	}
 
 	let parsedUrl: URL;
 	try {
 		parsedUrl = new URL(webhookUrl);
 	} catch {
 		console.warn("[model-discovery] invalid DISCORD_WEBHOOK_URL; skipping notification");
-		return;
+		return { delivered: false, skipped: true, reason: "invalid DISCORD_WEBHOOK_URL" };
 	}
 
 	const message = buildDiscordMessage(args);
-	if (!message.trim()) return;
-	const roleId = readBindingEnv(["DISCORD_ROLE_ID"]);
-	const userId = readBindingEnv(["DISCORD_USER_ID"]);
-	const mentions: string[] = [];
-	if (roleId) mentions.push(`<@&${roleId}>`);
-	if (userId) mentions.push(`<@${userId}>`);
-
-	const payload: Record<string, unknown> = {
-		content: mentions.length ? `${mentions.join(" ")}\n${message}` : message,
-	};
-	if (roleId || userId) {
-		payload.allowed_mentions = {
-			parse: [],
-			roles: roleId ? [roleId] : [],
-			users: userId ? [userId] : [],
-		};
+	if (!message.trim()) {
+		return { delivered: false, skipped: true, reason: "empty Discord message" };
 	}
-
-	const response = await fetch(parsedUrl.toString(), {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify(payload),
+	await sendDiscordTextMessage({
+		webhookUrl: parsedUrl.toString(),
+		message,
+		roleId: readBindingEnv(["DISCORD_ROLE_ID"]),
+		userId: readBindingEnv(["DISCORD_USER_ID"]),
 	});
-
-	if (!response.ok) {
-		const body = await response.text().catch(() => "");
-		throw new Error(`Discord webhook failed (${response.status})${body ? `: ${body.slice(0, 200)}` : ""}`);
-	}
+	return { delivered: true, skipped: false };
 }

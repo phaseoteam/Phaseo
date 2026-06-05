@@ -8,6 +8,7 @@ import type {
 	IRGeoPreferences,
 	IRReasoning,
 } from "@core/ir";
+import { normalizeTextServiceTier } from "@core/serviceTiers";
 
 export function normalizeResponseFormat(
 	format: unknown,
@@ -202,16 +203,10 @@ export function normalizeOpenAIToolChoice(
 	return undefined;
 }
 
-export function resolveServiceTierFromSpeedAndTier(input: {
-	speed?: unknown;
+export function resolveTextServiceTier(input: {
 	service_tier?: unknown;
 }): string | undefined {
-	const speed = typeof input.speed === "string" ? input.speed.toLowerCase() : undefined;
-	if (speed === "fast") return "priority";
-	if (typeof input.service_tier === "string" && input.service_tier.length > 0) {
-		return input.service_tier;
-	}
-	return undefined;
+	return normalizeTextServiceTier(input.service_tier);
 }
 
 function normalizeNonEmptyString(value: unknown): string | undefined {
@@ -309,7 +304,6 @@ export function normalizeProviderCacheOptions(rawRequest: any): {
 		),
 	};
 }
-
 
 
 

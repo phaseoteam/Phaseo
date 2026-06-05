@@ -1,0 +1,54 @@
+{
+  "plan_id": "v0-team",
+  "name": "v0 Team",
+  "organisation_id": "vercel",
+  "description": "v0 team workspace plan with pooled collaboration features and included usage.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 30,
+      "link": "https://v0.dev/pricing",
+      "other_info": "Per user per month; includes $30 monthly usage per user"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Included Usage",
+      "feature_value": "$30 / User / Month",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Daily Credits",
+      "feature_value": "$2 / User / Day",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Team Collaboration",
+      "feature_value": "Included",
+      "feature_description": "Team projects, centralized billing, and shared credits.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "vercel/v0-1.5-sm",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage or on-demand credits",
+      "other_info": null
+    },
+    {
+      "model_id": "vercel/v0-1.5-md",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage or on-demand credits",
+      "other_info": null
+    },
+    {
+      "model_id": "vercel/v0-1.5-lg",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage or on-demand credits",
+      "other_info": null
+    }
+  ]
+}

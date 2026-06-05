@@ -83,30 +83,6 @@
       "rank": 27
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 12.41,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 8
-    },
-    {
-      "benchmark_id": "creative-story-writing",
-      "score": 7.69,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/writing",
-      "rank": 7
-    },
-    {
-      "benchmark_id": "elimination-game",
-      "score": 5.996,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 8
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1193.2,
       "is_self_reported": false,
@@ -153,22 +129,6 @@
       "other_info": "No Tools",
       "source_link": "https://x.ai/news/grok-4",
       "rank": 64
-    },
-    {
-      "benchmark_id": "nyt-connections",
-      "score": 0.924,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 1
-    },
-    {
-      "benchmark_id": "thematic-generalisation",
-      "score": 1.88,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 19
     },
     {
       "benchmark_id": "usamo-2025",
@@ -233,6 +193,22 @@
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
       "rank": 2
+    },
+    {
+      "benchmark_id": "confabulations",
+      "score": 12.41,
+      "is_self_reported": false,
+      "other_info": "Confab 4.0%; non-response 20.9%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 9
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.153,
+      "is_self_reported": false,
+      "other_info": "sigma 0.228; games 455; avg points 0.565",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 12
     }
   ]
 }

@@ -16,6 +16,7 @@ export type OrganisationId =
   | "deepseek"
   | "eleven-labs"
   | "essential-ai"
+  | "github"
   | "google"
   | "ibm"
   | "inception"
@@ -34,6 +35,7 @@ export type OrganisationId =
   | "nvidia"
   | "openai"
   | "perplexity"
+  | "poe"
   | "prime-intellect"
   | "qwen"
   | "relace"
@@ -43,6 +45,7 @@ export type OrganisationId =
   | "upstage"
   | "vercel"
   | "voyage"
+  | "windsurf"
   | "x-ai"
   | "xiaomi"
   | "z-ai";

@@ -1,0 +1,120 @@
+{
+  "plan_id": "chatgpt-enterprise",
+  "name": "ChatGPT Enterprise",
+  "organisation_id": "openai",
+  "description": "Enterprise-grade ChatGPT workspace with custom pricing, expanded controls, and enterprise support.",
+  "pricing_options": [
+    {
+      "frequency": "custom",
+      "usd_price": 0,
+      "link": "https://openai.com/business/chatgpt-pricing/",
+      "other_info": "Custom pricing; contact OpenAI sales"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Pricing",
+      "feature_value": "Custom",
+      "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Enterprise Controls",
+      "feature_value": "SCIM, EKM, user analytics, domain verification, and role-based access controls",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Privacy and Compliance",
+      "feature_value": "Custom data retention, encryption, no training on business data by default, data residency, and enterprise terms",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Support",
+      "feature_value": "24/7 priority support, SLAs, invoicing, and volume discounts",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "GPT-5.5 Access Control",
+      "feature_value": "Workspace admin / RBAC controlled",
+      "feature_description": "OpenAI notes GPT-5.5 access is controlled through Enterprise workspace settings and role-based access controls.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Deep Research",
+      "feature_value": "Flexible",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Codex",
+      "feature_value": "Flexible",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "openai/chatgpt-image-latest",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "openai/chat-latest",
+      "model_info": "GPT-5.5 Instant",
+      "rate_limit": "Virtually unlimited GPT-5.5 messages, subject to abuse guardrails and workspace controls",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.5",
+      "model_info": "GPT-5.5 Thinking",
+      "rate_limit": "Workspace admin / RBAC controlled",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/gpt-5.5-pro",
+      "model_info": "GPT-5.5 Pro",
+      "rate_limit": "Workspace admin / RBAC controlled",
+      "other_info": null
+    },
+    {
+      "model_id": "openai/o3-deep-research",
+      "model_info": null,
+      "rate_limit": "Flexible",
+      "other_info": "Available through Deep Research"
+    },
+    {
+      "model_id": "openai/gpt-5.3-codex",
+      "model_info": "Codex",
+      "rate_limit": "Flexible",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.3-codex-spark",
+      "model_info": "Codex research preview",
+      "rate_limit": "Flexible",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.2-codex",
+      "model_info": "Codex",
+      "rate_limit": "Flexible",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.1-codex-max",
+      "model_info": "Codex Max",
+      "rate_limit": "Flexible",
+      "other_info": "Accessible through Codex"
+    },
+    {
+      "model_id": "openai/gpt-5.1-codex-mini",
+      "model_info": "Codex Mini",
+      "rate_limit": "Flexible",
+      "other_info": "Accessible through Codex"
+    }
+  ]
+}

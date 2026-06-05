@@ -49,6 +49,7 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
 - `client.calculatePricing(...)` for `/pricing/calculate` usage estimation
 - `client.listProviders(...)`, `client.getCredits(...)`, `client.getActivity(...)`, and `client.getAnalytics(...)` for provider discovery and management-key usage surfaces
+- `client.providers.derankStatus(providerId, ...)` for provider derank health checks
 - `client.listApiKeys(...)` for management-key `/keys` discovery
 - `client.createApiKey(...)`, `client.updateApiKey(id, ...)`, and `client.deleteApiKey(id)` for management-key API-key lifecycle changes
 - `client.getApiKey(id)` for management-key `/keys/{id}` lookup
@@ -57,6 +58,9 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.getHealth()`
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
+- `client.ocr.create(...)`, `client.rerank.create(...)`, and `client.music.create(...)` for OCR, rerank, and music generation
+- `client.dataModels.list(...)` for `/data/models`
+- `client.responses.websocketUrl(...)` for Responses websocket connection URLs
 
 Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 

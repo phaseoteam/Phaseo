@@ -2,8 +2,10 @@
 const CORE_PRICING_METER_VALUES = [
   "input_tokens",
   "input_characters",
+  "input_pages",
   "input_text_tokens",
   "input_image_tokens",
+  "input_audio_minutes",
   "image_pixels",
   "video_pixels",
   "input_video_tokens",
@@ -11,9 +13,11 @@ const CORE_PRICING_METER_VALUES = [
   "output_tokens",
   "output_text_tokens",
   "output_reasoning_tokens",
+  "implicit_cached_input_text_tokens",
   "cached_read_text_tokens",
   "output_image",
   "output_video",
+  "output_video_tokens",
   "cached_read_image_tokens",
   "output_image_tokens",
   "cached_read_audio_tokens",
@@ -27,6 +31,10 @@ const CORE_PRICING_METER_VALUES = [
   "input_video_seconds",
 ] as const
 
+const PRICING_METER_LABELS: Partial<Record<(typeof CORE_PRICING_METER_VALUES)[number], string>> = {
+  implicit_cached_input_text_tokens: "Implicit Cached Input Text Tokens",
+}
+
 const toTitleCase = (value: string) =>
   value
     .split("_")
@@ -37,6 +45,5 @@ export const PRICING_METER_VALUES = [...CORE_PRICING_METER_VALUES]
 
 export const PRICING_METER_OPTIONS = PRICING_METER_VALUES.map((value) => ({
   value,
-  label: toTitleCase(value),
+  label: PRICING_METER_LABELS[value] ?? toTitleCase(value),
 }))
-

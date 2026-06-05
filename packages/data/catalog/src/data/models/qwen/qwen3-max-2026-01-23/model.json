@@ -15,5 +15,14 @@
   "api_model_id": "qwen/qwen3-max-2026-01-23",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 42.1,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 50
+    }
+  ]
 }

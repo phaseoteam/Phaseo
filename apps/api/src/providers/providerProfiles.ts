@@ -87,7 +87,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "anthropic",
 		text: {
 			paramPolicy: {
-				supportedParams: ["service_tier", "speed"],
+				supportedParams: ["service_tier"],
 			},
 			normalize: {
 				maxTemperature: 1,

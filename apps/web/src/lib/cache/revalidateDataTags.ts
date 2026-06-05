@@ -57,6 +57,7 @@ const MODEL_API_GLOBAL_TAGS = [
 	"monitor-models",
 	"models:monitor",
 	"page:models",
+	"gateway-supported-models",
 ] as const;
 
 const MODEL_CANONICAL_RESOLVER_TAGS = [
@@ -91,6 +92,12 @@ function expireTagList(tags: readonly string[]) {
 
 function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) {
 	revalidatePath("/");
+	revalidatePath("/chat");
+	revalidatePath("/chat/image");
+	revalidatePath("/chat/video");
+	revalidatePath("/chat/audio");
+	revalidatePath("/chat/moderation");
+	revalidatePath("/chat/embeddings");
 	revalidatePath("/models", "layout");
 	revalidatePath("/models/table");
 	revalidatePath("/models/collections");

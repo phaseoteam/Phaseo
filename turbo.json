@@ -11,7 +11,7 @@
 			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"],
 			"inputs": [
 				"$TURBO_DEFAULT$",
-				"apps/api/src/**",
+				"packages/data/catalog/src/data/**",
 				"apps/api/openapi.openai.yml",
 				"apps/api/openapi.anthropic.json"
 			]

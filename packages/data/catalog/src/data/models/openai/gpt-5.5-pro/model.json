@@ -110,6 +110,14 @@
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-5/",
       "rank": 4
+    },
+    {
+      "benchmark_id": "simplebench",
+      "score": 76.9,
+      "is_self_reported": false,
+      "other_info": null,
+      "source_link": "https://simple-bench.com/",
+      "rank": 2
     }
   ]
 }

@@ -43,6 +43,13 @@
       "source_link": "https://www.minimax.io/models/text/m3"
     },
     {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 66.0,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m3"
+    },
+    {
       "benchmark_id": "browsecomp",
       "score": 83.5,
       "is_self_reported": true,

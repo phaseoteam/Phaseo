@@ -2,7 +2,7 @@
   "model_id": "mistral/mistral-ocr-2",
   "organisation_id": "mistral",
   "name": "Mistral OCR 2",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Mistral OCR 2 is a document understanding model from Mistral for OCR, extraction, and page-level visual reasoning. It is suited to extracting text, structure, and answers from PDFs, scans, and screenshots.",
   "announced_date": "2025-05-22T00:00:00",

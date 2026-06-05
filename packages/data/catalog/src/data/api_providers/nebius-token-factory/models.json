@@ -483,6 +483,28 @@
     ]
   },
   {
+    "api_model_id": "nvidia/cosmos3-super-reasoner",
+    "provider_api_model_id": "nebius-token-factory:nvidia/cosmos3-super-reasoner",
+    "provider_model_slug": "nvidia/Cosmos3-Super-Reasoner",
+    "internal_model_id": "nvidia/cosmos3-super-reasoner",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP16",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "notes": "Nebius currently exposes this endpoint as text-to-text despite the canonical model supporting text, image, and video inputs.",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-01T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "nvidia/nemotron-nano-v2-12b",
     "provider_api_model_id": "nebius-token-factory:nvidia/nemotron-nano-v2-12b",
     "provider_model_slug": "nvidia/Nemotron-Nano-V2-12b",

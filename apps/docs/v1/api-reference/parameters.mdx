@@ -426,6 +426,8 @@ Selects a supported routing or pricing tier on compatible text APIs.
 
 Use `priority` or `flex` only when the chosen model and provider combination supports them. Omit the field to stay on the default standard tier.
 
+AI Stats maps these gateway-normalized tier values to provider-native controls internally, so callers can use the same `service_tier` values across supported text surfaces.
+
 Notes:
 
 - `Batch` is a separate API flow, not a service-tier value.

@@ -22,6 +22,14 @@ const AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES = [
 	"audio.speech",
 	"audio.generate",
 ] as const;
+const TEXT_CONTEXT_CAPABILITY_ALIASES = [
+	"responses",
+	"chat.completions",
+	"messages",
+	"text.generate",
+	"chat.generate",
+	"text",
+] as const;
 
 function normalizeContextCapability(value: string): string {
 	return String(value ?? "").trim().toLowerCase();
@@ -40,6 +48,20 @@ function isGoogleImageGenerationModel(model: string | null | undefined): boolean
 export function getContextCapabilityCandidates(capability: string, model?: string): string[] {
 	const normalized = normalizeContextCapability(capability);
 	if (!normalized) return [];
+	if (
+		TEXT_CONTEXT_CAPABILITY_ALIASES.includes(
+			normalized as (typeof TEXT_CONTEXT_CAPABILITY_ALIASES)[number],
+		)
+	) {
+		const remaining = TEXT_CONTEXT_CAPABILITY_ALIASES.filter(
+			alias => alias !== "text.generate" && alias !== normalized,
+		);
+		return Array.from(new Set<string>([
+			"text.generate",
+			normalized,
+			...remaining,
+		]));
+	}
 	if (
 		MODERATION_CONTEXT_CAPABILITY_ALIASES.includes(
 			normalized as (typeof MODERATION_CONTEXT_CAPABILITY_ALIASES)[number],

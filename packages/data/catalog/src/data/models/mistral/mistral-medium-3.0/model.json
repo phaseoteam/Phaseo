@@ -2,18 +2,35 @@
   "model_id": "mistral/mistral-medium-3.0",
   "organisation_id": "mistral",
   "name": "Mistral Medium 3.0",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "Mistral Medium 3.0 is a multimodal model from Mistral that can work across text and visual inputs. It accepts text and image inputs and produces text outputs.",
   "announced_date": "2025-05-07T00:00:00",
   "release_date": "2025-05-07T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-05-22T00:00:00",
+  "retirement_date": "2026-08-31T00:00:00",
   "license": "Proprietary",
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "mistral/mistral-medium-3.0",
   "links": [],
   "details": [],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "confabulations",
+      "score": 21.9,
+      "is_self_reported": false,
+      "other_info": "Confab 38.1%; non-response 5.7%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 51
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 2.192,
+      "is_self_reported": false,
+      "other_info": "sigma 0.216; games 510; avg points 0.374",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 57
+    }
+  ]
 }

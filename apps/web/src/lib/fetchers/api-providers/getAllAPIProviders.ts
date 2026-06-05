@@ -1,42 +1,26 @@
 // lib/fetchers/api-providers/getAllAPIProviders.ts
 import { cacheLife, cacheTag } from "next/cache";
 import { filterVisibleAPIProviders } from "./visibility";
+import {
+	groupProviderIndexCards,
+	type APIProviderCard,
+	type APIProviderIndexVariant,
+	type ProviderModalityKey,
+	type ProviderModalitySupport,
+} from "./providerIndexGrouping";
+import { resolveEffectiveProviderModalities } from "./providerModalities";
 import { fetchPublicGatewayRequestRows } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { sumTokens } from "@/lib/utils/sumTokens";
-
-export type ProviderModalityKey =
-    | "text"
-    | "image"
-    | "video"
-    | "audio"
-    | "moderation"
-    | "embedding";
-
-export type ProviderModalitySupport = Record<
-    ProviderModalityKey,
-    {
-        input: number;
-        output: number;
-    }
->;
-
-export interface APIProviderCard {
-    api_provider_id: string;
-    api_provider_name: string;
-    colour?: string | null;
-    country_code: string;
-    total_models: number;
-    active_models: number;
-    free_models: number;
-    total_daily_tokens: number;
-    total_monthly_tokens: number;
-    daily_share_pct: number;
-    modality_support: ProviderModalitySupport;
-}
+export type {
+	APIProviderCard,
+	ProviderModalityKey,
+	ProviderModalitySupport,
+};
 
 type ProviderModelRow = {
     provider_id?: string | null;
+    model_id?: string | null;
     api_model_id?: string | null;
     provider_api_model_id?: string | null;
     provider_model_slug?: string | null;
@@ -53,6 +37,24 @@ type PricingRuleRow = {
     price_per_unit?: number | string | null;
     effective_from?: string | null;
     effective_to?: string | null;
+};
+
+type ProviderRow = {
+	api_provider_id?: string | null;
+	api_provider_name?: string | null;
+	colour?: string | null;
+	country_code?: string | null;
+	provider_family_id?: string | null;
+	offer_label?: string | null;
+	offer_scope?: "global" | "regional" | "specialized" | null;
+};
+
+type CanonicalModelRow = {
+	model_id?: string | null;
+	input_types?: string[] | string | null;
+	output_types?: string[] | string | null;
+	input_modalities?: string[] | string | null;
+	output_modalities?: string[] | string | null;
 };
 
 const MODALITY_KEYS: ProviderModalityKey[] = [
@@ -86,6 +88,16 @@ function createModalitySetMap(): Record<ProviderModalityKey, Set<string>> {
     };
 }
 
+function hasCanonicalModelModalities(row?: CanonicalModelRow | null): boolean {
+    const inputValue = String(
+        row?.input_types ?? row?.input_modalities ?? "",
+    ).trim();
+    const outputValue = String(
+        row?.output_types ?? row?.output_modalities ?? "",
+    ).trim();
+    return inputValue.length > 0 || outputValue.length > 0;
+}
+
 function normalizeModality(raw: string): ProviderModalityKey | null {
     const value = String(raw ?? "")
         .trim()
@@ -99,21 +111,6 @@ function normalizeModality(raw: string): ProviderModalityKey | null {
     if (value.includes("moderat")) return "moderation";
     if (value.includes("embed")) return "embedding";
     return null;
-}
-
-function parseModalities(raw: string[] | string | null | undefined): string[] {
-    if (Array.isArray(raw)) {
-        return raw.map((value) => String(value ?? "").trim()).filter(Boolean);
-    }
-    if (typeof raw === "string") {
-        const normalized = raw.trim();
-        if (!normalized) return [];
-        return normalized
-            .split(",")
-            .map((value) => value.trim())
-            .filter(Boolean);
-    }
-    return [];
 }
 
 function parseModelKey(modelKey: string | null | undefined): {
@@ -135,6 +132,15 @@ function isFreePricingRule(row: PricingRuleRow): boolean {
 
 function toTokenCount(value: unknown): number {
     return Math.max(0, Math.round(sumTokens(value)));
+}
+
+function chunkValues<T>(values: readonly T[], size: number): T[][] {
+	const normalizedSize = Math.max(1, Math.floor(size));
+	const chunks: T[][] = [];
+	for (let index = 0; index < values.length; index += normalizedSize) {
+		chunks.push(values.slice(index, index + normalizedSize));
+	}
+	return chunks;
 }
 
 export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
@@ -159,12 +165,14 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     const [providersRes, providerModelsRes, pricingRulesRes, gatewayUsageRows] = await Promise.all([
         supabase
             .from("data_api_providers")
-            .select("api_provider_id, api_provider_name, colour, country_code")
+            .select(
+                "api_provider_id, api_provider_name, colour, country_code, provider_family_id, offer_label, offer_scope"
+            )
             .order("api_provider_name", { ascending: true }),
         supabase
             .from("data_api_provider_models")
             .select(
-                "provider_id, api_model_id, provider_api_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to, input_modalities, output_modalities"
+                "provider_id, model_id, api_model_id, provider_api_model_id, provider_model_slug, is_active_gateway, effective_from, effective_to, input_modalities, output_modalities"
             ),
         supabase
             .from("data_api_pricing_rules")
@@ -185,6 +193,31 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     const providerModelsData = (providerModelsRes.data ?? []) as ProviderModelRow[];
     const pricingRulesData = (pricingRulesRes.data ?? []) as PricingRuleRow[];
     if (!providersData.length) return [];
+
+    const canonicalModelIds = Array.from(
+        new Set(
+            providerModelsData
+                .map((row) => String(row.model_id ?? "").trim())
+                .filter(Boolean),
+        ),
+    );
+    const canonicalModelsById = new Map<string, CanonicalModelRow>();
+    if (canonicalModelIds.length > 0) {
+		for (const modelIdChunk of chunkValues(canonicalModelIds, 100)) {
+			const canonicalModelsRes = await supabase
+				.from("data_models")
+				.select("model_id, input_types, output_types")
+				.in("model_id", modelIdChunk);
+			if (canonicalModelsRes.error) {
+				throw canonicalModelsRes.error;
+			}
+			for (const row of (canonicalModelsRes.data ?? []) as CanonicalModelRow[]) {
+				const modelId = String(row.model_id ?? "").trim();
+				if (!modelId) continue;
+				canonicalModelsById.set(modelId, row);
+			}
+		}
+    }
 
     const now = Date.now();
     const totalModelsByProvider = new Map<string, Set<string>>();
@@ -217,12 +250,21 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         const outputModalitySets =
             outputModalityModelSetsByProvider.get(providerId) ??
             createModalitySetMap();
-        for (const modalityRaw of parseModalities(row.input_modalities)) {
+        const dbCanonicalModel = canonicalModelsById.get(
+            String(row.model_id ?? "").trim(),
+        );
+        const canonicalModel = dbCanonicalModel;
+        const { inputModalities, outputModalities } =
+            resolveEffectiveProviderModalities({
+                providerModel: row,
+                canonicalModel,
+            });
+        for (const modalityRaw of inputModalities) {
             const modality = normalizeModality(modalityRaw);
             if (!modality) continue;
             inputModalitySets[modality].add(modelKey);
         }
-        for (const modalityRaw of parseModalities(row.output_modalities)) {
+        for (const modalityRaw of outputModalities) {
             const modality = normalizeModality(modalityRaw);
             if (!modality) continue;
             outputModalitySets[modality].add(modelKey);
@@ -310,62 +352,57 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
         );
     }
 
-    const totalDailyRequests = Array.from(dailyRequestsByProvider.values()).reduce(
-        (sum, value) => sum + value,
-        0
+    const providerVariants = filterVisibleAPIProviders(
+        (providersData as ProviderRow[])
+            .map((row): APIProviderIndexVariant | null => {
+				const providerId = String(row.api_provider_id ?? "").trim();
+				if (!providerId) return null;
+				const inputModalitySets =
+					inputModalityModelSetsByProvider.get(providerId) ??
+					createModalitySetMap();
+                const outputModalitySets =
+                    outputModalityModelSetsByProvider.get(providerId) ??
+                    createModalitySetMap();
+
+                return {
+					api_provider_id: providerId,
+					api_provider_name: row.api_provider_name ?? "",
+					colour:
+						typeof row.colour === "string" && row.colour.trim().length > 0
+							? row.colour.trim()
+							: null,
+                    country_code: row.country_code ?? "",
+                    provider_family_id: row.provider_family_id ?? null,
+                    offer_label: row.offer_label ?? null,
+                    offer_scope: row.offer_scope ?? null,
+                    total_model_ids: Array.from(
+                        totalModelsByProvider.get(providerId) ?? new Set<string>(),
+                    ),
+                    active_model_ids: Array.from(
+                        activeModelsByProvider.get(providerId) ?? new Set<string>(),
+                    ),
+                    free_model_ids: Array.from(
+                        freeModelsByProvider.get(providerId) ?? new Set<string>(),
+                    ),
+                    total_daily_requests: dailyRequestsByProvider.get(providerId) ?? 0,
+                    total_daily_tokens: dailyTokensByProvider.get(providerId) ?? 0,
+                    total_monthly_tokens:
+                        monthlyTokensByProvider.get(providerId) ?? 0,
+                    modality_model_ids: Object.fromEntries(
+                        MODALITY_KEYS.map((key) => [
+                            key,
+                            {
+                                input: Array.from(inputModalitySets[key]),
+                                output: Array.from(outputModalitySets[key]),
+                            },
+                        ]),
+                    ) as APIProviderIndexVariant["modality_model_ids"],
+                };
+            })
+            .filter((provider): provider is APIProviderIndexVariant => Boolean(provider)),
     );
 
-    const modalitySupportByProvider = new Map<string, ProviderModalitySupport>();
-    for (const providerId of new Set([
-        ...Array.from(inputModalityModelSetsByProvider.keys()),
-        ...Array.from(outputModalityModelSetsByProvider.keys()),
-    ])) {
-        const inputSets =
-            inputModalityModelSetsByProvider.get(providerId) ??
-            createModalitySetMap();
-        const outputSets =
-            outputModalityModelSetsByProvider.get(providerId) ??
-            createModalitySetMap();
-        const support = createEmptyModalitySupport();
-        for (const key of MODALITY_KEYS) {
-            support[key].input = inputSets[key].size;
-            support[key].output = outputSets[key].size;
-        }
-        modalitySupportByProvider.set(providerId, support);
-    }
-
-    return filterVisibleAPIProviders(
-        providersData
-            .map((r: any) => ({
-                api_provider_id: r.api_provider_id,
-                api_provider_name: r.api_provider_name ?? r.name ?? "",
-                colour:
-                    typeof r.colour === "string" && r.colour.trim().length > 0
-                        ? r.colour.trim()
-                        : null,
-                country_code: r.country_code ?? "",
-                total_models:
-                    totalModelsByProvider.get(r.api_provider_id)?.size ?? 0,
-                active_models:
-                    activeModelsByProvider.get(r.api_provider_id)?.size ?? 0,
-                free_models:
-                    freeModelsByProvider.get(r.api_provider_id)?.size ?? 0,
-                total_daily_tokens:
-                    dailyTokensByProvider.get(r.api_provider_id) ?? 0,
-                total_monthly_tokens:
-                    monthlyTokensByProvider.get(r.api_provider_id) ?? 0,
-                daily_share_pct:
-                    totalDailyRequests > 0
-                        ? ((dailyRequestsByProvider.get(r.api_provider_id) ?? 0) /
-                                totalDailyRequests) *
-                            100
-                        : 0,
-                modality_support:
-                    modalitySupportByProvider.get(r.api_provider_id) ??
-                    createEmptyModalitySupport(),
-            }))
-            .filter((p) => p.api_provider_id)
-    );
+    return groupProviderIndexCards(providerVariants);
 }
 
 export async function getAllAPIProvidersCached(): Promise<APIProviderCard[]> {

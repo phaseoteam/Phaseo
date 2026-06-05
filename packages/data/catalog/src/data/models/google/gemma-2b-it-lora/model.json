@@ -1,0 +1,19 @@
+{
+  "model_id": "google/gemma-2b-it-lora",
+  "organisation_id": "google",
+  "name": "Gemma 2B IT LoRA",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "This is a Gemma-2B base model that Cloudflare dedicates for inference with LoRA adapters. Gemma is a family of lightweight, state-of-the-art open models from Google, built from the same research and technology used to create the Gemini models.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "google/gemma-2b-it-lora",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

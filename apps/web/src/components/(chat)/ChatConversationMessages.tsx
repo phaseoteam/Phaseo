@@ -219,6 +219,16 @@ export function ChatConversationMessages({
 			: null;
 	const throughputDisplay =
 		typeof throughput === "number" ? Math.round(throughput) : null;
+	const metadataProviderId =
+		typeof (meta as any)?.provider === "string" &&
+		(meta as any).provider.trim().length > 0
+			? (meta as any).provider.trim()
+			: typeof (meta as any)?.routing?.selected_provider === "string" &&
+					(meta as any).routing.selected_provider.trim().length > 0
+				? (meta as any).routing.selected_provider.trim()
+				: metadataMessage?.providerId?.trim() || null;
+	const metadataProviderLabel =
+		metadataMessage?.providerName?.trim() || metadataProviderId || null;
 
 	const messagesContent = useMemo(() => {
 		if (!activeThread?.messages.length) {
@@ -252,6 +262,10 @@ export function ChatConversationMessages({
 			const activeVariantIndex = message.activeVariantIndex ?? 0;
 			const activeVariant = variants[activeVariantIndex] ?? variants[0];
 			const content = activeVariant?.content ?? message.content;
+			const activeMeta =
+				(activeVariant?.meta as Record<string, unknown> | null) ??
+				(message.meta as Record<string, unknown> | null) ??
+				null;
 			const videoUrl = isUser
 				? null
 				: sanitizeHttpMediaUrl(extractGeneratedVideoUrl(content));
@@ -306,6 +320,18 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
+			const responseProviderId =
+				typeof activeMeta?.provider === "string" &&
+				activeMeta.provider.trim().length > 0
+					? activeMeta.provider.trim()
+					: typeof (activeMeta?.routing as any)?.selected_provider ===
+							  "string" &&
+						  (activeMeta?.routing as any).selected_provider.trim()
+								.length > 0
+						? (activeMeta?.routing as any).selected_provider.trim()
+						: message.providerId?.trim() || null;
+			const responseProviderLabel =
+				message.providerName?.trim() || responseProviderId || null;
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -340,32 +366,39 @@ export function ChatConversationMessages({
 					)}
 				>
 					{!isUser && displayModelId && (
-						hasModelLink ? (
-							<Link
-								href={modelLink}
-								className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
-							>
-								<Logo
-									id={orgId}
-									alt={orgName}
-									width={18}
-									height={18}
-									className="shrink-0 rounded-none"
-								/>
-								<span className="truncate">{modelLabel}</span>
-							</Link>
-						) : (
-							<span className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-								<Logo
-									id={orgId}
-									alt={orgName}
-									width={18}
-									height={18}
-									className="shrink-0 rounded-none"
-								/>
-								<span className="truncate">{modelLabel}</span>
-							</span>
-						)
+						<div className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
+							{hasModelLink ? (
+								<Link
+									href={modelLink}
+									className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
+								>
+									<Logo
+										id={orgId}
+										alt={orgName}
+										width={18}
+										height={18}
+										className="shrink-0 rounded-none"
+									/>
+									<span className="truncate">{modelLabel}</span>
+								</Link>
+							) : (
+								<span className="inline-flex items-center gap-2">
+									<Logo
+										id={orgId}
+										alt={orgName}
+										width={18}
+										height={18}
+										className="shrink-0 rounded-none"
+									/>
+									<span className="truncate">{modelLabel}</span>
+								</span>
+							)}
+							{responseProviderLabel ? (
+								<span className="pl-6 text-[11px] text-muted-foreground/80">
+									via {responseProviderLabel}
+								</span>
+							) : null}
+						</div>
 					)}
 					<div
 						className={cn(
@@ -768,6 +801,14 @@ export function ChatConversationMessages({
 										>
 											<div className="grid gap-3 text-sm">
 												<div className="grid gap-1.5">
+													<div className="flex items-center justify-between">
+														<span className="text-muted-foreground">
+															Provider
+														</span>
+														<span className="truncate pl-3 text-right">
+															{metadataProviderLabel ?? "-"}
+														</span>
+													</div>
 													<div className="flex items-center justify-between">
 														<span className="text-muted-foreground">
 															Total tokens

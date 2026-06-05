@@ -2,8 +2,8 @@
   "benchmark_id": "thematic-generalisation",
   "benchmark_name": "Thematic Generalisation",
   "category": null,
-  "ascending_order": true,
+  "ascending_order": false,
   "type": "numerical",
   "link": "https://github.com/lechmazur/generalization",
-  "total_models": 34
+  "total_models": 30
 }

@@ -42,6 +42,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	"alibaba-cloud": "Alibaba Cloud",
 	aws: "AWS",
 	claudecode: "Claude Code",
+	digitalocean: "DigitalOcean",
 	"google-gemma": "Gemma",
 	ibm: "IBM",
 	lg: "LG",

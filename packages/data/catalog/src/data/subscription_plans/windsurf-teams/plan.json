@@ -1,0 +1,60 @@
+{
+  "plan_id": "windsurf-teams",
+  "name": "Windsurf Teams",
+  "organisation_id": "windsurf",
+  "description": "Windsurf team plan for collaboration and centralized team usage.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 40,
+      "link": "https://windsurf.com/pricing",
+      "other_info": "Per user per month"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Team Usage",
+      "feature_value": "Included",
+      "feature_description": "Team plan for shared team workflows and paid model access.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Premium Models",
+      "feature_value": "Included",
+      "feature_description": "Availability and pricing can vary in the live Cascade model selector.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "windsurf/swe-1.6",
+      "model_info": "Windsurf native agent model",
+      "rate_limit": "Team included quota",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1.6-fast",
+      "model_info": "Fast Windsurf native agent model",
+      "rate_limit": "Team included quota",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1.5",
+      "model_info": "Windsurf native agent model",
+      "rate_limit": "Team included quota",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-1-mini",
+      "model_info": "Tab completion model",
+      "rate_limit": "Unlimited Tab completions",
+      "other_info": null
+    },
+    {
+      "model_id": "windsurf/swe-grep",
+      "model_info": "Context retrieval model",
+      "rate_limit": "Included",
+      "other_info": null
+    }
+  ]
+}

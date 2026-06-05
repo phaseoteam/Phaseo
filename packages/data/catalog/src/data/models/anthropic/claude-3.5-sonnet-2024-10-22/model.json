@@ -42,22 +42,6 @@
       "rank": 106
     },
     {
-      "benchmark_id": "confabulations",
-      "score": 19.94,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 36
-    },
-    {
-      "benchmark_id": "elimination-game",
-      "score": 6.261,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 5
-    },
-    {
       "benchmark_id": "eqbench",
       "score": 1067.7,
       "is_self_reported": false,
@@ -106,14 +90,6 @@
       "rank": 8
     },
     {
-      "benchmark_id": "nyt-connections",
-      "score": 0.177,
-      "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 34
-    },
-    {
       "benchmark_id": "simplebench",
       "score": 41.4,
       "is_self_reported": false,
@@ -122,12 +98,20 @@
       "rank": 11
     },
     {
-      "benchmark_id": "thematic-generalisation",
-      "score": 1.93,
+      "benchmark_id": "confabulations",
+      "score": 19.94,
       "is_self_reported": false,
-      "other_info": null,
-      "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 24
+      "other_info": "Confab 12.9%; non-response 27.0%",
+      "source_link": "https://github.com/lechmazur/confabulations",
+      "rank": 45
+    },
+    {
+      "benchmark_id": "elimination-game",
+      "score": 5.097,
+      "is_self_reported": false,
+      "other_info": "sigma 0.180; games 731; avg points 0.597",
+      "source_link": "https://github.com/lechmazur/elimination_game",
+      "rank": 14
     }
   ]
 }

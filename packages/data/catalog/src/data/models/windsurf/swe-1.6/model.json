@@ -1,0 +1,28 @@
+{
+  "model_id": "windsurf/swe-1.6",
+  "organisation_id": "windsurf",
+  "name": "SWE-1.6",
+  "status": "Available",
+  "previous_model_id": "windsurf/swe-1.5",
+  "description": "SWE-1.6 is Windsurf's in-house frontier model for software engineering agents, optimized for agentic coding tasks and model UX.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "windsurf/swe-1.6",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://cognition.ai/blog/swe-1-6"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.windsurf.com/windsurf/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

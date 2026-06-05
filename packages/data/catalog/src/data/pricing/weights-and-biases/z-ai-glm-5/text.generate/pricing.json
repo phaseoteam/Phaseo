@@ -14,8 +14,7 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100,
-      "effective_to": "2026-05-11T00:00:00Z"
+      "priority": 100
     },
     {
       "meter": "output_text_tokens",
@@ -26,8 +25,7 @@
       "pricing_plan": "standard",
       "note": null,
       "match": [],
-      "priority": 100,
-      "effective_to": "2026-05-11T00:00:00Z"
+      "priority": 100
     }
   ]
 }

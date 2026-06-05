@@ -10,8 +10,8 @@
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,
-  "input_types": null,
-  "output_types": null,
+  "input_types": "text",
+  "output_types": "text",
   "api_model_id": "stepfun/step-3.5-flash",
   "links": [],
   "details": [],
@@ -71,6 +71,14 @@
       "other_info": null,
       "source_link": "https://stepfun.com/",
       "rank": 32
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 36.7,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 56
     }
   ]
 }
