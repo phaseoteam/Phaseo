@@ -156,7 +156,7 @@
 		"dotenv": "^17.4.2",
 		"eslint": "^10.4.0",
 		"eslint-config-next": "16.2.6",
-		"jest": "^30.3.0",
+		"jest": "^30.4.2",
 		"postcss": "^8",
 		"tailwindcss": "^4",
 		"tsx": "^4.19.3",
