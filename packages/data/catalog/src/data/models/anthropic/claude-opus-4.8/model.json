@@ -158,7 +158,7 @@
       "benchmark_id": "deepswe",
       "score": 58,
       "is_self_reported": false,
-      "other_info": "mini-swe-agent; effort max; 58% +/-5%; avg cost $12.58; avg time 43m; out tok 136k",
+      "other_info": "mini-swe-agent; effort max; 58% +/-2%; avg cost $12.58; avg time 43m; out tok 136k",
       "source_link": "https://deepswe.datacurve.ai/",
       "rank": 2
     },
