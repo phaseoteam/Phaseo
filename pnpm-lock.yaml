@@ -12841,11 +12841,7 @@ snapshots:
 
   '@jest/console@30.4.1':
     dependencies:
-<<<<<<< HEAD
       '@jest/types': 30.4.1
-=======
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       chalk: 4.1.2
       jest-message-util: 30.4.1
@@ -12854,21 +12850,12 @@ snapshots:
 
   '@jest/core@30.4.2(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.3))':
     dependencies:
-<<<<<<< HEAD
       '@jest/console': 30.4.1
       '@jest/pattern': 30.4.0
       '@jest/reporters': 30.4.1
       '@jest/test-result': 30.4.1
       '@jest/transform': 30.4.1
       '@jest/types': 30.4.1
-=======
-      '@jest/console': 30.3.0
-      '@jest/pattern': 30.0.1
-      '@jest/reporters': 30.3.0
-      '@jest/test-result': 30.3.0
-      '@jest/transform': 30.3.0
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       ansi-escapes: 4.3.2
       chalk: 4.1.2
@@ -12876,7 +12863,6 @@ snapshots:
       exit-x: 0.2.2
       fast-json-stable-stringify: 2.1.0
       graceful-fs: 4.2.11
-<<<<<<< HEAD
       jest-changed-files: 30.4.1
       jest-config: 30.4.2(@types/node@25.9.1)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.3))
       jest-haste-map: 30.4.1
@@ -12891,22 +12877,6 @@ snapshots:
       jest-validate: 30.4.1
       jest-watcher: 30.4.1
       pretty-format: 30.4.1
-=======
-      jest-changed-files: 30.3.0
-      jest-config: 30.3.0(@types/node@25.9.1)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.3))
-      jest-haste-map: 30.3.0
-      jest-message-util: 30.3.0
-      jest-regex-util: 30.0.1
-      jest-resolve: 30.3.0
-      jest-resolve-dependencies: 30.3.0
-      jest-runner: 30.3.0
-      jest-runtime: 30.3.0
-      jest-snapshot: 30.3.0
-      jest-util: 30.3.0
-      jest-validate: 30.3.0
-      jest-watcher: 30.3.0
-      pretty-format: 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       slash: 3.0.0
     transitivePeerDependencies:
       - babel-plugin-macros
@@ -12916,21 +12886,12 @@ snapshots:
 
   '@jest/core@30.4.2(ts-node@10.9.2(@types/node@25.9.1)(typescript@6.0.3))':
     dependencies:
-<<<<<<< HEAD
       '@jest/console': 30.4.1
       '@jest/pattern': 30.4.0
       '@jest/reporters': 30.4.1
       '@jest/test-result': 30.4.1
       '@jest/transform': 30.4.1
       '@jest/types': 30.4.1
-=======
-      '@jest/console': 30.3.0
-      '@jest/pattern': 30.0.1
-      '@jest/reporters': 30.3.0
-      '@jest/test-result': 30.3.0
-      '@jest/transform': 30.3.0
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       ansi-escapes: 4.3.2
       chalk: 4.1.2
@@ -12938,7 +12899,6 @@ snapshots:
       exit-x: 0.2.2
       fast-json-stable-stringify: 2.1.0
       graceful-fs: 4.2.11
-<<<<<<< HEAD
       jest-changed-files: 30.4.1
       jest-config: 30.4.2(@types/node@25.9.1)(ts-node@10.9.2(@types/node@25.9.1)(typescript@6.0.3))
       jest-haste-map: 30.4.1
@@ -12953,22 +12913,6 @@ snapshots:
       jest-validate: 30.4.1
       jest-watcher: 30.4.1
       pretty-format: 30.4.1
-=======
-      jest-changed-files: 30.3.0
-      jest-config: 30.3.0(@types/node@25.9.1)(ts-node@10.9.2(@types/node@25.9.1)(typescript@6.0.3))
-      jest-haste-map: 30.3.0
-      jest-message-util: 30.3.0
-      jest-regex-util: 30.0.1
-      jest-resolve: 30.3.0
-      jest-resolve-dependencies: 30.3.0
-      jest-runner: 30.3.0
-      jest-runtime: 30.3.0
-      jest-snapshot: 30.3.0
-      jest-util: 30.3.0
-      jest-validate: 30.3.0
-      jest-watcher: 30.3.0
-      pretty-format: 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       slash: 3.0.0
     transitivePeerDependencies:
       - babel-plugin-macros
@@ -12983,17 +12927,10 @@ snapshots:
 
   '@jest/environment@30.4.1':
     dependencies:
-<<<<<<< HEAD
       '@jest/fake-timers': 30.4.1
       '@jest/types': 30.4.1
       '@types/node': 25.9.1
       jest-mock: 30.4.1
-=======
-      '@jest/fake-timers': 30.3.0
-      '@jest/types': 30.3.0
-      '@types/node': 25.9.1
-      jest-mock: 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
 
   '@jest/expect-utils@30.3.0':
     dependencies:
@@ -13012,21 +12949,12 @@ snapshots:
 
   '@jest/fake-timers@30.4.1':
     dependencies:
-<<<<<<< HEAD
       '@jest/types': 30.4.1
       '@sinonjs/fake-timers': 15.4.0
       '@types/node': 25.9.1
       jest-message-util: 30.4.1
       jest-mock: 30.4.1
       jest-util: 30.4.1
-=======
-      '@jest/types': 30.3.0
-      '@sinonjs/fake-timers': 15.3.0
-      '@types/node': 25.9.1
-      jest-message-util: 30.3.0
-      jest-mock: 30.3.0
-      jest-util: 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
 
   '@jest/get-type@30.1.0': {}
 
@@ -13138,7 +13066,6 @@ snapshots:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
       '@types/node': 25.9.1
-<<<<<<< HEAD
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
@@ -13149,8 +13076,6 @@ snapshots:
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
       '@types/node': 25.9.1
-=======
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
@@ -18419,7 +18344,7 @@ snapshots:
       eslint: 10.4.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.4.0(jiti@2.6.1))
@@ -18456,7 +18381,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -18470,7 +18395,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -20024,17 +19949,10 @@ snapshots:
 
   jest-circus@30.4.2:
     dependencies:
-<<<<<<< HEAD
       '@jest/environment': 30.4.1
       '@jest/expect': 30.4.1
       '@jest/test-result': 30.4.1
       '@jest/types': 30.4.1
-=======
-      '@jest/environment': 30.3.0
-      '@jest/expect': 30.3.0
-      '@jest/test-result': 30.3.0
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       chalk: 4.1.2
       co: 4.6.0
@@ -20126,11 +20044,7 @@ snapshots:
       - babel-plugin-macros
       - supports-color
 
-<<<<<<< HEAD
   jest-config@30.4.2(@types/node@25.9.1)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.3)):
-=======
-  jest-config@30.3.0(@types/node@25.9.1)(ts-node@10.9.2(@types/node@25.6.0)(typescript@6.0.3)):
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
     dependencies:
       '@babel/core': 7.29.7
       '@jest/get-type': 30.1.0
@@ -20223,7 +20137,6 @@ snapshots:
 
   jest-environment-node@30.4.1:
     dependencies:
-<<<<<<< HEAD
       '@jest/environment': 30.4.1
       '@jest/fake-timers': 30.4.1
       '@jest/types': 30.4.1
@@ -20231,23 +20144,10 @@ snapshots:
       jest-mock: 30.4.1
       jest-util: 30.4.1
       jest-validate: 30.4.1
-=======
-      '@jest/environment': 30.3.0
-      '@jest/fake-timers': 30.3.0
-      '@jest/types': 30.3.0
-      '@types/node': 25.9.1
-      jest-mock: 30.3.0
-      jest-util: 30.3.0
-      jest-validate: 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
 
   jest-haste-map@30.4.1:
     dependencies:
-<<<<<<< HEAD
       '@jest/types': 30.4.1
-=======
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       anymatch: 3.1.3
       fb-watchman: 2.0.2
@@ -20344,19 +20244,11 @@ snapshots:
 
   jest-runner@30.4.2:
     dependencies:
-<<<<<<< HEAD
       '@jest/console': 30.4.1
       '@jest/environment': 30.4.1
       '@jest/test-result': 30.4.1
       '@jest/transform': 30.4.1
       '@jest/types': 30.4.1
-=======
-      '@jest/console': 30.3.0
-      '@jest/environment': 30.3.0
-      '@jest/test-result': 30.3.0
-      '@jest/transform': 30.3.0
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       chalk: 4.1.2
       emittery: 0.13.1
@@ -20383,15 +20275,9 @@ snapshots:
       '@jest/fake-timers': 30.4.1
       '@jest/globals': 30.4.1
       '@jest/source-map': 30.0.1
-<<<<<<< HEAD
       '@jest/test-result': 30.4.1
       '@jest/transform': 30.4.1
       '@jest/types': 30.4.1
-=======
-      '@jest/test-result': 30.3.0
-      '@jest/transform': 30.3.0
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       chalk: 4.1.2
       cjs-module-lexer: 2.2.0
@@ -20440,7 +20326,6 @@ snapshots:
     dependencies:
       '@jest/types': 30.3.0
       '@types/node': 25.9.1
-<<<<<<< HEAD
       chalk: 4.1.2
       ci-info: 4.4.0
       graceful-fs: 4.2.11
@@ -20450,8 +20335,6 @@ snapshots:
     dependencies:
       '@jest/types': 30.4.1
       '@types/node': 25.9.1
-=======
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       chalk: 4.1.2
       ci-info: 4.4.0
       graceful-fs: 4.2.11
@@ -20468,13 +20351,8 @@ snapshots:
 
   jest-watcher@30.4.1:
     dependencies:
-<<<<<<< HEAD
       '@jest/test-result': 30.4.1
       '@jest/types': 30.4.1
-=======
-      '@jest/test-result': 30.3.0
-      '@jest/types': 30.3.0
->>>>>>> b976bd6e8 (Add OAuth beta CLI foundation)
       '@types/node': 25.9.1
       ansi-escapes: 4.3.2
       chalk: 4.1.2
