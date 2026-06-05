@@ -62,19 +62,17 @@ export async function deleteAccount() {
     const { error } = await (admin as any).auth.admin.deleteUser(authUser.id)
     if (error) throw new Error(error.message)
 
-    try {
-        await sendAccountLifecycleDiscordWebhook({
-            event: 'account_deleted',
-            userId: authUser.id,
-            email: authUser.email ?? null,
-            timestampIso: new Date().toISOString(),
-        })
-    } catch (error) {
+    void sendAccountLifecycleDiscordWebhook({
+        event: 'account_deleted',
+        userId: authUser.id,
+        email: authUser.email ?? null,
+        timestampIso: new Date().toISOString(),
+    }).catch((error) => {
         console.error('Failed sending account deletion Discord webhook', {
             userId: authUser.id,
             error: error instanceof Error ? error.message : String(error),
         })
-    }
+    })
 
     return { ok: true }
 }
