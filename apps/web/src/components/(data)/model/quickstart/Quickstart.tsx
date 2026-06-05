@@ -523,29 +523,43 @@ export default function Quickstart({
 		acceptedModelIdentifiers ??
 		[];
 
-	const decodedAcceptedIdentifiers = Array.from(
-		new Set([
-			...(endpointAcceptedIdentifiers.map((identifier) =>
-				safeDecodeURIComponent(identifier),
-			) ?? []),
-			...(endpointAcceptedIdentifiers.length === 0
-				? [
-						...(apiModelIds?.map((identifier) =>
-							safeDecodeURIComponent(identifier),
-						) ?? []),
-						...(aliases?.map((alias) =>
-							safeDecodeURIComponent(alias),
-						) ?? []),
-				  ]
-				: []),
-		]),
-	).filter(Boolean);
-
-	const decodedAliases = new Set(
-		(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []).filter(Boolean),
+	const decodedAcceptedIdentifiers = useMemo(
+		() =>
+			Array.from(
+				new Set([
+					...(endpointAcceptedIdentifiers.map((identifier) =>
+						safeDecodeURIComponent(identifier),
+					) ?? []),
+					...(endpointAcceptedIdentifiers.length === 0
+						? [
+								...(apiModelIds?.map((identifier) =>
+									safeDecodeURIComponent(identifier),
+								) ?? []),
+								...(aliases?.map((alias) =>
+									safeDecodeURIComponent(alias),
+								) ?? []),
+						  ]
+						: []),
+				]),
+			).filter(Boolean),
+		[aliases, apiModelIds, endpointAcceptedIdentifiers],
 	);
-	const canonicalAcceptedIdentifiers = decodedAcceptedIdentifiers.filter(
-		(identifier) => !decodedAliases.has(identifier),
+
+	const decodedAliases = useMemo(
+		() =>
+			new Set(
+				(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []).filter(
+					Boolean,
+				),
+			),
+		[aliases],
+	);
+	const canonicalAcceptedIdentifiers = useMemo(
+		() =>
+			decodedAcceptedIdentifiers.filter(
+				(identifier) => !decodedAliases.has(identifier),
+			),
+		[decodedAcceptedIdentifiers, decodedAliases],
 	);
 
 	const model =
@@ -554,13 +568,37 @@ export default function Quickstart({
 		safeDecodeURIComponent(modelId) ||
 		decodedAcceptedIdentifiers[0] ||
 		"model_id_here";
+	const acceptedIdentifierList = useMemo(
+		() =>
+			Array.from(
+				new Set([
+					model,
+					...canonicalAcceptedIdentifiers,
+					...decodedAcceptedIdentifiers,
+				]),
+			).filter(Boolean),
+		[model, canonicalAcceptedIdentifiers, decodedAcceptedIdentifiers],
+	);
+	const [selectedModelIdentifier, setSelectedModelIdentifier] = useState(model);
+
+	useEffect(() => {
+		if (!acceptedIdentifierList.includes(selectedModelIdentifier)) {
+			setSelectedModelIdentifier(model);
+		}
+	}, [acceptedIdentifierList, model, selectedModelIdentifier]);
+
+	const modelIdentifierInCode = acceptedIdentifierList.includes(
+		selectedModelIdentifier,
+	)
+		? selectedModelIdentifier
+		: model;
 	const endpointPath = resolveGatewayPath(selectedEndpoint);
 	const batchEndpointPath = resolveGatewayPath("batch.create");
 	const activeEndpointPath = batchEnabled ? batchEndpointPath : endpointPath;
 	const endpointUrl = `${BASE_URL}${activeEndpointPath}`;
 	const routingPreference = resolveRoutingPreference(requestContext);
 	const requestPayloadBase = applyRoutingPreferenceToPayload(
-		buildExamplePayload(selectedEndpoint, model),
+		buildExamplePayload(selectedEndpoint, modelIdentifierInCode),
 		routingPreference,
 	);
 	const requestPayload =
@@ -605,10 +643,6 @@ export default function Quickstart({
 		.split("\n")
 		.map((line) => `# ${line}`)
 		.join("\n");
-	const acceptedIdentifierList = Array.from(
-		new Set([model, ...canonicalAcceptedIdentifiers, ...decodedAcceptedIdentifiers]),
-	).filter(Boolean);
-
 	const curlCommandLabel = batchEnabled
 		? "Create a batch job"
 		: shouldStream
@@ -1480,8 +1514,9 @@ console.log(response);`
 					</div>
 
 					<QuickstartUsageSection
-						modelIdentifierInCode={model}
+						modelIdentifierInCode={modelIdentifierInCode}
 						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
 						supportedParameters={supportedParameters}
 						selectedEndpointLabel={selectedEndpointLabel}
 						selectedEndpointValue={selectedEndpoint}
@@ -1539,8 +1574,9 @@ console.log(response);`
 					/>
 
 					{false ? <QuickstartUsageSection
-						modelIdentifierInCode={model}
+						modelIdentifierInCode={modelIdentifierInCode}
 						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
 						supportedParameters={supportedParameters}
 						selectedEndpointLabel={selectedEndpointLabel}
 						selectedEndpointValue={selectedEndpoint}
@@ -1608,8 +1644,9 @@ console.log(response);`
 					/>
 
 					{false ? <QuickstartUsageSection
-						modelIdentifierInCode={model}
+						modelIdentifierInCode={modelIdentifierInCode}
 						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
 						supportedParameters={supportedParameters}
 						selectedEndpointLabel={selectedEndpointLabel}
 						selectedEndpointValue={selectedEndpoint}
