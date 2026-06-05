@@ -650,4 +650,32 @@ describe("emitGatewayRequestEvent", () => {
 			error_requires_investigation: true,
 		});
 	});
+
+	it("falls back to the requested model when early failures have no resolved model", async () => {
+		await emitGatewayRequestEvent({
+			requestId: "req_requested_model_obs_123",
+			workspaceId: "ws_requested_model_obs_123",
+			endpoint: "responses",
+			requestedModel: "openai/gpt-5-nano",
+			requestPayload: {
+				model: "openai/gpt-5-nano",
+				input: "hello",
+			},
+			statusCode: 400,
+			success: false,
+			errorCode: "user:validation_error",
+			errorMessage: "Validation failed.",
+			errorStage: "before",
+			gatewayResponse: {
+				error: "validation_error",
+				details: [{ path: ["input"], message: "input is required" }],
+			},
+		});
+
+		expect(sendAxiomWideEventMock).toHaveBeenCalledTimes(1);
+		const event = sendAxiomWideEventMock.mock.calls[0]?.[0] as Record<string, unknown>;
+		expect(event.model).toBe("openai/gpt-5-nano");
+		expect(event.model_requested).toBe("openai/gpt-5-nano");
+		expect(event.request_payload_redacted_json).toContain("\"model\":\"openai/gpt-5-nano\"");
+	});
 });
