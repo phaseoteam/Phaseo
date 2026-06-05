@@ -523,29 +523,43 @@ export default function Quickstart({
 		acceptedModelIdentifiers ??
 		[];
 
-	const decodedAcceptedIdentifiers = Array.from(
-		new Set([
-			...(endpointAcceptedIdentifiers.map((identifier) =>
-				safeDecodeURIComponent(identifier),
-			) ?? []),
-			...(endpointAcceptedIdentifiers.length === 0
-				? [
-						...(apiModelIds?.map((identifier) =>
-							safeDecodeURIComponent(identifier),
-						) ?? []),
-						...(aliases?.map((alias) =>
-							safeDecodeURIComponent(alias),
-						) ?? []),
-				  ]
-				: []),
-		]),
-	).filter(Boolean);
-
-	const decodedAliases = new Set(
-		(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []).filter(Boolean),
+	const decodedAcceptedIdentifiers = useMemo(
+		() =>
+			Array.from(
+				new Set([
+					...(endpointAcceptedIdentifiers.map((identifier) =>
+						safeDecodeURIComponent(identifier),
+					) ?? []),
+					...(endpointAcceptedIdentifiers.length === 0
+						? [
+								...(apiModelIds?.map((identifier) =>
+									safeDecodeURIComponent(identifier),
+								) ?? []),
+								...(aliases?.map((alias) =>
+									safeDecodeURIComponent(alias),
+								) ?? []),
+						  ]
+						: []),
+				]),
+			).filter(Boolean),
+		[aliases, apiModelIds, endpointAcceptedIdentifiers],
 	);
-	const canonicalAcceptedIdentifiers = decodedAcceptedIdentifiers.filter(
-		(identifier) => !decodedAliases.has(identifier),
+
+	const decodedAliases = useMemo(
+		() =>
+			new Set(
+				(aliases?.map((alias) => safeDecodeURIComponent(alias)) ?? []).filter(
+					Boolean,
+				),
+			),
+		[aliases],
+	);
+	const canonicalAcceptedIdentifiers = useMemo(
+		() =>
+			decodedAcceptedIdentifiers.filter(
+				(identifier) => !decodedAliases.has(identifier),
+			),
+		[decodedAcceptedIdentifiers, decodedAliases],
 	);
 
 	const model =
@@ -554,9 +568,17 @@ export default function Quickstart({
 		safeDecodeURIComponent(modelId) ||
 		decodedAcceptedIdentifiers[0] ||
 		"model_id_here";
-	const acceptedIdentifierList = Array.from(
-		new Set([model, ...canonicalAcceptedIdentifiers, ...decodedAcceptedIdentifiers]),
-	).filter(Boolean);
+	const acceptedIdentifierList = useMemo(
+		() =>
+			Array.from(
+				new Set([
+					model,
+					...canonicalAcceptedIdentifiers,
+					...decodedAcceptedIdentifiers,
+				]),
+			).filter(Boolean),
+		[model, canonicalAcceptedIdentifiers, decodedAcceptedIdentifiers],
+	);
 	const [selectedModelIdentifier, setSelectedModelIdentifier] = useState(model);
 
 	useEffect(() => {
