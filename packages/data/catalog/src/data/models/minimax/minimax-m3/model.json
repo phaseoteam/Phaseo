@@ -34,5 +34,41 @@
       "value": 1000000
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 59.0,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m3"
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 66.0,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m3"
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 83.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://www.minimax.io/models/text/m3"
+    },
+    {
+      "benchmark_id": "scale-mcp-atlas",
+      "score": 74.2,
+      "is_self_reported": true,
+      "other_info": "Public Set",
+      "source_link": "https://www.minimax.io/models/text/m3"
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 70.0,
+      "is_self_reported": true,
+      "other_info": "Verified",
+      "source_link": "https://www.minimax.io/models/text/m3"
+    }
+  ]
 }
