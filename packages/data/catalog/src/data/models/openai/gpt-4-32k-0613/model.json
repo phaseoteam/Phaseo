@@ -2,7 +2,7 @@
   "model_id": "openai/gpt-4-32k-0613",
   "organisation_id": "openai",
   "name": "GPT 4 32K 0613",
-  "status": null,
+  "status": "Available",
   "previous_model_id": null,
   "description": "GPT 4 32K 0613 is OpenAI's high-quality speech-to-text model built on GPT-4o audio capabilities. It's priced per token (input and output), making it suitable for workflows that benefit from token-level billing transparency.",
   "announced_date": null,
