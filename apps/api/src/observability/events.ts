@@ -48,6 +48,8 @@ type EventArgs = {
     requestId?: string | null;
     workspaceId?: string | null;
     model?: string | null;
+    requestedModel?: string | null;
+    requestPayload?: unknown;
     endpoint?: string | null;
     mappedRequest?: string | null;
     gatewayResponse?: unknown;
@@ -1006,8 +1008,8 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
 
         const includeDetailedPayloads = observabilityPlan.detailLevel === "full";
 
-        const sanitizedGatewayRequest = includeDetailedPayloads && ctx
-            ? sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null)
+        const sanitizedGatewayRequest = includeDetailedPayloads
+            ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
             : null;
         const sanitizedUpstreamRequest = includeDetailedPayloads
             ? sanitizeJsonStringForAxiom(args.mappedRequest ?? args.result?.mappedRequest ?? null)
@@ -1042,6 +1044,9 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const requestedParams = Array.isArray(ctx?.requestedParams) ? ctx.requestedParams : [];
         const upstreamError = extractUpstreamErrorSummary(args);
         const modelRequested = (() => {
+            if (typeof args.requestedModel === "string" && args.requestedModel.length > 0) {
+                return args.requestedModel;
+            }
             const fromCtxBody = (ctx?.rawBody as any)?.model;
             if (typeof fromCtxBody === "string" && fromCtxBody.length > 0) return fromCtxBody;
             const fromGatewayResponse = (args.gatewayResponse as any)?.model;
@@ -1050,7 +1055,7 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             if (typeof fromErrorDetails === "string" && fromErrorDetails.length > 0) return fromErrorDetails;
             return null;
         })();
-        const modelResolved = args.model ?? ctx?.model ?? null;
+        const modelResolved = args.model ?? ctx?.model ?? modelRequested ?? null;
         const sanitizedProviderAttempts = includeDetailedPayloads
             ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
             : null;

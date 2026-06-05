@@ -439,6 +439,7 @@ type AuditFailureBefore = {
     workspaceId?: string | null;
     endpoint: Endpoint;
     model?: string | null;
+    requestedModel?: string | null;
     statusCode: number;
     errorCode: string;
     errorMessage?: string | null;
@@ -540,7 +541,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                 workspaceId: args.workspaceId ?? null,
                 endpoint: args.endpoint,
                 model: args.model ?? null,
-                canonicalModel: args.model ?? null,
+                canonicalModel: args.requestedModel ?? args.model ?? null,
                 provider: null,
                 stream: false,
                 byok: false,
@@ -588,7 +589,7 @@ export async function auditFailure(args: AuditFailureBefore | AuditFailureExecut
                             app_id: resolvedAppId ?? null,
                             key_id: args.keyId ?? null,
                             endpoint: args.endpoint,
-                            model_id: args.model ?? "unknown",
+                            model_id: args.requestedModel ?? args.model ?? "unknown",
                             provider: null,
                             status_code: args.statusCode,
                             success: false,
