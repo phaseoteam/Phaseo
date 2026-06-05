@@ -2,7 +2,7 @@
   "model_id": "mistral/pixtral-large",
   "organisation_id": "mistral",
   "name": "Pixtral Large",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Pixtral Large is a multimodal model from Mistral that can work across text and visual inputs. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": "2024-11-18T00:00:00",

@@ -2,7 +2,7 @@
   "model_id": "xiaomi/mimo-v2-pro",
   "organisation_id": "xiaomi",
   "name": "MiMo V2 Pro",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "MiMo V2 Pro is Xiaomi's legacy flagship foundation model, featuring over 1T total parameters and a 1M context length. Xiaomi has marked the alias deprecated and states it will route to MiMo V2.5 pricing and behavior starting June 1, 2026.",
   "announced_date": "2026-03-18T00:00:00",
