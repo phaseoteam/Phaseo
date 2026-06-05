@@ -29,6 +29,8 @@ guides/private/
 *.tmp
 *.tmp.*
 /tmp
+.playwright-cli/
+.tools/
 .codex/tmp/
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/
