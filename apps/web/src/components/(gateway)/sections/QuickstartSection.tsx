@@ -832,7 +832,6 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 										lang={
 											LANGUAGE_TO_SHIKI[selectedLanguage]
 										}
-										compact
 									/>
 								</div>
 							);

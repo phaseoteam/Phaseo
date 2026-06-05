@@ -191,102 +191,102 @@ export default function ModelProviderTrendChart({
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center justify-between gap-3">
+			<div className="flex items-start justify-between gap-3">
 				<p className="text-lg font-medium leading-none text-foreground">{title}</p>
-				<span className="text-xs text-muted-foreground">{activeHeadingDate}</span>
+				<span className="shrink-0 whitespace-nowrap text-[11px] text-muted-foreground">
+					{activeHeadingDate}
+				</span>
 			</div>
-				<div className="h-[170px] w-full pt-1">
-					<ResponsiveContainer width="100%" height="100%">
-						<LineChart
-							data={chartData}
-							margin={{ top: 8, right: 0, left: 0, bottom: 6 }}
-							onMouseMove={(state: any) => {
-								const dayFromPointer =
-									typeof state?.activeCoordinate?.x === "number" &&
-									typeof state?.offset?.left === "number" &&
-									typeof state?.offset?.width === "number" &&
-									state.offset.width > 0 &&
-									chartData.length > 0
-										? (() => {
-												const relativeX =
-													state.activeCoordinate.x - state.offset.left;
-												const clampedX = Math.max(
+			<div className="h-[148px] w-full pt-1">
+				<ResponsiveContainer width="100%" height="100%">
+					<LineChart
+						data={chartData}
+						margin={{ top: 8, right: 0, left: 0, bottom: 6 }}
+						onMouseMove={(state: any) => {
+							const dayFromPointer =
+								typeof state?.activeCoordinate?.x === "number" &&
+								typeof state?.offset?.left === "number" &&
+								typeof state?.offset?.width === "number" &&
+								state.offset.width > 0 &&
+								chartData.length > 0
+									? (() => {
+											const relativeX =
+												state.activeCoordinate.x - state.offset.left;
+											const clampedX = Math.max(
+												0,
+												Math.min(relativeX, state.offset.width),
+											);
+											const index =
+												chartData.length === 1
+													? 0
+													: Math.round(
+															(clampedX / state.offset.width) *
+																(chartData.length - 1),
+														);
+											return String(chartData[index]?.day ?? "");
+										})()
+									: null;
+							const dayFromLabel =
+								typeof state?.activeLabel === "string"
+									? state.activeLabel
+									: null;
+							const dayFromNumericLabel =
+								typeof state?.activeLabel === "number" &&
+								chartData.length > 0
+									? String(
+											chartData[
+												Math.max(
 													0,
-													Math.min(relativeX, state.offset.width),
-												);
-												const index =
-													chartData.length === 1
-														? 0
-														: Math.round(
-																(clampedX / state.offset.width) *
-																	(chartData.length - 1),
-															);
-												return String(chartData[index]?.day ?? "");
-											})()
-										: null;
-								const dayFromLabel =
-									typeof state?.activeLabel === "string"
-										? state.activeLabel
-										: null;
-								const dayFromNumericLabel =
-									typeof state?.activeLabel === "number" &&
-									chartData.length > 0
-										? String(
-												chartData[
-													Math.max(
-														0,
-														Math.min(
-															chartData.length - 1,
-															Math.round(state.activeLabel),
-														),
-													)
-												]?.day ?? "",
-											)
-										: null;
-								const dayFromIndex =
-									typeof state?.activeTooltipIndex === "number" &&
-									state.activeTooltipIndex >= 0 &&
-									state.activeTooltipIndex < chartData.length
-										? String(chartData[state.activeTooltipIndex]?.day ?? "")
-										: null;
-								const dayFromPayload =
-									typeof state?.activePayload?.[0]?.payload?.day === "string"
-										? state.activePayload[0].payload.day
-										: null;
-									const day =
-										dayFromPointer ||
-										dayFromLabel ||
-										dayFromNumericLabel ||
-										dayFromIndex ||
-										dayFromPayload ||
-										null;
-								onActiveDayChange(day);
-							}}
-							onMouseLeave={() => onActiveDayChange(null)}
-						>
-							<CartesianGrid vertical={false} stroke="transparent" />
-							<XAxis
-								dataKey="index"
-								type="number"
-								domain={[0, Math.max(chartData.length - 1, 0)]}
-								allowDataOverflow
-								hide
-							/>
-							<YAxis
-								hide
-							/>
+													Math.min(
+														chartData.length - 1,
+														Math.round(state.activeLabel),
+													),
+												)
+											]?.day ?? "",
+										)
+									: null;
+							const dayFromIndex =
+								typeof state?.activeTooltipIndex === "number" &&
+								state.activeTooltipIndex >= 0 &&
+								state.activeTooltipIndex < chartData.length
+									? String(chartData[state.activeTooltipIndex]?.day ?? "")
+									: null;
+							const dayFromPayload =
+								typeof state?.activePayload?.[0]?.payload?.day === "string"
+									? state.activePayload[0].payload.day
+									: null;
+							const day =
+								dayFromPointer ||
+								dayFromLabel ||
+								dayFromNumericLabel ||
+								dayFromIndex ||
+								dayFromPayload ||
+								null;
+							onActiveDayChange(day);
+						}}
+						onMouseLeave={() => onActiveDayChange(null)}
+					>
+						<CartesianGrid vertical={false} stroke="transparent" />
+						<XAxis
+							dataKey="index"
+							type="number"
+							domain={[0, Math.max(chartData.length - 1, 0)]}
+							allowDataOverflow
+							hide
+						/>
+						<YAxis hide />
 						<Tooltip
 							content={() => null}
 							cursor={false}
 						/>
-							{activeIndex != null ? (
-								<ReferenceLine
-									x={activeIndex}
-									stroke="hsl(var(--muted-foreground))"
-									strokeDasharray="3 4"
-									strokeWidth={1}
-								/>
-							) : null}
+						{activeIndex != null ? (
+							<ReferenceLine
+								x={activeIndex}
+								stroke="hsl(var(--muted-foreground))"
+								strokeDasharray="3 4"
+								strokeWidth={1}
+							/>
+						) : null}
 						{providers.map((provider) => (
 							<Line
 								key={provider.seriesKey}
@@ -304,7 +304,7 @@ export default function ModelProviderTrendChart({
 					</LineChart>
 				</ResponsiveContainer>
 			</div>
-			<div className="space-y-1.5">
+			<div className="space-y-1.5 pt-1">
 				{providerRows.map((provider) => (
 					<div
 						key={provider.seriesKey}

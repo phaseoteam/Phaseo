@@ -4,9 +4,9 @@
 import { useEffect, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { codeToHtmlBoth } from "./shiki";
-import { CopyButton } from "@/components/ui/copy-button";
+import { Button } from "@/components/ui/button";
+import { Check, Copy } from "lucide-react";
 import { ShikiLang } from "./shiki";
-import { cn } from "@/lib/utils";
 
 function PlainBlock({ code }: { code: string }) {
 	return (
@@ -20,16 +20,15 @@ export default function CodeBlock({
 	code,
 	lang = "bash",
 	label,
-	compact = false,
 }: {
 	code: string;
 	lang?: ShikiLang;
 	label?: string;
-	compact?: boolean;
 }) {
 	const [lightHtml, setLightHtml] = useState<string | null>(null);
 	const [darkHtml, setDarkHtml] = useState<string | null>(null);
 	const [error, setError] = useState(false);
+	const [copied, setCopied] = useState(false);
 
 	useEffect(() => {
 		let mounted = true;
@@ -57,31 +56,41 @@ export default function CodeBlock({
 		};
 	}, [code, lang]);
 
+	useEffect(() => {
+		if (!copied) return;
+		const timer = window.setTimeout(() => setCopied(false), 2000);
+		return () => window.clearTimeout(timer);
+	}, [copied]);
+
+	const handleCopy = async () => {
+		try {
+			await navigator.clipboard.writeText(code);
+			setCopied(true);
+		} catch (err) {
+			console.error("Error copying quickstart code", err);
+		}
+	};
+
 	return (
 		<div className="relative group rounded-xl border bg-primary/5">
-			<div
-				className={cn(
-					"flex items-center justify-between",
-					compact ? "px-3 py-1.5" : "px-3 py-2"
-				)}
-			>
+			<div className="flex items-center justify-between px-3 py-2">
 				<span className="text-[11px] uppercase tracking-wide text-muted-foreground">
 					{label ?? lang}
 				</span>
-				<CopyButton
-					content={code}
+				<Button
+					type="button"
+					onClick={handleCopy}
 					variant="outline"
-					className="border-zinc-200/80 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-				/>
+					size="sm"
+					className="h-8 gap-1.5 border-zinc-200/80 bg-white px-2.5 text-xs text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+				>
+					{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+					{copied ? "Copied" : "Copy"}
+				</Button>
 			</div>
 			<Separator />
 
-			<div
-				className={cn(
-					"overflow-auto rounded-b-xl text-sm",
-					compact ? "max-h-[340px] p-3" : "p-4"
-				)}
-			>
+			<div className="p-4 overflow-x-auto text-sm rounded-b-xl">
 				{!error && lightHtml && darkHtml ? (
 					<>
 						{/* Light */}
