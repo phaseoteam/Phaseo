@@ -6,7 +6,9 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
+import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 import { ensureWorkspaceWalletProvisioned, userHasPaidWorkspaceAccess } from "./management-helpers";
 
 type WorkspaceRow = {
@@ -140,6 +142,10 @@ async function handleListWorkspaces(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_READ);
+	if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
+	if (roleError) return roleError;
 
 	try {
 		const ownerUserId = await resolveOwnerUserId(auth.value.workspaceId);
@@ -192,6 +198,10 @@ async function handleGetWorkspace(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_READ);
+	if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
+	if (roleError) return roleError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) {
@@ -215,6 +225,10 @@ async function handleCreateWorkspace(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_WRITE);
+	if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
+	if (roleError) return roleError;
 
 	let body: Record<string, unknown>;
 	try {
@@ -312,6 +326,10 @@ async function handleUpdateWorkspace(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_WRITE);
+	if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
+	if (roleError) return roleError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) {
@@ -387,6 +405,10 @@ async function handleDeleteWorkspace(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_DELETE);
+	if (scopeError) return scopeError;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
+	if (roleError) return roleError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) {

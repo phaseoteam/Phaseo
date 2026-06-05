@@ -8,6 +8,7 @@ type ManagementKeyRow = {
 	hash: string;
 	expires_at?: string | null;
 	soft_blocked?: boolean | null;
+	scopes?: unknown;
 };
 
 const runtime = vi.hoisted(() => {
@@ -160,6 +161,7 @@ describe("authenticateManagement", () => {
 			workspace_id: "team_1",
 			status: "active",
 			hash: hashSecret(secret),
+			scopes: "[\"workspaces:read\"]",
 		};
 
 		const { authenticateManagement } = await import("./auth");
@@ -173,6 +175,7 @@ describe("authenticateManagement", () => {
 			workspaceId: "team_1",
 			apiKeyId: "mgmt_1",
 			apiKeyKid: kid,
+			scopes: ["workspaces:read"],
 		});
 		expect(runtime.updatePayloads).toContainEqual(
 			expect.objectContaining({
@@ -198,6 +201,25 @@ describe("authenticateManagement", () => {
 		);
 
 		expect(result).toEqual({ ok: false, reason: "key_soft_blocked" });
+	});
+
+	it("rejects legacy management keys with no scopes", async () => {
+		const kid = "MGMTNOSCOPE1";
+		const secret = "secret_without_scopes";
+		runtime.dbRow.value = {
+			id: "mgmt_legacy",
+			workspace_id: "team_legacy",
+			status: "active",
+			hash: hashSecret(secret),
+			scopes: "[]",
+		};
+
+		const { authenticateManagement } = await import("./auth");
+		const result = await authenticateManagement(
+			buildRequest(`aistats_v1_sk_${kid}_${secret}`),
+		);
+
+		expect(result).toEqual({ ok: false, reason: "management_key_scopes_required" });
 	});
 
 	it("rejects expired management keys", async () => {

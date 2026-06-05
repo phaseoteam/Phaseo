@@ -1,6 +1,11 @@
 // Purpose: Shared OAuth route helper utilities.
 
 import { z } from "zod";
+import {
+	DEFAULT_MANAGEMENT_KEY_CAPABILITIES,
+	normalizeScopeList,
+	serializeScopeList,
+} from "@/lib/authz/capabilities";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { json } from "@/routes/utils";
 
@@ -80,18 +85,14 @@ export async function hmacSecret(secret: string, pepper: string): Promise<string
 }
 
 export function normalizeScopeInput(scopes: unknown): { ok: true; value: string } | { ok: false; message: string } {
-	if (scopes === undefined || scopes === null) {
-		return { ok: true, value: "[]" };
+	const normalized = normalizeScopeList(scopes, {
+		allowIdentityScopes: false,
+		defaultScopes: DEFAULT_MANAGEMENT_KEY_CAPABILITIES,
+	});
+	if (!normalized.ok) {
+		return { ok: false, message: normalized.message };
 	}
-	if (typeof scopes === "string") {
-		const trimmed = scopes.trim();
-		return { ok: true, value: trimmed.length ? trimmed : "[]" };
-	}
-	if (Array.isArray(scopes)) {
-		const normalized = scopes.map((entry) => String(entry));
-		return { ok: true, value: JSON.stringify(normalized) };
-	}
-	return { ok: false, message: "scopes must be a string or string[]" };
+	return { ok: true, value: serializeScopeList(normalized.value) };
 }
 
 export function timingSafeEqual(a: string, b: string): boolean {

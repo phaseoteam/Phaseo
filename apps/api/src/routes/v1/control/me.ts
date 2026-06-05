@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { bearerToken, claimsScopes, validateLocalAccessToken } from "@/lib/oauth/service";
 import { json, withRuntime } from "@/routes/utils";
@@ -27,6 +28,14 @@ meRoutes.get(
 		}
 
 		const claims = validation.claims;
+		const scopes = claimsScopes(claims);
+		if (!scopes.includes(CAPABILITIES.ME_READ)) {
+			return json(
+				{ error: "insufficient_scope", message: `Token requires ${CAPABILITIES.ME_READ}` },
+				403,
+				{ "Cache-Control": "no-store" },
+			);
+		}
 		const supabase = getSupabaseAdmin();
 		const [userResult, membershipsResult] = await Promise.all([
 			supabase.auth.admin.getUserById(claims.user_id),
@@ -64,7 +73,7 @@ meRoutes.get(
 					},
 					oauth: {
 						client_id: claims.client_id,
-						scopes: claimsScopes(claims),
+						scopes,
 					},
 					current_workspace_id: claims.workspace_id,
 					workspaces,

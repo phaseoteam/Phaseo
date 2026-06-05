@@ -3,6 +3,12 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { json, withRuntime } from "@/routes/utils";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
+import {
+	type ManagementRouteAuth,
+	requireCapability,
+	requireOAuthWorkspaceRole,
+} from "./route-helpers";
 
 type PresetRow = {
 	id: string;
@@ -16,12 +22,6 @@ type PresetRow = {
 	source_preset_id?: string | null;
 	created_at?: string | null;
 	updated_at?: string | null;
-};
-
-type ManagementRouteAuth = {
-	authMethod?: "api_key" | "oauth";
-	userId?: string | null;
-	oauthScopes?: string[];
 };
 
 const DEFAULT_LIMIT = 100;
@@ -92,48 +92,6 @@ function formatPreset(row: PresetRow) {
 	};
 }
 
-function requireOAuthScope(auth: ManagementRouteAuth, scope: string): Response | null {
-	if (auth.authMethod !== "oauth") return null;
-	if (!auth.oauthScopes?.includes(scope)) {
-		return json(
-			{ error: "insufficient_scope", message: `OAuth token requires ${scope}` },
-			403,
-			{ "Cache-Control": "no-store" },
-		);
-	}
-	return null;
-}
-
-async function requireOAuthWorkspaceRole(
-	auth: ManagementRouteAuth,
-	workspaceId: string,
-	allowedRoles: string[],
-): Promise<Response | null> {
-	if (auth.authMethod !== "oauth") return null;
-	const userId = auth.userId?.trim();
-	if (!userId) {
-		return json({ error: "forbidden", message: "OAuth user is required" }, 403, { "Cache-Control": "no-store" });
-	}
-	const { data, error } = await getSupabaseAdmin()
-		.from("workspace_members")
-		.select("role")
-		.eq("workspace_id", workspaceId)
-		.eq("user_id", userId)
-		.maybeSingle();
-	if (error || !data) {
-		return json({ error: "forbidden", message: "Workspace membership is required" }, 403, { "Cache-Control": "no-store" });
-	}
-	const role = String((data as { role?: unknown }).role ?? "").toLowerCase();
-	if (!allowedRoles.includes(role)) {
-		return json(
-			{ error: "forbidden", message: `Workspace role must be one of: ${allowedRoles.join(", ")}` },
-			403,
-			{ "Cache-Control": "no-store" },
-		);
-	}
-	return null;
-}
-
 async function findPreset(workspaceId: string, identifier: string): Promise<PresetRow | null> {
 	const supabase = getSupabaseAdmin();
 	const select = "id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, created_at, updated_at";
@@ -168,7 +126,7 @@ async function findPreset(workspaceId: string, identifier: string): Promise<Pres
 async function handleListPresets(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "presets:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]);
 	if (roleError) return roleError;
@@ -204,7 +162,7 @@ async function handleListPresets(req: Request) {
 async function handleCreatePreset(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "presets:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -260,7 +218,7 @@ async function handleCreatePreset(req: Request) {
 async function handleGetPreset(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "presets:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]);
 	if (roleError) return roleError;
@@ -279,7 +237,7 @@ async function handleGetPreset(req: Request) {
 async function handleUpdatePreset(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "presets:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -329,7 +287,7 @@ async function handleUpdatePreset(req: Request) {
 async function handleDeletePreset(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "presets:delete");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_DELETE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;

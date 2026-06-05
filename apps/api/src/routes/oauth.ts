@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { ALL_SUPPORTED_SCOPES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
@@ -32,6 +33,7 @@ import {
 	verificationUriFor,
 	verifyPkce,
 	ensureGrant,
+	ensureGrants,
 } from "@/lib/oauth/service";
 
 export const oauthRouter = new Hono<Env>();
@@ -47,6 +49,22 @@ async function readBody(req: Request): Promise<Record<string, unknown>> {
 
 function oauthError(error: string, description: string, status = 400) {
 	return json({ error, error_description: description }, status, { "Cache-Control": "no-store" });
+}
+
+function normalizeWorkspaceIds(raw: unknown): string[] {
+	if (Array.isArray(raw)) {
+		return Array.from(
+			new Set(
+				raw
+					.map((value) => String(value ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+	}
+	if (typeof raw === "string" && raw.trim().length > 0) {
+		return [raw.trim()];
+	}
+	return [];
 }
 
 async function requireSupabaseActor(req: Request) {
@@ -159,7 +177,12 @@ oauthRouter.post(
 
 		const clientId = String(body.client_id ?? "").trim();
 		const redirectUri = String(body.redirect_uri ?? "").trim();
-		const workspaceId = String(body.workspace_id ?? "").trim();
+		const workspaceId = String(
+			body.primary_workspace_id ??
+				body.workspace_id ??
+				"",
+		).trim();
+		const workspaceIds = normalizeWorkspaceIds(body.workspace_ids);
 		const codeChallenge = String(body.code_challenge ?? "").trim();
 		const codeChallengeMethod = String(body.code_challenge_method ?? "S256").trim();
 		const state = typeof body.state === "string" ? body.state : null;
@@ -172,18 +195,29 @@ oauthRouter.post(
 			return oauthError("invalid_client", "OAuth client or redirect_uri is invalid", 401);
 		}
 		const scopes = filterAllowedScopes(client, normalizeScopes(body.scopes, ["openid", "profile", "email"]));
+		const selectedWorkspaceIds = Array.from(new Set([...workspaceIds, workspaceId]));
 		const supabase = getSupabaseAdmin();
-		const membership = await supabase
+		const memberships = await supabase
 			.from("workspace_members")
 			.select("workspace_id")
-			.eq("workspace_id", workspaceId)
 			.eq("user_id", actor.userId)
-			.maybeSingle();
-		if (membership.error || !membership.data) {
-			return oauthError("access_denied", "User is not a member of the selected workspace", 403);
+			.in("workspace_id", selectedWorkspaceIds);
+		if (memberships.error) {
+			return oauthError("server_error", memberships.error.message, 500);
+		}
+		const grantedWorkspaceIds = new Set(
+			(memberships.data ?? []).map((row: { workspace_id?: unknown }) => String(row.workspace_id ?? "").trim()).filter(Boolean),
+		);
+		if (!selectedWorkspaceIds.every((candidate) => grantedWorkspaceIds.has(candidate))) {
+			return oauthError("access_denied", "User is not a member of one or more selected workspaces", 403);
 		}
 
-		await ensureGrant({ userId: actor.userId, workspaceId, clientId: client.id, scopes });
+		await ensureGrants({
+			userId: actor.userId,
+			workspaceIds: selectedWorkspaceIds,
+			clientId: client.id,
+			scopes,
+		});
 		const code = createOpaqueCode();
 		const insert = await supabase.from("oauth_authorization_codes").insert({
 			code_hash: await hashOAuthSecret(code),
@@ -449,17 +483,7 @@ oauthRouter.get(
 					"urn:ietf:params:oauth:grant-type:device_code",
 				],
 				code_challenge_methods_supported: ["S256"],
-				scopes_supported: [
-					"openid",
-					"profile",
-					"email",
-					"models:read",
-					"workspaces:read",
-					"keys:read",
-					"keys:write",
-					"keys:delete",
-					"usage:read",
-				],
+				scopes_supported: [...ALL_SUPPORTED_SCOPES],
 			},
 			200,
 			{ "Cache-Control": "public, max-age=300" },

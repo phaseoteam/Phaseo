@@ -20,8 +20,9 @@
 		"LICENSE"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.json",
-		"test": "node --test --import tsx tests/*.test.ts",
+		"sync:capabilities": "node ./scripts/sync-capabilities.mjs",
+		"build": "pnpm run sync:capabilities && tsc -p tsconfig.json",
+		"test": "pnpm run sync:capabilities && node --test --import tsx tests/*.test.ts",
 		"prepublishOnly": "pnpm run build"
 	},
 	"dependencies": {},

@@ -1,4 +1,5 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { DEFAULT_CLI_OAUTH_CAPABILITIES, parseStoredScopeList } from "@/lib/authz/capabilities";
 import { validateOAuthToken, type JWTClaims } from "./jwt";
 
 const encoder = new TextEncoder();
@@ -13,33 +14,7 @@ const ACCESS_TOKEN_AUDIENCE = "ai-stats-api";
 
 export const CLI_CLIENT_ID = "aistats_cli";
 
-export const CLI_DEFAULT_SCOPES = [
-	"openid",
-	"profile",
-	"email",
-	"workspaces:read",
-	"workspaces:write",
-	"keys:read",
-	"keys:write",
-	"keys:delete",
-	"models:read",
-	"providers:read",
-	"pricing:read",
-	"usage:read",
-	"analytics:read",
-	"generations:read",
-	"presets:read",
-	"presets:write",
-	"presets:delete",
-	"settings:read",
-	"settings:write",
-	"guardrails:read",
-	"guardrails:write",
-	"guardrails:delete",
-	"management_keys:read",
-	"management_keys:write",
-	"management_keys:delete",
-] as const;
+export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
 type OAuthClient = {
 	id: string;
@@ -156,10 +131,15 @@ export async function hashOAuthSecret(value: string): Promise<string> {
 
 export function createUserCode(): string {
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-	const bytes = crypto.getRandomValues(new Uint8Array(8));
 	let out = "";
-	for (let i = 0; i < bytes.length; i++) {
-		out += alphabet[bytes[i] % alphabet.length];
+	const maxUnbiasedByte = Math.floor(256 / alphabet.length) * alphabet.length;
+	while (out.length < 8) {
+		const chunk = crypto.getRandomValues(new Uint8Array(8));
+		for (const byte of chunk) {
+			if (byte >= maxUnbiasedByte) continue;
+			out += alphabet[byte % alphabet.length];
+			if (out.length === 8) break;
+		}
 	}
 	return `${out.slice(0, 4)}-${out.slice(4)}`;
 }
@@ -348,12 +328,26 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 }
 
 export function filterAllowedScopes(client: OAuthClient, requested: string[]): string[] {
-	const allowed = new Set(client.allowed_scopes.length ? client.allowed_scopes : requested);
+	const allowed = new Set(client.allowed_scopes.length ? parseStoredScopeList(client.allowed_scopes) : requested);
 	return requested.filter((scope) => allowed.has(scope));
 }
 
+function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
+	if (client.id !== CLI_CLIENT_ID) return false;
+	try {
+		const url = new URL(redirectUri);
+		return (
+			url.protocol === "http:" &&
+			(url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1") &&
+			url.pathname === "/callback"
+		);
+	} catch {
+		return false;
+	}
+}
+
 export function assertRedirectAllowed(client: OAuthClient, redirectUri: string): boolean {
-	return client.redirect_uris.some((uri) => uri === redirectUri);
+	return client.redirect_uris.some((uri) => uri === redirectUri) || isCliLoopbackRedirectUri(client, redirectUri);
 }
 
 export async function ensureGrant(args: {
@@ -440,6 +434,14 @@ export async function rotateRefreshToken(refreshToken: string) {
 		.maybeSingle();
 	if (error || !data || data.revoked_at) return null;
 	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) return null;
+	const authorization = await supabase
+		.from("oauth_authorizations")
+		.select("scopes, revoked_at")
+		.eq("user_id", data.user_id)
+		.eq("workspace_id", data.workspace_id)
+		.eq("client_id", data.client_id)
+		.maybeSingle();
+	if (authorization.error || !authorization.data || authorization.data.revoked_at !== null) return null;
 
 	await supabase
 		.from("oauth_refresh_tokens")
@@ -450,8 +452,35 @@ export async function rotateRefreshToken(refreshToken: string) {
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),
 		clientId: String(data.client_id),
-		scopes: Array.isArray(data.scopes) ? data.scopes.map(String) : [],
+		scopes: Array.isArray(authorization.data.scopes)
+			? authorization.data.scopes.map(String)
+			: Array.isArray(data.scopes)
+				? data.scopes.map(String)
+				: [],
 	});
+}
+
+export async function ensureGrants(args: {
+	userId: string;
+	workspaceIds: string[];
+	clientId: string;
+	scopes: string[];
+}) {
+	const workspaceIds = Array.from(
+		new Set(
+			args.workspaceIds
+				.map((workspaceId) => String(workspaceId ?? "").trim())
+				.filter(Boolean),
+		),
+	);
+	for (const workspaceId of workspaceIds) {
+		await ensureGrant({
+			userId: args.userId,
+			workspaceId,
+			clientId: args.clientId,
+			scopes: args.scopes,
+		});
+	}
 }
 
 export async function revokeToken(token: string) {

@@ -5,6 +5,7 @@ export type ManagementRouteAuth = {
 	authMethod?: "api_key" | "oauth";
 	userId?: string | null;
 	oauthScopes?: string[];
+	scopes?: string[];
 };
 
 export function parsePositiveInt(raw: string | null, fallback: number, max: number): number {
@@ -30,11 +31,17 @@ export function parsePathId(url: URL, collectionName: string): string | null {
 	return decodeURIComponent(candidate).trim() || null;
 }
 
-export function requireOAuthScope(auth: ManagementRouteAuth, scope: string): Response | null {
-	if (auth.authMethod !== "oauth") return null;
-	if (!auth.oauthScopes?.includes(scope)) {
+export function requireCapability(auth: ManagementRouteAuth, scope: string): Response | null {
+	const grantedScopes =
+		auth.authMethod === "oauth"
+			? (auth.scopes ?? auth.oauthScopes ?? [])
+			: (auth.scopes ?? []);
+	if (auth.authMethod !== "oauth" && grantedScopes.length === 0) {
+		return null;
+	}
+	if (!grantedScopes.includes(scope)) {
 		return json(
-			{ error: "insufficient_scope", message: `OAuth token requires ${scope}` },
+			{ error: "insufficient_scope", message: `Token requires ${scope}` },
 			403,
 			{ "Cache-Control": "no-store" },
 		);

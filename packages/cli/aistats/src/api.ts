@@ -1,33 +1,24 @@
-import { readSession, writeSession, type Session } from "./session";
+import { readSession, writeSession, type Session } from "./session.js";
+import {
+	DEFAULT_CLI_OAUTH_CAPABILITIES,
+	normalizeScopeList,
+} from "./capabilities.js";
 
 const DEFAULT_API_URL = "https://api.phaseo.app";
-const DEFAULT_SCOPE = [
-	"openid",
-	"profile",
-	"email",
-	"workspaces:read",
-	"workspaces:write",
-	"keys:read",
-	"keys:write",
-	"keys:delete",
-	"models:read",
-	"providers:read",
-	"pricing:read",
-	"usage:read",
-	"analytics:read",
-	"generations:read",
-	"presets:read",
-	"presets:write",
-	"presets:delete",
-	"settings:read",
-	"settings:write",
-	"guardrails:read",
-	"guardrails:write",
-	"guardrails:delete",
-	"management_keys:read",
-	"management_keys:write",
-	"management_keys:delete",
-].join(" ");
+export const DEFAULT_LOGIN_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
+
+export const DEFAULT_SCOPE = DEFAULT_LOGIN_SCOPES.join(" ");
+
+export function parseScopeArgument(raw?: string): string {
+	const normalized = normalizeScopeList(raw, {
+		allowIdentityScopes: true,
+		defaultScopes: DEFAULT_LOGIN_SCOPES,
+	});
+	if (!normalized.ok) {
+		throw new Error("message" in normalized ? normalized.message : "Invalid scopes");
+	}
+	return normalized.value.join(" ");
+}
 
 export function normalizeApiRoot(input?: string): string {
 	const raw = input || process.env.AI_STATS_API_URL || DEFAULT_API_URL;
@@ -40,6 +31,25 @@ export function v1Url(apiRoot: string, path: string): string {
 
 export function oauthUrl(apiRoot: string, path: string): string {
 	return `${apiRoot}/oauth${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export function authorizeUrl(apiRoot: string, params: {
+	clientId: string;
+	redirectUri: string;
+	scope: string;
+	state: string;
+	codeChallenge: string;
+	codeChallengeMethod?: string;
+}): string {
+	const url = new URL(oauthUrl(apiRoot, "/authorize"));
+	url.searchParams.set("response_type", "code");
+	url.searchParams.set("client_id", params.clientId);
+	url.searchParams.set("redirect_uri", params.redirectUri);
+	url.searchParams.set("scope", params.scope);
+	url.searchParams.set("state", params.state);
+	url.searchParams.set("code_challenge", params.codeChallenge);
+	url.searchParams.set("code_challenge_method", params.codeChallengeMethod ?? "S256");
+	return url.toString();
 }
 
 async function parseJson(response: Response): Promise<any> {
@@ -98,13 +108,13 @@ export async function getSessionAccessToken(): Promise<Session> {
 	return session;
 }
 
-export async function startDeviceLogin(apiRoot: string) {
+export async function startDeviceLogin(apiRoot: string, scope = DEFAULT_SCOPE) {
 	const response = await fetch(oauthUrl(apiRoot, "/device/code"), {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
 			client_id: "aistats_cli",
-			scope: DEFAULT_SCOPE,
+			scope,
 		}),
 	});
 	const body = await parseJson(response);
@@ -138,6 +148,48 @@ export async function pollDeviceToken(apiRoot: string, deviceCode: string) {
 		const error = new Error(description) as Error & { code?: string };
 		error.code = code;
 		throw error;
+	}
+	return body as {
+		access_token: string;
+		refresh_token: string;
+		expires_in: number;
+		scope?: string;
+	};
+}
+
+export async function revokeRefreshToken(apiRoot: string, refreshToken: string): Promise<void> {
+	await fetch(oauthUrl(apiRoot, "/revoke"), {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({ token: refreshToken }),
+	});
+}
+
+export async function exchangeAuthorizationCode(apiRoot: string, args: {
+	code: string;
+	redirectUri: string;
+	codeVerifier: string;
+	clientId?: string;
+}): Promise<{
+	access_token: string;
+	refresh_token: string;
+	expires_in: number;
+	scope?: string;
+}> {
+	const response = await fetch(oauthUrl(apiRoot, "/token"), {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			grant_type: "authorization_code",
+			client_id: args.clientId ?? "aistats_cli",
+			code: args.code,
+			redirect_uri: args.redirectUri,
+			code_verifier: args.codeVerifier,
+		}),
+	});
+	const body = await parseJson(response);
+	if (!response.ok) {
+		throw new Error(typeof body?.error_description === "string" ? body.error_description : "Failed to exchange authorization code");
 	}
 	return body as {
 		access_token: string;

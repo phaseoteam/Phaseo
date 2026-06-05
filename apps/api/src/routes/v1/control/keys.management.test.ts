@@ -134,12 +134,6 @@ vi.mock("@/routes/auth.helpers", () => ({
 		prefix: "aistats_v1_sk_kid_123",
 	})),
 	hmacSecret: vi.fn(async () => "hashed_secret"),
-	normalizeScopeInput: vi.fn((scopes: unknown) => {
-		if (scopes === undefined) return { ok: true, value: "[]" };
-		if (Array.isArray(scopes)) return { ok: true, value: JSON.stringify(scopes.map(String)) };
-		if (typeof scopes === "string") return { ok: true, value: scopes };
-		return { ok: false, message: "invalid scopes" };
-	}),
 	timingSafeEqual: vi.fn((a: string, b: string) => a === b),
 }));
 
@@ -237,7 +231,6 @@ describe("management key routes", () => {
 				name: "Analytics Key",
 				limit: 5,
 				limit_reset: "weekly",
-				scopes: ["responses"],
 				expires_at: "2027-12-31T23:59:59Z",
 			}),
 		});
@@ -248,6 +241,7 @@ describe("management key routes", () => {
 		expect(state.insertPayloads[0]).toMatchObject({
 			workspace_id: "ws_1",
 			name: "Analytics Key",
+			scopes: "[]",
 			weekly_limit_cost_nanos: 5_000_000_000,
 			daily_limit_cost_nanos: 0,
 			monthly_limit_cost_nanos: 0,

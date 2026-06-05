@@ -254,6 +254,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    scopes?: string[];
 }>> {
     const requestId = generatePublicId();
     const auth = await authenticate(req, { useKvCache: options.useKvCache });
@@ -274,6 +275,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
             oauthScopes: auth.oauthScopes ?? [],
+            scopes: auth.scopes ?? [],
         },
     };
 }
@@ -289,6 +291,7 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    scopes?: string[];
 }>> {
     const requestId = generatePublicId();
     const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
@@ -309,6 +312,7 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
             oauthScopes: auth.oauthScopes ?? [],
+            scopes: auth.scopes ?? [],
         },
     };
 }

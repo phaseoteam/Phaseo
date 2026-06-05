@@ -9,6 +9,7 @@ import {
 	resolveKeyPepperCandidates,
 	type KeyPepperCandidate,
 } from "@/lib/security/keyPepper";
+import { parseStoredScopeList } from "@/lib/authz/capabilities";
 
 const enc = new TextEncoder();
 const KEY_CACHE_PREFIX = "gateway:key";
@@ -178,6 +179,7 @@ export type AuthSuccess = {
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
     oauthScopes?: string[];
+    scopes?: string[];
 };
 
 type AuthenticateOptions = {
@@ -191,6 +193,7 @@ type KeyRow = {
     hash: string;
     expires_at?: string | null;
     soft_blocked?: boolean | null;
+    scopes?: unknown;
 };
 
 type CachedKeyLookup = KeyRow | "missing" | null;
@@ -570,6 +573,10 @@ export async function authenticateManagement(
     const nextHash = matchedPepper.source === "previous"
         ? await hmacUtf8(parsed.secret, activePepper)
         : null;
+    const grantedScopes = parseStoredScopeList((keyRow as KeyRow).scopes);
+    if (grantedScopes.length === 0) {
+        return { ok: false, reason: "management_key_scopes_required" };
+    }
 
     dispatchBackground((async () => {
         configureRuntime(bindings);
@@ -600,6 +607,7 @@ export async function authenticateManagement(
         userId: null,
         internal,
         authMethod: "api_key",
+        scopes: grantedScopes,
     };
 }
 
@@ -659,6 +667,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
                 authMethod: "oauth",
                 oauthClientId: claims.client_id,
                 oauthScopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
+                scopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
             } as AuthSuccess;
         }
     } catch {
@@ -771,6 +780,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
             authMethod: "oauth",
             oauthClientId: claims.client_id,
             oauthScopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
+            scopes: typeof claims.scope === "string" ? claims.scope.split(/\s+/).filter(Boolean) : [],
         } as AuthSuccess;
     } catch (error: any) {
         const message = String(error?.message ?? "");

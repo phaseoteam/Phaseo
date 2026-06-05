@@ -1,7 +1,22 @@
 #!/usr/bin/env node
-import { apiFetch, getSessionAccessToken, normalizeApiRoot, pollDeviceToken, startDeviceLogin } from "./api";
-import { clearSession, writeSession } from "./session";
-import { printError, printJson } from "./output";
+import { createHash, randomBytes } from "node:crypto";
+import { spawn } from "node:child_process";
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output, platform } from "node:process";
+import {
+	apiFetch,
+	authorizeUrl,
+	exchangeAuthorizationCode,
+	getSessionAccessToken,
+	normalizeApiRoot,
+	parseScopeArgument,
+	pollDeviceToken,
+	revokeRefreshToken,
+	startDeviceLogin,
+} from "./api.js";
+import { clearSession, readSession, writeSession } from "./session.js";
+import { printError, printJson } from "./output.js";
 
 type ParsedArgs = {
 	command: string[];
@@ -9,6 +24,15 @@ type ParsedArgs = {
 };
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+type LoginMethod = "browser" | "device";
+type CallbackOutcome =
+	| { ok: true; code: string; state: string }
+	| { ok: false; error: string; errorDescription?: string; state?: string };
+
+type HelpEntry = {
+	usage: string[];
+	description?: string;
+};
 
 function parseArgs(argv: string[]): ParsedArgs {
 	const command: string[] = [];
@@ -56,6 +80,18 @@ function sleep(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function base64Url(input: Buffer): string {
+	return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function randomBase64Url(byteLength: number): string {
+	return base64Url(randomBytes(byteLength));
+}
+
+function sha256Base64Url(value: string): string {
+	return base64Url(createHash("sha256").update(value).digest());
+}
+
 function appendQuery(path: string, params: Record<string, string | number | boolean | undefined>): string {
 	const [base, existingQuery] = path.split("?", 2);
 	const query = new URLSearchParams(existingQuery ?? "");
@@ -87,65 +123,194 @@ function formatMoneyFromNanos(nanos: unknown): string {
 	return `$${(value / 1_000_000_000).toFixed(6)}`;
 }
 
-function printHelp() {
-	process.stdout.write(`AI Stats CLI
+const HELP_ENTRIES: Record<string, HelpEntry> = {
+	root: {
+		description: "AI Stats CLI",
+		usage: [
+			"aistats login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
+			"aistats logout [--json]",
+			"aistats whoami [--json]",
+			"",
+			"aistats keys --help",
+			"aistats workspaces --help",
+			"aistats presets --help",
+			"aistats settings --help",
+			"aistats guardrails --help",
+			"aistats management-keys --help",
+			"aistats models --help",
+			"aistats providers --help",
+			"aistats pricing --help",
+			"aistats credits --help",
+			"aistats activity --help",
+			"aistats analytics --help",
+			"aistats generation --help",
+			"aistats api --help",
+			"",
+			"Login scopes:",
+			"  Default login requests full first-party CLI access across the control plane.",
+			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
+			"",
+			"Environment:",
+			"  AI_STATS_API_URL  Override API root, defaults to https://api.phaseo.app",
+		],
+	},
+	login: {
+		usage: [
+			"aistats login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
+		],
+	},
+	logout: { usage: ["aistats logout [--json]"] },
+	whoami: { usage: ["aistats whoami [--json]"] },
+	keys: {
+		usage: [
+			"aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
+			"aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
+			"aistats keys get <id-or-hash> [--json]",
+			"aistats keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]",
+			"aistats keys delete <id-or-hash> [--json]",
+		],
+	},
+	"keys list": { usage: ["aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
+	"keys create": { usage: ["aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
+	"keys get": { usage: ["aistats keys get <id-or-hash> [--json]"] },
+	"keys update": { usage: ["aistats keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]"] },
+	"keys delete": { usage: ["aistats keys delete <id-or-hash> [--json]"] },
+	workspaces: {
+		usage: [
+			"aistats workspaces list [--json]",
+			"aistats workspaces create --name <name> [--slug <slug>] [--json]",
+			"aistats workspaces get <id-or-slug> [--json]",
+			"aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]",
+			"aistats workspaces delete <id-or-slug> [--json]",
+		],
+	},
+	"workspaces list": { usage: ["aistats workspaces list [--json]"] },
+	"workspaces create": { usage: ["aistats workspaces create --name <name> [--slug <slug>] [--json]"] },
+	"workspaces get": { usage: ["aistats workspaces get <id-or-slug> [--json]"] },
+	"workspaces update": { usage: ["aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]"] },
+	"workspaces delete": { usage: ["aistats workspaces delete <id-or-slug> [--json]"] },
+	presets: {
+		usage: [
+			"aistats presets list [--json]",
+			"aistats presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]",
+			"aistats presets get <id-or-slug-or-name> [--json]",
+			"aistats presets update <id-or-slug-or-name> [--config-json <json>] [--json]",
+			"aistats presets delete <id-or-slug-or-name> [--json]",
+		],
+	},
+	"presets list": { usage: ["aistats presets list [--json]"] },
+	"presets create": { usage: ["aistats presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]"] },
+	"presets get": { usage: ["aistats presets get <id-or-slug-or-name> [--json]"] },
+	"presets update": { usage: ["aistats presets update <id-or-slug-or-name> [--config-json <json>] [--json]"] },
+	"presets delete": { usage: ["aistats presets delete <id-or-slug-or-name> [--json]"] },
+	settings: {
+		usage: [
+			"aistats settings get [--json]",
+			"aistats settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]",
+		],
+	},
+	"settings get": { usage: ["aistats settings get [--json]"] },
+	"settings update": { usage: ["aistats settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]"] },
+	guardrails: {
+		usage: [
+			"aistats guardrails list [--json]",
+			"aistats guardrails create --name <name> [--body-json <json>] [--json]",
+			"aistats guardrails get <id> [--json]",
+			"aistats guardrails update <id> --body-json <json> [--json]",
+			"aistats guardrails delete <id> [--json]",
+			"aistats guardrails set-keys <id> --key-ids <id,id> [--json]",
+		],
+	},
+	"guardrails list": { usage: ["aistats guardrails list [--json]"] },
+	"guardrails create": { usage: ["aistats guardrails create --name <name> [--body-json <json>] [--json]"] },
+	"guardrails get": { usage: ["aistats guardrails get <id> [--json]"] },
+	"guardrails update": { usage: ["aistats guardrails update <id> --body-json <json> [--json]"] },
+	"guardrails delete": { usage: ["aistats guardrails delete <id> [--json]"] },
+	"guardrails set-keys": { usage: ["aistats guardrails set-keys <id> --key-ids <id,id> [--json]"] },
+	"management-keys": {
+		usage: [
+			"aistats management-keys list [--json]",
+			"aistats management-keys create --name <name> [--show-secret] [--json]",
+			"aistats management-keys get <id> [--json]",
+			"aistats management-keys update <id> [--name <name>] [--paused true|false] [--json]",
+			"aistats management-keys delete <id> [--json]",
+		],
+	},
+	"management-keys list": { usage: ["aistats management-keys list [--json]"] },
+	"management-keys create": { usage: ["aistats management-keys create --name <name> [--show-secret] [--json]"] },
+	"management-keys get": { usage: ["aistats management-keys get <id> [--json]"] },
+	"management-keys update": { usage: ["aistats management-keys update <id> [--name <name>] [--paused true|false] [--json]"] },
+	"management-keys delete": { usage: ["aistats management-keys delete <id> [--json]"] },
+	models: { usage: ["aistats models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
+	"models list": { usage: ["aistats models list [--limit <n>] [--offset <n>] [--all] [--json]"] },
+	providers: { usage: ["aistats providers list [--json]"] },
+	"providers list": { usage: ["aistats providers list [--json]"] },
+	pricing: {
+		usage: [
+			"aistats pricing models [--json]",
+			"aistats pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>",
+		],
+	},
+	"pricing models": { usage: ["aistats pricing models [--json]"] },
+	"pricing calculate": { usage: ["aistats pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>"] },
+	credits: { usage: ["aistats credits get [--json]"] },
+	"credits get": { usage: ["aistats credits get [--json]"] },
+	activity: { usage: ["aistats activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
+	"activity list": { usage: ["aistats activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
+	analytics: { usage: ["aistats analytics get [--date YYYY-MM-DD] [--json]"] },
+	"analytics get": { usage: ["aistats analytics get [--date YYYY-MM-DD] [--json]"] },
+	generation: { usage: ["aistats generation get --id <request-id> [--json]"] },
+	"generation get": { usage: ["aistats generation get --id <request-id> [--json]"] },
+	api: {
+		usage: [
+			"aistats api get <v1-path> [--json]",
+			"aistats api post <v1-path> --body-json <json> [--json]",
+			"aistats api put <v1-path> --body-json <json> [--json]",
+			"aistats api patch <v1-path> --body-json <json> [--json]",
+			"aistats api delete <v1-path> [--json]",
+		],
+	},
+	"api get": { usage: ["aistats api get <v1-path> [--json]"] },
+	"api post": { usage: ["aistats api post <v1-path> --body-json <json> [--json]"] },
+	"api put": { usage: ["aistats api put <v1-path> --body-json <json> [--json]"] },
+	"api patch": { usage: ["aistats api patch <v1-path> --body-json <json> [--json]"] },
+	"api delete": { usage: ["aistats api delete <v1-path> [--json]"] },
+};
 
-Usage:
-  aistats login [--api-url <url>] [--json]
-  aistats logout [--json]
-  aistats whoami [--json]
+export function helpKeyForCommand(command: string[]): string {
+	if (command.length >= 2) {
+		const twoPart = `${command[0]} ${command[1]}`;
+		if (twoPart in HELP_ENTRIES) return twoPart;
+	}
+	if (command.length >= 1 && command[0] in HELP_ENTRIES) return command[0];
+	return "root";
+}
 
-  aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]
-  aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]
-  aistats keys get <id-or-hash> [--json]
-  aistats keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]
-  aistats keys delete <id-or-hash> [--json]
+export function renderHelp(command: string[]): string {
+	const key = helpKeyForCommand(command);
+	const entry = HELP_ENTRIES[key] ?? HELP_ENTRIES.root;
+	const lines: string[] = [];
+	if (key === "root") {
+		lines.push(entry.description ?? "AI Stats CLI", "", "Usage:");
+	} else {
+		lines.push(`AI Stats CLI Help: ${key}`, "", "Usage:");
+	}
+	for (const usageLine of entry.usage) {
+		if (usageLine === "") {
+			lines.push("");
+			continue;
+		}
+		if (usageLine.endsWith(":")) {
+			lines.push(usageLine);
+			continue;
+		}
+		lines.push(`  ${usageLine}`);
+	}
+	return `${lines.join("\n")}\n`;
+}
 
-  aistats workspaces list [--json]
-  aistats workspaces create --name <name> [--slug <slug>] [--json]
-  aistats workspaces get <id-or-slug> [--json]
-  aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]
-  aistats workspaces delete <id-or-slug> [--json]
-
-  aistats presets list [--json]
-  aistats presets create --name <@name> [--model <model>] [--system-prompt <text>] [--config-json <json>] [--json]
-  aistats presets get <id-or-slug-or-name> [--json]
-  aistats presets update <id-or-slug-or-name> [--config-json <json>] [--json]
-  aistats presets delete <id-or-slug-or-name> [--json]
-
-  aistats settings get [--json]
-  aistats settings update [--routing-mode balanced|price|latency|throughput] [--body-json <json>] [--json]
-
-  aistats guardrails list [--json]
-  aistats guardrails create --name <name> [--body-json <json>] [--json]
-  aistats guardrails get <id> [--json]
-  aistats guardrails update <id> --body-json <json> [--json]
-  aistats guardrails delete <id> [--json]
-  aistats guardrails set-keys <id> --key-ids <id,id> [--json]
-
-  aistats management-keys list [--json]
-  aistats management-keys create --name <name> [--show-secret] [--json]
-  aistats management-keys get <id> [--json]
-  aistats management-keys update <id> [--name <name>] [--paused true|false] [--json]
-  aistats management-keys delete <id> [--json]
-
-  aistats models list [--limit <n>] [--offset <n>] [--all] [--json]
-  aistats providers list [--json]
-  aistats pricing models [--json]
-  aistats credits get [--json]
-  aistats activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]
-  aistats analytics get [--date YYYY-MM-DD] [--json]
-  aistats generation get --id <request-id> [--json]
-
-  aistats api get <v1-path> [--json]
-  aistats api post <v1-path> --body-json <json> [--json]
-  aistats api put <v1-path> --body-json <json> [--json]
-  aistats api patch <v1-path> --body-json <json> [--json]
-  aistats api delete <v1-path> [--json]
-
-Environment:
-  AI_STATS_API_URL  Override API root, defaults to https://api.phaseo.app
-`);
+function printHelp(command: string[] = []) {
+	process.stdout.write(renderHelp(command));
 }
 
 async function request(path: string, options: { method?: HttpMethod; body?: Record<string, unknown> } = {}) {
@@ -161,10 +326,176 @@ function printList(items: any[], render: (item: any) => string): void {
 	for (const item of items) process.stdout.write(`${render(item)}\n`);
 }
 
-async function login(flags: Record<string, string | boolean>) {
-	const apiRoot = normalizeApiRoot(flagString(flags, "api-url"));
-	const json = flagBool(flags, "json");
-	const device = await startDeviceLogin(apiRoot);
+function isInteractiveTerminal(): boolean {
+	return Boolean(input.isTTY && output.isTTY);
+}
+
+export function prefersDeviceCodeByEnvironment(
+	env: NodeJS.ProcessEnv = process.env,
+): boolean {
+	return Boolean(
+		env.SSH_CONNECTION ||
+			env.SSH_CLIENT ||
+			env.SSH_TTY ||
+			env.CI,
+	);
+}
+
+export function windowsBrowserOpenArgs(url: string): string[] {
+	const escapedUrl = url.replace(/'/g, "''");
+	return [
+		"-NoProfile",
+		"-NonInteractive",
+		"-Command",
+		`Start-Process -FilePath '${escapedUrl}'`,
+	];
+}
+
+function openUrl(url: string): boolean {
+	if (prefersDeviceCodeByEnvironment()) {
+		return false;
+	}
+	try {
+		if (platform === "win32") {
+			spawn("powershell.exe", windowsBrowserOpenArgs(url), {
+				detached: true,
+				stdio: "ignore",
+			}).unref();
+			return true;
+		}
+		if (platform === "darwin") {
+			spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
+			return true;
+		}
+		spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+function resolveLoginMethod(flags: Record<string, string | boolean>, json: boolean): LoginMethod {
+	if (flagBool(flags, "browser")) return "browser";
+	if (flagBool(flags, "device-code")) return "device";
+	const raw = flagString(flags, "method");
+	if (raw) {
+		if (raw === "browser" || raw === "device") return raw;
+		throw new Error("--method must be browser or device");
+	}
+	if (json || !isInteractiveTerminal() || prefersDeviceCodeByEnvironment()) {
+		return "device";
+	}
+	return "browser";
+}
+
+async function chooseLoginMethod(flags: Record<string, string | boolean>, json: boolean): Promise<LoginMethod> {
+	const preset = flagString(flags, "method") ?? (flagBool(flags, "browser") ? "browser" : flagBool(flags, "device-code") ? "device" : undefined);
+	if (preset || json || !isInteractiveTerminal() || prefersDeviceCodeByEnvironment()) {
+		return resolveLoginMethod(flags, json);
+	}
+	const defaultMethod = resolveLoginMethod(flags, json);
+	const prompt = createInterface({ input, output });
+	try {
+		const defaultChoice = defaultMethod === "device" ? "2" : "1";
+		const answer = (
+			await prompt.question(
+				`Login method: [1] Sign in with AI Stats  [2] Sign in with Device Code (default ${defaultChoice}): `,
+			)
+		).trim();
+		if (!answer) return defaultMethod;
+		if (answer === "2" || /^device$/i.test(answer)) return "device";
+		return "browser";
+	} finally {
+		prompt.close();
+	}
+}
+
+function createCallbackServer(args: { redirectUri: string; expectedState: string }) {
+	const redirect = new URL(args.redirectUri);
+	const host = redirect.hostname;
+	const port = redirect.port ? Number(redirect.port) : 80;
+	const callbackPath = redirect.pathname || "/";
+	let settled = false;
+	let resolveCallback: (value: CallbackOutcome) => void = () => undefined;
+	const waitForCallback = new Promise<CallbackOutcome>((resolve) => {
+		resolveCallback = resolve;
+	});
+
+	function finish(value: CallbackOutcome) {
+		if (settled) return;
+		settled = true;
+		resolveCallback(value);
+	}
+
+	const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+		const requestUrl = new URL(req.url || "/", args.redirectUri);
+		if (requestUrl.pathname !== callbackPath) {
+			res.statusCode = 404;
+			res.end("Not found");
+			return;
+		}
+		const error = requestUrl.searchParams.get("error") || undefined;
+		const errorDescription = requestUrl.searchParams.get("error_description") || undefined;
+		const state = requestUrl.searchParams.get("state") || undefined;
+		const code = requestUrl.searchParams.get("code") || undefined;
+		if (error) {
+			finish({ ok: false, error, errorDescription, state });
+		} else if (!code) {
+			finish({ ok: false, error: "missing_authorization_code", errorDescription: "Missing code query param in callback", state });
+		} else if (state !== args.expectedState) {
+			finish({ ok: false, error: "state_mismatch", errorDescription: `Expected ${args.expectedState}, got ${state ?? "<none>"}`, state });
+		} else {
+			finish({ ok: true, code, state });
+		}
+		res.statusCode = 200;
+		res.setHeader("content-type", "text/html; charset=utf-8");
+		res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>AI Stats login complete</h1><p>You can return to your terminal now.</p></body></html>");
+	});
+
+	return {
+		start: async () =>
+			new Promise<void>((resolve, reject) => {
+				server.once("error", reject);
+				server.listen(port, host, () => {
+					server.off("error", reject);
+					resolve();
+				});
+			}),
+		waitForCallback,
+		close: async () =>
+			new Promise<void>((resolve) => {
+				server.close(() => resolve());
+			}),
+	};
+}
+
+async function completeLogin(apiRoot: string, tokens: {
+	access_token: string;
+	refresh_token: string;
+	expires_in: number;
+	scope?: string;
+}, json: boolean) {
+	await writeSession({
+		accessToken: tokens.access_token,
+		refreshToken: tokens.refresh_token,
+		expiresAt: Date.now() + Number(tokens.expires_in ?? 900) * 1000,
+		apiUrl: apiRoot,
+		scope: tokens.scope,
+	});
+	if (json) {
+		printJson({ ok: true, logged_in: true, api_url: apiRoot, scope: tokens.scope ?? null });
+	} else {
+		process.stdout.write("Logged in to AI Stats.\n");
+	}
+}
+
+function requestedLoginScope(flags: Record<string, string | boolean>): string {
+	return parseScopeArgument(flagString(flags, "scopes"));
+}
+
+async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string | boolean>, json: boolean) {
+	const scope = requestedLoginScope(flags);
+	const device = await startDeviceLogin(apiRoot, scope);
 	if (json) {
 		printJson({
 			status: "authorization_required",
@@ -186,18 +517,7 @@ async function login(flags: Record<string, string | boolean>) {
 		await sleep(intervalMs);
 		try {
 			const tokens = await pollDeviceToken(apiRoot, device.device_code);
-			await writeSession({
-				accessToken: tokens.access_token,
-				refreshToken: tokens.refresh_token,
-				expiresAt: Date.now() + Number(tokens.expires_in ?? 900) * 1000,
-				apiUrl: apiRoot,
-				scope: tokens.scope,
-			});
-			if (json) {
-				printJson({ ok: true, logged_in: true, api_url: apiRoot, scope: tokens.scope ?? null });
-			} else {
-				process.stdout.write("Logged in to AI Stats.\n");
-			}
+			await completeLogin(apiRoot, tokens, json);
 			return;
 		} catch (error: any) {
 			if (error?.code === "authorization_pending") continue;
@@ -207,10 +527,75 @@ async function login(flags: Record<string, string | boolean>) {
 	throw new Error("Device login expired. Run `aistats login` again.");
 }
 
+async function loginWithBrowser(apiRoot: string, flags: Record<string, string | boolean>) {
+	const redirectUri = flagString(flags, "redirect-uri") ?? "http://127.0.0.1:8976/callback";
+	const state = randomBase64Url(24);
+	const codeVerifier = randomBase64Url(32);
+	const codeChallenge = sha256Base64Url(codeVerifier);
+	const callbackServer = createCallbackServer({ redirectUri, expectedState: state });
+	await callbackServer.start();
+	try {
+		const scope = requestedLoginScope(flags);
+		const authUrl = authorizeUrl(apiRoot, {
+			clientId: "aistats_cli",
+			redirectUri,
+			scope,
+			state,
+			codeChallenge,
+		});
+		const didOpen = openUrl(authUrl);
+		process.stdout.write("Sign in with AI Stats\n\n");
+		process.stdout.write(`Open: ${authUrl}\n\n`);
+		if (!didOpen) {
+			process.stdout.write("Browser auto-open was unavailable, so use the URL above.\n");
+		}
+		process.stdout.write("Waiting for browser sign-in...\n");
+		const callback = await callbackServer.waitForCallback;
+		if (!callback.ok) {
+			const failure = callback as Extract<CallbackOutcome, { ok: false }>;
+			throw new Error(failure.errorDescription ?? failure.error);
+		}
+		const tokens = await exchangeAuthorizationCode(apiRoot, {
+			code: callback.code,
+			redirectUri,
+			codeVerifier,
+		});
+		await completeLogin(apiRoot, tokens, false);
+	} finally {
+		await callbackServer.close();
+	}
+}
+
+async function login(flags: Record<string, string | boolean>) {
+	const apiRoot = normalizeApiRoot(flagString(flags, "api-url"));
+	const json = flagBool(flags, "json");
+	const method = await chooseLoginMethod(flags, json);
+	if (json && method === "browser") {
+		throw new Error("Browser login is not supported with --json. Use --method device instead.");
+	}
+	if (method === "browser") {
+		return loginWithBrowser(apiRoot, flags);
+	}
+	return loginWithDeviceCode(apiRoot, flags, json);
+}
+
 async function logout(flags: Record<string, string | boolean>) {
+	const session = await readSession();
+	let revoked = false;
+	if (session?.refreshToken) {
+		try {
+			await revokeRefreshToken(session.apiUrl, session.refreshToken);
+			revoked = true;
+		} catch {
+			revoked = false;
+		}
+	}
 	await clearSession();
-	if (flagBool(flags, "json")) printJson({ ok: true, logged_in: false });
-	else process.stdout.write("Logged out of AI Stats.\n");
+	if (flagBool(flags, "json")) {
+		printJson({ ok: true, logged_in: false, refresh_token_revoked: revoked });
+	} else {
+		process.stdout.write(revoked ? "Logged out of AI Stats and revoked the session.\n" : "Logged out of AI Stats.\n");
+	}
 }
 
 async function whoami(flags: Record<string, string | boolean>) {
@@ -609,7 +994,9 @@ async function main() {
 	const json = flagBool(parsed.flags, "json");
 	try {
 		const [first, second, third] = parsed.command;
-		if (!first || first === "help" || flagBool(parsed.flags, "help")) return printHelp();
+		if (!first) return printHelp();
+		if (first === "help") return printHelp(parsed.command.slice(1));
+		if (flagBool(parsed.flags, "help")) return printHelp(parsed.command);
 		if (first === "login") return login(parsed.flags);
 		if (first === "logout") return logout(parsed.flags);
 		if (first === "whoami") return whoami(parsed.flags);

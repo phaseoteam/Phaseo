@@ -22,6 +22,8 @@ interface ApproveAuthorizationInput {
 	authorization_id?: string;
 	client_id?: string;
 	workspace_id: string;
+	workspace_ids?: string[];
+	primary_workspace_id?: string;
 	scopes?: string[];
 	redirect_uri?: string;
 	state?: string;
@@ -111,70 +113,107 @@ export async function approveAuthorizationAction(
 			scopes = ["openid", "email", "gateway:access"];
 		}
 
-		// Verify user is a member of the selected team
-		const { data: membership, error: membershipError } = await supabase
+		const selectedWorkspaceIds = Array.from(
+			new Set(
+				[
+					...(Array.isArray(input.workspace_ids) ? input.workspace_ids : []),
+					input.primary_workspace_id,
+					input.workspace_id,
+				]
+					.map((workspaceId) => String(workspaceId ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+		const primaryWorkspaceId =
+			String(input.primary_workspace_id ?? input.workspace_id ?? "").trim() ||
+			selectedWorkspaceIds[0] ||
+			"";
+		if (!primaryWorkspaceId || selectedWorkspaceIds.length === 0) {
+			return { error: "Select at least one team to authorize" };
+		}
+		if (!selectedWorkspaceIds.includes(primaryWorkspaceId)) {
+			return { error: "The active team must also be selected for authorization" };
+		}
+
+		const isBuiltInFirstPartyClient = resolvedClientId === "aistats_cli";
+
+		// Verify user is a member of every selected team
+		const { data: memberships, error: membershipError } = await supabase
 			.from("workspace_members")
 			.select("workspace_id")
-			.eq("workspace_id", input.workspace_id)
 			.eq("user_id", user.id)
-			.single();
+			.in("workspace_id", selectedWorkspaceIds);
 
-		if (membershipError || !membership) {
+		const grantedWorkspaceIds = new Set(
+			(memberships ?? [])
+				.map((membership: { workspace_id?: unknown }) =>
+					String(membership.workspace_id ?? "").trim()
+				)
+				.filter(Boolean)
+		);
+
+		if (
+			membershipError ||
+			!selectedWorkspaceIds.every((workspaceId) => grantedWorkspaceIds.has(workspaceId))
+		) {
 			return {
-				error: "You don't have permission to authorize for this team",
+				error: "You don't have permission to authorize for one or more selected teams",
 			};
 		}
 
-		// Verify OAuth app exists and is active
-		const { data: oauthApp, error: appError } = await supabase
-			.from("oauth_app_metadata")
-			.select("id, status")
-			.eq("client_id", resolvedClientId)
-			.eq("status", "active")
-			.single();
+		if (!isBuiltInFirstPartyClient) {
+			// Verify OAuth app exists and is active
+			const { data: oauthApp, error: appError } = await supabase
+				.from("oauth_app_metadata")
+				.select("id, status")
+				.eq("client_id", resolvedClientId)
+				.eq("status", "active")
+				.single();
 
-		if (appError || !oauthApp) {
-			return { error: "OAuth application not found or inactive" };
+			if (appError || !oauthApp) {
+				return { error: "OAuth application not found or inactive" };
+			}
 		}
 
-		// Check if authorization already exists
-		const { data: existingAuth } = await supabase
+		// Check if authorizations already exist for the selected teams
+		const { data: existingAuths } = await supabase
 			.from("oauth_authorizations")
-			.select("id, revoked_at")
+			.select("id, revoked_at, workspace_id")
 			.eq("user_id", user.id)
 			.eq("client_id", resolvedClientId)
-			.eq("workspace_id", input.workspace_id)
-			.maybeSingle();
+			.in("workspace_id", selectedWorkspaceIds);
 
-		if (existingAuth) {
-			// If previously revoked, update it to active
-			if (existingAuth.revoked_at) {
-				await supabase
+		const existingByWorkspace = new Map(
+			(existingAuths ?? []).map((auth: { id: string; revoked_at: string | null; workspace_id: string }) => [
+				String(auth.workspace_id),
+				auth,
+			]),
+		);
+
+		for (const workspaceId of selectedWorkspaceIds) {
+			const existingAuth = existingByWorkspace.get(workspaceId);
+			if (existingAuth) {
+				const { error: updateError } = await supabase
 					.from("oauth_authorizations")
 					.update({
 						scopes,
-						revoked_at: null,
+						revoked_at: existingAuth.revoked_at ? null : existingAuth.revoked_at,
 					})
 					.eq("id", existingAuth.id);
-			} else {
-				// Already authorized, just update scopes
-				await supabase
-					.from("oauth_authorizations")
-					.update({
-						scopes,
-					})
-					.eq("id", existingAuth.id);
+				if (updateError) {
+					return {
+						error: `Failed to update authorization: ${updateError.message}`,
+					};
+				}
+				continue;
 			}
-		} else {
-			// Create new authorization record
-			const { error: authError } = await supabase
-				.from("oauth_authorizations")
-				.insert({
-					user_id: user.id,
-					client_id: resolvedClientId,
-					workspace_id: input.workspace_id,
-					scopes,
-				});
+
+			const { error: authError } = await supabase.from("oauth_authorizations").insert({
+				user_id: user.id,
+				client_id: resolvedClientId,
+				workspace_id: workspaceId,
+				scopes,
+			});
 
 			if (authError) {
 				return {
@@ -227,7 +266,9 @@ export async function approveAuthorizationAction(
 			},
 			body: JSON.stringify({
 				client_id: resolvedClientId,
-				workspace_id: input.workspace_id,
+				workspace_id: primaryWorkspaceId,
+				primary_workspace_id: primaryWorkspaceId,
+				workspace_ids: selectedWorkspaceIds,
 				scopes,
 				redirect_uri: input.redirect_uri,
 				state: input.state,

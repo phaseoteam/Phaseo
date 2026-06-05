@@ -6,6 +6,9 @@ This package contains the first beta of the official `aistats` CLI. It is built 
 
 ```sh
 aistats login
+aistats login --method browser
+aistats login --method device
+aistats login --scopes "openid,profile,email,keys:write,keys:delete"
 aistats whoami
 aistats keys create --name "Codex"
 aistats keys create --name "Codex" --json
@@ -30,7 +33,19 @@ aistats logout
 
 All first-class commands support `--json`. Pretty output hides newly-created API key secrets unless `--show-secret` is passed; JSON output includes the raw key once for agent workflows. The `aistats api ...` escape hatch always prints JSON and is intended for agents or newly-added endpoints before a polished command exists.
 
-The CLI stores its session at `~/.config/aistats/session.json` with restrictive file permissions. Set `AI_STATS_CONFIG_DIR` to override this location for tests or agent sandboxes.
+The CLI prefers OS-backed session storage where available:
+
+- Windows: DPAPI-protected session blob in the config directory
+- macOS: Keychain
+- Linux: Secret Service via `secret-tool`, with file fallback if unavailable
+
+Set `AI_STATS_CONFIG_DIR` to override the config location for tests or agent sandboxes. Set `AI_STATS_SESSION_BACKEND=file` only if you explicitly want the legacy file-based fallback.
+
+`aistats login` supports both first-party browser sign-in and device-code approval:
+
+- `Sign in with AI Stats` uses Authorization Code + PKCE with a loopback callback on `http://127.0.0.1:8976/callback` by default.
+- `Sign in with Device Code` uses the OAuth device authorization grant and remains the default for non-interactive or `--json` flows.
+- Default login scopes request full first-party CLI access across the control plane. Use `--scopes` when you want a narrower token for a specific workflow or agent sandbox.
 
 ## OAuth/OIDC Beta Shape
 
@@ -76,6 +91,8 @@ Creating keys with OAuth requires:
 - Workspace `owner` or `admin` membership.
 
 Existing management-key behavior remains supported.
+
+`aistats logout` also revokes the stored refresh token before clearing the local session cache.
 
 ## Programmatic Dashboard Parity Notes
 

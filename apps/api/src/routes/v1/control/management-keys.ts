@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES, parseStoredScopeList } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import { generateGatewayKey, hmacSecret, normalizeScopeInput } from "@/routes/auth.helpers";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
@@ -11,7 +12,7 @@ import {
 	parsePathId,
 	parsePositiveInt,
 	requireJsonBody,
-	requireOAuthScope,
+	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
 
@@ -68,10 +69,17 @@ function normalizeLimitPatch(body: Record<string, unknown>): Record<string, unkn
 	return patch;
 }
 
+function formatManagementKey(row: ManagementKeyRow) {
+	return {
+		...row,
+		scopes: parseStoredScopeList(row.scopes),
+	};
+}
+
 async function handleListManagementKeys(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "management_keys:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.MANAGEMENT_KEYS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -87,7 +95,7 @@ async function handleListManagementKeys(req: Request) {
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (error) throw new Error(error.message || "Failed to list management keys");
-		return json({ data: data ?? [] }, 200, { "Cache-Control": "no-store" });
+		return json({ data: (data ?? []).map((row) => formatManagementKey(row as ManagementKeyRow)) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
@@ -96,7 +104,7 @@ async function handleListManagementKeys(req: Request) {
 async function handleCreateManagementKey(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "management_keys:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.MANAGEMENT_KEYS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -135,7 +143,7 @@ async function handleCreateManagementKey(req: Request) {
 			.select(selectColumns())
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to create management key");
-		return json({ data: { ...(data as unknown as ManagementKeyRow), key: generated.plaintext } }, 201, { "Cache-Control": "no-store" });
+		return json({ data: { ...formatManagementKey(data as unknown as ManagementKeyRow), key: generated.plaintext } }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
@@ -155,7 +163,7 @@ async function findManagementKey(workspaceId: string, id: string): Promise<Manag
 async function handleGetManagementKey(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "management_keys:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.MANAGEMENT_KEYS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -164,7 +172,7 @@ async function handleGetManagementKey(req: Request) {
 	try {
 		const key = await findManagementKey(auth.value.workspaceId, id);
 		if (!key) return json({ error: "not_found", message: "Management key not found" }, 404, { "Cache-Control": "no-store" });
-		return json({ data: key }, 200, { "Cache-Control": "no-store" });
+		return json({ data: formatManagementKey(key) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
@@ -173,7 +181,7 @@ async function handleGetManagementKey(req: Request) {
 async function handleUpdateManagementKey(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "management_keys:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.MANAGEMENT_KEYS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -186,6 +194,11 @@ async function handleUpdateManagementKey(req: Request) {
 		const patch: Record<string, unknown> = normalizeLimitPatch(body);
 		if (typeof body.name === "string") patch.name = body.name.trim();
 		if (typeof body.paused === "boolean") patch.status = body.paused ? "paused" : "active";
+		if (body.scopes !== undefined) {
+			const scopes = normalizeScopeInput(body.scopes);
+			if (scopes.ok === false) return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
+			patch.scopes = scopes.value;
+		}
 		if (typeof body.expires_at !== "undefined" || typeof body.expiresAt !== "undefined") {
 			patch.expires_at = parseOptionalExpiry(body.expires_at ?? body.expiresAt);
 		}
@@ -201,7 +214,7 @@ async function handleUpdateManagementKey(req: Request) {
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update management key");
 		if (!data) return json({ error: "not_found", message: "Management key not found" }, 404, { "Cache-Control": "no-store" });
-		return json({ data }, 200, { "Cache-Control": "no-store" });
+		return json({ data: formatManagementKey(data as ManagementKeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
@@ -210,7 +223,7 @@ async function handleUpdateManagementKey(req: Request) {
 async function handleDeleteManagementKey(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "management_keys:delete");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.MANAGEMENT_KEYS_DELETE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	isResponse,
@@ -9,7 +10,7 @@ import {
 	parsePathId,
 	parsePositiveInt,
 	requireJsonBody,
-	requireOAuthScope,
+	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
 
@@ -135,7 +136,7 @@ async function findGuardrail(workspaceId: string, id: string): Promise<Guardrail
 async function handleListGuardrails(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "guardrails:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]);
 	if (roleError) return roleError;
@@ -161,7 +162,7 @@ async function handleListGuardrails(req: Request) {
 async function handleCreateGuardrail(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "guardrails:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -192,7 +193,7 @@ async function handleCreateGuardrail(req: Request) {
 async function handleGetGuardrail(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "guardrails:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]);
 	if (roleError) return roleError;
@@ -216,7 +217,7 @@ async function handleGetGuardrail(req: Request) {
 async function handleUpdateGuardrail(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "guardrails:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -249,7 +250,7 @@ async function handleUpdateGuardrail(req: Request) {
 async function handleDeleteGuardrail(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "guardrails:delete");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_DELETE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
@@ -273,7 +274,7 @@ async function handleDeleteGuardrail(req: Request) {
 async function handleSetGuardrailKeys(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "guardrails:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;

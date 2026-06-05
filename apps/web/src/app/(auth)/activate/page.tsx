@@ -5,14 +5,7 @@ import { createClient } from "@/utils/supabase/server";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 export const metadata = {
 	title: "Activate AI Stats CLI",
@@ -109,19 +102,7 @@ export default async function ActivatePage({ searchParams }: ActivatePageProps) 
 							</div>
 							<form id="approve-device" action={approveDeviceAction} className="space-y-2">
 								<input type="hidden" name="user_code" value={userCode} />
-								<Label htmlFor="workspace_id">Workspace</Label>
-								<Select name="workspace_id" defaultValue={workspaces[0]?.id}>
-									<SelectTrigger id="workspace_id">
-										<SelectValue placeholder="Choose a workspace" />
-									</SelectTrigger>
-									<SelectContent>
-										{workspaces.map((workspace) => (
-											<SelectItem key={workspace.id} value={workspace.id}>
-												{workspace.name} ({workspace.role})
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								<WorkspaceSelectField workspaces={workspaces} />
 							</form>
 						</>
 					)}

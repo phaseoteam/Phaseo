@@ -21,14 +21,23 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
 import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
+import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 5000;
 
-function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { workspaceId: string | null; userId: string | null } {
+function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): {
+	workspaceId: string | null;
+	userId: string | null;
+	authMethod: "api_key" | "oauth" | null;
+	scopes: string[];
+} {
 	return {
 		workspaceId: typeof ctx?.workspaceId === "string" ? ctx.workspaceId : null,
 		userId: typeof ctx?.userId === "string" ? ctx.userId : null,
+		authMethod: ctx && typeof (ctx as any).authMethod === "string" ? ((ctx as any).authMethod as "api_key" | "oauth") : null,
+		scopes: Array.isArray((ctx as any)?.scopes) ? ((ctx as any).scopes as unknown[]).map(String) : [],
 	};
 }
 
@@ -46,6 +55,8 @@ app.use("*", async (c, next) => {
 			apiKeyRef: auth.value.apiKeyRef,
 			apiKeyKid: auth.value.apiKeyKid,
 			internal: auth.value.internal,
+			authMethod: auth.value.authMethod ?? null,
+			scopes: auth.value.scopes ?? auth.value.oauthScopes ?? [],
 		});
 		return await next();
 	} finally {
@@ -210,6 +221,10 @@ app.post("/", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_WRITE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
 
 		// Parse and validate input
 		const body = await c.req.json();
@@ -298,6 +313,10 @@ app.get("/", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_READ);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
 
 		// Fetch OAuth apps for workspace and attach derived stats
 		const supabase = getSupabaseAdmin();
@@ -339,6 +358,10 @@ app.get("/:clientId", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_READ);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
 
 		const clientId = c.req.param("clientId");
 
@@ -377,6 +400,10 @@ app.patch("/:clientId", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_WRITE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
 
 		const clientId = c.req.param("clientId");
 
@@ -454,6 +481,10 @@ app.delete("/:clientId", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_DELETE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
 
 		const clientId = c.req.param("clientId");
 
@@ -512,6 +543,10 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_WRITE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
 
 		const clientId = c.req.param("clientId");
 

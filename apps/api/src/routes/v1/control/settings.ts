@@ -2,11 +2,12 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	isResponse,
 	requireJsonBody,
-	requireOAuthScope,
+	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
 
@@ -61,7 +62,7 @@ function normalizeSettingsPatch(body: Record<string, unknown>): Record<string, u
 async function handleGetSettings(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "settings:read");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.SETTINGS_READ);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin", "member"]);
 	if (roleError) return roleError;
@@ -82,7 +83,7 @@ async function handleGetSettings(req: Request) {
 async function handleUpdateSettings(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
-	const scopeError = requireOAuthScope(auth.value, "settings:write");
+	const scopeError = requireCapability(auth.value, CAPABILITIES.SETTINGS_WRITE);
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
