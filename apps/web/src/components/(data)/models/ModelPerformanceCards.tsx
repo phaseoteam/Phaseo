@@ -14,8 +14,8 @@ function MetricCard({
 	children: ReactNode;
 }) {
 	return (
-		<div className="w-full min-w-0 space-y-4 rounded-lg border border-border/70 bg-background px-5 py-5">
-			<div className="h-[220px]">{children}</div>
+		<div className="min-w-0 rounded-lg border border-border/70 bg-background px-4 py-4">
+			<div className="min-h-[228px] w-full min-w-0">{children}</div>
 		</div>
 	);
 }
@@ -39,7 +39,7 @@ export default function ModelPerformanceCards({
 	const hasHourly = hourly.some((point) => point.requests > 0);
 
 	return (
-		<div className="grid gap-4 md:grid-cols-3">
+		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 			<MetricCard>
 				<ModelProviderTrendChart
 					title="Throughput"
@@ -71,7 +71,7 @@ export default function ModelPerformanceCards({
 			</MetricCard>
 
 			{!hasHourly ? (
-				<p className="md:col-span-3 text-xs text-muted-foreground">
+				<p className="text-xs text-muted-foreground md:col-span-2 lg:col-span-3">
 					Low sample volume in the last 24 hours. Trend lines reflect up to 3
 					active providers over the last 7 days.
 				</p>

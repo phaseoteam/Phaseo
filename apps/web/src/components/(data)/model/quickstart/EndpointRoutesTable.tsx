@@ -96,9 +96,9 @@ export function EndpointRoutesTable({
 		<div className="space-y-3">
 			<div className="flex items-center justify-between gap-3">
 				<div>
-					<h3 className="text-base font-semibold">Available endpoints</h3>
+					<h3 className="text-base font-semibold">Supported endpoints</h3>
 					<p className="text-xs text-muted-foreground">
-						Supported routes for this model. Select a row to update the quickstart code.
+						Select a route to update the request snippet and compatibility details.
 					</p>
 				</div>
 				{endpointRoutes.length > ENDPOINT_ROUTE_PREVIEW_LIMIT ? (

@@ -457,6 +457,9 @@ export async function ModelQuickstartSection({
 					acceptedModelIdentifiersByEndpoint={
 						gatewayMetadata.acceptedModelIdentifiersByEndpoint
 					}
+					supportedParametersByEndpoint={
+						gatewayMetadata.supportedParametersByEndpoint
+					}
 					endpoint={quickstartEndpoint}
 					supportedEndpoints={supportedEndpoints}
 					showHeader={surface !== "overview"}
