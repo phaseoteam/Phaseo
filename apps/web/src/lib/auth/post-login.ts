@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { classifyAuthMethodFromSession } from "@/lib/auth/method";
 import { evaluateTeamSsoEnforcementNoop } from "@/lib/auth/ssoEnforcement";
+import { sendAccountLifecycleDiscordWebhook } from "@/lib/auth/accountLifecycleDiscord";
 import {
 	isResendOnboardingAutomationsEnabled,
 	sendUserCreatedEvent,
@@ -47,18 +48,6 @@ function deriveFirstName(name: string): string {
 	const trimmed = name.trim();
 	if (!trimmed) return "";
 	return trimmed.split(/\s+/)[0] ?? "";
-}
-
-function maskEmailForWebhook(email: string | null): string {
-	if (!email) return "unknown";
-	const atIndex = email.indexOf("@");
-	if (atIndex <= 0 || atIndex === email.length - 1) return "unknown";
-	const localPart = email.slice(0, atIndex);
-	const domain = email.slice(atIndex + 1);
-	const maskedLocal = `${localPart[0]}${"*".repeat(
-		Math.max(1, localPart.length - 1),
-	)}`;
-	return `${maskedLocal}@${domain}`;
 }
 
 async function sendSignupWelcomeEmail(args: {
@@ -166,33 +155,12 @@ async function sendSignupDiscordWebhook(args: {
 	email: string | null;
 	createdAtIso: string;
 }) {
-	const webhookUrl = String(process.env.DISCORD_SIGNUP_WEBHOOK_URL ?? "").trim();
-	if (!webhookUrl) return;
-
-	const maskedEmail = maskEmailForWebhook(args.email);
-
-	const res = await fetch(webhookUrl, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({
-			content: [
-				"New AI Stats signup",
-				`- user_id: \`${args.userId}\``,
-				`- email: \`${maskedEmail}\``,
-				`- created_at: \`${args.createdAtIso}\``,
-			].join("\n"),
-			allowed_mentions: { parse: [] },
-		}),
+	await sendAccountLifecycleDiscordWebhook({
+		event: "signup",
+		userId: args.userId,
+		email: args.email,
+		timestampIso: args.createdAtIso,
 	});
-
-	if (!res.ok) {
-		const detail = await res.text().catch(() => "");
-		throw new Error(
-			`discord_webhook_error:${res.status}:${detail || res.statusText}`,
-		);
-	}
 }
 
 async function ensureWalletRow(
