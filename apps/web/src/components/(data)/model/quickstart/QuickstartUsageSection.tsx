@@ -58,6 +58,7 @@ const SERVICE_TIER_OPTIONS: ServiceTierOption[] = [
 type QuickstartUsageSectionProps = {
 	modelIdentifierInCode: string;
 	acceptedIdentifiers: string[];
+	onSelectModelIdentifier: (value: string) => void;
 	supportedParameters: Array<{
 		param_id: string;
 		provider_count_supported: number;
@@ -537,6 +538,7 @@ function RequestCodePane({
 export function QuickstartUsageSection({
 	modelIdentifierInCode,
 	acceptedIdentifiers,
+	onSelectModelIdentifier,
 	supportedParameters,
 	selectedEndpointLabel,
 	selectedEndpointValue,
@@ -849,7 +851,7 @@ export function QuickstartUsageSection({
 							Accepted IDs
 						</span>
 						<span className="text-xs text-muted-foreground">
-							Click to copy
+							Click to use and copy
 						</span>
 					</div>
 					{acceptedIdentifiers.length > 0 ? (
@@ -864,8 +866,9 @@ export function QuickstartUsageSection({
 										size="sm"
 										className="h-auto min-h-8 max-w-full justify-start gap-2 rounded-md px-2.5 py-1.5 font-mono text-xs"
 										onClick={async () => {
+											onSelectModelIdentifier(identifier);
 											await navigator.clipboard.writeText(identifier);
-											toast.success("Copied model ID", {
+											toast.success("Updated model ID", {
 												description: identifier,
 											});
 										}}

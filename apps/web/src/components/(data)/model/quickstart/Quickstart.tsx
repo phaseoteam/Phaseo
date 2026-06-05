@@ -554,13 +554,29 @@ export default function Quickstart({
 		safeDecodeURIComponent(modelId) ||
 		decodedAcceptedIdentifiers[0] ||
 		"model_id_here";
+	const acceptedIdentifierList = Array.from(
+		new Set([model, ...canonicalAcceptedIdentifiers, ...decodedAcceptedIdentifiers]),
+	).filter(Boolean);
+	const [selectedModelIdentifier, setSelectedModelIdentifier] = useState(model);
+
+	useEffect(() => {
+		if (!acceptedIdentifierList.includes(selectedModelIdentifier)) {
+			setSelectedModelIdentifier(model);
+		}
+	}, [acceptedIdentifierList, model, selectedModelIdentifier]);
+
+	const modelIdentifierInCode = acceptedIdentifierList.includes(
+		selectedModelIdentifier,
+	)
+		? selectedModelIdentifier
+		: model;
 	const endpointPath = resolveGatewayPath(selectedEndpoint);
 	const batchEndpointPath = resolveGatewayPath("batch.create");
 	const activeEndpointPath = batchEnabled ? batchEndpointPath : endpointPath;
 	const endpointUrl = `${BASE_URL}${activeEndpointPath}`;
 	const routingPreference = resolveRoutingPreference(requestContext);
 	const requestPayloadBase = applyRoutingPreferenceToPayload(
-		buildExamplePayload(selectedEndpoint, model),
+		buildExamplePayload(selectedEndpoint, modelIdentifierInCode),
 		routingPreference,
 	);
 	const requestPayload =
@@ -605,10 +621,6 @@ export default function Quickstart({
 		.split("\n")
 		.map((line) => `# ${line}`)
 		.join("\n");
-	const acceptedIdentifierList = Array.from(
-		new Set([model, ...canonicalAcceptedIdentifiers, ...decodedAcceptedIdentifiers]),
-	).filter(Boolean);
-
 	const curlCommandLabel = batchEnabled
 		? "Create a batch job"
 		: shouldStream
@@ -1480,8 +1492,9 @@ console.log(response);`
 					</div>
 
 					<QuickstartUsageSection
-						modelIdentifierInCode={model}
+						modelIdentifierInCode={modelIdentifierInCode}
 						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
 						supportedParameters={supportedParameters}
 						selectedEndpointLabel={selectedEndpointLabel}
 						selectedEndpointValue={selectedEndpoint}
@@ -1539,8 +1552,9 @@ console.log(response);`
 					/>
 
 					{false ? <QuickstartUsageSection
-						modelIdentifierInCode={model}
+						modelIdentifierInCode={modelIdentifierInCode}
 						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
 						supportedParameters={supportedParameters}
 						selectedEndpointLabel={selectedEndpointLabel}
 						selectedEndpointValue={selectedEndpoint}
@@ -1608,8 +1622,9 @@ console.log(response);`
 					/>
 
 					{false ? <QuickstartUsageSection
-						modelIdentifierInCode={model}
+						modelIdentifierInCode={modelIdentifierInCode}
 						acceptedIdentifiers={acceptedIdentifierList}
+						onSelectModelIdentifier={setSelectedModelIdentifier}
 						supportedParameters={supportedParameters}
 						selectedEndpointLabel={selectedEndpointLabel}
 						selectedEndpointValue={selectedEndpoint}
