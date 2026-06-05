@@ -643,6 +643,28 @@ curl ${curlFlags} ${endpointUrl} \\
 		return userMessage?.content ?? "Give me one fun fact about cURL.";
 	})();
 	const aiSdkPromptLiteral = JSON.stringify(aiSdkPrompt);
+	const aiStatsMethod = AI_STATS_METHODS[normalizedEndpoint] ?? null;
+	const typescriptSdkResponseHandler =
+		normalizedEndpoint === "audio.speech"
+			? `const audio = await client.${aiStatsMethod?.ts}({
+${payloadObjectNode}
+});
+
+const audioBytes = await audio.arrayBuffer();
+console.log(\`Generated speech bytes: \${audioBytes.byteLength}\`);`
+			: `const response = await client.${aiStatsMethod?.ts}({
+${payloadObjectNode}
+});
+
+console.log(JSON.stringify(response, null, 2));`;
+	const pythonSdkResponseHandler =
+		normalizedEndpoint === "audio.speech"
+			? `audio = client.${aiStatsMethod?.py}(payload)
+
+print(audio)`
+			: `response = client.${aiStatsMethod?.py}(payload)
+
+print(response)`;
 
 	const typescriptSdkUsage =
 		normalizedEndpoint === "chat.completions"
@@ -729,7 +751,15 @@ const outputText = response.output
   ?.text;
 
 console.log(outputText ?? response);`
-				: null;
+				: aiStatsMethod
+					? `import AIStats from '@ai-stats/sdk';
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+${typescriptSdkResponseHandler}`
+					: null;
 
 	const aiSdkUsage = AI_SDK_ENDPOINTS.has(normalizedEndpoint)
 		? shouldStream
@@ -972,7 +1002,15 @@ output_text = next(
 )
 
 print(output_text or response)`
-				: null;
+				: aiStatsMethod
+					? `import os
+from ai_stats import AIStats
+
+client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
+
+payload = ${payloadJsonPython}
+${pythonSdkResponseHandler}`
+					: null;
 
 	const goSdkUsage = normalizedEndpoint === "chat.completions"
 		? `package main
