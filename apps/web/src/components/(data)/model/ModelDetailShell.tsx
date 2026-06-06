@@ -13,6 +13,8 @@ import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
+import ModelPageNotice from "./ModelPageNotice";
+import { getModelPageNotice } from "@/lib/fetchers/models/getModelPageNotice";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -64,7 +66,7 @@ export default async function ModelDetailShell({
 	includeHidden = false,
 }: ModelDetailShellProps) {
 	const isFreeRouter = isFreeRouterModelId(modelId);
-	const [header, modelOverview] = isFreeRouter
+	const [header, modelOverview, modelPageNotice] = isFreeRouter
 		? [
 				{
 					model_id: FREE_ROUTER_MODEL_ID,
@@ -79,6 +81,7 @@ export default async function ModelDetailShell({
 					hidden: false,
 				},
 				null,
+				null,
 			]
 		: await Promise.all([
 				getModelOverviewHeader(modelId, includeHidden).catch((error) => {
@@ -88,6 +91,7 @@ export default async function ModelDetailShell({
 					throw error;
 				}),
 				getModelOverviewCached(modelId, includeHidden).catch(() => null),
+				getModelPageNotice(modelId, includeHidden).catch(() => null),
 			]);
 
 	if (!header) {
@@ -110,6 +114,12 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
+				{modelPageNotice ? (
+					<div className="mb-6">
+						<ModelPageNotice notice={modelPageNotice} />
+					</div>
+				) : null}
+
 				<div className="mb-8 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="flex w-full items-start gap-4">
 						<div className="flex shrink-0 items-center justify-center">
