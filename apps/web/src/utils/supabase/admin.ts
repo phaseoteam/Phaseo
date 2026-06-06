@@ -1,6 +1,5 @@
 // utils/supabase/admin.ts
 import { createClient } from '@supabase/supabase-js'
-import NodeWebSocket from 'ws'
 
 const DEFAULT_FETCH_RETRIES = Number(process.env.SUPABASE_FETCH_RETRIES ?? "3");
 const DEFAULT_FETCH_TIMEOUT_MS = Number(process.env.SUPABASE_FETCH_TIMEOUT_MS ?? "20000");
@@ -69,17 +68,8 @@ export function createAdminClient() {
     if (!key) {
         throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY for admin Supabase client");
     }
-    const realtime =
-        typeof process !== "undefined" &&
-        Boolean(process.versions?.node) &&
-        typeof NodeWebSocket !== "undefined" &&
-        typeof globalThis.WebSocket === "undefined"
-            ? { transport: NodeWebSocket }
-            : undefined;
-
     return createClient(url, key, {
         auth: { persistSession: false, autoRefreshToken: false },
         global: { fetch: fetchWithRetry },
-        realtime,
     })
 }
