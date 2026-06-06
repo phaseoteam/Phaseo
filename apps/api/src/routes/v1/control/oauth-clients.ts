@@ -23,6 +23,7 @@ import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { createOpaqueCode, hashOAuthSecret } from "@/lib/oauth/service";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 5000;
@@ -259,6 +260,11 @@ app.post("/", async (c) => {
 			);
 		}
 
+		const clientSecretHash =
+			typeof oauthClient.client_secret === "string" && oauthClient.client_secret.trim().length > 0
+				? await hashOAuthSecret(oauthClient.client_secret)
+				: null;
+
 		// Store metadata in database
 		const { data: metadata, error: metadataError } = await supabase
 			.from("oauth_app_metadata")
@@ -272,6 +278,7 @@ app.post("/", async (c) => {
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
 				terms_of_service_url: input.terms_of_service_url,
+				client_secret_hash: clientSecretHash,
 				created_by: createdBy,
 				status: "active",
 			})
@@ -564,18 +571,25 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 			return c.json({ error: "OAuth app not found" }, 404);
 		}
 
-		// Regenerate secret via Supabase Admin SDK
-		const oauthAdmin = (supabase.auth.admin as any).oauth;
-		const { data: newSecret, error: secretError } = await oauthAdmin.regenerateSecret(clientId);
+		const nextSecret = createOpaqueCode();
+		const nextSecretHash = await hashOAuthSecret(nextSecret);
+		const { error: secretError } = await supabase
+			.from("oauth_app_metadata")
+			.update({
+				client_secret_hash: nextSecretHash,
+				updated_at: new Date().toISOString(),
+			})
+			.eq("client_id", clientId)
+			.eq("workspace_id", authCtx.workspaceId);
 
-		if (secretError || !newSecret) {
+		if (secretError) {
 			console.error("Error regenerating OAuth secret:", secretError);
 			return c.json({ error: "Failed to regenerate secret" }, 500);
 		}
 
 		return c.json({
 			client_id: clientId,
-			client_secret: newSecret.client_secret, // Only returned once!
+			client_secret: nextSecret, // Only returned once!
 			message: "Client secret regenerated successfully",
 		});
 	} catch (error: any) {

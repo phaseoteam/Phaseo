@@ -11,7 +11,10 @@ import {
 } from "../src/api.ts";
 import {
 	helpKeyForCommand,
+	nextLoginMenuIndex,
 	prefersDeviceCodeByEnvironment,
+	renderLoginBanner,
+	renderLoginMenu,
 	renderHelp,
 	windowsBrowserOpenArgs,
 } from "../src/index.ts";
@@ -80,6 +83,25 @@ test("prefers device code in SSH and CI environments", () => {
 	assert.equal(prefersDeviceCodeByEnvironment({ SSH_CONNECTION: "1" } as NodeJS.ProcessEnv), true);
 	assert.equal(prefersDeviceCodeByEnvironment({ CI: "true" } as NodeJS.ProcessEnv), true);
 	assert.equal(prefersDeviceCodeByEnvironment({} as NodeJS.ProcessEnv), false);
+});
+
+test("renders a branded login banner", () => {
+	const banner = renderLoginBanner();
+	assert.match(banner, /AI Stats CLI/);
+	assert.match(banner, /Workspace control, keys, and routing tools/);
+});
+
+test("renders login menu with the selected default option", () => {
+	const menu = renderLoginMenu(0, "browser");
+	assert.match(menu, /> Sign in with AI Stats \[default\]/);
+	assert.match(menu, /Sign in with Device Code/);
+});
+
+test("moves the login menu selection with arrow-key input", () => {
+	assert.equal(nextLoginMenuIndex(0, "\u001b[B", 2), 1);
+	assert.equal(nextLoginMenuIndex(1, "\u001b[A", 2), 0);
+	assert.equal(nextLoginMenuIndex(0, "\u001b[A", 2), 0);
+	assert.equal(nextLoginMenuIndex(1, "\u001b[B", 2), 1);
 });
 
 test("resolves help text for command groups and leaf commands", () => {

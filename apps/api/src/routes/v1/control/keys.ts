@@ -11,6 +11,7 @@ import { setKeyVersion } from "@/core/kv";
 import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
+import { loadOAuthClient } from "@/lib/oauth/service";
 import { requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit } from "./management-helpers";
 
@@ -291,6 +292,42 @@ async function handleGetCurrentKey(req: Request) {
 	if (scopeError) return scopeError;
 
 	try {
+		if (auth.value.authMethod === "oauth") {
+			const client = await loadOAuthClient(auth.value.apiKeyId);
+			if (!client) {
+				return json({ error: "not_found", message: "OAuth client not found" }, 404, { "Cache-Control": "no-store" });
+			}
+			return json(
+				{
+					data: {
+						id: client.id,
+						hash: client.id,
+						workspace_id: auth.value.workspaceId,
+						name: client.name ?? "OAuth session",
+						label: client.name ?? "OAuth session",
+						prefix: null,
+						status: "active",
+						disabled: false,
+						soft_blocked: false,
+						include_byok_in_limit: false,
+						limit: null,
+						limit_reset: null,
+						created_by: auth.value.userId ?? null,
+						creator_user_id: auth.value.userId ?? null,
+						created_at: null,
+						updated_at: null,
+						last_used_at: null,
+						expires_at: null,
+						auth_method: "oauth",
+						oauth_client_id: client.id,
+						oauth_scopes: auth.value.oauthScopes ?? [],
+					},
+				},
+				200,
+				{ "Cache-Control": "no-store" },
+			);
+		}
+
 		const supabase = getSupabaseAdmin();
 		const { data, error } = await supabase
 			.from("keys")

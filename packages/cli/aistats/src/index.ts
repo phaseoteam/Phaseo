@@ -2,6 +2,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { clearScreenDown, cursorTo, moveCursor } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stdout as output, platform } from "node:process";
 import {
@@ -33,6 +34,25 @@ type HelpEntry = {
 	usage: string[];
 	description?: string;
 };
+
+type LoginMethodOption = {
+	value: LoginMethod;
+	label: string;
+	description: string;
+};
+
+const LOGIN_METHOD_OPTIONS: LoginMethodOption[] = [
+	{
+		value: "browser",
+		label: "Sign in with AI Stats",
+		description: "Open a browser, approve access, and return here automatically.",
+	},
+	{
+		value: "device",
+		label: "Sign in with Device Code",
+		description: "Best for SSH, remote shells, and terminals without browser callback support.",
+	},
+];
 
 function parseArgs(argv: string[]): ParsedArgs {
 	const command: string[] = [];
@@ -117,6 +137,13 @@ function compact(value: Record<string, unknown>): Record<string, unknown> {
 	return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
 }
 
+function parseCsvFlag(flags: Record<string, string | boolean>, key: string): string[] {
+	return (flagString(flags, key) ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+}
+
 function formatMoneyFromNanos(nanos: unknown): string {
 	const value = Number(nanos ?? 0);
 	if (!Number.isFinite(value)) return "$0.000000";
@@ -136,6 +163,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"aistats presets --help",
 			"aistats settings --help",
 			"aistats guardrails --help",
+			"aistats oauth-clients --help",
 			"aistats management-keys --help",
 			"aistats models --help",
 			"aistats providers --help",
@@ -163,6 +191,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	whoami: { usage: ["aistats whoami [--json]"] },
 	keys: {
 		usage: [
+			"aistats keys current [--json]",
 			"aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
 			"aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
 			"aistats keys get <id-or-hash> [--json]",
@@ -170,6 +199,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"aistats keys delete <id-or-hash> [--json]",
 		],
 	},
+	"keys current": { usage: ["aistats keys current [--json]"] },
 	"keys list": { usage: ["aistats keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
 	"keys create": { usage: ["aistats keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
 	"keys get": { usage: ["aistats keys get <id-or-hash> [--json]"] },
@@ -182,6 +212,9 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"aistats workspaces get <id-or-slug> [--json]",
 			"aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]",
 			"aistats workspaces delete <id-or-slug> [--json]",
+			"aistats workspaces members <id-or-slug> [--json]",
+			"aistats workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]",
+			"aistats workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]",
 		],
 	},
 	"workspaces list": { usage: ["aistats workspaces list [--json]"] },
@@ -189,6 +222,9 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"workspaces get": { usage: ["aistats workspaces get <id-or-slug> [--json]"] },
 	"workspaces update": { usage: ["aistats workspaces update <id-or-slug> [--name <name>] [--slug <slug>] [--json]"] },
 	"workspaces delete": { usage: ["aistats workspaces delete <id-or-slug> [--json]"] },
+	"workspaces members": { usage: ["aistats workspaces members <id-or-slug> [--json]"] },
+	"workspaces add-members": { usage: ["aistats workspaces add-members <id-or-slug> --user-ids <id,id> [--role member|admin] [--json]"] },
+	"workspaces remove-members": { usage: ["aistats workspaces remove-members <id-or-slug> --user-ids <id,id> [--json]"] },
 	presets: {
 		usage: [
 			"aistats presets list [--json]",
@@ -218,6 +254,12 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"aistats guardrails get <id> [--json]",
 			"aistats guardrails update <id> --body-json <json> [--json]",
 			"aistats guardrails delete <id> [--json]",
+			"aistats guardrails list-keys <id> [--json]",
+			"aistats guardrails add-keys <id> --key-ids <id,id> [--json]",
+			"aistats guardrails remove-keys <id> --key-ids <id,id> [--json]",
+			"aistats guardrails list-members <id> [--json]",
+			"aistats guardrails add-members <id> --user-ids <id,id> [--json]",
+			"aistats guardrails remove-members <id> --user-ids <id,id> [--json]",
 			"aistats guardrails set-keys <id> --key-ids <id,id> [--json]",
 		],
 	},
@@ -226,7 +268,29 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"guardrails get": { usage: ["aistats guardrails get <id> [--json]"] },
 	"guardrails update": { usage: ["aistats guardrails update <id> --body-json <json> [--json]"] },
 	"guardrails delete": { usage: ["aistats guardrails delete <id> [--json]"] },
+	"guardrails list-keys": { usage: ["aistats guardrails list-keys <id> [--json]"] },
+	"guardrails add-keys": { usage: ["aistats guardrails add-keys <id> --key-ids <id,id> [--json]"] },
+	"guardrails remove-keys": { usage: ["aistats guardrails remove-keys <id> --key-ids <id,id> [--json]"] },
+	"guardrails list-members": { usage: ["aistats guardrails list-members <id> [--json]"] },
+	"guardrails add-members": { usage: ["aistats guardrails add-members <id> --user-ids <id,id> [--json]"] },
+	"guardrails remove-members": { usage: ["aistats guardrails remove-members <id> --user-ids <id,id> [--json]"] },
 	"guardrails set-keys": { usage: ["aistats guardrails set-keys <id> --key-ids <id,id> [--json]"] },
+	"oauth-clients": {
+		usage: [
+			"aistats oauth-clients list [--json]",
+			"aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
+			"aistats oauth-clients get <client-id> [--json]",
+			"aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
+			"aistats oauth-clients delete <client-id> [--json]",
+			"aistats oauth-clients regenerate-secret <client-id> [--json]",
+		],
+	},
+	"oauth-clients list": { usage: ["aistats oauth-clients list [--json]"] },
+	"oauth-clients create": { usage: ["aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
+	"oauth-clients get": { usage: ["aistats oauth-clients get <client-id> [--json]"] },
+	"oauth-clients update": { usage: ["aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
+	"oauth-clients delete": { usage: ["aistats oauth-clients delete <client-id> [--json]"] },
+	"oauth-clients regenerate-secret": { usage: ["aistats oauth-clients regenerate-secret <client-id> [--json]"] },
 	"management-keys": {
 		usage: [
 			"aistats management-keys list [--json]",
@@ -326,6 +390,25 @@ function printList(items: any[], render: (item: any) => string): void {
 	for (const item of items) process.stdout.write(`${render(item)}\n`);
 }
 
+function countRenderedLines(text: string): number {
+	const normalized = text.replace(/\r/g, "");
+	const trimmed = normalized.endsWith("\n") ? normalized.slice(0, -1) : normalized;
+	return trimmed ? trimmed.split("\n").length : 0;
+}
+
+function clearRenderedBlock(lineCount: number) {
+	if (!output.isTTY || lineCount <= 0) return;
+	moveCursor(output, 0, -lineCount);
+	cursorTo(output, 0);
+	clearScreenDown(output);
+}
+
+function repaintBlock(text: string, previousLineCount: number): number {
+	clearRenderedBlock(previousLineCount);
+	output.write(text);
+	return countRenderedLines(text);
+}
+
 function isInteractiveTerminal(): boolean {
 	return Boolean(input.isTTY && output.isTTY);
 }
@@ -349,6 +432,61 @@ export function windowsBrowserOpenArgs(url: string): string[] {
 		"-Command",
 		`Start-Process -FilePath '${escapedUrl}'`,
 	];
+}
+
+function loginOptionIndex(method: LoginMethod): number {
+	return LOGIN_METHOD_OPTIONS.findIndex((option) => option.value === method);
+}
+
+export function renderLoginBanner(): string {
+	return [
+		"    _    ___     ____  _        _       ",
+		"   / \\  |_ _|   / ___|| |_ __ _| |_ ___ ",
+		"  / _ \\  | |____\\___ \\| __/ _` | __/ __|",
+		" / ___ \\ | |_____|__) | || (_| | |_\\__ \\",
+		"/_/   \\_\\___|   |____/ \\__\\__,_|\\__|___/",
+		"",
+		"AI Stats CLI",
+		"Workspace control, keys, and routing tools from your terminal.",
+	].join("\n");
+}
+
+export function renderLoginMenu(selectedIndex: number, defaultMethod: LoginMethod): string {
+	const lines = [
+		renderLoginBanner(),
+		"",
+		"Choose a login method.",
+		"Use Up/Down arrows and Enter to continue.",
+		"",
+	];
+
+	for (const [index, option] of LOGIN_METHOD_OPTIONS.entries()) {
+		const isSelected = index === selectedIndex;
+		const isDefault = option.value === defaultMethod;
+		lines.push(`${isSelected ? ">" : " "} ${option.label}${isDefault ? " [default]" : ""}`);
+		lines.push(`    ${option.description}`);
+		lines.push("");
+	}
+
+	lines.push("Tip: Device Code is the safer choice in SSH, remote devboxes, and CI.");
+	lines.push("Press Ctrl+C to cancel.");
+	return lines.join("\n");
+}
+
+export function nextLoginMenuIndex(currentIndex: number, rawInput: string, optionCount: number): number {
+	if (optionCount <= 0) return 0;
+	switch (rawInput) {
+		case "\u001b[A":
+			return Math.max(0, currentIndex - 1);
+		case "\u001b[B":
+			return Math.min(optionCount - 1, currentIndex + 1);
+		case "1":
+			return 0;
+		case "2":
+			return Math.min(optionCount - 1, 1);
+		default:
+			return currentIndex;
+	}
 }
 
 function openUrl(url: string): boolean {
@@ -394,6 +532,54 @@ async function chooseLoginMethod(flags: Record<string, string | boolean>, json: 
 		return resolveLoginMethod(flags, json);
 	}
 	const defaultMethod = resolveLoginMethod(flags, json);
+	if (typeof input.setRawMode === "function") {
+		return new Promise<LoginMethod>((resolve, reject) => {
+			let selectedIndex = Math.max(0, loginOptionIndex(defaultMethod));
+			let renderedLines = 0;
+
+			const finish = (result: { method?: LoginMethod; error?: Error }) => {
+				input.off("data", handleKeypress);
+				if (typeof input.setRawMode === "function") {
+					input.setRawMode(false);
+				}
+				input.pause();
+				output.write("\x1b[?25h");
+				clearRenderedBlock(renderedLines);
+				if (result.error) {
+					reject(result.error);
+					return;
+				}
+				resolve(result.method ?? defaultMethod);
+			};
+
+			const render = () => {
+				renderedLines = repaintBlock(`${renderLoginMenu(selectedIndex, defaultMethod)}\n`, renderedLines);
+			};
+
+			const handleKeypress = (chunk: Buffer | string) => {
+				const rawInput = chunk.toString("utf8");
+				if (rawInput === "\u0003") {
+					finish({ error: new Error("Login cancelled.") });
+					return;
+				}
+				if (rawInput === "\r" || rawInput === "\n") {
+					finish({ method: LOGIN_METHOD_OPTIONS[selectedIndex]?.value ?? defaultMethod });
+					return;
+				}
+				const nextIndex = nextLoginMenuIndex(selectedIndex, rawInput, LOGIN_METHOD_OPTIONS.length);
+				if (nextIndex !== selectedIndex) {
+					selectedIndex = nextIndex;
+					render();
+				}
+			};
+
+			input.setRawMode(true);
+			input.resume();
+			output.write("\x1b[?25l");
+			render();
+			input.on("data", handleKeypress);
+		});
+	}
 	const prompt = createInterface({ input, output });
 	try {
 		const defaultChoice = defaultMethod === "device" ? "2" : "1";
@@ -679,6 +865,16 @@ async function deleteKey(id: string | undefined, flags: Record<string, string | 
 	process.stdout.write("Deleted API key.\n");
 }
 
+async function currentKey(flags: Record<string, string | boolean>) {
+	const body = await request("/key");
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`${body.data.name ?? body.data.prefix ?? body.data.id}\n`);
+	process.stdout.write(`ID: ${body.data.id}\n`);
+	process.stdout.write(`Workspace: ${body.data.workspace_id}\n`);
+	process.stdout.write(`Status: ${body.data.status}\n`);
+	process.stdout.write(`Expires: ${body.data.expires_at ?? "never"}\n`);
+}
+
 async function listWorkspaces(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/workspaces", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
@@ -715,6 +911,46 @@ async function deleteWorkspace(id: string | undefined, flags: Record<string, str
 	const body = await request(`/workspaces/${encodeURIComponent(id)}`, { method: "DELETE" });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write("Deleted workspace.\n");
+}
+
+async function listWorkspaceMembers(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Workspace id or slug is required");
+	const body = await request(`/workspaces/${encodeURIComponent(id)}/members`);
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (member) => `${member.role ?? "member"} ${member.user_id}`);
+}
+
+async function addWorkspaceMembers(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Workspace id or slug is required");
+	const userIds = (flagString(flags, "user-ids") ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	if (!userIds.length) throw new Error("--user-ids is required");
+	const body = await request(`/workspaces/${encodeURIComponent(id)}/members/add`, {
+		method: "POST",
+		body: compact({
+			user_ids: userIds,
+			role: flagString(flags, "role"),
+		}),
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Added ${body.added_count ?? userIds.length} member(s) to workspace.\n`);
+}
+
+async function removeWorkspaceMembers(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Workspace id or slug is required");
+	const userIds = (flagString(flags, "user-ids") ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	if (!userIds.length) throw new Error("--user-ids is required");
+	const body = await request(`/workspaces/${encodeURIComponent(id)}/members/remove`, {
+		method: "POST",
+		body: { user_ids: userIds },
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Removed ${body.removed_count ?? 0} member(s) from workspace.\n`);
 }
 
 function buildPresetConfig(flags: Record<string, string | boolean>): Record<string, unknown> {
@@ -859,6 +1095,140 @@ async function setGuardrailKeys(id: string | undefined, flags: Record<string, st
 	process.stdout.write(`Assigned ${keyIds.length} key(s) to guardrail.\n`);
 }
 
+async function listGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/keys`);
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (assignment) => `${assignment.name ?? assignment.prefix ?? assignment.key_id} ${assignment.key_id}`);
+}
+
+async function addGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const keyIds = (flagString(flags, "key-ids") ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	if (!keyIds.length) throw new Error("--key-ids is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/keys/add`, {
+		method: "POST",
+		body: { key_ids: keyIds },
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Added ${body.added_count ?? keyIds.length} key assignment(s).\n`);
+}
+
+async function removeGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const keyIds = (flagString(flags, "key-ids") ?? "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	if (!keyIds.length) throw new Error("--key-ids is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/keys/remove`, {
+		method: "POST",
+		body: { key_ids: keyIds },
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Removed ${body.removed_count ?? 0} key assignment(s).\n`);
+}
+
+async function listGuardrailMembers(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/members`);
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (assignment) => `${assignment.display_name ?? assignment.user_id} ${assignment.role ?? "member"} ${assignment.user_id}`);
+}
+
+async function addGuardrailMembers(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const userIds = parseCsvFlag(flags, "user-ids");
+	if (!userIds.length) throw new Error("--user-ids is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/members/add`, {
+		method: "POST",
+		body: { user_ids: userIds },
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Added ${body.added_count ?? userIds.length} member assignment(s).\n`);
+}
+
+async function removeGuardrailMembers(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Guardrail id is required");
+	const userIds = parseCsvFlag(flags, "user-ids");
+	if (!userIds.length) throw new Error("--user-ids is required");
+	const body = await request(`/guardrails/${encodeURIComponent(id)}/members/remove`, {
+		method: "POST",
+		body: { user_ids: userIds },
+	});
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Removed ${body.removed_count ?? 0} member assignment(s).\n`);
+}
+
+function buildOauthClientPayload(flags: Record<string, string | boolean>) {
+	const redirectUris = [
+		...parseCsvFlag(flags, "redirect-uris"),
+		...parseCsvFlag(flags, "redirect-uri"),
+	];
+	const uniqueRedirectUris = Array.from(new Set(redirectUris));
+	return compact({
+		name: flagString(flags, "name"),
+		description: flagString(flags, "description"),
+		homepage_url: flagString(flags, "homepage-url"),
+		logo_url: flagString(flags, "logo-url"),
+		privacy_policy_url: flagString(flags, "privacy-policy-url"),
+		terms_of_service_url: flagString(flags, "terms-of-service-url"),
+		redirect_uris: uniqueRedirectUris.length ? uniqueRedirectUris : undefined,
+	});
+}
+
+async function listOauthClients(flags: Record<string, string | boolean>) {
+	const body = await request("/oauth-clients");
+	if (flagBool(flags, "json")) return printJson(body);
+	printList(body.data ?? [], (client) => `${client.name ?? client.client_id} ${client.client_id}`);
+}
+
+async function createOauthClient(flags: Record<string, string | boolean>) {
+	const payload = buildOauthClientPayload(flags);
+	if (!payload.name) throw new Error("--name is required");
+	if (!Array.isArray(payload.redirect_uris) || payload.redirect_uris.length === 0) {
+		throw new Error("--redirect-uri or --redirect-uris is required");
+	}
+	const body = await request("/oauth-clients", { method: "POST", body: payload });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Created OAuth client: ${body.name ?? payload.name}\nClient ID: ${body.client_id}\n`);
+	if (body.client_secret) process.stdout.write(`Client secret: ${body.client_secret}\n`);
+}
+
+async function getOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("OAuth client id is required");
+	const body = await request(`/oauth-clients/${encodeURIComponent(id)}`);
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`${body.name ?? body.client_id}\nClient ID: ${body.client_id}\nRedirect URIs: ${(body.redirect_uris ?? []).join(", ")}\n`);
+}
+
+async function updateOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("OAuth client id is required");
+	const payload = buildOauthClientPayload(flags);
+	if (Object.keys(payload).length === 0) throw new Error("Provide at least one field to update");
+	const body = await request(`/oauth-clients/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Updated OAuth client: ${body.name ?? body.client_id}\n`);
+}
+
+async function deleteOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("OAuth client id is required");
+	const body = await request(`/oauth-clients/${encodeURIComponent(id)}`, { method: "DELETE" });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`${body.message ?? "Deleted OAuth client."}\n`);
+}
+
+async function regenerateOauthClientSecret(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("OAuth client id is required");
+	const body = await request(`/oauth-clients/${encodeURIComponent(id)}/regenerate-secret`, { method: "POST" });
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(`Regenerated secret for ${body.client_id}\n`);
+	if (body.client_secret) process.stdout.write(`Client secret: ${body.client_secret}\n`);
+}
+
 async function listManagementKeys(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/management-keys", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
@@ -1000,6 +1370,7 @@ async function main() {
 		if (first === "login") return login(parsed.flags);
 		if (first === "logout") return logout(parsed.flags);
 		if (first === "whoami") return whoami(parsed.flags);
+		if (first === "keys" && second === "current") return currentKey(parsed.flags);
 		if (first === "keys" && second === "list") return listKeys(parsed.flags);
 		if (first === "keys" && second === "create") return createKey(parsed.flags);
 		if (first === "keys" && second === "get") return getKey(third, parsed.flags);
@@ -1010,6 +1381,9 @@ async function main() {
 		if (first === "workspaces" && second === "get") return getWorkspace(third, parsed.flags);
 		if (first === "workspaces" && second === "update") return updateWorkspace(third, parsed.flags);
 		if (first === "workspaces" && second === "delete") return deleteWorkspace(third, parsed.flags);
+		if (first === "workspaces" && second === "members") return listWorkspaceMembers(third, parsed.flags);
+		if (first === "workspaces" && second === "add-members") return addWorkspaceMembers(third, parsed.flags);
+		if (first === "workspaces" && second === "remove-members") return removeWorkspaceMembers(third, parsed.flags);
 		if (first === "presets" && second === "list") return listPresets(parsed.flags);
 		if (first === "presets" && second === "create") return createPreset(parsed.flags);
 		if (first === "presets" && second === "get") return getPreset(third, parsed.flags);
@@ -1022,7 +1396,19 @@ async function main() {
 		if (first === "guardrails" && second === "get") return getGuardrail(third, parsed.flags);
 		if (first === "guardrails" && second === "update") return updateGuardrail(third, parsed.flags);
 		if (first === "guardrails" && second === "delete") return deleteGuardrail(third, parsed.flags);
+		if (first === "guardrails" && second === "list-keys") return listGuardrailKeys(third, parsed.flags);
+		if (first === "guardrails" && second === "add-keys") return addGuardrailKeys(third, parsed.flags);
+		if (first === "guardrails" && second === "remove-keys") return removeGuardrailKeys(third, parsed.flags);
+		if (first === "guardrails" && second === "list-members") return listGuardrailMembers(third, parsed.flags);
+		if (first === "guardrails" && second === "add-members") return addGuardrailMembers(third, parsed.flags);
+		if (first === "guardrails" && second === "remove-members") return removeGuardrailMembers(third, parsed.flags);
 		if (first === "guardrails" && second === "set-keys") return setGuardrailKeys(third, parsed.flags);
+		if (first === "oauth-clients" && second === "list") return listOauthClients(parsed.flags);
+		if (first === "oauth-clients" && second === "create") return createOauthClient(parsed.flags);
+		if (first === "oauth-clients" && second === "get") return getOauthClient(third, parsed.flags);
+		if (first === "oauth-clients" && second === "update") return updateOauthClient(third, parsed.flags);
+		if (first === "oauth-clients" && second === "delete") return deleteOauthClient(third, parsed.flags);
+		if (first === "oauth-clients" && second === "regenerate-secret") return regenerateOauthClientSecret(third, parsed.flags);
 		if (first === "management-keys" && second === "list") return listManagementKeys(parsed.flags);
 		if (first === "management-keys" && second === "create") return createManagementKey(parsed.flags);
 		if (first === "management-keys" && second === "get") return getManagementKey(third, parsed.flags);
