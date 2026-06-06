@@ -145,16 +145,5 @@ export async function getModelPageNotice(
 	modelId: string,
 	includeHidden: boolean,
 ): Promise<ModelPageNotice | null> {
-	"use cache";
-
-	cacheLife({
-		stale: 60 * 60 * 24,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 30,
-	});
-
-	cacheTag("data:data_api_model_page_notices");
-	cacheTag(`model:notice:${modelId}`);
-
 	return getModelPageNoticeUncached(modelId, includeHidden);
 }
