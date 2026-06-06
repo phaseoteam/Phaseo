@@ -175,76 +175,8 @@ export async function approveAuthorizationAction(
 			}
 		}
 
-		// Check if authorizations already exist for the selected teams
-		const { data: existingAuths } = await supabase
-			.from("oauth_authorizations")
-			.select("id, revoked_at, workspace_id")
-			.eq("user_id", user.id)
-			.eq("client_id", resolvedClientId)
-			.in("workspace_id", selectedWorkspaceIds);
-
-		const existingByWorkspace = new Map(
-			(existingAuths ?? []).map((auth: { id: string; revoked_at: string | null; workspace_id: string }) => [
-				String(auth.workspace_id),
-				auth,
-			]),
-		);
-
-		for (const workspaceId of selectedWorkspaceIds) {
-			const existingAuth = existingByWorkspace.get(workspaceId);
-			if (existingAuth) {
-				const { error: updateError } = await supabase
-					.from("oauth_authorizations")
-					.update({
-						scopes,
-						revoked_at: existingAuth.revoked_at ? null : existingAuth.revoked_at,
-					})
-					.eq("id", existingAuth.id);
-				if (updateError) {
-					return {
-						error: `Failed to update authorization: ${updateError.message}`,
-					};
-				}
-				continue;
-			}
-
-			const { error: authError } = await supabase.from("oauth_authorizations").insert({
-				user_id: user.id,
-				client_id: resolvedClientId,
-				workspace_id: workspaceId,
-				scopes,
-			});
-
-			if (authError) {
-				return {
-					error: `Failed to create authorization: ${authError.message}`,
-				};
-			}
-		}
-
-		if (input.authorization_id) {
-			const { data: redirectData, error: approveError } =
-				await oauthClient.approveAuthorization(input.authorization_id, {
-					skipBrowserRedirect: true,
-				});
-
-			if (approveError || !redirectData?.redirect_url) {
-				return {
-					error:
-						approveError?.message ||
-						"Failed to finalize OAuth authorization",
-				};
-			}
-
-			return {
-				data: {
-					redirect_url: redirectData.redirect_url,
-					authorization_id: input.authorization_id,
-				},
-			};
-		}
-
-		if (!input.redirect_uri) {
+		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
+		if (!resolvedRedirectUri) {
 			return {
 				error:
 					"Missing authorization_id. Please restart the OAuth flow from the client application.",
@@ -270,7 +202,7 @@ export async function approveAuthorizationAction(
 				primary_workspace_id: primaryWorkspaceId,
 				workspace_ids: selectedWorkspaceIds,
 				scopes,
-				redirect_uri: input.redirect_uri,
+				redirect_uri: resolvedRedirectUri,
 				state: input.state,
 				code_challenge: input.code_challenge,
 				code_challenge_method: input.code_challenge_method,
