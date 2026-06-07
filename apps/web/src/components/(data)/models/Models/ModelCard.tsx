@@ -838,7 +838,7 @@ function ModelCardImpl({
 		) {
 			return;
 		}
-		router.push(modelHref);
+		router.push(modelHref, { scroll: true });
 	};
 
 	return (
@@ -879,6 +879,7 @@ function ModelCardImpl({
 							<Link
 								href={modelHref}
 								prefetch={false}
+								scroll
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
 								{modelDisplayName}
@@ -929,6 +930,7 @@ function ModelCardImpl({
 						<Link
 							href={modelHref}
 							prefetch={false}
+							scroll
 							aria-label={`Open ${modelDisplayName}`}
 							className="group/open"
 						>
