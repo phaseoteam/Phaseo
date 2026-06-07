@@ -2273,7 +2273,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-03-12T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-12T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -2386,7 +2386,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-03-12T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-12T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -2471,7 +2471,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-03-12T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-12T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -2598,7 +2598,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-03-12T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-12T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -2697,7 +2697,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-06-25T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-12T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -2782,7 +2782,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-06-25T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-04-12T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",

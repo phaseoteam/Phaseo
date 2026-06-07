@@ -15,7 +15,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-03-12T00:00:00Z"
+      "effective_from": "2025-03-12T00:00:00Z",
+      "effective_to": "2026-04-12T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -27,7 +28,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-03-12T00:00:00Z"
+      "effective_from": "2025-03-12T00:00:00Z",
+      "effective_to": "2026-04-12T00:00:00Z"
     }
   ]
 }
