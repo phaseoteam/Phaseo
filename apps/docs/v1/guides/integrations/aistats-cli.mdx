@@ -1,0 +1,160 @@
+---
+title: "AI Stats CLI"
+description: "Install the official AI Stats CLI, sign in with browser OAuth or device code, and manage keys, guardrails, workspaces, and OAuth apps from the terminal."
+---
+
+The AI Stats CLI gives you a first-party terminal workflow for the AI Stats control plane.
+
+Use it when you want to:
+
+- sign in as a real AI Stats user from a local shell, remote shell, or agent runtime
+- create and rotate API keys or management keys
+- manage workspaces, presets, settings, and guardrails
+- create user-owned OAuth apps for your own integrations
+- inspect models, providers, pricing, credits, activity, analytics, and generations
+
+## Install
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @ai-stats/cli
+```
+
+```bash title="pnpm"
+pnpm add -g @ai-stats/cli
+```
+
+```bash title="yarn"
+yarn global add @ai-stats/cli
+```
+
+```bash title="bun"
+bun add -g @ai-stats/cli
+```
+
+</CodeGroup>
+
+## Check the installed version
+
+```bash
+aistats --version
+aistats version
+aistats version --json
+```
+
+- `aistats --version` prints the installed version.
+- `aistats version` prints the version plus the recommended update command for the current package manager.
+- interactive runs also show an update hint when a newer published version is available.
+
+## Sign in
+
+Start with:
+
+```bash
+aistats login
+```
+
+The CLI supports two first-party flows:
+
+- **Sign in with AI Stats**: browser OAuth with authorization code + PKCE
+- **Sign in with Device Code**: best for SSH, CI, headless shells, and agent environments
+
+You can force either path:
+
+```bash
+aistats login --browser
+aistats login --device-code
+```
+
+Remote and non-interactive environments automatically prefer device code.
+
+## Confirm who you are
+
+```bash
+aistats whoami
+aistats whoami --json
+```
+
+This returns your current AI Stats user, scopes, active workspace, and available workspaces.
+
+## Create keys
+
+```bash
+aistats keys create --name "Local CLI Key"
+aistats keys create --name "Agent Sandbox Key" --json
+aistats keys current
+```
+
+Use `--json` when an agent or automation needs the raw created key once.
+
+## Manage workspaces, guardrails, and OAuth apps
+
+```bash
+aistats workspaces list
+aistats workspaces members <workspace-id-or-slug>
+
+aistats guardrails list
+aistats guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+
+aistats oauth-clients list
+aistats oauth-clients create --name "My App" --redirect-uri "http://127.0.0.1:8789/callback"
+```
+
+The CLI is intended to cover the useful parts of the AI Stats dashboard and management APIs from the terminal.
+
+## Create your own OAuth apps
+
+You can create confidential or public apps from the CLI and control:
+
+- redirect URIs
+- allowed scopes
+- app metadata like description, homepage URL, privacy policy URL, and terms of service URL
+
+Example:
+
+```bash
+aistats oauth-clients create \
+  --name "My Guardrail Bot" \
+  --client-type confidential \
+  --redirect-uri "http://127.0.0.1:8789/callback" \
+  --scopes "openid,profile,email,me:read,guardrails:write"
+```
+
+That uses the same OAuth/OIDC foundation as the first-party CLI login flow.
+
+## Security model
+
+- CLI sessions prefer OS-backed secure storage where available.
+- `aistats logout` revokes the stored refresh token before clearing local state.
+- Management keys require explicit capabilities.
+- Regular inference keys rely on guardrails, routing policies, and workspace settings rather than a separate scope model.
+
+## Update
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @ai-stats/cli@latest
+```
+
+```bash title="pnpm"
+pnpm add -g @ai-stats/cli@latest
+```
+
+```bash title="yarn"
+yarn global add @ai-stats/cli@latest
+```
+
+```bash title="bun"
+bun add -g @ai-stats/cli@latest
+```
+
+</CodeGroup>
+
+## Next steps
+
+- [Management API keys](../../developers/management-api-keys)
+- [Authentication](../../developers/authentication)
+- [Codex](./codex)
+- [Claude Code](./claude-code)

@@ -11,6 +11,8 @@ import {
 } from "../src/api.ts";
 import {
 	helpKeyForCommand,
+	parseArgs,
+	renderVersionText,
 	inspectCallbackRequest,
 	nextLoginMenuIndex,
 	prefersDeviceCodeByEnvironment,
@@ -19,6 +21,12 @@ import {
 	renderHelp,
 	windowsBrowserOpenArgs,
 } from "../src/index.ts";
+import {
+	compareVersions,
+	detectPackageManager,
+	installCommandFor,
+	updateCommandFor,
+} from "../src/release.ts";
 
 test("normalizes API roots for oauth and v1 endpoints", () => {
 	assert.equal(normalizeApiRoot("https://api.example.com/v1/"), "https://api.example.com");
@@ -126,4 +134,45 @@ test("resolves help text for command groups and leaf commands", () => {
 	assert.match(renderHelp(["keys", "create"]), /aistats keys create --name <name>/);
 	assert.match(renderHelp(["pricing"]), /aistats pricing calculate --provider <provider>/);
 	assert.match(renderHelp(["login"]), /--scopes <csv>/);
+});
+
+test("treats short and long root flags as flags instead of commands", () => {
+	assert.deepEqual(parseArgs(["--version"]), {
+		command: [],
+		flags: { version: true },
+	});
+	assert.deepEqual(parseArgs(["-v"]), {
+		command: [],
+		flags: { version: true },
+	});
+	assert.deepEqual(parseArgs(["-h"]), {
+		command: [],
+		flags: { help: true },
+	});
+});
+
+test("detects preferred package managers and emits install/update commands", () => {
+	assert.equal(detectPackageManager({ npm_config_user_agent: "pnpm/10.33.0 node/v24" } as NodeJS.ProcessEnv), "pnpm");
+	assert.equal(detectPackageManager({ npm_config_user_agent: "yarn/1.22.22 npm/? node/v24" } as NodeJS.ProcessEnv), "yarn");
+	assert.equal(detectPackageManager({ npm_config_user_agent: "bun/1.2.0 npm/? node/v24" } as NodeJS.ProcessEnv), "bun");
+	assert.equal(detectPackageManager({} as NodeJS.ProcessEnv), "npm");
+	assert.equal(installCommandFor("pnpm"), "pnpm add -g @ai-stats/cli");
+	assert.equal(updateCommandFor("npm"), "npm install -g @ai-stats/cli@latest");
+});
+
+test("compares semantic versions and renders version details", () => {
+	assert.equal(compareVersions("0.1.0", "0.1.0"), 0);
+	assert.equal(compareVersions("0.2.0", "0.1.9"), 1);
+	assert.equal(compareVersions("0.1.0", "0.2.0"), -1);
+	const text = renderVersionText({
+		version: "0.1.0",
+		packageManager: "pnpm",
+		installCommand: "pnpm add -g @ai-stats/cli",
+		updateCommand: "pnpm add -g @ai-stats/cli@latest",
+		latestVersion: "0.2.0",
+		updateAvailable: true,
+	});
+	assert.match(text, /AI Stats CLI 0.1.0/);
+	assert.match(text, /pnpm add -g @ai-stats\/cli@latest/);
+	assert.match(text, /update available/);
 });

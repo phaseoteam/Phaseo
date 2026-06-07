@@ -89,7 +89,7 @@ export function normalizeScopeInput(scopes: unknown): { ok: true; value: string 
 		allowIdentityScopes: false,
 		defaultScopes: DEFAULT_MANAGEMENT_KEY_CAPABILITIES,
 	});
-	if (!normalized.ok) {
+	if (normalized.ok === false) {
 		return { ok: false, message: normalized.message };
 	}
 	return { ok: true, value: serializeScopeList(normalized.value) };

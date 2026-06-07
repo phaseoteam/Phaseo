@@ -18,6 +18,8 @@ import {
 } from "./api.js";
 import { clearSession, readSession, writeSession } from "./session.js";
 import { printError, printJson } from "./output.js";
+import { CLI_VERSION } from "./generated/meta.js";
+import { getVersionInfo } from "./release.js";
 
 type ParsedArgs = {
 	command: string[];
@@ -58,11 +60,19 @@ const LOGIN_METHOD_OPTIONS: LoginMethodOption[] = [
 	},
 ];
 
-function parseArgs(argv: string[]): ParsedArgs {
+export function parseArgs(argv: string[]): ParsedArgs {
 	const command: string[] = [];
 	const flags: Record<string, string | boolean> = {};
 	for (let i = 0; i < argv.length; i++) {
 		const arg = argv[i];
+		if (arg === "-h") {
+			flags.help = true;
+			continue;
+		}
+		if (arg === "-v") {
+			flags.version = true;
+			continue;
+		}
 		if (arg.startsWith("--")) {
 			const [rawKey, inlineValue] = arg.slice(2).split("=", 2);
 			if (inlineValue !== undefined) {
@@ -161,6 +171,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"aistats login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
 			"aistats logout [--json]",
 			"aistats whoami [--json]",
+			"aistats version [--json]",
 			"",
 			"aistats keys --help",
 			"aistats workspaces --help",
@@ -191,6 +202,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"aistats login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
 		],
 	},
+	version: { usage: ["aistats version [--json]"] },
 	logout: { usage: ["aistats logout [--json]"] },
 	whoami: { usage: ["aistats whoami [--json]"] },
 	keys: {
@@ -379,6 +391,57 @@ export function renderHelp(command: string[]): string {
 
 function printHelp(command: string[] = []) {
 	process.stdout.write(renderHelp(command));
+}
+
+export function renderVersionText(details: {
+	version: string;
+	packageManager: string;
+	installCommand: string;
+	updateCommand: string;
+	latestVersion: string | null;
+	updateAvailable: boolean;
+}): string {
+	const lines = [
+		`AI Stats CLI ${details.version}`,
+		`Package manager: ${details.packageManager}`,
+		`Install: ${details.installCommand}`,
+		`Update: ${details.updateCommand}`,
+	];
+	if (details.latestVersion) {
+		lines.push(
+			details.updateAvailable
+				? `Latest: ${details.latestVersion} (update available)`
+				: `Latest: ${details.latestVersion}`,
+		);
+	}
+	return `${lines.join("\n")}\n`;
+}
+
+async function printVersion(flags: Record<string, string | boolean>, options: { short?: boolean } = {}) {
+	if (options.short) {
+		const info = await getVersionInfo();
+		process.stdout.write(`${CLI_VERSION}  update: ${info.updateCommand}\n`);
+		return;
+	}
+	const refreshVersion = flagBool(flags, "refresh-version") || flagBool(flags, "check-update");
+	const info = await getVersionInfo({
+		lookupLatest: refreshVersion,
+		forceLatestLookup: refreshVersion,
+	});
+	if (flagBool(flags, "json")) {
+		printJson(info);
+		return;
+	}
+	process.stdout.write(renderVersionText(info));
+}
+
+async function maybePrintUpdateNotice(json: boolean) {
+	if (json || process.env.AI_STATS_DISABLE_UPDATE_CHECK === "1") return;
+	const info = await getVersionInfo({ lookupLatest: true });
+	if (!info.updateAvailable || !info.latestVersion) return;
+	process.stdout.write(
+		`\nUpdate available: ${CLI_VERSION} -> ${info.latestVersion}\nRun: ${info.updateCommand}\n`,
+	);
 }
 
 async function request(path: string, options: { method?: HttpMethod; body?: Record<string, unknown> } = {}) {
@@ -1391,69 +1454,93 @@ async function main() {
 	const json = flagBool(parsed.flags, "json");
 	try {
 		const [first, second, third] = parsed.command;
-		if (!first) return printHelp();
-		if (first === "help") return printHelp(parsed.command.slice(1));
-		if (flagBool(parsed.flags, "help")) return printHelp(parsed.command);
-		if (first === "login") return login(parsed.flags);
-		if (first === "logout") return logout(parsed.flags);
-		if (first === "whoami") return whoami(parsed.flags);
-		if (first === "keys" && second === "current") return currentKey(parsed.flags);
-		if (first === "keys" && second === "list") return listKeys(parsed.flags);
-		if (first === "keys" && second === "create") return createKey(parsed.flags);
-		if (first === "keys" && second === "get") return getKey(third, parsed.flags);
-		if (first === "keys" && second === "update") return updateKey(third, parsed.flags);
-		if (first === "keys" && second === "delete") return deleteKey(third, parsed.flags);
-		if (first === "workspaces" && second === "list") return listWorkspaces(parsed.flags);
-		if (first === "workspaces" && second === "create") return createWorkspace(parsed.flags);
-		if (first === "workspaces" && second === "get") return getWorkspace(third, parsed.flags);
-		if (first === "workspaces" && second === "update") return updateWorkspace(third, parsed.flags);
-		if (first === "workspaces" && second === "delete") return deleteWorkspace(third, parsed.flags);
-		if (first === "workspaces" && second === "members") return listWorkspaceMembers(third, parsed.flags);
-		if (first === "workspaces" && second === "add-members") return addWorkspaceMembers(third, parsed.flags);
-		if (first === "workspaces" && second === "remove-members") return removeWorkspaceMembers(third, parsed.flags);
-		if (first === "presets" && second === "list") return listPresets(parsed.flags);
-		if (first === "presets" && second === "create") return createPreset(parsed.flags);
-		if (first === "presets" && second === "get") return getPreset(third, parsed.flags);
-		if (first === "presets" && second === "update") return updatePreset(third, parsed.flags);
-		if (first === "presets" && second === "delete") return deletePreset(third, parsed.flags);
-		if (first === "settings" && second === "get") return settingsGet(parsed.flags);
-		if (first === "settings" && second === "update") return settingsUpdate(parsed.flags);
-		if (first === "guardrails" && second === "list") return listGuardrails(parsed.flags);
-		if (first === "guardrails" && second === "create") return createGuardrail(parsed.flags);
-		if (first === "guardrails" && second === "get") return getGuardrail(third, parsed.flags);
-		if (first === "guardrails" && second === "update") return updateGuardrail(third, parsed.flags);
-		if (first === "guardrails" && second === "delete") return deleteGuardrail(third, parsed.flags);
-		if (first === "guardrails" && second === "list-keys") return listGuardrailKeys(third, parsed.flags);
-		if (first === "guardrails" && second === "add-keys") return addGuardrailKeys(third, parsed.flags);
-		if (first === "guardrails" && second === "remove-keys") return removeGuardrailKeys(third, parsed.flags);
-		if (first === "guardrails" && second === "list-members") return listGuardrailMembers(third, parsed.flags);
-		if (first === "guardrails" && second === "add-members") return addGuardrailMembers(third, parsed.flags);
-		if (first === "guardrails" && second === "remove-members") return removeGuardrailMembers(third, parsed.flags);
-		if (first === "guardrails" && second === "set-keys") return setGuardrailKeys(third, parsed.flags);
-		if (first === "oauth-clients" && second === "list") return listOauthClients(parsed.flags);
-		if (first === "oauth-clients" && second === "create") return createOauthClient(parsed.flags);
-		if (first === "oauth-clients" && second === "get") return getOauthClient(third, parsed.flags);
-		if (first === "oauth-clients" && second === "update") return updateOauthClient(third, parsed.flags);
-		if (first === "oauth-clients" && second === "delete") return deleteOauthClient(third, parsed.flags);
-		if (first === "oauth-clients" && second === "regenerate-secret") return regenerateOauthClientSecret(third, parsed.flags);
-		if (first === "management-keys" && second === "list") return listManagementKeys(parsed.flags);
-		if (first === "management-keys" && second === "create") return createManagementKey(parsed.flags);
-		if (first === "management-keys" && second === "get") return getManagementKey(third, parsed.flags);
-		if (first === "management-keys" && second === "update") return updateManagementKey(third, parsed.flags);
-		if (first === "management-keys" && second === "delete") return deleteManagementKey(third, parsed.flags);
-		if (first === "models" && second === "list") return listModels(parsed.flags);
-		if (first === "providers" && second === "list") return listProviders(parsed.flags);
-		if (first === "pricing" && second === "models") return pricingModels(parsed.flags);
-		if (first === "pricing" && second === "calculate") return pricingCalculate(parsed.flags);
-		if (first === "credits" && second === "get") return creditsGet(parsed.flags);
-		if (first === "activity" && second === "list") return activityList(parsed.flags);
-		if (first === "analytics" && second === "get") return analyticsGet(parsed.flags);
-		if (first === "generation" && second === "get") return generationGet(parsed.flags);
-		if (first === "api" && second === "get") return rawApi("GET", third, parsed.flags);
-		if (first === "api" && second === "post") return rawApi("POST", third, parsed.flags);
-		if (first === "api" && second === "put") return rawApi("PUT", third, parsed.flags);
-		if (first === "api" && second === "patch") return rawApi("PATCH", third, parsed.flags);
-		if (first === "api" && second === "delete") return rawApi("DELETE", third, parsed.flags);
+		if (flagBool(parsed.flags, "version")) {
+			await printVersion(parsed.flags, { short: true });
+			return;
+		}
+		if (!first) {
+			printHelp();
+			return;
+		}
+		if (first === "help") {
+			printHelp(parsed.command.slice(1));
+			return;
+		}
+		if (flagBool(parsed.flags, "help")) {
+			printHelp(parsed.command);
+			return;
+		}
+		if (first === "version") {
+			await printVersion(parsed.flags);
+			return;
+		}
+
+		let action: Promise<unknown> | null = null;
+		if (first === "login") action = login(parsed.flags);
+		else if (first === "logout") action = logout(parsed.flags);
+		else if (first === "whoami") action = whoami(parsed.flags);
+		else if (first === "keys" && second === "current") action = currentKey(parsed.flags);
+		else if (first === "keys" && second === "list") action = listKeys(parsed.flags);
+		else if (first === "keys" && second === "create") action = createKey(parsed.flags);
+		else if (first === "keys" && second === "get") action = getKey(third, parsed.flags);
+		else if (first === "keys" && second === "update") action = updateKey(third, parsed.flags);
+		else if (first === "keys" && second === "delete") action = deleteKey(third, parsed.flags);
+		else if (first === "workspaces" && second === "list") action = listWorkspaces(parsed.flags);
+		else if (first === "workspaces" && second === "create") action = createWorkspace(parsed.flags);
+		else if (first === "workspaces" && second === "get") action = getWorkspace(third, parsed.flags);
+		else if (first === "workspaces" && second === "update") action = updateWorkspace(third, parsed.flags);
+		else if (first === "workspaces" && second === "delete") action = deleteWorkspace(third, parsed.flags);
+		else if (first === "workspaces" && second === "members") action = listWorkspaceMembers(third, parsed.flags);
+		else if (first === "workspaces" && second === "add-members") action = addWorkspaceMembers(third, parsed.flags);
+		else if (first === "workspaces" && second === "remove-members") action = removeWorkspaceMembers(third, parsed.flags);
+		else if (first === "presets" && second === "list") action = listPresets(parsed.flags);
+		else if (first === "presets" && second === "create") action = createPreset(parsed.flags);
+		else if (first === "presets" && second === "get") action = getPreset(third, parsed.flags);
+		else if (first === "presets" && second === "update") action = updatePreset(third, parsed.flags);
+		else if (first === "presets" && second === "delete") action = deletePreset(third, parsed.flags);
+		else if (first === "settings" && second === "get") action = settingsGet(parsed.flags);
+		else if (first === "settings" && second === "update") action = settingsUpdate(parsed.flags);
+		else if (first === "guardrails" && second === "list") action = listGuardrails(parsed.flags);
+		else if (first === "guardrails" && second === "create") action = createGuardrail(parsed.flags);
+		else if (first === "guardrails" && second === "get") action = getGuardrail(third, parsed.flags);
+		else if (first === "guardrails" && second === "update") action = updateGuardrail(third, parsed.flags);
+		else if (first === "guardrails" && second === "delete") action = deleteGuardrail(third, parsed.flags);
+		else if (first === "guardrails" && second === "list-keys") action = listGuardrailKeys(third, parsed.flags);
+		else if (first === "guardrails" && second === "add-keys") action = addGuardrailKeys(third, parsed.flags);
+		else if (first === "guardrails" && second === "remove-keys") action = removeGuardrailKeys(third, parsed.flags);
+		else if (first === "guardrails" && second === "list-members") action = listGuardrailMembers(third, parsed.flags);
+		else if (first === "guardrails" && second === "add-members") action = addGuardrailMembers(third, parsed.flags);
+		else if (first === "guardrails" && second === "remove-members") action = removeGuardrailMembers(third, parsed.flags);
+		else if (first === "guardrails" && second === "set-keys") action = setGuardrailKeys(third, parsed.flags);
+		else if (first === "oauth-clients" && second === "list") action = listOauthClients(parsed.flags);
+		else if (first === "oauth-clients" && second === "create") action = createOauthClient(parsed.flags);
+		else if (first === "oauth-clients" && second === "get") action = getOauthClient(third, parsed.flags);
+		else if (first === "oauth-clients" && second === "update") action = updateOauthClient(third, parsed.flags);
+		else if (first === "oauth-clients" && second === "delete") action = deleteOauthClient(third, parsed.flags);
+		else if (first === "oauth-clients" && second === "regenerate-secret") action = regenerateOauthClientSecret(third, parsed.flags);
+		else if (first === "management-keys" && second === "list") action = listManagementKeys(parsed.flags);
+		else if (first === "management-keys" && second === "create") action = createManagementKey(parsed.flags);
+		else if (first === "management-keys" && second === "get") action = getManagementKey(third, parsed.flags);
+		else if (first === "management-keys" && second === "update") action = updateManagementKey(third, parsed.flags);
+		else if (first === "management-keys" && second === "delete") action = deleteManagementKey(third, parsed.flags);
+		else if (first === "models" && second === "list") action = listModels(parsed.flags);
+		else if (first === "providers" && second === "list") action = listProviders(parsed.flags);
+		else if (first === "pricing" && second === "models") action = pricingModels(parsed.flags);
+		else if (first === "pricing" && second === "calculate") action = pricingCalculate(parsed.flags);
+		else if (first === "credits" && second === "get") action = creditsGet(parsed.flags);
+		else if (first === "activity" && second === "list") action = activityList(parsed.flags);
+		else if (first === "analytics" && second === "get") action = analyticsGet(parsed.flags);
+		else if (first === "generation" && second === "get") action = generationGet(parsed.flags);
+		else if (first === "api" && second === "get") action = rawApi("GET", third, parsed.flags);
+		else if (first === "api" && second === "post") action = rawApi("POST", third, parsed.flags);
+		else if (first === "api" && second === "put") action = rawApi("PUT", third, parsed.flags);
+		else if (first === "api" && second === "patch") action = rawApi("PATCH", third, parsed.flags);
+		else if (first === "api" && second === "delete") action = rawApi("DELETE", third, parsed.flags);
+		if (action) {
+			await action;
+			await maybePrintUpdateNotice(json);
+			return;
+		}
 		throw new Error(`Unknown command: ${parsed.command.join(" ")}`);
 	} catch (error) {
 		printError(error, { json });

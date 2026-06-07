@@ -1,57 +1,116 @@
-# AI Stats CLI and OAuth Beta Handoff
+# AI Stats CLI
 
-This package contains the first beta of the official `aistats` CLI. It is built on the shared AI Stats OAuth/OIDC layer rather than a CLI-only auth path, so the same foundations can support both first-party CLI login and future third-party "Sign in with AI Stats" apps.
+`@ai-stats/cli` is the official command-line interface for AI Stats.
 
-## CLI Commands
+It gives you a first-party terminal workflow for:
 
-```sh
+- signing in with AI Stats through browser OAuth or device code
+- inspecting your current identity and workspace grant
+- creating and managing regular API keys and management keys
+- managing workspaces, presets, settings, guardrails, and OAuth apps
+- reading models, providers, pricing, credits, activity, analytics, and generations
+- falling back to a raw authenticated API command when you need an endpoint before a polished subcommand exists
+
+## Install
+
+```bash
+npm install -g @ai-stats/cli
+pnpm add -g @ai-stats/cli
+yarn global add @ai-stats/cli
+bun add -g @ai-stats/cli
+```
+
+## Version and Updates
+
+```bash
+aistats --version
+aistats version
+aistats version --json
+```
+
+- `aistats --version` prints the installed CLI version.
+- `aistats version` prints the current version plus the recommended install/update command for the detected package manager.
+- interactive CLI commands also check for newer published versions and show an update hint when one is available.
+- set `AI_STATS_DISABLE_UPDATE_CHECK=1` if you want to suppress automatic update notices.
+
+Update commands:
+
+```bash
+npm install -g @ai-stats/cli@latest
+pnpm add -g @ai-stats/cli@latest
+yarn global add @ai-stats/cli@latest
+bun add -g @ai-stats/cli@latest
+```
+
+## Quick Start
+
+```bash
 aistats login
-aistats login --method browser
-aistats login --method device
-aistats login --scopes "openid,profile,email,keys:write,keys:delete"
+aistats whoami --json
+aistats keys create --name "Local CLI Key" --json
+```
+
+`aistats login` supports both:
+
+- `Sign in with AI Stats`: authorization code + PKCE with a loopback callback
+- `Sign in with Device Code`: best for SSH, CI, and remote shells
+
+Local interactive terminals default to browser sign-in. SSH, CI, and non-interactive flows automatically prefer device code. You can always force either path:
+
+```bash
+aistats login --browser
+aistats login --device-code
+```
+
+All commands support `--help`, and most commands support `--json` for agent-friendly output.
+
+## Common Commands
+
+```bash
+aistats login
+aistats logout
 aistats whoami
-aistats keys create --name "Codex"
-aistats keys create --name "Codex" --json
+
+aistats keys current
 aistats keys list
-aistats keys update <id-or-hash> --disabled true
+aistats keys create --name "Codex"
+
 aistats workspaces list
-aistats workspaces create --name "Agent Sandbox"
-aistats presets create --name "@support-bot" --model "openai/gpt-5.4-mini"
+aistats workspaces members <workspace>
+aistats workspaces add-members <workspace> --user-ids <user-id,user-id>
+
+aistats presets list
 aistats settings get
-aistats settings update --routing-mode price
-aistats guardrails create --name "Production safety" --body-json '{"enabled":true}'
-aistats guardrails set-keys <guardrail-id> --key-ids <key-id,key-id>
+
+aistats guardrails list
+aistats guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+aistats guardrails add-keys <guardrail-id> --key-ids <key-id,key-id>
+aistats guardrails add-members <guardrail-id> --user-ids <user-id,user-id>
+
+aistats oauth-clients list
+aistats oauth-clients create --name "My App" --redirect-uri "http://127.0.0.1:8789/callback"
+aistats oauth-clients regenerate-secret <client-id>
+
 aistats management-keys create --name "Automation"
 aistats models list --limit 20
 aistats providers list
+aistats pricing models
 aistats credits get
 aistats activity list --days 7
 aistats generation get --id <request-id>
 aistats api get /v1/models
-aistats logout
 ```
 
-All first-class commands support `--json`. Pretty output hides newly-created API key secrets unless `--show-secret` is passed; JSON output includes the raw key once for agent workflows. The `aistats api ...` escape hatch always prints JSON and is intended for agents or newly-added endpoints before a polished command exists.
+## OAuth and OAuth Apps
 
-The CLI prefers OS-backed session storage where available:
+The CLI sits on top of the shared AI Stats OAuth/OIDC stack, not a CLI-only auth path. That means the same foundations power:
 
-- Windows: DPAPI-protected session blob in the config directory
-- macOS: Keychain
-- Linux: Secret Service via `secret-tool`, with file fallback if unavailable
+- first-party CLI login
+- device-code approval
+- future and current user-created OAuth apps
+- `userinfo`, token, revoke, consent, and JWKS/discovery flows
 
-Set `AI_STATS_CONFIG_DIR` to override the config location for tests or agent sandboxes. Set `AI_STATS_SESSION_BACKEND=file` only if you explicitly want the legacy file-based fallback.
-
-`aistats login` supports both first-party browser sign-in and device-code approval:
-
-- `Sign in with AI Stats` uses Authorization Code + PKCE with a loopback callback on `http://127.0.0.1:8976/callback` by default.
-- `Sign in with Device Code` uses the OAuth device authorization grant and remains the default for non-interactive or `--json` flows.
-- Default login scopes request full first-party CLI access across the control plane. Use `--scopes` when you want a narrower token for a specific workflow or agent sandbox.
-
-## OAuth/OIDC Beta Shape
-
-The CLI uses the OAuth 2.0 Device Authorization Grant as the first-party `aistats_cli` client. Third-party beta apps use Authorization Code + PKCE with exact redirect URI matching.
-
-Implemented API endpoints:
+Implemented OAuth endpoints:
 
 - `GET /oauth/authorize`
 - `POST /oauth/authorize/approve`
@@ -60,75 +119,50 @@ Implemented API endpoints:
 - `POST /oauth/token`
 - `POST /oauth/revoke`
 - `GET /oauth/userinfo`
-- `GET /.well-known/openid-configuration`
-- `GET /.well-known/jwks.json`
+- `GET /oauth/.well-known/openid-configuration`
+- `GET /oauth/.well-known/jwks.json`
 
 Supported grants:
 
-- `urn:ietf:params:oauth:grant-type:device_code`
-- `authorization_code` with required PKCE S256
-- `refresh_token`
+- device code
+- authorization code with required PKCE `S256`
+- refresh token
 
-## Management API Integration
+You can create and manage your own OAuth apps from the CLI:
 
-OAuth access tokens are accepted by selected management routes alongside existing management keys. The initial CLI flow uses:
+```bash
+aistats oauth-clients create \
+  --name "My App" \
+  --client-type confidential \
+  --redirect-uri "http://127.0.0.1:8789/callback" \
+  --scopes "openid,profile,email,me:read,guardrails:write"
+```
 
-- `GET /v1/me` for user and workspace introspection.
-- `/v1/keys` for API key lifecycle operations.
-- `/v1/workspaces` for workspace lifecycle operations.
-- `/v1/presets` for preset lifecycle operations.
-- `/v1/settings` for workspace routing, privacy, response healing, and BYOK fallback settings.
-- `/v1/guardrails` for guardrail lifecycle operations and key assignment.
-- `/v1/management-keys` for management API key lifecycle operations.
-- `/v1/credits`, `/v1/activity`, `/v1/analytics`, and `/v1/generations` for usage and observability.
-- `/v1/gateway/models`, `/v1/providers`, and `/v1/pricing/models` for discovery.
+## Security Notes
 
-Creating keys with OAuth requires:
+- CLI sessions prefer OS-backed storage where possible:
+  - Windows: DPAPI-protected local blob
+  - macOS: Keychain
+  - Linux: Secret Service via `secret-tool`
+- `aistats logout` revokes the stored refresh token before clearing local state.
+- Management keys now require explicit scopes; legacy empty-scope management keys are rejected.
+- Regular inference/API keys are policy- and guardrail-driven rather than scope-driven.
 
-- A valid AI Stats OAuth access token.
-- `keys:write` scope.
-- A workspace-scoped grant/claim.
-- Workspace `owner` or `admin` membership.
+Override behavior when needed:
 
-Existing management-key behavior remains supported.
+- `AI_STATS_CONFIG_DIR` changes the config/session directory
+- `AI_STATS_SESSION_BACKEND=file` forces plain file storage
+- `AI_STATS_API_URL` points the CLI at a different API host
 
-`aistats logout` also revokes the stored refresh token before clearing the local session cache.
+## Local Validation
 
-## Programmatic Dashboard Parity Notes
-
-The CLI is intended to cover the useful parts of the AI Stats dashboard as a programmatic surface:
-
-- Key CRUD with limits and disable/delete controls.
-- Management key CRUD for automation/admin workflows.
-- Current account/workspace introspection.
-- Credits, recent activity, generation lookup, models, providers, and pricing discovery.
-- Workspace, settings, preset, and guardrail management.
-- A generic authenticated API escape hatch for agent workflows.
-
-## Production Setup Notes
-
-Before enabling this outside beta, configure:
-
-- `AI_STATS_OAUTH_PRIVATE_JWK`: RS256 private JWK used to sign AI Stats OAuth access tokens.
-- `AI_STATS_OAUTH_TOKEN_PEPPER`: pepper used to hash refresh tokens, device codes, and authorization codes.
-- `AI_STATS_WEB_BASE_URL`: web app base URL for device activation and consent redirects.
-
-The migration `20260531120000_oauth_cli_device_and_pkce_beta.sql` adds OAuth client metadata, device codes, authorization codes, hashed refresh tokens, and user grants. It also seeds the first-party `aistats_cli` OAuth client.
-
-## Current Beta Boundaries
-
-- Dynamic client registration is intentionally out of scope.
-- Third-party app registration remains beta/private through the existing OAuth app settings surface.
-- Workspace selection is required because current AI Stats resource permissions are workspace-scoped.
-- Confidential-client token auth is not fully productized yet; the beta path is public clients with PKCE/device flow.
-
-## Useful Validation Commands
-
-```sh
-pnpm --filter @ai-stats/gateway-api typecheck
-pnpm --filter @ai-stats/web typecheck
+```bash
 pnpm --filter @ai-stats/cli build
 pnpm --filter @ai-stats/cli test
-cd apps/api && pnpm exec vitest run src/lib/oauth/service.test.ts src/pipeline/before/auth.management.test.ts
-pnpm --filter @ai-stats/gateway-api build
+node packages/cli/aistats/dist/index.js --help
+node packages/cli/aistats/dist/index.js --version
+node packages/cli/aistats/dist/index.js version --json
+
+pnpm run validate:api
+pnpm --filter @ai-stats/web typecheck
 ```

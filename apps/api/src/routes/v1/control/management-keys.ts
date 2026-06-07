@@ -95,7 +95,7 @@ async function handleListManagementKeys(req: Request) {
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (error) throw new Error(error.message || "Failed to list management keys");
-		return json({ data: (data ?? []).map((row) => formatManagementKey(row as ManagementKeyRow)) }, 200, { "Cache-Control": "no-store" });
+		return json({ data: (data ?? []).map((row) => formatManagementKey(row as unknown as ManagementKeyRow)) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}
@@ -214,7 +214,7 @@ async function handleUpdateManagementKey(req: Request) {
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update management key");
 		if (!data) return json({ error: "not_found", message: "Management key not found" }, 404, { "Cache-Control": "no-store" });
-		return json({ data: formatManagementKey(data as ManagementKeyRow) }, 200, { "Cache-Control": "no-store" });
+		return json({ data: formatManagementKey(data as unknown as ManagementKeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });
 	}

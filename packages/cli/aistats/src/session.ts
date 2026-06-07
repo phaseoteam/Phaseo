@@ -20,6 +20,10 @@ function configDir(): string {
 	return process.env.AI_STATS_CONFIG_DIR || join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "aistats");
 }
 
+export function configDirPath(): string {
+	return configDir();
+}
+
 export function sessionPath(): string {
 	return join(configDir(), "session.json");
 }

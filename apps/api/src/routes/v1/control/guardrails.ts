@@ -191,8 +191,12 @@ async function listGuardrailKeyAssignments(workspaceId: string, guardrailId: str
 				} satisfies KeyAssignmentRow,
 			]),
 	);
-
-	return keyIds.map((keyId) => keysById.get(keyId)).filter((value): value is KeyAssignmentRow => Boolean(value));
+	const assignments: KeyAssignmentRow[] = [];
+	for (const keyId of keyIds) {
+		const assignment = keysById.get(keyId);
+		if (assignment) assignments.push(assignment);
+	}
+	return assignments;
 }
 
 async function listGuardrailMemberAssignments(workspaceId: string, guardrailId: string): Promise<MemberAssignmentRow[]> {
@@ -245,7 +249,12 @@ async function listGuardrailMemberAssignments(workspaceId: string, guardrailId: 
 			} satisfies MemberAssignmentRow,
 		]),
 	);
-	return userIds.map((userId) => membersById.get(userId)).filter((value): value is MemberAssignmentRow => Boolean(value));
+	const assignments: MemberAssignmentRow[] = [];
+	for (const userId of userIds) {
+		const assignment = membersById.get(userId);
+		if (assignment) assignments.push(assignment);
+	}
+	return assignments;
 }
 
 async function handleListGuardrails(req: Request) {

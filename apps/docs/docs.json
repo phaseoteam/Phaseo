@@ -114,6 +114,7 @@
 								"pages": [
 									"v1/guides/integrations/index",
 									"v1/guides/integrations/docs-mcp",
+									"v1/guides/integrations/aistats-cli",
 									"v1/guides/integrations/ai-sdk",
 									"v1/guides/integrations/claude-code",
 									"v1/guides/integrations/codex",

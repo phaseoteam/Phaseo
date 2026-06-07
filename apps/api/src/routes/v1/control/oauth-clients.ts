@@ -284,7 +284,7 @@ app.post("/", async (c) => {
 		const createdBy = authCtx.userId ?? await resolveCreatorUserId(authCtx.workspaceId);
 		const clientType = input.client_type ?? "confidential";
 		const allowedScopes = resolveAllowedScopes(input.allowed_scopes);
-		if (!allowedScopes.ok) {
+		if (allowedScopes.ok === false) {
 			return c.json({ error: allowedScopes.message }, 400);
 		}
 
@@ -345,8 +345,8 @@ app.post("/", async (c) => {
 			serializeOAuthClientRecord(
 				metadata as Record<string, unknown>,
 				{
-				client_secret:
-					clientType === "confidential" ? oauthClient.client_secret : null,
+					clientSecret:
+						clientType === "confidential" ? oauthClient.client_secret : null,
 				},
 			),
 			201
@@ -485,7 +485,7 @@ app.patch("/:clientId", async (c) => {
 			updates.allowed_scopes === undefined
 				? { ok: true as const, value: undefined }
 				: resolveAllowedScopes(updates.allowed_scopes, []);
-		if (!allowedScopes.ok) {
+		if (allowedScopes.ok === false) {
 			return c.json({ error: allowedScopes.message }, 400);
 		}
 

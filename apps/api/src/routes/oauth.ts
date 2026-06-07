@@ -456,13 +456,14 @@ oauthRouter.post(
 				clientId: clientId || undefined,
 				clientSecret,
 			});
-			if (!next.ok) {
-				if (next.reason === "invalid_client") {
-					return oauthError("invalid_client", "OAuth client authentication failed", 401);
-				}
-				return oauthError("invalid_grant", "Refresh token is invalid or expired", 401);
+			if (next.ok) {
+				return json(next.tokens, 200, { "Cache-Control": "no-store" });
 			}
-			return json(next.tokens, 200, { "Cache-Control": "no-store" });
+			const reason = "reason" in next ? next.reason : "invalid_grant";
+			if (reason === "invalid_client") {
+				return oauthError("invalid_client", "OAuth client authentication failed", 401);
+			}
+			return oauthError("invalid_grant", "Refresh token is invalid or expired", 401);
 		}
 
 		return oauthError("unsupported_grant_type", "Unsupported grant_type");
