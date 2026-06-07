@@ -317,8 +317,7 @@ export default function ProviderInfoHoverIcons({
 }) {
 	const slugs = uniqueDefined(providerModelSlugs);
 	const modelIds = uniqueDefined(apiModelIds);
-	const slugSet = new Set(modelIds.map((value) => value.toLowerCase()));
-	const distinctSlugs = slugs.filter((slug) => !slugSet.has(slug.toLowerCase()));
+	const displayModelIds = slugs.length > 0 ? slugs : modelIds;
 	const quantization = getFirstDefined([
 		normalizeQuantizationScheme(quantizationScheme),
 		...quantizationSchemes.map((value) => normalizeQuantizationScheme(value)),
@@ -408,7 +407,7 @@ export default function ProviderInfoHoverIcons({
 		),
 	);
 	const hasQuantization = Boolean(quantization);
-	const hasSlug = distinctSlugs.length > 0 || modelIds.length > 0;
+	const hasSlug = displayModelIds.length > 0;
 	const hasPromptTraining = promptTrainingEntries.length > 0;
 	const hasResidency = residencyEntries.some(
 		(entry) =>
@@ -645,20 +644,12 @@ export default function ProviderInfoHoverIcons({
 								This provider exposes this mapping as:
 							</p>
 							<div className="flex flex-col items-start gap-1">
-								{modelIds.map((modelId) => (
+								{displayModelIds.map((modelId) => (
 									<code
 										key={`model:${modelId}`}
 										className="inline-flex max-w-full overflow-x-auto whitespace-nowrap rounded bg-muted px-1 py-0.5 text-foreground"
 									>
 										{modelId}
-									</code>
-								))}
-								{distinctSlugs.map((slug) => (
-									<code
-										key={`slug:${slug}`}
-										className="inline-flex max-w-full overflow-x-auto whitespace-nowrap rounded bg-muted px-1 py-0.5 text-foreground"
-									>
-										{slug}
 									</code>
 								))}
 							</div>
