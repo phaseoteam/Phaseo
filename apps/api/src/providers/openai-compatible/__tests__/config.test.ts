@@ -397,14 +397,26 @@ describe("openAICompatUrl", () => {
 		);
 	});
 
-	it("builds poolside chat-completions endpoint with /v1 prefix", () => {
+	it("builds poolside chat-completions endpoint with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
 			POOLSIDE_API_KEY: "test-poolside-key",
 		} as any);
 
 		expect(openAICompatUrl("poolside", "/chat/completions")).toBe(
-			"https://inference.poolside.ai/v1/chat/completions",
+			"https://inference.poolside.ai/openai/v1/chat/completions",
+		);
+	});
+
+	it("does not duplicate the poolside openai prefix when the base url override already includes it", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			POOLSIDE_API_KEY: "test-poolside-key",
+			POOLSIDE_BASE_URL: "https://poolside.example/openai/v1",
+		} as any);
+
+		expect(openAICompatUrl("poolside", "/chat/completions")).toBe(
+			"https://poolside.example/openai/v1/chat/completions",
 		);
 	});
 

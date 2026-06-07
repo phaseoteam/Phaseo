@@ -17,6 +17,9 @@ type ProviderConfig = {
 	providerId: string;
 	providerName: string;
 	modelsEndpoint: string;
+	pathPrefix?: string;
+	modelsPath?: string;
+	baseUrlEnv?: string[];
 	apiKeyEnv?: string[];
 	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
 };
@@ -142,6 +145,33 @@ export function asRecord(value: unknown): Record<string, unknown> | null {
 
 export function asArray(value: unknown): unknown[] {
 	return Array.isArray(value) ? value : [];
+}
+
+function normalizePathSegment(value: string | undefined): string {
+	if (!value) return "";
+	return `/${value.replace(/^\/+|\/+$/g, "")}`;
+}
+
+export function resolveProviderModelsEndpoint(provider: ProviderConfig): string {
+	const baseUrlOverride = provider.baseUrlEnv ? readBindingEnv(provider.baseUrlEnv) : null;
+	if (!baseUrlOverride) return provider.modelsEndpoint;
+
+	const parsed = new URL(baseUrlOverride);
+	const basePath = parsed.pathname.replace(/\/+$/, "");
+	const pathPrefix = normalizePathSegment(provider.pathPrefix);
+	const modelsPath = normalizePathSegment(provider.modelsPath ?? "/models");
+	const fullModelsPath = `${pathPrefix}${modelsPath}`;
+
+	if (fullModelsPath && (basePath === fullModelsPath || basePath.endsWith(fullModelsPath))) {
+		return parsed.toString();
+	}
+	if (pathPrefix && (basePath === pathPrefix || basePath.endsWith(pathPrefix))) {
+		parsed.pathname = `${basePath}${modelsPath}`.replace(/\/{2,}/g, "/");
+		return parsed.toString();
+	}
+
+	parsed.pathname = `${basePath}${fullModelsPath || modelsPath}`.replace(/\/{2,}/g, "/");
+	return parsed.toString();
 }
 
 export function normalizeJson(value: unknown): unknown {
@@ -519,7 +549,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 
 	try {
 		const headers: Record<string, string> = {};
-		let url = provider.modelsEndpoint;
+		let url = resolveProviderModelsEndpoint(provider);
 
 		switch (provider.authStyle ?? "bearer") {
 			case "anthropic":
@@ -529,7 +559,7 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 				break;
 			case "google_api_key_query": {
 				if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
-				const parsed = new URL(provider.modelsEndpoint);
+				const parsed = new URL(url);
 				parsed.searchParams.set("key", apiKey);
 				url = parsed.toString();
 				break;
