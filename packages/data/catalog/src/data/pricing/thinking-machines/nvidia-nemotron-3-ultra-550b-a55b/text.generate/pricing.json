@@ -1,0 +1,33 @@
+{
+  "key": "thinking-machines:nvidia/nemotron-3-ultra-550b-a55b:text.generate",
+  "api_provider_id": "thinking-machines",
+  "provider_slug": "thinking-machines",
+  "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.66,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Mapped from Tinker Prefill pricing for Nemotron-3-Ultra-550B-A55B.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-07T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.15,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Mapped from Tinker Sample pricing for Nemotron-3-Ultra-550B-A55B.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-07T00:00:00Z"
+    }
+  ]
+}

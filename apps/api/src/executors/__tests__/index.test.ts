@@ -61,6 +61,7 @@ describe("resolveProviderExecutor", () => {
 			"sourceful",
 			"stepfun",
 			"tensorix",
+			"thinking-machines",
 			"together",
 			"venice",
 			"weights-and-biases",
