@@ -822,15 +822,9 @@ module AIStatsSdk
     # Model ID: openai/whisper-1
     # Model page: https://ai-stats.phaseo.app/models/openai/whisper-1
     OPENAI_WHISPER_1 = "openai/whisper-1"
-    # Model ID: poolside/laguna-m.1
-    # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1
-    POOLSIDE_LAGUNA_M_1 = "poolside/laguna-m.1"
     # Model ID: poolside/laguna-m.1:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
     POOLSIDE_LAGUNA_M_1_FREE = "poolside/laguna-m.1:free"
-    # Model ID: poolside/laguna-xs.2
-    # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2
-    POOLSIDE_LAGUNA_XS_2 = "poolside/laguna-xs.2"
     # Model ID: poolside/laguna-xs.2:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
     POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free"
@@ -1640,9 +1634,7 @@ module AIStatsSdk
     ModelIds::OPENAI_TEXT_EMBEDDING_3_SMALL,
     ModelIds::OPENAI_TEXT_EMBEDDING_ADA_002,
     ModelIds::OPENAI_WHISPER_1,
-    ModelIds::POOLSIDE_LAGUNA_M_1,
     ModelIds::POOLSIDE_LAGUNA_M_1_FREE,
-    ModelIds::POOLSIDE_LAGUNA_XS_2,
     ModelIds::POOLSIDE_LAGUNA_XS_2_FREE,
     ModelIds::PRIMEINTELLECT_INTELLECT_3,
     ModelIds::QWEN_QVQ_MAX,

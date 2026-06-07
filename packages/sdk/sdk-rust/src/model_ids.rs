@@ -822,15 +822,9 @@ pub mod model_ids {
     /// Model ID: `openai/whisper-1`.
     /// Model page: https://ai-stats.phaseo.app/models/openai/whisper-1
     pub const OPENAI_WHISPER_1: &str = "openai/whisper-1";
-    /// Model ID: `poolside/laguna-m.1`.
-    /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1
-    pub const POOLSIDE_LAGUNA_M_1: &str = "poolside/laguna-m.1";
     /// Model ID: `poolside/laguna-m.1:free`.
     /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
     pub const POOLSIDE_LAGUNA_M_1_FREE: &str = "poolside/laguna-m.1:free";
-    /// Model ID: `poolside/laguna-xs.2`.
-    /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2
-    pub const POOLSIDE_LAGUNA_XS_2: &str = "poolside/laguna-xs.2";
     /// Model ID: `poolside/laguna-xs.2:free`.
     /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
     pub const POOLSIDE_LAGUNA_XS_2_FREE: &str = "poolside/laguna-xs.2:free";
@@ -1640,9 +1634,7 @@ pub mod model_ids {
         OPENAI_TEXT_EMBEDDING_3_SMALL,
         OPENAI_TEXT_EMBEDDING_ADA_002,
         OPENAI_WHISPER_1,
-        POOLSIDE_LAGUNA_M_1,
         POOLSIDE_LAGUNA_M_1_FREE,
-        POOLSIDE_LAGUNA_XS_2,
         POOLSIDE_LAGUNA_XS_2_FREE,
         PRIMEINTELLECT_INTELLECT_3,
         QWEN_QVQ_MAX,
