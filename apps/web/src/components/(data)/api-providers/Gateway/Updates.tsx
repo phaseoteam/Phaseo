@@ -23,6 +23,8 @@ type OrganisationRow = {
 type DataModelRelation = {
 	name?: string | null;
 	organisation_id?: string | null;
+	release_date?: string | null;
+	announcement_date?: string | null;
 	organisation?: OrganisationRow | OrganisationRow[] | null;
 };
 
@@ -33,6 +35,33 @@ type RecentModel = {
 	is_active_gateway: boolean;
 	data_models?: DataModelRelation | DataModelRelation[] | null;
 };
+
+type LifecycleDateInfo = {
+	date: string | null;
+	label: "Released" | "Announced" | null;
+};
+
+function toSortableDateMs(value?: string | null): number {
+	if (!value) return Number.NEGATIVE_INFINITY;
+	const parsed = new Date(value).getTime();
+	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
+function getLifecycleDateInfo(model: RecentModel): LifecycleDateInfo {
+	const relatedModel = Array.isArray(model.data_models)
+		? model.data_models[0] ?? null
+		: model.data_models ?? null;
+
+	if (relatedModel?.release_date) {
+		return { date: relatedModel.release_date, label: "Released" };
+	}
+
+	if (relatedModel?.announcement_date) {
+		return { date: relatedModel.announcement_date, label: "Announced" };
+	}
+
+	return { date: null, label: null };
+}
 
 function isoSevenDaysAgo(from = new Date()): string {
 	const d = new Date(from);
@@ -48,18 +77,12 @@ async function getRecentModels(
 	const limit = opts?.limit ?? 5;
 
 	try {
-		let q = supabase
+		const { data: providerModels, error } = await supabase
 			.from("data_api_provider_models")
 			.select(
 				"model_id, api_model_id, created_at, is_active_gateway"
 			)
-			.eq("provider_id", apiProviderId)
-			.order("created_at", { ascending: false })
-			.limit(limit);
-
-		if (opts?.sinceTs) q = q.gte("created_at", opts.sinceTs);
-
-		const { data: providerModels, error } = await q;
+			.eq("provider_id", apiProviderId);
 
 		if (error) {
 			console.error("Error fetching recent models:", error);
@@ -76,7 +99,7 @@ async function getRecentModels(
 		const { data: models } = await supabase
 			.from("data_models")
 			.select(
-				"model_id, name, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)"
+				"model_id, name, organisation_id, release_date, announcement_date, organisation:data_organisations!data_models_organisation_id_fkey(organisation_id, name)"
 			)
 			.in("model_id", modelIds);
 
@@ -86,19 +109,77 @@ async function getRecentModels(
 			modelMap.set(model.model_id, {
 				name: model.name ?? null,
 				organisation_id: model.organisation_id ?? null,
+				release_date: model.release_date ?? null,
+				announcement_date: model.announcement_date ?? null,
 				organisation: model.organisation ?? null,
 			});
 		}
 
-		return (providerModels ?? []).map((row: any) => ({
-			model_id: row.model_id,
-			api_model_id: row.api_model_id,
-			created_at: row.created_at,
-			is_active_gateway: row.is_active_gateway,
-			data_models: row.model_id
-				? modelMap.get(row.model_id) ?? null
-				: null,
-		})) as RecentModel[];
+		const mergedByModelId = new Map<string, RecentModel>();
+		for (const row of providerModels ?? []) {
+			const modelKey = row.model_id ?? row.api_model_id;
+			if (!modelKey) continue;
+
+			const nextModel: RecentModel = {
+				model_id: row.model_id ?? row.api_model_id,
+				api_model_id: row.api_model_id,
+				created_at: row.created_at,
+				is_active_gateway: Boolean(row.is_active_gateway),
+				data_models: row.model_id
+					? modelMap.get(row.model_id) ?? null
+					: null,
+			};
+
+			const existing = mergedByModelId.get(modelKey);
+			if (!existing) {
+				mergedByModelId.set(modelKey, nextModel);
+				continue;
+			}
+
+			const existingCreatedAtMs = toSortableDateMs(existing.created_at);
+			const nextCreatedAtMs = toSortableDateMs(nextModel.created_at);
+			if (nextCreatedAtMs > existingCreatedAtMs) {
+				existing.created_at = nextModel.created_at;
+				existing.api_model_id = nextModel.api_model_id;
+			}
+			existing.is_active_gateway =
+				existing.is_active_gateway || nextModel.is_active_gateway;
+			if (!existing.data_models && nextModel.data_models) {
+				existing.data_models = nextModel.data_models;
+			}
+		}
+
+		const modelsByLifecycleDate = Array.from(mergedByModelId.values())
+			.filter((model) => {
+				if (!opts?.sinceTs) return true;
+				return (
+					toSortableDateMs(getLifecycleDateInfo(model).date) >=
+					toSortableDateMs(opts.sinceTs)
+				);
+			})
+			.sort((a, b) => {
+				const aLifecycleMs = toSortableDateMs(
+					getLifecycleDateInfo(a).date,
+				);
+				const bLifecycleMs = toSortableDateMs(
+					getLifecycleDateInfo(b).date,
+				);
+				if (aLifecycleMs !== bLifecycleMs) {
+					return bLifecycleMs - aLifecycleMs;
+				}
+
+				const aCreatedAtMs = toSortableDateMs(a.created_at);
+				const bCreatedAtMs = toSortableDateMs(b.created_at);
+				if (aCreatedAtMs !== bCreatedAtMs) {
+					return bCreatedAtMs - aCreatedAtMs;
+				}
+
+				return resolveModelDisplayInfo(a).name.localeCompare(
+					resolveModelDisplayInfo(b).name,
+				);
+			});
+
+		return modelsByLifecycleDate.slice(0, limit);
 	} catch (err) {
 		console.error("Unexpected error fetching recent models:", err);
 		return [];
@@ -148,27 +229,33 @@ export default async function Updates({
 		recentModels.length > 0
 			? resolveModelDisplayInfo(recentModels[0])
 			: undefined;
-	const latestModelDate =
+	const latestModelDateInfo =
 		recentModels.length > 0
-			? formatModelDate(recentModels[0].created_at)
-			: undefined;
+			? getLifecycleDateInfo(recentModels[0])
+			: { date: null, label: null };
+	const latestModelDate = latestModelDateInfo.date
+		? formatModelDate(latestModelDateInfo.date)
+		: "Unknown";
+	const latestModelDateLabel = latestModelDateInfo.label ?? "Date";
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 			<div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 				<div className="mb-4">
-					<h3 className="text-lg font-semibold mb-2">New Models</h3>
+					<h3 className="text-lg font-semibold mb-2">Latest Models</h3>
 					<p className="text-sm text-muted-foreground">
-						Recently added models with gateway availability status.
+						Sorted by release date, with announcement date as fallback.
 					</p>
 				</div>
 				{newModels.length > 0 ? (
 					<div className="space-y-3">
 						{newModels.map((model) => {
 							const display = resolveModelDisplayInfo(model);
-							const formattedDate = formatModelDate(
-								model.created_at
-							);
+							const dateInfo = getLifecycleDateInfo(model);
+							const formattedDate = dateInfo.date
+								? formatModelDate(dateInfo.date)
+								: "Unknown";
+							const dateLabel = dateInfo.label ?? "Date";
 
 							return (
 								<div
@@ -200,7 +287,7 @@ export default async function Updates({
 										</div>
 										<div className="flex flex-col items-end gap-1 text-right text-xs text-muted-foreground">
 											<span className="text-[11px] font-semibold uppercase tracking-wide">
-												Added
+												{dateLabel}
 											</span>
 											<span className="text-sm font-medium text-foreground">
 												{formattedDate}
@@ -218,10 +305,10 @@ export default async function Updates({
 								<EmptyMedia variant="icon">
 									<Sparkles className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle>No New Models</EmptyTitle>
+								<EmptyTitle>No Recent Models</EmptyTitle>
 								<EmptyDescription>
-									New models will appear here when added to
-									the platform.
+									No model releases or announcements landed
+									in the last 7 days.
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -266,7 +353,7 @@ export default async function Updates({
 						<div className="pt-2 border-t border-gray-200 dark:border-gray-700">
 							<p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
 								<Calendar className="h-3 w-3" />
-								Latest model added:
+								Latest model:
 							</p>
 							<div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 								<div className="flex items-start justify-between gap-4">
@@ -308,7 +395,7 @@ export default async function Updates({
 									</div>
 									<div className="flex flex-col items-end gap-1 text-right text-xs text-muted-foreground">
 										<span className="text-[11px] font-semibold uppercase tracking-wide">
-											Added
+											{latestModelDateLabel}
 										</span>
 										<span className="text-sm font-semibold text-foreground">
 											{latestModelDate}

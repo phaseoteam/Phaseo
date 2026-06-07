@@ -21,6 +21,7 @@ export interface APIProviderModels {
 	input_modalities?: string[] | string | null;
 	output_modalities?: string[] | string | null;
 	release_date?: string | null;
+	announcement_date?: string | null;
 }
 
 export interface APIProviderModelListItem extends APIProviderModels {
@@ -43,6 +44,19 @@ export interface APIProviderModelPricingMeter {
 	price_per_1m_usd: number | null;
 	estimated_price_per_image_usd: number | null;
 	display_unit_label: string;
+}
+
+function toSortableDateMs(value?: string | null): number {
+	if (!value) return Number.NEGATIVE_INFINITY;
+	const parsed = new Date(value).getTime();
+	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
+function getModelLifecycleDate(model: {
+	release_date?: string | null;
+	announcement_date?: string | null;
+}): string | null {
+	return model.release_date ?? model.announcement_date ?? null;
 }
 
 export type ModelOutputType =
@@ -305,7 +319,7 @@ export async function getAPIProviderModels(
 		? await applyHiddenFilter(
 				supabase
 					.from("data_models")
-					.select("model_id, name, release_date, hidden")
+					.select("model_id, name, release_date, announcement_date, hidden")
 					.in("model_id", modelIds),
 				includeHidden,
 			)
@@ -313,7 +327,11 @@ export async function getAPIProviderModels(
 
 	const modelMapById = new Map<
 		string,
-		{ name: string | null; release_date: string | null }
+		{
+			name: string | null;
+			release_date: string | null;
+			announcement_date: string | null;
+		}
 	>();
 	const visibleModelIds = new Set<string>();
 	for (const model of modelsResponse.data ?? []) {
@@ -322,6 +340,7 @@ export async function getAPIProviderModels(
 		modelMapById.set(model.model_id, {
 			name: model.name ?? null,
 			release_date: model.release_date ?? null,
+			announcement_date: model.announcement_date ?? null,
 		});
 	}
 
@@ -378,6 +397,7 @@ export async function getAPIProviderModels(
 				input_modalities: r.input_modalities ?? null,
 				output_modalities: r.output_modalities ?? null,
 				release_date: r.data_models?.release_date ?? null,
+				announcement_date: r.data_models?.announcement_date ?? null,
 			});
 		} else {
 			const existing = modelMap.get(model_id)!;
@@ -394,15 +414,8 @@ export async function getAPIProviderModels(
 	);
 
 	results.sort((a, b) => {
-		const aDate = a.release_date ?? null;
-		const bDate = b.release_date ?? null;
-
-		const aTime = aDate
-			? new Date(aDate).getTime()
-			: Number.NEGATIVE_INFINITY;
-		const bTime = bDate
-			? new Date(bDate).getTime()
-			: Number.NEGATIVE_INFINITY;
+		const aTime = toSortableDateMs(getModelLifecycleDate(a));
+		const bTime = toSortableDateMs(getModelLifecycleDate(b));
 
 		if (aTime === bTime) {
 			return a.model_name.localeCompare(b.model_name);
@@ -469,7 +482,7 @@ export async function getAPIProviderImageModelsCached(
 	return getAPIProviderModels(apiProviderId, "image", includeHidden);
 }
 
-export async function getAPIProviderModelsListByAdded(
+export async function getAPIProviderModelsListByModelDate(
 	apiProviderId: string,
 	includeHidden: boolean,
 ): Promise<APIProviderModelListItem[]> {
@@ -522,19 +535,28 @@ export async function getAPIProviderModelsListByAdded(
 		? await applyHiddenFilter(
 				supabase
 					.from("data_models")
-					.select("model_id, name, hidden")
+					.select("model_id, name, release_date, announcement_date, hidden")
 					.in("model_id", modelIds),
 				includeHidden,
 			)
 		: { data: [] as any[] };
 
-	const modelMapById = new Map<string, { name: string | null }>();
+	const modelMapById = new Map<
+		string,
+		{
+			name: string | null;
+			release_date: string | null;
+			announcement_date: string | null;
+		}
+	>();
 	const visibleModelIds = new Set<string>();
 	for (const model of modelsResponse.data ?? []) {
 		if (!model.model_id) continue;
 		visibleModelIds.add(model.model_id);
 		modelMapById.set(model.model_id, {
 			name: model.name ?? null,
+			release_date: model.release_date ?? null,
+			announcement_date: model.announcement_date ?? null,
 		});
 	}
 
@@ -597,6 +619,10 @@ export async function getAPIProviderModelsListByAdded(
 				is_active_gateway: Boolean(row.is_active_gateway),
 				input_modalities: inputModalities,
 				output_modalities: outputModalities,
+				release_date:
+					modelMapById.get(row.model_id ?? "")?.release_date ?? null,
+				announcement_date:
+					modelMapById.get(row.model_id ?? "")?.announcement_date ?? null,
 				created_at: createdAt,
 			});
 			continue;
@@ -762,24 +788,23 @@ export async function getAPIProviderModelsListByAdded(
 	}
 
 	results.sort((a, b) => {
-		const aTs = a.created_at
-			? new Date(a.created_at).getTime()
-			: Number.NEGATIVE_INFINITY;
-		const bTs = b.created_at
-			? new Date(b.created_at).getTime()
-			: Number.NEGATIVE_INFINITY;
-		if (aTs === bTs) {
+		const aDateMs = toSortableDateMs(getModelLifecycleDate(a));
+		const bDateMs = toSortableDateMs(getModelLifecycleDate(b));
+		if (aDateMs === bDateMs) {
+			const aCreatedMs = toSortableDateMs(a.created_at);
+			const bCreatedMs = toSortableDateMs(b.created_at);
+			if (aCreatedMs !== bCreatedMs) return bCreatedMs - aCreatedMs;
 			return (a.model_name ?? a.model_id).localeCompare(
 				b.model_name ?? b.model_id,
 			);
 		}
-		return bTs - aTs;
+		return bDateMs - aDateMs;
 	});
 
 	return results;
 }
 
-export async function getAPIProviderModelsListByAddedCached(
+export async function getAPIProviderModelsListByModelDateCached(
 	apiProviderId: string,
 	includeHidden: boolean,
 ): Promise<APIProviderModelListItem[]> {
@@ -791,7 +816,7 @@ export async function getAPIProviderModelsListByAddedCached(
 	cacheTag("data:data_api_pricing_rules");
 	cacheTag("data:models");
 
-	return getAPIProviderModelsListByAdded(apiProviderId, includeHidden);
+	return getAPIProviderModelsListByModelDate(apiProviderId, includeHidden);
 }
 
 function cacheAPIProviderTags(apiProviderId: string) {
