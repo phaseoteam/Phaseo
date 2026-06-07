@@ -8,7 +8,7 @@ import {
 import { getFreeRouterOverview } from "@/lib/fetchers/models/getFreeRouterOverview";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -20,6 +20,7 @@ import {
 } from "@/lib/models/freeRouter";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
+import Script from "next/script";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
@@ -1137,6 +1138,43 @@ function buildFreeRouterModelsPageEntry(
 	};
 }
 
+function summarizeModelsPage(models: ModelsPageModel[]) {
+	const creators = new Set<string>();
+	const providers = new Set<string>();
+	let activeModels = 0;
+
+	for (const model of models) {
+		const creator = normalizeOrganisationDisplayName(
+			model.organisation_name,
+			model.organisation_id,
+		);
+		if (creator) creators.add(creator);
+
+		for (const provider of model.gateway_provider_names ?? []) {
+			const normalized = String(provider ?? "").trim();
+			if (normalized) providers.add(normalized);
+		}
+
+		if (model.gateway_status === "active") {
+			activeModels += 1;
+		}
+	}
+
+	const featuredModels = models
+		.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID)
+		.slice(0, 8)
+		.map((model) => model.name)
+		.filter(Boolean);
+
+	return {
+		totalModels: models.length,
+		activeModels,
+		creators: creators.size,
+		providers: providers.size,
+		featuredModels,
+	};
+}
+
 async function ModelsPageDataSection() {
 	const includeHidden = false;
 	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
@@ -1151,8 +1189,83 @@ async function ModelsPageDataSection() {
 		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
 	];
 	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
+	const summary = summarizeModelsPage(modelsWithFreeRouter);
+	const dataCatalogSchema = {
+		"@context": "https://schema.org",
+		"@type": "DataCatalog",
+		name: "AI Stats Model Database",
+		description:
+			"Compare AI models by pricing, benchmarks, context window, modalities, providers, and gateway availability.",
+		url: absoluteUrl("/models"),
+		keywords: [
+			"AI models",
+			"model pricing",
+			"AI benchmarks",
+			"context window",
+			"gateway providers",
+		],
+		includesObject: summary.featuredModels.map((name) => ({
+			"@type": "Dataset",
+			name,
+		})),
+	};
+	const breadcrumbSchema = {
+		"@context": "https://schema.org",
+		"@type": "BreadcrumbList",
+		itemListElement: [
+			{
+				"@type": "ListItem",
+				position: 1,
+				name: "Home",
+				item: absoluteUrl("/"),
+			},
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: "Models",
+				item: absoluteUrl("/models"),
+			},
+		],
+	};
 
-	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
+	return (
+		<>
+			<Script
+				id="models-data-catalog-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(dataCatalogSchema) }}
+			/>
+			<Script
+				id="models-breadcrumb-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+			/>
+			<div className="mb-8 space-y-3">
+				<h1 className="text-3xl font-bold tracking-tight">
+					Compare AI models by pricing, benchmarks, providers, and context
+				</h1>
+				<p className="max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base">
+					AI Stats tracks {summary.totalModels.toLocaleString()} models from{" "}
+					{summary.creators.toLocaleString()} model creators and{" "}
+					{summary.providers.toLocaleString()} gateway providers. Use this index
+					to compare pricing, modality support, context length, active gateway
+					coverage, throughput, latency, and benchmark results.
+				</p>
+				{summary.featuredModels.length > 0 ? (
+					<p className="max-w-4xl text-sm leading-6 text-muted-foreground">
+						Popular entries in this index include{" "}
+						{summary.featuredModels.join(", ")}. {summary.activeModels.toLocaleString()}{" "}
+						models currently have active gateway coverage.
+					</p>
+				) : null}
+			</div>
+			<ModelsDisplay
+				models={modelsWithFreeRouter}
+				facets={facets}
+				showPrimaryHeader={false}
+			/>
+		</>
+	);
 }
 
 export default function ModelsPage() {

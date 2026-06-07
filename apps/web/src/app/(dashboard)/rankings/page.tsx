@@ -6,6 +6,7 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
+import Link from "next/link";
 import { PerformanceLandscapePanel } from "@/components/(rankings)/PerformanceLandscapePanel";
 import { PerformanceLeaderboard } from "@/components/(rankings)/PerformanceLeaderboard";
 import { MarketShareStackedBar } from "@/components/(rankings)/MarketShareStackedBar";
@@ -35,26 +36,34 @@ import {
     getTopApps,
     getOrganisationLogoIdsByNames,
     getAppImageUrlsByIds,
+    getRankingsIndexabilitySnapshot,
 } from "@/lib/fetchers/rankings/getRankingsData";
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
-	description:
-		"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
-	path: "/rankings",
-	keywords: [
-		"AI model rankings",
-		"LLM rankings",
-		"model latency",
-		"model throughput",
-		"AI usage statistics",
-	],
-	openGraph: {
-		title: "AI Model Rankings: Live Usage Statistics",
+export async function generateMetadata(): Promise<Metadata> {
+	const indexability = await getRankingsIndexabilitySnapshot();
+
+	return buildMetadata({
+		title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
 		description:
-			"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
-	},
-});
+			"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
+		path: "/rankings",
+		keywords: [
+			"AI model rankings",
+			"LLM rankings",
+			"model latency",
+			"model throughput",
+			"AI usage statistics",
+		],
+		openGraph: {
+			title: "AI Model Rankings: Live Usage Statistics",
+			description:
+				"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
+		},
+		robots: indexability.shouldIndex
+			? { index: true, follow: true }
+			: { index: false, follow: true },
+	});
+}
 
 export default async function RankingsPage() {
     return (
@@ -69,6 +78,30 @@ export default async function RankingsPage() {
                         </h1>
                         <p className="text-sm text-muted-foreground">
                             Based on real usage data from across AI Stats.
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            Methodology:{" "}
+                            <Link
+                                href="/how-ai-stats-measures-latency-throughput"
+                                className="underline underline-offset-4"
+                            >
+                                latency and throughput
+                            </Link>
+                            ,{" "}
+                            <Link
+                                href="/how-ai-stats-normalises-ai-benchmarks"
+                                className="underline underline-offset-4"
+                            >
+                                benchmark normalization
+                            </Link>
+                            , and{" "}
+                            <Link
+                                href="/how-ai-stats-tracks-provider-availability"
+                                className="underline underline-offset-4"
+                            >
+                                provider availability
+                            </Link>
+                            .
                         </p>
                     </div>
                     <Suspense fallback={<ChartSkeleton />}>

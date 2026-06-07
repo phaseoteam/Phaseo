@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import TopAppsLeaderboardTable from "@/components/(data)/apps/TopAppsLeaderboardTable";
 import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import {
+	getAppsIndexabilitySnapshot,
 	getAppImageUrlsByIds,
 	getTopApps,
 	getTrendingApps,
@@ -38,19 +39,26 @@ type TrendingPublicApp = {
 	imageUrl?: string | null;
 };
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI App Rankings: Usage Trends & Top Apps",
-	description:
-		"See the most popular and fastest-growing AI apps on AI Stats Gateway, with leaderboard and token-usage trends.",
-	path: "/apps",
-	keywords: [
-		"AI apps",
-		"AI app rankings",
-		"app leaderboard",
-		"app usage trends",
-		"app trends",
-	],
-});
+export async function generateMetadata(): Promise<Metadata> {
+	const indexability = await getAppsIndexabilitySnapshot();
+
+	return buildMetadata({
+		title: "AI App Rankings: Usage Trends & Top Apps",
+		description:
+			"See the most popular and fastest-growing AI apps on AI Stats Gateway, with leaderboard and token-usage trends.",
+		path: "/apps",
+		keywords: [
+			"AI apps",
+			"AI app rankings",
+			"app leaderboard",
+			"app usage trends",
+			"app trends",
+		],
+		robots: indexability.shouldIndex
+			? { index: true, follow: true }
+			: { index: false, follow: true },
+	});
+}
 
 function formatCompactNumber(value: number): string {
 	if (!Number.isFinite(value)) return "0";

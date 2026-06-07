@@ -174,6 +174,20 @@ export type DailyAppRollup = {
     success_rate: number | null;
 };
 
+export type RankingsIndexabilitySnapshot = {
+	hasLeaderboardData: boolean;
+	hasPerformanceData: boolean;
+	hasUsageData: boolean;
+	hasAppsData: boolean;
+	shouldIndex: boolean;
+};
+
+export type AppsIndexabilitySnapshot = {
+	hasLeaderboardData: boolean;
+	hasTrendingData: boolean;
+	shouldIndex: boolean;
+};
+
 function getDefaultWeeklySinceIso(): string {
     const now = new Date();
     const since = new Date(
@@ -991,7 +1005,49 @@ export async function getTopApps(
                 fallbackTitlesById.get(row.app_id) ??
                 row.app_id,
         })),
-    };
+	};
+}
+
+export async function getRankingsIndexabilitySnapshot(): Promise<RankingsIndexabilitySnapshot> {
+	const [rankingsResult, performanceResult, usageResult, appsResult] =
+		await Promise.all([
+			getRankings("week", "tokens", 1),
+			getPerformanceData(24),
+			getTimeseriesData("year", "week", 1),
+			getTopApps("week", 1),
+		]);
+
+	const hasLeaderboardData = rankingsResult.rankings.some(
+		(row) =>
+			Boolean(row.model_id) &&
+			row.model_id.toLowerCase() !== "unknown" &&
+			row.model_id.toLowerCase() !== "other" &&
+			Number(row.total_tokens ?? 0) > 0,
+	);
+	const hasPerformanceData = performanceResult.data.some(
+		(row) =>
+			Boolean(row.model_id) &&
+			Boolean(row.provider) &&
+			Number.isFinite(Number(row.median_throughput ?? 0)) &&
+			Number(row.median_throughput ?? 0) > 0,
+	);
+	const hasUsageData = usageResult.data.some(
+		(row) =>
+			Boolean(row.model_id) &&
+			row.model_id.toLowerCase() !== "unknown" &&
+			row.model_id.toLowerCase() !== "other" &&
+			Number(row.tokens ?? 0) > 0,
+	);
+	const hasAppsData = appsResult.data.some((row) => Number(row.tokens ?? 0) > 0);
+
+	return {
+		hasLeaderboardData,
+		hasPerformanceData,
+		hasUsageData,
+		hasAppsData,
+		shouldIndex:
+			hasLeaderboardData || hasPerformanceData || hasUsageData || hasAppsData,
+	};
 }
 
 /**
@@ -1079,7 +1135,27 @@ export async function getTrendingApps(
                 fallbackTitlesById.get(row.app_id) ??
                 row.app_id,
         })),
-    };
+	};
+}
+
+export async function getAppsIndexabilitySnapshot(): Promise<AppsIndexabilitySnapshot> {
+	const [topAppsResult, trendingAppsResult] = await Promise.all([
+		getTopApps("4w", 1),
+		getTrendingApps(1),
+	]);
+
+	const hasLeaderboardData = topAppsResult.data.some(
+		(row) => Number(row.tokens ?? 0) > 0,
+	);
+	const hasTrendingData = trendingAppsResult.data.some(
+		(row) => Number(row.growth_tokens ?? 0) > 0,
+	);
+
+	return {
+		hasLeaderboardData,
+		hasTrendingData,
+		shouldIndex: hasLeaderboardData || hasTrendingData,
+	};
 }
 
 export async function getWeeklyModelProviderTokens(): Promise<{

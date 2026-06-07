@@ -8,7 +8,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import { getGatewayHeroVariant } from "@/lib/flags/gatewayHero";
 import { GATEWAY_TIERS } from "@/components/(gateway)/credits/tiers";
 import DatabaseStats from "@/components/landingPage/DatabaseStatistics";
@@ -26,6 +26,12 @@ import PartnerLogos from "@/components/landingPage/PartnerLogos/PartnerLogos";
 import { Logo } from "@/components/Logo";
 import { HomepageModelContext } from "@/components/agents/HomepageModelContext";
 import { Button } from "@/components/ui/button";
+import Script from "next/script";
+import {
+	PREFERRED_SITE_NAME,
+	SITE_ALTERNATE_NAME,
+	SITE_NAME,
+} from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Models, Benchmarks & Gateway API",
@@ -326,8 +332,41 @@ function LandingPage({ isBeta }: { isBeta: boolean }) {
 
 export default async function Page() {
 	const heroVariant = await getGatewayHeroVariant();
+	const softwareApplicationSchema = {
+		"@context": "https://schema.org",
+		"@type": "SoftwareApplication",
+		name: SITE_NAME,
+		alternateName: PREFERRED_SITE_NAME,
+		applicationCategory: "DeveloperApplication",
+		operatingSystem: "Web",
+		url: absoluteUrl("/"),
+		description:
+			"Open-source AI gateway and model intelligence database for comparing AI models, providers, pricing, benchmarks, and reliability.",
+	};
+	const websiteSchema = {
+		"@context": "https://schema.org",
+		"@type": "WebSite",
+		name: PREFERRED_SITE_NAME,
+		alternateName: SITE_ALTERNATE_NAME,
+		url: absoluteUrl("/"),
+		description:
+			"Compare AI models, providers, pricing, benchmarks, and gateway reliability data.",
+	};
+
 	return (
 		<>
+			<Script
+				id="homepage-software-application-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(softwareApplicationSchema),
+				}}
+			/>
+			<Script
+				id="homepage-website-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+			/>
 			<HomepageModelContext />
 			<LandingPage isBeta={heroVariant === "experimental"} />
 		</>

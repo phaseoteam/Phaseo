@@ -14,6 +14,7 @@ export interface ModelCard {
     hidden?: boolean;
     release_date?: string | null;
     announcement_date?: string | null;
+    updated_at?: string | null;
     input_types?: string[];
     output_types?: string[];
     // Backward-compatibility alias used in some legacy call sites
@@ -136,6 +137,7 @@ export function mapRawToModelCard(
         hidden: Boolean(raw.hidden),
         release_date: raw.release_date ?? null,
         announcement_date: raw.announcement_date ?? null,
+        updated_at: raw.updated_at ?? null,
         input_types: inputTypes,
         output_types: outputTypes,
         input_modalities: inputTypes,
@@ -203,6 +205,7 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
             hidden,
             release_date,
             announcement_date,
+            updated_at,
             input_types,
             output_types,
             organisation: data_organisations (name, colour)

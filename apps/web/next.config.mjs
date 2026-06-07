@@ -23,6 +23,15 @@ const nextConfig = {
   experimental: {
     turbopackFileSystemCacheForDev: true,
   },
+  async redirects() {
+    return [
+      {
+        source: "/providers",
+        destination: "/api-providers",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
