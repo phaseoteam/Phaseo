@@ -826,15 +826,9 @@ const (
 	// Model ID: openai/whisper-1
 	// Model page: https://ai-stats.phaseo.app/models/openai/whisper-1
 	ModelIDOpenaiWhisper1 gen.ModelId = "openai/whisper-1"
-	// Model ID: poolside/laguna-m.1
-	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1
-	ModelIDPoolsideLagunaM1 gen.ModelId = "poolside/laguna-m.1"
 	// Model ID: poolside/laguna-m.1:free
 	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
 	ModelIDPoolsideLagunaM1Free gen.ModelId = "poolside/laguna-m.1:free"
-	// Model ID: poolside/laguna-xs.2
-	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2
-	ModelIDPoolsideLagunaXs2 gen.ModelId = "poolside/laguna-xs.2"
 	// Model ID: poolside/laguna-xs.2:free
 	// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
 	ModelIDPoolsideLagunaXs2Free gen.ModelId = "poolside/laguna-xs.2:free"
@@ -1644,9 +1638,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDOpenaiTextEmbedding3Small,
 	ModelIDOpenaiTextEmbeddingAda002,
 	ModelIDOpenaiWhisper1,
-	ModelIDPoolsideLagunaM1,
 	ModelIDPoolsideLagunaM1Free,
-	ModelIDPoolsideLagunaXs2,
 	ModelIDPoolsideLagunaXs2Free,
 	ModelIDPrimeintellectIntellect3,
 	ModelIDQwenQvqMax,

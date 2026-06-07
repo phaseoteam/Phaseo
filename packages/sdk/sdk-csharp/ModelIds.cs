@@ -552,12 +552,8 @@ namespace AiStatsSdk
         public const string OpenaiTextEmbeddingAda002 = "openai/text-embedding-ada-002";
         /// <summary>Model ID: <c>openai/whisper-1</c>. Model page: https://ai-stats.phaseo.app/models/openai/whisper-1</summary>
         public const string OpenaiWhisper1 = "openai/whisper-1";
-        /// <summary>Model ID: <c>poolside/laguna-m.1</c>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1</summary>
-        public const string PoolsideLagunaM1 = "poolside/laguna-m.1";
         /// <summary>Model ID: <c>poolside/laguna-m.1:free</c>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree</summary>
         public const string PoolsideLagunaM1Free = "poolside/laguna-m.1:free";
-        /// <summary>Model ID: <c>poolside/laguna-xs.2</c>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2</summary>
-        public const string PoolsideLagunaXs2 = "poolside/laguna-xs.2";
         /// <summary>Model ID: <c>poolside/laguna-xs.2:free</c>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree</summary>
         public const string PoolsideLagunaXs2Free = "poolside/laguna-xs.2:free";
         /// <summary>Model ID: <c>primeintellect/intellect-3</c>. Model page: https://ai-stats.phaseo.app/models/primeintellect/intellect-3</summary>

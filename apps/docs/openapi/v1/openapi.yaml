@@ -7639,9 +7639,7 @@ components:
         - openai/text-embedding-3-small
         - openai/text-embedding-ada-002
         - openai/whisper-1
-        - poolside/laguna-m.1
         - poolside/laguna-m.1:free
-        - poolside/laguna-xs.2
         - poolside/laguna-xs.2:free
         - primeintellect/intellect-3
         - qwen/qvq-max
