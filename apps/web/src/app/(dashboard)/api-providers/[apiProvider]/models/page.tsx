@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import APIProviderDetailShell from "@/components/(data)/api-providers/APIProviderDetailShell";
-import { getAPIProviderModelsListByAddedCached } from "@/lib/fetchers/api-providers/getAPIProvider";
+import { getAPIProviderModelsListByModelDateCached } from "@/lib/fetchers/api-providers/getAPIProvider";
 import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
 import { buildMetadata } from "@/lib/seo";
 import ProviderModelsClient from "./ProviderModelsClient";
@@ -29,7 +29,7 @@ export async function generateMetadata(props: {
 		return buildMetadata({
 			title: "API Provider Models",
 			description:
-				"Browse all models available from this API provider on AI Stats, including date-added ordering, capability support, pricing visibility, and which variants are gateway accessible.",
+				"Browse all models available from this API provider on AI Stats, ordered by model release date with announcement-date fallback, plus capability support, pricing visibility, and gateway accessibility.",
 			path,
 			imagePath,
 		});
@@ -37,8 +37,8 @@ export async function generateMetadata(props: {
 
 	const providerName = header.api_provider_name ?? "AI API provider";
 	return buildMetadata({
-		title: `${providerName} Models - Ordered by Date Added`,
-		description: `View all ${providerName} models on AI Stats in date-added order, with gateway accessibility, supported capabilities, and quick visibility into pricing and integration coverage.`,
+		title: `${providerName} Models - Ordered by Model Date`,
+		description: `View all ${providerName} models on AI Stats ordered by release date, with announcement date fallback, gateway accessibility, supported capabilities, and quick visibility into pricing and integration coverage.`,
 		path,
 		imagePath,
 	});
@@ -53,7 +53,7 @@ export default async function Page({
 	const header = await fetchProviderMeta(apiProvider);
 	const providerLabel = header?.api_provider_name ?? apiProvider;
 
-	const models = await getAPIProviderModelsListByAddedCached(apiProvider, false);
+	const models = await getAPIProviderModelsListByModelDateCached(apiProvider, false);
 
 	return (
 		<APIProviderDetailShell apiProviderId={apiProvider}>
