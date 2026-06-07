@@ -13,6 +13,7 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "anthropic/claude-mythos-preview",
+  "family_id": "anthropic/claude-mythos",
   "links": [
     {
       "platform": "announcement",
@@ -63,7 +64,7 @@
       "rank": 1
     },
     {
-      "benchmark_id": "swe-bench",
+      "benchmark_id": "swe-bench-multimodal",
       "score": 59,
       "is_self_reported": true,
       "other_info": "Multimodal (internal implementation)",
