@@ -225,7 +225,7 @@
       "is_self_reported": false,
       "other_info": "DeepSWE label: gemini-3-flash; mini-swe-agent; 5% +/-2%; avg cost $1.53; avg time 39m; out tok 233k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "elimination-game",
