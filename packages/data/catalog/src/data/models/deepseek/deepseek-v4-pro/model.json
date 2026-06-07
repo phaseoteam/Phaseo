@@ -136,7 +136,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 8% +/-3%; avg cost $4.22; avg time 37m; out tok 50k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "livebench",
