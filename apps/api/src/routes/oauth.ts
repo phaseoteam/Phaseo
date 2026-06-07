@@ -34,6 +34,7 @@ import {
 	verifyPkce,
 	ensureGrant,
 	ensureGrants,
+	verifyClientSecret,
 } from "@/lib/oauth/service";
 
 export const oauthRouter = new Hono<Env>();
@@ -65,6 +66,33 @@ function normalizeWorkspaceIds(raw: unknown): string[] {
 		return [raw.trim()];
 	}
 	return [];
+}
+
+function readClientCredentials(
+	req: Request,
+	body: Record<string, unknown>,
+): { clientId: string; clientSecret: string | null } {
+	const authorization = req.headers.get("authorization") ?? "";
+	if (authorization.toLowerCase().startsWith("basic ")) {
+		try {
+			const decoded = atob(authorization.slice(6).trim());
+			const separatorIndex = decoded.indexOf(":");
+			if (separatorIndex >= 0) {
+				return {
+					clientId: decoded.slice(0, separatorIndex).trim(),
+					clientSecret: decoded.slice(separatorIndex + 1),
+				};
+			}
+		} catch {
+			// Fall back to request-body credentials.
+		}
+	}
+
+	return {
+		clientId: String(body.client_id ?? "").trim(),
+		clientSecret:
+			typeof body.client_secret === "string" ? body.client_secret : null,
+	};
 }
 
 async function requireSupabaseActor(req: Request) {
@@ -370,17 +398,24 @@ oauthRouter.post(
 
 		if (grantType === "authorization_code") {
 			const code = String(body.code ?? "").trim();
-			const clientId = String(body.client_id ?? "").trim();
+			const { clientId, clientSecret } = readClientCredentials(req, body);
 			const redirectUri = String(body.redirect_uri ?? "").trim();
 			const verifier = String(body.code_verifier ?? "").trim();
 			if (!code || !clientId || !redirectUri || !verifier) {
 				return oauthError("invalid_request", "code, client_id, redirect_uri, and code_verifier are required");
 			}
+			const client = await loadOAuthClient(clientId);
+			if (!client || !assertRedirectAllowed(client, redirectUri)) {
+				return oauthError("invalid_client", "OAuth client or redirect_uri is invalid", 401);
+			}
+			if (!(await verifyClientSecret(client, clientSecret))) {
+				return oauthError("invalid_client", "OAuth client authentication failed", 401);
+			}
 			const { data, error } = await supabase
 				.from("oauth_authorization_codes")
 				.select("id, client_id, user_id, workspace_id, redirect_uri, scopes, code_challenge, code_challenge_method, expires_at, used_at")
 				.eq("code_hash", await hashOAuthSecret(code))
-				.eq("client_id", clientId)
+				.eq("client_id", client.id)
 				.maybeSingle();
 			if (error) return oauthError("server_error", error.message, 500);
 			if (!data || data.used_at || Date.parse(String(data.expires_at)) <= Date.now()) {
@@ -416,9 +451,18 @@ oauthRouter.post(
 		if (grantType === "refresh_token") {
 			const token = String(body.refresh_token ?? "").trim();
 			if (!token) return oauthError("invalid_request", "refresh_token is required");
-			const next = await rotateRefreshToken(token);
-			if (!next) return oauthError("invalid_grant", "Refresh token is invalid or expired", 401);
-			return json(next, 200, { "Cache-Control": "no-store" });
+			const { clientId, clientSecret } = readClientCredentials(req, body);
+			const next = await rotateRefreshToken(token, {
+				clientId: clientId || undefined,
+				clientSecret,
+			});
+			if (!next.ok) {
+				if (next.reason === "invalid_client") {
+					return oauthError("invalid_client", "OAuth client authentication failed", 401);
+				}
+				return oauthError("invalid_grant", "Refresh token is invalid or expired", 401);
+			}
+			return json(next.tokens, 200, { "Cache-Control": "no-store" });
 		}
 
 		return oauthError("unsupported_grant_type", "Unsupported grant_type");

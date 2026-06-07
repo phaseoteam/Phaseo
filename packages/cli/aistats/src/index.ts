@@ -30,6 +30,10 @@ type CallbackOutcome =
 	| { ok: true; code: string; state: string }
 	| { ok: false; error: string; errorDescription?: string; state?: string };
 
+type CallbackInspection =
+	| CallbackOutcome
+	| { ok: false; pending: true };
+
 type HelpEntry = {
 	usage: string[];
 	description?: string;
@@ -278,17 +282,17 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"oauth-clients": {
 		usage: [
 			"aistats oauth-clients list [--json]",
-			"aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
+			"aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--client-type public|confidential] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
 			"aistats oauth-clients get <client-id> [--json]",
-			"aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
+			"aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
 			"aistats oauth-clients delete <client-id> [--json]",
 			"aistats oauth-clients regenerate-secret <client-id> [--json]",
 		],
 	},
 	"oauth-clients list": { usage: ["aistats oauth-clients list [--json]"] },
-	"oauth-clients create": { usage: ["aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
+	"oauth-clients create": { usage: ["aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--client-type public|confidential] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
 	"oauth-clients get": { usage: ["aistats oauth-clients get <client-id> [--json]"] },
-	"oauth-clients update": { usage: ["aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
+	"oauth-clients update": { usage: ["aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
 	"oauth-clients delete": { usage: ["aistats oauth-clients delete <client-id> [--json]"] },
 	"oauth-clients regenerate-secret": { usage: ["aistats oauth-clients regenerate-secret <client-id> [--json]"] },
 	"management-keys": {
@@ -489,6 +493,31 @@ export function nextLoginMenuIndex(currentIndex: number, rawInput: string, optio
 	}
 }
 
+export function inspectCallbackRequest(
+	requestUrl: URL,
+	expectedState: string,
+): CallbackInspection {
+	const error = requestUrl.searchParams.get("error") || undefined;
+	const errorDescription = requestUrl.searchParams.get("error_description") || undefined;
+	const state = requestUrl.searchParams.get("state") || undefined;
+	const code = requestUrl.searchParams.get("code") || undefined;
+	if (error) {
+		return { ok: false, error, errorDescription, state };
+	}
+	if (!code) {
+		return { ok: false, pending: true };
+	}
+	if (state !== expectedState) {
+		return {
+			ok: false,
+			error: "state_mismatch",
+			errorDescription: `Expected ${expectedState}, got ${state ?? "<none>"}`,
+			state,
+		};
+	}
+	return { ok: true, code, state };
+}
+
 function openUrl(url: string): boolean {
 	if (prefersDeviceCodeByEnvironment()) {
 		return false;
@@ -620,19 +649,14 @@ function createCallbackServer(args: { redirectUri: string; expectedState: string
 			res.end("Not found");
 			return;
 		}
-		const error = requestUrl.searchParams.get("error") || undefined;
-		const errorDescription = requestUrl.searchParams.get("error_description") || undefined;
-		const state = requestUrl.searchParams.get("state") || undefined;
-		const code = requestUrl.searchParams.get("code") || undefined;
-		if (error) {
-			finish({ ok: false, error, errorDescription, state });
-		} else if (!code) {
-			finish({ ok: false, error: "missing_authorization_code", errorDescription: "Missing code query param in callback", state });
-		} else if (state !== args.expectedState) {
-			finish({ ok: false, error: "state_mismatch", errorDescription: `Expected ${args.expectedState}, got ${state ?? "<none>"}`, state });
-		} else {
-			finish({ ok: true, code, state });
+		const outcome = inspectCallbackRequest(requestUrl, args.expectedState);
+		if ("pending" in outcome) {
+			res.statusCode = 200;
+			res.setHeader("content-type", "text/html; charset=utf-8");
+			res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>Waiting for AI Stats authorization</h1><p>This browser window can stay open until authorization completes.</p></body></html>");
+			return;
 		}
+		finish(outcome);
 		res.statusCode = 200;
 		res.setHeader("content-type", "text/html; charset=utf-8");
 		res.end("<!doctype html><html><body style=\"font-family:sans-serif;padding:24px\"><h1>AI Stats login complete</h1><p>You can return to your terminal now.</p></body></html>");
@@ -1169,8 +1193,11 @@ function buildOauthClientPayload(flags: Record<string, string | boolean>) {
 		...parseCsvFlag(flags, "redirect-uri"),
 	];
 	const uniqueRedirectUris = Array.from(new Set(redirectUris));
+	const scopes = parseCsvFlag(flags, "scopes");
 	return compact({
 		name: flagString(flags, "name"),
+		client_type: flagString(flags, "client-type"),
+		allowed_scopes: scopes.length ? scopes : undefined,
 		description: flagString(flags, "description"),
 		homepage_url: flagString(flags, "homepage-url"),
 		logo_url: flagString(flags, "logo-url"),

@@ -129,6 +129,16 @@ export async function hashOAuthSecret(value: string): Promise<string> {
 	return sha256Base64Url(`${pepper}:${value}`);
 }
 
+export async function verifyClientSecret(
+	client: Pick<OAuthClient, "client_type" | "client_secret_hash">,
+	providedSecret: string | null | undefined,
+): Promise<boolean> {
+	if (client.client_type !== "confidential") return true;
+	const normalizedSecret = String(providedSecret ?? "").trim();
+	if (!normalizedSecret || !client.client_secret_hash) return false;
+	return (await hashOAuthSecret(normalizedSecret)) === client.client_secret_hash;
+}
+
 export function createUserCode(): string {
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 	let out = "";
@@ -424,7 +434,13 @@ export async function issueTokenPair(input: TokenIssueInput) {
 	};
 }
 
-export async function rotateRefreshToken(refreshToken: string) {
+export async function rotateRefreshToken(
+	refreshToken: string,
+	clientAuth?: { clientId?: string; clientSecret?: string | null },
+): Promise<
+	| { ok: true; tokens: Awaited<ReturnType<typeof issueTokenPair>> }
+	| { ok: false; reason: "invalid_client" | "invalid_grant" }
+> {
 	const tokenHash = await hashOAuthSecret(refreshToken);
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
@@ -432,32 +448,53 @@ export async function rotateRefreshToken(refreshToken: string) {
 		.select("id, user_id, workspace_id, client_id, scopes, expires_at, revoked_at")
 		.eq("token_hash", tokenHash)
 		.maybeSingle();
-	if (error || !data || data.revoked_at) return null;
-	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) return null;
+	if (error || !data || data.revoked_at) return { ok: false, reason: "invalid_grant" };
+	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) {
+		return { ok: false, reason: "invalid_grant" };
+	}
+	const clientId = String(data.client_id ?? "").trim();
+	const client = await loadOAuthClient(clientId);
+	if (!client) return { ok: false, reason: "invalid_grant" };
+	if (clientAuth?.clientId && clientAuth.clientId !== clientId) {
+		return { ok: false, reason: "invalid_client" };
+	}
+	if (client.client_type === "confidential") {
+		if (!clientAuth?.clientId || clientAuth.clientId !== clientId) {
+			return { ok: false, reason: "invalid_client" };
+		}
+		if (!(await verifyClientSecret(client, clientAuth.clientSecret))) {
+			return { ok: false, reason: "invalid_client" };
+		}
+	}
 	const authorization = await supabase
 		.from("oauth_authorizations")
 		.select("scopes, revoked_at")
 		.eq("user_id", data.user_id)
 		.eq("workspace_id", data.workspace_id)
-		.eq("client_id", data.client_id)
+		.eq("client_id", clientId)
 		.maybeSingle();
-	if (authorization.error || !authorization.data || authorization.data.revoked_at !== null) return null;
+	if (authorization.error || !authorization.data || authorization.data.revoked_at !== null) {
+		return { ok: false, reason: "invalid_grant" };
+	}
 
 	await supabase
 		.from("oauth_refresh_tokens")
 		.update({ revoked_at: new Date().toISOString(), last_used_at: new Date().toISOString() })
 		.eq("id", data.id);
 
-	return issueTokenPair({
+	return {
+		ok: true,
+		tokens: await issueTokenPair({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),
-		clientId: String(data.client_id),
+		clientId,
 		scopes: Array.isArray(authorization.data.scopes)
 			? authorization.data.scopes.map(String)
 			: Array.isArray(data.scopes)
 				? data.scopes.map(String)
 				: [],
-	});
+		}),
+	};
 }
 
 export async function ensureGrants(args: {

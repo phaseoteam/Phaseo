@@ -81,6 +81,7 @@ export async function refreshSession(session: Session): Promise<Session> {
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
 			grant_type: "refresh_token",
+			client_id: "aistats_cli",
 			refresh_token: session.refreshToken,
 		}),
 	});
@@ -170,6 +171,7 @@ export async function exchangeAuthorizationCode(apiRoot: string, args: {
 	redirectUri: string;
 	codeVerifier: string;
 	clientId?: string;
+	clientSecret?: string;
 }): Promise<{
 	access_token: string;
 	refresh_token: string;
@@ -182,6 +184,7 @@ export async function exchangeAuthorizationCode(apiRoot: string, args: {
 		body: JSON.stringify({
 			grant_type: "authorization_code",
 			client_id: args.clientId ?? "aistats_cli",
+			client_secret: args.clientSecret,
 			code: args.code,
 			redirect_uri: args.redirectUri,
 			code_verifier: args.codeVerifier,

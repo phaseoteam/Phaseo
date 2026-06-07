@@ -1,14 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { clearRuntime, configureRuntime } from "@/runtime/env";
 import {
 	assertRedirectAllowed,
 	CLI_DEFAULT_SCOPES,
 	createUserCode,
 	filterAllowedScopes,
+	hashOAuthSecret,
 	normalizeScopes,
 	normalizeUserCode,
+	verifyClientSecret,
 } from "./service";
 
 describe("OAuth service helpers", () => {
+	beforeAll(() => {
+		configureRuntime({
+			SUPABASE_URL: "https://example.supabase.co",
+			SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key",
+			GATEWAY_CACHE: {} as KVNamespace,
+			KEY_PEPPER_ACTIVE: "test-pepper",
+		} as any);
+	});
+
+	afterAll(() => {
+		clearRuntime();
+	});
+
 	it("normalizes scope strings and user codes", () => {
 		expect(normalizeScopes("openid profile  keys:write")).toEqual([
 			"openid",
@@ -58,5 +74,17 @@ describe("OAuth service helpers", () => {
 		for (let i = 0; i < 32; i++) {
 			expect(createUserCode()).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
 		}
+	});
+
+	it("requires a valid secret for confidential OAuth clients", async () => {
+		const secret = "super-secret-value";
+		const client = {
+			client_type: "confidential",
+			client_secret_hash: await hashOAuthSecret(secret),
+		} as const;
+
+		await expect(verifyClientSecret(client, secret)).resolves.toBe(true);
+		await expect(verifyClientSecret(client, "wrong-secret")).resolves.toBe(false);
+		await expect(verifyClientSecret(client, null)).resolves.toBe(false);
 	});
 });

@@ -11,6 +11,7 @@ import {
 } from "../src/api.ts";
 import {
 	helpKeyForCommand,
+	inspectCallbackRequest,
 	nextLoginMenuIndex,
 	prefersDeviceCodeByEnvironment,
 	renderLoginBanner,
@@ -102,6 +103,21 @@ test("moves the login menu selection with arrow-key input", () => {
 	assert.equal(nextLoginMenuIndex(1, "\u001b[A", 2), 0);
 	assert.equal(nextLoginMenuIndex(0, "\u001b[A", 2), 0);
 	assert.equal(nextLoginMenuIndex(1, "\u001b[B", 2), 1);
+});
+
+test("ignores callback hits until an authorization code is present", () => {
+	const pendingUrl = new URL("http://127.0.0.1:8976/callback");
+	assert.deepEqual(inspectCallbackRequest(pendingUrl, "state-123"), {
+		ok: false,
+		pending: true,
+	});
+
+	const successUrl = new URL("http://127.0.0.1:8976/callback?code=abc123&state=state-123");
+	assert.deepEqual(inspectCallbackRequest(successUrl, "state-123"), {
+		ok: true,
+		code: "abc123",
+		state: "state-123",
+	});
 });
 
 test("resolves help text for command groups and leaf commands", () => {
