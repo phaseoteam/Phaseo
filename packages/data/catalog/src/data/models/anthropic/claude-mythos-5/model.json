@@ -13,6 +13,7 @@
   "input_types": null,
   "output_types": null,
   "api_model_id": "anthropic/claude-mythos-5",
+  "family_id": "anthropic/claude-mythos",
   "links": [],
   "details": [
     {
