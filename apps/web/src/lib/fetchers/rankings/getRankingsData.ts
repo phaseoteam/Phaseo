@@ -6,6 +6,7 @@
 "use cache";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import {
 	fetchPublicGatewayRequestRows,
 } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
@@ -187,6 +188,8 @@ export type AppsIndexabilitySnapshot = {
 	hasTrendingData: boolean;
 	shouldIndex: boolean;
 };
+
+const APPS_INDEXABILITY_QUERY_LIMIT = 300;
 
 function getDefaultWeeklySinceIso(): string {
     const now = new Date();
@@ -1139,16 +1142,22 @@ export async function getTrendingApps(
 }
 
 export async function getAppsIndexabilitySnapshot(): Promise<AppsIndexabilitySnapshot> {
-	const [topAppsResult, trendingAppsResult] = await Promise.all([
-		getTopApps("4w", 1),
-		getTrendingApps(1),
+	const [publicAppIds, topAppsResult, trendingAppsResult] = await Promise.all([
+		getPublicAppIdsCached(),
+		getTopApps("4w", APPS_INDEXABILITY_QUERY_LIMIT),
+		getTrendingApps(APPS_INDEXABILITY_QUERY_LIMIT),
 	]);
+	const publicAppIdSet = new Set(publicAppIds);
 
 	const hasLeaderboardData = topAppsResult.data.some(
-		(row) => Number(row.tokens ?? 0) > 0,
+		(row) =>
+			publicAppIdSet.has(String(row.app_id ?? "").trim()) &&
+			Number(row.tokens ?? 0) > 0,
 	);
 	const hasTrendingData = trendingAppsResult.data.some(
-		(row) => Number(row.growth_tokens ?? 0) > 0,
+		(row) =>
+			publicAppIdSet.has(String(row.app_id ?? "").trim()) &&
+			Number(row.growth_tokens ?? 0) > 0,
 	);
 
 	return {
