@@ -580,6 +580,9 @@ const (
 	// Model ID: nex-agi/deepseek-v3.1-nex-n1
 	// Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
 	ModelIDNexAgiDeepseekV31NexN1 gen.ModelId = "nex-agi/deepseek-v3.1-nex-n1"
+	// Model ID: nex-agi/nex-n2-pro:free
+	// Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
+	ModelIDNexAgiNexN2ProFree gen.ModelId = "nex-agi/nex-n2-pro:free"
 	// Model ID: nous/hermes-3-llama-3.1-405b
 	// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
 	ModelIDNousHermes3Llama31405b gen.ModelId = "nous/hermes-3-llama-3.1-405b"
@@ -1556,6 +1559,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDMorphMorphV3Fast,
 	ModelIDMorphMorphV3Large,
 	ModelIDNexAgiDeepseekV31NexN1,
+	ModelIDNexAgiNexN2ProFree,
 	ModelIDNousHermes3Llama31405b,
 	ModelIDNousresearchHermes3Llama31405b,
 	ModelIDNousresearchHermes3Llama3170b,

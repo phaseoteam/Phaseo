@@ -581,6 +581,9 @@ final class ModelIds
     /** Model ID: nex-agi/deepseek-v3.1-nex-n1. Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1 */
     public const NEX_AGI_DEEPSEEK_V3_1_NEX_N1 = 'nex-agi/deepseek-v3.1-nex-n1';
 
+    /** Model ID: nex-agi/nex-n2-pro:free. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree */
+    public const NEX_AGI_NEX_N2_PRO_FREE = 'nex-agi/nex-n2-pro:free';
+
     /** Model ID: nous/hermes-3-llama-3.1-405b. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b */
     public const NOUS_HERMES_3_LLAMA_3_1_405B = 'nous/hermes-3-llama-3.1-405b';
 

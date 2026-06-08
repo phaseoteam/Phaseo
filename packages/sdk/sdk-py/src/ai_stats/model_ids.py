@@ -774,6 +774,10 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
     NEX_AGI_DEEPSEEK_V3_1_NEX_N1: Final[str] = "nex-agi/deepseek-v3.1-nex-n1"
 
+    # Model ID: nex-agi/nex-n2-pro:free
+    # Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
+    NEX_AGI_NEX_N2_PRO_FREE: Final[str] = "nex-agi/nex-n2-pro:free"
+
     # Model ID: nous/hermes-3-llama-3.1-405b
     # Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
     NOUS_HERMES_3_LLAMA_3_1_405B: Final[str] = "nous/hermes-3-llama-3.1-405b"
@@ -2011,6 +2015,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.MORPH_MORPH_V3_FAST,
         ModelIds.MORPH_MORPH_V3_LARGE,
         ModelIds.NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
+        ModelIds.NEX_AGI_NEX_N2_PRO_FREE,
         ModelIds.NOUS_HERMES_3_LLAMA_3_1_405B,
         ModelIds.NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
         ModelIds.NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,

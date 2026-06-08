@@ -187,6 +187,7 @@ export type KnownModelId =
   | "morph/morph-v3-fast"
   | "morph/morph-v3-large"
   | "nex-agi/deepseek-v3.1-nex-n1"
+  | "nex-agi/nex-n2-pro:free"
   | "nous/hermes-3-llama-3.1-405b"
   | "nousresearch/hermes-3-llama-3.1-405b"
   | "nousresearch/hermes-3-llama-3.1-70b"
