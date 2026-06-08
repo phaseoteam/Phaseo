@@ -131,6 +131,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "poolside",
 		textOnly: true,
 	},
+	{
+		id: "thinking-machines",
+		textOnly: true,
+	},
 ];
 
 const PROFILE_INDEX = new Map<string, ProviderProfile>();
