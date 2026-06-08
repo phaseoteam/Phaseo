@@ -258,8 +258,8 @@ importers:
         specifier: ^9.6.1
         version: 9.6.1(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(three@0.184.0)
       '@statsig/js-client':
-        specifier: ^3.33.0
-        version: 3.33.1
+        specifier: ^3.33.2
+        version: 3.33.2
       '@statsig/react-bindings':
         specifier: ^3.33.0
         version: 3.33.1(react@19.2.6)
@@ -4278,8 +4278,14 @@ packages:
   '@statsig/client-core@3.33.1':
     resolution: {integrity: sha512-xz8wO/Kc7PzmWPFTptblX4DycbCceJdaa2AAXnmxw53OWDcYvRcgFZgcjymXsxli9cwkp2zkLtMSay4SCw2xFw==}
 
+  '@statsig/client-core@3.33.2':
+    resolution: {integrity: sha512-TKZ546NfK2oShe1sHhgn+TaCoAWZ/bs0soK+gAjB/y5UAqWVhCcORAd/8eRUyor8Lz2VfL3V4Ze/zr1CCM2/5g==}
+
   '@statsig/js-client@3.33.1':
     resolution: {integrity: sha512-512h014fLkIXf7remo8iBd6pyuqkD1oWTOPbmsd1xj2BnqZ8ETRmHh8owJsc3kvie042yGb8LgnwFxv+NnPAaQ==}
+
+  '@statsig/js-client@3.33.2':
+    resolution: {integrity: sha512-FgAnaN0d8X/OEZS/HEGI2D3CdbZzsbw3BHlSGvaqUcnwu45aXejFFUCCw96/NTH4lEvSMj1S1RBsrnQ2pVErgQ==}
 
   '@statsig/react-bindings@3.33.1':
     resolution: {integrity: sha512-Zn+/OmILUFKDz2iutqkZGiX/1KeBab8iwBmO0UknwsgY2q/dgaxnoCEYse5DzQbJUmVBp2EQYG2SetrenNSA/g==}
@@ -15491,9 +15497,15 @@ snapshots:
 
   '@statsig/client-core@3.33.1': {}
 
+  '@statsig/client-core@3.33.2': {}
+
   '@statsig/js-client@3.33.1':
     dependencies:
       '@statsig/client-core': 3.33.1
+
+  '@statsig/js-client@3.33.2':
+    dependencies:
+      '@statsig/client-core': 3.33.2
 
   '@statsig/react-bindings@3.33.1(react@19.2.6)':
     dependencies:
