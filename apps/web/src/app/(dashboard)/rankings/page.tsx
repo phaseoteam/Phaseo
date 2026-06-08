@@ -6,7 +6,6 @@
 import { Suspense } from "react";
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import Link from "next/link";
 import { PerformanceLandscapePanel } from "@/components/(rankings)/PerformanceLandscapePanel";
 import { PerformanceLeaderboard } from "@/components/(rankings)/PerformanceLeaderboard";
 import { MarketShareStackedBar } from "@/components/(rankings)/MarketShareStackedBar";
@@ -78,30 +77,6 @@ export default async function RankingsPage() {
                         </h1>
                         <p className="text-sm text-muted-foreground">
                             Based on real usage data from across AI Stats.
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Methodology:{" "}
-                            <Link
-                                href="/how-ai-stats-measures-latency-throughput"
-                                className="underline underline-offset-4"
-                            >
-                                latency and throughput
-                            </Link>
-                            ,{" "}
-                            <Link
-                                href="/how-ai-stats-normalises-ai-benchmarks"
-                                className="underline underline-offset-4"
-                            >
-                                benchmark normalization
-                            </Link>
-                            , and{" "}
-                            <Link
-                                href="/how-ai-stats-tracks-provider-availability"
-                                className="underline underline-offset-4"
-                            >
-                                provider availability
-                            </Link>
-                            .
                         </p>
                     </div>
                     <Suspense fallback={<ChartSkeleton />}>
