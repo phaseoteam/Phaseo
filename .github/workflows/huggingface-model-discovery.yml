@@ -11,10 +11,6 @@ concurrency:
 
 env:
     NODE_VERSION: 22
-    DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-    DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
-    DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
-    HF_TOKEN: ${{ secrets.HF_TOKEN }}
     MODEL_DISCOVERY_HF_GITHUB_ISSUES: "false"
 
 permissions:
@@ -60,10 +56,16 @@ jobs:
                       hf-model-discovery-state-${{ github.ref_name }}-
 
             - name: Check watched Hugging Face orgs
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
+                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+                  HF_TOKEN: ${{ secrets.HF_TOKEN }}
               run: >
                   pnpm exec tsx scripts/model-discovery/run-hf-private.ts
                   --discord-role-id "${DISCORD_ROLE_ID}"
                   --discord-user-id "${DISCORD_USER_ID}"
+                  --hf-token "${HF_TOKEN}"
                   --hf-orgs "primeintellect,voyageai,arcee-ai,apple,baidu,suno,perplexity-ai,moonshotai,elevenlabs,cohere,anthropic,amazon,ai21labs,ai-stats,ibm-granite,nousresearch,bytedance-seed,minimaxai,microsoft,xai-org,zai-org,lgai-exaone,mistralai,meta-llama,nvidia,google,openai,deepseek-ai,qwen"
 
             - name: Save Hugging Face discovery state cache

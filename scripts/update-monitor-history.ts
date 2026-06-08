@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DATA_ROOT = "packages/data/catalog/src/data";
 const HISTORY_FILE = `${DATA_ROOT}/monitor-history.json`;
@@ -133,41 +134,73 @@ function diffBenchmarks(
   after: any[],
   field: string
 ): DiffItem[] {
-  const toKey = (item: any) =>
-    `${item?.benchmark_id ?? "unknown"}::${item?.other_info ?? ""}`;
+  const buildVariantKey = (item: any) => {
+    const benchmarkId = item?.benchmark_id ?? "unknown";
+    const otherInfo = String(item?.other_info ?? "").trim();
+    return `${benchmarkId}::${otherInfo}`;
+  };
 
-  const beforeMap = new Map<string, any>();
-  const afterMap = new Map<string, any>();
+  const groupScores = (items: any[]) => {
+    const map = new Map<string, number[]>();
 
-  for (const item of before) beforeMap.set(toKey(item), item);
-  for (const item of after) afterMap.set(toKey(item), item);
+    for (const item of items) {
+      const variantKey = buildVariantKey(item);
+      const score = item?.score;
+      const existing = map.get(variantKey) ?? [];
+
+      if (typeof score === "number" && Number.isFinite(score)) {
+        existing.push(score);
+      }
+
+      map.set(variantKey, existing);
+    }
+
+    for (const [variantKey, scores] of map.entries()) {
+      map.set(
+        variantKey,
+        [...scores].sort((a, b) => a - b)
+      );
+    }
+
+    return map;
+  };
+
+  const beforeMap = groupScores(before);
+  const afterMap = groupScores(after);
 
   const keys = new Set([...beforeMap.keys(), ...afterMap.keys()]);
   const diffs: DiffItem[] = [];
 
   for (const key of keys) {
-    const prev = beforeMap.get(key);
-    const next = afterMap.get(key);
-    const name = key.split("::")[0] || "unknown";
-    const note = key.split("::")[1];
-    const label = note ? `${name}[${note}]` : name;
-    const diffField = `${field}.${label}.score`;
+    const prevScores = beforeMap.get(key) ?? [];
+    const nextScores = afterMap.get(key) ?? [];
 
-    if (prev && !next) {
-      diffs.push({ field: diffField, before: prev?.score ?? null, after: null });
+    if (JSON.stringify(prevScores) === JSON.stringify(nextScores)) {
       continue;
     }
 
-    if (!prev && next) {
-      diffs.push({ field: diffField, before: null, after: next?.score ?? null });
-      continue;
-    }
+    const beforeValue =
+      prevScores.length === 0
+        ? null
+        : prevScores.length === 1
+        ? prevScores[0]
+        : prevScores;
+    const afterValue =
+      nextScores.length === 0
+        ? null
+        : nextScores.length === 1
+        ? nextScores[0]
+        : nextScores;
 
-    const prevScore = prev?.score ?? null;
-    const nextScore = next?.score ?? null;
-    if (prevScore !== nextScore) {
-      diffs.push({ field: diffField, before: prevScore, after: nextScore });
-    }
+    diffs.push({
+      field: (() => {
+        const [benchmarkId, otherInfo = ""] = key.split("::");
+        const label = otherInfo ? `${benchmarkId}[${otherInfo}]` : benchmarkId;
+        return `${field}.${label}.score`;
+      })(),
+      before: beforeValue,
+      after: afterValue,
+    });
   }
 
   return diffs;
@@ -779,4 +812,16 @@ function main() {
   );
 }
 
-main();
+function isMainModule(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return path.resolve(entry) === path.resolve(fileURLToPath(import.meta.url));
+}
+
+export const testingExports = {
+  diffBenchmarks,
+};
+
+if (isMainModule()) {
+  main();
+}
