@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/empty";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
+import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 
@@ -134,17 +135,6 @@ function parseTypes(types: unknown): string[] {
 		);
 	}
 	return [];
-}
-
-function formatDate(dateStr?: string | null): string {
-	if (!dateStr) return "-";
-	const date = new Date(dateStr);
-	if (Number.isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
 }
 
 function isProviderModelActiveNow(
@@ -670,7 +660,6 @@ export async function ModelAboutSection({
 				released={model.release_date ?? undefined}
 				deprecated={model.deprecation_date ?? undefined}
 				retired={model.retirement_date ?? undefined}
-				formatDate={formatDate}
 				showHeading={false}
 			/>
 			<OtherInfo details={model.model_details ?? undefined} showHeading={false} />
@@ -750,7 +739,7 @@ export async function ModelCreatorModelsSection({
 										</div>
 										<div className="mt-3">
 											<p className="text-xs text-muted-foreground">
-												{formatDate(creatorModel.primary_date)}
+												{formatModelLifecycleDate(creatorModel.primary_date)}
 											</p>
 										</div>
 									</Link>
