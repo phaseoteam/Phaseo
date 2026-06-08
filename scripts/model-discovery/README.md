@@ -19,7 +19,7 @@ On subsequent runs, the runner computes per-provider:
 
 ## Private upstream discovery
 
-External upstream discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. In production these checks run from the Cloudflare Worker scheduled runner. They send Discord notifications and can create or update GitHub triage issues when `GITHUB_TOKEN` or `GH_TOKEN` is available.
+External upstream discovery checks model sources outside AI Stats, including provider `/models` APIs and watched Hugging Face organisations/models. Provider `/models` checks run from the Cloudflare Worker scheduled runner. Hugging Face checks run from GitHub Actions on an hourly schedule. Both can send Discord notifications and can create or update GitHub triage issues when `GITHUB_TOKEN` or `GH_TOKEN` is available.
 
 Provider `/models` Discord alerts are filtered to provider model IDs already known in the database table `data_api_provider_models` (`provider_model_slug` and the `api_model_id` tail), regardless of `is_active_gateway` status. GitHub issue sync is intentionally not filtered by that allowlist: unknown upstream models are included in triage issues so newly exposed provider or Hugging Face models are not silently discarded.
 
@@ -52,7 +52,7 @@ Providers not present in `discovery-policy.ts` are also treated as inactive by d
 - `scripts/model-discovery/run.ts`
   - Local/manual external upstream provider `/models` API discovery. The production scheduled equivalent lives in the Cloudflare Worker.
 - `scripts/model-discovery/run-hf-private.ts`
-  - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent lives in the Cloudflare Worker.
+  - Local/manual external upstream Hugging Face discovery. The production scheduled equivalent lives in `.github/workflows/huggingface-model-discovery.yml`.
 - `scripts/model-discovery/run-internal-public.ts`
   - Local/manual internal catalog/database discovery helper. Production runs from `.github/workflows/check-new-models.yml` on pushes to `main`.
 
@@ -71,7 +71,7 @@ pnpm run data:check-new-models:test
 - `DISCORD_WEBHOOK_NEW_MODELS_PUBLIC` (public webhook URL for internal website model additions)
 - `DISCORD_WEBHOOK_URL` (private/default webhook URL for provider and Hugging Face tracking alerts)
 - `DISCORD_MODEL_DISCOVERY_AVATAR_URL` (optional manual override when calling internal runner scripts with `--discord-avatar-url`)
-- Watched Hugging Face orgs for the Cloudflare scheduled runner are hardcoded in `apps/api/src/pipeline/model-discovery/huggingface.ts`
+- Watched Hugging Face orgs for the GitHub Actions scheduled runner are currently passed in `.github/workflows/huggingface-model-discovery.yml`
 - `HF_TOKEN` (optional Hugging Face token for orgs/models that require authenticated API access)
 - `GITHUB_TOKEN` or `GH_TOKEN` (optional, enables automatic GitHub issues for external provider and Hugging Face additions/changes/deletions)
 - `NEXT_PUBLIC_SUPABASE_URL` (required for known provider model DB allowlist)

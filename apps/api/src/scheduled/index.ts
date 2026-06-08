@@ -11,13 +11,38 @@ import {
 	normalizeModelDiscoveryShardSize,
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
-import { runHuggingFaceDiscovery } from "@/pipeline/model-discovery/huggingface";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 
-const SHARD_ROTATION_WINDOW_MS = 5 * 60 * 1000;
+const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
+	60 / getModelDiscoveryStepMinutesUtc(hour),
+).reduce((total, ticks) => total + ticks, 0);
+
+function serializeError(error: unknown): Record<string, unknown> {
+	if (error instanceof Error) {
+		return {
+			name: error.name,
+			message: error.message,
+			stack: error.stack,
+			cause:
+				error.cause instanceof Error
+					? serializeError(error.cause)
+					: error.cause ?? undefined,
+		};
+	}
+
+	if (typeof error === "object" && error !== null) {
+		return {
+			value: error,
+		};
+	}
+
+	return {
+		value: error,
+	};
+}
 
 function toBool(value: string | undefined, fallback = false): boolean {
 	if (value === undefined) return fallback;
@@ -32,13 +57,58 @@ function toInt(value: string | undefined, fallback: number): number {
 	return Math.max(1, Math.floor(parsed));
 }
 
+function getScheduledMinuteUtc(event: ScheduledController): number {
+	return new Date(event.scheduledTime).getUTCMinutes();
+}
+
+function getModelDiscoveryStepMinutesUtc(hour: number): number {
+	if (hour >= 15 && hour < 18) {
+		return 3;
+	}
+
+	if (hour >= 10 && hour < 12) {
+		return 5;
+	}
+
+	return 15;
+}
+
+function isCoreJobsTick(event: ScheduledController): boolean {
+	return getScheduledMinuteUtc(event) % 5 === 0;
+}
+
+function isModelDiscoveryTick(event: ScheduledController): boolean {
+	const scheduledAt = new Date(event.scheduledTime);
+	const hour = scheduledAt.getUTCHours();
+	const minute = scheduledAt.getUTCMinutes();
+	return minute % getModelDiscoveryStepMinutesUtc(hour) === 0;
+}
+
+function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
+	const scheduledAt = new Date(event.scheduledTime);
+	const hour = scheduledAt.getUTCHours();
+	const minute = scheduledAt.getUTCMinutes();
+	const dayNumber = Math.floor(event.scheduledTime / (24 * 60 * 60 * 1000));
+
+	let ticksBeforeHour = 0;
+	for (let currentHour = 0; currentHour < hour; currentHour += 1) {
+		ticksBeforeHour += 60 / getModelDiscoveryStepMinutesUtc(currentHour);
+	}
+
+	return (
+		dayNumber * MODEL_DISCOVERY_TICKS_PER_DAY +
+		ticksBeforeHour +
+		Math.floor(minute / getModelDiscoveryStepMinutesUtc(hour))
+	);
+}
+
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	const shardSize = normalizeModelDiscoveryShardSize(
 		toInt(env.MODEL_DISCOVERY_SHARD_SIZE, DEFAULT_MODEL_DISCOVERY_SHARD_SIZE),
 	);
 	const shardCount = getModelDiscoveryShardCount(shardSize);
-	const bucket = Math.floor(event.scheduledTime / SHARD_ROTATION_WINDOW_MS);
-	const shardIndex = bucket % shardCount;
+	const executionIndex = getModelDiscoveryExecutionIndex(event);
+	const shardIndex = executionIndex % shardCount;
 
 	configureRuntime(env);
 	try {
@@ -51,18 +121,6 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 			notify: true,
 			prune: shardIndex === 0,
 		});
-	} finally {
-		clearRuntime();
-	}
-}
-
-async function handleHuggingFaceDiscoveryScheduledEvent(_event: ScheduledController, env: GatewayBindings): Promise<void> {
-	configureRuntime(env);
-	try {
-		const summary = await runHuggingFaceDiscovery();
-		if (summary.executed) {
-			console.log("model_discovery_huggingface_completed", summary);
-		}
 	} finally {
 		clearRuntime();
 	}
@@ -139,34 +197,33 @@ async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env:
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
-	try {
-		await handleEmailOutboxScheduledEvent(event, env);
-	} catch (error) {
-		console.error("email_outbox_scheduled_failed", { error });
+	if (isCoreJobsTick(event)) {
+		try {
+			await handleEmailOutboxScheduledEvent(event, env);
+		} catch (error) {
+			console.error("email_outbox_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleAsyncWebhookRetriesScheduledEvent(event, env);
+		} catch (error) {
+			console.error("async_webhook_retries_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleVideoReconciliationScheduledEvent(event, env);
+		} catch (error) {
+			console.error("video_reconciliation_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleBatchReconciliationScheduledEvent(event, env);
+		} catch (error) {
+			console.error("batch_reconciliation_scheduled_failed", serializeError(error));
+		}
 	}
-	try {
-		await handleAsyncWebhookRetriesScheduledEvent(event, env);
-	} catch (error) {
-		console.error("async_webhook_retries_scheduled_failed", { error });
-	}
-	try {
-		await handleVideoReconciliationScheduledEvent(event, env);
-	} catch (error) {
-		console.error("video_reconciliation_scheduled_failed", { error });
-	}
-	try {
-		await handleBatchReconciliationScheduledEvent(event, env);
-	} catch (error) {
-		console.error("batch_reconciliation_scheduled_failed", { error });
-	}
-	try {
-		await handleModelDiscoveryScheduledEvent(event, env);
-	} catch (error) {
-		console.error("model_discovery_scheduled_failed", { error });
-	}
-	try {
-		await handleHuggingFaceDiscoveryScheduledEvent(event, env);
-	} catch (error) {
-		console.error("model_discovery_huggingface_scheduled_failed", { error });
+	if (isModelDiscoveryTick(event)) {
+		try {
+			await handleModelDiscoveryScheduledEvent(event, env);
+		} catch (error) {
+			console.error("model_discovery_scheduled_failed", serializeError(error));
+		}
 	}
 }
