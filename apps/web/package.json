@@ -66,7 +66,7 @@
 		"@radix-ui/react-tooltip": "^1.2.8",
 		"@radix-ui/react-use-controllable-state": "^1.2.2",
 		"@react-three/drei": "^10.7.6",
-		"@react-three/fiber": "^9.4.0",
+		"@react-three/fiber": "^9.6.1",
 		"@statsig/js-client": "^3.33.0",
 		"@statsig/react-bindings": "^3.33.0",
 		"@statsig/session-replay": "^3.33.0",
