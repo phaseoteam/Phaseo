@@ -69,7 +69,6 @@ for (const [key, assets] of manifestEntries) {
 // Keep common aliases here so callers can pass provider IDs directly.
 normalisedAliasMap.set(normalise("novitaai"), "novita");
 normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
-normalisedAliasMap.set(normalise("anthropic-us"), "anthropic");
 normalisedAliasMap.set(normalise("anthropic-aws"), "aws");
 normalisedAliasMap.set(normalise("anthropic-aws-us"), "aws");
 
