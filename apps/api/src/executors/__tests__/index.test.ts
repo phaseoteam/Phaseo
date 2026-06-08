@@ -256,6 +256,9 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("ai21", "images.generations")).toBeNull();
 		expect(resolveProviderExecutor("ai21", "audio.transcription")).toBeNull();
 		expect(resolveProviderExecutor("ai21", "video.generation")).toBeNull();
+		expect(resolveProviderExecutor("thinking-machines", "images.generations")).toBeNull();
+		expect(resolveProviderExecutor("thinking-machines", "audio.transcription")).toBeNull();
+		expect(resolveProviderExecutor("thinking-machines", "video.generation")).toBeNull();
 		expect(resolveProviderExecutor("xiaomi", "images.generations")).toBeTruthy();
 		expect(resolveProviderExecutor("xiaomi", "audio.transcription")).toBeTruthy();
 		expect(resolveProviderExecutor("xiaomi", "video.generation")).toBeTruthy();
