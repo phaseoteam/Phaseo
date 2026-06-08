@@ -8,7 +8,12 @@ import { Montserrat } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { Metadata } from "next";
-import { METADATA_BASE, absoluteUrl } from "@/lib/seo";
+import {
+	METADATA_BASE,
+	PREFERRED_SITE_NAME,
+	SITE_NAME,
+	absoluteUrl,
+} from "@/lib/seo";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { CookieConsentManager } from "@/components/analytics/CookieConsentManager";
 import { DeferredVercelAnalytics } from "@/components/analytics/DeferredVercelAnalytics";
@@ -20,19 +25,20 @@ const montserrat = Montserrat({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
 	title: {
-		default: "AI Stats",
-		template: "%s | AI Stats",
+		default: PREFERRED_SITE_NAME,
+		template: `%s | ${SITE_NAME}`,
 	},
 	description:
 		"Discover and compare the world's most comprehensive AI model database and gateway. Browse benchmarks, features, pricing, and access state-of-the-art AI models.",
-	authors: [{ name: "AI Stats" }],
+	applicationName: PREFERRED_SITE_NAME,
+	authors: [{ name: SITE_NAME }],
 	metadataBase: METADATA_BASE,
 	openGraph: {
 		type: "website",
 		locale: "en_GB",
-		siteName: "AI Stats",
+		siteName: PREFERRED_SITE_NAME,
 		url: absoluteUrl("/"),
-		title: "AI Stats",
+		title: PREFERRED_SITE_NAME,
 		description:
 			"Browse and compare state-of-the-art AI models, benchmarks, features, and pricing.",
 		images: [
@@ -48,7 +54,7 @@ export const metadata: Metadata = {
 		card: "summary_large_image",
 		site: "@phaseoapp",
 		creator: "@DanielButler001",
-		title: "AI Stats",
+		title: PREFERRED_SITE_NAME,
 		description:
 			"Browse and compare state-of-the-art AI models, benchmarks, features, and pricing.",
 		images: [absoluteUrl("/og.png")],

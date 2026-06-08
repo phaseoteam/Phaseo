@@ -63,6 +63,11 @@ const developerLinks = [
 		external: true,
 	},
 	{
+		href: "/methodology",
+		label: "Methodology",
+		icon: FileText,
+	},
+	{
 		href: "https://ai-stats.instatus.com/",
 		label: "Status",
 		icon: Activity,
@@ -239,7 +244,8 @@ export default function Footer() {
 							/>
 						</Link>
 						<p className="max-w-xs text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-							Unified model, provider, and gateway data for teams building with AI APIs.
+							AI Stats by Phaseo brings together model, provider, and gateway
+							data for teams building with AI APIs.
 						</p>
 						<div className="grid gap-2 sm:max-w-none sm:grid-cols-3 xl:max-w-sm xl:grid-cols-1">
 							{featuredLinks.map((link) => (

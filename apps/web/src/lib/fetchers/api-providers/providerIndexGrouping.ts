@@ -25,6 +25,7 @@ export interface APIProviderCard {
 	api_provider_name: string;
 	colour?: string | null;
 	country_code: string;
+	last_updated_at?: string | null;
 	total_models: number;
 	active_models: number;
 	free_models: number;
@@ -48,6 +49,7 @@ export interface APIProviderIndexVariant {
 	total_daily_requests: number;
 	total_daily_tokens: number;
 	total_monthly_tokens: number;
+	last_updated_at?: string | null;
 	modality_model_ids: Record<
 		ProviderModalityKey,
 		{
@@ -76,6 +78,21 @@ function uniqueStrings(values: Iterable<string>): string[] {
 				.filter(Boolean),
 		),
 	);
+}
+
+function pickLatestIsoDate(values: Array<string | null | undefined>): string | null {
+	let latest: string | null = null;
+	let latestMs = Number.NEGATIVE_INFINITY;
+
+	for (const value of values) {
+		if (!value) continue;
+		const parsed = Date.parse(value);
+		if (!Number.isFinite(parsed) || parsed <= latestMs) continue;
+		latestMs = parsed;
+		latest = value;
+	}
+
+	return latest;
 }
 
 function getRegionalParentProviderId(
@@ -226,6 +243,9 @@ export function groupProviderIndexCards(
 				(sum, variant) =>
 					sum + Math.max(0, Number(variant.total_monthly_tokens ?? 0)),
 				0,
+			),
+			last_updated_at: pickLatestIsoDate(
+				group.map((variant) => variant.last_updated_at ?? null),
 			),
 			daily_share_pct:
 				totalDailyRequests > 0

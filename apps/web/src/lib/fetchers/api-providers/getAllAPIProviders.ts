@@ -143,6 +143,21 @@ function chunkValues<T>(values: readonly T[], size: number): T[][] {
 	return chunks;
 }
 
+function pickLatestIsoDate(
+	current: string | null | undefined,
+	candidate: string | null | undefined,
+): string | null {
+	const currentMs = current ? Date.parse(current) : Number.NEGATIVE_INFINITY;
+	const candidateMs = candidate ? Date.parse(candidate) : Number.NEGATIVE_INFINITY;
+	if (!Number.isFinite(candidateMs)) {
+		return current ?? null;
+	}
+	if (!Number.isFinite(currentMs) || candidateMs > currentMs) {
+		return candidate ?? null;
+	}
+	return current ?? null;
+}
+
 export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     let supabase: ReturnType<typeof createAdminClient> | null = null;
     try {
@@ -223,6 +238,7 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
     const totalModelsByProvider = new Map<string, Set<string>>();
     const activeModelsByProvider = new Map<string, Set<string>>();
     const freeModelsByProvider = new Map<string, Set<string>>();
+    const lastUpdatedAtByProvider = new Map<string, string | null>();
     const inputModalityModelSetsByProvider = new Map<
         string,
         Record<ProviderModalityKey, Set<string>>
@@ -239,6 +255,14 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             String(row.api_model_id ?? "").trim() ||
             String(row.provider_api_model_id ?? "").trim();
         if (!modelKey) continue;
+
+        lastUpdatedAtByProvider.set(
+            providerId,
+            pickLatestIsoDate(
+                lastUpdatedAtByProvider.get(providerId) ?? null,
+                row.effective_from ?? row.effective_to ?? null,
+            ),
+        );
 
         const totalSet = totalModelsByProvider.get(providerId) ?? new Set<string>();
         totalSet.add(modelKey);
@@ -339,6 +363,13 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
             providerId,
             (monthlyTokensByProvider.get(providerId) ?? 0) + tokens,
         );
+        lastUpdatedAtByProvider.set(
+            providerId,
+            pickLatestIsoDate(
+                lastUpdatedAtByProvider.get(providerId) ?? null,
+                row.created_at ?? null,
+            ),
+        );
 
         if (!Number.isFinite(createdAtMs) || createdAtMs < dayStartMs) continue;
 
@@ -388,6 +419,8 @@ export async function getAllAPIProviders(): Promise<APIProviderCard[]> {
                     total_daily_tokens: dailyTokensByProvider.get(providerId) ?? 0,
                     total_monthly_tokens:
                         monthlyTokensByProvider.get(providerId) ?? 0,
+                    last_updated_at:
+                        lastUpdatedAtByProvider.get(providerId) ?? null,
                     modality_model_ids: Object.fromEntries(
                         MODALITY_KEYS.map((key) => [
                             key,
