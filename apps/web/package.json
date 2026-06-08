@@ -72,7 +72,7 @@
 		"@statsig/session-replay": "^3.33.0",
 		"@statsig/web-analytics": "^3.33.0",
 		"@stripe/react-stripe-js": "^6.3.0",
-		"@stripe/stripe-js": "^9.4.0",
+		"@stripe/stripe-js": "^9.7.0",
 		"@supabase/ssr": "^0.10.2",
 		"@supabase/supabase-js": "^2.106.2",
 		"@tanstack/react-table": "^8.21.3",
