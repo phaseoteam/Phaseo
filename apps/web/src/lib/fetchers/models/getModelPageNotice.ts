@@ -93,6 +93,7 @@ async function resolveApiModelIdForModelPageUncached(
 		normalizeId(apiModelRes.data?.api_model_id) ??
 		normalizeId(aliasRes.data?.api_model_id) ??
 		normalizeId(internalRes.data?.api_model_id) ??
+		(internalRes.data ? normalizeId(modelId) : null) ??
 		normalizeId(providerRes.data?.[0]?.api_model_id) ??
 		null
 	);

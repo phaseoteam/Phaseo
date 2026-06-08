@@ -16,6 +16,12 @@ function benchDigest(score: unknown, other_info?: string | null, source_link?: s
     return createHash("md5").update(payload).digest("hex"); // use 'hex' as a valid BinaryToTextEncoding
 }
 
+function resolveApiModelId(model: Pick<ModelJSON, "model_id" | "api_model_id">): string {
+    return typeof model.api_model_id === "string" && model.api_model_id.trim()
+        ? model.api_model_id.trim()
+        : model.model_id;
+}
+
 type ModelJSON = {
     model_id: string;
     api_model_id?: string | null;
@@ -32,6 +38,10 @@ type ModelJSON = {
     input_types?: string | null;
     output_types?: string | null;
     family_id?: string | null; // slug/key from families
+    page_notice?: {
+        tone: "info" | "warning" | "critical";
+        markdown: string;
+    } | null;
     links?: Array<{ platform: string; url: string }>;
     details?: Array<{ name: string; value: unknown }>;
     benchmarks?: Array<{
@@ -54,6 +64,7 @@ type ModelFileMeta = {
     model_id: string;
     organisation_id: string;
     previous_model_id: string | null;
+    api_model_id: string | null;
 };
 
 async function dataModelsHasApiModelIdColumn(
@@ -125,6 +136,7 @@ export async function loadModels(
     const orgDirs = await listDirs(DIR_MODELS);
     const modelIds = new Set<string>();
     const changedModels = new Set<string>();
+    const previousMetaByModelId = new Map<string, ModelFileMeta | null>();
     let modelFound = false;
 
     for (const orgPath of orgDirs) {
@@ -147,7 +159,12 @@ export async function loadModels(
                 model_id: modelJson.model_id,
                 organisation_id: modelJson.organisation_id,
                 previous_model_id: modelJson.previous_model_id ?? null,
+                api_model_id: resolveApiModelId(modelJson),
             } as ModelFileMeta);
+            previousMetaByModelId.set(
+                modelJson.model_id,
+                (change.previous?.meta as ModelFileMeta | undefined) ?? null
+            );
 
             modelIds.add(modelJson.model_id);
 
@@ -183,6 +200,52 @@ export async function loadModels(
     };
 
     const coreRows: Array<Record<string, any>> = [];
+
+    const syncModelPageNotice = async (
+        apiModelId: string,
+        notice: ModelJSON["page_notice"]
+    ) => {
+        const normalizedApiModelId = apiModelId.trim();
+        if (!normalizedApiModelId) return;
+
+        if (!notice) {
+            if (isDryRun()) {
+                logWrite("public.data_api_model_page_notices", "DELETE", {
+                    api_model_id: normalizedApiModelId,
+                });
+                return;
+            }
+
+            assertOk(
+                await supa
+                    .from("data_api_model_page_notices")
+                    .delete()
+                    .eq("api_model_id", normalizedApiModelId),
+                "delete data_api_model_page_notices"
+            );
+            return;
+        }
+
+        const row = {
+            api_model_id: normalizedApiModelId,
+            tone: notice.tone,
+            markdown: notice.markdown,
+        };
+
+        if (isDryRun()) {
+            logWrite("public.data_api_model_page_notices", "UPSERT", row, {
+                onConflict: "api_model_id",
+            });
+            return;
+        }
+
+        assertOk(
+            await supa
+                .from("data_api_model_page_notices")
+                .upsert(row, { onConflict: "api_model_id" }),
+            "upsert data_api_model_page_notices"
+        );
+    };
 
     // ---------- 3) UPSERT children + targeted prune (no reads) ----------
     for (const orgPath of orgDirs) {
@@ -231,58 +294,70 @@ export async function loadModels(
             // Ensure parent data_models rows exist before child-table upserts that FK on model_id.
             await flushCoreRows(coreRows.splice(0, coreRows.length));
 
-        const model_id = m.model_id;
+            const model_id = m.model_id;
+            const apiModelId = resolveApiModelId(m);
+            const previousMeta = previousMetaByModelId.get(model_id) ?? null;
+            const previousApiModelId =
+                typeof previousMeta?.api_model_id === "string" &&
+                previousMeta.api_model_id.trim()
+                    ? previousMeta.api_model_id.trim()
+                    : null;
 
-        // LINKS (dedupe by platform to avoid upsert conflicts)
-        const rawLinkRows = (m.links ?? []).map(l => ({ model_id, platform: l.platform, url: l.url }));
-        const linkMap = new Map<string, { model_id: string; platform: string; url: string }>();
-        for (const r of rawLinkRows) {
-            // keep the last occurrence for a given platform
-            linkMap.set(r.platform, r);
-        }
-        const linkRows = Array.from(linkMap.values());
-
-        if (isDryRun()) {
-            for (const r of linkRows) logWrite("public.data_model_links", "UPSERT", r, { onConflict: "model_id,platform" });
-            if (linkRows.length === 0) logWrite("public.data_model_links", "PRUNE", { model_id });
-        } else {
-            if (linkRows.length) {
-                assertOk(
-                    await supa.from("data_model_links").upsert(linkRows, { onConflict: "model_id,platform" }),
-                    "upsert data_model_links"
-                );
-                const platforms = [...new Set(linkRows.map(l => l.platform))];
-                assertOk(
-                    await supa
-                        .from("data_model_links")
-                        .delete()
-                        .eq("model_id", model_id)
-                        .not("platform", "in", toInList(platforms)),
-                    "prune data_model_links"
-                );
-            } else {
-                // No links in source -> delete all existing for this model
-                assertOk(await supa.from("data_model_links").delete().eq("model_id", model_id), "prune all links");
+            if (previousApiModelId && previousApiModelId !== apiModelId) {
+                await syncModelPageNotice(previousApiModelId, null);
             }
-        }
+            await syncModelPageNotice(apiModelId, m.page_notice ?? null);
 
-        // DETAILS
-        const rawDetailRows = [
-            ...(description
-                ? [{ model_id, detail_name: "description", detail_value: description }]
-                : []),
-            ...(m.details ?? []).map(d => ({
-                model_id,
-                detail_name: d.name,
-                detail_value: String(d.value),
-            })),
-        ];
-        const detailMap = new Map<string, { model_id: string; detail_name: string; detail_value: string }>();
-        for (const r of rawDetailRows) {
-            // keep last occurrence per detail_name
-            detailMap.set(r.detail_name, r);
-        }
-        const detailRows = Array.from(detailMap.values());
+            // LINKS (dedupe by platform to avoid upsert conflicts)
+            const rawLinkRows = (m.links ?? []).map(l => ({ model_id, platform: l.platform, url: l.url }));
+            const linkMap = new Map<string, { model_id: string; platform: string; url: string }>();
+            for (const r of rawLinkRows) {
+                // keep the last occurrence for a given platform
+                linkMap.set(r.platform, r);
+            }
+            const linkRows = Array.from(linkMap.values());
+
+            if (isDryRun()) {
+                for (const r of linkRows) logWrite("public.data_model_links", "UPSERT", r, { onConflict: "model_id,platform" });
+                if (linkRows.length === 0) logWrite("public.data_model_links", "PRUNE", { model_id });
+            } else {
+                if (linkRows.length) {
+                    assertOk(
+                        await supa.from("data_model_links").upsert(linkRows, { onConflict: "model_id,platform" }),
+                        "upsert data_model_links"
+                    );
+                    const platforms = [...new Set(linkRows.map(l => l.platform))];
+                    assertOk(
+                        await supa
+                            .from("data_model_links")
+                            .delete()
+                            .eq("model_id", model_id)
+                            .not("platform", "in", toInList(platforms)),
+                        "prune data_model_links"
+                    );
+                } else {
+                    // No links in source -> delete all existing for this model
+                    assertOk(await supa.from("data_model_links").delete().eq("model_id", model_id), "prune all links");
+                }
+            }
+
+            // DETAILS
+            const rawDetailRows = [
+                ...(description
+                    ? [{ model_id, detail_name: "description", detail_value: description }]
+                    : []),
+                ...(m.details ?? []).map(d => ({
+                    model_id,
+                    detail_name: d.name,
+                    detail_value: String(d.value),
+                })),
+            ];
+            const detailMap = new Map<string, { model_id: string; detail_name: string; detail_value: string }>();
+            for (const r of rawDetailRows) {
+                // keep last occurrence per detail_name
+                detailMap.set(r.detail_name, r);
+            }
+            const detailRows = Array.from(detailMap.values());
 
         if (isDryRun()) {
             for (const r of detailRows) logWrite("public.data_model_details", "UPSERT", r, { onConflict: "model_id,detail_name" });
