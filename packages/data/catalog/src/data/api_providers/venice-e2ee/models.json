@@ -109,14 +109,14 @@
     "provider_api_model_id": "venice/e2ee:qwen/qwen3.5-122b-a10b",
     "provider_model_slug": "e2ee-qwen3-5-122b-a10b",
     "internal_model_id": "qwen/qwen3.5-122b-a10b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": null,
     "output_modalities": null,
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-03-18T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-08T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
