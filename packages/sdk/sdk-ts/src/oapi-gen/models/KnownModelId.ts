@@ -357,7 +357,6 @@ export type KnownModelId =
   | "qwen/qwen3.5-0.8b"
   | "qwen/qwen3.5-122b-a10b"
   | "qwen/qwen3.5-27b"
-  | "qwen/qwen3.5-2b"
   | "qwen/qwen3.5-35b-a3b"
   | "qwen/qwen3.5-397b-a17b"
   | "qwen/qwen3.5-4b"

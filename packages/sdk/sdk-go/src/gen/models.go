@@ -1612,7 +1612,6 @@ const (
 	KnownModelIdQwenQwen3508b KnownModelId = "qwen/qwen3.5-0.8b"
 	KnownModelIdQwenQwen35122bA10b KnownModelId = "qwen/qwen3.5-122b-a10b"
 	KnownModelIdQwenQwen3527b KnownModelId = "qwen/qwen3.5-27b"
-	KnownModelIdQwenQwen352b KnownModelId = "qwen/qwen3.5-2b"
 	KnownModelIdQwenQwen3535bA3b KnownModelId = "qwen/qwen3.5-35b-a3b"
 	KnownModelIdQwenQwen35397bA17b KnownModelId = "qwen/qwen3.5-397b-a17b"
 	KnownModelIdQwenQwen354b KnownModelId = "qwen/qwen3.5-4b"

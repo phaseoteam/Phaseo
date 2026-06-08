@@ -336,6 +336,27 @@
     ]
   },
   {
+    "api_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_api_model_id": "gmicloud:nvidia/nemotron-3-ultra-550b-a55b",
+    "provider_model_slug": "nvidia/nemotron-3-ultra-550b-a55b",
+    "internal_model_id": "nvidia/nemotron-3-ultra-550b-a55b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": null,
+    "output_modalities": null,
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwen3.5-122b-a10b",
     "provider_api_model_id": "gmicloud:qwen/qwen3.5-122b-a10b",
     "provider_model_slug": "Qwen/Qwen3.5-122B-A10B",
