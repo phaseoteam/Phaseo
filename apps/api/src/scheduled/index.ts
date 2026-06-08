@@ -16,7 +16,9 @@ import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 
-const SHARD_ROTATION_WINDOW_MS = 5 * 60 * 1000;
+const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
+	60 / getModelDiscoveryStepMinutesUtc(hour),
+).reduce((total, ticks) => total + ticks, 0);
 
 function serializeError(error: unknown): Record<string, unknown> {
 	if (error instanceof Error) {
@@ -59,6 +61,18 @@ function getScheduledMinuteUtc(event: ScheduledController): number {
 	return new Date(event.scheduledTime).getUTCMinutes();
 }
 
+function getModelDiscoveryStepMinutesUtc(hour: number): number {
+	if (hour >= 15 && hour < 18) {
+		return 3;
+	}
+
+	if (hour >= 10 && hour < 12) {
+		return 5;
+	}
+
+	return 15;
+}
+
 function isCoreJobsTick(event: ScheduledController): boolean {
 	return getScheduledMinuteUtc(event) % 5 === 0;
 }
@@ -67,16 +81,25 @@ function isModelDiscoveryTick(event: ScheduledController): boolean {
 	const scheduledAt = new Date(event.scheduledTime);
 	const hour = scheduledAt.getUTCHours();
 	const minute = scheduledAt.getUTCMinutes();
+	return minute % getModelDiscoveryStepMinutesUtc(hour) === 0;
+}
 
-	if (hour >= 15 && hour < 18) {
-		return minute % 3 === 0;
+function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
+	const scheduledAt = new Date(event.scheduledTime);
+	const hour = scheduledAt.getUTCHours();
+	const minute = scheduledAt.getUTCMinutes();
+	const dayNumber = Math.floor(event.scheduledTime / (24 * 60 * 60 * 1000));
+
+	let ticksBeforeHour = 0;
+	for (let currentHour = 0; currentHour < hour; currentHour += 1) {
+		ticksBeforeHour += 60 / getModelDiscoveryStepMinutesUtc(currentHour);
 	}
 
-	if (hour >= 10 && hour < 12) {
-		return minute % 5 === 0;
-	}
-
-	return minute % 15 === 0;
+	return (
+		dayNumber * MODEL_DISCOVERY_TICKS_PER_DAY +
+		ticksBeforeHour +
+		Math.floor(minute / getModelDiscoveryStepMinutesUtc(hour))
+	);
 }
 
 async function handleModelDiscoveryScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
@@ -84,8 +107,8 @@ async function handleModelDiscoveryScheduledEvent(event: ScheduledController, en
 		toInt(env.MODEL_DISCOVERY_SHARD_SIZE, DEFAULT_MODEL_DISCOVERY_SHARD_SIZE),
 	);
 	const shardCount = getModelDiscoveryShardCount(shardSize);
-	const bucket = Math.floor(event.scheduledTime / SHARD_ROTATION_WINDOW_MS);
-	const shardIndex = bucket % shardCount;
+	const executionIndex = getModelDiscoveryExecutionIndex(event);
+	const shardIndex = executionIndex % shardCount;
 
 	configureRuntime(env);
 	try {

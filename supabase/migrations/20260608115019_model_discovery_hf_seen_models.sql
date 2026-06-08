@@ -3,8 +3,8 @@
 create table if not exists public.model_discovery_hf_seen_models (
   org_id text not null,
   model_id text not null,
-  first_seen_at timestamp with time zone not null default (now() at time zone 'utc'::text),
-  last_seen_at timestamp with time zone not null default (now() at time zone 'utc'::text),
+  first_seen_at timestamp with time zone not null default now(),
+  last_seen_at timestamp with time zone not null default now(),
   constraint model_discovery_hf_seen_models_pkey primary key (org_id, model_id)
 );
 
