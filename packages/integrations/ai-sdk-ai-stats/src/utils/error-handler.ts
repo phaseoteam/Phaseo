@@ -1,4 +1,7 @@
-import { createJsonErrorResponseHandler } from '@ai-sdk/provider-utils';
+import {
+  createJsonErrorResponseHandler,
+  type ResponseHandler,
+} from '@ai-sdk/provider-utils';
 
 type ErrorResponse = {
   error?: {
@@ -11,7 +14,7 @@ type ErrorResponse = {
 /**
  * Creates a standard error handler for AI Stats Gateway API calls
  */
-export const createAIStatsErrorHandler = () =>
+export const createAIStatsErrorHandler = (): ResponseHandler<Error> =>
   createJsonErrorResponseHandler<ErrorResponse>({
     // Cast to any because we don't have a proper schema type available
     // The error handler will still work for parsing JSON error responses
