@@ -31,6 +31,7 @@ export type OrganisationId =
   | "mistral"
   | "moonshotai"
   | "naver-hyperclova"
+  | "nex-agi"
   | "nous"
   | "nvidia"
   | "openai"

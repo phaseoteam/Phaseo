@@ -1942,6 +1942,7 @@ const (
 	OrganisationIdMistral OrganisationId = "mistral"
 	OrganisationIdMoonshotai OrganisationId = "moonshotai"
 	OrganisationIdNaverHyperclova OrganisationId = "naver-hyperclova"
+	OrganisationIdNexAgi OrganisationId = "nex-agi"
 	OrganisationIdNous OrganisationId = "nous"
 	OrganisationIdNvidia OrganisationId = "nvidia"
 	OrganisationIdOpenai OrganisationId = "openai"

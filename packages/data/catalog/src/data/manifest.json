@@ -28,6 +28,7 @@
     "minimax",
     "mistral",
     "moonshotai",
+    "nex-agi",
     "naver-hyperclova",
     "nous",
     "nvidia",
@@ -600,6 +601,11 @@
       "moonshotai/kimi-vl-a3b",
       "moonshotai/kimi-vl-a3b-thinking",
       "moonshotai/kimi-vl-a3b-thinking-2025-04-09"
+    ],
+    "nex-agi": [
+      "nex-agi/deepseek-v3.1-nex-n1",
+      "nex-agi/nex-n2-mini",
+      "nex-agi/nex-n2-pro"
     ],
     "naver-hyperclova": [
       "naver-hyperclova/hyperclova-x-seed-omni-8b",

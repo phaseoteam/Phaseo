@@ -388,6 +388,8 @@ namespace AiStatsSdk
         public const string MorphMorphV3Large = "morph/morph-v3-large";
         /// <summary>Model ID: <c>nex-agi/deepseek-v3.1-nex-n1</c>. Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1</summary>
         public const string NexAgiDeepseekV31NexN1 = "nex-agi/deepseek-v3.1-nex-n1";
+        /// <summary>Model ID: <c>nex-agi/nex-n2-pro:free</c>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree</summary>
+        public const string NexAgiNexN2ProFree = "nex-agi/nex-n2-pro:free";
         /// <summary>Model ID: <c>nous/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b</summary>
         public const string NousHermes3Llama31405b = "nous/hermes-3-llama-3.1-405b";
         /// <summary>Model ID: <c>nousresearch/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b</summary>

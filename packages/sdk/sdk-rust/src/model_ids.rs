@@ -576,6 +576,9 @@ pub mod model_ids {
     /// Model ID: `nex-agi/deepseek-v3.1-nex-n1`.
     /// Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
     pub const NEX_AGI_DEEPSEEK_V3_1_NEX_N1: &str = "nex-agi/deepseek-v3.1-nex-n1";
+    /// Model ID: `nex-agi/nex-n2-pro:free`.
+    /// Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
+    pub const NEX_AGI_NEX_N2_PRO_FREE: &str = "nex-agi/nex-n2-pro:free";
     /// Model ID: `nous/hermes-3-llama-3.1-405b`.
     /// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
     pub const NOUS_HERMES_3_LLAMA_3_1_405B: &str = "nous/hermes-3-llama-3.1-405b";
@@ -1552,6 +1555,7 @@ pub mod model_ids {
         MORPH_MORPH_V3_FAST,
         MORPH_MORPH_V3_LARGE,
         NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
+        NEX_AGI_NEX_N2_PRO_FREE,
         NOUS_HERMES_3_LLAMA_3_1_405B,
         NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
         NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,
