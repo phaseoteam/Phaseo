@@ -50,6 +50,14 @@ type GitHubIssueClient = {
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_GITHUB_REPOSITORY = "AI-Stats/AI-Stats";
+const DEFAULT_GITHUB_USER_AGENT = "ai-stats-gateway-model-discovery";
+
+function toBool(value: string | null | undefined, fallback = false): boolean {
+	if (value === undefined || value === null) return fallback;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return fallback;
+	return ["1", "true", "yes", "on"].includes(normalized);
+}
 
 function resolveGitHubRepository(): string {
 	return readBindingEnv(["GITHUB_REPOSITORY"]) ?? DEFAULT_GITHUB_REPOSITORY;
@@ -187,6 +195,7 @@ function createGitHubIssueClient(args: {
 				Authorization: `Bearer ${args.token}`,
 				"Content-Type": "application/json",
 				"X-GitHub-Api-Version": "2022-11-28",
+				"User-Agent": DEFAULT_GITHUB_USER_AGENT,
 				...(init.headers ?? {}),
 			},
 		});
@@ -232,6 +241,10 @@ function shouldSkipIssueSync(entries: UpstreamDiscoveryIssueEntry[]): GitHubIssu
 	}
 
 	return null;
+}
+
+export function shouldSyncProviderDiscoveryIssues(): boolean {
+	return toBool(readBindingEnv(["MODEL_DISCOVERY_ISSUE_SYNC_ENABLED"]) ?? "true", true);
 }
 
 export function buildProviderIssueEntries(args: {

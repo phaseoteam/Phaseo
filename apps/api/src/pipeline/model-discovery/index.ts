@@ -23,7 +23,11 @@ import {
 	toInt,
 	toPricingFingerprint,
 } from "./helpers";
-import { buildProviderIssueEntries, syncUpstreamDiscoveryIssues } from "./github-issues";
+import {
+	buildProviderIssueEntries,
+	shouldSyncProviderDiscoveryIssues,
+	syncUpstreamDiscoveryIssues,
+} from "./github-issues";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -760,22 +764,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		if (changes.length > 0) {
-			const issueEntries = buildProviderIssueEntries({
-				changes,
-				detectedAt: new Date().toISOString(),
-				detectionSource: args.source,
-			});
-			issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
-			if (issueSyncSummary.skipped) {
-				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason ?? "no reason provided");
-			} else {
-				console.log(
-					`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
-				);
-			}
-		}
-
 		let pricingMonitor: PricingMonitorSummary = {
 			enabled: pricingEnabled,
 			executed: pricingExecuted,
@@ -913,18 +901,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providerApiPricingMonitor.updatesDetected > 0 ||
 			(includeConfiguredCoverageNotifications &&
 				configuredModelCoverageNotificationSummary.updatesDetected > 0);
-		const requiresIssueSyncDelivery = changes.length > 0;
-		const issueSyncDelivered =
-			!requiresIssueSyncDelivery ||
-			issueSyncSummary.skipped ||
-			(!issueSyncSummary.error && issueSyncSummary.reason !== "not attempted");
 		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
 		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
-		const persistenceDeferredReason = !issueSyncDelivered
-			? issueSyncSummary.reason ?? issueSyncSummary.error ?? "provider GitHub issue sync not delivered"
-			: !notificationDelivered
-				? notificationError ?? notificationSummary.reason ?? "Discord notification not delivered"
-				: null;
+		const persistenceDeferredReason = !notificationDelivered
+			? notificationError ?? notificationSummary.reason ?? "Discord notification not delivered"
+			: null;
 
 		let staleModelsDeleted = 0;
 		if (!persistenceDeferredReason) {
@@ -934,6 +915,46 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				staleModelsDeleted = await pruneOldRows(staleCutoff);
 				if (shouldPruneRunsDaily(args, startedAt)) {
 					await pruneOldRuns(runsCutoff);
+				}
+			}
+		}
+
+		if (changes.length > 0) {
+			if (!shouldSyncProviderDiscoveryIssues()) {
+				issueSyncSummary = {
+					created: 0,
+					updated: 0,
+					skipped: true,
+					reason: "disabled by MODEL_DISCOVERY_ISSUE_SYNC_ENABLED",
+				};
+				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason);
+			} else {
+				try {
+					const issueEntries = buildProviderIssueEntries({
+						changes,
+						detectedAt: new Date().toISOString(),
+						detectionSource: args.source,
+					});
+					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
+					if (issueSyncSummary.skipped) {
+						console.log(
+							"[model-discovery] Provider GitHub issue sync skipped:",
+							issueSyncSummary.reason ?? "no reason provided"
+						);
+					} else {
+						console.log(
+							`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
+						);
+					}
+				} catch (error) {
+					const reason = error instanceof Error ? error.message : String(error);
+					issueSyncSummary = {
+						created: 0,
+						updated: 0,
+						skipped: false,
+						error: reason,
+					};
+					console.error("[model-discovery] Provider GitHub issue sync failed:", reason);
 				}
 			}
 		}
@@ -964,6 +985,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const status: RunStatus =
 			summary.providersError > 0 ||
 			notificationError ||
+			Boolean(summary.issueSync?.error) ||
 			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
