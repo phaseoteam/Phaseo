@@ -271,10 +271,10 @@ importers:
         version: 3.33.1
       '@stripe/react-stripe-js':
         specifier: ^6.3.0
-        version: 6.3.0(@stripe/stripe-js@9.4.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        version: 6.3.0(@stripe/stripe-js@9.7.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@stripe/stripe-js':
-        specifier: ^9.4.0
-        version: 9.4.0
+        specifier: ^9.7.0
+        version: 9.7.0
       '@supabase/ssr':
         specifier: ^0.10.2
         version: 0.10.2(@supabase/supabase-js@2.106.2)
@@ -4392,8 +4392,8 @@ packages:
       react: '>=16.8.0 <20.0.0'
       react-dom: '>=16.8.0 <20.0.0'
 
-  '@stripe/stripe-js@9.4.0':
-    resolution: {integrity: sha512-zXG86DnoLU5nH2U18tX5ApTE3IAm+txoiPm4YFyEtRS0K5y7ZDH9M8e1Le/cZyI6wvW3BkJn2daZe2FqZOrSSg==}
+  '@stripe/stripe-js@9.7.0':
+    resolution: {integrity: sha512-r1ElolvWXM4aYnZZVHvKW3EDL8JcwEuIgTuWxlB5lvC+YsvjkQ0gX35x9d8dTDubX395fViLVqkaolVs1PmIQQ==}
     engines: {node: '>=12.16'}
 
   '@supabase/auth-js@2.106.2':
@@ -15744,14 +15744,14 @@ snapshots:
       '@stoplight/yaml-ast-parser': 0.0.50
       tslib: 2.8.1
 
-  '@stripe/react-stripe-js@6.3.0(@stripe/stripe-js@9.4.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@stripe/react-stripe-js@6.3.0(@stripe/stripe-js@9.7.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
-      '@stripe/stripe-js': 9.4.0
+      '@stripe/stripe-js': 9.7.0
       prop-types: 15.8.1
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
 
-  '@stripe/stripe-js@9.4.0': {}
+  '@stripe/stripe-js@9.7.0': {}
 
   '@supabase/auth-js@2.106.2':
     dependencies:
@@ -18338,7 +18338,7 @@ snapshots:
       eslint: 10.4.0(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.10
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@10.4.0(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.1.1(eslint@10.4.0(jiti@2.6.1))
@@ -18375,7 +18375,7 @@ snapshots:
       tinyglobby: 0.2.16
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -18389,7 +18389,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)))(eslint@10.4.0(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(eslint-import-resolver-typescript@3.10.1)(eslint@10.4.0(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
