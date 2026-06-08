@@ -6,8 +6,27 @@ import { loadPersistedState, DEFAULT_STATE_PATH } from "./state";
 import type { FileRecord } from "./state";
 import { DIR_MODELS, DIR_BENCHMARKS, DIR_FAMILIES, DIR_ORGS, DIR_PROVIDERS, DIR_PRICING, DIR_ALIASES } from "./paths";
 
+async function dataApiModelPageNoticesTableExists(
+    supa: ReturnType<typeof client>
+): Promise<boolean> {
+    const probe = await supa.from("data_api_model_page_notices").select("api_model_id").limit(1);
+    if (!probe.error) return true;
+
+    const message = String(probe.error?.message ?? "");
+    const code = String((probe.error as any)?.code ?? "");
+    const missingRelation =
+        code === "PGRST205" ||
+        /does not exist|could not find table|relation|schema cache/i.test(message);
+    if (missingRelation) return false;
+
+    throw new Error(
+        `probe data_api_model_page_notices failed: ${message}${code ? ` | code=${code}` : ""}`
+    );
+}
+
 export async function cleanDeleted() {
     const supa = client();
+    const hasModelPageNoticesTable = await dataApiModelPageNoticesTableExists(supa);
     const state = await loadPersistedState(DEFAULT_STATE_PATH);
 
     const toDelete: Array<{ path: string; meta: any }> = [];
@@ -72,7 +91,9 @@ export async function cleanDeleted() {
         if (isDryRun()) {
             for (const id of models) {
                 const apiModelId = modelPageNoticeApiModelIdByModelId.get(id) ?? id;
-                logWrite("public.data_api_model_page_notices", "DELETE", { api_model_id: apiModelId });
+                if (hasModelPageNoticesTable) {
+                    logWrite("public.data_api_model_page_notices", "DELETE", { api_model_id: apiModelId });
+                }
                 logWrite("public.data_model_links", "DELETE", { model_id: id });
                 logWrite("public.data_model_details", "DELETE", { model_id: id });
                 logWrite("public.data_benchmark_results", "DELETE", { model_id: id });
@@ -82,13 +103,15 @@ export async function cleanDeleted() {
             for (const id of models) {
                 const apiModelId = modelPageNoticeApiModelIdByModelId.get(id) ?? id;
                 // remove children first
-                assertOk(
-                    await supa
-                        .from("data_api_model_page_notices")
-                        .delete()
-                        .eq("api_model_id", apiModelId),
-                    "delete data_api_model_page_notices"
-                );
+                if (hasModelPageNoticesTable) {
+                    assertOk(
+                        await supa
+                            .from("data_api_model_page_notices")
+                            .delete()
+                            .eq("api_model_id", apiModelId),
+                        "delete data_api_model_page_notices"
+                    );
+                }
                 assertOk(await supa.from("data_model_links").delete().eq("model_id", id), "delete data_model_links");
                 assertOk(await supa.from("data_model_details").delete().eq("model_id", id), "delete data_model_details");
                 assertOk(await supa.from("data_benchmark_results").delete().eq("model_id", id), "delete data_benchmark_results");

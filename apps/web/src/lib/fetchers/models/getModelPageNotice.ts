@@ -56,7 +56,7 @@ export function parseModelPageNoticeRow(row: {
 	return parsed.data;
 }
 
-async function resolveApiModelIdForModelPageUncached(
+export async function resolveApiModelIdForModelPageUncached(
 	modelId: string,
 	includeHidden: boolean,
 ): Promise<string | null> {

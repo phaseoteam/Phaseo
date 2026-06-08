@@ -65,6 +65,7 @@ type ModelFileMeta = {
     organisation_id: string;
     previous_model_id: string | null;
     api_model_id: string | null;
+    has_page_notice: boolean;
 };
 
 async function dataModelsHasApiModelIdColumn(
@@ -82,6 +83,24 @@ async function dataModelsHasApiModelIdColumn(
 
     throw new Error(
         `probe data_models.api_model_id failed: ${message}${code ? ` | code=${code}` : ""}`
+    );
+}
+
+async function dataApiModelPageNoticesTableExists(
+    supa: ReturnType<typeof client>
+): Promise<boolean> {
+    const probe = await supa.from("data_api_model_page_notices").select("api_model_id").limit(1);
+    if (!probe.error) return true;
+
+    const message = String(probe.error?.message ?? "");
+    const code = String((probe.error as any)?.code ?? "");
+    const missingRelation =
+        code === "PGRST205" ||
+        /does not exist|could not find table|relation|schema cache/i.test(message);
+    if (missingRelation) return false;
+
+    throw new Error(
+        `probe data_api_model_page_notices failed: ${message}${code ? ` | code=${code}` : ""}`
     );
 }
 
@@ -121,6 +140,7 @@ export async function loadModels(
 ) {
     const supa = client();
     const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
+    const hasModelPageNoticesTable = await dataApiModelPageNoticesTableExists(supa);
     const existingBenchmarkIds = await loadExistingBenchmarkIds(supa);
     if (!modelId) tracker.touchPrefix(DIR_MODELS);
 
@@ -160,6 +180,7 @@ export async function loadModels(
                 organisation_id: modelJson.organisation_id,
                 previous_model_id: modelJson.previous_model_id ?? null,
                 api_model_id: resolveApiModelId(modelJson),
+                has_page_notice: Object.prototype.hasOwnProperty.call(modelJson, "page_notice"),
             } as ModelFileMeta);
             previousMetaByModelId.set(
                 modelJson.model_id,
@@ -205,6 +226,8 @@ export async function loadModels(
         apiModelId: string,
         notice: ModelJSON["page_notice"]
     ) => {
+        if (!hasModelPageNoticesTable) return;
+
         const normalizedApiModelId = apiModelId.trim();
         if (!normalizedApiModelId) return;
 
@@ -302,11 +325,17 @@ export async function loadModels(
                 previousMeta.api_model_id.trim()
                     ? previousMeta.api_model_id.trim()
                     : null;
+            const previousHadPageNotice = previousMeta?.has_page_notice === true;
+            const hasPageNotice = Object.prototype.hasOwnProperty.call(m, "page_notice");
 
-            if (previousApiModelId && previousApiModelId !== apiModelId) {
+            if (previousApiModelId && previousApiModelId !== apiModelId && previousHadPageNotice) {
                 await syncModelPageNotice(previousApiModelId, null);
             }
-            await syncModelPageNotice(apiModelId, m.page_notice ?? null);
+            if (hasPageNotice) {
+                await syncModelPageNotice(apiModelId, m.page_notice ?? null);
+            } else if (previousHadPageNotice) {
+                await syncModelPageNotice(apiModelId, null);
+            }
 
             // LINKS (dedupe by platform to avoid upsert conflicts)
             const rawLinkRows = (m.links ?? []).map(l => ({ model_id, platform: l.platform, url: l.url }));
@@ -359,139 +388,139 @@ export async function loadModels(
             }
             const detailRows = Array.from(detailMap.values());
 
-        if (isDryRun()) {
-            for (const r of detailRows) logWrite("public.data_model_details", "UPSERT", r, { onConflict: "model_id,detail_name" });
-            if (detailRows.length === 0) logWrite("public.data_model_details", "PRUNE", { model_id });
-        } else {
-            if (detailRows.length) {
-                assertOk(
-                    await supa.from("data_model_details").upsert(detailRows, { onConflict: "model_id,detail_name" }),
-                    "upsert data_model_details"
-                );
-                const names = [...new Set(detailRows.map(d => d.detail_name))];
-                assertOk(
-                    await supa
-                        .from("data_model_details")
-                        .delete()
-                        .eq("model_id", model_id)
-                        .not("detail_name", "in", toInList(names)),
-                    "prune data_model_details"
-                );
+            if (isDryRun()) {
+                for (const r of detailRows) logWrite("public.data_model_details", "UPSERT", r, { onConflict: "model_id,detail_name" });
+                if (detailRows.length === 0) logWrite("public.data_model_details", "PRUNE", { model_id });
             } else {
-                assertOk(await supa.from("data_model_details").delete().eq("model_id", model_id), "prune all details");
-            }
-        }
-
-        // -------- BENCHMARKS (supports true duplicates safely) --------
-        // Build rows with (benchmark_id + digest) buckets, assign occur_idx 1..n per identical digest.
-        const rawBenches = m.benchmarks ?? [];
-        const validBenches = rawBenches.filter(
-            (b) => typeof b?.benchmark_id === "string" && b.benchmark_id.trim().length > 0
-        );
-        const invalidBenchmarkRowCount = rawBenches.length - validBenches.length;
-        const hasInvalidBenchmarkRows = invalidBenchmarkRowCount > 0;
-        if (validBenches.length !== rawBenches.length) {
-            console.warn(
-                `[importer] Skipping ${invalidBenchmarkRowCount} benchmark row(s) with missing benchmark_id for model=${model_id}`
-            );
-        }
-
-        const knownBenches = validBenches.filter((b) => existingBenchmarkIds.has(b.benchmark_id));
-        const unknownBenchmarkIds = [...new Set(
-            validBenches
-                .filter((b) => !existingBenchmarkIds.has(b.benchmark_id))
-                .map((b) => b.benchmark_id)
-        )];
-        const hasUnknownBenchmarkRows = unknownBenchmarkIds.length > 0;
-        if (hasUnknownBenchmarkRows) {
-            console.warn(
-                `[importer] Skipping ${validBenches.length - knownBenches.length} benchmark row(s) with unknown benchmark_id(s) for model=${model_id}: ${unknownBenchmarkIds.join(", ")}`
-            );
-        }
-
-        // If you want visibility into duplicates that used to collide on your old key, keep this tiny logger:
-        if (isDryRun() && knownBenches.length) {
-            const seen = new Map<string, number>();
-            const dupes: Array<{ key: string; first: number; second: number }> = [];
-            knownBenches.forEach((b, i) => {
-                const k = `${model_id}|${b.benchmark_id}|${String(b.score)}|${b.other_info ?? ""}`;
-                if (seen.has(k)) dupes.push({ key: k, first: seen.get(k)!, second: i });
-                else seen.set(k, i);
-            });
-            if (dupes.length) console.warn(`[bench dupe candidates on old key] model=${model_id}`, dupes.slice(0, 10));
-        }
-
-        // Build stable rows
-        const perKeyCount = new Map<string, number>(); // key: benchmark_id|digest -> next occur_idx
-        const benchRows = knownBenches.map(b => {
-            const digest = benchDigest(b.score, b.other_info ?? null, b.source_link ?? null, b.is_self_reported);
-            const bucket = `${b.benchmark_id}|${digest}`;
-            const occur_idx = (perKeyCount.get(bucket) ?? 0) + 1;
-            perKeyCount.set(bucket, occur_idx);
-
-            const result_key = `${model_id}|${b.benchmark_id}|${digest}|${occur_idx}`;
-
-            return {
-                model_id,
-                benchmark_id: b.benchmark_id,
-                score: String(b.score),
-                is_self_reported: !!b.is_self_reported,
-                other_info: b.other_info ?? null,
-                source_link: b.source_link ?? null,
-                rank: b.rank ?? null,
-                occur_idx,
-                variant: null,       // keep null for now; add if you later encode run config
-                result_key,
-            };
-        });
-
-        if (isDryRun()) {
-            for (const r of benchRows)
-                logWrite("public.data_benchmark_results", "UPSERT", r, { onConflict: "result_key" });
-        } else {
-            // UPSERT by unique result_key -- avoids "affect row a second time"
-            if (benchRows.length) {
-                assertOk(
-                    await supa.from("data_benchmark_results").upsert(benchRows, { onConflict: "result_key" }),
-                    "upsert data_benchmark_results"
-                );
-            }
-
-            // Safety: when any malformed benchmark rows are present, skip destructive prune.
-            // This preserves existing benchmark history if source payload quality regresses.
-            if (hasInvalidBenchmarkRows || hasUnknownBenchmarkRows) {
-                const reasonParts: string[] = [];
-                if (hasInvalidBenchmarkRows) {
-                    reasonParts.push(`${invalidBenchmarkRowCount} invalid row(s)`);
-                }
-                if (hasUnknownBenchmarkRows) {
-                    reasonParts.push(`unknown benchmark_id(s): ${unknownBenchmarkIds.join(", ")}`);
-                }
-                console.warn(
-                    `[importer] Skipping benchmark prune for model=${model_id} because ${reasonParts.join("; ")}`
-                );
-            } else {
-                // Precise prune: keep only this run's result_keys for this model
-                const keep = benchRows.map(r => r.result_key);
-                if (keep.length) {
+                if (detailRows.length) {
+                    assertOk(
+                        await supa.from("data_model_details").upsert(detailRows, { onConflict: "model_id,detail_name" }),
+                        "upsert data_model_details"
+                    );
+                    const names = [...new Set(detailRows.map(d => d.detail_name))];
                     assertOk(
                         await supa
-                            .from("data_benchmark_results")
+                            .from("data_model_details")
                             .delete()
                             .eq("model_id", model_id)
-                            .not("result_key", "in", toInList(keep)),
-                        "prune data_benchmark_results"
+                            .not("detail_name", "in", toInList(names)),
+                        "prune data_model_details"
                     );
                 } else {
-                    // Source explicitly contains no benchmark rows for this model.
+                    assertOk(await supa.from("data_model_details").delete().eq("model_id", model_id), "prune all details");
+                }
+            }
+
+            // -------- BENCHMARKS (supports true duplicates safely) --------
+            // Build rows with (benchmark_id + digest) buckets, assign occur_idx 1..n per identical digest.
+            const rawBenches = m.benchmarks ?? [];
+            const validBenches = rawBenches.filter(
+                (b) => typeof b?.benchmark_id === "string" && b.benchmark_id.trim().length > 0
+            );
+            const invalidBenchmarkRowCount = rawBenches.length - validBenches.length;
+            const hasInvalidBenchmarkRows = invalidBenchmarkRowCount > 0;
+            if (validBenches.length !== rawBenches.length) {
+                console.warn(
+                    `[importer] Skipping ${invalidBenchmarkRowCount} benchmark row(s) with missing benchmark_id for model=${model_id}`
+                );
+            }
+
+            const knownBenches = validBenches.filter((b) => existingBenchmarkIds.has(b.benchmark_id));
+            const unknownBenchmarkIds = [...new Set(
+                validBenches
+                    .filter((b) => !existingBenchmarkIds.has(b.benchmark_id))
+                    .map((b) => b.benchmark_id)
+            )];
+            const hasUnknownBenchmarkRows = unknownBenchmarkIds.length > 0;
+            if (hasUnknownBenchmarkRows) {
+                console.warn(
+                    `[importer] Skipping ${validBenches.length - knownBenches.length} benchmark row(s) with unknown benchmark_id(s) for model=${model_id}: ${unknownBenchmarkIds.join(", ")}`
+                );
+            }
+
+            // If you want visibility into duplicates that used to collide on your old key, keep this tiny logger:
+            if (isDryRun() && knownBenches.length) {
+                const seen = new Map<string, number>();
+                const dupes: Array<{ key: string; first: number; second: number }> = [];
+                knownBenches.forEach((b, i) => {
+                    const k = `${model_id}|${b.benchmark_id}|${String(b.score)}|${b.other_info ?? ""}`;
+                    if (seen.has(k)) dupes.push({ key: k, first: seen.get(k)!, second: i });
+                    else seen.set(k, i);
+                });
+                if (dupes.length) console.warn(`[bench dupe candidates on old key] model=${model_id}`, dupes.slice(0, 10));
+            }
+
+            // Build stable rows
+            const perKeyCount = new Map<string, number>(); // key: benchmark_id|digest -> next occur_idx
+            const benchRows = knownBenches.map(b => {
+                const digest = benchDigest(b.score, b.other_info ?? null, b.source_link ?? null, b.is_self_reported);
+                const bucket = `${b.benchmark_id}|${digest}`;
+                const occur_idx = (perKeyCount.get(bucket) ?? 0) + 1;
+                perKeyCount.set(bucket, occur_idx);
+
+                const result_key = `${model_id}|${b.benchmark_id}|${digest}|${occur_idx}`;
+
+                return {
+                    model_id,
+                    benchmark_id: b.benchmark_id,
+                    score: String(b.score),
+                    is_self_reported: !!b.is_self_reported,
+                    other_info: b.other_info ?? null,
+                    source_link: b.source_link ?? null,
+                    rank: b.rank ?? null,
+                    occur_idx,
+                    variant: null,       // keep null for now; add if you later encode run config
+                    result_key,
+                };
+            });
+
+            if (isDryRun()) {
+                for (const r of benchRows)
+                    logWrite("public.data_benchmark_results", "UPSERT", r, { onConflict: "result_key" });
+            } else {
+                // UPSERT by unique result_key -- avoids "affect row a second time"
+                if (benchRows.length) {
                     assertOk(
-                        await supa.from("data_benchmark_results").delete().eq("model_id", model_id),
-                        "prune all data_benchmark_results (source has no benchmarks)"
+                        await supa.from("data_benchmark_results").upsert(benchRows, { onConflict: "result_key" }),
+                        "upsert data_benchmark_results"
                     );
+                }
+
+                // Safety: when any malformed benchmark rows are present, skip destructive prune.
+                // This preserves existing benchmark history if source payload quality regresses.
+                if (hasInvalidBenchmarkRows || hasUnknownBenchmarkRows) {
+                    const reasonParts: string[] = [];
+                    if (hasInvalidBenchmarkRows) {
+                        reasonParts.push(`${invalidBenchmarkRowCount} invalid row(s)`);
+                    }
+                    if (hasUnknownBenchmarkRows) {
+                        reasonParts.push(`unknown benchmark_id(s): ${unknownBenchmarkIds.join(", ")}`);
+                    }
+                    console.warn(
+                        `[importer] Skipping benchmark prune for model=${model_id} because ${reasonParts.join("; ")}`
+                    );
+                } else {
+                    // Precise prune: keep only this run's result_keys for this model
+                    const keep = benchRows.map(r => r.result_key);
+                    if (keep.length) {
+                        assertOk(
+                            await supa
+                                .from("data_benchmark_results")
+                                .delete()
+                                .eq("model_id", model_id)
+                                .not("result_key", "in", toInList(keep)),
+                            "prune data_benchmark_results"
+                        );
+                    } else {
+                        // Source explicitly contains no benchmark rows for this model.
+                        assertOk(
+                            await supa.from("data_benchmark_results").delete().eq("model_id", model_id),
+                            "prune all data_benchmark_results (source has no benchmarks)"
+                        );
+                    }
                 }
             }
         }
-    }
     }
 
     await flushCoreRows(coreRows);
