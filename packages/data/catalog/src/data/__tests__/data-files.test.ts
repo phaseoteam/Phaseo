@@ -187,6 +187,13 @@ describe('Models', () => {
         expect(isrType === 'boolean' || isrType === 'number').toBe(true);
       }
     });
+    test(`${m.model_id} page_notice shape`, () => {
+      const j = readJson(m.filePath);
+      if (!j.page_notice) return;
+      expect(['info', 'warning', 'critical']).toContain(j.page_notice.tone);
+      expect(typeof j.page_notice.markdown).toBe('string');
+      expect(j.page_notice.markdown.trim().length).toBeGreaterThan(0);
+    });
   }
 });
 

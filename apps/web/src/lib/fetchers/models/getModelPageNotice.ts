@@ -56,7 +56,7 @@ export function parseModelPageNoticeRow(row: {
 	return parsed.data;
 }
 
-async function resolveApiModelIdForModelPageUncached(
+export async function resolveApiModelIdForModelPageUncached(
 	modelId: string,
 	includeHidden: boolean,
 ): Promise<string | null> {
@@ -93,6 +93,7 @@ async function resolveApiModelIdForModelPageUncached(
 		normalizeId(apiModelRes.data?.api_model_id) ??
 		normalizeId(aliasRes.data?.api_model_id) ??
 		normalizeId(internalRes.data?.api_model_id) ??
+		(internalRes.data ? normalizeId(modelId) : null) ??
 		normalizeId(providerRes.data?.[0]?.api_model_id) ??
 		null
 	);

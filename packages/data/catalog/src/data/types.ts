@@ -161,6 +161,10 @@ export interface Model {
     training_tokens: number | string | null;
     benchmark_results: BenchmarkResult[] | null;
     prices: Price[] | null;
+    page_notice?: {
+        tone: "info" | "warning" | "critical";
+        markdown: string;
+    } | null;
 }
 
 export interface ExtendedModel {
@@ -198,6 +202,10 @@ export interface ExtendedModel {
         }
     > | null;
     prices: Price[] | null;
+    page_notice?: {
+        tone: "info" | "warning" | "critical";
+        markdown: string;
+    } | null;
     provider: Provider;
     // Optional structured model details (from supabase `model_details`)
     model_details?: { detail_name: string; detail_value: string | number | null }[] | null;
