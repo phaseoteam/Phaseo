@@ -58,7 +58,7 @@ export async function generateMetadata(props: {
 		.join(" ");
 
 	return buildMetadata({
-		title: `${providerName} API Models, Latency & Usage Analytics`,
+		title: `${providerName} - API performance, Latency & Usage analytics`,
 		description,
 		path: `/api-providers/${apiProvider}`,
 		keywords: [
@@ -209,14 +209,6 @@ export default async function Page({
 			)}
 			<APIProviderDetailShell apiProviderId={apiProvider}>
 				<div className="flex flex-col gap-10 w-full">
-					<section className="space-y-3">
-						<p className="max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base">
-							Track how {header?.api_provider_name ?? "this provider"} performs on
-							the AI Stats Gateway, including latency, throughput, token usage, and
-							the models driving current traffic. Use this page as a provider-level
-							companion to the broader model and pricing database.
-						</p>
-					</section>
 					<section className="space-y-2">
 						<h3 className="text-xl font-semibold">Performance</h3>
 						<PerformanceCards params={params} />
