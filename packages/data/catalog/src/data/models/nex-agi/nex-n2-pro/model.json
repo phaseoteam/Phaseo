@@ -1,0 +1,41 @@
+{
+  "model_id": "nex-agi/nex-n2-pro",
+  "organisation_id": "nex-agi",
+  "name": "Nex N2 Pro",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Nex N2 Pro is an open-weight agentic multimodal model aimed at coding, tool use, terminal execution, and long-horizon real-world tasks in a 397B-class configuration.",
+  "announced_date": "2026-06-05T00:00:00",
+  "release_date": "2026-06-05T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "nex-agi/nex-n2-pro",
+  "links": [
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/nex-agi/Nex-N2-Pro"
+    },
+    {
+      "platform": "github",
+      "url": "https://github.com/nex-agi"
+    },
+    {
+      "platform": "website",
+      "url": "https://nex-agi.com"
+    }
+  ],
+  "details": [
+    {
+      "name": "parameter_count",
+      "value": 397000000000
+    },
+    {
+      "name": "base_model",
+      "value": "Qwen3.5-397B-A17B"
+    }
+  ],
+  "benchmarks": []
+}
