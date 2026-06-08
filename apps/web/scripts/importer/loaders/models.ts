@@ -86,24 +86,6 @@ async function dataModelsHasApiModelIdColumn(
     );
 }
 
-async function dataApiModelPageNoticesTableExists(
-    supa: ReturnType<typeof client>
-): Promise<boolean> {
-    const probe = await supa.from("data_api_model_page_notices").select("api_model_id").limit(1);
-    if (!probe.error) return true;
-
-    const message = String(probe.error?.message ?? "");
-    const code = String((probe.error as any)?.code ?? "");
-    const missingRelation =
-        code === "PGRST205" ||
-        /does not exist|could not find table|relation|schema cache/i.test(message);
-    if (missingRelation) return false;
-
-    throw new Error(
-        `probe data_api_model_page_notices failed: ${message}${code ? ` | code=${code}` : ""}`
-    );
-}
-
 async function loadExistingBenchmarkIds(
     supa: ReturnType<typeof client>
 ): Promise<Set<string>> {
@@ -140,7 +122,6 @@ export async function loadModels(
 ) {
     const supa = client();
     const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
-    const hasModelPageNoticesTable = await dataApiModelPageNoticesTableExists(supa);
     const existingBenchmarkIds = await loadExistingBenchmarkIds(supa);
     if (!modelId) tracker.touchPrefix(DIR_MODELS);
 
@@ -226,8 +207,6 @@ export async function loadModels(
         apiModelId: string,
         notice: ModelJSON["page_notice"]
     ) => {
-        if (!hasModelPageNoticesTable) return;
-
         const normalizedApiModelId = apiModelId.trim();
         if (!normalizedApiModelId) return;
 
