@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "legal-agent-benchmark",
+  "benchmark_name": "Legal Agent Benchmark",
+  "category": "legal",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

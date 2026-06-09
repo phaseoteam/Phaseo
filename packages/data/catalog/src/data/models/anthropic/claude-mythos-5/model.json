@@ -4,8 +4,8 @@
   "name": "Claude Mythos 5",
   "status": "Withheld",
   "previous_model_id": null,
-  "description": "Claude Mythos 5 is a withheld Anthropic API model ID tracked as part of the Mythos release track alongside Claude Mythos Preview. Current expectations are that it will be announced alongside [Claude Fable 5](/anthropic/claude-fable-5), with Mythos remaining withheld while Fable becomes the public release.",
-  "announced_date": null,
+  "description": "Claude Mythos 5 is Anthropic's withheld counterpart to [Claude Fable 5](/anthropic/claude-fable-5), announced on the same release day but not exposed as the public rollout model. AI Stats tracks it as the internal Mythos line while Fable remains the public launch target.",
+  "announced_date": "2026-06-09T00:00:00",
   "release_date": null,
   "deprecation_date": null,
   "retirement_date": null,
@@ -14,11 +14,20 @@
   "output_types": null,
   "api_model_id": "anthropic/claude-mythos-5",
   "family_id": "anthropic/claude-mythos",
-  "links": [],
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
+    },
+    {
+      "platform": "docs",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5"
+    }
+  ],
   "details": [
     {
       "name": "availability",
-      "value": "Claude Mythos 5 is expected to be announced alongside [Claude Fable 5](/anthropic/claude-fable-5). Current expectations are that Mythos 5 will remain withheld rather than receive a public release, while Fable 5 ships as the public-facing counterpart with broadly similar capabilities and additional safeguards."
+      "value": "Claude Mythos 5 was announced alongside [Claude Fable 5](/anthropic/claude-fable-5) on June 9, 2026. Anthropic's public rollout centers on Fable 5, while Mythos 5 remains withheld rather than exposed as a generally available public model."
     }
   ],
   "benchmarks": []

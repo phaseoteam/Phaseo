@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "frontiercode-diamond",
+  "benchmark_name": "FrontierCode (Diamond)",
+  "category": "code",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}
