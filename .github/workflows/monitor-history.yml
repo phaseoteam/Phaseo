@@ -4,43 +4,39 @@ on:
     schedule:
         - cron: "0 * * * *"
     workflow_dispatch:
+        inputs:
+            full_rebuild:
+                description: Force a full rebuild of monitor history from the configured base SHA.
+                required: false
+                default: false
+                type: boolean
+            base_sha:
+                description: Optional override base SHA for a manual full rebuild.
+                required: false
+                type: string
 
 permissions:
     contents: read
-    pull-requests: read
 
 concurrency:
-    group: update-monitor-history
+    group: sync-monitor-history-db
     cancel-in-progress: false
 
 jobs:
-    update-history:
+    sync-monitor-history:
         runs-on: ubuntu-latest
+        timeout-minutes: 30
+
+        env:
+            NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            MONITOR_HISTORY_BASE_SHA: ${{ github.event.inputs.base_sha || vars.MONITOR_HISTORY_BASE_SHA || '' }}
 
         steps:
             - name: Checkout repository
               uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
               with:
                   fetch-depth: 0 # needed to diff before..after reliably
-                  persist-credentials: false
-
-            - name: Create GitHub App token (AI Stats Bot)
-              id: app-token
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
-              with:
-                  app-id: ${{ secrets.AI_STATS_APP_ID }}
-                  private-key: ${{ secrets.AI_STATS_APP_PRIVATE_KEY }}
-
-            - name: Compute bot commit identity
-              id: bot
-              env:
-                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
-              run: |
-                  bot="${{ steps.app-token.outputs.app-slug }}[bot]"
-                  id="$(gh api "/users/${bot}" --jq .id)"
-                  email="${id}+${bot}@users.noreply.github.com"
-                  echo "name=${bot}" >> "$GITHUB_OUTPUT"
-                  echo "email=${email}" >> "$GITHUB_OUTPUT"
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
@@ -58,109 +54,19 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Determine range
-              id: range
-              shell: bash
-              run: |
-                  HEAD="$(git rev-parse HEAD)"
-                  BASE=""
-                  HISTORY_FILE="packages/data/catalog/src/data/monitor-history.json"
-
-                  if [ -f "$HISTORY_FILE" ]; then
-                    BASE="$(node -e "try{const fs=require('fs');const data=JSON.parse(fs.readFileSync('${HISTORY_FILE}','utf8'));process.stdout.write(data?.meta?.lastSha ?? '')}catch{process.stdout.write('')}")"
-                  fi
-
-                  if [ -n "$BASE" ] && git cat-file -e "${BASE}^{commit}" 2>/dev/null; then
-                    echo "Using stored base $BASE"
-                  else
-                    BASE="$(git rev-parse HEAD~1)"
-                    echo "Falling back to base $BASE"
-                  fi
-
-                  echo "base=$BASE" >> "$GITHUB_OUTPUT"
-                  echo "head=$HEAD" >> "$GITHUB_OUTPUT"
-
-            - name: Check for data changes
-              id: check-changes
-              shell: bash
-              run: |
-                  BASE="${{ steps.range.outputs.base }}"
-                  HEAD="${{ steps.range.outputs.head }}"
-                  if git diff --name-only "$BASE" "$HEAD" | grep -q '^packages/data/catalog/src/data/'; then
-                    echo "changes=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "changes=false" >> "$GITHUB_OUTPUT"
-                  fi
-
-            - name: Update monitor history
-              if: steps.check-changes.outputs.changes == 'true'
-              shell: bash
-              run: |
-                  BASE="${{ steps.range.outputs.base }}"
-                  HEAD="${{ steps.range.outputs.head }}"
-                  pnpm exec tsx scripts/update-monitor-history.ts "$BASE" "$HEAD"
-
-            - name: Update marker
-              if: steps.check-changes.outputs.changes == 'true'
-              shell: bash
-              run: |
-                  echo "No marker file update needed."
-
-            - name: Create or update pull request
-              if: steps.check-changes.outputs.changes == 'true'
-              id: cpr
-              uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
-              with:
-                  token: ${{ steps.app-token.outputs.token }}
-                  commit-message: "chore: update monitor history"
-                  title: "chore: update monitor history"
-                  body: |
-                      Automated hourly run to refresh monitor history.
-                      - Triggered by: ${{ github.workflow }} (run ${{ github.run_id }})
-                  branch: chore/auto-monitor-history
-                  delete-branch: true
-                  committer: ${{ steps.bot.outputs.name }} <${{ steps.bot.outputs.email }}>
-                  author: ${{ steps.bot.outputs.name }} <${{ steps.bot.outputs.email }}>
-                  signoff: true
-
-            - name: Wait for checks (all checks, not just required)
-              if: steps.cpr.outputs.pull-request-number != ''
-              env:
-                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
-              run: |
-                  set -euo pipefail
-                  pr="${{ steps.cpr.outputs.pull-request-number }}"
-
-                  sleep 10
-
-                  for i in $(seq 1 30); do
-                    out="$(gh pr checks "$pr" --watch 2>&1)" && { echo "$out"; exit 0; }
-                    echo "$out"
-
-                    if echo "$out" | grep -qi "no checks reported"; then
-                      echo "Checks not attached yet; retrying ($i/30)"
-                      sleep 5
-                      continue
-                    fi
-
-                    exit 1
-                  done
-
-                  echo "Still no checks reported after retries."
-                  exit 1
-
-            - name: Merge PR (squash)
-              if: steps.cpr.outputs.pull-request-number != ''
-              env:
-                  GH_TOKEN: ${{ steps.app-token.outputs.token }}
+            - name: Sync monitor history to Supabase
               shell: bash
               run: |
                   set -euo pipefail
-                  pr="${{ steps.cpr.outputs.pull-request-number }}"
+                  cd apps/web
+                  args=()
 
-                  if gh pr merge "$pr" --squash --delete-branch; then
-                    exit 0
+                  if [ "${{ github.event.inputs.full_rebuild || 'false' }}" = "true" ]; then
+                    args+=(--full-rebuild)
                   fi
 
-                  echo "Direct merge blocked by branch policy; enabling auto-merge."
-                  gh pr merge "$pr" --auto --squash --delete-branch
+                  if [ -n "${MONITOR_HISTORY_BASE_SHA:-}" ]; then
+                    args+=(--from "$MONITOR_HISTORY_BASE_SHA")
+                  fi
+
+                  pnpm exec tsx scripts/sync-monitor-history-to-supabase.ts "${args[@]}"
