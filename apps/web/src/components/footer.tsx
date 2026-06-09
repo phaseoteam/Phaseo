@@ -15,6 +15,7 @@ import {
 	LifeBuoy,
 	MessageSquare,
 	Megaphone,
+	MonitorDot,
 	Scale,
 	Server,
 	ShieldCheck,
@@ -35,6 +36,7 @@ const productLinks = [
 	{ href: "/api-providers", label: "Providers", icon: Server },
 	{ href: "/apps", label: "Apps", icon: AppWindow },
 	{ href: "/rankings", label: "Rankings", icon: Trophy },
+	{ href: "/monitor", label: "Monitor", icon: MonitorDot },
 ];
 
 const developerLinks = [
@@ -66,12 +68,6 @@ const developerLinks = [
 		href: "/methodology",
 		label: "Methodology",
 		icon: FileText,
-	},
-	{
-		href: "https://ai-stats.instatus.com/",
-		label: "Status",
-		icon: Activity,
-		external: true,
 	},
 ];
 
