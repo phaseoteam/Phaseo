@@ -8,7 +8,7 @@ import {
 import { getFreeRouterOverview } from "@/lib/fetchers/models/getFreeRouterOverview";
 import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import type { Metadata } from "next";
-import { absoluteUrl, buildMetadata } from "@/lib/seo";
+import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -20,7 +20,6 @@ import {
 } from "@/lib/models/freeRouter";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
-import Script from "next/script";
 import type {
 	GatewayStatusFilter,
 	ModelsFilterFacets,
@@ -283,6 +282,43 @@ function chooseProviderGatewayStatus(
 
 function isActiveProviderStatus(status: string): boolean {
 	return ACTIVE_PROVIDER_STATUS_SET.has(status);
+}
+
+function firstNonEmptyString(
+	...values: Array<string | null | undefined>
+): string | null {
+	for (const value of values) {
+		const normalized = String(value ?? "").trim();
+		if (normalized) return normalized;
+	}
+	return null;
+}
+
+function buildCanonicalModelLookupCandidates(value: string): string[] {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) return [];
+	if (normalized.toLowerCase().endsWith(":free")) {
+		return [normalized, normalized.slice(0, -":free".length)];
+	}
+	return [normalized];
+}
+
+function resolveBaseModel(
+	baseModelById: Map<string, ModelCard>,
+	modelId: string,
+	signals: GatewaySignals | undefined,
+): ModelCard | undefined {
+	const candidates = [
+		modelId,
+		...Array.from(signals?.apiModelIds ?? []),
+	].flatMap((value) => buildCanonicalModelLookupCandidates(value));
+
+	for (const candidate of candidates) {
+		const model = baseModelById.get(candidate);
+		if (model) return model;
+	}
+
+	return undefined;
 }
 
 function sortModalityOptions(
@@ -841,8 +877,8 @@ function withGatewayMetadata(
 	const canonicalModelIds = Array.from(signalsByModelId.keys()).filter(Boolean);
 
 	const enriched = canonicalModelIds.map((modelId) => {
-		const model = baseModelById.get(modelId);
 		const signals = signalsByModelId.get(modelId);
+		const model = resolveBaseModel(baseModelById, modelId, signals);
 		const weeklyMetrics = resolveModelWeeklyMetrics(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
@@ -879,15 +915,18 @@ function withGatewayMetadata(
 				).padStart(2, "0")}`
 			: (model?.primary_group_key ?? null);
 		const fallbackName =
-			model?.name ??
-			Array.from(signals?.displayNames ?? [])[0] ??
-			modelId.split("/").slice(-1)[0] ??
-			modelId;
+			firstNonEmptyString(
+				model?.name,
+				Array.from(signals?.displayNames ?? [])[0],
+				modelId.split("/").slice(-1)[0],
+				modelId,
+			) ?? modelId;
 		const fallbackOrganisationId =
-			model?.organisation_id ??
-			Array.from(signals?.organisationIds ?? [])[0] ??
-			modelId.split("/")[0] ??
-			"";
+			firstNonEmptyString(
+				model?.organisation_id,
+				Array.from(signals?.organisationIds ?? [])[0],
+				modelId.split("/")[0],
+			) ?? "";
 
 		const compactModel: ModelsPageModel = {
 			model_id: modelId,
@@ -1138,43 +1177,6 @@ function buildFreeRouterModelsPageEntry(
 	};
 }
 
-function summarizeModelsPage(models: ModelsPageModel[]) {
-	const creators = new Set<string>();
-	const providers = new Set<string>();
-	let activeModels = 0;
-
-	for (const model of models) {
-		const creator = normalizeOrganisationDisplayName(
-			model.organisation_name,
-			model.organisation_id,
-		);
-		if (creator) creators.add(creator);
-
-		for (const provider of model.gateway_provider_names ?? []) {
-			const normalized = String(provider ?? "").trim();
-			if (normalized) providers.add(normalized);
-		}
-
-		if (model.gateway_status === "active") {
-			activeModels += 1;
-		}
-	}
-
-	const featuredModels = models
-		.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID)
-		.slice(0, 8)
-		.map((model) => model.name)
-		.filter(Boolean);
-
-	return {
-		totalModels: models.length,
-		activeModels,
-		creators: creators.size,
-		providers: providers.size,
-		featuredModels,
-	};
-}
-
 async function ModelsPageDataSection() {
 	const includeHidden = false;
 	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
@@ -1189,83 +1191,7 @@ async function ModelsPageDataSection() {
 		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
 	];
 	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
-	const summary = summarizeModelsPage(modelsWithFreeRouter);
-	const dataCatalogSchema = {
-		"@context": "https://schema.org",
-		"@type": "DataCatalog",
-		name: "AI Stats Model Database",
-		description:
-			"Compare AI models by pricing, benchmarks, context window, modalities, providers, and gateway availability.",
-		url: absoluteUrl("/models"),
-		keywords: [
-			"AI models",
-			"model pricing",
-			"AI benchmarks",
-			"context window",
-			"gateway providers",
-		],
-		includesObject: summary.featuredModels.map((name) => ({
-			"@type": "Dataset",
-			name,
-		})),
-	};
-	const breadcrumbSchema = {
-		"@context": "https://schema.org",
-		"@type": "BreadcrumbList",
-		itemListElement: [
-			{
-				"@type": "ListItem",
-				position: 1,
-				name: "Home",
-				item: absoluteUrl("/"),
-			},
-			{
-				"@type": "ListItem",
-				position: 2,
-				name: "Models",
-				item: absoluteUrl("/models"),
-			},
-		],
-	};
-
-	return (
-		<>
-			<Script
-				id="models-data-catalog-schema"
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(dataCatalogSchema) }}
-			/>
-			<Script
-				id="models-breadcrumb-schema"
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-			/>
-			<div className="mb-8 space-y-3">
-				<h1 className="text-3xl font-bold tracking-tight">
-					Compare AI models by pricing, benchmarks, providers, and context
-				</h1>
-				<p className="max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base">
-					AI Stats tracks {summary.totalModels.toLocaleString()} models from{" "}
-					{summary.creators.toLocaleString()} model creators and{" "}
-					{summary.providers.toLocaleString()} gateway providers. Use this index
-					to compare pricing, modality support, context length, active gateway
-					coverage, throughput, latency, and benchmark results.
-				</p>
-				{summary.featuredModels.length > 0 ? (
-					<p className="max-w-4xl text-sm leading-6 text-muted-foreground">
-						Popular entries in this index include{" "}
-						{summary.featuredModels.join(", ")}. {summary.activeModels.toLocaleString()}{" "}
-						models currently have active gateway coverage.
-					</p>
-				) : null}
-			</div>
-			<ModelsDisplay
-				models={modelsWithFreeRouter}
-				facets={facets}
-				showPrimaryHeader={false}
-			/>
-		</>
-	);
+	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
 }
 
 export default function ModelsPage() {
