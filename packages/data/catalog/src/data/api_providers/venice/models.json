@@ -1771,7 +1771,7 @@
     "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": 128000,
-    "effective_from": null,
+    "effective_from": "2026-06-09T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1818,7 +1818,7 @@
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "coming_soon",
+        "status": "active",
         "params": []
       }
     ]
