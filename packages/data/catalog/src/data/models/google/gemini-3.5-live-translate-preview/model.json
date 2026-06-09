@@ -20,13 +20,13 @@
     },
     {
       "platform": "guide",
-      "url": "https://ai.google.dev/gemini-api/docs/live"
+      "url": "https://ai.google.dev/gemini-api/docs/live-api/live-translate"
     }
   ],
   "details": [
     {
       "name": "catalog_note",
-      "value": "AI Stats inferred this preview model's modality metadata from its public name and the documented Gemini Live API family because a dedicated model page was not yet publicly indexed when this entry was added."
+      "value": "Official Gemini docs list this preview model as a Live API speech-to-speech translation model with audio input and translated audio plus transcript output."
     }
   ],
   "benchmarks": []
