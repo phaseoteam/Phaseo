@@ -4470,8 +4470,10 @@ export type ListModelsParams = {
     endpoints?: string[];
     feed?: "json" | "rss" | "atom";
     format?: "json" | "rss" | "atom";
+    id?: string | string[];
     input_types?: string[];
     limit?: number;
+    model_id?: string | string[];
     model_routing_status?: string[];
     offset?: number;
     organisation?:
@@ -4723,7 +4725,7 @@ export async function listModels(
   }[];
   offset: number;
   ok: boolean;
-  privacy_scope: "shared" | "team";
+  privacy_scope: "shared";
   total: number;
 }> {
   const { path, query, headers, body } = args;
@@ -4861,7 +4863,7 @@ export async function listModels(
     }[];
     offset: number;
     ok: boolean;
-    privacy_scope: "shared" | "team";
+    privacy_scope: "shared";
     total: number;
   }>({
     method: "GET",
