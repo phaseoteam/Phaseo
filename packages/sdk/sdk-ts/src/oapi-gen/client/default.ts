@@ -4555,7 +4555,7 @@ export async function listDataModels(
   total?: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/data/models";
+  const resolvedPath = "/models";
   return client.request<{
     include_hidden?: boolean;
     limit?: number;
@@ -4918,7 +4918,7 @@ export async function listModels(
   total: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/gateway/models";
+  const resolvedPath = "/models";
   return client.request<{
     availability_mode: "active" | "all";
     limit: number;
@@ -5467,7 +5467,7 @@ export async function listTeamModels(
   total: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/gateway/models/me";
+  const resolvedPath = "/models";
   return client.request<{
     availability_mode: "active" | "all";
     limit: number;

@@ -466,7 +466,7 @@ export class AIStats {
     }
 
     try {
-      const payload = await this.request("GET", "/data/models", {
+      const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
       });
       const models = Array.isArray((payload as { models?: unknown }).models)

@@ -112,8 +112,8 @@ describeLive("DeepSeek v4 flash multi-provider sweep", () => {
     it(
         "gateway_models_entry_matches_discovered_model",
         async () => {
-            const result = await getGateway("/gateway/models?limit=250&offset=0");
-            assertOk(result, "/gateway/models");
+            const result = await getGateway("/models?limit=250&offset=0");
+            assertOk(result, "/models");
             if (!("json" in result)) throw new Error("Expected JSON");
             const models = Array.isArray(result.json?.models) ? result.json.models : [];
             const found = models.find((entry: any) => String(entry?.model_id ?? "") === model);

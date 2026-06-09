@@ -9,7 +9,7 @@ import (
 
 func TestListTeamModelsReturnsPayload(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || r.URL.Path != "/gateway/models/me" {
+		if r.Method != http.MethodGet || r.URL.Path != "/models" {
 			http.NotFound(w, r)
 			return
 		}

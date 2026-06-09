@@ -55,7 +55,7 @@ describe("AIStats endpoints discovery helper", () => {
       if (url === "https://example.test/music/generate/music_1" && method === "GET") {
         return jsonResponse({ id: "music_1", status: "completed" });
       }
-      if (url.startsWith("https://example.test/data/models?") && method === "GET") {
+      if (url.startsWith("https://example.test/models?") && method === "GET") {
         const parsedUrl = new URL(url);
         const modelId = parsedUrl.searchParams.get("model_id");
         if (modelId) {
@@ -92,14 +92,14 @@ describe("AIStats endpoints discovery helper", () => {
     await client.providers.derankStatus("openai", { window_hours: 24 });
 
     expect(seen.map((entry) => `${entry.method} ${entry.url}`)).toEqual([
-      "GET https://example.test/data/models?model_id=deepseek%2Fdeepseek-ocr&limit=1",
+      "GET https://example.test/models?model_id=deepseek%2Fdeepseek-ocr&limit=1",
       "POST https://example.test/ocr",
-      "GET https://example.test/data/models?model_id=voyage%2Frerank-2&limit=1",
+      "GET https://example.test/models?model_id=voyage%2Frerank-2&limit=1",
       "POST https://example.test/rerank",
-      "GET https://example.test/data/models?model_id=minimax%2Fmusic-2.6&limit=1",
+      "GET https://example.test/models?model_id=minimax%2Fmusic-2.6&limit=1",
       "POST https://example.test/music/generate",
       "GET https://example.test/music/generate/music_1",
-      "GET https://example.test/data/models?limit=1",
+      "GET https://example.test/models?limit=1",
       "GET https://example.test/health/providers/openai/derank?window_hours=24",
     ]);
   });

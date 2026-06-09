@@ -366,4 +366,53 @@ describe("handleModels", () => {
             expect.objectContaining({ statuses: ["active", "retired"] }),
         );
     });
+
+    it("filters the returned catalogue by model_id", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel(),
+            buildCatalogueModel({
+                model_id: "anthropic/claude-sonnet-4",
+                name: "Claude Sonnet 4",
+                organisation_id: "anthropic",
+                organisation_name: "Anthropic",
+            }),
+        ]);
+
+        const response = await handleModels(
+            new Request("https://api.example.com/?model_id=anthropic/claude-sonnet-4"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            total: 1,
+            models: [
+                {
+                    model_id: "anthropic/claude-sonnet-4",
+                    name: "Claude Sonnet 4",
+                },
+            ],
+        });
+    });
+
+    it("returns the shared gateway model catalogue from /v1/models", async () => {
+        const response = await handleModels(
+            new Request("https://api.example.com/v1/models"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            privacy_scope: "shared",
+            total: 1,
+            models: [
+                {
+                    model_id: "openai/gpt-4o-mini",
+                    name: "GPT-4o Mini",
+                },
+            ],
+        });
+    });
 });

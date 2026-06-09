@@ -578,7 +578,7 @@ public static class Operations
 		object? body = null
 	)
 	{
-		var resolvedPath = "/data/models";
+		var resolvedPath = "/models";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -614,7 +614,7 @@ public static class Operations
 		object? body = null
 	)
 	{
-		var resolvedPath = "/gateway/models";
+		var resolvedPath = "/models";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
@@ -662,7 +662,7 @@ public static class Operations
 		object? body = null
 	)
 	{
-		var resolvedPath = "/gateway/models/me";
+		var resolvedPath = "/models";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 

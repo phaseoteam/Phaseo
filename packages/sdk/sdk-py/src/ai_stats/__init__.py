@@ -426,7 +426,7 @@ class AIStats:
         try:
             payload = self.request(
                 "GET",
-                "/data/models",
+                "/models",
                 query={"model_id": model_id, "limit": 1},
             )
         except Exception:

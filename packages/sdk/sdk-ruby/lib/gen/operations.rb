@@ -287,7 +287,7 @@ module AiStats
 
       def self.listDataModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/data/models"
+        resolved_path = "/models"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -305,7 +305,7 @@ module AiStats
 
       def self.listModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/gateway/models"
+        resolved_path = "/models"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
@@ -329,7 +329,7 @@ module AiStats
 
       def self.listTeamModels(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
-        resolved_path = "/gateway/models/me"
+        resolved_path = "/models"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

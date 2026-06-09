@@ -22,6 +22,6 @@ class TeamModelsTest < Minitest::Test
 
     assert_equal true, response["ok"]
     assert_equal "openai/gpt-5-mini", response["models"][0]["id"]
-    assert_equal [["GET", "/gateway/models/me", {"limit" => "2", "endpoints" => "responses"}, nil, nil]], calls
+    assert_equal [["GET", "/models", {"limit" => "2", "endpoints" => "responses"}, nil, nil]], calls
   end
 end

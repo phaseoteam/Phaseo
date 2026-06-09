@@ -381,8 +381,7 @@
 										"group": "Models",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/models",
-											"v1/api-reference/endpoint/models-team"
+											"v1/api-reference/endpoint/models"
 										]
 									},
 									{

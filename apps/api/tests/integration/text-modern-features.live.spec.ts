@@ -609,7 +609,7 @@ async function fetchModelsByProvider(providers: string[]): Promise<Map<string, s
 	const limit = 250;
 	let total = Number.POSITIVE_INFINITY;
 	while (offset < total) {
-		const url = new URL(resolveGatewayUrl("/gateway/models"));
+		const url = new URL(resolveGatewayUrl("/models"));
 		url.searchParams.set("offset", String(offset));
 		url.searchParams.set("limit", String(limit));
 		const res = await fetch(url.toString(), { method: "GET", headers: { Authorization: `Bearer ${GATEWAY_API_KEY}` } });

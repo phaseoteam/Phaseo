@@ -2,10 +2,10 @@ import { describe, expect, test, vi } from "vitest";
 import { AIStats } from "../src/index.js";
 
 describe("AIStats team models discovery helper", () => {
-  test("calls /gateway/models/me through listTeamModels", async () => {
+  test("calls /models through listTeamModels", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
-      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/gateway/models/me");
+      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/models");
       expect(url.searchParams.get("limit")).toBe("2");
       expect(url.searchParams.get("endpoints")).toBe("responses");
       expect(init?.method).toBe("GET");

@@ -50,7 +50,7 @@ $response = $client->listTeamModels(["limit" => "2", "endpoints" => "responses"]
 assert_true(($response["ok"] ?? null) === true, "expected ok payload");
 assert_true(($response["models"][0]["id"] ?? null) === "openai/gpt-5-mini", "expected team model id");
 assert_true($fake->calls === [
-    ["GET", "/gateway/models/me", ["limit" => "2", "endpoints" => "responses"], null, null],
+    ["GET", "/models", ["limit" => "2", "endpoints" => "responses"], null, null],
 ], "expected request call for team models discovery");
 
 echo "php team models tests ok" . PHP_EOL;

@@ -624,7 +624,7 @@ def listDataModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/data/models"
+	resolved_path = "/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -663,7 +663,7 @@ def listModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/gateway/models"
+	resolved_path = "/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -715,7 +715,7 @@ def listTeamModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/gateway/models/me"
+	resolved_path = "/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 

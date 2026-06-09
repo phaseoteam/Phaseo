@@ -13,7 +13,7 @@ public class TeamModelsTests
     {
         var handler = new StubHttpHandler(request =>
         {
-            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/gateway/models/me")
+            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/models")
             {
                 Assert.Equal("2", request.RequestUri.Query.Contains("limit=2") ? "2" : null);
                 Assert.Equal("responses", request.RequestUri.Query.Contains("endpoints=responses") ? "responses" : null);

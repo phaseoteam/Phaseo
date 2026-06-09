@@ -240,7 +240,7 @@ inline Response ListApiKeys(Client& client, const std::map<std::string, std::str
 }
 
 inline Response ListDataModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/data/models";
+	const std::string resolved_path = "/models";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -255,7 +255,7 @@ inline Response ListFiles(Client& client, const std::map<std::string, std::strin
 }
 
 inline Response ListModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/gateway/models";
+	const std::string resolved_path = "/models";
 	return client.request("GET", resolved_path, body);
 }
 
@@ -275,7 +275,7 @@ inline Response ListProviders(Client& client, const std::map<std::string, std::s
 }
 
 inline Response ListTeamModels(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/gateway/models/me";
+	const std::string resolved_path = "/models";
 	return client.request("GET", resolved_path, body);
 }
 

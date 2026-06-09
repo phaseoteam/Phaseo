@@ -19112,7 +19112,7 @@
           }
         }
       ],
-      "path": "/data/models",
+      "path": "/models",
       "responses": [
         {
           "contentType": "application/json",
@@ -19362,7 +19362,7 @@
           "status": "500"
         }
       ],
-      "sourcePointer": "#/paths//data/models/get",
+      "sourcePointer": "#/paths//models/get",
       "tags": [
         "Gateway"
       ]
@@ -20845,7 +20845,7 @@
           }
         }
       ],
-      "path": "/gateway/models",
+      "path": "/models",
       "responses": [
         {
           "contentType": "application/json",
@@ -21426,7 +21426,7 @@
           "status": "501"
         }
       ],
-      "sourcePointer": "#/paths//gateway/models/get",
+      "sourcePointer": "#/paths//models/get",
       "tags": [
         "Gateway"
       ]

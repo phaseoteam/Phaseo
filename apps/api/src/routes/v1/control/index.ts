@@ -6,7 +6,6 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
 import { modelsRoutes } from "./models";
-import { dataModelsRoutes } from "./models-data";
 import { generationsRoutes } from "./generations";
 import { placeholdersRoutes } from "./placeholders";
 import { healthRoutes } from "./health";
@@ -22,8 +21,7 @@ import oauthClientsRoutes from "./oauth-clients";
 
 export const platformRouter = new Hono<Env>();
 
-platformRouter.route("/gateway/models", modelsRoutes);
-platformRouter.route("/data/models", dataModelsRoutes);
+platformRouter.route("/models", modelsRoutes);
 platformRouter.route("/generations", generationsRoutes);
 platformRouter.route("/organisations", organisationsRoutes);
 platformRouter.route("/providers", providersRoutes);

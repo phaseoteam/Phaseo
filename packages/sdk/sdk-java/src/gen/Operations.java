@@ -242,7 +242,7 @@ public final class Operations {
 	}
 
 	public static Object listDataModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/data/models";
+		String resolvedPath = "/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -257,7 +257,7 @@ public final class Operations {
 	}
 
 	public static Object listModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/gateway/models";
+		String resolvedPath = "/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -277,7 +277,7 @@ public final class Operations {
 	}
 
 	public static Object listTeamModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/gateway/models/me";
+		String resolvedPath = "/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

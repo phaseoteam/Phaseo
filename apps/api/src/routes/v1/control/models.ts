@@ -430,7 +430,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
             {
                 ok: false,
                 error: "invalid_request",
-                message: "privacy_scope query is no longer supported. Use /gateway/models for shared or /gateway/models/me for team-scoped listings.",
+                message: "privacy_scope query is no longer supported. Use /models.",
             },
             400,
             { "Cache-Control": "no-store" }
@@ -500,6 +500,10 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
         url.searchParams,
         "provider_availability_reason"
     );
+    const modelIds = [
+        ...parseMultiValue(url.searchParams, "model_id"),
+        ...parseMultiValue(url.searchParams, "id"),
+    ];
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValue(url.searchParams, "input_types");
     const outputTypes = parseMultiValue(url.searchParams, "output_types");
@@ -516,6 +520,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
             { "Cache-Control": "no-store" }
         );
     }
+
     try {
         const catalogue = await fetchCatalogue({
             endpoints,
@@ -544,9 +549,11 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
                 ? [freeRouterModel, ...catalogue]
                 : catalogue;
         const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
-        const models = enrichedCatalogue.map((model) =>
-            toRichModel(model, replacementByPreviousModel.get(model.model_id) ?? null)
-        );
+        const models = enrichedCatalogue
+            .filter((model) => !modelIds.length || modelIds.includes(model.model_id))
+            .map((model) =>
+                toRichModel(model, replacementByPreviousModel.get(model.model_id) ?? null)
+            );
         const paged = models.slice(offset, offset + limit);
         const headers = cacheHeaders(cacheOptions);
         if (requestedFormat.format !== "json") {

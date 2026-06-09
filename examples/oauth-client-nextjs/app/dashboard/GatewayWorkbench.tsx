@@ -181,11 +181,10 @@ export default function GatewayWorkbench() {
     setLoadingControl(true);
 
     try {
-      const [healthRes, providersRes, modelsRes, gatewayModelsRes] = await Promise.all([
+      const [healthRes, providersRes, modelsRes] = await Promise.all([
         fetchJson('/api/gateway/health'),
         fetchJson('/api/gateway/providers'),
         fetchJson('/api/gateway/models'),
-        fetchJson('/api/gateway/gateway/models?limit=250'),
       ]);
 
       if (healthRes.ok && typeof healthRes.data === 'object' && healthRes.data) {
@@ -203,7 +202,7 @@ export default function GatewayWorkbench() {
         setProviderCount(0);
       }
 
-      const discovered = [...pickModels(modelsRes.data), ...pickModels(gatewayModelsRes.data)];
+      const discovered = pickModels(modelsRes.data);
       const deduped = Array.from(new Set(discovered)).sort((a, b) => a.localeCompare(b));
       setModels(deduped);
       if (!selectedModel && deduped.length > 0) {
