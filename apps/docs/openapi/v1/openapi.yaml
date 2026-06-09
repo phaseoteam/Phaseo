@@ -5618,6 +5618,7 @@ components:
         - artificial-analysis
         - attaq
         - autologi
+        - automationbench
         - babe
         - babyvision
         - balrog-ai
@@ -5636,9 +5637,11 @@ components:
         - bigcodebench
         - biobench
         - biolp-bench
+        - biomysterybench
         - bird-sql-(dev)
         - bixbench
         - blink
+        - blueprint-bench-2
         - boolq
         - browsecomp
         - browsecomp-long-128k
@@ -5736,6 +5739,7 @@ components:
         - erqa
         - evalplus
         - expert-swe
+        - exploitbench-cap
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
@@ -5759,6 +5763,7 @@ components:
         - flteval-pass-8
         - frames
         - frontier-math
+        - frontiercode-diamond
         - frontiermath
         - frontiersci-olympiad
         - frontiersci-research
@@ -5767,6 +5772,7 @@ components:
         - fullstackbench-zh
         - functionalmath
         - galileo-agent
+        - gdp-pdf
         - gdpval-aa
         - gdpval-mm
         - genebench
@@ -5838,6 +5844,7 @@ components:
         - ivebench-overall-vs-runway-aleph
         - korbench
         - lbpp-(v2)
+        - legal-agent-benchmark
         - lingoqa
         - lisanbench
         - livebench

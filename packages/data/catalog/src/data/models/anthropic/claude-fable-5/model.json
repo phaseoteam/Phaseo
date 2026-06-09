@@ -3,23 +3,165 @@
   "organisation_id": "anthropic",
   "name": "Claude Fable 5",
   "status": "Available",
-  "previous_model_id": null,
-  "description": "Claude Fable 5 is tracked as the public release line paired with [Claude Mythos 5](/anthropic/claude-mythos-5). AI Stats currently treats Fable as the active rollout target while Mythos remains withheld, with active provider mappings and pricing scaffolding in place.",
+  "previous_model_id": "anthropic/claude-opus-4.8",
+  "description": "Claude Fable 5 is Anthropic's public frontier model, released alongside [Claude Mythos 5](/anthropic/claude-mythos-5) as the generally available public rollout track. It succeeds Claude Opus 4.8 for Anthropic's highest-end coding, knowledge work, and long-context agent workflows.",
   "announced_date": "2026-06-09T00:00:00",
   "release_date": "2026-06-09T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
-  "input_types": null,
-  "output_types": null,
+  "input_types": "text,image",
+  "output_types": "text",
   "api_model_id": "anthropic/claude-fable-5",
   "family_id": "anthropic/claude-fable",
-  "links": [],
-  "details": [
+  "links": [
     {
-      "name": "availability",
-      "value": "Claude Fable 5 is treated as the released public counterpart to [Claude Mythos 5](/anthropic/claude-mythos-5). Active rollout mappings are now staged across Anthropic and Google Vertex AI in this workspace, with broader pricing scaffolding pre-seeded for related provider variants including Claude Platform on AWS."
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5"
+    },
+    {
+      "platform": "docs",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5"
+    },
+    {
+      "platform": "website",
+      "url": "https://www.anthropic.com/claude/fable"
     }
   ],
-  "benchmarks": []
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 128000
+    },
+    {
+      "name": "availability",
+      "value": "Claude Fable 5 is Anthropic's released public counterpart to [Claude Mythos 5](/anthropic/claude-mythos-5). AI Stats now tracks active launch coverage across Anthropic, Claude Platform on AWS, Amazon Bedrock, and Google Vertex AI, with release pricing, cache pricing, and the `anthropic/claude-fable-latest` alias synced to the June 9 rollout."
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 80.3,
+      "is_self_reported": true,
+      "other_info": "Higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "frontiercode-diamond",
+      "score": 29.3,
+      "is_self_reported": true,
+      "other_info": "xHigh; higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1932,
+      "is_self_reported": true,
+      "other_info": "Higher of Mythos 5 / Fable 5; Elo",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gdp-pdf",
+      "score": 29.8,
+      "is_self_reported": true,
+      "other_info": "No tools; higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "blueprint-bench-2",
+      "score": 38.6,
+      "is_self_reported": true,
+      "other_info": "Higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "automationbench",
+      "score": 17.4,
+      "is_self_reported": true,
+      "other_info": "Higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 85,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified; higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "legal-agent-benchmark",
+      "score": 13.3,
+      "is_self_reported": true,
+      "other_info": "Higher of Mythos 5 / Fable 5 in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 59,
+      "is_self_reported": true,
+      "other_info": "No tools; starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 64.5,
+      "is_self_reported": true,
+      "other_info": "With tools; starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "biomysterybench",
+      "score": 46.1,
+      "is_self_reported": true,
+      "other_info": "Hard; starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "biomysterybench",
+      "score": 83.9,
+      "is_self_reported": true,
+      "other_info": "Human solved; starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 88,
+      "is_self_reported": true,
+      "other_info": "Starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "exploitbench-cap",
+      "score": 78,
+      "is_self_reported": true,
+      "other_info": "Cap%; starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    },
+    {
+      "benchmark_id": "healthbench",
+      "score": 66,
+      "is_self_reported": true,
+      "other_info": "Professional; starred row in Anthropic's launch table",
+      "source_link": "https://www-cdn.anthropic.com/images/4zrzovbb/website/1e65982497d7d4891219ed0e83141625a291b860-2600x2870.png",
+      "rank": null
+    }
+  ]
 }
