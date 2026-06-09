@@ -1,0 +1,80 @@
+{
+  "key": "amazon-bedrock:anthropic/claude-fable-5:text.generate",
+  "api_provider_id": "amazon-bedrock",
+  "provider_slug": "amazon-bedrock",
+  "api_model_id": "anthropic/claude-fable-5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 10,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Bedrock cache multipliers applied pending provider confirmation. Bedrock does not yet have a catalogued Claude Opus 4.8 pricing file in this repo, so this follows the same baseline used for the other mapped providers.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Bedrock cache multipliers applied pending provider confirmation. Bedrock does not yet have a catalogued Claude Opus 4.8 pricing file in this repo, so this follows the same baseline used for the other mapped providers.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 12.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Bedrock cache multipliers applied pending provider confirmation. Bedrock does not yet have a catalogued Claude Opus 4.8 pricing file in this repo, so this follows the same baseline used for the other mapped providers.",
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "5m"
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "cached_write_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 20,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Bedrock cache multipliers applied pending provider confirmation. Bedrock does not yet have a catalogued Claude Opus 4.8 pricing file in this repo, so this follows the same baseline used for the other mapped providers.",
+      "match": [
+        {
+          "path": "cache_ttl",
+          "op": "eq",
+          "or_group": 1,
+          "and_index": 1,
+          "value": "1h"
+        }
+      ],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 50,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Bedrock cache multipliers applied pending provider confirmation. Bedrock does not yet have a catalogued Claude Opus 4.8 pricing file in this repo, so this follows the same baseline used for the other mapped providers.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

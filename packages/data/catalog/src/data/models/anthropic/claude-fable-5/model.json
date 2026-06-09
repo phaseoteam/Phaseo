@@ -4,9 +4,9 @@
   "name": "Claude Fable 5",
   "status": "Rumoured",
   "previous_model_id": null,
-  "description": "Claude Fable 5 is a rumoured Anthropic flagship model tracked as the likely public release line paired with [Claude Mythos 5](/anthropic/claude-mythos-5). Current expectations are that Fable will be the release candidate while Mythos remains withheld.",
-  "announced_date": null,
-  "release_date": null,
+  "description": "Claude Fable 5 is a rumoured Anthropic flagship model tracked as the likely public release line paired with [Claude Mythos 5](/anthropic/claude-mythos-5). Current expectations are that Fable will be the release candidate while Mythos remains withheld, with provisional provider pricing scaffolded from a $10 per million input and $50 per million output baseline plus current provider-specific multipliers.",
+  "announced_date": "2026-06-09T00:00:00",
+  "release_date": "2026-06-09T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
@@ -18,7 +18,7 @@
   "details": [
     {
       "name": "availability",
-      "value": "Claude Fable 5 is expected to be announced alongside [Claude Mythos 5](/anthropic/claude-mythos-5) and to be the model that actually ships. Current expectations are that it will be broadly similar to Mythos 5 at the capability level, but released with additional safeguards. Rollout mappings are pre-seeded across Anthropic, Anthropic US, Claude Platform on AWS, Claude Platform on AWS US, Amazon Bedrock, Google Vertex AI, and Venice; pricing and final provider slugs remain unconfirmed."
+      "value": "Claude Fable 5 is expected to be announced alongside [Claude Mythos 5](/anthropic/claude-mythos-5) and to be the model that actually ships. Current expectations are that it will be broadly similar to Mythos 5 at the capability level, but released with additional safeguards. Rollout mappings are pre-seeded across Anthropic, Anthropic US, Claude Platform on AWS, Claude Platform on AWS US, Amazon Bedrock, Google Vertex AI, and Venice; provisional pricing scaffolds are seeded from a $10 per million input and $50 per million output baseline with current provider-specific cache, regional, priority, and batch multipliers applied pending confirmation, and final provider slugs remain unconfirmed."
     }
   ],
   "benchmarks": []
