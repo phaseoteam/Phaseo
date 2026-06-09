@@ -336,6 +336,27 @@
     ]
   },
   {
+    "api_model_id": "anthropic/claude-opus-4.8",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-opus-4.8",
+    "provider_model_slug": "anthropic.claude-opus-4-8",
+    "internal_model_id": "anthropic/claude-opus-4.8",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-05-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "anthropic/claude-sonnet-4",
     "provider_api_model_id": "amazon-bedrock:anthropic/claude-sonnet-4",
     "provider_model_slug": "anthropic.claude-sonnet-4-20250514-v1:0",
@@ -898,6 +919,27 @@
       {
         "capability_id": "text.generate",
         "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-fable-5",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-fable-5",
+    "provider_model_slug": "anthropic.claude-fable-5-v1",
+    "internal_model_id": "anthropic/claude-fable-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "coming_soon",
         "params": []
       }
     ]

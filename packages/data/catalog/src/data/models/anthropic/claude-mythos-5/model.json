@@ -2,9 +2,9 @@
   "model_id": "anthropic/claude-mythos-5",
   "organisation_id": "anthropic",
   "name": "Claude Mythos 5",
-  "status": "Rumoured",
+  "status": "Withheld",
   "previous_model_id": null,
-  "description": "Claude Mythos 5 is a leaked Anthropic API model ID tracked as a separate Mythos-line model alongside Claude Mythos Preview. This placeholder entry keeps the catalog ready in preparation for a wider release, ahead of formal pricing and fuller public capability documentation.",
+  "description": "Claude Mythos 5 is a withheld Anthropic API model ID tracked as part of the Mythos release track alongside Claude Mythos Preview. Current expectations are that it will be announced alongside [Claude Fable 5](/anthropic/claude-fable-5), with Mythos remaining withheld while Fable becomes the public release.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
@@ -18,7 +18,7 @@
   "details": [
     {
       "name": "availability",
-      "value": "Observed as a leaked Anthropic API model ID; pricing and full public documentation are not yet confirmed."
+      "value": "Claude Mythos 5 is expected to be announced alongside [Claude Fable 5](/anthropic/claude-fable-5). Current expectations are that Mythos 5 will remain withheld rather than receive a public release, while Fable 5 ships as the public-facing counterpart with broadly similar capabilities and additional safeguards."
     }
   ],
   "benchmarks": []

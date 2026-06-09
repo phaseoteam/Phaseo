@@ -1,0 +1,25 @@
+{
+  "model_id": "anthropic/claude-fable-5",
+  "organisation_id": "anthropic",
+  "name": "Claude Fable 5",
+  "status": "Rumoured",
+  "previous_model_id": null,
+  "description": "Claude Fable 5 is a rumoured Anthropic flagship model tracked as the likely public release line paired with [Claude Mythos 5](/anthropic/claude-mythos-5). Current expectations are that Fable will be the release candidate while Mythos remains withheld.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "anthropic/claude-fable-5",
+  "family_id": "anthropic/claude-fable",
+  "links": [],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Claude Fable 5 is expected to be announced alongside [Claude Mythos 5](/anthropic/claude-mythos-5) and to be the model that actually ships. Current expectations are that it will be broadly similar to Mythos 5 at the capability level, but released with additional safeguards. Rollout mappings are pre-seeded across Anthropic, Anthropic US, Claude Platform on AWS, Claude Platform on AWS US, Amazon Bedrock, Google Vertex AI, and Venice; pricing and final provider slugs remain unconfirmed."
+    }
+  ],
+  "benchmarks": []
+}
