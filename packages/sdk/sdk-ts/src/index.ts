@@ -308,10 +308,6 @@ export class AIStats {
     create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
   };
 
-  readonly dataModels = {
-    list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listDataModels(params),
-  };
-
   readonly providers = {
     list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),
     derankStatus: async (
@@ -821,22 +817,6 @@ export class AIStats {
     return this.telemetry.wrap(
       "models.list",
       () => ops.listModels(this.client, { query: params as any }),
-      () => params
-    );
-  }
-
-  listDataModels(params: Record<string, unknown> = {}): Promise<unknown> {
-    return this.telemetry.wrap(
-      "models.data",
-      () => ops.listDataModels(this.client, { query: params as any }),
-      () => params
-    );
-  }
-
-  listTeamModels(params: Record<string, unknown> = {}): Promise<unknown> {
-    return this.telemetry.wrap(
-      "models.team",
-      () => ops.listTeamModels(this.client, { query: params as any }),
       () => params
     );
   }

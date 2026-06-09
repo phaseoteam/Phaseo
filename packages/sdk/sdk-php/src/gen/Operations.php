@@ -332,13 +332,6 @@ function listApiKeys(Client $client, ?array $path = null, ?array $query = null, 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function listDataModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/models";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function listEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -378,13 +371,6 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 {
 	$path = $path ?? [];
 	$resolvedPath = "/providers";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

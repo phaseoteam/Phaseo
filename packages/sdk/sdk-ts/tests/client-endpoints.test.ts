@@ -88,7 +88,7 @@ describe("AIStats endpoints discovery helper", () => {
     });
     await client.music.create({ model: "minimax/music-2.6", prompt: "short theme" } as any);
     await client.music.get("music_1");
-    await client.dataModels.list({ limit: 1 });
+    await client.getModels({ limit: 1 });
     await client.providers.derankStatus("openai", { window_hours: 24 });
 
     expect(seen.map((entry) => `${entry.method} ${entry.url}`)).toEqual([

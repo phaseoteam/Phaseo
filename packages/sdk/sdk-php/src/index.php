@@ -494,16 +494,6 @@ class AIStats
         );
     }
 
-    public function listTeamModels(array $params = []): mixed
-    {
-        return $this->withLifecycleAndTelemetry(
-            "models.team",
-            $params,
-            false,
-            fn () => \AIStats\Gen\listTeamModels($this->client, null, $params, null, null)
-        );
-    }
-
     public function listProviders(array $params = []): mixed
     {
         return $this->withLifecycleAndTelemetry(
@@ -827,7 +817,7 @@ class AIStats
     private function fetchModelLifecycle(string $modelId): ?array
     {
         try {
-            $response = \AIStats\Gen\listDataModels(
+            $response = \AIStats\Gen\listModels(
                 $this->client,
                 null,
                 ["model_id" => $modelId, "limit" => "1"],

@@ -1327,20 +1327,6 @@ class ModelProviderAvailability
 	public $provider_status;
 }
 
-class ModelsPrivacyScopeNotImplementedResponse
-{
-	/** @var string */
-	public $code;
-	/** @var string */
-	public $error;
-	/** @var string */
-	public $message;
-	/** @var string */
-	public $ok;
-	/** @var string */
-	public $privacy_scope;
-}
-
 class ModerationCategories
 {
 	/** @var bool|null */

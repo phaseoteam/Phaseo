@@ -6571,7 +6571,6 @@ components:
           type: string
           enum:
             - shared
-            - team
           example: shared
         availability_mode:
           type: string
@@ -6619,36 +6618,6 @@ components:
         max_offset:
           type: integer
           minimum: 0
-      additionalProperties: true
-    ModelsPrivacyScopeNotImplementedResponse:
-      type: object
-      required:
-        - ok
-        - error
-        - code
-        - message
-        - privacy_scope
-      properties:
-        ok:
-          type: boolean
-          enum:
-            - false
-          example: false
-        error:
-          type: string
-          enum:
-            - not_implemented
-          example: not_implemented
-        code:
-          type: string
-          enum:
-            - models_privacy_scope_not_implemented
-        message:
-          type: string
-        privacy_scope:
-          type: string
-          enum:
-            - team
       additionalProperties: true
     AnalyticsNotImplementedResponse:
       type: object

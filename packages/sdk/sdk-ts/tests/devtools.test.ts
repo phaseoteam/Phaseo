@@ -1162,14 +1162,14 @@ describe("DevTools Integration", () => {
       }
     });
 
-    await adminClient.listTeamModels({ limit: 2, endpoints: "responses" });
+    await adminClient.getModels({ limit: 2, endpoints: "responses" });
 
     await new Promise((resolve) => setTimeout(resolve, 120));
 
     const entries = writer.readEntries();
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
-      type: "models.team",
+      type: "models.list",
       request: {
         limit: 2,
         endpoints: "responses"

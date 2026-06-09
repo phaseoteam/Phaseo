@@ -987,14 +987,6 @@ class AIStats:
             call=lambda: ops.listModels(self._client, query=request),
         )
 
-    def list_team_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        request = params or {}
-        return self._run_traced(
-            endpoint="models.team",
-            request=request,
-            call=lambda: ops.listTeamModels(self._client, query=request),
-        )
-
     def list_endpoints(self) -> dict[str, Any]:
         return self._run_traced(
             endpoint="endpoints.list",

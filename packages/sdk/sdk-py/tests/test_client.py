@@ -499,10 +499,10 @@ def test_list_organisations_uses_generated_operation(monkeypatch):
     assert response["organisations"][0]["organisation_id"] == "org_123"
 
 
-def test_list_team_models_uses_generated_operation(monkeypatch):
+def test_get_models_uses_generated_operation(monkeypatch):
     captured: list[dict[str, object]] = []
 
-    def fake_list_team_models(_client, **kwargs):
+    def fake_list_models(_client, **kwargs):
         captured.append({"query": kwargs.get("query")})
         return {
             "ok": True,
@@ -515,10 +515,10 @@ def test_list_team_models_uses_generated_operation(monkeypatch):
             ],
         }
 
-    monkeypatch.setattr(ops, "listTeamModels", fake_list_team_models)
+    monkeypatch.setattr(ops, "listModels", fake_list_models)
 
     client = AIStats(api_key="sk_test_123", base_url="https://example.test")
-    response = client.list_team_models({"limit": "2", "endpoints": "responses"})
+    response = client.get_models({"limit": "2", "endpoints": "responses"})
 
     assert captured == [{"query": {"limit": "2", "endpoints": "responses"}}]
     assert response["ok"] is True

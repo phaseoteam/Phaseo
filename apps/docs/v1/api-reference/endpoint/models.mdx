@@ -19,7 +19,6 @@ By default, this endpoint only returns models that are currently routable. Set `
 - `provider_availability_status` filters provider-side availability, for example `active`, `coming_soon`, or `inactive`
 - `provider_availability_reason` filters provider-side availability reason, for example `preview_only`, `provider_not_ready`, `gated`, `access_limited`, or `region_limited`
 - `organisation` filters by the public model ID prefix, for example `anthropic` in `anthropic/claude-3-haiku`
-- `privacy_scope=shared` is supported today. `privacy_scope=team` currently returns `501`
 - `availability=active` is the default
 - `availability=all` includes models or providers that are `coming_soon`, `inactive`, or not yet publicly routable
 

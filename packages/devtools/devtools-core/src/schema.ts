@@ -35,8 +35,6 @@ export const EndpointTypeSchema = z.enum([
   "pricing.calculate",
   "key.current",
   "models.list",
-  "models.data",
-  "models.team",
   "providers",
   "providers.derank",
   "credits",

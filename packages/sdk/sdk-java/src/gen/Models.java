@@ -756,14 +756,6 @@ public final class Models {
 		public Object provider_status;
 	}
 
-	public static class ModelsPrivacyScopeNotImplementedResponse {
-		public Object code;
-		public Object error;
-		public String message;
-		public Object ok;
-		public Object privacy_scope;
-	}
-
 	public static class ModerationCategories {
 		public Boolean harassment;
 		public Boolean harassment_threatening;

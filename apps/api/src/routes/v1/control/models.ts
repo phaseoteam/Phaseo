@@ -15,7 +15,6 @@ import {
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
-type ModelVisibilityScope = "shared" | "team";
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
 
@@ -423,7 +422,7 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
     };
 }
 
-export async function handleModels(req: Request, scope: ModelVisibilityScope) {
+export async function handleModels(req: Request) {
     const url = new URL(req.url);
     if (hasDeprecatedPrivacyScopeQuery(url)) {
         return json(
@@ -470,7 +469,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
         );
     }
 
-    const cacheScope = scope === "team" ? `models:team:${auth.value.workspaceId}:v1` : "models:shared:v1";
+    const cacheScope = "models:shared:v1";
 
     const cacheOptions = {
         scope: cacheScope,
@@ -575,7 +574,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
         return json(
             {
                 ok: true,
-                privacy_scope: scope,
+                privacy_scope: "shared",
                 availability_mode: availabilityMode,
                 limit,
                 offset,
@@ -596,6 +595,5 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
 
 export const modelsRoutes = new Hono<Env>();
 
-modelsRoutes.get("/me", withRuntime((req) => handleModels(req, "team")));
-modelsRoutes.get("/", withRuntime((req) => handleModels(req, "shared")));
+modelsRoutes.get("/", withRuntime((req) => handleModels(req)));
 
