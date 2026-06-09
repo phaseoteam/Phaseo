@@ -749,14 +749,6 @@ pub struct ModelProviderAvailability {
 	pub provider_status: String,
 }
 
-pub struct ModelsPrivacyScopeNotImplementedResponse {
-	pub code: String,
-	pub error: String,
-	pub message: String,
-	pub ok: String,
-	pub privacy_scope: String,
-}
-
 pub struct ModerationCategories {
 	pub harassment: Option<bool>,
 	pub harassment_threatening: Option<bool>,

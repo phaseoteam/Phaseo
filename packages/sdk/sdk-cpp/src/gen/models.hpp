@@ -753,14 +753,6 @@ struct ModelProviderAvailability {
 	std::any provider_status;
 };
 
-struct ModelsPrivacyScopeNotImplementedResponse {
-	std::any code;
-	std::any error;
-	std::string message;
-	std::any ok;
-	std::any privacy_scope;
-};
-
 struct ModerationCategories {
 	std::optional<bool> harassment;
 	std::optional<bool> harassment_threatening;
