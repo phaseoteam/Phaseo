@@ -358,24 +358,23 @@ At integration boundary, normalize to:
 
 1. `GET /health` success
 2. `GET /models` success
-3. `GET /models` success
-4. Model normalization produces non-empty list
+3. Model normalization produces non-empty list
 
 ### Text
 
-5. `POST /responses` success with selected model
-6. Follow-up request with `previous_response_id` success
-7. `POST /chat/completions` success for compatibility path
+4. `POST /responses` success with selected model
+5. Follow-up request with `previous_response_id` success
+6. `POST /chat/completions` success for compatibility path
 
 ### Additional modality checks (as in scope)
 
-8. Embeddings success
-9. Moderations success
-10. At least one image surface success
-11. At least one audio surface success
-12. OCR success
-13. Video create + status poll path works
-14. Music create + status poll path works
+7. Embeddings success
+8. Moderations success
+9. At least one image surface success
+10. At least one audio surface success
+11. OCR success
+12. Video create + status poll path works
+13. Music create + status poll path works
 
 ## Definition of Done
 
