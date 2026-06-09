@@ -7,6 +7,8 @@ description: "Browse gateway-native models through AI Stats Gateway, including o
 
 By default, this endpoint only returns models that are currently routable. Set `availability=all` to include models that are known but not currently available.
 
+`GET /models/me` is reserved for future guardrail-aware filtering of models for the current caller. It currently returns `501 not implemented`, so use `GET /models` for the shared gateway catalogue today.
+
 ## Useful filters
 
 - `endpoints` uses public names like `chat.completions`, `responses`, and `messages`

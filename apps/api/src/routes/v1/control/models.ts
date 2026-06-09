@@ -593,7 +593,26 @@ export async function handleModels(req: Request) {
     }
 }
 
+export async function handleMyModels(req: Request) {
+    const auth = await guardAuth(req);
+    if (!auth.ok) {
+        return (auth as GuardErr).response;
+    }
+
+    return json(
+        {
+            status_code: 501,
+            error: "not_implemented",
+            description:
+                "GET /models/me is reserved for future guardrail-aware model filtering and is not implemented yet. Use /models for the shared gateway catalogue.",
+        },
+        501,
+        { "Cache-Control": "no-store" }
+    );
+}
+
 export const modelsRoutes = new Hono<Env>();
 
+modelsRoutes.get("/me", withRuntime((req) => handleMyModels(req)));
 modelsRoutes.get("/", withRuntime((req) => handleModels(req)));
 

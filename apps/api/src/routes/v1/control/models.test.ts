@@ -16,7 +16,7 @@ vi.mock("@pipeline/before/context", () => ({
     fetchGatewayContext: (...args: any[]) => fetchGatewayContextMock(...args),
 }));
 
-import { handleModels } from "./models";
+import { handleModels, handleMyModels } from "./models";
 
 function buildCatalogueModel(overrides: Record<string, unknown> = {}) {
     return {
@@ -413,6 +413,19 @@ describe("handleModels", () => {
                     name: "GPT-4o Mini",
                 },
             ],
+        });
+    });
+
+    it("returns a guarded 501 placeholder from /v1/models/me", async () => {
+        const response = await handleMyModels(
+            new Request("https://api.example.com/v1/models/me"),
+        );
+
+        expect(response.status).toBe(501);
+        expect(fetchCatalogueMock).not.toHaveBeenCalled();
+        await expect(response.json()).resolves.toMatchObject({
+            status_code: 501,
+            error: "not_implemented",
         });
     });
 });
