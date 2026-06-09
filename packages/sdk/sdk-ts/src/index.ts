@@ -468,7 +468,10 @@ export class AIStats {
       const models = Array.isArray((payload as { models?: unknown }).models)
         ? ((payload as { models: DataModel[] }).models ?? [])
         : [];
-      const model = models.find((entry) => (entry?.model_id ?? "").trim() === normalizedModelId);
+      const model = models.find((entry) => {
+        const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
+        return candidateId === normalizedModelId;
+      });
       if (!model) {
         this.modelLifecycleCache.set(normalizedModelId, null);
         return null;
@@ -1217,7 +1220,10 @@ function toModelLifecycleInfo(
   fallbackModelId: string
 ): ModelLifecycleInfo {
   const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
-  const modelId = asTrimmedString(model.model_id) ?? fallbackModelId;
+  const modelId =
+    asTrimmedString(model.model_id) ??
+    asTrimmedString(model.id) ??
+    fallbackModelId;
   const sourceStatus =
     asTrimmedString(model.status) ??
     asTrimmedString(lifecycle.status) ??

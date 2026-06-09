@@ -842,7 +842,11 @@ class AIStats
             if (!is_array($modelData)) {
                 continue;
             }
-            if ($this->asTrimmedString((string) ($modelData["model_id"] ?? "")) !== $modelId) {
+            $candidateId = $this->firstNonEmpty(
+                $this->asTrimmedString((string) ($modelData["model_id"] ?? "")),
+                $this->asTrimmedString((string) ($modelData["id"] ?? ""))
+            );
+            if ($candidateId !== $modelId) {
                 continue;
             }
             return $this->toModelLifecycleInfo($modelData, $modelId);
@@ -857,6 +861,7 @@ class AIStats
         $lifecycle = $this->normalizeToArray($model["lifecycle"] ?? null) ?? [];
         $modelId = $this->firstNonEmpty(
             $this->asTrimmedString((string) ($model["model_id"] ?? "")),
+            $this->asTrimmedString((string) ($model["id"] ?? "")),
             $fallbackModelId
         ) ?? $fallbackModelId;
         $sourceStatus = $this->firstNonEmpty(

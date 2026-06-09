@@ -18,7 +18,6 @@ const TESTER_PRESETS: TesterPreset[] = [
   { label: 'Health', method: 'GET', surface: 'health' },
   { label: 'Providers', method: 'GET', surface: 'providers' },
   { label: 'Models', method: 'GET', surface: 'models' },
-  { label: 'Gateway Models', method: 'GET', surface: 'gateway/models' },
   {
     label: 'Embeddings',
     method: 'POST',
