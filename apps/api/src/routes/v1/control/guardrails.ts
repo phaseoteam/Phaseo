@@ -382,7 +382,14 @@ async function handleDeleteGuardrail(req: Request) {
 	const id = parsePathId(new URL(req.url), "guardrails");
 	if (!id) return json({ error: "bad_request", message: "Guardrail id is required" }, 400, { "Cache-Control": "no-store" });
 	try {
-		await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		const { error: keyDeleteError } = await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		if (keyDeleteError) throw new Error(keyDeleteError.message || "Failed to delete guardrail key assignments");
+		const { error: memberDeleteError } = await getSupabaseAdmin()
+			.from("workspace_member_guardrails")
+			.delete()
+			.eq("workspace_id", auth.value.workspaceId)
+			.eq("guardrail_id", id);
+		if (memberDeleteError) throw new Error(memberDeleteError.message || "Failed to delete guardrail member assignments");
 		const { error } = await getSupabaseAdmin()
 			.from("workspace_guardrails")
 			.delete()
@@ -402,7 +409,7 @@ async function handleSetGuardrailKeys(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
-	const id = new URL(req.url).pathname.split("/").slice(-2, -1)[0];
+	const id = parseGuardrailResourceId(new URL(req.url));
 	if (!id) return json({ error: "bad_request", message: "Guardrail id is required" }, 400, { "Cache-Control": "no-store" });
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;

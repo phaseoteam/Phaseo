@@ -686,7 +686,7 @@ async function chooseLoginMethod(flags: Record<string, string | boolean>, json: 
 function createCallbackServer(args: { redirectUri: string; expectedState: string }) {
 	const redirect = new URL(args.redirectUri);
 	const host = redirect.hostname;
-	const port = redirect.port ? Number(redirect.port) : 80;
+	const port = redirect.port ? Number(redirect.port) : 8976;
 	const callbackPath = redirect.pathname || "/";
 	let settled = false;
 	let resolveCallback: (value: CallbackOutcome) => void = () => undefined;

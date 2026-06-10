@@ -159,11 +159,21 @@ export async function pollDeviceToken(apiRoot: string, deviceCode: string) {
 }
 
 export async function revokeRefreshToken(apiRoot: string, refreshToken: string): Promise<void> {
-	await fetch(oauthUrl(apiRoot, "/revoke"), {
+	const response = await fetch(oauthUrl(apiRoot, "/revoke"), {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({ token: refreshToken }),
 	});
+	if (!response.ok) {
+		const body = await parseJson(response);
+		const description =
+			typeof body?.error_description === "string"
+				? body.error_description
+				: typeof body?.message === "string"
+					? body.message
+					: `OAuth token revocation failed with HTTP ${response.status}`;
+		throw new Error(description);
+	}
 }
 
 export async function exchangeAuthorizationCode(apiRoot: string, args: {

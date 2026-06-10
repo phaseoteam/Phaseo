@@ -230,12 +230,15 @@ async function handleDeleteManagementKey(req: Request) {
 	const id = parsePathId(new URL(req.url), "management-keys");
 	if (!id) return json({ error: "bad_request", message: "Management key id is required" }, 400, { "Cache-Control": "no-store" });
 	try {
-		const { error } = await getSupabaseAdmin()
+		const { data, error } = await getSupabaseAdmin()
 			.from("management_keys")
 			.delete()
 			.eq("workspace_id", auth.value.workspaceId)
-			.eq("id", id);
+			.eq("id", id)
+			.select("id")
+			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to delete management key");
+		if (!data) return json({ error: "not_found", message: "Management key not found" }, 404, { "Cache-Control": "no-store" });
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });

@@ -44,11 +44,13 @@ function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): {
 	authMethod: "api_key" | "oauth" | null;
 	scopes: string[];
 } {
+	const authMethod = ctx?.authMethod;
+	const scopes = ctx?.scopes;
 	return {
 		workspaceId: typeof ctx?.workspaceId === "string" ? ctx.workspaceId : null,
 		userId: typeof ctx?.userId === "string" ? ctx.userId : null,
-		authMethod: ctx && typeof (ctx as any).authMethod === "string" ? ((ctx as any).authMethod as "api_key" | "oauth") : null,
-		scopes: Array.isArray((ctx as any)?.scopes) ? ((ctx as any).scopes as unknown[]).map(String) : [],
+		authMethod: authMethod === "api_key" || authMethod === "oauth" ? authMethod : null,
+		scopes: Array.isArray(scopes) ? scopes.filter((scope): scope is string => typeof scope === "string") : [],
 	};
 }
 
@@ -537,19 +539,23 @@ app.patch("/:clientId", async (c) => {
 		}
 
 		// Update metadata in database
+		const metadataUpdates: Record<string, unknown> = {
+			name: updates.name,
+			description: updates.description,
+			homepage_url: updates.homepage_url,
+			logo_url: updates.logo_url,
+			privacy_policy_url: updates.privacy_policy_url,
+			terms_of_service_url: updates.terms_of_service_url,
+			redirect_uris: updates.redirect_uris,
+			updated_at: new Date().toISOString(),
+		};
+		if (allowedScopes.value !== undefined) {
+			metadataUpdates.allowed_scopes = allowedScopes.value;
+		}
+
 		const { data: updated, error: metadataError } = await supabase
 			.from("oauth_app_metadata")
-			.update({
-				name: updates.name,
-				description: updates.description,
-				homepage_url: updates.homepage_url,
-				logo_url: updates.logo_url,
-				privacy_policy_url: updates.privacy_policy_url,
-				terms_of_service_url: updates.terms_of_service_url,
-				redirect_uris: updates.redirect_uris,
-				allowed_scopes: allowedScopes.value,
-				updated_at: new Date().toISOString(),
-			})
+			.update(metadataUpdates)
 			.eq("client_id", clientId)
 			.eq("workspace_id", authCtx.workspaceId)
 			.select()

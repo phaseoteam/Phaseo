@@ -78,6 +78,23 @@ test("posts refresh-token revocation to the OAuth endpoint", async () => {
 	assert.equal(requestBody, JSON.stringify({ token: "refresh-token-123" }));
 });
 
+test("surfaces refresh-token revocation failures", async () => {
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = (async () =>
+		new Response(JSON.stringify({ error_description: "token already revoked" }), {
+			status: 400,
+			headers: { "content-type": "application/json" },
+		})) as typeof fetch;
+	try {
+		await assert.rejects(
+			() => revokeRefreshToken("https://api.example.com", "refresh-token-123"),
+			/token already revoked/,
+		);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
 test("quotes Windows browser-launch URLs so cmd does not truncate query params", () => {
 	const fullUrl = "http://127.0.0.1:8788/oauth/authorize?response_type=code&client_id=aistats_cli&redirect_uri=http%3A%2F%2F127.0.0.1%3A8976%2Fcallback";
 	assert.deepEqual(windowsBrowserOpenArgs(fullUrl), [

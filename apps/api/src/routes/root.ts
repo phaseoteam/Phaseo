@@ -6,6 +6,7 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { json, withRuntime } from "./utils";
+import { ALL_SUPPORTED_SCOPES } from "@/lib/authz/capabilities";
 import { getApiBaseUrl, getIssuer, getLocalJwks } from "@/lib/oauth/service";
 
 export const rootRouter = new Hono<Env>();
@@ -39,6 +40,7 @@ rootRouter.get(
                     "refresh_token",
                     "urn:ietf:params:oauth:grant-type:device_code",
                 ],
+                scopes_supported: [...ALL_SUPPORTED_SCOPES],
                 code_challenge_methods_supported: ["S256"],
             },
             200,

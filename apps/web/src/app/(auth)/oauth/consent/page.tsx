@@ -239,13 +239,17 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		}
 		if (!resolvedAppMetadata && params.client_id in FIRST_PARTY_CLIENTS) {
 			const firstPartyClient = FIRST_PARTY_CLIENTS[params.client_id];
+			const redirectUris =
+				typeof params.redirect_uri === "string" && params.redirect_uri.trim().length > 0
+					? [params.redirect_uri]
+					: [];
 			resolvedAppMetadata = {
 				client_id: params.client_id,
 				name: firstPartyClient.name,
 				description: firstPartyClient.description,
 				homepage_url: firstPartyClient.homepage_url,
 				logo_url: firstPartyClient.logo_url,
-				redirect_uris: [params.redirect_uri],
+				redirect_uris: redirectUris,
 				status: "active",
 			};
 		}

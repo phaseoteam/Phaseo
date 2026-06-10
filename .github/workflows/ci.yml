@@ -381,9 +381,12 @@ jobs:
     cli:
         name: CLI package
         runs-on: ubuntu-latest
+        needs: sdk-gen
         if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         steps:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                  persist-credentials: false
 
             - name: Setup pnpm
               uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288

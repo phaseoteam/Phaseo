@@ -264,6 +264,17 @@ async function handleUpdatePreset(req: Request) {
 			const name = normalizePresetName(body.name);
 			const nameError = validatePresetName(name);
 			if (nameError) return json({ error: "bad_request", message: nameError }, 400, { "Cache-Control": "no-store" });
+			const { data: duplicate, error: duplicateError } = await getSupabaseAdmin()
+				.from("presets")
+				.select("id")
+				.eq("workspace_id", auth.value.workspaceId)
+				.eq("name", name)
+				.neq("id", existing.id)
+				.maybeSingle();
+			if (duplicateError) throw new Error(duplicateError.message || "Failed to check preset name");
+			if (duplicate) {
+				return json({ error: "conflict", message: `Preset "${name}" already exists in this workspace` }, 409, { "Cache-Control": "no-store" });
+			}
 			updatePayload.name = name;
 		}
 		if (typeof body.slug === "string") updatePayload.slug = body.slug.trim() || null;
