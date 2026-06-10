@@ -477,10 +477,16 @@ export async function rotateRefreshToken(
 		return { ok: false, reason: "invalid_grant" };
 	}
 
-	await supabase
+	const rotation = await supabase
 		.from("oauth_refresh_tokens")
 		.update({ revoked_at: new Date().toISOString(), last_used_at: new Date().toISOString() })
-		.eq("id", data.id);
+		.eq("id", data.id)
+		.is("revoked_at", null)
+		.select("id")
+		.maybeSingle();
+	if (rotation.error || !rotation.data) {
+		return { ok: false, reason: "invalid_grant" };
+	}
 
 	return {
 		ok: true,

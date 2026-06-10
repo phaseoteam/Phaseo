@@ -489,6 +489,21 @@ app.patch("/:clientId", async (c) => {
 			return c.json({ error: allowedScopes.message }, 400);
 		}
 
+		const { data: existingApp, error: fetchError } = await supabase
+			.from("oauth_app_metadata")
+			.select("client_id")
+			.eq("client_id", clientId)
+			.eq("workspace_id", authCtx.workspaceId)
+			.maybeSingle();
+
+		if (fetchError) {
+			console.error("Error loading OAuth metadata:", fetchError);
+			return c.json({ error: "Failed to update OAuth app" }, 500);
+		}
+		if (!existingApp) {
+			return c.json({ error: "OAuth app not found" }, 404);
+		}
+
 		// If updating redirect URIs, update in Supabase OAuth client
 		if (updates.redirect_uris) {
 			const { error: updateError } = await oauthAdmin.updateClient(clientId, {

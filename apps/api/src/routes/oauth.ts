@@ -379,11 +379,15 @@ oauthRouter.post(
 			if (data.status === "denied") return oauthError("access_denied", "The user denied this device request");
 			if (data.status !== "approved") return oauthError("authorization_pending", "Authorization is still pending");
 			if (data.consumed_at) return oauthError("invalid_grant", "Device code has already been consumed");
-			await supabase
+			const consume = await supabase
 				.from("oauth_device_codes")
 				.update({ consumed_at: new Date().toISOString() })
 				.eq("id", data.id)
-				.is("consumed_at", null);
+				.is("consumed_at", null)
+				.select("id")
+				.maybeSingle();
+			if (consume.error) return oauthError("server_error", consume.error.message, 500);
+			if (!consume.data) return oauthError("invalid_grant", "Device code has already been consumed");
 			return json(
 				await issueTokenPair({
 					userId: String(data.user_id),
@@ -431,11 +435,15 @@ oauthRouter.post(
 			}))) {
 				return oauthError("invalid_grant", "PKCE verification failed");
 			}
-			await supabase
+			const consume = await supabase
 				.from("oauth_authorization_codes")
 				.update({ used_at: new Date().toISOString() })
 				.eq("id", data.id)
-				.is("used_at", null);
+				.is("used_at", null)
+				.select("id")
+				.maybeSingle();
+			if (consume.error) return oauthError("server_error", consume.error.message, 500);
+			if (!consume.data) return oauthError("invalid_grant", "Authorization code is invalid or expired");
 			return json(
 				await issueTokenPair({
 					userId: String(data.user_id),
