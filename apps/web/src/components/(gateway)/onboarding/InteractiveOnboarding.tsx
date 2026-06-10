@@ -911,7 +911,7 @@ export default function InteractiveOnboarding({
 												type="button"
 												onClick={async () => {
 													await saveProgress("request");
-													finish("completed");
+													await finish("completed");
 												}}
 												disabled={isSaving || isStreamingResponse}
 											>

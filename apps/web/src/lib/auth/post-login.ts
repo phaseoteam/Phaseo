@@ -535,10 +535,20 @@ export async function finalizePostLogin(
 		});
 	}
 
-	const onboardingComplete = await hasCompletedOnboarding({
-		supabaseAdmin,
-		userId: user.id,
-	});
+	let onboardingComplete: boolean | null = null;
+	try {
+		onboardingComplete = await hasCompletedOnboarding({
+			supabaseAdmin,
+			userId: user.id,
+		});
+	} catch (error) {
+		console.error("Failed to check onboarding status during post-login", {
+			source: input.source,
+			workspaceId,
+			userId: user.id,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
 	const shouldShowOnboarding =
 		input.returnUrl === "/" &&
 		(onboardingComplete === false ||

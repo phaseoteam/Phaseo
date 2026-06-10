@@ -136,15 +136,24 @@ export async function createOnboardingApiKeyAction(input: {
 	if (!workspaceId) throw new Error("No personal workspace found");
 
 	const key = await createApiKeyAction(name, user.id, workspaceId, JSON.stringify([]));
-	await mergeUserOnboardingState({
-		workspaceId,
-		selectedModelId: input.selectedModelId ?? null,
-		createdKeyId: key.id ?? null,
-		selectedKeyId: key.id ?? null,
-		keyPrefix: key.prefix ?? null,
-		completedSteps: ["api-key"],
-		status: "started",
-	});
+	try {
+		await mergeUserOnboardingState({
+			workspaceId,
+			selectedModelId: input.selectedModelId ?? null,
+			createdKeyId: key.id ?? null,
+			selectedKeyId: key.id ?? null,
+			keyPrefix: key.prefix ?? null,
+			completedSteps: ["api-key"],
+			status: "started",
+		});
+	} catch (error) {
+		console.error("Failed to save onboarding state after API key creation", {
+			userId: user.id,
+			workspaceId,
+			keyId: key.id,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
 
 	return { ...key, workspaceId };
 }
