@@ -78,7 +78,7 @@ app.use("*", async (c, next) => {
 // Validation schemas
 const createOAuthClientSchema = z.object({
 	name: z.string().min(3).max(100),
-	client_type: z.enum(["public", "confidential"]).optional(),
+	client_type: z.enum(["public", "confidential"]).default("confidential"),
 	allowed_scopes: z.array(z.string().trim().min(1)).optional(),
 	description: z.string().optional(),
 	homepage_url: z.string().url().optional(),
@@ -299,7 +299,7 @@ app.post("/", async (c) => {
 
 		const input = parsed.data;
 		const createdBy = authCtx.userId ?? await resolveCreatorUserId(authCtx.workspaceId);
-		const clientType = input.client_type ?? "confidential";
+		const clientType = input.client_type;
 		const allowedScopes = resolveAllowedScopes(input.allowed_scopes);
 		if (allowedScopes.ok === false) {
 			return c.json({ error: allowedScopes.message }, 400);

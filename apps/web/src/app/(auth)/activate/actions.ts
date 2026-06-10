@@ -2,14 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-
-function apiBaseUrl(): string {
-	return (
-		process.env.NEXT_PUBLIC_API_URL ??
-		process.env.NEXT_PUBLIC_GATEWAY_API_URL?.replace(/\/v1\/?$/, "") ??
-		"https://api.phaseo.app"
-	).replace(/\/+$/, "");
-}
+import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 
 async function callDeviceActivation(body: Record<string, unknown>) {
 	const supabase = await createClient();

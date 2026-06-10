@@ -1,14 +1,7 @@
 "use server";
 
+import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 import { createClient } from "@/utils/supabase/server";
-
-function apiBaseUrl(): string {
-	return (
-		process.env.NEXT_PUBLIC_API_URL ??
-		process.env.NEXT_PUBLIC_GATEWAY_API_URL?.replace(/\/v1\/?$/, "") ??
-		"https://api.phaseo.app"
-	).replace(/\/+$/, "");
-}
 
 /**
  * OAuth Consent Server Actions
@@ -226,7 +219,10 @@ export async function approveAuthorizationAction(
 			},
 		};
 	} catch (error: any) {
-		console.error("Error approving authorization:", error);
+		console.error("oauth_consent_approve_authorization_failed", {
+			operation: "approveAuthorizationAction",
+			error,
+		});
 		return { error: error.message || "Failed to approve authorization" };
 	}
 }
@@ -290,7 +286,10 @@ export async function denyAuthorizationAction(input: {
 			},
 		};
 	} catch (error: any) {
-		console.error("Error denying authorization:", error);
+		console.error("oauth_consent_deny_authorization_failed", {
+			operation: "denyAuthorizationAction",
+			error,
+		});
 		return { error: error.message || "Failed to deny authorization" };
 	}
 }
@@ -332,7 +331,10 @@ export async function revokeAuthorizationAction(
 
 		return { data: {} };
 	} catch (error: any) {
-		console.error("Error revoking authorization:", error);
+		console.error("oauth_consent_revoke_authorization_failed", {
+			operation: "revokeAuthorizationAction",
+			error,
+		});
 		return { error: error.message || "Failed to revoke authorization" };
 	}
 }

@@ -102,6 +102,8 @@ create table if not exists public.oauth_device_codes (
   scopes text[] not null default '{}'::text[],
   status text not null default 'pending'
     check (status in ('pending', 'approved', 'denied', 'expired')),
+  constraint ck_oauth_device_codes_approved_user_workspace
+    check (status <> 'approved' or (user_id is not null and workspace_id is not null)),
   interval_seconds integer not null default 5,
   expires_at timestamptz not null,
   approved_at timestamptz,

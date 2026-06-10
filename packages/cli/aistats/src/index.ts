@@ -839,7 +839,9 @@ async function login(flags: Record<string, string | boolean>) {
 	const json = flagBool(flags, "json");
 	const method = await chooseLoginMethod(flags, json);
 	if (json && method === "browser") {
-		throw new Error("Browser login is not supported with --json. Use --method device instead.");
+		throw new Error(
+			"Browser login is interactive and requires user action in the browser, so it cannot produce immediate JSON output with --json. Use --method device instead.",
+		);
 	}
 	if (method === "browser") {
 		return loginWithBrowser(apiRoot, flags);

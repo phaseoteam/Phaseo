@@ -330,7 +330,6 @@ export default function ConsentForm({
 				authorization_id: authorizationId,
 				client_id: clientId,
 				workspace_id: primaryTeamId,
-				primary_workspace_id: primaryTeamId,
 				workspace_ids: selectedTeamIds,
 				scopes: requestedScopes,
 				redirect_uri: redirectUri,
