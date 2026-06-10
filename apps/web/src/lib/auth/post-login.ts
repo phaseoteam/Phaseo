@@ -36,6 +36,18 @@ type PersonalWorkspaceProvisionResult = {
 	createdPersonalTeam: boolean;
 };
 
+export function shouldRedirectToOnboardingAfterLogin(opts: {
+	returnUrl: string;
+	onboardingComplete: boolean | null;
+	createdPersonalTeam: boolean;
+}) {
+	return (
+		opts.returnUrl === "/" &&
+		opts.createdPersonalTeam &&
+		opts.onboardingComplete !== true
+	);
+}
+
 async function hasCompletedOnboarding(opts: {
 	supabaseAdmin: ReturnType<typeof createAdminClient>;
 	userId: string;
@@ -549,10 +561,11 @@ export async function finalizePostLogin(
 			error: error instanceof Error ? error.message : String(error),
 		});
 	}
-	const shouldShowOnboarding =
-		input.returnUrl === "/" &&
-		(onboardingComplete === false ||
-			(onboardingComplete === null && provisionedTeam.createdPersonalTeam));
+	const shouldShowOnboarding = shouldRedirectToOnboardingAfterLogin({
+		returnUrl: input.returnUrl,
+		onboardingComplete,
+		createdPersonalTeam: provisionedTeam.createdPersonalTeam,
+	});
 
 	const redirectPath = shouldShowOnboarding ? "/onboarding" : input.returnUrl;
 

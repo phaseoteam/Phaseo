@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
 	Check,
 	Code2,
@@ -379,6 +380,7 @@ export default function InteractiveOnboarding({
 	const streamTimeoutsRef = React.useRef<number[]>([]);
 	const streamIntervalRef = React.useRef<number | null>(null);
 	const streamStartedAtRef = React.useRef<number | null>(null);
+	const router = useRouter();
 
 	const selectedModel =
 		models.find((model) => model.id === selectedModelId) ?? models[0] ?? null;
@@ -582,6 +584,8 @@ export default function InteractiveOnboarding({
 			toast.success(
 				status === "completed" ? "Onboarding complete" : "Onboarding skipped",
 			);
+			router.replace("/");
+			router.refresh();
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : "Could not save onboarding",
