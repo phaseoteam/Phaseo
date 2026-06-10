@@ -92,6 +92,15 @@ on conflict (id) do update set
   status = excluded.status,
   updated_at = now();
 
+do $$
+begin
+  if to_regclass('public.management_keys') is not null then
+    update public.management_keys
+    set scopes = '["me:read","models:read","providers:read","pricing:read","credits:read","activity:read","analytics:read","generations:read","workspaces:read","workspaces:write","workspaces:delete","keys:read","keys:write","keys:delete","presets:read","presets:write","presets:delete","settings:read","settings:write","guardrails:read","guardrails:write","guardrails:delete","management_keys:read","management_keys:write","management_keys:delete","oauth_clients:read","oauth_clients:write","oauth_clients:delete"]'
+    where coalesce(nullif(btrim(scopes), ''), '[]') = '[]';
+  end if;
+end $$;
+
 create table if not exists public.oauth_device_codes (
   id uuid primary key default gen_random_uuid(),
   device_code_hash text not null unique,
