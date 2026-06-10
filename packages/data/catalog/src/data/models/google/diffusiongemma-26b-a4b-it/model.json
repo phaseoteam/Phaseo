@@ -1,0 +1,163 @@
+{
+  "model_id": "google/diffusiongemma-26b-a4b-it",
+  "organisation_id": "google",
+  "name": "DiffusionGemma 26B A4B IT",
+  "status": "Available",
+  "previous_model_id": "google/gemma-4-26b-a4b",
+  "description": "DiffusionGemma 26B A4B IT is an open-weights multimodal model from Google DeepMind based on the Gemma 4 26B A4B Mixture-of-Experts architecture. It uses discrete diffusion for block-autoregressive text generation and accepts text, image, and video inputs to produce text outputs.",
+  "announced_date": "2026-06-09T00:00:00",
+  "release_date": "2026-06-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Apache 2.0",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "google/diffusiongemma-26b-a4b-it",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/diffusion-gemma-faster-text-generation/"
+    },
+    {
+      "platform": "documentation",
+      "url": "https://ai.google.dev/gemma/docs/diffusiongemma"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 262144
+    },
+    {
+      "name": "canvas_length",
+      "value": 256
+    },
+    {
+      "name": "parameter_count",
+      "value": 25200000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 3800000000
+    },
+    {
+      "name": "expert_count",
+      "value": "8 active / 128 total and 1 shared"
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "2025-01-01T00:00:00"
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "mmlu-pro",
+      "score": 77.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "aime-2026",
+      "score": 69.1,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "livecodebench-v6",
+      "score": 69.1,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "codeforces",
+      "score": 1429,
+      "is_self_reported": true,
+      "other_info": "ELO",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 73.2,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "tau-2-bench",
+      "score": 56.2,
+      "is_self_reported": true,
+      "other_info": "Average over 3",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 11.0,
+      "is_self_reported": true,
+      "other_info": "No tools",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 11.9,
+      "is_self_reported": true,
+      "other_info": "With search",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "big-bench-extra-hard",
+      "score": 47.6,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "mmmlu",
+      "score": 81.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "mmmu-pro",
+      "score": 54.3,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "omnidocbench-1.5",
+      "score": 31.9,
+      "is_self_reported": true,
+      "other_info": "Average edit distance (lower is better)",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "mathvision",
+      "score": 70.5,
+      "is_self_reported": true,
+      "other_info": null,
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "medxpertqa",
+      "score": 49.0,
+      "is_self_reported": true,
+      "other_info": "MM",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    },
+    {
+      "benchmark_id": "openai-mrcr-8-needle-128k",
+      "score": 32.0,
+      "is_self_reported": true,
+      "other_info": "Average",
+      "source_link": "https://huggingface.co/google/diffusiongemma-26B-A4B-it"
+    }
+  ]
+}
