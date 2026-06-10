@@ -1,0 +1,33 @@
+{
+  "model_id": "google/gemini-3.5-live-translate-preview",
+  "organisation_id": "google",
+  "name": "Gemini 3.5 Live Translate Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Gemini 3.5 Live Translate Preview is a Google preview model for low-latency multilingual voice translation workflows, returning translated audio and text in live sessions.",
+  "announced_date": "2026-06-09T00:00:00",
+  "release_date": "2026-06-09T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "audio,text",
+  "api_model_id": "google/gemini-3.5-live-translate-preview",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://developers.googleblog.com/all-the-news-from-the-google-io-2026-developer-keynote/"
+    },
+    {
+      "platform": "guide",
+      "url": "https://ai.google.dev/gemini-api/docs/live-api/live-translate"
+    }
+  ],
+  "details": [
+    {
+      "name": "catalog_note",
+      "value": "Official Gemini docs list this preview model as a Live API speech-to-speech translation model with audio input and translated audio plus transcript output."
+    }
+  ],
+  "benchmarks": []
+}
