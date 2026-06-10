@@ -79,6 +79,8 @@ export type ModelLifecycleInfo = {
   message: string | null;
 };
 
+type DataModelLike = DataModel & { id?: string | null };
+
 type MessageContentPartInput = Record<string, unknown> | string;
 export type VideoOutputAccess = "bytes" | "signed_url" | "both";
 export type VideoInputReference = {
@@ -466,7 +468,7 @@ export class AIStats {
         query: { model_id: normalizedModelId, limit: 1 },
       });
       const models = Array.isArray((payload as { models?: unknown }).models)
-        ? ((payload as { models: DataModel[] }).models ?? [])
+        ? ((payload as { models: DataModelLike[] }).models ?? [])
         : [];
       const model = models.find((entry) => {
         const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
@@ -1216,7 +1218,7 @@ function extractModelIdFromPayload(payload: unknown): string | null {
 }
 
 function toModelLifecycleInfo(
-  model: DataModel & { lifecycle?: Record<string, unknown> | null },
+  model: DataModelLike & { lifecycle?: Record<string, unknown> | null },
   fallbackModelId: string
 ): ModelLifecycleInfo {
   const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
