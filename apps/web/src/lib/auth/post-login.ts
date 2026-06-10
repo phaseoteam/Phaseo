@@ -10,6 +10,7 @@ import {
 } from "@/lib/automations/resend-events";
 import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import type { createClient } from "@/utils/supabase/server";
+import { shouldRedirectToOnboardingAfterLogin } from "@/lib/auth/post-login-onboarding";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -35,6 +36,25 @@ type PersonalWorkspaceProvisionResult = {
 	workspaceId: string;
 	createdPersonalTeam: boolean;
 };
+
+async function hasCompletedOnboarding(opts: {
+	supabaseAdmin: ReturnType<typeof createAdminClient>;
+	userId: string;
+}): Promise<boolean | null> {
+	const { data, error } = await opts.supabaseAdmin
+		.from("users")
+		.select("onboarding_completed_at")
+		.eq("user_id", opts.userId)
+		.maybeSingle();
+
+	if (error) {
+		const message = String(error.message ?? "").toLowerCase();
+		if (message.includes("onboarding_completed_at")) return null;
+		throw new Error(`onboarding_lookup_failed:${error.message}`);
+	}
+
+	return Boolean(data?.onboarding_completed_at);
+}
 
 function makeSlug(name: string) {
 	return name
@@ -516,8 +536,32 @@ export async function finalizePostLogin(
 		});
 	}
 
+	let onboardingComplete: boolean | null = null;
+	if (provisionedTeam.createdPersonalTeam && input.returnUrl === "/") {
+		try {
+			onboardingComplete = await hasCompletedOnboarding({
+				supabaseAdmin,
+				userId: user.id,
+			});
+		} catch (error) {
+			console.error("Failed to check onboarding status during post-login", {
+				source: input.source,
+				workspaceId,
+				userId: user.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
+	const shouldShowOnboarding = shouldRedirectToOnboardingAfterLogin({
+		returnUrl: input.returnUrl,
+		onboardingComplete,
+		createdPersonalTeam: provisionedTeam.createdPersonalTeam,
+	});
+
+	const redirectPath = shouldShowOnboarding ? "/onboarding" : input.returnUrl;
+
 	return {
-		redirectPath: input.returnUrl,
+		redirectPath,
 		workspaceId,
 		userId: user.id,
 		createdPersonalTeam: provisionedTeam.createdPersonalTeam,

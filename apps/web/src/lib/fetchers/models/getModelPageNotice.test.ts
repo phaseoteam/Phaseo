@@ -1,5 +1,6 @@
 export {};
 
+/* eslint-disable no-var */
 var createClient = jest.fn();
 var isFreeRouterModelId = jest.fn();
 var applyHiddenFilter = jest.fn((query: unknown, _includeHidden: boolean) => query);
