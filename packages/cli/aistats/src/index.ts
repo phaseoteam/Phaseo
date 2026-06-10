@@ -905,7 +905,6 @@ async function createKey(flags: Record<string, string | boolean>) {
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
 			disabled: flagBool(flags, "disabled") || undefined,
-			scopes: flagString(flags, "scopes")?.split(",").map((scope) => scope.trim()).filter(Boolean),
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
@@ -935,7 +934,6 @@ async function updateKey(id: string | undefined, flags: Record<string, string | 
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
-			scopes: flagString(flags, "scopes")?.split(",").map((scope) => scope.trim()).filter(Boolean),
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);

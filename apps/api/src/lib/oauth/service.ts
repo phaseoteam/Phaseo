@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { DEFAULT_CLI_OAUTH_CAPABILITIES, parseStoredScopeList } from "@/lib/authz/capabilities";
+import { timingSafeEqual } from "@/routes/auth.helpers";
 import { validateOAuthToken, type JWTClaims } from "./jwt";
 
 const encoder = new TextEncoder();
@@ -148,7 +149,7 @@ export async function verifyClientSecret(
 	if (client.client_type !== "confidential") return true;
 	const normalizedSecret = String(providedSecret ?? "").trim();
 	if (!normalizedSecret || !client.client_secret_hash) return false;
-	return (await hashOAuthSecret(normalizedSecret)) === client.client_secret_hash;
+	return timingSafeEqual(await hashOAuthSecret(normalizedSecret), client.client_secret_hash);
 }
 
 export function createUserCode(): string {

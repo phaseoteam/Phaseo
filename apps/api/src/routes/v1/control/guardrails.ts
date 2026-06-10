@@ -382,6 +382,8 @@ async function handleDeleteGuardrail(req: Request) {
 	const id = parsePathId(new URL(req.url), "guardrails");
 	if (!id) return json({ error: "bad_request", message: "Guardrail id is required" }, 400, { "Cache-Control": "no-store" });
 	try {
+		const guardrail = await findGuardrail(auth.value.workspaceId, id);
+		if (!guardrail) return json({ error: "not_found", message: "Guardrail not found" }, 404, { "Cache-Control": "no-store" });
 		const { error: keyDeleteError } = await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
 		if (keyDeleteError) throw new Error(keyDeleteError.message || "Failed to delete guardrail key assignments");
 		const { error: memberDeleteError } = await getSupabaseAdmin()

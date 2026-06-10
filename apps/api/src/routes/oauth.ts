@@ -315,10 +315,15 @@ oauthRouter.post(
 			);
 		}
 		if (action === "deny") {
-			await supabase
+			const deny = await supabase
 				.from("oauth_device_codes")
 				.update({ status: "denied", denied_at: new Date().toISOString(), user_id: actor.userId })
-				.eq("id", device.id);
+				.eq("id", device.id)
+				.eq("status", "pending")
+				.select("id")
+				.maybeSingle();
+			if (deny.error) return oauthError("server_error", deny.error.message, 500);
+			if (!deny.data) return oauthError("invalid_grant", "Device code is no longer pending");
 			return json({ ok: true }, 200, { "Cache-Control": "no-store" });
 		}
 		if (action !== "approve" || !workspaceId) {
@@ -335,8 +340,7 @@ oauthRouter.post(
 			return oauthError("access_denied", "User is not a member of the selected workspace", 403);
 		}
 		const scopes = Array.isArray(device.scopes) ? device.scopes.map(String) : [];
-		await ensureGrant({ userId: actor.userId, workspaceId, clientId: client.id, scopes });
-		await supabase
+		const approve = await supabase
 			.from("oauth_device_codes")
 			.update({
 				status: "approved",
@@ -345,7 +349,12 @@ oauthRouter.post(
 				workspace_id: workspaceId,
 			})
 			.eq("id", device.id)
-			.eq("status", "pending");
+			.eq("status", "pending")
+			.select("id")
+			.maybeSingle();
+		if (approve.error) return oauthError("server_error", approve.error.message, 500);
+		if (!approve.data) return oauthError("invalid_grant", "Device code is no longer pending");
+		await ensureGrant({ userId: actor.userId, workspaceId, clientId: client.id, scopes });
 		return json({ ok: true }, 200, { "Cache-Control": "no-store" });
 	}),
 );
