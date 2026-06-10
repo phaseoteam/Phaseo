@@ -25,6 +25,24 @@ interface ConsentPageProps {
 	}>;
 }
 
+const FIRST_PARTY_CLIENTS: Record<
+	string,
+	{
+		name: string;
+		description: string;
+		homepage_url: string | null;
+		logo_url: string | null;
+	}
+> = {
+	aistats_cli: {
+		name: "AI Stats CLI",
+		description:
+			"Official first-party AI Stats command line interface for signing in, managing workspaces, and creating keys.",
+		homepage_url: null,
+		logo_url: null,
+	},
+};
+
 function parseRedirectUris(value: unknown): string[] {
 	if (Array.isArray(value)) {
 		return value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
@@ -42,6 +60,18 @@ function parseRedirectUris(value: unknown): string[] {
 		}
 	}
 	return [];
+}
+
+function oauthAppFromClientRow(row: Record<string, any>) {
+	return {
+		client_id: row.client_id ?? row.id ?? null,
+		name: row.name ?? "OAuth Application",
+		description: row.description ?? null,
+		homepage_url: row.homepage_url ?? null,
+		logo_url: row.logo_url ?? null,
+		redirect_uris: parseRedirectUris(row.redirect_uris),
+		status: row.status ?? "active",
+	};
 }
 
 export default function ConsentPage({ searchParams }: ConsentPageProps) {
@@ -195,7 +225,36 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			.eq("status", "active")
 			.single();
 
-		if (appError || !appMetadata) {
+		let resolvedAppMetadata: Record<string, any> | null = appMetadata as Record<string, any> | null;
+		if (appError || !resolvedAppMetadata) {
+			const { data: firstPartyClient } = await supabase
+				.from("oauth_clients")
+				.select("id, name, description, logo_url, homepage_url, redirect_uris, status")
+				.eq("id", params.client_id)
+				.eq("status", "active")
+				.maybeSingle();
+			if (firstPartyClient) {
+				resolvedAppMetadata = oauthAppFromClientRow(firstPartyClient as Record<string, any>);
+			}
+		}
+		if (!resolvedAppMetadata && params.client_id in FIRST_PARTY_CLIENTS) {
+			const firstPartyClient = FIRST_PARTY_CLIENTS[params.client_id];
+			const redirectUris =
+				typeof params.redirect_uri === "string" && params.redirect_uri.trim().length > 0
+					? [params.redirect_uri]
+					: [];
+			resolvedAppMetadata = {
+				client_id: params.client_id,
+				name: firstPartyClient.name,
+				description: firstPartyClient.description,
+				homepage_url: firstPartyClient.homepage_url,
+				logo_url: firstPartyClient.logo_url,
+				redirect_uris: redirectUris,
+				status: "active",
+			};
+		}
+
+		if (!resolvedAppMetadata) {
 			return (
 				<div className="container max-w-2xl mx-auto py-12">
 					<Card className="p-8">
@@ -248,7 +307,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 				</div>
 			);
 		}
-		const registeredRedirectUris = parseRedirectUris((appMetadata as any).redirect_uris);
+		const registeredRedirectUris = parseRedirectUris(resolvedAppMetadata.redirect_uris);
 		if (
 			registeredRedirectUris.length > 0 &&
 			!registeredRedirectUris.includes(params.redirect_uri)
@@ -268,7 +327,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 			);
 		}
 
-		oauthApp = appMetadata;
+		oauthApp = resolvedAppMetadata;
 		resolvedClientId = params.client_id;
 		resolvedRedirectUri = params.redirect_uri;
 		requestedScopes = params.scope
@@ -319,7 +378,7 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		.filter((t): t is { id: string; name: string } => t !== null);
 
 	return (
-		<div className="container max-w-2xl mx-auto py-12">
+		<div className="container max-w-3xl mx-auto py-12">
 			<ConsentForm
 				oauthApp={oauthApp}
 				user={user}

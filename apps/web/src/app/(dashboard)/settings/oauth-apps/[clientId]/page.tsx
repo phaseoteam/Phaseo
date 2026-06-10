@@ -2,10 +2,21 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { AppWindow, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OAuthAppDetailPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppDetailPanel";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "@/components/ui/empty";
+import {
+	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
+	isThirdPartyOAuthEnabled,
+} from "@/lib/oauth/thirdPartyOAuth";
 
 export const metadata = {
 	title: "OAuth App Details - Settings",
@@ -38,6 +49,8 @@ interface OAuthUserDirectoryRow {
 }
 
 export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) {
+	const thirdPartyOAuthEnabled = isThirdPartyOAuthEnabled();
+
 	return (
 		<div className="space-y-6">
 			<div className="flex items-center gap-4">
@@ -53,9 +66,23 @@ export default function OAuthAppDetailPage({ params }: OAuthAppDetailPageProps) 
 					</p>
 				</div>
 			</div>
-			<Suspense fallback={<SettingsSectionFallback />}>
-				<OAuthAppDetailContent params={params} />
-			</Suspense>
+			{thirdPartyOAuthEnabled ? (
+				<Suspense fallback={<SettingsSectionFallback />}>
+					<OAuthAppDetailContent params={params} />
+				</Suspense>
+			) : (
+				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<AppWindow className="h-5 w-5" />
+						</EmptyMedia>
+						<EmptyTitle>OAuth apps are coming soon</EmptyTitle>
+						<EmptyDescription>
+							{THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE}
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			)}
 		</div>
 	);
 }

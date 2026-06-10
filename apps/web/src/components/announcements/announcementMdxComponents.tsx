@@ -2,6 +2,7 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import AnnouncementCounter from "./AnnouncementCounter";
+import CliInstallTabs from "./CliInstallTabs";
 
 type AnnouncementCalloutProps = {
 	title?: string;
@@ -159,4 +160,5 @@ export const announcementMdxComponents = {
 	),
 	Callout: AnnouncementCallout,
 	Counter: AnnouncementCounter,
+	CliInstallTabs,
 };

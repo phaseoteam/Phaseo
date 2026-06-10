@@ -251,6 +251,10 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     apiKeyKid: string | null;
     userId?: string | null;
     internal?: boolean;
+    authMethod?: "api_key" | "oauth";
+    oauthClientId?: string | null;
+    oauthScopes?: string[];
+    scopes?: string[];
 }>> {
     const requestId = generatePublicId();
     const auth = await authenticate(req, { useKvCache: options.useKvCache });
@@ -268,6 +272,10 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             apiKeyKid: auth.apiKeyKid,
             userId: auth.userId ?? null,
             internal: auth.internal,
+            authMethod: auth.authMethod ?? "api_key",
+            oauthClientId: auth.oauthClientId ?? null,
+            oauthScopes: auth.oauthScopes ?? [],
+            scopes: auth.scopes ?? [],
         },
     };
 }
@@ -280,6 +288,10 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     apiKeyKid: string | null;
     userId?: string | null;
     internal?: boolean;
+    authMethod?: "api_key" | "oauth";
+    oauthClientId?: string | null;
+    oauthScopes?: string[];
+    scopes?: string[];
 }>> {
     const requestId = generatePublicId();
     const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
@@ -297,6 +309,10 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
             apiKeyKid: auth.apiKeyKid,
             userId: auth.userId ?? null,
             internal: auth.internal,
+            authMethod: auth.authMethod ?? "api_key",
+            oauthClientId: auth.oauthClientId ?? null,
+            oauthScopes: auth.oauthScopes ?? [],
+            scopes: auth.scopes ?? [],
         },
     };
 }

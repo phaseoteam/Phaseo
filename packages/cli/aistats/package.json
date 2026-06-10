@@ -1,0 +1,42 @@
+{
+	"name": "@ai-stats/cli",
+	"description": "Official AI Stats command line interface",
+	"version": "0.1.0",
+	"type": "module",
+	"private": false,
+	"license": "MIT",
+	"bin": {
+		"aistats": "./dist/index.js"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"sync:capabilities": "node ./scripts/sync-capabilities.mjs",
+		"build": "pnpm run sync:capabilities && tsc -p tsconfig.json",
+		"test": "pnpm run sync:capabilities && node --test --import tsx tests/*.test.ts",
+		"prepublishOnly": "pnpm run build"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"@types/node": "^25.6.0",
+		"tsx": "^4.21.0",
+		"typescript": "^6.0.3"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/AI-Stats/AI-Stats.git",
+		"directory": "packages/cli/aistats"
+	}
+}

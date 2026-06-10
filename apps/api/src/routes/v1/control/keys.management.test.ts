@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
 	workspaceRows: [] as Array<Record<string, unknown> | null>,
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	insertPayloads: [] as Array<Record<string, unknown>>,
+	membershipRows: [] as Array<Record<string, unknown> | null>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
 	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string) => undefined),
@@ -36,7 +37,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 function buildKeysSupabaseMock() {
 	return {
 		from(table: string) {
-			if (table !== "keys" && table !== "workspaces" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
+			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
 				throw new Error(`Unexpected table: ${table}`);
 			}
 
@@ -58,6 +59,21 @@ function buildKeysSupabaseMock() {
 							maybeSingle: async () => ({
 								data: state.workspaceRows.shift() ?? null,
 								error: null,
+							}),
+						}),
+					}),
+				};
+			}
+
+			if (table === "workspace_members") {
+				return {
+					select: () => ({
+						eq: () => ({
+							eq: () => ({
+								maybeSingle: async () => ({
+									data: state.membershipRows.shift() ?? null,
+									error: null,
+								}),
 							}),
 						}),
 					}),
@@ -134,12 +150,6 @@ vi.mock("@/routes/auth.helpers", () => ({
 		prefix: "aistats_v1_sk_kid_123",
 	})),
 	hmacSecret: vi.fn(async () => "hashed_secret"),
-	normalizeScopeInput: vi.fn((scopes: unknown) => {
-		if (scopes === undefined) return { ok: true, value: "[]" };
-		if (Array.isArray(scopes)) return { ok: true, value: JSON.stringify(scopes.map(String)) };
-		if (typeof scopes === "string") return { ok: true, value: scopes };
-		return { ok: false, message: "invalid scopes" };
-	}),
 	timingSafeEqual: vi.fn((a: string, b: string) => a === b),
 }));
 
@@ -164,6 +174,7 @@ describe("management key routes", () => {
 		};
 		state.keyRows.length = 0;
 		state.workspaceRows.length = 0;
+		state.membershipRows.length = 0;
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.deleteFilters.length = 0;
@@ -237,7 +248,6 @@ describe("management key routes", () => {
 				name: "Analytics Key",
 				limit: 5,
 				limit_reset: "weekly",
-				scopes: ["responses"],
 				expires_at: "2027-12-31T23:59:59Z",
 			}),
 		});
@@ -248,6 +258,7 @@ describe("management key routes", () => {
 		expect(state.insertPayloads[0]).toMatchObject({
 			workspace_id: "ws_1",
 			name: "Analytics Key",
+			scopes: "[]",
 			weekly_limit_cost_nanos: 5_000_000_000,
 			daily_limit_cost_nanos: 0,
 			monthly_limit_cost_nanos: 0,
@@ -257,6 +268,96 @@ describe("management key routes", () => {
 			limit: 5,
 			limit_reset: "weekly",
 			key: "aistats_v1_sk_kid_123_secret_123",
+		});
+	});
+
+	it("blocks OAuth workspace members from creating API keys", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1",
+				apiKeyId: "oauth_1",
+				internal: false,
+				authMethod: "oauth",
+				userId: "user_member",
+				scopes: ["keys:write"],
+			} as any,
+		};
+		state.membershipRows.push({ role: "member" });
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Member Key" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(403);
+		expect(body).toMatchObject({
+			error: "forbidden",
+			message: "Workspace owner or admin role is required",
+		});
+		expect(state.insertPayloads).toEqual([]);
+	});
+
+	it("blocks OAuth workspace members from reading individual API keys", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1",
+				apiKeyId: "oauth_1",
+				internal: false,
+				authMethod: "oauth",
+				userId: "user_member",
+				scopes: ["keys:read"],
+			} as any,
+		};
+		state.membershipRows.push({ role: "member" });
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/hash_1");
+		const body = await response.json();
+
+		expect(response.status).toBe(403);
+		expect(body).toMatchObject({
+			error: "forbidden",
+			message: "Workspace owner or admin role is required",
+		});
+		expect(state.keyRows).toEqual([]);
+	});
+
+	it("allows OAuth workspace admins to read individual API keys", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1",
+				apiKeyId: "oauth_1",
+				internal: false,
+				authMethod: "oauth",
+				userId: "user_admin",
+				scopes: ["keys:read"],
+			} as any,
+		};
+		state.membershipRows.push({ role: "admin" });
+		state.keyRows.push({
+			id: "key_1",
+			hash: "hash_1",
+			workspace_id: "ws_1",
+			name: "Primary Key",
+			prefix: "aistats_v1_sk_abc",
+			status: "active",
+		});
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/hash_1");
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.data).toMatchObject({
+			id: "key_1",
+			hash: "hash_1",
+			name: "Primary Key",
 		});
 	});
 

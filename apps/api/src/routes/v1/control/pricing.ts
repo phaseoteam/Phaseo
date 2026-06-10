@@ -7,8 +7,10 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime, cacheHeaders } from "@/routes/utils";
 import type { PriceCard } from "@pipeline/pricing/types";
+import { requireCapability } from "./route-helpers";
 
 type PricingModel = {
     provider: string;
@@ -45,6 +47,8 @@ async function handlePricingModels(req: Request) {
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
+    const scopeError = requireCapability(auth.value, CAPABILITIES.PRICING_READ);
+    if (scopeError) return scopeError;
 
     try {
         const supabase = getSupabaseAdmin();
@@ -207,6 +211,8 @@ async function handlePricingCalculate(req: Request) {
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
+    const scopeError = requireCapability(auth.value, CAPABILITIES.PRICING_READ);
+    if (scopeError) return scopeError;
 
     try {
         const body = await req.json();

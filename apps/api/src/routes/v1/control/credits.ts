@@ -6,7 +6,9 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
+import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 250;
@@ -59,6 +61,8 @@ async function handleCredits(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.CREDITS_READ);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const teamScope = resolveScopedTeamId({
@@ -70,6 +74,8 @@ async function handleCredits(req: Request) {
 		return teamScope.response;
 	}
 	const workspaceId = teamScope.workspaceId;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, workspaceId, ["owner", "admin", "member"]);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();
@@ -135,6 +141,8 @@ async function handleActivity(req: Request) {
 	if (!auth.ok) {
 		return (auth as GuardErr).response;
 	}
+	const scopeError = requireCapability(auth.value, CAPABILITIES.ACTIVITY_READ);
+	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
 	const teamScope = resolveScopedTeamId({
@@ -146,6 +154,8 @@ async function handleActivity(req: Request) {
 		return teamScope.response;
 	}
 	const workspaceId = teamScope.workspaceId;
+	const roleError = await requireOAuthWorkspaceRole(auth.value, workspaceId, ["owner", "admin", "member"]);
+	if (roleError) return roleError;
 	const days = parseInt(url.searchParams.get("days") || "30", 10);
 	const limit = parsePaginationParam(url.searchParams.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
 	const offset = parseOffsetParam(url.searchParams.get("offset"));

@@ -5,8 +5,10 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { fetchGatewayContext } from "@pipeline/before/context";
 import { json, withRuntime, cacheHeaders } from "@/routes/utils";
+import { requireCapability } from "./route-helpers";
 import {
     fetchCatalogue,
     type CatalogueModel,
@@ -454,6 +456,8 @@ export async function handleModels(req: Request) {
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
+    const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
+    if (scopeError) return scopeError;
 
     const requestedFormat = parseFeedFormat(url);
     if (requestedFormat.ok === false) {

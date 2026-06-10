@@ -329,17 +329,18 @@ describe("management workspace routes", () => {
 	});
 
 	it("blocks renaming the personal workspace", async () => {
-		state.workspaces.push(
-			{ owner_user_id: "user_1" },
-			{
-				id: "ws_personal",
-				name: "Personal",
-				slug: "personal",
-				owner_user_id: "user_1",
-				created_at: "2026-04-28T12:00:00Z",
-				updated_at: "2026-04-28T12:00:00Z",
-			},
-		);
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_personal", apiKeyId: "mgmt_1", internal: false },
+		};
+		state.workspaces.push({
+			id: "ws_personal",
+			name: "Personal",
+			slug: "personal",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
 		state.users.push({ default_workspace_id: "ws_personal" });
 
 		const { workspacesRoutes } = await import("./workspaces");
@@ -355,17 +356,18 @@ describe("management workspace routes", () => {
 	});
 
 	it("blocks deleting the default workspace", async () => {
-		state.workspaces.push(
-			{ owner_user_id: "user_1" },
-			{
-				id: "ws_personal",
-				name: "Personal",
-				slug: "personal",
-				owner_user_id: "user_1",
-				created_at: "2026-04-28T12:00:00Z",
-				updated_at: "2026-04-28T12:00:00Z",
-			},
-		);
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_personal", apiKeyId: "mgmt_1", internal: false },
+		};
+		state.workspaces.push({
+			id: "ws_personal",
+			name: "Personal",
+			slug: "personal",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
 		state.users.push({ default_workspace_id: "ws_personal" });
 
 		const { workspacesRoutes } = await import("./workspaces");
@@ -380,17 +382,18 @@ describe("management workspace routes", () => {
 	});
 
 	it("blocks deleting a workspace that still has active keys", async () => {
-		state.workspaces.push(
-			{ owner_user_id: "user_1" },
-			{
-				id: "ws_prod",
-				name: "Production",
-				slug: "production",
-				owner_user_id: "user_1",
-				created_at: "2026-04-28T12:00:00Z",
-				updated_at: "2026-04-28T12:00:00Z",
-			},
-		);
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false },
+		};
+		state.workspaces.push({
+			id: "ws_prod",
+			name: "Production",
+			slug: "production",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
 		state.users.push({ default_workspace_id: "ws_personal" });
 		state.keyCount = 2;
 
@@ -406,17 +409,18 @@ describe("management workspace routes", () => {
 	});
 
 	it("deletes a non-default workspace after dependent cleanup", async () => {
-		state.workspaces.push(
-			{ owner_user_id: "user_1" },
-			{
-				id: "ws_prod",
-				name: "Production",
-				slug: "production",
-				owner_user_id: "user_1",
-				created_at: "2026-04-28T12:00:00Z",
-				updated_at: "2026-04-28T12:00:00Z",
-			},
-		);
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false },
+		};
+		state.workspaces.push({
+			id: "ws_prod",
+			name: "Production",
+			slug: "production",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
 		state.users.push({ default_workspace_id: "ws_personal" });
 
 		const { workspacesRoutes } = await import("./workspaces");
@@ -437,5 +441,29 @@ describe("management workspace routes", () => {
 			{ table: "workspaces", column: "id", value: "ws_prod" },
 			{ table: "workspaces", column: "owner_user_id", value: "user_1" },
 		]);
+	});
+
+	it("does not allow accessing a different workspace by slug even when the owner matches", async () => {
+		state.workspaces.push({
+			id: "ws_current",
+			name: "Current",
+			slug: "current",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_current", apiKeyId: "mgmt_1", internal: false },
+		};
+
+		const { workspacesRoutes } = await import("./workspaces");
+		const response = await workspacesRoutes.request("https://example.com/production", {
+			method: "GET",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(404);
+		expect(body.message).toBe("Workspace not found");
 	});
 });

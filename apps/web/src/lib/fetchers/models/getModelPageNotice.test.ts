@@ -2,7 +2,7 @@ export {};
 
 var createClient = jest.fn();
 var isFreeRouterModelId = jest.fn();
-var applyHiddenFilter = jest.fn((query) => query);
+var applyHiddenFilter = jest.fn((query: unknown, _includeHidden: boolean) => query);
 
 jest.mock("next/cache", () => ({
 	cacheLife: jest.fn(),
@@ -10,15 +10,16 @@ jest.mock("next/cache", () => ({
 }));
 
 jest.mock("@/utils/supabase/client", () => ({
-	createClient: (...args: unknown[]) => createClient(...args),
+	createClient: () => createClient(),
 }));
 
 jest.mock("@/lib/models/freeRouter", () => ({
-	isFreeRouterModelId: (...args: unknown[]) => isFreeRouterModelId(...args),
+	isFreeRouterModelId: (modelId: string) => isFreeRouterModelId(modelId),
 }));
 
 jest.mock("./visibility", () => ({
-	applyHiddenFilter: (...args: unknown[]) => applyHiddenFilter(...args),
+	applyHiddenFilter: (query: unknown, includeHidden: boolean) =>
+		applyHiddenFilter(query, includeHidden),
 }));
 
 import {
