@@ -294,6 +294,7 @@ authRouter.post(
 					hash,
 					prefix: generated.prefix,
 					status: "active",
+					scopes: "[]",
 					created_by: oauthUserId,
 					daily_limit_requests: 0,
 					weekly_limit_requests: 0,

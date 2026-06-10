@@ -455,6 +455,8 @@ async function handleCreateKey(req: Request) {
 		internal: auth.value.internal,
 	});
 	if (workspaceScope.ok === false) return workspaceScope.response;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceScope.workspaceId);
+	if (roleError) return roleError;
 
 	const name = String(body.name ?? "").trim();
 	if (!name) {
@@ -625,6 +627,8 @@ async function handleUpdateKey(req: Request) {
 	}
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();
@@ -712,6 +716,8 @@ async function handleDeleteKey(req: Request) {
 	if (!keyId) {
 		return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();

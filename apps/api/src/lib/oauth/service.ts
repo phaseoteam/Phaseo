@@ -429,7 +429,7 @@ export async function issueTokenPair(input: TokenIssueInput) {
 	const refreshHash = await hashOAuthSecret(refreshToken);
 	const refreshExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString();
 	const supabase = getSupabaseAdmin();
-	await supabase.from("oauth_refresh_tokens").insert({
+	const { error: refreshInsertError } = await supabase.from("oauth_refresh_tokens").insert({
 		token_hash: refreshHash,
 		user_id: input.userId,
 		workspace_id: input.workspaceId,
@@ -437,6 +437,9 @@ export async function issueTokenPair(input: TokenIssueInput) {
 		scopes: input.scopes,
 		expires_at: refreshExpiresAt,
 	});
+	if (refreshInsertError) {
+		throw new Error(refreshInsertError.message || "Failed to persist OAuth refresh token");
+	}
 
 	return {
 		access_token: accessToken,

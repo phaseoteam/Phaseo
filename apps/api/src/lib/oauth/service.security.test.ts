@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
 	rotationRow: null as Record<string, unknown> | null,
 	fromCalls: [] as string[],
 	insertedRefreshTokens: [] as Array<Record<string, unknown>>,
+	refreshInsertError: null as { message?: string } | null,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -41,7 +42,7 @@ vi.mock("@/runtime/env", () => ({
 					}),
 					insert: async (payload: Record<string, unknown>) => {
 						state.insertedRefreshTokens.push(payload);
-						return { error: null };
+						return { error: state.refreshInsertError };
 					},
 				};
 			}
@@ -101,6 +102,7 @@ describe("OAuth refresh rotation security", () => {
 			revoked_at: null,
 		};
 		state.rotationRow = null;
+		state.refreshInsertError = null;
 		state.fromCalls.length = 0;
 		state.insertedRefreshTokens.length = 0;
 		vi.resetModules();
@@ -121,5 +123,22 @@ describe("OAuth refresh rotation security", () => {
 			reason: "invalid_grant",
 		});
 		expect(state.insertedRefreshTokens).toEqual([]);
+	});
+
+	it("fails token issuance when refresh-token persistence fails", async () => {
+		state.refreshInsertError = { message: "insert failed" };
+		const { issueTokenPair } = await import("./service");
+
+		await expect(
+			issueTokenPair({
+				userId: "user_1",
+				workspaceId: "ws_1",
+				clientId: "aistats_cli",
+				scopes: ["openid"],
+				email: "user@example.com",
+				name: "Test User",
+			}),
+		).rejects.toThrow("insert failed");
+		expect(state.insertedRefreshTokens).toHaveLength(1);
 	});
 });

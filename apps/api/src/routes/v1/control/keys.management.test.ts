@@ -18,6 +18,7 @@ const state = vi.hoisted(() => ({
 	workspaceRows: [] as Array<Record<string, unknown> | null>,
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	insertPayloads: [] as Array<Record<string, unknown>>,
+	membershipRows: [] as Array<Record<string, unknown> | null>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
 	deleteFilters: [] as Array<{ table: string; column: string; value: unknown }>,
 	enforceWorkspaceKeyLimit: vi.fn(async (_workspaceId: string) => undefined),
@@ -36,7 +37,7 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 function buildKeysSupabaseMock() {
 	return {
 		from(table: string) {
-			if (table !== "keys" && table !== "workspaces" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
+			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
 				throw new Error(`Unexpected table: ${table}`);
 			}
 
@@ -58,6 +59,21 @@ function buildKeysSupabaseMock() {
 							maybeSingle: async () => ({
 								data: state.workspaceRows.shift() ?? null,
 								error: null,
+							}),
+						}),
+					}),
+				};
+			}
+
+			if (table === "workspace_members") {
+				return {
+					select: () => ({
+						eq: () => ({
+							eq: () => ({
+								maybeSingle: async () => ({
+									data: state.membershipRows.shift() ?? null,
+									error: null,
+								}),
 							}),
 						}),
 					}),
@@ -158,6 +174,7 @@ describe("management key routes", () => {
 		};
 		state.keyRows.length = 0;
 		state.workspaceRows.length = 0;
+		state.membershipRows.length = 0;
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
 		state.deleteFilters.length = 0;
@@ -252,6 +269,36 @@ describe("management key routes", () => {
 			limit_reset: "weekly",
 			key: "aistats_v1_sk_kid_123_secret_123",
 		});
+	});
+
+	it("blocks OAuth workspace members from creating API keys", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1",
+				apiKeyId: "oauth_1",
+				internal: false,
+				authMethod: "oauth",
+				userId: "user_member",
+				scopes: ["keys:write"],
+			} as any,
+		};
+		state.membershipRows.push({ role: "member" });
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Member Key" }),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(403);
+		expect(body).toMatchObject({
+			error: "forbidden",
+			message: "Workspace owner or admin role is required",
+		});
+		expect(state.insertPayloads).toEqual([]);
 	});
 
 	it("updates a key by hash and remaps limit_reset using the existing limit", async () => {
