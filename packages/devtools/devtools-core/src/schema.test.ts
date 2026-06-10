@@ -353,10 +353,10 @@ describe("DevToolsEntrySchema", () => {
     expect(parsed.response?.status).toBe("ok");
   });
 
-  it("accepts team-model discovery entries", () => {
+  it("accepts model discovery entries", () => {
     const parsed = DevToolsEntrySchema.parse({
-      id: "entry_team_models_123",
-      type: "models.team",
+      id: "entry_models_123",
+      type: "models.list",
       timestamp: Date.now(),
       duration_ms: 19,
       request: {
@@ -382,7 +382,7 @@ describe("DevToolsEntrySchema", () => {
       },
     });
 
-    expect(parsed.type).toBe("models.team");
+    expect(parsed.type).toBe("models.list");
     expect(parsed.response?.models[0].id).toBe("openai/gpt-5-mini");
   });
 

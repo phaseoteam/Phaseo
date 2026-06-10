@@ -16,7 +16,7 @@ vi.mock("@pipeline/before/context", () => ({
     fetchGatewayContext: (...args: any[]) => fetchGatewayContextMock(...args),
 }));
 
-import { handleModels } from "./models";
+import { handleModels, handleMyModels } from "./models";
 
 function buildCatalogueModel(overrides: Record<string, unknown> = {}) {
     return {
@@ -365,5 +365,67 @@ describe("handleModels", () => {
         expect(fetchCatalogueMock).toHaveBeenCalledWith(
             expect.objectContaining({ statuses: ["active", "retired"] }),
         );
+    });
+
+    it("filters the returned catalogue by model_id", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel(),
+            buildCatalogueModel({
+                model_id: "anthropic/claude-sonnet-4",
+                name: "Claude Sonnet 4",
+                organisation_id: "anthropic",
+                organisation_name: "Anthropic",
+            }),
+        ]);
+
+        const response = await handleModels(
+            new Request("https://api.example.com/?model_id=anthropic/claude-sonnet-4"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            total: 1,
+            models: [
+                {
+                    model_id: "anthropic/claude-sonnet-4",
+                    name: "Claude Sonnet 4",
+                },
+            ],
+        });
+    });
+
+    it("returns the shared gateway model catalogue from /v1/models", async () => {
+        const response = await handleModels(
+            new Request("https://api.example.com/v1/models"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            privacy_scope: "shared",
+            total: 1,
+            models: [
+                {
+                    model_id: "openai/gpt-4o-mini",
+                    name: "GPT-4o Mini",
+                },
+            ],
+        });
+    });
+
+    it("returns a guarded 501 placeholder from /v1/models/me", async () => {
+        const response = await handleMyModels(
+            new Request("https://api.example.com/v1/models/me"),
+        );
+
+        expect(response.status).toBe(501);
+        expect(fetchCatalogueMock).not.toHaveBeenCalled();
+        await expect(response.json()).resolves.toMatchObject({
+            status_code: 501,
+            error: "not_implemented",
+        });
     });
 });

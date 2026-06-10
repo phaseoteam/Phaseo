@@ -12,7 +12,7 @@
       "price_per_unit": 10,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-09T00:00:00Z"
@@ -24,7 +24,7 @@
       "price_per_unit": 1,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-09T00:00:00Z"
@@ -36,7 +36,7 @@
       "price_per_unit": 50,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-09T00:00:00Z"
@@ -48,7 +48,7 @@
       "price_per_unit": 12.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [
         {
           "path": "cache_ttl",
@@ -68,7 +68,7 @@
       "price_per_unit": 20,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [
         {
           "path": "cache_ttl",
@@ -88,7 +88,7 @@
       "price_per_unit": 5,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-09T00:00:00Z"
@@ -100,7 +100,7 @@
       "price_per_unit": 25,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Provisional scaffold from a $10 per million input and $50 per million output baseline, with current Claude Platform on AWS cache and batch multipliers applied pending provider confirmation.",
+      "note": null,
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-09T00:00:00Z"

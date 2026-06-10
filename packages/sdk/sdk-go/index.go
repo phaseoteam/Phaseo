@@ -349,7 +349,7 @@ func (c *AIStats) fetchModelLifecycle(
 	_ context.Context,
 	modelID string,
 ) (*ModelLifecycleInfo, error) {
-	payload, err := gen.ListDataModels(
+	payload, err := gen.ListModels(
 		c.raw,
 		nil,
 		map[string]string{
@@ -381,13 +381,6 @@ func (c *AIStats) fetchModelLifecycle(
 func (c *AIStats) GetModels(_ context.Context, query map[string]string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "models.list", query, false, func() (map[string]interface{}, error) {
 		return gen.ListModels(c.raw, nil, query, nil, nil)
-	})
-}
-
-// ListTeamModels calls /gateway/models/me.
-func (c *AIStats) ListTeamModels(_ context.Context, query map[string]string) (interface{}, error) {
-	return withLifecycleAndTelemetry(c, context.Background(), "models.team", query, false, func() (interface{}, error) {
-		return gen.ListTeamModels(c.raw, nil, query, nil, nil)
 	})
 }
 

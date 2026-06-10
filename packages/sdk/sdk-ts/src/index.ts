@@ -79,6 +79,8 @@ export type ModelLifecycleInfo = {
   message: string | null;
 };
 
+type DataModelLike = DataModel & { id?: string | null };
+
 type MessageContentPartInput = Record<string, unknown> | string;
 export type VideoOutputAccess = "bytes" | "signed_url" | "both";
 export type VideoInputReference = {
@@ -308,10 +310,6 @@ export class AIStats {
     create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
   };
 
-  readonly dataModels = {
-    list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listDataModels(params),
-  };
-
   readonly providers = {
     list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),
     derankStatus: async (
@@ -466,13 +464,16 @@ export class AIStats {
     }
 
     try {
-      const payload = await this.request("GET", "/data/models", {
+      const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
       });
       const models = Array.isArray((payload as { models?: unknown }).models)
-        ? ((payload as { models: DataModel[] }).models ?? [])
+        ? ((payload as { models: DataModelLike[] }).models ?? [])
         : [];
-      const model = models.find((entry) => (entry?.model_id ?? "").trim() === normalizedModelId);
+      const model = models.find((entry) => {
+        const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
+        return candidateId === normalizedModelId;
+      });
       if (!model) {
         this.modelLifecycleCache.set(normalizedModelId, null);
         return null;
@@ -821,22 +822,6 @@ export class AIStats {
     return this.telemetry.wrap(
       "models.list",
       () => ops.listModels(this.client, { query: params as any }),
-      () => params
-    );
-  }
-
-  listDataModels(params: Record<string, unknown> = {}): Promise<unknown> {
-    return this.telemetry.wrap(
-      "models.data",
-      () => ops.listDataModels(this.client, { query: params as any }),
-      () => params
-    );
-  }
-
-  listTeamModels(params: Record<string, unknown> = {}): Promise<unknown> {
-    return this.telemetry.wrap(
-      "models.team",
-      () => ops.listTeamModels(this.client, { query: params as any }),
       () => params
     );
   }
@@ -1233,11 +1218,14 @@ function extractModelIdFromPayload(payload: unknown): string | null {
 }
 
 function toModelLifecycleInfo(
-  model: DataModel & { lifecycle?: Record<string, unknown> | null },
+  model: DataModelLike & { lifecycle?: Record<string, unknown> | null },
   fallbackModelId: string
 ): ModelLifecycleInfo {
   const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
-  const modelId = asTrimmedString(model.model_id) ?? fallbackModelId;
+  const modelId =
+    asTrimmedString(model.model_id) ??
+    asTrimmedString(model.id) ??
+    fallbackModelId;
   const sourceStatus =
     asTrimmedString(model.status) ??
     asTrimmedString(lifecycle.status) ??

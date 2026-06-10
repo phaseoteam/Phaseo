@@ -75,7 +75,7 @@ Before making assumptions:
 
 Useful discovery endpoints:
 
-- `GET /v1/gateway/models`
+- `GET /v1/models`
 - `GET /v1/providers`
 - `GET /v1/pricing/models`
 

@@ -237,7 +237,7 @@ namespace AiStatsSdk
             Dictionary<string, object>? response;
             try
             {
-                response = await Operations.ListDataModelsAsync(
+                response = await Operations.ListModelsAsync(
                     _client,
                     query: new Dictionary<string, string>
                     {
@@ -517,11 +517,6 @@ namespace AiStatsSdk
         public Task<Dictionary<string, object>?> ListModels(Dictionary<string, string>? query = null)
         {
             return WithLifecycleAndTelemetry("models.list", query, false, () => Operations.ListModelsAsync(_client, query: query));
-        }
-
-        public Task<Dictionary<string, object>?> ListTeamModels(Dictionary<string, string>? query = null)
-        {
-            return WithLifecycleAndTelemetry("models.team", query, false, () => Operations.ListTeamModelsAsync(_client, query: query));
         }
 
         public Task<Dictionary<string, object>?> ListProviders(Dictionary<string, string>? query = null)

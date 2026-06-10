@@ -25,6 +25,6 @@
   "pricing_source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
   "regional_pricing_notes": "US-only inference on Claude Platform on AWS is priced at 1.1x the standard rate on Claude Opus 4.6, Claude Sonnet 4.6, and later models.",
   "country_code": "US",
-  "status": "NotReady",
+  "status": "Active",
   "colour": "#CC785C"
 }

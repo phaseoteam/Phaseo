@@ -31,7 +31,7 @@ final class FakeVideoClient extends \AIStats\Gen\Client
     public function request(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null)
     {
         $this->calls[] = [$method, $path, $query, $headers, $body];
-        if ($method === "GET" && $path === "/data/models") {
+        if ($method === "GET" && $path === "/models") {
             return [
                 "models" => [
                     [

@@ -95,7 +95,7 @@ async function discoverGoogleTextGenerateModels(): Promise<string[]> {
 	let total = Number.POSITIVE_INFINITY;
 
 	while (offset < total) {
-		const url = new URL(resolveGatewayUrl("/gateway/models"));
+		const url = new URL(resolveGatewayUrl("/models"));
 		url.searchParams.set("limit", String(limit));
 		url.searchParams.set("offset", String(offset));
 

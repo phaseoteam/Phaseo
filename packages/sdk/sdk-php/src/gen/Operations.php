@@ -332,13 +332,6 @@ function listApiKeys(Client $client, ?array $path = null, ?array $query = null, 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function listDataModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/data/models";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function listEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -356,7 +349,7 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/gateway/models";
+	$resolvedPath = "/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -378,13 +371,6 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 {
 	$path = $path ?? [];
 	$resolvedPath = "/providers";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
-function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/gateway/models/me";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

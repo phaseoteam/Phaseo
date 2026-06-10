@@ -1829,14 +1829,6 @@ type ModelProviderAvailability struct {
 	ProviderStatus string `json:"provider_status"`
 }
 
-type ModelsPrivacyScopeNotImplementedResponse struct {
-	Code string `json:"code"`
-	Error string `json:"error"`
-	Message string `json:"message"`
-	Ok string `json:"ok"`
-	PrivacyScope string `json:"privacy_scope"`
-}
-
 type ModerationCategories struct {
 	Harassment *bool `json:"harassment,omitempty"`
 	HarassmentThreatening *bool `json:"harassment/threatening,omitempty"`

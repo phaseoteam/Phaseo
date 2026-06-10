@@ -83,7 +83,7 @@ public class VideoTests
     {
         var handler = new StubHttpHandler(request =>
         {
-            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/data/models")
+            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/models")
             {
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {

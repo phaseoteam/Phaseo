@@ -240,11 +240,6 @@ pub fn listApiKeys<T: Transport>(client: &Client<T>, path: &HashMap<String, Stri
 	client.request("GET", &resolved_path, body)
 }
 
-pub fn listDataModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/data/models");
-	client.request("GET", &resolved_path, body)
-}
-
 pub fn listEndpoints<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/endpoints");
 	client.request("GET", &resolved_path, body)
@@ -256,7 +251,7 @@ pub fn listFiles<T: Transport>(client: &Client<T>, path: &HashMap<String, String
 }
 
 pub fn listModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/gateway/models");
+	let resolved_path = String::from("/models");
 	client.request("GET", &resolved_path, body)
 }
 
@@ -272,11 +267,6 @@ pub fn listPricingModels<T: Transport>(client: &Client<T>, path: &HashMap<String
 
 pub fn listProviders<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/providers");
-	client.request("GET", &resolved_path, body)
-}
-
-pub fn listTeamModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
-	let resolved_path = String::from("/gateway/models/me");
 	client.request("GET", &resolved_path, body)
 }
 

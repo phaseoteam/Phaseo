@@ -89,7 +89,6 @@
     "models/ModelId.ts",
     "models/ModelLifecycle.ts",
     "models/ModelProviderAvailability.ts",
-    "models/ModelsPrivacyScopeNotImplementedResponse.ts",
     "models/ModerationCategories.ts",
     "models/ModerationCategoryScores.ts",
     "models/ModerationResult.ts",

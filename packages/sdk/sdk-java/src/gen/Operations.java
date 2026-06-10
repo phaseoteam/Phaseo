@@ -241,11 +241,6 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object listDataModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/data/models";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
 	public static Object listEndpoints(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/endpoints";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -257,7 +252,7 @@ public final class Operations {
 	}
 
 	public static Object listModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/gateway/models";
+		String resolvedPath = "/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -273,11 +268,6 @@ public final class Operations {
 
 	public static Object listProviders(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/providers";
-		return client.request("GET", resolvedPath, query, headers, body);
-	}
-
-	public static Object listTeamModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/gateway/models/me";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
