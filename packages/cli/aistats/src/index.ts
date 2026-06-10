@@ -293,20 +293,15 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"guardrails set-keys": { usage: ["aistats guardrails set-keys <id> --key-ids <id,id> [--json]"] },
 	"oauth-clients": {
 		usage: [
-			"aistats oauth-clients list [--json]",
-			"aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--client-type public|confidential] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
-			"aistats oauth-clients get <client-id> [--json]",
-			"aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]",
-			"aistats oauth-clients delete <client-id> [--json]",
-			"aistats oauth-clients regenerate-secret <client-id> [--json]",
+			"User-created OAuth apps are coming soon during the first-party CLI OAuth beta.",
 		],
 	},
-	"oauth-clients list": { usage: ["aistats oauth-clients list [--json]"] },
-	"oauth-clients create": { usage: ["aistats oauth-clients create --name <name> --redirect-uri <uri> [--redirect-uri <uri>] [--client-type public|confidential] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
-	"oauth-clients get": { usage: ["aistats oauth-clients get <client-id> [--json]"] },
-	"oauth-clients update": { usage: ["aistats oauth-clients update <client-id> [--name <name>] [--redirect-uri <uri>] [--scopes <csv>] [--description <text>] [--homepage-url <url>] [--logo-url <url>] [--privacy-policy-url <url>] [--terms-of-service-url <url>] [--json]"] },
-	"oauth-clients delete": { usage: ["aistats oauth-clients delete <client-id> [--json]"] },
-	"oauth-clients regenerate-secret": { usage: ["aistats oauth-clients regenerate-secret <client-id> [--json]"] },
+	"oauth-clients list": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients create": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients get": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients update": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients delete": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
+	"oauth-clients regenerate-secret": { usage: ["User-created OAuth apps are coming soon during the first-party CLI OAuth beta."] },
 	"management-keys": {
 		usage: [
 			"aistats management-keys list [--json]",

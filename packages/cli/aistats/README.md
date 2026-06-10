@@ -7,7 +7,8 @@ It gives you a first-party terminal workflow for:
 - signing in with AI Stats through browser OAuth or device code
 - inspecting your current identity and workspace grant
 - creating and managing regular API keys and management keys
-- managing workspaces, presets, settings, guardrails, and OAuth apps
+- managing workspaces, presets, settings, and guardrails
+- using first-party CLI OAuth while user-created OAuth apps remain in private testing
 - reading models, providers, pricing, credits, activity, analytics, and generations
 - falling back to a raw authenticated API command when you need an endpoint before a polished subcommand exists
 
@@ -87,10 +88,6 @@ aistats guardrails create --name "Production Safety" --body-json '{"enabled":tru
 aistats guardrails add-keys <guardrail-id> --key-ids <key-id,key-id>
 aistats guardrails add-members <guardrail-id> --user-ids <user-id,user-id>
 
-aistats oauth-clients list
-aistats oauth-clients create --name "My App" --redirect-uri "http://127.0.0.1:8789/callback"
-aistats oauth-clients regenerate-secret <client-id>
-
 aistats management-keys create --name "Automation"
 aistats models list --limit 20
 aistats providers list
@@ -107,7 +104,7 @@ The CLI sits on top of the shared AI Stats OAuth/OIDC stack, not a CLI-only auth
 
 - first-party CLI login
 - device-code approval
-- future and current user-created OAuth apps
+- future user-created OAuth apps
 - `userinfo`, token, revoke, consent, and JWKS/discovery flows
 
 Implemented OAuth endpoints:
@@ -128,15 +125,7 @@ Supported grants:
 - authorization code with required PKCE `S256`
 - refresh token
 
-You can create and manage your own OAuth apps from the CLI:
-
-```bash
-aistats oauth-clients create \
-  --name "My App" \
-  --client-type confidential \
-  --redirect-uri "http://127.0.0.1:8789/callback" \
-  --scopes "openid,profile,email,me:read,guardrails:write"
-```
+User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while the first-party AI Stats CLI exercises the shared OAuth/OIDC foundation.
 
 ## Security Notes
 

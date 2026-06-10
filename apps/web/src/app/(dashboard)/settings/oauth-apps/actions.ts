@@ -3,6 +3,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
+import {
+	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
+	isThirdPartyOAuthEnabled,
+} from "@/lib/oauth/thirdPartyOAuth";
 
 /**
  * OAuth App Management Server Actions
@@ -45,6 +49,10 @@ export async function createOAuthAppAction(
 	input: CreateOAuthAppInput
 ): Promise<OAuthAppResult> {
 	try {
+		if (!isThirdPartyOAuthEnabled()) {
+			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+		}
+
 		const supabase = await createClient();
 
 		// Get current user
@@ -159,6 +167,10 @@ export async function updateOAuthAppAction(
 	}
 ): Promise<OAuthAppResult> {
 	try {
+		if (!isThirdPartyOAuthEnabled()) {
+			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+		}
+
 		const supabase = await createClient();
 
 		// Get current user
@@ -225,6 +237,10 @@ export async function regenerateClientSecretAction(
 	clientId: string
 ): Promise<OAuthAppResult> {
 	try {
+		if (!isThirdPartyOAuthEnabled()) {
+			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+		}
+
 		const supabase = await createClient();
 
 		// Get current user
@@ -294,6 +310,10 @@ export async function deleteOAuthAppAction(
 	clientId: string
 ): Promise<OAuthAppResult> {
 	try {
+		if (!isThirdPartyOAuthEnabled()) {
+			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+		}
+
 		const supabase = await createClient();
 
 		// Get current user
@@ -411,6 +431,10 @@ export async function updateRedirectUrisAction(
 	redirectUris: string[]
 ): Promise<OAuthAppResult> {
 	try {
+		if (!isThirdPartyOAuthEnabled()) {
+			return { error: THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE };
+		}
+
 		const supabase = await createClient();
 
 		// Get current user

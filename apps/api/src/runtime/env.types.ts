@@ -206,6 +206,7 @@ export type GatewayBindings = {
     AI_STATS_WEB_BASE_URL?: string;
     AI_STATS_OAUTH_PRIVATE_JWK?: string;
     AI_STATS_OAUTH_TOKEN_PEPPER?: string;
+    AI_STATS_THIRD_PARTY_OAUTH_ENABLED?: string;
     KEY_PEPPER?: string;
     KEY_PEPPER_ACTIVE?: string;
     KEY_PEPPER_PREVIOUS?: string;

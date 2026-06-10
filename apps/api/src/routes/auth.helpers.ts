@@ -6,6 +6,7 @@ import {
 	normalizeScopeList,
 	serializeScopeList,
 } from "@/lib/authz/capabilities";
+import { isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { json } from "@/routes/utils";
 
@@ -115,6 +116,21 @@ export function safeJsonParse(text: string): unknown {
 }
 
 export async function resolveOAuthApp(args: { clientId?: string | null; redirectUri: string }): Promise<ResolveOAuthAppResult> {
+	if (!isThirdPartyOAuthEnabled()) {
+		return {
+			ok: false,
+			response: json(
+				{
+					ok: false,
+					error: "third_party_oauth_disabled",
+					message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+				},
+				403,
+				{ "Cache-Control": "no-store" },
+			),
+		};
+	}
+
 	const supabase = getSupabaseAdmin();
 	const clientId = args.clientId?.trim() || null;
 	if (clientId) {

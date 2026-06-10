@@ -15,14 +15,47 @@ import {
 import { UserRoundX } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import {
+	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
+	isThirdPartyOAuthEnabled,
+} from "@/lib/oauth/thirdPartyOAuth";
 
 export const metadata = {
 	title: "OAuth Apps - Settings",
 	description:
-		"Manage your OAuth applications for third-party integrations, configure callback URLs and scopes, and control credentials used by external clients.",
+		"OAuth applications for third-party integrations are coming soon while the first-party AI Stats CLI OAuth beta is tested.",
 };
 
 export default function OAuthAppsPage() {
+	const thirdPartyOAuthEnabled = isThirdPartyOAuthEnabled();
+
+	if (!thirdPartyOAuthEnabled) {
+		return (
+			<div className="space-y-6">
+				<SettingsPageHeader
+					title="OAuth Apps"
+					meta={
+						<span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+							COMING SOON
+						</span>
+					}
+					description={THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE}
+				/>
+				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<UserRoundX className="h-5 w-5" />
+						</EmptyMedia>
+						<EmptyTitle>OAuth apps are coming soon</EmptyTitle>
+						<EmptyDescription>
+							User-created OAuth clients are disabled while we test the first-party CLI OAuth flow.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-6">
 			<div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">

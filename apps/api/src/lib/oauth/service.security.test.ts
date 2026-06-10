@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
 	refreshRow: null as Record<string, unknown> | null,
 	rotationRow: null as Record<string, unknown> | null,
+	fromCalls: [] as string[],
 	insertedRefreshTokens: [] as Array<Record<string, unknown>>,
 }));
 
@@ -15,6 +16,7 @@ vi.mock("@/runtime/env", () => ({
 	}),
 	getSupabaseAdmin: () => ({
 		from(table: string) {
+			state.fromCalls.push(table);
 			if (table === "oauth_refresh_tokens") {
 				return {
 					select: () => ({
@@ -99,8 +101,16 @@ describe("OAuth refresh rotation security", () => {
 			revoked_at: null,
 		};
 		state.rotationRow = null;
+		state.fromCalls.length = 0;
 		state.insertedRefreshTokens.length = 0;
 		vi.resetModules();
+	});
+
+	it("does not load third-party OAuth clients while the CLI-only beta gate is closed", async () => {
+		const { loadOAuthClient } = await import("./service");
+
+		await expect(loadOAuthClient("partner_client")).resolves.toBeNull();
+		expect(state.fromCalls).toEqual([]);
 	});
 
 	it("rejects replay when the refresh-token revoke transition updates no row", async () => {

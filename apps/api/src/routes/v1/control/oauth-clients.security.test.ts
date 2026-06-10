@@ -1,17 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+	thirdPartyOAuthEnabled: false,
 	metadataRows: [] as Array<Record<string, unknown> | null>,
+	createClient: vi.fn(async () => ({ data: { client_id: "client_1" }, error: null })),
 	updateClient: vi.fn(async () => ({ error: null })),
 }));
 
 vi.mock("@/runtime/env", () => ({
 	configureRuntime: () => undefined,
 	clearRuntime: () => undefined,
+	getBindings: () => ({
+		AI_STATS_THIRD_PARTY_OAUTH_ENABLED: state.thirdPartyOAuthEnabled ? "true" : undefined,
+	}),
 	getSupabaseAdmin: () => ({
 		auth: {
 			admin: {
 				oauth: {
+					createClient: state.createClient,
 					updateClient: state.updateClient,
 				},
 			},
@@ -62,12 +68,33 @@ vi.mock("@/pipeline/before/guards", () => ({
 
 describe("OAuth client management security", () => {
 	beforeEach(() => {
+		state.thirdPartyOAuthEnabled = false;
 		state.metadataRows.length = 0;
+		state.createClient.mockClear();
 		state.updateClient.mockClear();
 		vi.resetModules();
 	});
 
+	it("keeps third-party OAuth client creation closed during the CLI beta", async () => {
+		const { default: oauthClientsRoutes } = await import("./oauth-clients");
+		const response = await oauthClientsRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				name: "Partner App",
+				redirect_uris: ["https://partner.example/callback"],
+			}),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(403);
+		expect(body.error).toBe("third_party_oauth_disabled");
+		expect(body.message).toContain("coming soon");
+		expect(state.createClient).not.toHaveBeenCalled();
+	});
+
 	it("does not update upstream redirect URIs before local client ownership is proven", async () => {
+		state.thirdPartyOAuthEnabled = true;
 		const { default: oauthClientsRoutes } = await import("./oauth-clients");
 		const response = await oauthClientsRoutes.request("https://example.com/victim_client", {
 			method: "PATCH",

@@ -11,6 +11,7 @@ const DEFAULT_DEVICE_INTERVAL_SECONDS = 5;
 const DEFAULT_WEB_BASE_URL = "https://ai-stats.com";
 const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
 const ACCESS_TOKEN_AUDIENCE = "ai-stats-api";
+const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 export const CLI_CLIENT_ID = "aistats_cli";
 
@@ -86,6 +87,17 @@ export function getWebBaseUrl(): string {
 
 export function getIssuer(): string {
 	return `${getApiBaseUrl()}/oauth`;
+}
+
+export function isThirdPartyOAuthEnabled(): boolean {
+	const bindings = getBindings();
+	const raw = bindings.AI_STATS_THIRD_PARTY_OAUTH_ENABLED;
+	if (typeof raw === "boolean") return raw;
+	return TRUTHY_VALUES.has(String(raw ?? "").trim().toLowerCase());
+}
+
+export function isOAuthClientUsable(clientId: string): boolean {
+	return clientId.trim() === CLI_CLIENT_ID || isThirdPartyOAuthEnabled();
 }
 
 export function normalizeScopes(raw: unknown, fallback: readonly string[] = []): string[] {
@@ -288,6 +300,7 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 	const supabase = getSupabaseAdmin();
 	const id = clientId.trim();
 	if (!id) return null;
+	if (!isOAuthClientUsable(id)) return null;
 
 	const firstParty = await supabase
 		.from("oauth_clients")

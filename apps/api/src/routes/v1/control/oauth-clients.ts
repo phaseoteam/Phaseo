@@ -23,7 +23,7 @@ import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES, normalizeScopeList } from "@/lib/authz/capabilities";
 import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
-import { createOpaqueCode, hashOAuthSecret } from "@/lib/oauth/service";
+import { createOpaqueCode, hashOAuthSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 5000;
@@ -249,6 +249,22 @@ function serializeOAuthClientRecord(
 	};
 }
 
+function thirdPartyOAuthComingSoon() {
+	return new Response(
+		JSON.stringify({
+			error: "third_party_oauth_disabled",
+			message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+		}),
+		{
+			status: 403,
+			headers: {
+				"Content-Type": "application/json",
+				"Cache-Control": "no-store",
+			},
+		},
+	);
+}
+
 /**
  * POST /v1/oauth-clients
  *
@@ -265,6 +281,7 @@ app.post("/", async (c) => {
 		if (scopeError) return scopeError;
 		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
 		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		// Parse and validate input
 		const body = await c.req.json();
@@ -372,6 +389,7 @@ app.get("/", async (c) => {
 		if (scopeError) return scopeError;
 		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
 		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		// Fetch OAuth apps for workspace and attach derived stats
 		const supabase = getSupabaseAdmin();
@@ -419,6 +437,7 @@ app.get("/:clientId", async (c) => {
 		if (scopeError) return scopeError;
 		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
 		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -461,6 +480,7 @@ app.patch("/:clientId", async (c) => {
 		if (scopeError) return scopeError;
 		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
 		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -562,6 +582,7 @@ app.delete("/:clientId", async (c) => {
 		if (scopeError) return scopeError;
 		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
 		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -624,6 +645,7 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		if (scopeError) return scopeError;
 		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
 		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 

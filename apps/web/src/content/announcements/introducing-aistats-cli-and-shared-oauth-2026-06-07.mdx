@@ -1,6 +1,6 @@
 ---
 title: "Introducing the AI Stats CLI"
-description: "Browser OAuth, device code, key management, guardrails, workspaces, and user-owned OAuth apps now have a first-party terminal workflow."
+description: "Browser OAuth, device code, key management, guardrails, and workspaces now have a first-party terminal workflow."
 publishedAt: 2026-06-07
 author: AI Stats Team
 tags:
@@ -28,14 +28,14 @@ The CLI is built for the real workflows we already use internally:
 - inspect your current grant with `whoami`
 - create and manage regular API keys and management keys
 - manage workspaces, presets, settings, and guardrails
-- create and manage your own OAuth apps from the terminal
+- use first-party CLI OAuth while user-created OAuth apps remain in private testing
 - inspect models, providers, pricing, credits, activity, analytics, and generations
 
 ## Built on the shared OAuth stack
 
 This is not a one-off auth shim.
 
-We built the CLI on the same shared OAuth/OIDC foundations that also back user-created OAuth apps:
+We built the CLI on the same shared OAuth/OIDC foundations that will also back user-created OAuth apps:
 
 - authorization code + PKCE
 - device authorization grant
@@ -62,14 +62,7 @@ aistats whoami --json
 aistats keys create --name "My CLI Key" --json
 ```
 
-You can also manage your own OAuth apps:
-
-```bash
-aistats oauth-clients create \
-  --name "My App" \
-  --client-type confidential \
-  --redirect-uri "http://127.0.0.1:8789/callback"
-```
+User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while we validate the first-party CLI OAuth path.
 
 ## Versioning and updates
 
@@ -96,4 +89,4 @@ We tightened the auth model while building this:
 
 The CLI closes a gap between dashboard-only control-plane actions and real automation.
 
-If you are building agents, internal tools, or your own OAuth-connected integrations, you can now do that work through a first-party terminal surface instead of reverse-engineering the product UI.
+If you are building agents or internal tools, you can now do that work through a first-party terminal surface instead of reverse-engineering the product UI.

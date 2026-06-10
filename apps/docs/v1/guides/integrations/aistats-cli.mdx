@@ -1,6 +1,6 @@
 ---
 title: "AI Stats CLI"
-description: "Install the official AI Stats CLI, sign in with browser OAuth or device code, and manage keys, guardrails, workspaces, and OAuth apps from the terminal."
+description: "Install the official AI Stats CLI, sign in with browser OAuth or device code, and manage keys, guardrails, and workspaces from the terminal."
 ---
 
 The AI Stats CLI gives you a first-party terminal workflow for the AI Stats control plane.
@@ -10,7 +10,7 @@ Use it when you want to:
 - sign in as a real AI Stats user from a local shell, remote shell, or agent runtime
 - create and rotate API keys or management keys
 - manage workspaces, presets, settings, and guardrails
-- create user-owned OAuth apps for your own integrations
+- use first-party CLI OAuth while user-owned OAuth apps remain in private testing
 - inspect models, providers, pricing, credits, activity, analytics, and generations
 
 ## Install
@@ -88,7 +88,7 @@ aistats keys current
 
 Use `--json` when an agent or automation needs the raw created key once.
 
-## Manage workspaces, guardrails, and OAuth apps
+## Manage workspaces and guardrails
 
 ```bash
 aistats workspaces list
@@ -96,32 +96,13 @@ aistats workspaces members <workspace-id-or-slug>
 
 aistats guardrails list
 aistats guardrails create --name "Production Safety" --body-json '{"enabled":true}'
-
-aistats oauth-clients list
-aistats oauth-clients create --name "My App" --redirect-uri "http://127.0.0.1:8789/callback"
 ```
 
 The CLI is intended to cover the useful parts of the AI Stats dashboard and management APIs from the terminal.
 
-## Create your own OAuth apps
+## OAuth apps
 
-You can create confidential or public apps from the CLI and control:
-
-- redirect URIs
-- allowed scopes
-- app metadata like description, homepage URL, privacy policy URL, and terms of service URL
-
-Example:
-
-```bash
-aistats oauth-clients create \
-  --name "My Guardrail Bot" \
-  --client-type confidential \
-  --redirect-uri "http://127.0.0.1:8789/callback" \
-  --scopes "openid,profile,email,me:read,guardrails:write"
-```
-
-That uses the same OAuth/OIDC foundation as the first-party CLI login flow.
+User-created OAuth apps are coming soon. This release keeps OAuth client creation in private testing while the first-party AI Stats CLI uses the shared OAuth/OIDC foundation for browser sign-in, device code, token refresh, revoke, userinfo, and JWKS/discovery flows.
 
 ## Security model
 
