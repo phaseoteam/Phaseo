@@ -110,16 +110,22 @@ function buildModelsCode(): RestCodeExample {
 	};
 }
 
+function toShellSingleQuotedJson(value: unknown) {
+	return JSON.stringify(value, null, 2).replace(/'/g, "'\\''");
+}
+
 function buildKeyCode(keyName: string): RestCodeExample {
+	const payload = toShellSingleQuotedJson({
+		name: keyName || "Onboarding key",
+	});
+
 	return {
 		method: "POST",
 		endpoint: "/v1/keys",
 		code: `curl https://api.phaseo.app/v1/keys \\
   -H "Authorization: Bearer $AI_STATS_MANAGEMENT_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "name": "${keyName || "Onboarding key"}"
-  }'`,
+  -d '${payload}'`,
 	};
 }
 
@@ -128,21 +134,23 @@ function buildRequestCode(
 	keyPreview: string,
 	message: string,
 ): RestCodeExample {
+	const payload = toShellSingleQuotedJson({
+		model: modelId || "openai/gpt-4.1-mini",
+		messages: [
+			{
+				role: "user",
+				content: message || "Hello from AI Stats",
+			},
+		],
+	});
+
 	return {
 		method: "POST",
 		endpoint: "/v1/chat/completions",
 		code: `curl https://api.phaseo.app/v1/chat/completions \\
   -H "Authorization: Bearer ${keyPreview || "$AI_STATS_API_KEY"}" \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "model": "${modelId || "openai/gpt-4.1-mini"}",
-    "messages": [
-      {
-        "role": "user",
-        "content": "${message || "Hello from AI Stats"}"
-      }
-    ]
-  }'`,
+  -d '${payload}'`,
 	};
 }
 

@@ -11,6 +11,16 @@ describe("shouldRedirectToOnboardingAfterLogin", () => {
 		).toBe(true);
 	});
 
+	it("shows onboarding for newly-created personal workspaces when completion status is unavailable", () => {
+		expect(
+			shouldRedirectToOnboardingAfterLogin({
+				returnUrl: "/",
+				onboardingComplete: null,
+				createdPersonalTeam: true,
+			}),
+		).toBe(true);
+	});
+
 	it("does not show onboarding to existing users with no completion timestamp", () => {
 		expect(
 			shouldRedirectToOnboardingAfterLogin({
