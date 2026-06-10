@@ -15,6 +15,10 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 	});
 }
 
+function rowMatchesFilters(row: Record<string, unknown> | null, filters: Array<{ column: string; value: unknown }>) {
+	return Boolean(row) && filters.every((filter) => row?.[filter.column] === filter.value);
+}
+
 function buildSupabaseMock() {
 	return {
 		from(table: string) {
@@ -28,10 +32,13 @@ function buildSupabaseMock() {
 								eq: (nextColumn: string, nextValue: unknown) => {
 									filters.push({ column: nextColumn, value: nextValue });
 									return {
-										maybeSingle: async () => ({
-											data: state.guardrailRows.shift() ?? null,
-											error: null,
-										}),
+										maybeSingle: async () => {
+											const index = state.guardrailRows.findIndex((row) => rowMatchesFilters(row, filters));
+											return {
+												data: index >= 0 ? state.guardrailRows.splice(index, 1)[0] : null,
+												error: null,
+											};
+										},
 									};
 								},
 							};
@@ -102,6 +109,8 @@ describe("guardrail management security", () => {
 	});
 
 	it("does not delete dependent guardrail rows before workspace ownership is proven", async () => {
+		state.guardrailRows.push({ id: "gr_victim", workspace_id: "ws_victim", name: "Victim" });
+
 		const { guardrailsRoutes } = await import("./guardrails");
 		const response = await guardrailsRoutes.request("https://example.com/gr_victim", { method: "DELETE" });
 		const body = await response.json();

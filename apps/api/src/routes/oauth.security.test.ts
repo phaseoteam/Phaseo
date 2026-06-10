@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
 	issuedTokenPairs: [] as Array<Record<string, unknown>>,
 }));
 
+const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
+
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
 	return new Response(JSON.stringify(body), {
 		status,
@@ -128,7 +130,7 @@ describe("OAuth route security", () => {
 			client_id: "aistats_cli",
 			scopes: ["openid"],
 			status: "approved",
-			expires_at: new Date(Date.now() + 60_000).toISOString(),
+			expires_at: FUTURE_EXPIRES_AT,
 		};
 
 		const { oauthRouter } = await import("./oauth");
@@ -156,7 +158,7 @@ describe("OAuth route security", () => {
 			workspace_id: "ws_1",
 			scopes: ["openid"],
 			status: "approved",
-			expires_at: new Date(Date.now() + 60_000).toISOString(),
+			expires_at: FUTURE_EXPIRES_AT,
 			consumed_at: null,
 		};
 
@@ -186,7 +188,7 @@ describe("OAuth route security", () => {
 			workspace_id: "ws_1",
 			scopes: ["openid"],
 			status: "approved",
-			expires_at: new Date(Date.now() + 60_000).toISOString(),
+			expires_at: FUTURE_EXPIRES_AT,
 			consumed_at: null,
 		};
 		state.authorizationRow = { id: "auth_1", revoked_at: null };
