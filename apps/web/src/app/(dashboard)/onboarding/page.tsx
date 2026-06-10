@@ -111,7 +111,8 @@ export default async function OnboardingPage() {
 		supabase
 			.from("workspace_members")
 			.select("workspace_id, role, workspaces(id, name)")
-			.eq("user_id", user.id),
+			.eq("user_id", user.id)
+			.in("role", ["owner", "admin"]),
 		getGatewaySupportedModels(false),
 	]);
 
