@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
 	deviceRow: null as Record<string, unknown> | null,
+	authorizationRow: null as Record<string, unknown> | null,
 	updateResult: null as Record<string, unknown> | null,
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
+	issuedTokenPairs: [] as Array<Record<string, unknown>>,
 }));
 
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
@@ -20,10 +22,26 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from(table: string) {
+			if (table === "oauth_authorizations") {
+				return {
+					select: () => ({
+						eq: () => ({
+							eq: () => ({
+								eq: () => ({
+									maybeSingle: async () => ({ data: state.authorizationRow, error: null }),
+								}),
+							}),
+						}),
+					}),
+				};
+			}
 			if (table !== "oauth_device_codes") throw new Error(`Unexpected table: ${table}`);
 			return {
 				select: () => ({
 					eq: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({ data: state.deviceRow, error: null }),
+						}),
 						maybeSingle: async () => ({ data: state.deviceRow, error: null }),
 					}),
 				}),
@@ -33,6 +51,10 @@ vi.mock("@/runtime/env", () => ({
 					state.updateFilters.push(filters);
 					return {
 						eq(column: string, value: unknown) {
+							filters.push({ column, value });
+							return this;
+						},
+						is(column: string, value: unknown) {
 							filters.push({ column, value });
 							return this;
 						},
@@ -69,7 +91,10 @@ vi.mock("@/lib/oauth/service", () => ({
 	getLocalJwks: vi.fn(async () => ({ keys: [] })),
 	getSupabaseActor: vi.fn(async () => ({ userId: "user_1" })),
 	hashOAuthSecret: vi.fn(async (value: string) => `hash:${value}`),
-	issueTokenPair: vi.fn(async () => ({ access_token: "token" })),
+	issueTokenPair: vi.fn(async (input: Record<string, unknown>) => {
+		state.issuedTokenPairs.push(input);
+		return { access_token: "token" };
+	}),
 	loadOAuthClient: vi.fn(async () => ({ id: "aistats_cli", name: "AI Stats CLI", client_type: "public" })),
 	makeAuthCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
 	makeDeviceCodeExpiry: vi.fn(() => "2026-06-10T16:00:00.000Z"),
@@ -89,9 +114,11 @@ vi.mock("@/lib/oauth/service", () => ({
 describe("OAuth route security", () => {
 	beforeEach(() => {
 		state.deviceRow = null;
+		state.authorizationRow = null;
 		state.updateResult = null;
 		state.updatePayloads.length = 0;
 		state.updateFilters.length = 0;
+		state.issuedTokenPairs.length = 0;
 		vi.resetModules();
 	});
 
@@ -117,10 +144,75 @@ describe("OAuth route security", () => {
 
 		expect(response.status).toBe(400);
 		expect(body).toMatchObject({ error: "invalid_grant" });
-		expect(state.updatePayloads[0]).toMatchObject({ status: "denied", user_id: "user_1" });
-		expect(state.updateFilters[0]).toEqual([
-			{ column: "id", value: "device_1" },
-			{ column: "status", value: "pending" },
+		expect(state.updatePayloads).toEqual([]);
+		expect(state.updateFilters).toEqual([]);
+	});
+
+	it("does not issue a device token when the approval grant is missing", async () => {
+		state.deviceRow = {
+			id: "device_1",
+			client_id: "aistats_cli",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			scopes: ["openid"],
+			status: "approved",
+			expires_at: new Date(Date.now() + 60_000).toISOString(),
+			consumed_at: null,
+		};
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+				device_code: "device-code",
+				client_id: "aistats_cli",
+			}),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(400);
+		expect(body).toMatchObject({ error: "invalid_grant" });
+		expect(state.issuedTokenPairs).toEqual([]);
+		expect(state.updatePayloads).toEqual([]);
+	});
+
+	it("issues a device token when the approved code has an active grant", async () => {
+		state.deviceRow = {
+			id: "device_1",
+			client_id: "aistats_cli",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			scopes: ["openid"],
+			status: "approved",
+			expires_at: new Date(Date.now() + 60_000).toISOString(),
+			consumed_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+		state.updateResult = { id: "device_1" };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+				device_code: "device-code",
+				client_id: "aistats_cli",
+			}),
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body).toMatchObject({ access_token: "token" });
+		expect(state.issuedTokenPairs).toEqual([
+			{
+				userId: "user_1",
+				workspaceId: "ws_1",
+				clientId: "aistats_cli",
+				scopes: ["openid"],
+			},
 		]);
 	});
 });

@@ -301,6 +301,66 @@ describe("management key routes", () => {
 		expect(state.insertPayloads).toEqual([]);
 	});
 
+	it("blocks OAuth workspace members from reading individual API keys", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1",
+				apiKeyId: "oauth_1",
+				internal: false,
+				authMethod: "oauth",
+				userId: "user_member",
+				scopes: ["keys:read"],
+			} as any,
+		};
+		state.membershipRows.push({ role: "member" });
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/hash_1");
+		const body = await response.json();
+
+		expect(response.status).toBe(403);
+		expect(body).toMatchObject({
+			error: "forbidden",
+			message: "Workspace owner or admin role is required",
+		});
+		expect(state.keyRows).toEqual([]);
+	});
+
+	it("allows OAuth workspace admins to read individual API keys", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: {
+				workspaceId: "ws_1",
+				apiKeyId: "oauth_1",
+				internal: false,
+				authMethod: "oauth",
+				userId: "user_admin",
+				scopes: ["keys:read"],
+			} as any,
+		};
+		state.membershipRows.push({ role: "admin" });
+		state.keyRows.push({
+			id: "key_1",
+			hash: "hash_1",
+			workspace_id: "ws_1",
+			name: "Primary Key",
+			prefix: "aistats_v1_sk_abc",
+			status: "active",
+		});
+
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/hash_1");
+		const body = await response.json();
+
+		expect(response.status).toBe(200);
+		expect(body.data).toMatchObject({
+			id: "key_1",
+			hash: "hash_1",
+			name: "Primary Key",
+		});
+	});
+
 	it("updates a key by hash and remaps limit_reset using the existing limit", async () => {
 		state.keyRows.push(
 			{

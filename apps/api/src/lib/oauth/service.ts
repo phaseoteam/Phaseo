@@ -352,7 +352,7 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 }
 
 export function filterAllowedScopes(client: OAuthClient, requested: string[]): string[] {
-	const allowed = new Set(client.allowed_scopes.length ? parseStoredScopeList(client.allowed_scopes) : requested);
+	const allowed = new Set(parseStoredScopeList(client.allowed_scopes));
 	return requested.filter((scope) => allowed.has(scope));
 }
 

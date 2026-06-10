@@ -44,6 +44,13 @@ describe("OAuth service helpers", () => {
 		]);
 	});
 
+	it("treats an empty OAuth client scope allowlist as deny-all", () => {
+		const client = {
+			allowed_scopes: [],
+		} as any;
+		expect(filterAllowedScopes(client, ["openid", "keys:write"])).toEqual([]);
+	});
+
 	it("allows first-party CLI loopback redirects for PKCE login", () => {
 		const cliClient = {
 			id: "aistats_cli",

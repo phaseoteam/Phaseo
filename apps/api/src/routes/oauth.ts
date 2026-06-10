@@ -314,6 +314,9 @@ oauthRouter.post(
 				{ "Cache-Control": "no-store" },
 			);
 		}
+		if (device.status !== "pending") {
+			return oauthError("invalid_grant", "Device code is no longer pending");
+		}
 		if (action === "deny") {
 			const deny = await supabase
 				.from("oauth_device_codes")
@@ -340,6 +343,7 @@ oauthRouter.post(
 			return oauthError("access_denied", "User is not a member of the selected workspace", 403);
 		}
 		const scopes = Array.isArray(device.scopes) ? device.scopes.map(String) : [];
+		await ensureGrant({ userId: actor.userId, workspaceId, clientId: client.id, scopes });
 		const approve = await supabase
 			.from("oauth_device_codes")
 			.update({
@@ -354,7 +358,6 @@ oauthRouter.post(
 			.maybeSingle();
 		if (approve.error) return oauthError("server_error", approve.error.message, 500);
 		if (!approve.data) return oauthError("invalid_grant", "Device code is no longer pending");
-		await ensureGrant({ userId: actor.userId, workspaceId, clientId: client.id, scopes });
 		return json({ ok: true }, 200, { "Cache-Control": "no-store" });
 	}),
 );
@@ -388,6 +391,17 @@ oauthRouter.post(
 			if (data.status === "denied") return oauthError("access_denied", "The user denied this device request");
 			if (data.status !== "approved") return oauthError("authorization_pending", "Authorization is still pending");
 			if (data.consumed_at) return oauthError("invalid_grant", "Device code has already been consumed");
+			const authorization = await supabase
+				.from("oauth_authorizations")
+				.select("id, revoked_at")
+				.eq("user_id", data.user_id)
+				.eq("workspace_id", data.workspace_id)
+				.eq("client_id", data.client_id)
+				.maybeSingle();
+			if (authorization.error) return oauthError("server_error", authorization.error.message, 500);
+			if (!authorization.data || authorization.data.revoked_at !== null) {
+				return oauthError("invalid_grant", "Device authorization is no longer valid");
+			}
 			const consume = await supabase
 				.from("oauth_device_codes")
 				.update({ consumed_at: new Date().toISOString() })

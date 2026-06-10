@@ -561,6 +561,8 @@ async function handleGetKey(req: Request) {
 	if (!keyId) {
 		return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	if (roleError) return roleError;
 
 	try {
 		const supabase = getSupabaseAdmin();
