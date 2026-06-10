@@ -457,6 +457,15 @@ export default function InteractiveOnboarding({
 		}, 100);
 
 		const tokens = splitIntoDisplayTokens(response);
+		if (tokens.length === 0) {
+			setIsStreamingResponse(false);
+			if (streamIntervalRef.current !== null) {
+				window.clearInterval(streamIntervalRef.current);
+				streamIntervalRef.current = null;
+			}
+			return;
+		}
+
 		const semanticTokenTotal = tokens.filter((token) => token.trim().length > 0).length;
 		let nextValue = "";
 		let semanticTokenCount = 0;

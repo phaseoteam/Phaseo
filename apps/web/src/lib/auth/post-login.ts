@@ -10,6 +10,7 @@ import {
 } from "@/lib/automations/resend-events";
 import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import type { createClient } from "@/utils/supabase/server";
+import { shouldRedirectToOnboardingAfterLogin } from "@/lib/auth/post-login-onboarding";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -35,18 +36,6 @@ type PersonalWorkspaceProvisionResult = {
 	workspaceId: string;
 	createdPersonalTeam: boolean;
 };
-
-export function shouldRedirectToOnboardingAfterLogin(opts: {
-	returnUrl: string;
-	onboardingComplete: boolean | null;
-	createdPersonalTeam: boolean;
-}) {
-	return (
-		opts.returnUrl === "/" &&
-		opts.createdPersonalTeam &&
-		opts.onboardingComplete !== true
-	);
-}
 
 async function hasCompletedOnboarding(opts: {
 	supabaseAdmin: ReturnType<typeof createAdminClient>;

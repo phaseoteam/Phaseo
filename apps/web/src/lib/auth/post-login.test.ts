@@ -1,4 +1,4 @@
-import { shouldRedirectToOnboardingAfterLogin } from "./post-login";
+import { shouldRedirectToOnboardingAfterLogin } from "./post-login-onboarding";
 
 describe("shouldRedirectToOnboardingAfterLogin", () => {
 	it("shows onboarding for newly-created personal workspaces without completion", () => {
