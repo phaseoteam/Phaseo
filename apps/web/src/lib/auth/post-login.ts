@@ -36,6 +36,25 @@ type PersonalWorkspaceProvisionResult = {
 	createdPersonalTeam: boolean;
 };
 
+async function hasCompletedOnboarding(opts: {
+	supabaseAdmin: ReturnType<typeof createAdminClient>;
+	userId: string;
+}): Promise<boolean | null> {
+	const { data, error } = await opts.supabaseAdmin
+		.from("users")
+		.select("onboarding_completed_at")
+		.eq("user_id", opts.userId)
+		.maybeSingle();
+
+	if (error) {
+		const message = String(error.message ?? "").toLowerCase();
+		if (message.includes("onboarding_completed_at")) return null;
+		throw new Error(`onboarding_lookup_failed:${error.message}`);
+	}
+
+	return Boolean(data?.onboarding_completed_at);
+}
+
 function makeSlug(name: string) {
 	return name
 		.toLowerCase()
@@ -516,8 +535,19 @@ export async function finalizePostLogin(
 		});
 	}
 
+	const onboardingComplete = await hasCompletedOnboarding({
+		supabaseAdmin,
+		userId: user.id,
+	});
+	const shouldShowOnboarding =
+		input.returnUrl === "/" &&
+		(onboardingComplete === false ||
+			(onboardingComplete === null && provisionedTeam.createdPersonalTeam));
+
+	const redirectPath = shouldShowOnboarding ? "/onboarding" : input.returnUrl;
+
 	return {
-		redirectPath: input.returnUrl,
+		redirectPath,
 		workspaceId,
 		userId: user.id,
 		createdPersonalTeam: provisionedTeam.createdPersonalTeam,
