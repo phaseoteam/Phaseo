@@ -24,7 +24,7 @@ final class FakeChatClient extends \AIStats\Gen\Client
     public function request(string $method, string $path, ?array $query = null, ?array $headers = null, $body = null)
     {
         $this->calls[] = [$method, $path, $query, $headers, $body];
-        if ($method === "GET" && $path === "/data/models") {
+        if ($method === "GET" && $path === "/models") {
             return [
                 "models" => [
                     [
@@ -96,7 +96,7 @@ assert_true((($response["usage"]["total_tokens"] ?? null) === 3), "expected tota
 assert_true($fake->calls === [
     [
         "GET",
-        "/data/models",
+        "/models",
         ["model_id" => "openai/gpt-5-nano", "limit" => "1"],
         null,
         null,

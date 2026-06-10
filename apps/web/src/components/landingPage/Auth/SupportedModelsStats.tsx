@@ -39,7 +39,7 @@ export default async function SupportedModelsStats() {
 		{
 			label: "Organisations",
 			raw: orgsCount,
-			route: "/providers",
+			route: "/api-providers",
 		},
 		{
 			label: "API Models",

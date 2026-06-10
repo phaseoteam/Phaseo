@@ -576,6 +576,9 @@ module AIStatsSdk
     # Model ID: nex-agi/deepseek-v3.1-nex-n1
     # Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
     NEX_AGI_DEEPSEEK_V3_1_NEX_N1 = "nex-agi/deepseek-v3.1-nex-n1"
+    # Model ID: nex-agi/nex-n2-pro:free
+    # Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
+    NEX_AGI_NEX_N2_PRO_FREE = "nex-agi/nex-n2-pro:free"
     # Model ID: nous/hermes-3-llama-3.1-405b
     # Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
     NOUS_HERMES_3_LLAMA_3_1_405B = "nous/hermes-3-llama-3.1-405b"
@@ -822,15 +825,9 @@ module AIStatsSdk
     # Model ID: openai/whisper-1
     # Model page: https://ai-stats.phaseo.app/models/openai/whisper-1
     OPENAI_WHISPER_1 = "openai/whisper-1"
-    # Model ID: poolside/laguna-m.1
-    # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1
-    POOLSIDE_LAGUNA_M_1 = "poolside/laguna-m.1"
     # Model ID: poolside/laguna-m.1:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
     POOLSIDE_LAGUNA_M_1_FREE = "poolside/laguna-m.1:free"
-    # Model ID: poolside/laguna-xs.2
-    # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2
-    POOLSIDE_LAGUNA_XS_2 = "poolside/laguna-xs.2"
     # Model ID: poolside/laguna-xs.2:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
     POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free"
@@ -1558,6 +1555,7 @@ module AIStatsSdk
     ModelIds::MORPH_MORPH_V3_FAST,
     ModelIds::MORPH_MORPH_V3_LARGE,
     ModelIds::NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
+    ModelIds::NEX_AGI_NEX_N2_PRO_FREE,
     ModelIds::NOUS_HERMES_3_LLAMA_3_1_405B,
     ModelIds::NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
     ModelIds::NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,
@@ -1640,9 +1638,7 @@ module AIStatsSdk
     ModelIds::OPENAI_TEXT_EMBEDDING_3_SMALL,
     ModelIds::OPENAI_TEXT_EMBEDDING_ADA_002,
     ModelIds::OPENAI_WHISPER_1,
-    ModelIds::POOLSIDE_LAGUNA_M_1,
     ModelIds::POOLSIDE_LAGUNA_M_1_FREE,
-    ModelIds::POOLSIDE_LAGUNA_XS_2,
     ModelIds::POOLSIDE_LAGUNA_XS_2_FREE,
     ModelIds::PRIMEINTELLECT_INTELLECT_3,
     ModelIds::QWEN_QVQ_MAX,

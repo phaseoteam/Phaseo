@@ -503,6 +503,13 @@ export default function PricingPage() {
 						<Link className="underline underline-offset-4" href="/tools/pricing-calculator">
 							Pricing Calculator
 						</Link>
+						{" "}and review{" "}
+						<Link
+							className="underline underline-offset-4"
+							href="/how-ai-stats-calculates-model-pricing"
+						>
+							how AI Stats calculates model pricing
+						</Link>
 						.
 					</p>
 					<div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

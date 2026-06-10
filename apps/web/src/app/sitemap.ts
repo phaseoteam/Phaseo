@@ -36,6 +36,9 @@ type RouteSuffix = {
 
 type ModelSitemapSource = {
 	model_id?: string | null;
+	updated_at?: string | null;
+	primary_date?: string | null;
+	announcement_date?: string | null;
 };
 
 type PresetSitemapSource = {
@@ -60,6 +63,11 @@ const staticRoutes: Array<{
         { path: "/families", changeFrequency: "weekly", priority: 0.75 },
         { path: "/subscription-plans", changeFrequency: "weekly", priority: 0.75 },
         { path: "/pricing", changeFrequency: "weekly", priority: 0.75 },
+        { path: "/methodology", changeFrequency: "monthly", priority: 0.68 },
+        { path: "/how-ai-stats-calculates-model-pricing", changeFrequency: "monthly", priority: 0.65 },
+        { path: "/how-ai-stats-measures-latency-throughput", changeFrequency: "monthly", priority: 0.65 },
+        { path: "/how-ai-stats-normalises-ai-benchmarks", changeFrequency: "monthly", priority: 0.65 },
+        { path: "/how-ai-stats-tracks-provider-availability", changeFrequency: "monthly", priority: 0.65 },
         { path: "/faq", changeFrequency: "monthly", priority: 0.6 },
 		{ path: "/compare", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/migrate", changeFrequency: "weekly", priority: 0.7 },
@@ -279,6 +287,53 @@ function applySuffixes(
     return items;
 }
 
+function resolveLastModified(
+	...candidates: Array<string | null | undefined>
+): string | null {
+	let latest: string | null = null;
+	let latestMs = Number.NEGATIVE_INFINITY;
+
+	for (const candidate of candidates) {
+		if (!candidate) continue;
+		const parsed = Date.parse(candidate);
+		if (!Number.isFinite(parsed) || parsed <= latestMs) continue;
+		latestMs = parsed;
+		latest = candidate;
+	}
+
+	return latest;
+}
+
+function applySuffixesWithEntries<T extends { slug: string; lastModified?: string | null }>(
+	prefix: string,
+	entries: T[],
+	suffixes: RouteSuffix[],
+	fallbackLastModified: string,
+): SitemapItem[] {
+	if (!entries.length) {
+		return [];
+	}
+
+	const items: SitemapItem[] = [];
+	for (const entry of entries) {
+		for (const suffix of suffixes) {
+			const route = suffix.suffix
+				? `${prefix}/${entry.slug}${suffix.suffix}`
+				: `${prefix}/${entry.slug}`;
+			items.push(
+				createItem(
+					route,
+					suffix.changeFrequency,
+					suffix.priority,
+					entry.lastModified ?? fallbackLastModified,
+				),
+			);
+		}
+	}
+
+	return items;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const lastModified =
 		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString();
@@ -310,15 +365,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		getHelpArticleParams(),
 	]);
 
-	const modelSlugs = normalizeModelRouteSlugs(
-		fromSettled(modelsResult, "models for sitemap", [])
+	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
+	const modelSlugs = normalizeModelRouteSlugs(modelsForSitemap);
+	const modelEntries = modelSlugs.map((slug) => {
+		const source = modelsForSitemap.find(
+			(model) => String(model.model_id ?? "").trim() === slug,
+		);
+		return {
+			slug,
+			lastModified:
+				resolveLastModified(
+					source?.updated_at,
+					source?.primary_date,
+					source?.announcement_date,
+				) ?? lastModified,
+		};
+	});
+	const providersForSitemap = fromSettled(
+		apiProvidersResult,
+		"api providers for sitemap",
+		[],
 	);
 	const providerSlugs = normalizeSingleSegmentSlugs(
-		fromSettled(apiProvidersResult, "api providers for sitemap", []).map(
-			(provider) => String(provider.api_provider_id ?? "").trim()
+		providersForSitemap.map((provider) =>
+			String(provider.api_provider_id ?? "").trim()
 		),
 		"api provider",
 	);
+	const providerEntries = providerSlugs.map((slug) => {
+		const source = providersForSitemap.find(
+			(provider) => String(provider.api_provider_id ?? "").trim() === slug,
+		);
+		return {
+			slug,
+			lastModified:
+				resolveLastModified(source?.last_updated_at) ?? lastModified,
+		};
+	});
 	const organisationSlugs = normalizeSingleSegmentSlugs(
 		fromSettled(organisationsResult, "organisations for sitemap", []).map(
 			(organisation) => String(organisation.organisation_id ?? "").trim()
@@ -354,10 +437,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	);
 
 	const dynamicItems = [
-		...applySuffixes("/models", modelSlugs, MODEL_SUFFIXES, lastModified),
-		...applySuffixes(
+		...applySuffixesWithEntries(
+			"/models",
+			modelEntries,
+			MODEL_SUFFIXES,
+			lastModified,
+		),
+		...applySuffixesWithEntries(
 			"/api-providers",
-			providerSlugs,
+			providerEntries,
 			PROVIDER_SUFFIXES,
 			lastModified
 		),

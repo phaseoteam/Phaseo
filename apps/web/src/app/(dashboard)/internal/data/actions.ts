@@ -8,6 +8,11 @@ import {
 	revalidateModelDataOnlyTags,
 	revalidateModelDataTags,
 } from "@/lib/cache/revalidateDataTags";
+import {
+	getIndexNowModelUrls,
+	getIndexNowProviderUrls,
+	submitIndexNowUrls,
+} from "@/lib/indexnow";
 import { updateModel } from "@/app/(dashboard)/models/actions";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
 import {
@@ -406,6 +411,10 @@ export async function createAPIProviderAction(formData: FormData) {
 	if (error) throw new Error(error.message);
 
 	revalidateModelDataTags();
+	await submitIndexNowUrls(
+		getIndexNowProviderUrls(apiProviderId),
+		`create provider ${apiProviderId}`,
+	);
 	revalidatePath("/internal/data/api-providers");
 }
 
@@ -430,6 +439,10 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 	if (error) throw new Error(error.message);
 
 	revalidateModelDataTags();
+	await submitIndexNowUrls(
+		getIndexNowProviderUrls(apiProviderId),
+		`update provider ${apiProviderId}`,
+	);
 	revalidatePath("/internal/data/api-providers");
 }
 
@@ -442,6 +455,10 @@ export async function deleteAPIProviderAction(apiProviderId: string) {
 	if (error) throw new Error(error.message);
 
 	revalidateModelDataTags();
+	await submitIndexNowUrls(
+		getIndexNowProviderUrls(apiProviderId),
+		`delete provider ${apiProviderId}`,
+	);
 	revalidatePath("/internal/data/api-providers");
 }
 
@@ -913,6 +930,10 @@ export async function createModelAction(formData: FormData) {
 		modelId,
 		organisationIds: [organisationId],
 	});
+	await submitIndexNowUrls(
+		getIndexNowModelUrls(modelId),
+		`create model ${modelId}`,
+	);
 	revalidatePath("/internal/data/models");
 }
 
@@ -955,6 +976,10 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 	if (error) throw new Error(error.message);
 
 	revalidateModelDataTags({ modelId, organisationIds: [organisationId] });
+	await submitIndexNowUrls(
+		getIndexNowModelUrls(modelId),
+		`update model ${modelId}`,
+	);
 	revalidatePath("/internal/data/models");
 }
 
@@ -964,6 +989,10 @@ export async function deleteModelAction(modelId: string) {
 	await deleteModelGraph(supabase, modelId);
 
 	revalidateModelDataTags({ modelId, organisationIds });
+	await submitIndexNowUrls(
+		getIndexNowModelUrls(modelId),
+		`delete model ${modelId}`,
+	);
 	revalidatePath("/internal/data/models");
 }
 

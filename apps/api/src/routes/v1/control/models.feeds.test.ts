@@ -3,19 +3,19 @@ import { buildFeedResponse, parseFeedFormat } from "./models.feeds";
 
 describe("parseFeedFormat", () => {
     it("defaults to json", () => {
-        const url = new URL("https://api.example.com/v1/gateway/models?limit=10");
+        const url = new URL("https://api.example.com/v1/models?limit=10");
         expect(parseFeedFormat(url)).toEqual({ ok: true, format: "json" });
     });
 
     it("accepts format and feed alias", () => {
-        const formatUrl = new URL("https://api.example.com/v1/gateway/models?format=rss");
-        const aliasUrl = new URL("https://api.example.com/v1/gateway/models?feed=atom");
+        const formatUrl = new URL("https://api.example.com/v1/models?format=rss");
+        const aliasUrl = new URL("https://api.example.com/v1/models?feed=atom");
         expect(parseFeedFormat(formatUrl)).toEqual({ ok: true, format: "rss" });
         expect(parseFeedFormat(aliasUrl)).toEqual({ ok: true, format: "atom" });
     });
 
     it("rejects unknown formats", () => {
-        const url = new URL("https://api.example.com/v1/gateway/models?format=xml");
+        const url = new URL("https://api.example.com/v1/models?format=xml");
         expect(parseFeedFormat(url)).toEqual({ ok: false, raw: "xml" });
     });
 });
@@ -23,7 +23,7 @@ describe("parseFeedFormat", () => {
 describe("buildFeedResponse", () => {
     it("renders rss xml with escaped values", async () => {
         const response = buildFeedResponse({
-            url: new URL("https://api.example.com/v1/gateway/models?format=rss&limit=2"),
+            url: new URL("https://api.example.com/v1/models?format=rss&limit=2"),
             format: "rss",
             title: "Gateway Models",
             description: "Gateway <catalogue>",
@@ -46,12 +46,12 @@ describe("buildFeedResponse", () => {
         expect(body).toContain("<rss version=\"2.0\">");
         expect(body).toContain("<title>OpenAI &amp; GPT-5</title>");
         expect(body).toContain("Supports &lt;chat&gt; and &quot;responses&quot;");
-        expect(body).toContain("<link>https://api.example.com/v1/gateway/models?limit=2</link>");
+        expect(body).toContain("<link>https://api.example.com/v1/models?limit=2</link>");
     });
 
     it("renders atom xml", async () => {
         const response = buildFeedResponse({
-            url: new URL("https://api.example.com/v1/data/models?feed=atom"),
+            url: new URL("https://api.example.com/v1/models?feed=atom"),
             format: "atom",
             title: "Data Models",
             description: "Data source",
@@ -70,6 +70,6 @@ describe("buildFeedResponse", () => {
         expect(body).toContain("<feed xmlns=\"http://www.w3.org/2005/Atom\">");
         expect(body).toContain("<entry>");
         expect(body).toContain("<id>model-1</id>");
-        expect(body).toContain("<link rel=\"self\" href=\"https://api.example.com/v1/data/models\"/>");
+        expect(body).toContain("<link rel=\"self\" href=\"https://api.example.com/v1/models\"/>");
     });
 });

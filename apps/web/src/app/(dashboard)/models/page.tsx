@@ -284,6 +284,43 @@ function isActiveProviderStatus(status: string): boolean {
 	return ACTIVE_PROVIDER_STATUS_SET.has(status);
 }
 
+function firstNonEmptyString(
+	...values: Array<string | null | undefined>
+): string | null {
+	for (const value of values) {
+		const normalized = String(value ?? "").trim();
+		if (normalized) return normalized;
+	}
+	return null;
+}
+
+function buildCanonicalModelLookupCandidates(value: string): string[] {
+	const normalized = String(value ?? "").trim();
+	if (!normalized) return [];
+	if (normalized.toLowerCase().endsWith(":free")) {
+		return [normalized, normalized.slice(0, -":free".length)];
+	}
+	return [normalized];
+}
+
+function resolveBaseModel(
+	baseModelById: Map<string, ModelCard>,
+	modelId: string,
+	signals: GatewaySignals | undefined,
+): ModelCard | undefined {
+	const candidates = [
+		modelId,
+		...Array.from(signals?.apiModelIds ?? []),
+	].flatMap((value) => buildCanonicalModelLookupCandidates(value));
+
+	for (const candidate of candidates) {
+		const model = baseModelById.get(candidate);
+		if (model) return model;
+	}
+
+	return undefined;
+}
+
 function sortModalityOptions(
 	options: OptionCount[],
 	order: readonly string[],
@@ -840,8 +877,8 @@ function withGatewayMetadata(
 	const canonicalModelIds = Array.from(signalsByModelId.keys()).filter(Boolean);
 
 	const enriched = canonicalModelIds.map((modelId) => {
-		const model = baseModelById.get(modelId);
 		const signals = signalsByModelId.get(modelId);
+		const model = resolveBaseModel(baseModelById, modelId, signals);
 		const weeklyMetrics = resolveModelWeeklyMetrics(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
@@ -878,15 +915,18 @@ function withGatewayMetadata(
 				).padStart(2, "0")}`
 			: (model?.primary_group_key ?? null);
 		const fallbackName =
-			model?.name ??
-			Array.from(signals?.displayNames ?? [])[0] ??
-			modelId.split("/").slice(-1)[0] ??
-			modelId;
+			firstNonEmptyString(
+				model?.name,
+				Array.from(signals?.displayNames ?? [])[0],
+				modelId.split("/").slice(-1)[0],
+				modelId,
+			) ?? modelId;
 		const fallbackOrganisationId =
-			model?.organisation_id ??
-			Array.from(signals?.organisationIds ?? [])[0] ??
-			modelId.split("/")[0] ??
-			"";
+			firstNonEmptyString(
+				model?.organisation_id,
+				Array.from(signals?.organisationIds ?? [])[0],
+				modelId.split("/")[0],
+			) ?? "";
 
 		const compactModel: ModelsPageModel = {
 			model_id: modelId,
@@ -1151,7 +1191,6 @@ async function ModelsPageDataSection() {
 		...models.filter((model) => model.model_id !== FREE_ROUTER_MODEL_ID),
 	];
 	const facets = buildModelsFilterFacets(modelsWithFreeRouter);
-
 	return <ModelsDisplay models={modelsWithFreeRouter} facets={facets} />;
 }
 

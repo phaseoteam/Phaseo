@@ -6,6 +6,7 @@
 "use cache";
 import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import {
 	fetchPublicGatewayRequestRows,
 } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
@@ -173,6 +174,22 @@ export type DailyAppRollup = {
     unique_models: number;
     success_rate: number | null;
 };
+
+export type RankingsIndexabilitySnapshot = {
+	hasLeaderboardData: boolean;
+	hasPerformanceData: boolean;
+	hasUsageData: boolean;
+	hasAppsData: boolean;
+	shouldIndex: boolean;
+};
+
+export type AppsIndexabilitySnapshot = {
+	hasLeaderboardData: boolean;
+	hasTrendingData: boolean;
+	shouldIndex: boolean;
+};
+
+const APPS_INDEXABILITY_QUERY_LIMIT = 300;
 
 function getDefaultWeeklySinceIso(): string {
     const now = new Date();
@@ -991,7 +1008,49 @@ export async function getTopApps(
                 fallbackTitlesById.get(row.app_id) ??
                 row.app_id,
         })),
-    };
+	};
+}
+
+export async function getRankingsIndexabilitySnapshot(): Promise<RankingsIndexabilitySnapshot> {
+	const [rankingsResult, performanceResult, usageResult, appsResult] =
+		await Promise.all([
+			getRankings("week", "tokens", 1),
+			getPerformanceData(24),
+			getTimeseriesData("year", "week", 1),
+			getTopApps("week", 1),
+		]);
+
+	const hasLeaderboardData = rankingsResult.rankings.some(
+		(row) =>
+			Boolean(row.model_id) &&
+			row.model_id.toLowerCase() !== "unknown" &&
+			row.model_id.toLowerCase() !== "other" &&
+			Number(row.total_tokens ?? 0) > 0,
+	);
+	const hasPerformanceData = performanceResult.data.some(
+		(row) =>
+			Boolean(row.model_id) &&
+			Boolean(row.provider) &&
+			Number.isFinite(Number(row.median_throughput ?? 0)) &&
+			Number(row.median_throughput ?? 0) > 0,
+	);
+	const hasUsageData = usageResult.data.some(
+		(row) =>
+			Boolean(row.model_id) &&
+			row.model_id.toLowerCase() !== "unknown" &&
+			row.model_id.toLowerCase() !== "other" &&
+			Number(row.tokens ?? 0) > 0,
+	);
+	const hasAppsData = appsResult.data.some((row) => Number(row.tokens ?? 0) > 0);
+
+	return {
+		hasLeaderboardData,
+		hasPerformanceData,
+		hasUsageData,
+		hasAppsData,
+		shouldIndex:
+			hasLeaderboardData || hasPerformanceData || hasUsageData || hasAppsData,
+	};
 }
 
 /**
@@ -1079,7 +1138,33 @@ export async function getTrendingApps(
                 fallbackTitlesById.get(row.app_id) ??
                 row.app_id,
         })),
-    };
+	};
+}
+
+export async function getAppsIndexabilitySnapshot(): Promise<AppsIndexabilitySnapshot> {
+	const [publicAppIds, topAppsResult, trendingAppsResult] = await Promise.all([
+		getPublicAppIdsCached(),
+		getTopApps("4w", APPS_INDEXABILITY_QUERY_LIMIT),
+		getTrendingApps(APPS_INDEXABILITY_QUERY_LIMIT),
+	]);
+	const publicAppIdSet = new Set(publicAppIds);
+
+	const hasLeaderboardData = topAppsResult.data.some(
+		(row) =>
+			publicAppIdSet.has(String(row.app_id ?? "").trim()) &&
+			Number(row.tokens ?? 0) > 0,
+	);
+	const hasTrendingData = trendingAppsResult.data.some(
+		(row) =>
+			publicAppIdSet.has(String(row.app_id ?? "").trim()) &&
+			Number(row.growth_tokens ?? 0) > 0,
+	);
+
+	return {
+		hasLeaderboardData,
+		hasTrendingData,
+		shouldIndex: hasLeaderboardData || hasTrendingData,
+	};
 }
 
 export async function getWeeklyModelProviderTokens(): Promise<{

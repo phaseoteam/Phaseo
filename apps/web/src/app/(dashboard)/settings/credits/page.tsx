@@ -7,6 +7,7 @@ import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/Top
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
 import LowBalanceEmailAlertsClient from "@/components/(gateway)/credits/LowBalanceEmailAlertsClient";
 import { getStripe } from "@/lib/stripe";
+import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -68,6 +69,21 @@ async function CreditsSettingsContent(props: {
 	const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
 
 	const workspaceId = await getWorkspaceIdFromCookie();
+
+	if (workspaceId && authData.user?.id) {
+		try {
+			await ensureWorkspaceStripeWallet({
+				workspaceId,
+				userId: authData.user.id,
+				email: authData.user.email ?? undefined,
+			});
+		} catch (error) {
+			console.warn(`${logPrefix} stripe wallet ensure failed`, {
+				workspaceId,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
+	}
 
 	console.info(`${logPrefix} workspace resolution`, {
 		userId: authData.user?.id ?? null,

@@ -73,7 +73,7 @@ def test_non_active_status_blocks_request_dispatch(monkeypatch):
 
     def fake_request(method, path, *, query=None, headers=None, body=None):
         assert method == "GET"
-        assert path == "/data/models"
+        assert path == "/models"
         assert query == {"model_id": "openai/rumoured-model", "limit": 1}
         return {
             "models": [
@@ -156,7 +156,7 @@ def test_can_disable_deprecation_warnings(monkeypatch):
     response = client.generate_response({"model": "openai/new-model", "input": "hi"})
     assert called is True
     assert response["id"] == "resp_123"
-    assert lifecycle_lookups == [("GET", "/data/models", {"model_id": "openai/new-model", "limit": 1})]
+    assert lifecycle_lookups == [("GET", "/models", {"model_id": "openai/new-model", "limit": 1})]
 
 
 def test_cancel_batch_uses_generated_operation(monkeypatch):
@@ -499,10 +499,10 @@ def test_list_organisations_uses_generated_operation(monkeypatch):
     assert response["organisations"][0]["organisation_id"] == "org_123"
 
 
-def test_list_team_models_uses_generated_operation(monkeypatch):
+def test_get_models_uses_generated_operation(monkeypatch):
     captured: list[dict[str, object]] = []
 
-    def fake_list_team_models(_client, **kwargs):
+    def fake_list_models(_client, **kwargs):
         captured.append({"query": kwargs.get("query")})
         return {
             "ok": True,
@@ -515,10 +515,10 @@ def test_list_team_models_uses_generated_operation(monkeypatch):
             ],
         }
 
-    monkeypatch.setattr(ops, "listTeamModels", fake_list_team_models)
+    monkeypatch.setattr(ops, "listModels", fake_list_models)
 
     client = AIStats(api_key="sk_test_123", base_url="https://example.test")
-    response = client.list_team_models({"limit": "2", "endpoints": "responses"})
+    response = client.get_models({"limit": "2", "endpoints": "responses"})
 
     assert captured == [{"query": {"limit": "2", "endpoints": "responses"}}]
     assert response["ok"] is True

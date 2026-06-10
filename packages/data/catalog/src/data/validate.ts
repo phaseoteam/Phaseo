@@ -256,6 +256,19 @@ type ModelEntry = {
     data: Record<string, unknown>;
 };
 
+function isValidPageNotice(
+    notice: unknown
+): notice is { tone: "info" | "warning" | "critical"; markdown: string } {
+    if (!notice || typeof notice !== 'object') return false;
+    const tone = (notice as { tone?: unknown }).tone;
+    const markdown = (notice as { markdown?: unknown }).markdown;
+    return (
+        (tone === 'info' || tone === 'warning' || tone === 'critical') &&
+        typeof markdown === 'string' &&
+        markdown.trim().length > 0
+    );
+}
+
 interface ValidationState {
     organisationIds: Map<string, string>;
     familyIds: Map<string, string>;
@@ -814,6 +827,10 @@ function checkModelReferences(state: ValidationState): { errors: string[]; warni
                     }
                 }
             }
+        }
+        const pageNotice = data.page_notice;
+        if (pageNotice !== undefined && pageNotice !== null && !isValidPageNotice(pageNotice)) {
+            errors.push(`${label} page_notice must include a valid tone and non-empty markdown`);
         }
         if (typeof data.name !== 'string' || !data.name.trim()) {
             errors.push(`${label} missing a name`);

@@ -11,6 +11,7 @@ process.env.NEXT_FONT_IGNORE_FAILED_DOWNLOADS ||= "true";
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
   cacheComponents: true,
   env: {
     NEXT_PUBLIC_DEPLOY_TIME:

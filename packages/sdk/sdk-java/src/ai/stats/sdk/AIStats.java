@@ -464,10 +464,6 @@ public final class AIStats {
 		return withLifecycleAndTelemetry("models.list", query, false, () -> parse(Operations.listModels(rawClient, null, query, null, null)));
 	}
 
-	public JsonNode listTeamModels(Map<String, String> query) throws IOException, InterruptedException {
-		return withLifecycleAndTelemetry("models.team", query, false, () -> parse(Operations.listTeamModels(rawClient, null, query, null, null)));
-	}
-
 	public JsonNode listProviders(Map<String, String> query) throws IOException, InterruptedException {
 		return withLifecycleAndTelemetry("providers", query, false, () -> parse(Operations.listProviders(rawClient, null, query, null, null)));
 	}
@@ -730,7 +726,7 @@ public final class AIStats {
 		Map<String, String> query = new HashMap<>();
 		query.put("model_id", modelId);
 		query.put("limit", "1");
-		JsonNode response = parse(Operations.listDataModels(rawClient, null, query, null, null));
+		JsonNode response = parse(Operations.listModels(rawClient, null, query, null, null));
 		JsonNode models = response.path("models");
 		if (!models.isArray()) {
 			return null;

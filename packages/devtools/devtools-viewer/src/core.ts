@@ -33,8 +33,6 @@ export type EndpointType =
   | "pricing.calculate"
   | "key.current"
   | "models.list"
-  | "models.data"
-  | "models.team"
   | "providers"
   | "providers.derank"
   | "credits"

@@ -9,6 +9,11 @@ import {
   revalidateModelDataTags,
 } from "@/lib/cache/revalidateDataTags"
 import {
+  getIndexNowModelUrls,
+  getIndexNowProviderUrls,
+  submitIndexNowUrls,
+} from "@/lib/indexnow"
+import {
   MODEL_MODALITY_OPTIONS,
   normalizeCapabilityStatus,
   normalizeModelStatus,
@@ -1025,6 +1030,13 @@ export async function updateModel(payload: ModelUpdatePayload) {
   const benchmarkIds = Array.from(
     new Set([...previousBenchmarkIds, ...incomingBenchmarkIds])
   )
+  const providerIdsForIndexNow = Array.from(
+    new Set([
+      ...(provider_models ?? []).map((row) => row.provider_id?.trim() || ""),
+      ...(provider_capabilities ?? []).map((row) => row.provider_id?.trim() || ""),
+      ...(pricing_rules ?? []).map((row) => row.provider_id?.trim() || ""),
+    ].filter(Boolean))
+  )
   revalidateModelDataTags({
     modelId,
     organisationIds: [previousOrganisationId, nextOrganisationId],
@@ -1035,6 +1047,15 @@ export async function updateModel(payload: ModelUpdatePayload) {
   }
   revalidatePath(`/models/**`)
   revalidatePath("/models")
+  await submitIndexNowUrls(
+    [
+      ...getIndexNowModelUrls(modelId),
+      ...providerIdsForIndexNow.flatMap((providerId) =>
+        getIndexNowProviderUrls(providerId)
+      ),
+    ],
+    `update model graph ${modelId}`
+  )
 
   return { ok: true }
 }

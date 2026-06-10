@@ -32,6 +32,7 @@ guides/private/
 .playwright-cli/
 .tools/
 .codex/tmp/
+packages/data/catalog/src/data/monitor-history.json
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/
 packages/sdk/sdk-csharp/**/bin/

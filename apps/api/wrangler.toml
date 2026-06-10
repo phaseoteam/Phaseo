@@ -9,10 +9,11 @@ preview_urls = false
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
-MODEL_DISCOVERY_SHARD_SIZE = "20"
+MODEL_DISCOVERY_SHARD_SIZE = "15"
+MODEL_DISCOVERY_ISSUE_SYNC_ENABLED = "false"
 VIDEO_RECONCILIATION_ENABLED = "true"
 VIDEO_RECONCILIATION_LIMIT = "100"
-EMAIL_OUTBOX_DRAIN_ENABLED = "true"
+EMAIL_OUTBOX_DRAIN_ENABLED = "false"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
 VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "true"
@@ -20,7 +21,7 @@ ENTERPRISE_INVOICING_ENABLED = "true"
 GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
 
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/5 * * * *", "3,6,9,12,18,21,24,27,33,36,39,42,48,51,54,57 15-17 * * *"]
 
 [placement]
 mode = "smart"

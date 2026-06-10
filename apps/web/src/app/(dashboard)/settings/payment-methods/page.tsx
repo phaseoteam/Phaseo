@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { getStripe } from "@/lib/stripe";
+import { ensureWorkspaceStripeWallet } from "@/lib/server/activeTeamStripe";
 import {
   Card,
   CardHeader,
@@ -42,6 +43,18 @@ async function PaymentMethodsContent() {
   const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
   const workspaceId = await getWorkspaceIdFromCookie();
   const stripe = getStripe();
+
+  if (workspaceId && authData.user?.id) {
+    try {
+      await ensureWorkspaceStripeWallet({
+        workspaceId,
+        userId: authData.user.id,
+        email: authData.user.email ?? undefined,
+      });
+    } catch (err) {
+      console.log("[WARN] stripe wallet ensure (payment methods):", String(err));
+    }
+  }
 
   let customerId: string | null = null;
   let customer: Stripe.Customer | null = null;

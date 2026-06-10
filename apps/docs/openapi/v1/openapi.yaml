@@ -14,7 +14,7 @@ servers:
 security:
   - BearerAuth: []
 paths:
-  /gateway/models:
+  /models:
     get:
       x-beta: true
       tags:
@@ -98,190 +98,24 @@ paths:
             type: array
             items:
               type: string
-        - name: input_types
+        - name: model_id
           in: query
-          description: Filter by input types
-          schema:
-            type: array
-            items:
-              type: string
-        - name: output_types
-          in: query
-          description: Filter by output types
-          schema:
-            type: array
-            items:
-              type: string
-        - name: params
-          in: query
-          description: Filter by params
-          schema:
-            type: array
-            items:
-              type: string
-        - name: availability
-          in: query
-          description: >-
-            Availability filter. active returns publicly routable models only;
-            all includes non-routable availability records.
-          schema:
-            type: string
-            enum:
-              - active
-              - all
-            default: active
-        - name: limit
-          in: query
-          description: Limit the number of results
-          schema:
-            type: integer
-            default: 50
-            minimum: 1
-            maximum: 250
-        - name: offset
-          in: query
-          description: Offset for pagination
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
-            maximum: 5000
-        - name: format
-          in: query
-          description: Response format. Defaults to json.
-          schema:
-            type: string
-            enum:
-              - json
-              - rss
-              - atom
-            default: json
-        - name: feed
-          in: query
-          description: Alias for format. Accepts json, rss, or atom.
-          schema:
-            type: string
-            enum:
-              - json
-              - rss
-              - atom
-      responses:
-        '200':
-          description: List of models
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GatewayModelsResponse'
-            application/rss+xml:
-              schema:
-                type: string
-                description: RSS 2.0 XML feed
-            application/atom+xml:
-              schema:
-                type: string
-                description: Atom XML feed
-        '400':
-          description: Invalid request parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvalidRequestResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /gateway/models/me:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: listTeamModels
-      summary: List team-scoped gateway models
-      description: >-
-        Returns team-scoped gateway model listings. Defaults to currently
-        publicly routable models; use availability=all to include non-routable
-        availability records.
-      parameters:
-        - name: endpoints
-          in: query
-          description: Filter by endpoints
-          schema:
-            type: array
-            items:
-              type: string
-        - name: organisation
-          in: query
-          description: Filter by organisation
+          description: Filter by model id
           schema:
             oneOf:
-              - $ref: '#/components/schemas/OrganisationId'
+              - type: string
               - type: array
                 items:
-                  $ref: '#/components/schemas/OrganisationId'
-        - name: provider
+                  type: string
+        - name: id
           in: query
-          description: Filter by provider id
+          description: Alias for model_id filter
           schema:
-            type: array
-            items:
-              type: string
-        - name: provider_status
-          in: query
-          description: Filter by provider rollout status
-          schema:
-            type: array
-            items:
-              type: string
-        - name: provider_routing_status
-          in: query
-          description: Filter by provider routing status
-          schema:
-            type: array
-            items:
-              type: string
-        - name: model_routing_status
-          in: query
-          description: Filter by model routing status
-          schema:
-            type: array
-            items:
-              type: string
-        - name: capability_status
-          in: query
-          description: Filter by provider capability status
-          schema:
-            type: array
-            items:
-              type: string
-        - name: provider_availability_status
-          in: query
-          description: Filter by provider availability status
-          schema:
-            type: array
-            items:
-              type: string
-        - name: provider_availability_reason
-          in: query
-          description: Filter by provider availability reason
-          schema:
-            type: array
-            items:
-              type: string
-        - name: status
-          in: query
-          description: Filter by model status
-          schema:
-            type: array
-            items:
-              type: string
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
         - name: input_types
           in: query
           description: Filter by input types
@@ -2562,138 +2396,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /data/models:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: listDataModels
-      summary: List data models
-      description: Returns source catalogue models from the data_models table.
-      parameters:
-        - name: include_hidden
-          in: query
-          description: Include hidden models in results
-          schema:
-            type: boolean
-            default: false
-        - name: status
-          in: query
-          description: Filter by model status
-          schema:
-            type: array
-            items:
-              type: string
-        - name: organisation
-          in: query
-          description: Filter by organisation
-          schema:
-            oneOf:
-              - $ref: '#/components/schemas/OrganisationId'
-              - type: array
-                items:
-                  $ref: '#/components/schemas/OrganisationId'
-        - name: model_id
-          in: query
-          description: Filter by model id
-          schema:
-            oneOf:
-              - type: string
-              - type: array
-                items:
-                  type: string
-        - name: id
-          in: query
-          description: Alias for model_id filter
-          schema:
-            oneOf:
-              - type: string
-              - type: array
-                items:
-                  type: string
-        - name: limit
-          in: query
-          description: Limit the number of results
-          schema:
-            type: integer
-            default: 50
-            minimum: 1
-            maximum: 250
-        - name: offset
-          in: query
-          description: Offset for pagination
-          schema:
-            type: integer
-            default: 0
-            minimum: 0
-        - name: format
-          in: query
-          description: Response format. Defaults to json.
-          schema:
-            type: string
-            enum:
-              - json
-              - rss
-              - atom
-            default: json
-        - name: feed
-          in: query
-          description: Alias for format. Accepts json, rss, or atom.
-          schema:
-            type: string
-            enum:
-              - json
-              - rss
-              - atom
-      responses:
-        '200':
-          description: List of data models
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  include_hidden:
-                    type: boolean
-                  limit:
-                    type: integer
-                  offset:
-                    type: integer
-                  total:
-                    type: integer
-                  models:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/DataModel'
-            application/rss+xml:
-              schema:
-                type: string
-                description: RSS 2.0 XML feed
-            application/atom+xml:
-              schema:
-                type: string
-                description: Atom XML feed
-        '400':
-          description: Invalid request parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InvalidRequestResponse'
-        '500':
-          description: Error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok:
-                    type: boolean
-                  error:
-                    type: string
-                  message:
-                    type: string
   /endpoints:
     get:
       x-beta: true
@@ -5463,6 +5165,7 @@ components:
         - mistral
         - moonshotai
         - naver-hyperclova
+        - nex-agi
         - nous
         - nvidia
         - openai
@@ -5617,6 +5320,7 @@ components:
         - artificial-analysis
         - attaq
         - autologi
+        - automationbench
         - babe
         - babyvision
         - balrog-ai
@@ -5635,9 +5339,11 @@ components:
         - bigcodebench
         - biobench
         - biolp-bench
+        - biomysterybench
         - bird-sql-(dev)
         - bixbench
         - blink
+        - blueprint-bench-2
         - boolq
         - browsecomp
         - browsecomp-long-128k
@@ -5735,6 +5441,7 @@ components:
         - erqa
         - evalplus
         - expert-swe
+        - exploitbench-cap
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
@@ -5758,6 +5465,7 @@ components:
         - flteval-pass-8
         - frames
         - frontier-math
+        - frontiercode-diamond
         - frontiermath
         - frontiersci-olympiad
         - frontiersci-research
@@ -5766,6 +5474,7 @@ components:
         - fullstackbench-zh
         - functionalmath
         - galileo-agent
+        - gdp-pdf
         - gdpval-aa
         - gdpval-mm
         - genebench
@@ -5837,6 +5546,7 @@ components:
         - ivebench-overall-vs-runway-aleph
         - korbench
         - lbpp-(v2)
+        - legal-agent-benchmark
         - lingoqa
         - lisanbench
         - livebench
@@ -6868,7 +6578,6 @@ components:
           type: string
           enum:
             - shared
-            - team
           example: shared
         availability_mode:
           type: string
@@ -6916,36 +6625,6 @@ components:
         max_offset:
           type: integer
           minimum: 0
-      additionalProperties: true
-    ModelsPrivacyScopeNotImplementedResponse:
-      type: object
-      required:
-        - ok
-        - error
-        - code
-        - message
-        - privacy_scope
-      properties:
-        ok:
-          type: boolean
-          enum:
-            - false
-          example: false
-        error:
-          type: string
-          enum:
-            - not_implemented
-          example: not_implemented
-        code:
-          type: string
-          enum:
-            - models_privacy_scope_not_implemented
-        message:
-          type: string
-        privacy_scope:
-          type: string
-          enum:
-            - team
       additionalProperties: true
     AnalyticsNotImplementedResponse:
       type: object
@@ -7382,6 +7061,7 @@ components:
         - allenai/olmo-3.1-32b
         - anthropic/claude-3.5-haiku
         - anthropic/claude-3.7-sonnet
+        - anthropic/claude-fable-5
         - anthropic/claude-haiku-4.5
         - anthropic/claude-opus-4
         - anthropic/claude-opus-4.1
@@ -7460,14 +7140,8 @@ components:
         - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
         - google/gemini-robotics-er-1.6-preview
-        - google/gemma-3-12b:free
-        - google/gemma-3-1b:free
         - google/gemma-3-27b
-        - google/gemma-3-27b:free
-        - google/gemma-3-4b:free
-        - google/gemma-3n-e2b:free
         - google/gemma-3n-e4b
-        - google/gemma-3n-e4b:free
         - google/gemma-4-26b-a4b
         - google/gemma-4-26b-a4b:free
         - google/gemma-4-31b
@@ -7562,6 +7236,8 @@ components:
         - morph/morph-v3-fast
         - morph/morph-v3-large
         - nex-agi/deepseek-v3.1-nex-n1
+        - nex-agi/nex-n2-pro
+        - nex-agi/nex-n2-pro:free
         - nous/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-70b
@@ -7645,9 +7321,7 @@ components:
         - openai/text-embedding-3-small
         - openai/text-embedding-ada-002
         - openai/whisper-1
-        - poolside/laguna-m.1
         - poolside/laguna-m.1:free
-        - poolside/laguna-xs.2
         - poolside/laguna-xs.2:free
         - primeintellect/intellect-3
         - qwen/qvq-max
@@ -7733,7 +7407,6 @@ components:
         - qwen/qwen3.5-0.8b
         - qwen/qwen3.5-122b-a10b
         - qwen/qwen3.5-27b
-        - qwen/qwen3.5-2b
         - qwen/qwen3.5-35b-a3b
         - qwen/qwen3.5-397b-a17b
         - qwen/qwen3.5-4b

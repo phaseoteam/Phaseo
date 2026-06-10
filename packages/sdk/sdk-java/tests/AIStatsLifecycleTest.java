@@ -24,7 +24,7 @@ public class AIStatsLifecycleTest {
 		List<String> warnings = new ArrayList<>();
 
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/data/models", jsonHandler(dataModelsCalls, """
+		server.createContext("/models", jsonHandler(dataModelsCalls, """
 			{"models":[{"model_id":"provider/old-model","lifecycle":{"status":"deprecated","retirement_date":"2099-01-01T00:00:00Z","replacement_model_id":"provider/new-model"}}]}
 			"""));
 		server.createContext("/responses", jsonHandler(responseCalls, """
@@ -64,7 +64,7 @@ public class AIStatsLifecycleTest {
 		AtomicInteger responseCalls = new AtomicInteger(0);
 
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/data/models", jsonHandler(new AtomicInteger(0), """
+		server.createContext("/models", jsonHandler(new AtomicInteger(0), """
 			{"models":[{"model_id":"provider/retired-model","lifecycle":{"status":"retired","retirement_date":"2020-01-01T00:00:00Z"}}]}
 			"""));
 		server.createContext("/responses", jsonHandler(responseCalls, """

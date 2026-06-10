@@ -385,6 +385,8 @@ export const ModelIds = {
   MORPH_MORPH_V3_LARGE: "morph/morph-v3-large",
   /** Model ID: `nex-agi/deepseek-v3.1-nex-n1`. Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1 */
   NEX_AGI_DEEPSEEK_V3_1_NEX_N1: "nex-agi/deepseek-v3.1-nex-n1",
+  /** Model ID: `nex-agi/nex-n2-pro:free`. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree */
+  NEX_AGI_NEX_N2_PRO_FREE: "nex-agi/nex-n2-pro:free",
   /** Model ID: `nous/hermes-3-llama-3.1-405b`. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b */
   NOUS_HERMES_3_LLAMA_3_1_405B: "nous/hermes-3-llama-3.1-405b",
   /** Model ID: `nousresearch/hermes-3-llama-3.1-405b`. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b */
@@ -549,12 +551,8 @@ export const ModelIds = {
   OPENAI_TEXT_EMBEDDING_ADA_002: "openai/text-embedding-ada-002",
   /** Model ID: `openai/whisper-1`. Model page: https://ai-stats.phaseo.app/models/openai/whisper-1 */
   OPENAI_WHISPER_1: "openai/whisper-1",
-  /** Model ID: `poolside/laguna-m.1`. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1 */
-  POOLSIDE_LAGUNA_M_1: "poolside/laguna-m.1",
   /** Model ID: `poolside/laguna-m.1:free`. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree */
   POOLSIDE_LAGUNA_M_1_FREE: "poolside/laguna-m.1:free",
-  /** Model ID: `poolside/laguna-xs.2`. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2 */
-  POOLSIDE_LAGUNA_XS_2: "poolside/laguna-xs.2",
   /** Model ID: `poolside/laguna-xs.2:free`. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree */
   POOLSIDE_LAGUNA_XS_2_FREE: "poolside/laguna-xs.2:free",
   /** Model ID: `primeintellect/intellect-3`. Model page: https://ai-stats.phaseo.app/models/primeintellect/intellect-3 */

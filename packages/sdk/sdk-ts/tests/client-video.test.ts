@@ -7,7 +7,7 @@ describe("AIStats video helpers", () => {
       const url = String(input);
       const method = String(init?.method ?? "GET").toUpperCase();
 
-      if (url === "https://example.test/data/models" && method === "GET") {
+      if (url === "https://example.test/models" && method === "GET") {
         return new Response(
           JSON.stringify({
             models: [{ model_id: "google/veo-3", status: "active" }],

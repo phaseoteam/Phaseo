@@ -1826,25 +1826,6 @@ public sealed class ModelProviderAvailability
 
 }
 
-public sealed class ModelsPrivacyScopeNotImplementedResponse
-{
-	[JsonPropertyName("code")]
-	public string Code { get; set; }
-
-	[JsonPropertyName("error")]
-	public string Error { get; set; }
-
-	[JsonPropertyName("message")]
-	public string Message { get; set; }
-
-	[JsonPropertyName("ok")]
-	public string Ok { get; set; }
-
-	[JsonPropertyName("privacy_scope")]
-	public string PrivacyScope { get; set; }
-
-}
-
 public sealed class ModerationCategories
 {
 	[JsonPropertyName("harassment")]

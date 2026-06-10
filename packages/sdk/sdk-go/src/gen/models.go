@@ -317,6 +317,7 @@ const (
 	BenchmarkIdArtificialAnalysis BenchmarkId = "artificial-analysis"
 	BenchmarkIdAttaq BenchmarkId = "attaq"
 	BenchmarkIdAutologi BenchmarkId = "autologi"
+	BenchmarkIdAutomationbench BenchmarkId = "automationbench"
 	BenchmarkIdBabe BenchmarkId = "babe"
 	BenchmarkIdBabyvision BenchmarkId = "babyvision"
 	BenchmarkIdBalrogAi BenchmarkId = "balrog-ai"
@@ -335,9 +336,11 @@ const (
 	BenchmarkIdBigcodebench BenchmarkId = "bigcodebench"
 	BenchmarkIdBiobench BenchmarkId = "biobench"
 	BenchmarkIdBiolpBench BenchmarkId = "biolp-bench"
+	BenchmarkIdBiomysterybench BenchmarkId = "biomysterybench"
 	BenchmarkIdBirdSqlDev BenchmarkId = "bird-sql-(dev)"
 	BenchmarkIdBixbench BenchmarkId = "bixbench"
 	BenchmarkIdBlink BenchmarkId = "blink"
+	BenchmarkIdBlueprintBench2 BenchmarkId = "blueprint-bench-2"
 	BenchmarkIdBoolq BenchmarkId = "boolq"
 	BenchmarkIdBrowsecomp BenchmarkId = "browsecomp"
 	BenchmarkIdBrowsecompLong128k BenchmarkId = "browsecomp-long-128k"
@@ -435,6 +438,7 @@ const (
 	BenchmarkIdErqa BenchmarkId = "erqa"
 	BenchmarkIdEvalplus BenchmarkId = "evalplus"
 	BenchmarkIdExpertSwe BenchmarkId = "expert-swe"
+	BenchmarkIdExploitbenchCap BenchmarkId = "exploitbench-cap"
 	BenchmarkIdEyepacsAccuracy BenchmarkId = "eyepacs-accuracy"
 	BenchmarkIdFacts BenchmarkId = "facts"
 	BenchmarkIdFactsBenchmarkSuite BenchmarkId = "facts-benchmark-suite"
@@ -458,6 +462,7 @@ const (
 	BenchmarkIdFltevalPass8 BenchmarkId = "flteval-pass-8"
 	BenchmarkIdFrames BenchmarkId = "frames"
 	BenchmarkIdFrontierMath BenchmarkId = "frontier-math"
+	BenchmarkIdFrontiercodeDiamond BenchmarkId = "frontiercode-diamond"
 	BenchmarkIdFrontiermath BenchmarkId = "frontiermath"
 	BenchmarkIdFrontiersciOlympiad BenchmarkId = "frontiersci-olympiad"
 	BenchmarkIdFrontiersciResearch BenchmarkId = "frontiersci-research"
@@ -466,6 +471,7 @@ const (
 	BenchmarkIdFullstackbenchZh BenchmarkId = "fullstackbench-zh"
 	BenchmarkIdFunctionalmath BenchmarkId = "functionalmath"
 	BenchmarkIdGalileoAgent BenchmarkId = "galileo-agent"
+	BenchmarkIdGdpPdf BenchmarkId = "gdp-pdf"
 	BenchmarkIdGdpvalAa BenchmarkId = "gdpval-aa"
 	BenchmarkIdGdpvalMm BenchmarkId = "gdpval-mm"
 	BenchmarkIdGenebench BenchmarkId = "genebench"
@@ -537,6 +543,7 @@ const (
 	BenchmarkIdIvebenchOverallVsRunwayAleph BenchmarkId = "ivebench-overall-vs-runway-aleph"
 	BenchmarkIdKorbench BenchmarkId = "korbench"
 	BenchmarkIdLbppV2 BenchmarkId = "lbpp-(v2)"
+	BenchmarkIdLegalAgentBenchmark BenchmarkId = "legal-agent-benchmark"
 	BenchmarkIdLingoqa BenchmarkId = "lingoqa"
 	BenchmarkIdLisanbench BenchmarkId = "lisanbench"
 	BenchmarkIdLivebench BenchmarkId = "livebench"
@@ -1268,6 +1275,7 @@ const (
 	KnownModelIdAllenaiOlmo3132b KnownModelId = "allenai/olmo-3.1-32b"
 	KnownModelIdAnthropicClaude35Haiku KnownModelId = "anthropic/claude-3.5-haiku"
 	KnownModelIdAnthropicClaude37Sonnet KnownModelId = "anthropic/claude-3.7-sonnet"
+	KnownModelIdAnthropicClaudeFable5 KnownModelId = "anthropic/claude-fable-5"
 	KnownModelIdAnthropicClaudeHaiku45 KnownModelId = "anthropic/claude-haiku-4.5"
 	KnownModelIdAnthropicClaudeOpus4 KnownModelId = "anthropic/claude-opus-4"
 	KnownModelIdAnthropicClaudeOpus41 KnownModelId = "anthropic/claude-opus-4.1"
@@ -1346,14 +1354,8 @@ const (
 	KnownModelIdGoogleGeminiEmbedding2 KnownModelId = "google/gemini-embedding-2"
 	KnownModelIdGoogleGeminiEmbedding2Preview KnownModelId = "google/gemini-embedding-2-preview"
 	KnownModelIdGoogleGeminiRoboticsEr16Preview KnownModelId = "google/gemini-robotics-er-1.6-preview"
-	KnownModelIdGoogleGemma312bFree KnownModelId = "google/gemma-3-12b:free"
-	KnownModelIdGoogleGemma31bFree KnownModelId = "google/gemma-3-1b:free"
 	KnownModelIdGoogleGemma327b KnownModelId = "google/gemma-3-27b"
-	KnownModelIdGoogleGemma327bFree KnownModelId = "google/gemma-3-27b:free"
-	KnownModelIdGoogleGemma34bFree KnownModelId = "google/gemma-3-4b:free"
-	KnownModelIdGoogleGemma3nE2bFree KnownModelId = "google/gemma-3n-e2b:free"
 	KnownModelIdGoogleGemma3nE4b KnownModelId = "google/gemma-3n-e4b"
-	KnownModelIdGoogleGemma3nE4bFree KnownModelId = "google/gemma-3n-e4b:free"
 	KnownModelIdGoogleGemma426bA4b KnownModelId = "google/gemma-4-26b-a4b"
 	KnownModelIdGoogleGemma426bA4bFree KnownModelId = "google/gemma-4-26b-a4b:free"
 	KnownModelIdGoogleGemma431b KnownModelId = "google/gemma-4-31b"
@@ -1448,6 +1450,8 @@ const (
 	KnownModelIdMorphMorphV3Fast KnownModelId = "morph/morph-v3-fast"
 	KnownModelIdMorphMorphV3Large KnownModelId = "morph/morph-v3-large"
 	KnownModelIdNexAgiDeepseekV31NexN1 KnownModelId = "nex-agi/deepseek-v3.1-nex-n1"
+	KnownModelIdNexAgiNexN2Pro KnownModelId = "nex-agi/nex-n2-pro"
+	KnownModelIdNexAgiNexN2ProFree KnownModelId = "nex-agi/nex-n2-pro:free"
 	KnownModelIdNousHermes3Llama31405b KnownModelId = "nous/hermes-3-llama-3.1-405b"
 	KnownModelIdNousresearchHermes3Llama31405b KnownModelId = "nousresearch/hermes-3-llama-3.1-405b"
 	KnownModelIdNousresearchHermes3Llama3170b KnownModelId = "nousresearch/hermes-3-llama-3.1-70b"
@@ -1531,9 +1535,7 @@ const (
 	KnownModelIdOpenaiTextEmbedding3Small KnownModelId = "openai/text-embedding-3-small"
 	KnownModelIdOpenaiTextEmbeddingAda002 KnownModelId = "openai/text-embedding-ada-002"
 	KnownModelIdOpenaiWhisper1 KnownModelId = "openai/whisper-1"
-	KnownModelIdPoolsideLagunaM1 KnownModelId = "poolside/laguna-m.1"
 	KnownModelIdPoolsideLagunaM1Free KnownModelId = "poolside/laguna-m.1:free"
-	KnownModelIdPoolsideLagunaXs2 KnownModelId = "poolside/laguna-xs.2"
 	KnownModelIdPoolsideLagunaXs2Free KnownModelId = "poolside/laguna-xs.2:free"
 	KnownModelIdPrimeintellectIntellect3 KnownModelId = "primeintellect/intellect-3"
 	KnownModelIdQwenQvqMax KnownModelId = "qwen/qvq-max"
@@ -1619,7 +1621,6 @@ const (
 	KnownModelIdQwenQwen3508b KnownModelId = "qwen/qwen3.5-0.8b"
 	KnownModelIdQwenQwen35122bA10b KnownModelId = "qwen/qwen3.5-122b-a10b"
 	KnownModelIdQwenQwen3527b KnownModelId = "qwen/qwen3.5-27b"
-	KnownModelIdQwenQwen352b KnownModelId = "qwen/qwen3.5-2b"
 	KnownModelIdQwenQwen3535bA3b KnownModelId = "qwen/qwen3.5-35b-a3b"
 	KnownModelIdQwenQwen35397bA17b KnownModelId = "qwen/qwen3.5-397b-a17b"
 	KnownModelIdQwenQwen354b KnownModelId = "qwen/qwen3.5-4b"
@@ -1828,14 +1829,6 @@ type ModelProviderAvailability struct {
 	ProviderStatus string `json:"provider_status"`
 }
 
-type ModelsPrivacyScopeNotImplementedResponse struct {
-	Code string `json:"code"`
-	Error string `json:"error"`
-	Message string `json:"message"`
-	Ok string `json:"ok"`
-	PrivacyScope string `json:"privacy_scope"`
-}
-
 type ModerationCategories struct {
 	Harassment *bool `json:"harassment,omitempty"`
 	HarassmentThreatening *bool `json:"harassment/threatening,omitempty"`
@@ -1949,6 +1942,7 @@ const (
 	OrganisationIdMistral OrganisationId = "mistral"
 	OrganisationIdMoonshotai OrganisationId = "moonshotai"
 	OrganisationIdNaverHyperclova OrganisationId = "naver-hyperclova"
+	OrganisationIdNexAgi OrganisationId = "nex-agi"
 	OrganisationIdNous OrganisationId = "nous"
 	OrganisationIdNvidia OrganisationId = "nvidia"
 	OrganisationIdOpenai OrganisationId = "openai"

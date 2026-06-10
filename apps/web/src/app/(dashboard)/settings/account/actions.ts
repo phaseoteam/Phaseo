@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { createHash, randomBytes } from 'crypto'
 import { cookies } from 'next/headers'
 import { OBFUSCATE_INFO_COOKIE, serializeObfuscateInfo } from '@/lib/obfuscation'
+import { sendAccountLifecycleDiscordWebhook } from '@/lib/auth/accountLifecycleDiscord'
 
 export async function updateAccount(payload: {
     display_name?: string | null
@@ -60,6 +61,18 @@ export async function deleteAccount() {
     // If this fails, throw so the client can show an error
     const { error } = await (admin as any).auth.admin.deleteUser(authUser.id)
     if (error) throw new Error(error.message)
+
+    void sendAccountLifecycleDiscordWebhook({
+        event: 'account_deleted',
+        userId: authUser.id,
+        email: authUser.email ?? null,
+        timestampIso: new Date().toISOString(),
+    }).catch((error) => {
+        console.error('Failed sending account deletion Discord webhook', {
+            userId: authUser.id,
+            error: error instanceof Error ? error.message : String(error),
+        })
+    })
 
     return { ok: true }
 }

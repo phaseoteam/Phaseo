@@ -35,26 +35,34 @@ import {
     getTopApps,
     getOrganisationLogoIdsByNames,
     getAppImageUrlsByIds,
+    getRankingsIndexabilitySnapshot,
 } from "@/lib/fetchers/rankings/getRankingsData";
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
-	description:
-		"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
-	path: "/rankings",
-	keywords: [
-		"AI model rankings",
-		"LLM rankings",
-		"model latency",
-		"model throughput",
-		"AI usage statistics",
-	],
-	openGraph: {
-		title: "AI Model Rankings: Live Usage Statistics",
+export async function generateMetadata(): Promise<Metadata> {
+	const indexability = await getRankingsIndexabilitySnapshot();
+
+	return buildMetadata({
+		title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
 		description:
-			"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
-	},
-});
+			"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
+		path: "/rankings",
+		keywords: [
+			"AI model rankings",
+			"LLM rankings",
+			"model latency",
+			"model throughput",
+			"AI usage statistics",
+		],
+		openGraph: {
+			title: "AI Model Rankings: Live Usage Statistics",
+			description:
+				"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
+		},
+		robots: indexability.shouldIndex
+			? { index: true, follow: true }
+			: { index: false, follow: true },
+	});
+}
 
 export default async function RankingsPage() {
     return (

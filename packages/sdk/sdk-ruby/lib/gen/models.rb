@@ -1081,17 +1081,6 @@ module AiStats
     # @!attribute [rw] provider_status
     #   @return [String]
     ModelProviderAvailability = Struct.new(:api_provider_id, :api_provider_name, :availability_reason, :availability_status, :capability_status, :effective_from, :effective_to, :endpoints, :is_active_gateway, :model_routing_status, :params, :provider_routing_status, :provider_status, keyword_init: true)
-    # @!attribute [rw] code
-    #   @return [String]
-    # @!attribute [rw] error
-    #   @return [String]
-    # @!attribute [rw] message
-    #   @return [String]
-    # @!attribute [rw] ok
-    #   @return [String]
-    # @!attribute [rw] privacy_scope
-    #   @return [String]
-    ModelsPrivacyScopeNotImplementedResponse = Struct.new(:code, :error, :message, :ok, :privacy_scope, keyword_init: true)
     # @!attribute [rw] harassment
     #   @return [Boolean, nil]
     # @!attribute [rw] harassment_threatening

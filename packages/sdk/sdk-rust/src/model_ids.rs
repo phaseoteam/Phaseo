@@ -576,6 +576,9 @@ pub mod model_ids {
     /// Model ID: `nex-agi/deepseek-v3.1-nex-n1`.
     /// Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
     pub const NEX_AGI_DEEPSEEK_V3_1_NEX_N1: &str = "nex-agi/deepseek-v3.1-nex-n1";
+    /// Model ID: `nex-agi/nex-n2-pro:free`.
+    /// Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
+    pub const NEX_AGI_NEX_N2_PRO_FREE: &str = "nex-agi/nex-n2-pro:free";
     /// Model ID: `nous/hermes-3-llama-3.1-405b`.
     /// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
     pub const NOUS_HERMES_3_LLAMA_3_1_405B: &str = "nous/hermes-3-llama-3.1-405b";
@@ -822,15 +825,9 @@ pub mod model_ids {
     /// Model ID: `openai/whisper-1`.
     /// Model page: https://ai-stats.phaseo.app/models/openai/whisper-1
     pub const OPENAI_WHISPER_1: &str = "openai/whisper-1";
-    /// Model ID: `poolside/laguna-m.1`.
-    /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1
-    pub const POOLSIDE_LAGUNA_M_1: &str = "poolside/laguna-m.1";
     /// Model ID: `poolside/laguna-m.1:free`.
     /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-m.1%3Afree
     pub const POOLSIDE_LAGUNA_M_1_FREE: &str = "poolside/laguna-m.1:free";
-    /// Model ID: `poolside/laguna-xs.2`.
-    /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2
-    pub const POOLSIDE_LAGUNA_XS_2: &str = "poolside/laguna-xs.2";
     /// Model ID: `poolside/laguna-xs.2:free`.
     /// Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
     pub const POOLSIDE_LAGUNA_XS_2_FREE: &str = "poolside/laguna-xs.2:free";
@@ -1558,6 +1555,7 @@ pub mod model_ids {
         MORPH_MORPH_V3_FAST,
         MORPH_MORPH_V3_LARGE,
         NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
+        NEX_AGI_NEX_N2_PRO_FREE,
         NOUS_HERMES_3_LLAMA_3_1_405B,
         NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
         NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,
@@ -1640,9 +1638,7 @@ pub mod model_ids {
         OPENAI_TEXT_EMBEDDING_3_SMALL,
         OPENAI_TEXT_EMBEDDING_ADA_002,
         OPENAI_WHISPER_1,
-        POOLSIDE_LAGUNA_M_1,
         POOLSIDE_LAGUNA_M_1_FREE,
-        POOLSIDE_LAGUNA_XS_2,
         POOLSIDE_LAGUNA_XS_2_FREE,
         PRIMEINTELLECT_INTELLECT_3,
         QWEN_QVQ_MAX,

@@ -14,6 +14,7 @@ export interface ModelCard {
     hidden?: boolean;
     release_date?: string | null;
     announcement_date?: string | null;
+    updated_at?: string | null;
     input_types?: string[];
     output_types?: string[];
     // Backward-compatibility alias used in some legacy call sites
@@ -136,6 +137,7 @@ export function mapRawToModelCard(
         hidden: Boolean(raw.hidden),
         release_date: raw.release_date ?? null,
         announcement_date: raw.announcement_date ?? null,
+        updated_at: raw.updated_at ?? null,
         input_types: inputTypes,
         output_types: outputTypes,
         input_modalities: inputTypes,
@@ -157,6 +159,38 @@ type GetModelsFilter = {
     includeHidden?: boolean;
 };
 
+const PAGE_SIZE = 1000;
+
+async function fetchPagedRows(
+    runQuery: (from: number, to: number) => Promise<{ data: any[] | null; error: any }>,
+    errorContext: string,
+): Promise<any[]> {
+    const rows: any[] = [];
+
+    for (let from = 0; ; from += PAGE_SIZE) {
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await runQuery(from, to);
+
+        if (error) {
+            // eslint-disable-next-line no-console
+            console.warn(`[getAllModels] supabase error ${errorContext}`, error.message);
+            throw error;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            break;
+        }
+
+        rows.push(...data);
+
+        if (data.length < PAGE_SIZE) {
+            break;
+        }
+    }
+
+    return rows;
+}
+
 async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
     const supabase = await createClient();
     const includeHidden = Boolean(filters.includeHidden);
@@ -171,6 +205,7 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
             hidden,
             release_date,
             announcement_date,
+            updated_at,
             input_types,
             output_types,
             organisation: data_organisations (name, colour)
@@ -178,49 +213,40 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
 
     // No search filter: simple ordered query
     if (!search) {
-        const query = applyHiddenFilter(
-            supabase.from("data_models").select(baseSelect),
-            includeHidden
+        return fetchPagedRows(
+            (from, to) =>
+                applyHiddenFilter(
+                    supabase.from("data_models").select(baseSelect),
+                    includeHidden
+                )
+                    .order("name", { ascending: true })
+                    .range(from, to),
+            "fetching models",
         );
-        const { data, error } = await query.order("name", { ascending: true });
-
-        if (error) {
-            // eslint-disable-next-line no-console
-            console.warn(
-                "[getAllModels] supabase error fetching models",
-                error.message
-            );
-            throw error;
-        }
-
-        return (data ?? []) as any[];
     }
 
     const like = `%${search}%`;
 
     // 1) Models whose name matches the search
     const [
-        { data: byNameData, error: byNameError },
+        byNameData,
         { data: orgsData, error: orgsError },
     ] = await Promise.all([
-        applyHiddenFilter(
-            supabase.from("data_models").select(baseSelect),
-            includeHidden
-        ).ilike("name", like),
+        fetchPagedRows(
+            (from, to) =>
+                applyHiddenFilter(
+                    supabase.from("data_models").select(baseSelect),
+                    includeHidden
+                )
+                    .ilike("name", like)
+                    .range(from, to),
+            "fetching models by name",
+        ),
         supabase
             .from("data_organisations")
             .select("organisation_id")
             .ilike("name", like),
     ]);
-
-    if (byNameError) {
-        // eslint-disable-next-line no-console
-        console.warn(
-            "[getAllModels] supabase error fetching models by name",
-            byNameError.message
-        );
-        throw byNameError;
-    }
 
     if (orgsError) {
         // eslint-disable-next-line no-console
@@ -238,24 +264,16 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
     let byOrgData: any[] = [];
 
     if (orgIds.length > 0) {
-        const {
-            data: modelsByOrg,
-            error: modelsByOrgError,
-        } = await applyHiddenFilter(
-            supabase.from("data_models").select(baseSelect),
-            includeHidden
-        ).in("organisation_id", orgIds);
-
-        if (modelsByOrgError) {
-            // eslint-disable-next-line no-console
-            console.warn(
-                "[getAllModels] supabase error fetching models by organisation",
-                modelsByOrgError.message
-            );
-            throw modelsByOrgError;
-        }
-
-        byOrgData = (modelsByOrg ?? []) as any[];
+        byOrgData = await fetchPagedRows(
+            (from, to) =>
+                applyHiddenFilter(
+                    supabase.from("data_models").select(baseSelect),
+                    includeHidden
+                )
+                    .in("organisation_id", orgIds)
+                    .range(from, to),
+            "fetching models by organisation",
+        );
     }
 
     // Merge and de-duplicate by model_id

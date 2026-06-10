@@ -48,6 +48,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	lg: "LG",
 	llmgateway: "LLM Gateway",
 	"naver-hyperclova": "NAVER HyperCLOVA",
+	"nex-agi": "Nex AGI",
 	n8n: "n8n",
 	opencode: "OpenCode",
 	openwebui: "Open WebUI",

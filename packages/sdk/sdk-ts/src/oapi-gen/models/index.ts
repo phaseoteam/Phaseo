@@ -83,7 +83,6 @@ export type { ModelAvailability } from "./ModelAvailability.js";
 export type { ModelId } from "./ModelId.js";
 export type { ModelLifecycle } from "./ModelLifecycle.js";
 export type { ModelProviderAvailability } from "./ModelProviderAvailability.js";
-export type { ModelsPrivacyScopeNotImplementedResponse } from "./ModelsPrivacyScopeNotImplementedResponse.js";
 export type { ModerationCategories } from "./ModerationCategories.js";
 export type { ModerationCategoryScores } from "./ModerationCategoryScores.js";
 export type { ModerationResult } from "./ModerationResult.js";

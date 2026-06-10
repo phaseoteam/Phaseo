@@ -94,7 +94,7 @@ Required environment:
 
 ### DeepSeek v4 Flash Provider Sweep
 
-Provider-pinned `/responses` coverage for `deepseek/deepseek-v4-flash`, using whichever active providers are currently exposed in `/gateway/models`.
+Provider-pinned `/responses` coverage for `deepseek/deepseek-v4-flash`, using whichever active providers are currently exposed in `/models`.
 
 Run it with:
 
@@ -180,7 +180,7 @@ Useful optional environment:
 
 ## Provider Endpoint Matrix
 
-This suite discovers active provider/model capability pairs from `/gateway/models`, picks a low-cost model candidate for each provider + supported data-plane surface, and exercises one minimal valid request per surface.
+This suite discovers active provider/model capability pairs from `/models`, picks a low-cost model candidate for each provider + supported data-plane surface, and exercises one minimal valid request per surface.
 
 Covered HTTP surfaces:
 

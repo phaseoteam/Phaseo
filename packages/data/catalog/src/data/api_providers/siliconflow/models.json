@@ -399,6 +399,27 @@
     ]
   },
   {
+    "api_model_id": "nex-agi/nex-n2-pro:free",
+    "provider_api_model_id": "siliconflow:nex-agi/nex-n2-pro:free",
+    "provider_model_slug": "nex-agi/Nex-N2-Pro",
+    "internal_model_id": "nex-agi/nex-n2-pro",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262000,
+    "max_output_tokens": 256000,
+    "effective_from": "2026-06-05T00:00:00",
+    "effective_to": "2026-06-19T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "nex-agi/deepseek-v3.1-nex-n1",
     "provider_api_model_id": "siliconflow:nex-agi/deepseek-v3.1-nex-n1",
     "provider_model_slug": "nex-agi/DeepSeek-V3.1-Nex-N1",

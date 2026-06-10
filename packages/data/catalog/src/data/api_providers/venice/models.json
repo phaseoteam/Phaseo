@@ -470,6 +470,27 @@
     ]
   },
   {
+    "api_model_id": "qwen/qwen3.7-plus",
+    "provider_api_model_id": "venice:qwen/qwen3.7-plus",
+    "provider_model_slug": "qwen-3-7-plus",
+    "internal_model_id": "qwen/qwen3.7-plus",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-06-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "minimax/minimax-m3",
     "provider_api_model_id": "venice:minimax/minimax-m3",
     "provider_model_slug": "minimax-m3",
@@ -1648,6 +1669,27 @@
     ]
   },
   {
+    "api_model_id": "qwen/qwen3.7-plus",
+    "provider_api_model_id": "venice:qwen/qwen3.7-plus",
+    "provider_model_slug": "qwen-3-7-plus",
+    "internal_model_id": "qwen/qwen3.7-plus",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 65536,
+    "effective_from": "2026-06-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "minimax/minimax-m3",
     "provider_api_model_id": "venice:minimax/minimax-m3",
     "provider_model_slug": "minimax-m3",
@@ -1750,7 +1792,7 @@
     "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": 128000,
-    "effective_from": null,
+    "effective_from": "2026-06-09T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1777,6 +1819,27 @@
       {
         "capability_id": "text.generate",
         "status": "deranked_lvl2",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "anthropic/claude-fable-5",
+    "provider_api_model_id": "venice:anthropic/claude-fable-5",
+    "provider_model_slug": "claude-fable-5",
+    "internal_model_id": "anthropic/claude-fable-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
         "params": []
       }
     ]

@@ -26,6 +26,6 @@
   "pricing_source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
   "regional_pricing_notes": "Displayed pricing reflects the standard Claude API rate card billed through AWS Marketplace CCUs. Anthropic documents a 1.1x multiplier for US-only inference on Claude Opus 4.6, Claude Sonnet 4.6, and later models when inference_geo is set to us.",
   "country_code": "US",
-  "status": "NotReady",
+  "status": "Active",
   "colour": "#CC785C"
 }
