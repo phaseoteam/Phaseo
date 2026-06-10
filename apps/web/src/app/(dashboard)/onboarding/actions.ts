@@ -37,14 +37,19 @@ function isMissingOnboardingColumnError(error: unknown): boolean {
 
 async function mergeUserOnboardingState(input: OnboardingProgressInput) {
 	const { supabase, user } = await requireAuthenticatedUser();
-	const { data: existing } = await supabase
+	const { data: existing, error: readError } = await supabase
 		.from("users")
 		.select("onboarding_state")
 		.eq("user_id", user.id)
 		.maybeSingle();
+	if (readError && !isMissingOnboardingColumnError(readError)) {
+		throw readError;
+	}
 
 	const current =
-		existing?.onboarding_state && typeof existing.onboarding_state === "object"
+		!readError &&
+		existing?.onboarding_state &&
+		typeof existing.onboarding_state === "object"
 			? (existing.onboarding_state as Record<string, unknown>)
 			: {};
 	const next: Record<string, unknown> = {

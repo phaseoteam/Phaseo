@@ -537,18 +537,20 @@ export async function finalizePostLogin(
 	}
 
 	let onboardingComplete: boolean | null = null;
-	try {
-		onboardingComplete = await hasCompletedOnboarding({
-			supabaseAdmin,
-			userId: user.id,
-		});
-	} catch (error) {
-		console.error("Failed to check onboarding status during post-login", {
-			source: input.source,
-			workspaceId,
-			userId: user.id,
-			error: error instanceof Error ? error.message : String(error),
-		});
+	if (provisionedTeam.createdPersonalTeam && input.returnUrl === "/") {
+		try {
+			onboardingComplete = await hasCompletedOnboarding({
+				supabaseAdmin,
+				userId: user.id,
+			});
+		} catch (error) {
+			console.error("Failed to check onboarding status during post-login", {
+				source: input.source,
+				workspaceId,
+				userId: user.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
+		}
 	}
 	const shouldShowOnboarding = shouldRedirectToOnboardingAfterLogin({
 		returnUrl: input.returnUrl,
