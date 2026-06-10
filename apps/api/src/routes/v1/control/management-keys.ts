@@ -195,6 +195,13 @@ async function handleUpdateManagementKey(req: Request) {
 		if (typeof body.name === "string") patch.name = body.name.trim();
 		if (typeof body.paused === "boolean") patch.status = body.paused ? "paused" : "active";
 		if (body.scopes !== undefined) {
+			if (body.scopes === null) {
+				return json(
+					{ error: "bad_request", message: "scopes must be omitted to keep existing scopes or provided as a string or string[]" },
+					400,
+					{ "Cache-Control": "no-store" },
+				);
+			}
 			const scopes = normalizeScopeInput(body.scopes);
 			if (scopes.ok === false) return json({ error: "bad_request", message: scopes.message }, 400, { "Cache-Control": "no-store" });
 			patch.scopes = scopes.value;
