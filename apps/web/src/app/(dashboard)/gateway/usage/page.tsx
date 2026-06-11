@@ -25,9 +25,20 @@ export default async function Page(props: {
 		}
 	}
 
+	const tab =
+		typeof sp?.tab === "string"
+			? sp.tab
+			: Array.isArray(sp?.tab)
+				? sp.tab[0]
+				: undefined;
+	const normalizedTab = (tab ?? "").toLowerCase();
+	const target =
+		normalizedTab === "trends" ||
+		normalizedTab === "explore" ||
+		normalizedTab === "guardrails"
+			? `/settings/usage/${normalizedTab}`
+			: "/settings/usage/overview";
 	const qs = params.toString();
-	permanentRedirect(
-		qs ? `/settings/usage/overview?${qs}` : "/settings/usage/overview",
-	);
+	permanentRedirect(qs ? `${target}?${qs}` : target);
 }
 

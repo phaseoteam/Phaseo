@@ -151,12 +151,14 @@ export default function UsageLogsToolbar({
 	customFrom,
 	customTo,
 	showRefresh = true,
+	showLivePreset = true,
 }: {
 	view: UsageLogsViewKey;
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
 	showRefresh?: boolean;
+	showLivePreset?: boolean;
 }) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -370,6 +372,7 @@ export default function UsageLogsToolbar({
 	}, [runRefresh]);
 
 	React.useEffect(() => {
+		if (!showLivePreset) return;
 		if (effectivePreset !== "live") return;
 		const interval = window.setInterval(() => {
 			setSecondsUntilRefresh((current) => {
@@ -384,7 +387,7 @@ export default function UsageLogsToolbar({
 			});
 		}, 1_000);
 		return () => window.clearInterval(interval);
-	}, [effectivePreset, isRefreshing, isRevalidating, runRefresh]);
+	}, [effectivePreset, isRefreshing, isRevalidating, runRefresh, showLivePreset]);
 
 	const rollingOptions: Array<{ preset: UsageRangePreset; badge: string }> = [
 		{ preset: "past_15m", badge: "15m" },
@@ -612,13 +615,15 @@ export default function UsageLogsToolbar({
 										onClick={() => setShowCustomRange(true)}
 									/>
 
-									<RangeOptionButton
-										badge="live"
-										label="Live"
-										live
-										active={effectivePreset === "live"}
-										onClick={() => selectPreset("live")}
-									/>
+									{showLivePreset ? (
+										<RangeOptionButton
+											badge="live"
+											label="Live"
+											live
+											active={effectivePreset === "live"}
+											onClick={() => selectPreset("live")}
+										/>
+									) : null}
 								</div>
 							</div>
 						)}

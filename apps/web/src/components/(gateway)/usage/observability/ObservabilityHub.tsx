@@ -2436,6 +2436,7 @@ export default function ObservabilityHub({
 						customFrom={customFrom}
 						customTo={customTo}
 						showRefresh={false}
+						showLivePreset={false}
 					/>
 				</div>
 			</div>
