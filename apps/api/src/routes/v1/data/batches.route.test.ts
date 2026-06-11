@@ -1281,6 +1281,9 @@ describe("batchRoutes", () => {
 						completion_window: "24h",
 					});
 				}
+				if (url === "https://api.openai.example/v1/batches/batch_meta_failed_123/cancel" && method === "POST") {
+					return jsonResponse({ id: "batch_meta_failed_123", status: "cancelled" });
+				}
 				throw new Error(`Unexpected fetch: ${method} ${url}`);
 			}),
 		);
@@ -1313,7 +1316,12 @@ describe("batchRoutes", () => {
 		expect(state.webhookEvents).toEqual([]);
 		expect(state.operationLog).toEqual([]);
 		expect(state.fileMeta.get(fileKey("ws_batch_test", "file_input_meta_failed_123"))).toBeUndefined();
-		expect(state.releaseCalls).toEqual([]);
+		expect(state.releaseCalls).toEqual([
+			expect.objectContaining({
+				workspaceId: "ws_batch_test",
+				reservationId: expect.stringContaining("batch_hold:"),
+			}),
+		]);
 	});
 
 	it("releases the held reservation when upstream batch creation throws", async () => {

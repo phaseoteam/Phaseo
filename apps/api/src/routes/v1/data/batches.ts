@@ -855,6 +855,32 @@ async function handleCreate(req: Request) {
 				await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta);
 				batchMetaPersisted = true;
 			} catch (lookupErr) {
+				await fetchOpenAiBatches({
+					endpointPath: `/batches/${encodeURIComponent(batchId)}/cancel`,
+					method: "POST",
+				}).catch((cancelErr) => {
+					console.error("batch_upstream_cancel_after_meta_store_failed", {
+						error: cancelErr,
+						workspaceId: auth.workspaceId,
+						batchId,
+						requestId,
+					});
+				});
+				if (reservation?.held) {
+					await releaseWalletReservation({
+						workspaceId: auth.workspaceId,
+						reservationId: reservation.reservationId,
+						releaseRefId: requestId,
+					}).catch((releaseErr) => {
+						console.error("batch_reservation_release_after_meta_store_failed", {
+							error: releaseErr,
+							workspaceId: auth.workspaceId,
+							batchId,
+							requestId,
+							reservationId: reservation.reservationId,
+						});
+					});
+				}
 				console.error("batch_job_meta_store_failed", {
 					error: lookupErr,
 					workspaceId: auth.workspaceId,
@@ -862,7 +888,7 @@ async function handleCreate(req: Request) {
 					requestId,
 					reservationId: reservation?.reservationId ?? null,
 					reservationStatus: reservation?.status ?? null,
-					note: "reservation_retained_for_manual_reconciliation",
+					note: "upstream_cancel_and_reservation_release_attempted",
 				});
 				return batchAsyncPersistenceFailureResponse({
 					message: "Batch job was created upstream, but AI Stats could not persist gateway ownership metadata.",

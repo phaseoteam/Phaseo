@@ -38,6 +38,39 @@ function looksLikeOpenAiVideoId(value: string | null | undefined): boolean {
 	return /^video_[A-Za-z0-9_-]+$/.test(id);
 }
 
+async function guardedVideoCancelFetch(
+	url: string,
+	init: RequestInit,
+	args: {
+		reason: string;
+		provider: string;
+		taskId: string;
+		requestId: string;
+		workspaceId: string;
+	},
+): Promise<Response> {
+	const timeoutMs = 30000;
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), timeoutMs);
+	try {
+		return await fetch(url, {
+			...init,
+			signal: controller.signal,
+		});
+	} catch (fetchErr) {
+		return err("upstream_error", {
+			reason: args.reason,
+			provider: args.provider,
+			provider_task_id: args.taskId,
+			request_id: args.requestId,
+			workspace_id: args.workspaceId,
+			error: fetchErr instanceof Error ? fetchErr.message : String(fetchErr),
+		});
+	} finally {
+		clearTimeout(timeout);
+	}
+}
+
 export function resolveOpenAiCompatVideoProviderForFallback(
 	record: VideoJobRecord | null,
 	meta: VideoJobMeta | null,
@@ -164,14 +197,24 @@ export async function cancelDashscopeTask(
 	}
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const baseUrl = (bindings.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com").replace(/\/+$/, "");
-	return fetch(`${baseUrl}/api/v1/tasks/${encodeURIComponent(taskId)}/cancel`, {
-		method: "POST",
-		headers: {
-			Authorization: `Bearer ${key}`,
-			"Content-Type": "application/json",
-			Accept: "application/json",
+	return guardedVideoCancelFetch(
+		`${baseUrl}/api/v1/tasks/${encodeURIComponent(taskId)}/cancel`,
+		{
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${key}`,
+				"Content-Type": "application/json",
+				Accept: "application/json",
+			},
 		},
-	});
+		{
+			reason: "dashscope_task_cancel_failed",
+			provider: providerId,
+			taskId,
+			requestId: auth.requestId,
+			workspaceId: auth.workspaceId,
+		},
+	);
 }
 
 export async function fetchXAiVideoStatus(
@@ -345,10 +388,20 @@ export async function cancelRunwayTask(
 		Accept: "application/json",
 	};
 	if (apiVersion) headers["X-Runway-Version"] = apiVersion;
-	return fetch(`${baseUrl}/v1/tasks/${encodeURIComponent(taskId)}`, {
-		method: "DELETE",
-		headers,
-	});
+	return guardedVideoCancelFetch(
+		`${baseUrl}/v1/tasks/${encodeURIComponent(taskId)}`,
+		{
+			method: "DELETE",
+			headers,
+		},
+		{
+			reason: "runway_task_cancel_failed",
+			provider: providerId,
+			taskId,
+			requestId: auth.requestId,
+			workspaceId: auth.workspaceId,
+		},
+	);
 }
 
 export function extractAtlasPredictionPayload(payload: unknown): Record<string, unknown> {

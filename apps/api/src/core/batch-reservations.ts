@@ -107,7 +107,7 @@ function resolvePricingCapabilityCandidates(endpoint: unknown): string[] {
 	return [...new Set(candidates.map((value) => value.trim()).filter(Boolean))];
 }
 
-async function fetchOpenAiFileText(fileIdRaw: string): Promise<string> {
+async function fetchOpenAiFileInput(fileIdRaw: string): Promise<ParsedBatchInput> {
 	const fileId = normalizeText(fileIdRaw);
 	if (!fileId) throw new Error("missing_input_file_id");
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
@@ -125,7 +125,44 @@ async function fetchOpenAiFileText(fileIdRaw: string): Promise<string> {
 		const preview = await response.text().catch(() => "");
 		throw new Error(`openai_batch_input_fetch_failed_${response.status}:${preview.slice(0, 200)}`);
 	}
-	return response.text();
+	if (!response.body) return parseJsonLines(await response.text());
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	const lines: string[] = [];
+	let buffered = "";
+	let totalRows = 0;
+	let done = false;
+	try {
+		while (!done && lines.length <= MAX_BATCH_ROWS_TO_PRICE) {
+			const chunk = await reader.read();
+			done = chunk.done;
+			buffered += decoder.decode(chunk.value ?? new Uint8Array(), { stream: !done });
+			const parts = buffered.split(/\r?\n/);
+			buffered = parts.pop() ?? "";
+			for (const part of parts) {
+				const line = part.trim();
+				if (!line) continue;
+				totalRows += 1;
+				if (lines.length <= MAX_BATCH_ROWS_TO_PRICE) lines.push(line);
+				if (lines.length > MAX_BATCH_ROWS_TO_PRICE) break;
+			}
+		}
+		if (!done) await reader.cancel().catch(() => undefined);
+	} finally {
+		reader.releaseLock();
+	}
+	if (lines.length <= MAX_BATCH_ROWS_TO_PRICE) {
+		const line = buffered.trim();
+		if (line) {
+			totalRows += 1;
+			lines.push(line);
+		}
+	}
+	return {
+		entries: lines.slice(0, MAX_BATCH_ROWS_TO_PRICE).map((line) => JSON.parse(line)),
+		totalRows,
+		truncated: lines.length > MAX_BATCH_ROWS_TO_PRICE,
+	};
 }
 
 function parseJsonLines(text: string): ParsedBatchInput {
@@ -396,7 +433,7 @@ export async function reserveBatchCredits(args: {
 
 	let parsedInput: ParsedBatchInput;
 	try {
-		parsedInput = parseJsonLines(await fetchOpenAiFileText(inputFileId));
+		parsedInput = await fetchOpenAiFileInput(inputFileId);
 	} catch (error) {
 		console.warn("batch_reservation_input_read_failed", {
 			workspaceId: args.workspaceId,

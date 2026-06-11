@@ -9,6 +9,7 @@ const saveVideoJobMetaMock = vi.fn(async () => undefined);
 const state = vi.hoisted(() => ({
 	reservationResult: null as Record<string, unknown> | null,
 	releaseCalls: [] as Array<Record<string, unknown>>,
+	saveVideoJobMetaCalls: [] as Array<unknown[]>,
 	saveVideoJobMetaError: null as Error | null,
 }));
 
@@ -27,6 +28,7 @@ vi.mock("@core/video-reservations", () => ({
 
 vi.mock("@core/video-jobs", () => ({
 	saveVideoJobMeta: (...args: unknown[]) => {
+		state.saveVideoJobMetaCalls.push(args);
 		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
 		return saveVideoJobMetaMock(...args);
 	},
@@ -81,6 +83,7 @@ describe("minimax video executor", () => {
 		saveVideoJobMetaMock.mockClear();
 		state.reservationResult = null;
 		state.releaseCalls = [];
+		state.saveVideoJobMetaCalls = [];
 		state.saveVideoJobMetaError = null;
 	});
 
@@ -162,6 +165,7 @@ describe("minimax video executor", () => {
 		});
 		expect(result.ir).toBeUndefined();
 		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.saveVideoJobMetaCalls).toHaveLength(1);
 		expect(state.releaseCalls).toEqual([]);
 	});
 

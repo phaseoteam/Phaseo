@@ -225,7 +225,7 @@ function addUsageSample(target: BatchUsageAggregate, usageRaw: any): void {
 	target.total_tokens += canonical.totalTokens;
 	target.input_text_tokens += pickFirstFiniteNumber(usageRaw, ["input_text_tokens", "input_tokens", "prompt_tokens"]) ?? canonical.inputTokens;
 	target.output_text_tokens += pickFirstFiniteNumber(usageRaw, ["output_text_tokens", "output_tokens", "completion_tokens"]) ?? canonical.outputTokens;
-	target.embedding_tokens += pickFirstFiniteNumber(usageRaw, ["embedding_tokens", "input_tokens", "input_text_tokens"]) ?? canonical.inputTokens;
+	target.embedding_tokens += pickFirstFiniteNumber(usageRaw, ["embedding_tokens"]) ?? 0;
 	target.output_image += pickFirstFiniteNumber(usageRaw, ["output_image", "output_images", "images"]) ?? 0;
 	target.output_video_seconds += pickFirstFiniteNumber(usageRaw, [
 		"output_video_seconds",
