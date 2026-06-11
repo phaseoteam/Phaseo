@@ -267,7 +267,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			viewport.removeEventListener("scroll", handleScroll);
 			window.removeEventListener("resize", moveToMiddle);
 		};
-	}, []);
+	}, [showEvaluationPrompts]);
 
 	return (
 		<div className="border-t border-border bg-background px-4 py-4 md:px-8">

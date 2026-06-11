@@ -622,7 +622,7 @@ export function ChatConversationMessages({
 										Request failed. Use Retry to run this message again.
 									</p>
 								) : null}
-								{contentWithoutMediaLinks ? (
+								{!showRequestError && contentWithoutMediaLinks ? (
 									<Streamdown>{contentWithoutMediaLinks}</Streamdown>
 								) : null}
 								{imageUrl ? (

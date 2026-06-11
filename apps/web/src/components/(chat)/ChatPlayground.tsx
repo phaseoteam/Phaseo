@@ -2186,7 +2186,7 @@ function ChatPlaygroundContent({
 							latestThread,
 							streamingMessageId,
 							variantIndex,
-							"",
+							message,
 							undefined,
 							errorMeta,
 						);
@@ -2195,7 +2195,7 @@ function ChatPlaygroundContent({
 						const errorMessage: ChatMessage = {
 							id: generateId(),
 							role: "assistant",
-							content: "",
+							content: message,
 							createdAt: nowIso(),
 							modelId: selectedModelId,
 							providerId: latestThread.settings.providerId,
@@ -2204,7 +2204,7 @@ function ChatPlaygroundContent({
 							variants: [
 								{
 									id: generateId(),
-									content: "",
+									content: message,
 									createdAt: nowIso(),
 									meta: errorMeta,
 								},
