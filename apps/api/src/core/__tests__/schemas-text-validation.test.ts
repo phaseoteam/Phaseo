@@ -129,6 +129,20 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it("rejects AI Stats apply patch server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "propose a patch" }],
+			tools: [{
+				type: "ai-stats:apply_patch",
+				parameters: { engine: "auto" },
+			}],
+			tool_choice: "ai-stats:apply_patch",
+		});
+
+		expect(parsed.success).toBe(false);
+	});
+
 	it("rejects chat n", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",

@@ -146,5 +146,10 @@ export function extractToolNameOrType(tool: unknown): string | undefined {
 export function isIRNativeToolDefinition(tool: unknown): boolean {
 	if (!tool || typeof tool !== "object") return false;
 	const type = toNonEmptyString((tool as Record<string, unknown>).type);
-	return Boolean(type && type !== "function" && type !== "gateway:datetime");
+	return Boolean(
+		type &&
+			type !== "function" &&
+			type !== "gateway:datetime" &&
+			!type.startsWith("ai-stats:"),
+	);
 }

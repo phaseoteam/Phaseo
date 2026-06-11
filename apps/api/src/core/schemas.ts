@@ -692,7 +692,6 @@ export const ChatCompletionsSchema = z.object({
 			GatewayWebFetchToolSchema,
 			GatewayAdvisorToolSchema,
 			GatewayImageGenerationToolSchema,
-			GatewayApplyPatchToolSchema,
 			OpenAINativeWebSearchToolSchema,
 		]),
 	).optional(),
