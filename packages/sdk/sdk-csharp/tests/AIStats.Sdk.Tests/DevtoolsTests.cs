@@ -314,7 +314,7 @@ public class DevtoolsTests
     {
         var handler = new StubHttpHandler(request =>
         {
-            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/models")
+            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/gateway/models")
             {
                 Assert.Contains("limit=2", request.RequestUri.Query);
                 return Json(HttpStatusCode.OK, """
@@ -539,7 +539,7 @@ public class DevtoolsTests
     {
         var handler = new StubHttpHandler((request) =>
         {
-            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/models")
+            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/gateway/models")
             {
                 return Json(HttpStatusCode.OK, """
                 {

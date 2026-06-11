@@ -13,7 +13,7 @@ public class ModelsTests
     {
         var handler = new StubHttpHandler(request =>
         {
-            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/models")
+            if (request.Method == HttpMethod.Get && request.RequestUri?.AbsolutePath == "/gateway/models")
             {
                 Assert.Contains("availability=all", request.RequestUri.Query);
                 return new HttpResponseMessage(HttpStatusCode.OK)
