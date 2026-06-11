@@ -359,8 +359,7 @@ export function ChatConversationMessages({
 				activeMeta.provider.trim().length > 0
 			) {
 				responseProviderId = activeMeta.provider.trim();
-			}
-			if (
+			} else if (
 				typeof routingSelectedProvider === "string" &&
 				routingSelectedProvider.trim().length > 0
 			) {
@@ -582,20 +581,6 @@ export function ChatConversationMessages({
 									) : null}
 								</div>
 							)
-						) : showRequestError && messageRequestError ? (
-							<ChatRequestErrorNotice
-								error={messageRequestError}
-								threadTitle={activeThread.title}
-								className="not-prose"
-								onDismiss={() => {
-									setDismissedErrorMessageIds((current) => {
-										const next = new Set(current);
-										next.add(message.id);
-										return next;
-									});
-									onDismissRequestError?.();
-								}}
-							/>
 						) : isSending && (!content || content === "Generating...") ? (
 							<div className="flex min-h-7 items-center">
 								<Shimmer className="text-sm text-muted-foreground">
@@ -613,9 +598,29 @@ export function ChatConversationMessages({
 									>
 										<ReasoningTrigger />
 										<ReasoningContent>
-											{reasoningText}
-										</ReasoningContent>
+										{reasoningText}
+									</ReasoningContent>
 									</Reasoning>
+								) : null}
+								{showRequestError && messageRequestError ? (
+									<ChatRequestErrorNotice
+										error={messageRequestError}
+										threadTitle={activeThread.title}
+										className="not-prose"
+										onDismiss={() => {
+											setDismissedErrorMessageIds((current) => {
+												const next = new Set(current);
+												next.add(message.id);
+												return next;
+											});
+											onDismissRequestError?.();
+										}}
+									/>
+								) : !contentWithoutMediaLinks &&
+									messageRequestError ? (
+									<p className="not-prose text-sm text-muted-foreground">
+										Request failed. Use Retry to run this message again.
+									</p>
 								) : null}
 								{contentWithoutMediaLinks ? (
 									<Streamdown>{contentWithoutMediaLinks}</Streamdown>

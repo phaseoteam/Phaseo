@@ -516,6 +516,7 @@ export function ChatConversation({
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
 				apiServerToolsEnabled={apiServerToolsEnabled}
 				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
+				showEvaluationPrompts={(activeThread?.messages.length ?? 0) === 0}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}

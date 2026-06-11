@@ -3582,6 +3582,10 @@ function ChatPlaygroundContent({
 		temporaryMode,
 		updateThreadState,
 	]);
+	const handleDismissRequestError = useCallback(() => {
+		setRequestError(null);
+		setError(null);
+	}, []);
 
 	return (
 		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
@@ -3691,10 +3695,7 @@ function ChatPlaygroundContent({
 						setComposerRequiresAudioInput(requiresAudioInput)
 					}
 					requestError={requestError}
-					onDismissRequestError={() => {
-						setRequestError(null);
-						setError(null);
-					}}
+					onDismissRequestError={handleDismissRequestError}
 				/>
 			</SidebarInset>
 			<ModelSettingsDialog

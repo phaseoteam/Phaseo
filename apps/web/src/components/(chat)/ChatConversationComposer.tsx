@@ -156,6 +156,7 @@ interface ChatConversationComposerProps {
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
 	apiServerToolsEnabled: boolean;
 	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
+	showEvaluationPrompts: boolean;
 	reasoningEnabled: boolean;
 	reasoningPickerOpen: boolean;
 	onReasoningPickerOpenChange: (open: boolean) => void;
@@ -195,6 +196,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		isUnified,
 		apiServerToolsEnabled,
 		onApiServerToolsEnabledChange,
+		showEvaluationPrompts,
 		reasoningEnabled,
 		reasoningPickerOpen,
 		onReasoningPickerOpenChange,
@@ -293,39 +295,43 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</div>
 					</div>
 				) : null}
-				<ScrollArea
-					ref={promptScrollAreaRef}
-					className="-mx-4 w-[calc(100%+2rem)] whitespace-nowrap px-4 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8"
-					aria-label="Prompt presets"
-				>
-					<div className="flex w-max gap-3 py-1">
-						{PROMPT_SCROLL_COPIES.map((copyIndex) => (
-							<div
-								key={copyIndex}
-								className="flex shrink-0 gap-3"
-								aria-hidden={copyIndex !== 1}
-							>
-								{EVALUATION_PROMPTS.map((item) => (
-									<button
-										key={`${item.title}-${copyIndex}`}
-										type="button"
-										className="group/card flex h-16 w-56 shrink-0 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 text-left text-foreground shadow-sm ring-1 ring-border/40 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-60"
-										onClick={() => onSelectEvaluationPrompt(item.prompt)}
-										tabIndex={copyIndex === 1 ? 0 : -1}
-									>
-										<span className="w-full truncate text-[13px] font-medium transition-colors group-hover/card:text-foreground sm:text-sm">
-											{item.title}
-										</span>
-										<span className="mt-1 w-full truncate text-xs text-muted-foreground">
-											{item.description}
-										</span>
-									</button>
-								))}
-							</div>
-						))}
-					</div>
-					<ScrollBar className="hidden" orientation="horizontal" />
-				</ScrollArea>
+				{showEvaluationPrompts ? (
+					<ScrollArea
+						ref={promptScrollAreaRef}
+						className="-mx-4 w-[calc(100%+2rem)] whitespace-nowrap px-4 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8"
+						aria-label="Prompt presets"
+					>
+						<div className="flex w-max gap-3 py-1">
+							{PROMPT_SCROLL_COPIES.map((copyIndex) => (
+								<div
+									key={copyIndex}
+									className="flex shrink-0 gap-3"
+									aria-hidden={copyIndex !== 1}
+								>
+									{EVALUATION_PROMPTS.map((item) => (
+										<button
+											key={`${item.title}-${copyIndex}`}
+											type="button"
+											className="group/card flex h-16 w-56 shrink-0 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 text-left text-foreground shadow-sm ring-1 ring-border/40 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-60"
+											onClick={() =>
+												onSelectEvaluationPrompt(item.prompt)
+											}
+											tabIndex={copyIndex === 1 ? 0 : -1}
+										>
+											<span className="w-full truncate text-[13px] font-medium transition-colors group-hover/card:text-foreground sm:text-sm">
+												{item.title}
+											</span>
+											<span className="mt-1 w-full truncate text-xs text-muted-foreground">
+												{item.description}
+											</span>
+										</button>
+									))}
+								</div>
+							))}
+						</div>
+						<ScrollBar className="hidden" orientation="horizontal" />
+					</ScrollArea>
+				) : null}
 				<div className="rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
 					<input
 						ref={fileInputRef}
