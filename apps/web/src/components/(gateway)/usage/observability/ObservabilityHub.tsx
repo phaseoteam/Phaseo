@@ -215,136 +215,22 @@ function ObservabilityFilters({
 }: {
 	data: ObservabilityData;
 }) {
-	const options = React.useMemo(() => buildFilterOptions(data), [data]);
-	const [filters, setFilters] = React.useState<ObservabilityFilter[]>([]);
-	const [open, setOpen] = React.useState(false);
-	const [step, setStep] = React.useState<"field" | "value">("field");
-	const [field, setField] = React.useState<ObservabilityFilterField>("model");
-	const [query, setQuery] = React.useState("");
-	const addFilter = (option: ObservabilityFilterOption) => {
-		setFilters((current) => [
-			...current,
-			{
-				id: `${field}-include-${option.value}-${Date.now()}`,
-				field,
-				operator: "include",
-				values: [option],
-			},
-		]);
-		setQuery("");
-		setStep("field");
-		setOpen(false);
-	};
-	const addTextFilter = (targetField = field) => {
-		const value = query.trim();
-		if (!value) return;
-		setFilters((current) => [
-			...current,
-			{
-				id: `${targetField}-include-${value}-${Date.now()}`,
-				field: targetField,
-				operator: "include",
-				values: [{ value, label: value }],
-			},
-		]);
-		setQuery("");
-		setStep("field");
-		setOpen(false);
-	};
-
+	const modelCount = data.filterOptions?.models?.length ?? 0;
 	return (
-		<div className="min-w-0 flex-1 space-y-2">
-			<div className="flex min-w-0 flex-wrap items-center gap-2">
-				<ButtonGroup>
-					<Popover
-						open={open}
-						onOpenChange={(nextOpen) => {
-							setOpen(nextOpen);
-							if (!nextOpen) {
-								setStep("field");
-								setQuery("");
-							}
-						}}
-					>
-						<PopoverTrigger asChild>
-							<Button variant="outline" size="sm" className="h-9 gap-2">
-								<Filter className="h-4 w-4" />
-								Filter
-								{filters.length > 0 ? (
-									<Badge
-										variant="secondary"
-										className="ml-1 h-5 rounded-sm px-1.5"
-									>
-										{filters.length}
-									</Badge>
-								) : null}
-							</Button>
-						</PopoverTrigger>
-						<PopoverContent align="start" className="w-[250px] p-0">
-							{step === "field" ? (
-								<FilterFieldMenu
-									query={query}
-									onQueryChange={setQuery}
-									onSelect={(nextField) => {
-										setField(nextField);
-										setQuery("");
-										setStep("value");
-									}}
-								/>
-							) : (
-						<FilterValueMenu
-							field={field}
-							query={query}
-							options={options[field]}
-							selectedValues={[]}
-							onQueryChange={setQuery}
-									onBack={() => {
-										setStep("field");
-										setQuery("");
-									}}
-									onSelect={addFilter}
-									onAddText={() => addTextFilter(field)}
-								/>
-							)}
-						</PopoverContent>
-					</Popover>
-					{filters.length > 0 ? (
-						<Button
-							type="button"
-							variant="outline"
-							size="icon"
-							className="h-9 w-9"
-							aria-label="Clear filters"
-							onClick={() => setFilters([])}
-						>
-							<X className="h-4 w-4" />
-						</Button>
-					) : null}
-				</ButtonGroup>
+		<div className="min-w-0 flex-1">
+			<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-muted-foreground">
+				<Badge variant="outline" className="gap-1.5">
+					<Workflow className="h-3.5 w-3.5" />
+					Current workspace
+				</Badge>
+				{modelCount > 0 ? (
+					<Badge variant="outline" className="gap-1.5">
+						<Blocks className="h-3.5 w-3.5" />
+						{modelCount} {modelCount === 1 ? "model" : "models"}
+					</Badge>
+				) : null}
+				<span>Use the time range controls to change the server-fetched data.</span>
 			</div>
-			{filters.length > 0 ? (
-				<div className="flex min-w-0 flex-wrap items-center gap-2 pl-0">
-					{filters.map((filter) => (
-						<AppliedFilterChip
-							key={filter.id}
-							filter={filter}
-							options={options}
-							onUpdate={(nextFilter) =>
-								setFilters((current) =>
-									current.map((item) =>
-										item.id === filter.id ? { ...item, ...nextFilter } : item,
-									),
-								)
-							}
-							onRemove={() =>
-								setFilters((current) =>
-									current.filter((item) => item.id !== filter.id),
-								)
-							}
-						/>
-					))}
-				</div>
-			) : null}
 		</div>
 	);
 }
@@ -1708,7 +1594,7 @@ function TrendingPanel({
 	return (
 		<Card className="rounded-lg">
 			<CardHeader className="flex-row items-center justify-between gap-3 pb-2">
-				<CardTitle className="text-base">Trending</CardTitle>
+				<CardTitle className="text-base">Top by tokens</CardTitle>
 				<ExploreButton />
 			</CardHeader>
 			<CardContent className="space-y-3">
@@ -2531,7 +2417,6 @@ export default function ObservabilityHub({
 	preset,
 	customFrom,
 	customTo,
-	requestsTable,
 }: {
 	data: ObservabilityData;
 	guardrailMetrics: GuardrailEnforcementMetricsResult;
@@ -2539,7 +2424,6 @@ export default function ObservabilityHub({
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
-	requestsTable: React.ReactNode;
 }) {
 	return (
 		<div className="space-y-6">
@@ -2555,6 +2439,11 @@ export default function ObservabilityHub({
 					/>
 				</div>
 			</div>
+			{data.isSampled ? (
+				<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-100">
+					This view is based on the first {formatNumber(data.sampleLimit ?? 0)} requests in the selected period.
+				</div>
+			) : null}
 
 			{initialTab === "overview" ? <Overview data={data} /> : null}
 			{initialTab === "trends" ? <Trends data={data} /> : null}

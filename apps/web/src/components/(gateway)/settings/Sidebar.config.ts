@@ -8,6 +8,7 @@ import {
 	CreditCard,
 	EyeOff,
 	KeyRound,
+	Package,
 	RadioTower,
 	ShieldCheck,
 	User,
@@ -113,6 +114,12 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				label: "Apps",
 				icon: AppWindow,
 				match: ["/settings/apps"],
+			},
+			{
+				href: "/settings/sdk",
+				label: "SDKs",
+				icon: Package,
+				match: ["/settings/sdk"],
 			},
 			{
 				href: "/settings/usage",

@@ -76,11 +76,7 @@ export async function updateRoutingSettings({
 			.upsert(responseHealingPayload, { onConflict: "workspace_id" });
 
 		if (responseHealingError) {
-			console.warn("[settings.routing.update] response healing defaults", {
-				code: responseHealingError.code,
-				message: responseHealingError.message,
-				workspaceId,
-			});
+			throw responseHealingError;
 		}
 	}
 

@@ -89,6 +89,8 @@ export type ObservabilityExploreRow = {
 export type ObservabilityData = {
 	range: ObservabilityRange;
 	periodLabel: string;
+	isSampled?: boolean;
+	sampleLimit?: number;
 	kpis: ObservabilityKpi[];
 	topApiKeys: ObservabilityRankedItem[];
 	topApps: ObservabilityRankedItem[];

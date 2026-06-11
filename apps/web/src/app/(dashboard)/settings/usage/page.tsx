@@ -6,7 +6,6 @@ import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
 import ObservabilityHub from "@/components/(gateway)/usage/observability/ObservabilityHub";
 import type {
 	ObservabilityData,
@@ -38,13 +37,6 @@ import {
 import {
 	fetchAppNames,
 	fetchModelMetadata,
-	fetchPaginatedRequests,
-	fetchProviderMetadata,
-	fetchProviderNames,
-	type PaginatedRequestsParams,
-	type PaginatedRequestsResult,
-	type ProviderMetadataEntry,
-	type RequestRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 export const metadata: Metadata = {
@@ -73,19 +65,18 @@ type RawRequestRow = {
 	pricing_lines: unknown;
 };
 
+type RawRequestResult = {
+	rows: RawRequestRow[];
+	isSampled: boolean;
+	limit: number;
+};
+
+const RAW_REQUEST_SAMPLE_LIMIT = 5000;
+
 function firstParam(value: string | string[] | undefined): string | undefined {
 	if (typeof value === "string") return value;
 	if (Array.isArray(value)) return value[0];
 	return undefined;
-}
-
-function parsePositivePage(value: string | undefined): number {
-	const parsed = Number.parseInt(value ?? "", 10);
-	return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-}
-
-function parseSortDirection(value: string | undefined): "asc" | "desc" {
-	return value === "asc" ? "asc" : "desc";
 }
 
 function toNumber(value: unknown): number {
@@ -533,8 +524,9 @@ async function fetchRawRequests(args: {
 	from: string;
 	to: string;
 	limit?: number;
-}): Promise<RawRequestRow[]> {
+}): Promise<RawRequestResult> {
 	try {
+		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
 		const { data, error } = await args.supabase
 			.from("gateway_requests")
 			.select(
@@ -545,16 +537,22 @@ async function fetchRawRequests(args: {
 			.lte("created_at", args.to)
 			.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS))
 			.order("created_at", { ascending: true })
-			.limit(args.limit ?? 5000);
+			.limit(limit + 1);
 
 		if (error) {
 			console.error("Error fetching observability request rows:", error);
-			return [];
+			return { rows: [], isSampled: false, limit };
 		}
-		return (data ?? []) as RawRequestRow[];
+		const rows = (data ?? []) as RawRequestRow[];
+		return {
+			rows: rows.slice(0, limit),
+			isSampled: rows.length > limit,
+			limit,
+		};
 	} catch (error) {
 		console.error("Failed to fetch observability request rows:", error);
-		return [];
+		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
+		return { rows: [], isSampled: false, limit };
 	}
 }
 
@@ -595,23 +593,6 @@ async function safeMapLoad<T>(
 	} catch (error) {
 		console.error(`Failed to fetch observability ${label}:`, error);
 		return new Map<string, T>();
-	}
-}
-
-async function safePaginatedRequests(
-	params: PaginatedRequestsParams,
-): Promise<PaginatedRequestsResult> {
-	try {
-		return await fetchPaginatedRequests(params);
-	} catch (error) {
-		console.error("Failed to fetch observability request table:", error);
-		return {
-			data: [] as RequestRow[],
-			total: 0,
-			page: params.page,
-			pageSize: 25,
-			totalPages: 0,
-		};
 	}
 }
 
@@ -713,11 +694,7 @@ async function ObservabilityContent({
 	const previousFrom = new Date(fromDate.getTime() - windowMs).toISOString();
 	const previousTo = from;
 
-	const logsPage = parsePositivePage(firstParam(sp.page));
-	const logsSortField = firstParam(sp.sort)?.trim() || "created_at";
-	const logsSortDir = parseSortDirection(firstParam(sp.dir));
-
-	const [keys, rawRows, previousRows] = await Promise.all([
+	const [keys, currentRequestResult, previousRequestResult] = await Promise.all([
 		fetchApiKeyOptions({ supabase, workspaceId }),
 		fetchRawRequests({ supabase, workspaceId, from, to }),
 		fetchRawRequests({
@@ -727,19 +704,14 @@ async function ObservabilityContent({
 			to: previousTo,
 		}),
 	]);
+	const rawRows = currentRequestResult.rows;
+	const previousRows = previousRequestResult.rows;
 
 	const keyMap = new Map(keys.map((key) => [key.id, key]));
 	const modelIds = Array.from(
 		new Set(
 			[...rawRows, ...previousRows]
 				.map((row) => row.model_id)
-				.filter((id): id is string => Boolean(id)),
-		),
-	);
-	const providerIds = Array.from(
-		new Set(
-			rawRows
-				.map((row) => row.provider)
 				.filter((id): id is string => Boolean(id)),
 		),
 	);
@@ -751,26 +723,9 @@ async function ObservabilityContent({
 		),
 	);
 
-	const [
-		modelMetadata,
-		appNames,
-		providerNames,
-		providerMetadata,
-		initialRequestsPage,
-	] = await Promise.all([
+	const [modelMetadata, appNames] = await Promise.all([
 		safeMapLoad("model metadata", () => fetchModelMetadata(modelIds)),
 		safeMapLoad("app names", () => fetchAppNames(appIds)),
-		safeMapLoad("provider names", () => fetchProviderNames(providerIds)),
-		safeMapLoad<ProviderMetadataEntry>("provider metadata", () =>
-			fetchProviderMetadata(providerIds),
-		),
-		safePaginatedRequests({
-			timeRange: { from, to },
-			page: logsPage,
-			sortField: logsSortField,
-			sortDirection: logsSortDir,
-			statusFilter: "all",
-		}),
 	]);
 
 	const modelLabel = (id: string | null) => {
@@ -1065,6 +1020,8 @@ async function ObservabilityContent({
 	const data: ObservabilityData = {
 		range,
 		periodLabel: getUsageRangeLabel({ preset, customFrom, customTo }),
+		isSampled: currentRequestResult.isSampled,
+		sampleLimit: currentRequestResult.limit,
 		kpis,
 		topApiKeys,
 		topApps,
@@ -1121,19 +1078,6 @@ async function ObservabilityContent({
 			preset={preset}
 			customFrom={customFrom}
 			customTo={customTo}
-			requestsTable={
-				<RequestsSection
-					timeRange={{ from, to }}
-					appNames={appNames}
-					providerNames={providerNames}
-					providerMetadata={providerMetadata}
-					modelMetadata={modelMetadata}
-					initialPage={logsPage}
-					initialRows={initialRequestsPage.data}
-					initialTotal={initialRequestsPage.total}
-					initialTotalPages={initialRequestsPage.totalPages}
-				/>
-			}
 		/>
 	);
 }
