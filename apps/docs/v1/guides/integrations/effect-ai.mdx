@@ -1,0 +1,75 @@
+---
+title: "Effect AI SDK"
+description: "Use AI Stats from Effect TypeScript applications."
+---
+
+Use this guide when your application already uses Effect and you want AI Stats behind an Effect service or workflow.
+
+## Status
+
+AI Stats exposes OpenAI-compatible HTTP endpoints. Effect's first-party provider packages are useful when they support the provider you need directly; if your installed Effect OpenAI package does not expose a base URL option, call AI Stats through Effect's HTTP client or wrap the [OpenAI SDK](./openai-sdk.mdx) in your own Effect layer.
+
+## Install
+
+```bash
+npm install effect @effect/platform
+```
+
+## Call AI Stats with Effect HTTP
+
+```ts
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
+import { Config, Effect, Redacted } from "effect";
+
+const generate = Effect.gen(function* () {
+	const apiKey = yield* Config.redacted("AI_STATS_API_KEY");
+	const client = yield* HttpClient.HttpClient;
+
+	const request = HttpClientRequest.post(
+		"https://api.phaseo.app/v1/chat/completions",
+	).pipe(
+		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
+		HttpClientRequest.jsonBody({
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "Reply with only: ok" }],
+		}),
+	);
+
+	return yield* client.execute(request).pipe(
+		Effect.flatMap((response) => response.json),
+	);
+});
+
+const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
+```
+
+## Wrap the OpenAI SDK in an Effect service
+
+If you already use the official OpenAI SDK elsewhere, keep the AI Stats configuration in one layer:
+
+```ts
+import OpenAI from "openai";
+import { Config, Effect } from "effect";
+
+const makeClient = Effect.gen(function* () {
+	const apiKey = yield* Config.string("AI_STATS_API_KEY");
+
+	return new OpenAI({
+		apiKey,
+		baseURL: "https://api.phaseo.app/v1",
+	});
+});
+```
+
+## Notes
+
+- Use `https://api.phaseo.app/v1` for OpenAI-compatible calls.
+- Keep model ids in AI Stats format, for example `openai/gpt-5-nano`.
+- Use a custom Effect layer when you want a provider-style abstraction across the rest of your application.
+- Test streaming and tool calls with your exact Effect package versions before production rollout.
+
+## Related
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [Streaming](../streaming.mdx)

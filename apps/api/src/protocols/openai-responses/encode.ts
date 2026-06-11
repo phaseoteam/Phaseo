@@ -30,7 +30,12 @@ export type OpenAIResponsesResponse = {
 		server_tool_use?: {
 			datetime_requests?: number;
 			web_search_requests?: number;
+			web_search_results?: number;
+			web_search_extra_results?: number;
 			web_fetch_requests?: number;
+			advisor_requests?: number;
+			image_generation_requests?: number;
+			apply_patch_requests?: number;
 		};
 	};
 	status: "completed" | "failed" | "incomplete";
@@ -219,19 +224,39 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 		server_tool_use:
 			typeof usage._ext?.serverToolUse?.datetime_requests === "number" ||
 			typeof usage._ext?.serverToolUse?.web_search_requests === "number" ||
-			typeof usage._ext?.serverToolUse?.web_fetch_requests === "number"
-				? {
+			typeof usage._ext?.serverToolUse?.web_search_results === "number" ||
+			typeof usage._ext?.serverToolUse?.web_search_extra_results === "number" ||
+			typeof usage._ext?.serverToolUse?.web_fetch_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.advisor_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.image_generation_requests === "number" ||
+			typeof usage._ext?.serverToolUse?.apply_patch_requests === "number"
+			? {
 					...(typeof usage._ext?.serverToolUse?.datetime_requests === "number"
 						? { datetime_requests: usage._ext?.serverToolUse?.datetime_requests }
 						: {}),
 					...(typeof usage._ext?.serverToolUse?.web_search_requests === "number"
 						? { web_search_requests: usage._ext?.serverToolUse?.web_search_requests }
 						: {}),
+					...(typeof usage._ext?.serverToolUse?.web_search_results === "number"
+						? { web_search_results: usage._ext?.serverToolUse?.web_search_results }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.web_search_extra_results === "number"
+						? { web_search_extra_results: usage._ext?.serverToolUse?.web_search_extra_results }
+						: {}),
 					...(typeof usage._ext?.serverToolUse?.web_fetch_requests === "number"
 						? { web_fetch_requests: usage._ext?.serverToolUse?.web_fetch_requests }
 						: {}),
+					...(typeof usage._ext?.serverToolUse?.advisor_requests === "number"
+						? { advisor_requests: usage._ext?.serverToolUse?.advisor_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.image_generation_requests === "number"
+						? { image_generation_requests: usage._ext?.serverToolUse?.image_generation_requests }
+						: {}),
+					...(typeof usage._ext?.serverToolUse?.apply_patch_requests === "number"
+						? { apply_patch_requests: usage._ext?.serverToolUse?.apply_patch_requests }
+						: {}),
 				}
-				: undefined,
+			: undefined,
 	};
 }
 

@@ -3038,7 +3038,8 @@ components:
           description: >
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch`.
+            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`,
+            `ai-stats:image_generation`, and `ai-stats:apply_patch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
@@ -3376,7 +3377,7 @@ components:
         type:
           type: string
           enum:
-            - gateway:web_search
+            - ai-stats:web_search
         parameters:
           type: object
           properties:
@@ -3410,7 +3411,7 @@ components:
         type:
           type: string
           enum:
-            - gateway:web_fetch
+            - ai-stats:web_fetch
         parameters:
           type: object
           properties:
@@ -3424,17 +3425,191 @@ components:
           minimum: 1
           maximum: 50000
       additionalProperties: false
+    GatewayAdvisorToolDefinition:
+      type: object
+      description: >
+        Gateway-managed Advisor server tool. The gateway calls the configured
+        advisor model and injects the advice back into the model tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - ai-stats:advisor
+        parameters:
+          type: object
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 64
+              pattern: ^[A-Za-z0-9 _-]+$
+              description: >-
+                Optional Advisor name. Use unique names to expose multiple
+                Advisor tools.
+            model:
+              type: string
+              description: >-
+                Optional pinned Advisor model ID. If omitted, the tool call may
+                provide `model`; otherwise the outer request model is used.
+            instructions:
+              type: string
+              description: Extra instructions for the Advisor model.
+            forward_transcript:
+              type: boolean
+              default: false
+              description: >-
+                Include the current conversation transcript in the Advisor
+                request.
+            max_uses:
+              type: integer
+              minimum: 1
+              default: 1
+            max_tokens:
+              type: integer
+              minimum: 1024
+              deprecated: true
+              description: Legacy alias for `max_completion_tokens`.
+            max_completion_tokens:
+              type: integer
+              minimum: 1024
+            reasoning:
+              type: object
+              additionalProperties: true
+            temperature:
+              type: number
+              minimum: 0
+              maximum: 2
+          additionalProperties: false
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Za-z0-9 _-]+$
+        model:
+          type: string
+        instructions:
+          type: string
+        forward_transcript:
+          type: boolean
+        max_uses:
+          type: integer
+          minimum: 1
+        max_tokens:
+          type: integer
+          minimum: 1024
+          deprecated: true
+        max_completion_tokens:
+          type: integer
+          minimum: 1024
+        reasoning:
+          type: object
+          additionalProperties: true
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+      additionalProperties: false
+    GatewayImageGenerationToolDefinition:
+      type: object
+      description: >
+        Gateway-managed image generation server tool. The gateway runs the
+        configured image model and injects the image result back into the model
+        tool loop.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - ai-stats:image_generation
+        parameters:
+          type: object
+          properties:
+            prompt:
+              type: string
+              description: >-
+                Optional image prompt. The model normally supplies this when it
+                calls the tool.
+            description:
+              type: string
+              description: Alias for `prompt`.
+            model:
+              type: string
+              description: >-
+                Optional image-capable model ID. Defaults to
+                `openai/gpt-image-2`.
+            quality:
+              type: string
+            size:
+              type: string
+            aspect_ratio:
+              type: string
+            background:
+              type: string
+            output_format:
+              type: string
+            output_compression:
+              type: integer
+              minimum: 0
+              maximum: 100
+            moderation:
+              type: string
+          additionalProperties: false
+        prompt:
+          type: string
+        description:
+          type: string
+        model:
+          type: string
+          description: Optional image-capable model ID. Defaults to `openai/gpt-image-2`.
+        quality:
+          type: string
+        size:
+          type: string
+        aspect_ratio:
+          type: string
+        background:
+          type: string
+        output_format:
+          type: string
+        output_compression:
+          type: integer
+          minimum: 0
+          maximum: 100
+        moderation:
+          type: string
+      additionalProperties: false
+    GatewayApplyPatchToolDefinition:
+      type: object
+      description: >
+        Gateway-managed apply-patch server tool for the Responses API. The
+        gateway validates patch operations and returns them to the client; it
+        does not mutate files.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - ai-stats:apply_patch
+      additionalProperties: false
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
         - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
         - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
         - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
+        - $ref: '#/components/schemas/GatewayAdvisorToolDefinition'
+        - $ref: '#/components/schemas/GatewayImageGenerationToolDefinition'
+        - $ref: '#/components/schemas/GatewayApplyPatchToolDefinition'
     TextToolChoice:
       description: >
-        Tool selection strategy. `gateway:datetime`, `gateway:web_search`, and
-        `gateway:web_fetch` are accepted and rewritten by the gateway into
-        upstream function/tool targets.
+        Tool selection strategy. `gateway:datetime`, `ai-stats:web_search`,
+        `ai-stats:web_fetch`, `ai-stats:advisor`, `ai-stats:image_generation`,
+        and `ai-stats:apply_patch` are accepted and rewritten by the gateway
+        into upstream function/tool targets.
       oneOf:
         - type: string
           enum:
@@ -3442,8 +3617,11 @@ components:
             - none
             - required
             - gateway:datetime
-            - gateway:web_search
-            - gateway:web_fetch
+            - ai-stats:web_search
+            - ai-stats:web_fetch
+            - ai-stats:advisor
+            - ai-stats:image_generation
+            - ai-stats:apply_patch
         - type: object
     ServerToolUsage:
       type: object
@@ -3454,7 +3632,22 @@ components:
         web_search_requests:
           type: integer
           minimum: 0
+        web_search_results:
+          type: integer
+          minimum: 0
+        web_search_extra_results:
+          type: integer
+          minimum: 0
         web_fetch_requests:
+          type: integer
+          minimum: 0
+        advisor_requests:
+          type: integer
+          minimum: 0
+        image_generation_requests:
+          type: integer
+          minimum: 0
+        apply_patch_requests:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -3612,18 +3805,22 @@ components:
           description: >
             Anthropic-compatible tools plus gateway server tools. The only
             built-in gateway server tools are `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch`.
+            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`, and
+            `ai-stats:image_generation`.
           items:
             oneOf:
               - $ref: '#/components/schemas/AnthropicTool'
               - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
               - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
               - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
+              - $ref: '#/components/schemas/GatewayAdvisorToolDefinition'
+              - $ref: '#/components/schemas/GatewayImageGenerationToolDefinition'
         tool_choice:
           description: >
             Anthropic tool choice object/string. `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch` are also accepted and
-            rewritten by the gateway.
+            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`, and
+            `ai-stats:image_generation` are also accepted and rewritten by the
+            gateway.
           oneOf:
             - type: object
             - type: string
@@ -3815,7 +4012,8 @@ components:
           description: >
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
-            `gateway:web_search`, and `gateway:web_fetch`.
+            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`,
+            `ai-stats:image_generation`, and `ai-stats:apply_patch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         top_p:

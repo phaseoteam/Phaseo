@@ -249,7 +249,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				usage: {
 					datetimeRequests: 1,
 					webSearchRequests: 0,
+					webSearchResults: 0,
+					webSearchExtraResults: 0,
 					webFetchRequests: 0,
+					advisorRequests: 0,
+					imageGenerationRequests: 0,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -338,7 +343,12 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(attachServerToolUsageMock).toHaveBeenCalledWith(mergedUsage, {
 			datetimeRequests: 1,
 			webSearchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
 			webFetchRequests: 0,
+			advisorRequests: 0,
+			imageGenerationRequests: 0,
+			applyPatchRequests: 0,
 		});
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			1,
@@ -350,7 +360,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			{
 				datetimeRequests: 1,
 				webSearchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
 				webFetchRequests: 0,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
@@ -363,7 +378,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			{
 				datetimeRequests: 1,
 				webSearchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
 				webFetchRequests: 0,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 
@@ -437,7 +457,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				usage: {
 					datetimeRequests: 1,
 					webSearchRequests: 0,
+					webSearchResults: 0,
+					webSearchExtraResults: 0,
 					webFetchRequests: 0,
+					advisorRequests: 0,
+					imageGenerationRequests: 0,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -533,25 +558,25 @@ describe("runTextGeneratePipeline server tools", () => {
 		);
 	});
 
-	it("executes the managed web search follow-up loop and records search plus fetch usage on non-stream requests", async () => {
+	it("executes the managed web search follow-up loop and records search result usage on non-stream requests", async () => {
 		const initialUsage = { inputTokens: 8, outputTokens: 3, totalTokens: 11 };
 		const finalUsage = { inputTokens: 7, outputTokens: 9, totalTokens: 16 };
 		const mergedUsage = { inputTokens: 15, outputTokens: 12, totalTokens: 27 };
 		const usageWithServerTool = {
 			...mergedUsage,
-			_ext: { serverToolUse: { web_search_requests: 1, web_fetch_requests: 2 } },
+			_ext: { serverToolUse: { web_search_requests: 1, web_search_results: 2, web_search_extra_results: 0 } },
 		};
 		const billUsageWithServerTool = {
 			prompt_tokens: 15,
 			completion_tokens: 12,
 			total_tokens: 27,
-			server_tool_use: { web_search_requests: 1, web_fetch_requests: 2 },
+			server_tool_use: { web_search_requests: 1, web_search_results: 2, web_search_extra_results: 0 },
 		};
 		const rawResponseUsageWithServerTool = {
 			input_tokens: 15,
 			output_tokens: 12,
 			total_tokens: 27,
-			server_tool_use: { web_search_requests: 1, web_fetch_requests: 2 },
+			server_tool_use: { web_search_requests: 1, web_search_results: 2, web_search_extra_results: 0 },
 		};
 
 		consumeTextProtocolStreamToIRMock.mockResolvedValue({
@@ -565,7 +590,7 @@ describe("runTextGeneratePipeline server tools", () => {
 							toolCalls: [
 								{
 									id: "call_web_search",
-									name: "gateway_web_search",
+									name: "ai_stats_web_search",
 									arguments:
 										'{"query":"latest gateway reliability patterns","max_results":2,"include_text":true}',
 								},
@@ -599,7 +624,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					toolCalls: [
 						{
 							id: "call_web_search",
-							name: "gateway_web_search",
+							name: "ai_stats_web_search",
 							arguments:
 								'{"query":"latest gateway reliability patterns","max_results":2,"include_text":true}',
 						},
@@ -631,7 +656,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				usage: {
 					datetimeRequests: 0,
 					webSearchRequests: 1,
-					webFetchRequests: 2,
+					webSearchResults: 2,
+					webSearchExtraResults: 0,
+					webFetchRequests: 0,
+					advisorRequests: 0,
+					imageGenerationRequests: 0,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -724,18 +754,18 @@ describe("runTextGeneratePipeline server tools", () => {
 		const args = createArgs();
 		args.pre.ctx.body.tools = [
 			{
-				type: "gateway:web_search",
+				type: "ai-stats:web_search",
 				parameters: { max_results: 2, include_text: true },
 			},
 		];
 		args.pre.ctx.rawBody.tools = [
 			{
-				type: "gateway:web_search",
+				type: "ai-stats:web_search",
 				parameters: { max_results: 2, include_text: true },
 			},
 		];
-		args.pre.ctx.body.tool_choice = "gateway:web_search";
-		args.pre.ctx.rawBody.tool_choice = "gateway:web_search";
+		args.pre.ctx.body.tool_choice = "ai-stats:web_search";
+		args.pre.ctx.rawBody.tool_choice = "ai-stats:web_search";
 
 		const response = await runTextGeneratePipeline(args);
 
@@ -747,7 +777,12 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(attachServerToolUsageMock).toHaveBeenCalledWith(mergedUsage, {
 			datetimeRequests: 0,
 			webSearchRequests: 1,
-			webFetchRequests: 2,
+			webSearchResults: 2,
+			webSearchExtraResults: 0,
+			webFetchRequests: 0,
+			advisorRequests: 0,
+			imageGenerationRequests: 0,
+			applyPatchRequests: 0,
 		});
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
 			1,
@@ -759,7 +794,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			{
 				datetimeRequests: 0,
 				webSearchRequests: 1,
-				webFetchRequests: 2,
+				webSearchResults: 2,
+				webSearchExtraResults: 0,
+				webFetchRequests: 0,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 		expect(attachServerToolUsageToRawUsageMock).toHaveBeenNthCalledWith(
@@ -772,7 +812,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			{
 				datetimeRequests: 0,
 				webSearchRequests: 1,
-				webFetchRequests: 2,
+				webSearchResults: 2,
+				webSearchExtraResults: 0,
+				webFetchRequests: 0,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 
@@ -781,7 +826,7 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(followUpRequest.messages).toHaveLength(3);
 		expect(followUpRequest.messages[1]).toMatchObject({
 			role: "assistant",
-			toolCalls: [{ id: "call_web_search", name: "gateway_web_search" }],
+			toolCalls: [{ id: "call_web_search", name: "ai_stats_web_search" }],
 		});
 		expect(followUpRequest.messages[2]).toMatchObject({
 			role: "tool",
@@ -810,7 +855,7 @@ describe("runTextGeneratePipeline server tools", () => {
 							toolCalls: [
 								{
 									id: "call_web_fetch",
-									name: "gateway_web_fetch",
+									name: "ai_stats_web_fetch",
 									arguments:
 										'{"url":"https://example.com/spec","max_chars":4000}',
 								},
@@ -833,7 +878,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					toolCalls: [
 						{
 							id: "call_web_fetch",
-							name: "gateway_web_fetch",
+							name: "ai_stats_web_fetch",
 							arguments:
 								'{"url":"https://example.com/spec","max_chars":4000}',
 						},
@@ -858,7 +903,12 @@ describe("runTextGeneratePipeline server tools", () => {
 				usage: {
 					datetimeRequests: 0,
 					webSearchRequests: 0,
+					webSearchResults: 0,
+					webSearchExtraResults: 0,
 					webFetchRequests: 1,
+					advisorRequests: 0,
+					imageGenerationRequests: 0,
+					applyPatchRequests: 0,
 				},
 			})
 			.mockResolvedValueOnce(null);
@@ -943,18 +993,18 @@ describe("runTextGeneratePipeline server tools", () => {
 		const args = createArgs({ stream: true });
 		args.pre.ctx.body.tools = [
 			{
-				type: "gateway:web_fetch",
+				type: "ai-stats:web_fetch",
 				parameters: { max_chars: 4000 },
 			},
 		];
 		args.pre.ctx.rawBody.tools = [
 			{
-				type: "gateway:web_fetch",
+				type: "ai-stats:web_fetch",
 				parameters: { max_chars: 4000 },
 			},
 		];
-		args.pre.ctx.body.tool_choice = "gateway:web_fetch";
-		args.pre.ctx.rawBody.tool_choice = "gateway:web_fetch";
+		args.pre.ctx.body.tool_choice = "ai-stats:web_fetch";
+		args.pre.ctx.rawBody.tool_choice = "ai-stats:web_fetch";
 
 		const response = await runTextGeneratePipeline(args);
 
@@ -988,7 +1038,12 @@ describe("runTextGeneratePipeline server tools", () => {
 			{
 				datetimeRequests: 0,
 				webSearchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
 				webFetchRequests: 1,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
 			},
 		);
 

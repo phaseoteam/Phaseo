@@ -320,7 +320,7 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
         "data": [{"date": "2026-05-01", "endpoint_id": "responses", "requests": 12}],
     })
     monkeypatch.setattr(ops, "listEndpoints", lambda _client, **_kwargs: {
-        "data": [{"id": "responses", "path": "/responses"}],
+        "data": [{"endpoint_id": "responses", "path": "/responses"}],
     })
     monkeypatch.setattr(ops, "listOrganisations", lambda _client, query=None, **_kwargs: {
         "total": 1,

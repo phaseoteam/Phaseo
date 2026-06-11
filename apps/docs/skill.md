@@ -111,7 +111,7 @@ Do not assume async endpoints return final content immediately.
 
 AI Stats supports agentic workflows through:
 
-- gateway-native tools like `gateway:web_search`, `gateway:web_fetch`, and `gateway:datetime`
+- gateway-native tools like `ai-stats:web_search`, `ai-stats:web_fetch`, and `gateway:datetime`
 - Agent SDK docs and examples
 - structured-output and response-healing workflows
 

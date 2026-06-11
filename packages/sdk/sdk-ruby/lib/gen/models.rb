@@ -731,6 +731,32 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     FunctionToolDefinition = Struct.new(:function, :type, keyword_init: true)
+    # @!attribute [rw] forward_transcript
+    #   @return [Boolean, nil]
+    # @!attribute [rw] instructions
+    #   @return [String, nil]
+    # @!attribute [rw] max_completion_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] max_tokens
+    #   @return [Integer, nil]
+    # @!attribute [rw] max_uses
+    #   @return [Integer, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] reasoning
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] temperature
+    #   @return [Float, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayAdvisorToolDefinition = Struct.new(:forward_transcript, :instructions, :max_completion_tokens, :max_tokens, :max_uses, :model, :name, :parameters, :reasoning, :temperature, :type, keyword_init: true)
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayApplyPatchToolDefinition = Struct.new(:type, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] timezone
@@ -738,6 +764,31 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     GatewayDatetimeToolDefinition = Struct.new(:parameters, :timezone, :type, keyword_init: true)
+    # @!attribute [rw] aspect_ratio
+    #   @return [String, nil]
+    # @!attribute [rw] background
+    #   @return [String, nil]
+    # @!attribute [rw] description
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] moderation
+    #   @return [String, nil]
+    # @!attribute [rw] output_compression
+    #   @return [Integer, nil]
+    # @!attribute [rw] output_format
+    #   @return [String, nil]
+    # @!attribute [rw] parameters
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] prompt
+    #   @return [String, nil]
+    # @!attribute [rw] quality
+    #   @return [String, nil]
+    # @!attribute [rw] size
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    GatewayImageGenerationToolDefinition = Struct.new(:aspect_ratio, :background, :description, :model, :moderation, :output_compression, :output_format, :parameters, :prompt, :quality, :size, :type, keyword_init: true)
     # @!attribute [rw] availability_mode
     #   @return [String]
     # @!attribute [rw] limit
@@ -1530,13 +1581,23 @@ module AiStats
     # @!attribute [rw] error
     #   @return [Hash{String => Object}, nil]
     ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
+    # @!attribute [rw] advisor_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] apply_patch_requests
+    #   @return [Integer, nil]
     # @!attribute [rw] datetime_requests
+    #   @return [Integer, nil]
+    # @!attribute [rw] image_generation_requests
     #   @return [Integer, nil]
     # @!attribute [rw] web_fetch_requests
     #   @return [Integer, nil]
+    # @!attribute [rw] web_search_extra_results
+    #   @return [Integer, nil]
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
-    ServerToolUsage = Struct.new(:datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    # @!attribute [rw] web_search_results
+    #   @return [Integer, nil]
+    ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :image_generation_requests, :web_fetch_requests, :web_search_extra_results, :web_search_requests, :web_search_results, keyword_init: true)
     SupportedParameterDetails = Struct.new(:_unused, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]

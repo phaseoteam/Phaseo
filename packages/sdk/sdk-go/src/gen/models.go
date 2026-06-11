@@ -1130,9 +1130,42 @@ type FunctionToolDefinition struct {
 	Type string `json:"type"`
 }
 
+type GatewayAdvisorToolDefinition struct {
+	ForwardTranscript *bool `json:"forward_transcript,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
+	MaxTokens *int `json:"max_tokens,omitempty"`
+	MaxUses *int `json:"max_uses,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Name *string `json:"name,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
+	Temperature *float64 `json:"temperature,omitempty"`
+	Type string `json:"type"`
+}
+
+type GatewayApplyPatchToolDefinition struct {
+	Type string `json:"type"`
+}
+
 type GatewayDatetimeToolDefinition struct {
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 	Timezone *string `json:"timezone,omitempty"`
+	Type string `json:"type"`
+}
+
+type GatewayImageGenerationToolDefinition struct {
+	AspectRatio *string `json:"aspect_ratio,omitempty"`
+	Background *string `json:"background,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Moderation *string `json:"moderation,omitempty"`
+	OutputCompression *int `json:"output_compression,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
+	Parameters *map[string]interface{} `json:"parameters,omitempty"`
+	Prompt *string `json:"prompt,omitempty"`
+	Quality *string `json:"quality,omitempty"`
+	Size *string `json:"size,omitempty"`
 	Type string `json:"type"`
 }
 
@@ -2190,9 +2223,14 @@ type ResponsesWebSocketUpgradeRequiredResponse struct {
 }
 
 type ServerToolUsage struct {
+	AdvisorRequests *int `json:"advisor_requests,omitempty"`
+	ApplyPatchRequests *int `json:"apply_patch_requests,omitempty"`
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
+	ImageGenerationRequests *int `json:"image_generation_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
+	WebSearchExtraResults *int `json:"web_search_extra_results,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
+	WebSearchResults *int `json:"web_search_results,omitempty"`
 }
 
 type SupportedParameterDetails struct {

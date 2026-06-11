@@ -29,6 +29,14 @@ const CORE_PRICING_METER_VALUES = [
   "bfl_credits",
   "total_tokens",
   "requests",
+  "server_tool_web_search_requests",
+  "server_tool_web_search_extra_results",
+  "server_tool_web_fetch_requests",
+  "server_tool_advisor_requests",
+  "server_tool_image_generation_requests",
+  "server_tool_apply_patch_requests",
+  "native_web_search_requests",
+  "native_web_fetch_requests",
   "input_image",
   "input_video_seconds",
 ] as const
@@ -39,6 +47,14 @@ const PRICING_METER_LABELS: Partial<Record<(typeof CORE_PRICING_METER_VALUES)[nu
   cached_write_text_tokens: "Cache Write Tokens",
   cached_write_text_tokens_5m: "Cache Write Tokens (5 Min TTL)",
   cached_write_text_tokens_1h: "Cache Write Tokens (1 Hour TTL)",
+  server_tool_web_search_requests: "Server Tool Web Search Requests",
+  server_tool_web_search_extra_results: "Server Tool Web Search Extra Results",
+  server_tool_web_fetch_requests: "Server Tool Web Fetch Requests",
+  server_tool_advisor_requests: "Server Tool Advisor Requests",
+  server_tool_image_generation_requests: "Server Tool Image Generation Requests",
+  server_tool_apply_patch_requests: "Server Tool Apply Patch Requests",
+  native_web_search_requests: "Native Web Search Requests",
+  native_web_fetch_requests: "Native Web Fetch Requests",
 }
 
 const toTitleCase = (value: string) =>

@@ -1232,6 +1232,50 @@ public sealed class FunctionToolDefinition
 
 }
 
+public sealed class GatewayAdvisorToolDefinition
+{
+	[JsonPropertyName("forward_transcript")]
+	public bool? ForwardTranscript { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string? Instructions { get; set; }
+
+	[JsonPropertyName("max_completion_tokens")]
+	public int? MaxCompletionTokens { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public int? MaxTokens { get; set; }
+
+	[JsonPropertyName("max_uses")]
+	public int? MaxUses { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("reasoning")]
+	public Dictionary<string, object>? Reasoning { get; set; }
+
+	[JsonPropertyName("temperature")]
+	public double? Temperature { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class GatewayApplyPatchToolDefinition
+{
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class GatewayDatetimeToolDefinition
 {
 	[JsonPropertyName("parameters")]
@@ -1239,6 +1283,46 @@ public sealed class GatewayDatetimeToolDefinition
 
 	[JsonPropertyName("timezone")]
 	public string? Timezone { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class GatewayImageGenerationToolDefinition
+{
+	[JsonPropertyName("aspect_ratio")]
+	public string? AspectRatio { get; set; }
+
+	[JsonPropertyName("background")]
+	public string? Background { get; set; }
+
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("moderation")]
+	public string? Moderation { get; set; }
+
+	[JsonPropertyName("output_compression")]
+	public int? OutputCompression { get; set; }
+
+	[JsonPropertyName("output_format")]
+	public string? OutputFormat { get; set; }
+
+	[JsonPropertyName("parameters")]
+	public Dictionary<string, object>? Parameters { get; set; }
+
+	[JsonPropertyName("prompt")]
+	public string? Prompt { get; set; }
+
+	[JsonPropertyName("quality")]
+	public string? Quality { get; set; }
+
+	[JsonPropertyName("size")]
+	public string? Size { get; set; }
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
@@ -2581,14 +2665,29 @@ public sealed class ResponsesWebSocketUpgradeRequiredResponse
 
 public sealed class ServerToolUsage
 {
+	[JsonPropertyName("advisor_requests")]
+	public int? AdvisorRequests { get; set; }
+
+	[JsonPropertyName("apply_patch_requests")]
+	public int? ApplyPatchRequests { get; set; }
+
 	[JsonPropertyName("datetime_requests")]
 	public int? DatetimeRequests { get; set; }
+
+	[JsonPropertyName("image_generation_requests")]
+	public int? ImageGenerationRequests { get; set; }
 
 	[JsonPropertyName("web_fetch_requests")]
 	public int? WebFetchRequests { get; set; }
 
+	[JsonPropertyName("web_search_extra_results")]
+	public int? WebSearchExtraResults { get; set; }
+
 	[JsonPropertyName("web_search_requests")]
 	public int? WebSearchRequests { get; set; }
+
+	[JsonPropertyName("web_search_results")]
+	public int? WebSearchResults { get; set; }
 
 }
 

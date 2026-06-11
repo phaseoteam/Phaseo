@@ -18,7 +18,11 @@ const KNOWN_METERS = new Set<string>([
     "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
     "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
-    "embedding_tokens", "bfl_credits", "requests",
+    "embedding_tokens", "bfl_credits",
+    "server_tool_web_search_requests", "server_tool_web_search_extra_results", "server_tool_web_fetch_requests", "server_tool_advisor_requests",
+    "server_tool_image_generation_requests", "server_tool_apply_patch_requests",
+    "native_web_search_requests", "native_web_fetch_requests",
+    "requests",
 ]);
 
 function isPricingDebugEnabled(): boolean {
@@ -284,6 +288,78 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     if (typeof requests === "number" && meters.requests == null) {
         meters.requests = requests;
     }
+    const webSearchRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_web_search_requests",
+    ]);
+    const webSearchExtraResults = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_web_search_extra_results",
+    ]);
+    const webFetchRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_web_fetch_requests",
+    ]);
+    const advisorRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_advisor_requests",
+        "server_tool_use.advisor_requests",
+        "serverToolUse.advisor_requests",
+    ]);
+    const imageGenerationRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_image_generation_requests",
+        "server_tool_use.image_generation_requests",
+        "serverToolUse.image_generation_requests",
+    ]);
+    const applyPatchRequests = pickFirstFiniteNumber(usageRaw, [
+        "server_tool_apply_patch_requests",
+        "server_tool_use.apply_patch_requests",
+        "serverToolUse.apply_patch_requests",
+    ]);
+    const nativeWebSearchRequests = pickFirstFiniteNumber(usageRaw, [
+        "native_web_search_requests",
+        "native_web_searches",
+        "server_tool_use.web_search_requests",
+        "serverToolUse.web_search_requests",
+    ]);
+    const nativeWebFetchRequests = pickFirstFiniteNumber(usageRaw, [
+        "native_web_fetch_requests",
+        "native_web_fetches",
+        "server_tool_use.web_fetch_requests",
+        "serverToolUse.web_fetch_requests",
+    ]);
+    if (typeof webSearchRequests === "number" && meters.server_tool_web_search_requests == null) {
+        meters.server_tool_web_search_requests = webSearchRequests;
+    }
+    if (typeof webSearchExtraResults === "number" && meters.server_tool_web_search_extra_results == null) {
+        meters.server_tool_web_search_extra_results = webSearchExtraResults;
+    }
+    if (typeof webFetchRequests === "number" && meters.server_tool_web_fetch_requests == null) {
+        meters.server_tool_web_fetch_requests = webFetchRequests;
+    }
+    if (typeof advisorRequests === "number" && meters.server_tool_advisor_requests == null) {
+        meters.server_tool_advisor_requests = advisorRequests;
+    }
+    if (typeof imageGenerationRequests === "number" && meters.server_tool_image_generation_requests == null) {
+        meters.server_tool_image_generation_requests = imageGenerationRequests;
+    }
+    if (typeof applyPatchRequests === "number" && meters.server_tool_apply_patch_requests == null) {
+        meters.server_tool_apply_patch_requests = applyPatchRequests;
+    }
+    const hasManagedWebSearchMeter =
+        typeof pickFirstFiniteNumber(usageRaw, ["server_tool_web_search_requests"]) === "number";
+    const hasManagedWebFetchMeter =
+        typeof pickFirstFiniteNumber(usageRaw, ["server_tool_web_fetch_requests"]) === "number";
+    if (
+        !hasManagedWebSearchMeter &&
+        typeof nativeWebSearchRequests === "number" &&
+        meters.native_web_search_requests == null
+    ) {
+        meters.native_web_search_requests = nativeWebSearchRequests;
+    }
+    if (
+        !hasManagedWebFetchMeter &&
+        typeof nativeWebFetchRequests === "number" &&
+        meters.native_web_fetch_requests == null
+    ) {
+        meters.native_web_fetch_requests = nativeWebFetchRequests;
+    }
 
     const inputTextTokens = meters.input_text_tokens;
     const cachedReadIsSubsetHint = usageRaw?.cached_read_tokens_are_subset_of_input;
@@ -372,6 +448,37 @@ function priceWithRule(qty: number, rule: PriceRule) {
     };
 }
 
+function nativeToolFallbackRule(card: PriceCard, meter: PricingDimensionKey): PriceRule | null {
+    const provider = String(card.provider ?? "").toLowerCase();
+    if (meter === "native_web_search_requests" && (provider === "openai" || provider === "anthropic")) {
+        return {
+            pricing_plan: "standard",
+            meter,
+            unit: "request",
+            unit_size: 1,
+            price_per_unit: "0.01",
+            currency: "USD",
+            match: [],
+            priority: -1000,
+            id: `${provider}_native_web_search_default`,
+        };
+    }
+    if (meter === "native_web_fetch_requests" && provider === "anthropic") {
+        return {
+            pricing_plan: "standard",
+            meter,
+            unit: "request",
+            unit_size: 1,
+            price_per_unit: "0",
+            currency: "USD",
+            match: [],
+            priority: -1000,
+            id: "anthropic_native_web_fetch_default",
+        };
+    }
+    return null;
+}
+
 /** Main public API -- build a full pricing summary from raw usage. */
 export function computeBillSummary(
     usageRaw: Record<string, any>,
@@ -423,6 +530,19 @@ export function computeBillSummary(
                     requestedPricingPlan: pricingPlan,
                     fallbackPricingPlan: "standard",
                     candidateRuleIds: candidates.map((r) => r.id),
+                });
+            }
+        }
+        if (!candidates.length) {
+            const nativeFallback = nativeToolFallbackRule(card, dim);
+            if (nativeFallback) {
+                candidates = [nativeFallback];
+                resolvedPlan = nativeFallback.pricing_plan;
+                logPricingDebug("meter_native_tool_default_pricing", {
+                    meter: dim,
+                    provider: card.provider,
+                    model: card.model,
+                    price_per_unit: nativeFallback.price_per_unit,
                 });
             }
         }

@@ -893,12 +893,72 @@ class FunctionToolDefinition
 	public $type;
 }
 
+class GatewayAdvisorToolDefinition
+{
+	/** @var bool|null */
+	public $forward_transcript;
+	/** @var string|null */
+	public $instructions;
+	/** @var int|null */
+	public $max_completion_tokens;
+	/** @var int|null */
+	public $max_tokens;
+	/** @var int|null */
+	public $max_uses;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $name;
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var array<string, mixed>|null */
+	public $reasoning;
+	/** @var float|null */
+	public $temperature;
+	/** @var string */
+	public $type;
+}
+
+class GatewayApplyPatchToolDefinition
+{
+	/** @var string */
+	public $type;
+}
+
 class GatewayDatetimeToolDefinition
 {
 	/** @var array<string, mixed>|null */
 	public $parameters;
 	/** @var string|null */
 	public $timezone;
+	/** @var string */
+	public $type;
+}
+
+class GatewayImageGenerationToolDefinition
+{
+	/** @var string|null */
+	public $aspect_ratio;
+	/** @var string|null */
+	public $background;
+	/** @var string|null */
+	public $description;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $moderation;
+	/** @var int|null */
+	public $output_compression;
+	/** @var string|null */
+	public $output_format;
+	/** @var array<string, mixed>|null */
+	public $parameters;
+	/** @var string|null */
+	public $prompt;
+	/** @var string|null */
+	public $quality;
+	/** @var string|null */
+	public $size;
 	/** @var string */
 	public $type;
 }
@@ -1876,11 +1936,21 @@ class ResponsesWebSocketUpgradeRequiredResponse
 class ServerToolUsage
 {
 	/** @var int|null */
+	public $advisor_requests;
+	/** @var int|null */
+	public $apply_patch_requests;
+	/** @var int|null */
 	public $datetime_requests;
+	/** @var int|null */
+	public $image_generation_requests;
 	/** @var int|null */
 	public $web_fetch_requests;
 	/** @var int|null */
+	public $web_search_extra_results;
+	/** @var int|null */
 	public $web_search_requests;
+	/** @var int|null */
+	public $web_search_results;
 }
 
 class SupportedParameterDetails
