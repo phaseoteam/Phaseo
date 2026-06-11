@@ -11,7 +11,7 @@ import (
 func TestAudioHelpersReturnPayloads(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/models":
+		case r.Method == http.MethodGet && r.URL.Path == "/gateway/models":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"models":[{"model_id":"openai/gpt-4o-mini-tts","status":"active"},{"model_id":"openai/gpt-4o-transcribe","status":"active"}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/audio/speech":
