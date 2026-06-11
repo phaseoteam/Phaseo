@@ -2,13 +2,13 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { Flame, Link2 } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Camera, ExternalLink, Flame } from "lucide-react"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/getProfileSnapshot"
 import { formatCompactNumber, formatUsdFromNanos } from "@/lib/profile"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Logo } from "@/components/Logo"
 import {
 	ChartContainer,
 	ChartTooltip,
@@ -26,14 +26,20 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 type Props = {
 	profile: ProfileSnapshot
 	publicView?: boolean
+	actions?: ReactNode
 }
 
-type ActivityRange = "1d" | "7d" | "30d"
-type HeatmapMetric = "requests" | "tokens" | "spend"
-type ActivitySeriesMetric = "requests" | "tokens"
-type TopModelsMetric = "requests" | "tokens" | "spend"
+type TimeRange = "today" | "7d" | "30d" | "1y" | "all"
+type Metric = "tokens" | "spend" | "requests"
 
-const HEATMAP_ROW_LABELS = ["M", "T", "W", "T", "F", "S", "S"]
+const RANGE_LABELS: Record<TimeRange, string> = {
+	today: "Today",
+	"7d": "Last 7 Days",
+	"30d": "Last 30 Days",
+	"1y": "Last Year",
+	all: "All Time",
+}
+
 const HEATMAP_LEVEL_CLASSES = [
 	"bg-zinc-100",
 	"bg-indigo-100",
@@ -41,11 +47,8 @@ const HEATMAP_LEVEL_CLASSES = [
 	"bg-indigo-400",
 	"bg-indigo-600",
 ]
-const ACTIVITY_RANGE_LABELS: Record<ActivityRange, string> = {
-	"1d": "Today",
-	"7d": "Last 7 Days",
-	"30d": "Last 30 Days",
-}
+
+const WEEKDAY_LABELS = ["M", "", "W", "", "F", "", ""]
 
 function getInitials(name: string): string {
 	return name
@@ -54,12 +57,6 @@ function getInitials(name: string): string {
 		.slice(0, 2)
 		.map((part) => part[0]?.toUpperCase() ?? "")
 		.join("")
-}
-
-function formatDelta(value: number | null): string {
-	if (value == null) return "0%"
-	const rounded = Math.round(value)
-	return `${rounded > 0 ? "+" : ""}${rounded}%`
 }
 
 function formatShortDate(date: string): string {
@@ -80,788 +77,580 @@ function formatLongDate(date: string): string {
 	})
 }
 
-function formatMetricValue(mode: HeatmapMetric, value: number, compact = false): string {
-	if (mode === "spend") {
-		if (compact) {
-			const dollars = value / 1_000_000_000
-			return new Intl.NumberFormat("en-US", {
-				style: "currency",
-				currency: "USD",
-				notation: dollars >= 1000 ? "compact" : "standard",
-				maximumFractionDigits: dollars >= 100 ? 0 : dollars >= 1 ? 2 : 4,
-			}).format(dollars)
-		}
+function formatWeekday(date: string): string {
+	return new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en", {
+		weekday: "long",
+		timeZone: "UTC",
+	})
+}
 
-		return formatUsdFromNanos(value)
+function getSeriesForRange(
+	profile: ProfileSnapshot,
+	range: TimeRange,
+): ProfileSnapshot["activitySeries30"] {
+	if (range === "today") return profile.activitySeries30.slice(-1)
+	if (range === "7d") return profile.activitySeries30.slice(-7)
+	if (range === "30d") return profile.activitySeries30
+	return profile.heatmapDays
+		.filter((day) => day.inTrailingWindow && !day.isFuture)
+		.map((day) => ({
+			date: day.date,
+			requests: day.requests,
+			tokens: day.tokens,
+			spendNanos: day.spendNanos,
+		}))
+}
+
+function getMetricValue(
+	point: Pick<ProfileSnapshot["activitySeries30"][number], "requests" | "tokens" | "spendNanos">,
+	metric: Metric,
+) {
+	if (metric === "requests") return point.requests
+	if (metric === "spend") return point.spendNanos / 1_000_000_000
+	return point.tokens
+}
+
+function formatMetricValue(metric: Metric, value: number, compact = true): string {
+	if (metric === "spend") {
+		return new Intl.NumberFormat("en-US", {
+			style: "currency",
+			currency: "USD",
+			notation: value >= 1000 && compact ? "compact" : "standard",
+			maximumFractionDigits: value >= 100 ? 0 : value >= 1 ? 2 : 4,
+		}).format(value)
 	}
 
-	if (compact) {
-		return formatCompactNumber(value)
+	return compact ? formatCompactNumber(value) : value.toLocaleString()
+}
+
+function getProviderFromModelId(id: string): string {
+	const provider = id.includes("/") ? id.split("/")[0] : ""
+	return provider || "ai-stats"
+}
+
+function formatProviderName(provider: string): string {
+	const normalized = provider.trim().toLowerCase()
+	const known: Record<string, string> = {
+		"ai-stats": "AI Stats",
+		anthropic: "Anthropic",
+		deepseek: "DeepSeek",
+		google: "Google",
+		meta: "Meta",
+		mistral: "Mistral AI",
+		openai: "OpenAI",
+		openrouter: "OpenRouter",
+		xai: "xAI",
+		"x-ai": "xAI",
 	}
 
-	return new Intl.NumberFormat("en", {
-		minimumFractionDigits: value > 0 && value < 10 ? 2 : 0,
-		maximumFractionDigits: value >= 100 ? 0 : 2,
-	}).format(value)
+	return (
+		known[normalized] ??
+		normalized
+			.split(/[-_\s]+/)
+			.filter(Boolean)
+			.map((part) => `${part[0]?.toUpperCase() ?? ""}${part.slice(1)}`)
+			.join(" ")
+	)
 }
 
-function formatTopModelMetricValue(
-	mode: TopModelsMetric,
-	model: ProfileSnapshot["topModels"][number],
-): string {
-	if (mode === "spend") {
-		return formatUsdFromNanos(model.spendNanos)
-	}
-
-	if (mode === "requests") {
-		return model.requests.toLocaleString()
-	}
-
-	return formatCompactNumber(model.tokens)
+function ProviderMark({ provider, label }: { provider: string; label: string }) {
+	return (
+		<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white p-1">
+			<Logo
+				id={provider}
+				alt={`${label} logo`}
+				width={18}
+				height={18}
+				className="h-4.5 w-4.5 object-contain"
+				fallbackToColor={false}
+				fallback={
+					<span className="text-[9px] font-semibold uppercase text-zinc-500">
+						{label.slice(0, 2)}
+					</span>
+				}
+			/>
+		</div>
+	)
 }
 
-function formatTopModelMetricLabel(mode: TopModelsMetric): string {
-	if (mode === "spend") return "Spend"
-	if (mode === "requests") return "Requests"
-	return "Tokens"
-}
-
-function formatChartMetricValue(mode: ActivitySeriesMetric, value: number): string {
-	if (mode === "tokens") {
-		return value.toLocaleString()
-	}
-
-	return value.toLocaleString()
-}
-
-function getMetricDayValue(
-	day: ProfileSnapshot["heatmapDays"][number],
-	mode: HeatmapMetric,
-): number {
-	if (mode === "tokens") return day.tokens
-	if (mode === "spend") return day.spendNanos
-	return day.requests
-}
-
-function getMetricLabel(mode: HeatmapMetric): string {
-	if (mode === "tokens") return "Tokens"
-	if (mode === "spend") return "Spend"
-	return "Requests"
-}
-
-function getHeatmapQuantile(values: number[], quantile: number): number {
-	if (values.length === 0) return 0
-	const sorted = [...values].sort((left, right) => left - right)
-	const index = (sorted.length - 1) * quantile
-	const lower = Math.floor(index)
-	const upper = Math.ceil(index)
-	if (lower === upper) return sorted[lower] ?? 0
-	const weight = index - lower
-	return (sorted[lower] ?? 0) * (1 - weight) + (sorted[upper] ?? 0) * weight
-}
-
-function getHeatmapLevel(
-	value: number,
-	thresholds: { low: number; medium: number; high: number } | null,
-): number {
-	if (value <= 0 || !thresholds) return 0
-	if (value <= thresholds.low) return 1
-	if (value <= thresholds.medium) return 2
-	if (value <= thresholds.high) return 3
+function getHeatmapLevel(value: number, max: number): number {
+	if (value <= 0 || max <= 0) return 0
+	const ratio = value / max
+	if (ratio <= 0.25) return 1
+	if (ratio <= 0.5) return 2
+	if (ratio <= 0.75) return 3
 	return 4
 }
 
-function SectionShell({
-	children,
-	className = "",
-}: {
-	children: ReactNode
-	className?: string
-}) {
-	return (
-		<section
-			className={`rounded-[1.25rem] border border-zinc-200/90 bg-white ${className}`}
-		>
-			{children}
-		</section>
-	)
-}
-
-function SectionHeader({
-	title,
-	description,
-	right,
-}: {
-	title: string
-	description?: string
-	right?: ReactNode
-}) {
-	return (
-		<div className="flex items-start justify-between gap-3 px-4 py-3.5 sm:px-5">
-			<div>
-				<h2 className="text-sm font-semibold text-zinc-950">{title}</h2>
-				{description ? (
-					<p className="mt-1 text-xs text-zinc-500">{description}</p>
-				) : null}
-			</div>
-			{right}
-		</div>
-	)
-}
-
-function ActivitySeriesChart({
-	points,
-	mode,
-}: {
-	points: ProfileSnapshot["activitySeries30"]
-	mode: ActivitySeriesMetric
-}) {
-	const chartData = useMemo(
-		() =>
-			points.map((point) => ({
-				date: point.date,
-				value: mode === "requests" ? point.requests : point.tokens,
-			})),
-		[mode, points],
-	)
-
-	const chartConfig = useMemo(
-		() => ({
-			value: {
-				label: mode === "requests" ? "Requests" : "Tokens",
-				color: mode === "requests" ? "#7c65f6" : "#f43f5e",
-			},
-		}),
-		[mode],
-	)
-
-	const gradientId =
-		mode === "requests" ? "profile-activity-gradient" : "profile-token-gradient"
-
-	return (
-		<div className="px-4 pb-3.5 sm:px-5">
-			<ChartContainer
-				config={chartConfig}
-				className="h-[12.5rem] w-full border-t border-dashed border-zinc-200 pt-3"
-			>
-				<AreaChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-					<defs>
-						<linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" stopColor="var(--color-value)" stopOpacity={0.28} />
-							<stop offset="100%" stopColor="var(--color-value)" stopOpacity={0.03} />
-						</linearGradient>
-					</defs>
-					<CartesianGrid vertical={false} strokeDasharray="3 3" />
-					<XAxis
-						dataKey="date"
-						tickLine={false}
-						axisLine={false}
-						minTickGap={24}
-						tickMargin={10}
-						tickFormatter={(value) => formatShortDate(String(value))}
-					/>
-					<YAxis
-						tickLine={false}
-						axisLine={false}
-						width={44}
-						tickMargin={10}
-						tickFormatter={(value) => formatCompactNumber(Number(value))}
-					/>
-					<ChartTooltip
-						cursor={false}
-						content={
-							<ChartTooltipContent
-								className="min-w-[11rem] gap-2.5 rounded-xl border-zinc-200 px-3.5 py-2.5 shadow-lg"
-								hideIndicator
-								labelClassName="text-sm font-medium text-zinc-900"
-								labelFormatter={(label) => formatLongDate(String(label))}
-								formatter={(value) => (
-									<div className="flex items-center gap-2.5 leading-none">
-										<span className="font-mono text-sm font-semibold tabular-nums text-zinc-950">
-											{formatChartMetricValue(mode, Number(value))}
-										</span>
-										<span className="text-xs font-medium text-zinc-500">
-											{mode === "requests" ? "Requests" : "Tokens"}
-										</span>
-									</div>
-								)}
-							/>
-						}
-					/>
-					<Area
-						type="monotone"
-						dataKey="value"
-						stroke="var(--color-value)"
-						fill={`url(#${gradientId})`}
-						strokeWidth={2.2}
-						activeDot={{
-							r: 4,
-							fill: "var(--color-value)",
-							stroke: "#ffffff",
-							strokeWidth: 2,
-						}}
-					/>
-				</AreaChart>
-			</ChartContainer>
-		</div>
-	)
-}
-
-function StatPill({
-	label,
-	value,
-}: {
-	label: string
-	value: string
-}) {
-	return (
-		<div className="rounded-xl bg-zinc-50 px-3.5 py-3">
-			<div className="text-[11px] text-zinc-500">{label}</div>
-			<div className="mt-1 text-2xl font-semibold text-zinc-950">{value}</div>
-		</div>
-	)
-}
-
-function UsageBreakdown({
-	label,
-	value,
-}: {
-	label: string
-	value: string
-}) {
-	return (
-		<div className="flex items-center justify-between text-sm">
-			<span className="text-zinc-500">{label}</span>
-			<span className="font-medium text-zinc-950">{value}</span>
-		</div>
-	)
-}
-
 function ActivityHeatmap({
-	days,
+	profile,
+	metric,
 }: {
-	days: ProfileSnapshot["heatmapDays"]
+	profile: ProfileSnapshot
+	metric: Metric
 }) {
-	const [mode, setMode] = useState<HeatmapMetric>("requests")
-
-	const monthLabels = useMemo(
-		() =>
-			days
-				.map((day, index) =>
-					day.monthLabel ? { index, label: day.monthLabel } : null,
-				)
-				.filter(Boolean) as Array<{ index: number; label: string }>,
-		[days],
-	)
-
-	const inRangeDays = useMemo(
-		() => days.filter((day) => day.inTrailingWindow),
-		[days],
-	)
-
-	const thresholds = useMemo(() => {
-		const positiveValues = inRangeDays
-			.map((day) => getMetricDayValue(day, mode))
-			.filter((value) => value > 0)
-
-		if (positiveValues.length === 0) return null
-
-		return {
-			low: getHeatmapQuantile(positiveValues, 0.25),
-			medium: getHeatmapQuantile(positiveValues, 0.5),
-			high: getHeatmapQuantile(positiveValues, 0.75),
+	const days = profile.heatmapDays
+	const activeDays = days.filter((day) => day.inTrailingWindow && !day.isFuture)
+	const values = activeDays.map((day) => getMetricValue(day, metric))
+	const total = values.reduce((sum, value) => sum + value, 0)
+	const max = Math.max(0, ...values)
+	const avgDay = total / Math.max(1, activeDays.length)
+	const avgWeek = total / 52
+	const nonZeroDays = activeDays.filter((day) => getMetricValue(day, metric) > 0)
+	const biggestDay = nonZeroDays.reduce<
+		(ProfileSnapshot["heatmapDays"][number] & { metricValue: number }) | null
+	>((best, day) => {
+		const metricValue = getMetricValue(day, metric)
+		if (!best || metricValue > best.metricValue) {
+			return { ...day, metricValue }
 		}
-	}, [inRangeDays, mode])
+		return best
+	}, null)
+	const weekdayTotals = activeDays.reduce<Record<string, number>>((acc, day) => {
+		const weekday = formatWeekday(day.date)
+		acc[weekday] = (acc[weekday] ?? 0) + getMetricValue(day, metric)
+		return acc
+	}, {})
+	const mostActiveWeekday =
+		Object.entries(weekdayTotals).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "No activity yet"
+	const topModel = profile.topModels[0]
+	const topModelValue = topModel
+		? metric === "spend"
+			? topModel.spendNanos / 1_000_000_000
+			: metric === "requests"
+				? topModel.requests
+				: topModel.tokens
+		: 0
+	const topModelShare = total > 0 ? Math.round((topModelValue / total) * 100) : 0
 
-	const totals = useMemo(() => {
-		const values = inRangeDays.map((day) => getMetricDayValue(day, mode))
-		const total = values.reduce((sum, value) => sum + value, 0)
-		let currentStreak = 0
-
-		for (let index = values.length - 1; index >= 0; index -= 1) {
-			if ((values[index] ?? 0) > 0) {
-				currentStreak += 1
-			} else {
-				break
-			}
-		}
-
-		return {
-			total,
-			currentStreak,
-			avgDay: total / 365,
-			avgWeek: total / 52,
-		}
-	}, [inRangeDays, mode])
+	const monthLabels = days
+		.map((day, index) => (day.monthLabel ? { index, label: day.monthLabel } : null))
+		.filter(Boolean) as Array<{ index: number; label: string }>
 
 	return (
-		<SectionShell>
-			<SectionHeader
-				title="Activity"
-				description="Last 53 weeks of personal workspace activity."
-				right={
-					<div className="flex flex-wrap items-center justify-end gap-1.5" aria-label="Annual activity metric">
-						{(["requests", "tokens", "spend"] as const).map((nextMode) => {
-							const isActive = mode === nextMode
-							return (
-								<button
-									key={nextMode}
-									type="button"
-									onClick={() => setMode(nextMode)}
-									aria-pressed={isActive}
-									className={[
-										"h-7 rounded-lg px-3 text-[11px] font-medium transition-colors",
-										isActive
-											? "bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200"
-											: "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
-									].join(" ")}
-								>
-									{nextMode === "requests"
-										? "Requests"
-										: nextMode === "tokens"
-											? "Tokens"
-											: "Spend"}
-								</button>
-							)
+		<section className="min-w-0 overflow-hidden border-t border-zinc-200 pt-6">
+			<div className="mb-4 flex items-start justify-between gap-4">
+				<div>
+					<h2 className="text-lg font-semibold text-zinc-950">Activity</h2>
+				</div>
+				<div className="text-sm text-zinc-500">
+					{metric === "tokens" ? "Tokens" : metric === "spend" ? "Spend" : "Requests"}
+				</div>
+			</div>
+
+			<div className="mb-5 grid max-w-3xl grid-cols-4 divide-x divide-zinc-200 text-sm">
+				<div className="pr-6">
+					<div className="flex items-center gap-1.5 text-zinc-500">
+						<Flame className="h-3.5 w-3.5" />
+						<span>Streak</span>
+					</div>
+					<div className="mt-1 text-base font-semibold text-zinc-950">
+						{profile.currentStreak.toLocaleString()} days
+					</div>
+					<div className="mt-0.5 text-xs text-zinc-500">
+						Best {profile.longestStreak.toLocaleString()}
+					</div>
+				</div>
+				<div className="px-6">
+						<div className="text-zinc-500">Avg / day</div>
+						<div className="mt-1 text-base font-semibold text-zinc-950">
+							{formatMetricValue(metric, avgDay)}
+						</div>
+				</div>
+				<div className="px-6">
+					<div className="text-zinc-500">Avg / week</div>
+					<div className="mt-1 text-base font-semibold text-zinc-950">
+						{formatMetricValue(metric, avgWeek)}
+					</div>
+				</div>
+				<div className="pl-6">
+					<div className="text-zinc-500">Total</div>
+					<div className="mt-1 text-base font-semibold text-zinc-950">
+						{formatMetricValue(metric, total)}
+					</div>
+				</div>
+			</div>
+
+			<div className="w-full max-w-full overflow-hidden pb-1">
+				<div className="w-full">
+					<div className="ml-5 grid grid-cols-[repeat(53,1fr)] gap-1 text-[10px] text-zinc-400">
+						{Array.from({ length: 53 }).map((_, weekIndex) => {
+							const label =
+								monthLabels.find(
+									(entry) => Math.floor(entry.index / 7) === weekIndex,
+								)?.label ?? ""
+							return <div key={`month-${weekIndex}`}>{label}</div>
 						})}
 					</div>
-				}
-			/>
 
-			<div className="space-y-2.5 px-4 pb-4 sm:px-5">
-				<div className="overflow-x-auto pb-1">
-					<div className="min-w-[47rem] space-y-2">
-						<div className="ml-6 grid grid-cols-[repeat(53,minmax(0,1fr))] gap-1 text-[10px] text-zinc-400">
-							{Array.from({ length: 53 }).map((_, weekIndex) => {
-								const label =
-									monthLabels.find(
-										(entry) => Math.floor(entry.index / 7) === weekIndex,
-									)?.label ?? ""
+					<div className="mt-1 grid grid-cols-[0.75rem_minmax(0,1fr)] gap-2">
+						<div className="grid grid-rows-7 gap-1 text-[10px] text-zinc-500">
+							{WEEKDAY_LABELS.map((label, index) => (
+								<div key={`${label}-${index}`} className="flex h-3.5 items-center">
+									{label}
+								</div>
+							))}
+						</div>
 
+						<div className="grid auto-cols-fr grid-flow-col grid-rows-7 gap-1 overflow-hidden">
+							{days.map((day) => {
+								const value = getMetricValue(day, metric)
+								const level = getHeatmapLevel(value, max)
 								return (
-									<div key={`month-${weekIndex}`} className="text-left">
-										{label}
-									</div>
+									<Tooltip key={`${metric}-${day.date}`}>
+										<TooltipTrigger asChild>
+											<button
+												type="button"
+												className={`aspect-square w-full min-w-0 rounded-[4px] ${HEATMAP_LEVEL_CLASSES[level]} ${
+													day.isFuture ? "opacity-40" : ""
+												}`}
+												aria-label={`${formatLongDate(day.date)} ${formatMetricValue(metric, value)}`}
+											/>
+										</TooltipTrigger>
+										<TooltipContent>
+											<div className="space-y-1">
+												<p className="font-medium">{formatLongDate(day.date)}</p>
+												<p>{formatMetricValue(metric, value, false)}</p>
+											</div>
+										</TooltipContent>
+									</Tooltip>
 								)
 							})}
 						</div>
-
-						<div className="grid grid-cols-[0.75rem_minmax(0,1fr)] gap-2.5">
-							<div className="grid grid-rows-7 gap-1 text-[10px] text-zinc-400">
-								{HEATMAP_ROW_LABELS.map((label, index) => (
-									<div
-										key={`weekday-${index}`}
-										className="flex items-center"
-									>
-										{label}
-									</div>
-								))}
-							</div>
-
-							<div className="grid grid-flow-col grid-rows-7 gap-1">
-								{days.map((day) => {
-									const value = getMetricDayValue(day, mode)
-									const level = getHeatmapLevel(value, thresholds)
-									const label = getMetricLabel(mode)
-
-									return (
-										<Tooltip key={`${mode}-${day.date}`}>
-											<TooltipTrigger asChild>
-												<button
-													type="button"
-													className={`h-3.5 w-3.5 rounded-[4px] ${HEATMAP_LEVEL_CLASSES[level]} ${
-														day.isFuture ? "opacity-45" : ""
-													} appearance-none border-0 p-0`}
-													aria-label={`${formatLongDate(day.date)} ${label} ${formatMetricValue(mode, value)}`}
-												/>
-											</TooltipTrigger>
-											<TooltipContent side="top" sideOffset={6}>
-												<div className="space-y-1">
-													<p className="font-medium">{formatLongDate(day.date)}</p>
-													<p>
-														{label}: {formatMetricValue(mode, value)}
-													</p>
-												</div>
-											</TooltipContent>
-										</Tooltip>
-									)
-								})}
-							</div>
-						</div>
 					</div>
-				</div>
-
-				<div className="flex justify-end">
-					<div className="flex items-center gap-2 text-[11px] text-zinc-500">
-						<span>Less</span>
-						<div className="flex items-center gap-1">
-							{HEATMAP_LEVEL_CLASSES.map((levelClass, index) => (
-								<div
-									key={`legend-${index}`}
-									className={`h-2.5 w-2.5 rounded-[3px] ${levelClass}`}
-								/>
-							))}
-						</div>
-						<span>More</span>
-					</div>
-				</div>
-
-				<div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-					<StatPill label="Current streak" value={`${totals.currentStreak} days`} />
-					<StatPill
-						label="Avg day"
-						value={formatMetricValue(mode, totals.avgDay)}
-					/>
-					<StatPill
-						label="Avg week"
-						value={formatMetricValue(mode, totals.avgWeek)}
-					/>
-					<StatPill
-						label="Total"
-						value={formatMetricValue(mode, totals.total, true)}
-					/>
 				</div>
 			</div>
-		</SectionShell>
+
+			<div className="mt-3 flex items-center gap-2 text-xs text-zinc-500">
+				<span>Less</span>
+				<div className="flex items-center gap-1">
+					{HEATMAP_LEVEL_CLASSES.map((levelClass, index) => (
+						<div
+							key={levelClass}
+							className={`h-2.5 w-2.5 rounded-[3px] ${levelClass}`}
+							aria-label={`Activity level ${index}`}
+						/>
+					))}
+				</div>
+				<span>More</span>
+			</div>
+
+			<div className="mt-8 grid gap-10 lg:grid-cols-2">
+				<div>
+					<h3 className="text-sm font-semibold text-zinc-950">Activity insights</h3>
+					<div className="mt-3 space-y-3 text-sm">
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Biggest day</span>
+							<span className="text-right font-medium text-zinc-950">
+								{biggestDay
+									? `${formatLongDate(biggestDay.date)} · ${formatMetricValue(
+											metric,
+											biggestDay.metricValue,
+										)}`
+									: "No activity yet"}
+							</span>
+						</div>
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Most active weekday</span>
+							<span className="font-medium text-zinc-950">{mostActiveWeekday}</span>
+						</div>
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Active days</span>
+							<span className="font-medium text-zinc-950">
+								{nonZeroDays.length.toLocaleString()} of {activeDays.length.toLocaleString()}
+							</span>
+						</div>
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Quiet days</span>
+							<span className="font-medium text-zinc-950">
+								{Math.max(0, activeDays.length - nonZeroDays.length).toLocaleString()}
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<div>
+					<h3 className="text-sm font-semibold text-zinc-950">Usage notes</h3>
+					<div className="mt-3 space-y-3 text-sm">
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Most used model</span>
+							<span className="max-w-[14rem] truncate text-right font-medium text-zinc-950">
+								{topModel?.name ?? "No model activity"}
+							</span>
+						</div>
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Top model share</span>
+							<span className="font-medium text-zinc-950">
+								{topModel ? `${topModelShare}%` : "0%"}
+							</span>
+						</div>
+						<div className="flex items-center justify-between gap-6">
+							<span className="text-zinc-500">Models used</span>
+							<span className="font-medium text-zinc-950">
+								{profile.topModels.length.toLocaleString()}
+							</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 	)
 }
 
 export default function ProfileDashboard({
 	profile,
 	publicView = false,
+	actions,
 }: Props) {
-	const [activityRange, setActivityRange] = useState<ActivityRange>("7d")
-	const [topModelsMetric, setTopModelsMetric] = useState<TopModelsMetric>("tokens")
+	const [range, setRange] = useState<TimeRange>("all")
+	const [metric, setMetric] = useState<Metric>("tokens")
 
-	const activityPoints = useMemo(() => {
-		if (activityRange === "1d") return profile.activitySeries30.slice(-1)
-		if (activityRange === "30d") return profile.activitySeries30
-		return profile.activitySeries30.slice(-7)
-	}, [activityRange, profile.activitySeries30])
+	const chartPoints = useMemo(() => {
+		const points = getSeriesForRange(profile, range)
+		return points.map((point) => ({
+			date: point.date,
+			value: getMetricValue(point, metric),
+			raw: point,
+		}))
+	}, [profile, range, metric])
 
-	const activityDescription = useMemo(() => {
-		if (activityRange === "1d") {
-			return "Personal workspace requests from today."
-		}
-		if (activityRange === "30d") {
-			return "Personal workspace requests over the last 30 days."
-		}
-		return "Personal workspace requests over the last 7 days."
-	}, [activityRange])
-
-	const activityRequestsTotal = useMemo(
-		() => activityPoints.reduce((sum, point) => sum + point.requests, 0),
-		[activityPoints],
-	)
-	const activityTokensTotal = useMemo(
-		() => activityPoints.reduce((sum, point) => sum + point.tokens, 0),
-		[activityPoints],
-	)
-
-	const sortedTopModels = useMemo(() => {
-		const models = [...profile.topModels]
-		models.sort((left, right) => {
-			if (topModelsMetric === "spend") {
-				if (right.spendNanos !== left.spendNanos) {
-					return right.spendNanos - left.spendNanos
-				}
-			} else if (topModelsMetric === "requests") {
-				if (right.requests !== left.requests) {
-					return right.requests - left.requests
-				}
-			} else if (right.tokens !== left.tokens) {
+	const total = chartPoints.reduce((sum, point) => sum + point.value, 0)
+	const previous =
+		metric === "tokens" ? profile.tokenChange : metric === "requests" ? profile.requestChange : null
+	const topModels = useMemo(() => {
+		return [...profile.topModels]
+			.sort((left, right) => {
+				if (metric === "spend") return right.spendNanos - left.spendNanos
+				if (metric === "requests") return right.requests - left.requests
 				return right.tokens - left.tokens
-			}
-
-			if (right.tokens !== left.tokens) return right.tokens - left.tokens
-			return right.requests - left.requests
-		})
-		return models.slice(0, 5)
-	}, [profile.topModels, topModelsMetric])
+			})
+			.slice(0, 5)
+	}, [profile.topModels, metric])
+	const topModelMax = Math.max(
+		1,
+		...topModels.map((model) =>
+			metric === "spend"
+				? model.spendNanos
+				: metric === "requests"
+					? model.requests
+					: model.tokens,
+		),
+	)
 
 	return (
-		<div className="space-y-2.5">
-			<SectionShell>
-				<div className="space-y-4 px-4 py-4 sm:px-5">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-						<div className="flex items-center gap-4">
-							<Avatar className="h-20 w-20 border border-zinc-200 bg-zinc-50">
-								{profile.avatarUrl ? (
-									<AvatarImage src={profile.avatarUrl} alt={profile.displayName} />
-								) : null}
-								<AvatarFallback className="bg-zinc-100 text-lg font-semibold text-zinc-700">
-									{getInitials(profile.displayName)}
-								</AvatarFallback>
-							</Avatar>
-
-							<div>
-								<h2 className="text-[1.85rem] font-semibold tracking-tight text-zinc-950">
-									{profile.displayName}
-								</h2>
-								{publicView ? (
-									<p className="mt-1 text-sm text-zinc-500">
-										/{profile.publicProfileSlug}
-									</p>
-								) : profile.email ? (
-									<p className="mt-1 text-sm text-zinc-500" data-pii="true">
-										{profile.email}
-									</p>
-								) : null}
-							</div>
-						</div>
-
+		<div className="space-y-6 px-4 pb-8 sm:px-6 lg:px-8">
+			<header className="flex items-start justify-between gap-4">
+				<div className="flex items-center gap-3">
+					<div className="relative">
+						<Avatar className="h-14 w-14 border border-zinc-200 bg-zinc-50">
+							{profile.avatarUrl ? (
+								<AvatarImage src={profile.avatarUrl} alt={profile.displayName} />
+							) : null}
+							<AvatarFallback className="bg-zinc-100 font-semibold text-zinc-700">
+								{getInitials(profile.displayName)}
+							</AvatarFallback>
+						</Avatar>
+						{publicView ? null : (
+							<button
+								type="button"
+								className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-sm"
+								aria-label="Change profile photo"
+							>
+								<Camera className="h-3 w-3" />
+							</button>
+						)}
+					</div>
+					<div>
+						<h1 className="text-base font-semibold text-zinc-950">
+							{profile.displayName}
+						</h1>
 						{publicView ? (
-							<div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
-								<Link2 className="h-3.5 w-3.5" />
-								Shared profile
-							</div>
+							<p className="text-sm text-zinc-500">/{profile.publicProfileSlug}</p>
+						) : profile.email ? (
+							<p className="text-sm text-zinc-500" data-pii="true">
+								{profile.email}
+							</p>
 						) : null}
 					</div>
+				</div>
+				{actions}
+			</header>
 
-					<div className="grid gap-3 border-t border-zinc-100 pt-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-						<div>
-							<div className="text-[11px] text-zinc-500">Workspace</div>
-							<div className="mt-1 font-medium text-zinc-950">
-								{profile.workspaceName ?? "Personal"}
+			<section className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
+				<div className="min-w-0">
+					<div className="mb-4 flex flex-wrap items-center gap-3">
+						<h2 className="mr-2 text-lg font-semibold text-zinc-950">
+							Usage summary
+						</h2>
+						<Select value={range} onValueChange={(value) => setRange(value as TimeRange)}>
+							<SelectTrigger className="h-8 w-36 rounded-lg border-zinc-200 bg-white text-xs shadow-none">
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								{Object.entries(RANGE_LABELS).map(([value, label]) => (
+									<SelectItem key={value} value={value}>
+										{label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<div className="inline-flex rounded-lg bg-zinc-100 p-1">
+							{(["tokens", "spend", "requests"] as const).map((nextMetric) => (
+								<button
+									key={nextMetric}
+									type="button"
+									onClick={() => setMetric(nextMetric)}
+									className={[
+										"h-7 rounded-md px-4 text-xs font-medium transition-colors",
+										metric === nextMetric
+											? "bg-white text-zinc-950 shadow-sm"
+											: "text-zinc-600 hover:text-zinc-950",
+									].join(" ")}
+								>
+									{nextMetric === "tokens"
+										? "Tokens"
+										: nextMetric === "spend"
+											? "Spend"
+											: "Requests"}
+								</button>
+							))}
+						</div>
+					</div>
+
+					<div className="grid min-w-0 gap-3">
+						<div className="w-fit">
+							<div className="text-xs text-zinc-500">
+								{metric === "tokens" ? "Tokens" : metric === "spend" ? "Spend" : "Requests"} ·{" "}
+								{RANGE_LABELS[range].toLowerCase()}
+							</div>
+							<div className="mt-1 text-4xl font-semibold tracking-tight text-zinc-950">
+								{formatMetricValue(metric, total)}
+							</div>
+							<div className="mt-1 text-sm text-zinc-500">
+								{previous == null
+									? "No prior data"
+									: `${previous > 0 ? "+" : ""}${Math.round(previous)}% vs prior`}
 							</div>
 						</div>
-						<div>
-							<div className="text-[11px] text-zinc-500">Member since</div>
-							<div className="mt-1 font-medium text-zinc-950">
-								{new Date(profile.memberSince).toLocaleDateString("en", {
-									month: "short",
-									year: "numeric",
-								})}
-							</div>
-						</div>
-						<div>
-							<div className="text-[11px] text-zinc-500">Active days</div>
-							<div className="mt-1 font-medium text-zinc-950">
-								{profile.activeDays.toLocaleString()}
-							</div>
-						</div>
-						<div>
-							<div className="text-[11px] text-zinc-500">Avg week</div>
-							<div className="mt-1 font-medium text-zinc-950">
-								{profile.avgPerWeek.toFixed(1)} requests
-							</div>
-						</div>
+
+						<ChartContainer
+							config={{
+								value: {
+									label:
+										metric === "tokens"
+											? "Tokens"
+											: metric === "spend"
+												? "Spend"
+												: "Requests",
+									color: "#8b5cf6",
+								},
+							}}
+							className="h-[18rem] min-w-0 w-full"
+						>
+							<BarChart data={chartPoints} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+								<CartesianGrid strokeDasharray="3 3" vertical={false} />
+								<XAxis
+									dataKey="date"
+									tickLine={false}
+									axisLine={false}
+									minTickGap={28}
+									tickMargin={8}
+									tickFormatter={(value) => formatShortDate(String(value))}
+								/>
+								<YAxis
+									tickLine={false}
+									axisLine={false}
+									width={52}
+									tickFormatter={(value) => formatMetricValue(metric, Number(value))}
+								/>
+								<ChartTooltip
+									cursor={{ fill: "rgba(24,24,27,0.06)" }}
+									content={
+										<ChartTooltipContent
+											hideIndicator
+											labelFormatter={(label) => formatLongDate(String(label))}
+											formatter={(value) => (
+												<span className="font-mono font-semibold tabular-nums text-zinc-950">
+													{formatMetricValue(metric, Number(value), false)}
+												</span>
+											)}
+										/>
+									}
+								/>
+								<Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} />
+							</BarChart>
+						</ChartContainer>
 					</div>
 				</div>
-			</SectionShell>
 
-			<div className="min-w-0 space-y-2.5">
-				<SectionShell>
-					<SectionHeader
-						title="Activity"
-						description={activityDescription}
-						right={
-							<div className="flex flex-wrap items-center justify-end gap-2">
-								{publicView ? (
-									<span className="text-xs font-medium text-indigo-600">
-										Shared view
-									</span>
-								) : (
-									<Link
-										href="/settings/usage"
-										className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
-									>
-										All Activity
-									</Link>
-								)}
-									<div className="flex items-center gap-1.5" aria-label="Activity time range">
-										{(["1d", "7d", "30d"] as const).map((range) => {
-											const isActive = activityRange === range
-											return (
-												<button
-													key={range}
-													type="button"
-													onClick={() => setActivityRange(range)}
-													aria-pressed={isActive}
-													className={[
-														"h-8 rounded-lg px-3.5 text-[11px] font-medium transition-colors",
-														isActive
-															? "bg-white text-zinc-950 shadow-sm ring-1 ring-zinc-200"
-															: "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900",
-													].join(" ")}
-												>
-													{range === "1d" ? "Today" : range}
-												</button>
-											)
-										})}
-									</div>
-							</div>
-						}
-					/>
-
-					<ActivitySeriesChart points={activityPoints} mode="requests" />
-
-					<div className="flex items-end justify-between gap-4 border-t border-zinc-100 px-4 py-3.5 sm:px-5">
-						<div>
-							<div className="text-[11px] text-zinc-500">Longest streak</div>
-							<div className="mt-1 text-3xl font-semibold text-zinc-950">
-								{profile.longestStreak} days
-							</div>
+				<aside className="min-w-0 border-l border-zinc-200 pl-5">
+					<div className="mb-5 flex items-center justify-between">
+						<div className="flex items-baseline gap-2">
+							<h2 className="text-lg font-semibold text-zinc-950">Top models</h2>
+							<span className="text-sm text-zinc-500">
+								by {metric === "tokens" ? "tokens" : metric === "spend" ? "spend" : "requests"}
+							</span>
 						</div>
-						<div className="text-right">
-							<div className="text-[11px] text-zinc-500">
-								{ACTIVITY_RANGE_LABELS[activityRange]}
-							</div>
-							<div className="mt-1 text-2xl font-semibold text-zinc-950">
-								{activityRequestsTotal.toLocaleString()}{" "}
-								requests
-							</div>
-						</div>
+						{publicView ? null : (
+							<Link
+								href="/settings/usage/overview"
+								className="text-xs font-medium text-zinc-600 hover:text-zinc-950"
+							>
+								View all usage <ExternalLink className="ml-1 inline h-3 w-3" />
+							</Link>
+						)}
 					</div>
-				</SectionShell>
 
-				<div className="grid gap-2.5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-					<SectionShell>
-							<SectionHeader
-								title="Tokens"
-								right={
-									<div className="flex items-center gap-2">
-										<Badge
-											variant="outline"
-											className="rounded-full border-zinc-200 bg-white px-3 py-1 text-[11px] font-medium text-zinc-500"
-										>
-											{ACTIVITY_RANGE_LABELS[activityRange]}
-										</Badge>
-										<Badge
-											variant="secondary"
-											className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-500"
-										>
-											{formatDelta(profile.tokenChange)}
-										</Badge>
-									</div>
-								}
-							/>
-
-							<div className="px-4 pb-1 text-3xl font-semibold text-zinc-950 sm:px-5">
-								{formatCompactNumber(activityTokensTotal)}
+					<div className="space-y-4">
+						{topModels.length === 0 ? (
+							<div className="rounded-lg bg-zinc-50 px-3 py-4 text-sm text-zinc-500">
+								No model activity recorded yet.
 							</div>
-
-						<ActivitySeriesChart points={activityPoints} mode="tokens" />
-					</SectionShell>
-
-					<SectionShell>
-						<SectionHeader
-							title="Top Models"
-							right={
-								<div className="flex items-center gap-2">
-									<Select
-										value={topModelsMetric}
-										onValueChange={(nextValue) => {
-											if (
-												nextValue === "requests" ||
-												nextValue === "tokens" ||
-												nextValue === "spend"
-											) {
-												setTopModelsMetric(nextValue)
-											}
-										}}
-									>
-										<SelectTrigger className="h-8 w-[8.5rem] rounded-lg border-zinc-200 bg-white text-[11px] font-medium text-zinc-500 shadow-none">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="tokens">Tokens</SelectItem>
-											<SelectItem value="spend">Spend</SelectItem>
-											<SelectItem value="requests">Requests</SelectItem>
-										</SelectContent>
-									</Select>
-									{publicView ? null : (
-										<Link
-											href="/models"
-											className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
-										>
-											Explore
-										</Link>
-									)}
-								</div>
-							}
-						/>
-
-						<div className="px-4 pb-4 sm:px-5">
-							{profile.topModels.length === 0 ? (
-								<div className="rounded-xl bg-zinc-50 px-4 py-4 text-sm text-zinc-500">
-									No model activity recorded yet.
-								</div>
-							) : (
-								<div className="space-y-1.5">
-									{sortedTopModels.map((model, index) => (
-										<div
-											key={model.id}
-											className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-zinc-50"
-										>
-											<div className="text-sm font-semibold text-zinc-400">
-												{index + 1}
-											</div>
-											<div className="min-w-0">
-												<p className="truncate text-sm font-medium text-zinc-950">
+						) : (
+							topModels.map((model) => {
+								const value =
+									metric === "spend"
+										? model.spendNanos
+										: metric === "requests"
+											? model.requests
+											: model.tokens
+								const provider = getProviderFromModelId(model.id)
+								const providerName = formatProviderName(provider)
+								return (
+									<div key={model.id} className="space-y-2">
+										<div className="flex items-center gap-3">
+											<ProviderMark provider={provider} label={providerName} />
+											<div className="min-w-0 flex-1">
+												<div className="truncate text-sm font-medium text-zinc-950">
 													{model.name}
-												</p>
-												<p className="text-xs text-zinc-500">
-													{model.requests.toLocaleString()} requests
-												</p>
+												</div>
+												<div className="truncate text-xs text-zinc-500">
+													{providerName}
+												</div>
 											</div>
-											<div className="text-right">
-												<p className="text-sm font-semibold text-zinc-950">
-													{formatTopModelMetricValue(topModelsMetric, model)}
-												</p>
-												<p className="text-xs text-zinc-500">
-													{formatTopModelMetricLabel(topModelsMetric)}
-												</p>
+											<div className="text-sm font-semibold tabular-nums text-zinc-950">
+												{metric === "spend"
+													? formatUsdFromNanos(model.spendNanos)
+													: formatCompactNumber(value)}
 											</div>
 										</div>
-									))}
-								</div>
-							)}
-						</div>
-					</SectionShell>
-				</div>
-
-				<ActivityHeatmap days={profile.heatmapDays} />
-
-				<div className="grid gap-2.5 lg:grid-cols-2">
-					<div className="rounded-[1.1rem] border border-zinc-200 bg-white px-4 py-4 sm:px-5">
-						<div className="space-y-3">
-							<div className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
-								<Flame className="h-4 w-4 text-zinc-400" />
-								Credit Usage
-							</div>
-							<div className="space-y-2.5">
-								<UsageBreakdown label="Today" value={profile.creditsUsage.today} />
-								<UsageBreakdown
-									label="This Week"
-									value={profile.creditsUsage.week}
-								/>
-								<UsageBreakdown
-									label="This Month"
-									value={profile.creditsUsage.month}
-								/>
-							</div>
-						</div>
+										<div className="h-1.5 overflow-hidden rounded-full bg-zinc-100">
+											<div
+												className="h-full rounded-full bg-zinc-800"
+												style={{
+													width: `${Math.max(3, (value / topModelMax) * 100)}%`,
+												}}
+											/>
+										</div>
+									</div>
+								)
+							})
+						)}
 					</div>
+				</aside>
+			</section>
 
-					<div className="rounded-[1.1rem] border border-zinc-200 bg-white px-4 py-4 sm:px-5">
-						<div className="space-y-3">
-							<div className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
-								<Link2 className="h-4 w-4 text-zinc-400" />
-								BYOK Usage
-							</div>
-							<div className="space-y-2.5">
-								<UsageBreakdown label="Today" value={profile.byokUsage.today} />
-								<UsageBreakdown label="This Week" value={profile.byokUsage.week} />
-								<UsageBreakdown
-									label="This Month"
-									value={profile.byokUsage.month}
-								/>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+			<ActivityHeatmap profile={profile} metric={metric} />
 		</div>
 	)
 }
