@@ -7,15 +7,66 @@ description: "List active public video model capabilities."
 
 Each item includes capability metadata such as:
 
-<Warning>
-The public video routes are currently mounted but temporarily disabled, so this route currently returns `501 not_implemented`.
-</Warning>
-
 - `model`
 - `name`
 - `status`
 - `input_types`
 - `output_types`
 - `supported_params`
-- `providers`
+- `supported_parameters`
+- `supported_params_detail`
+- `supported_parameters_detail`
+- `providers`, each with provider-level supported parameter detail
 - `pricing`
+
+`supported_parameters` is the OpenRouter-compatible alias for `supported_params`. `supported_params_detail` and `supported_parameters_detail` are aliases for the same structured metadata. New clients should prefer `supported_parameters` and `supported_parameters_detail`; existing clients can continue reading `supported_params` and `supported_params_detail`.
+
+These detail maps expose structured constraints such as allowed durations, resolutions, qualities, aspect ratios, voice or audio options when relevant, and provider-specific parameter support when that metadata is available.
+
+You can filter models by supported parameter with the `params` query parameter. Repeat it or pass a comma-separated list. The filter accepts canonical names and aliases from `supported_parameters_detail`, so `params=size` can match models whose canonical parameter is `resolution`, and `params=duration_seconds` can match `duration`.
+
+```bash
+curl "https://api.phaseo.app/v1/videos/models?params=size,duration_seconds" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY"
+```
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "model": "openai/sora",
+      "status": "active",
+      "input_types": ["text", "image"],
+      "output_types": ["video"],
+      "supported_params": ["duration", "resolution", "aspect_ratio"],
+      "supported_parameters": ["duration", "resolution", "aspect_ratio"],
+      "supported_parameters_detail": {
+        "duration": {
+          "supported": true,
+          "values": [4, 8, 12],
+          "providers": ["openai"]
+        },
+        "resolution": {
+          "supported": true,
+          "values": ["720p", "1080p"],
+          "providers": ["openai"]
+        }
+      },
+      "providers": [
+        {
+          "id": "openai",
+          "supported_params": ["duration", "resolution", "aspect_ratio"],
+          "supported_parameters": ["duration", "resolution", "aspect_ratio"],
+          "supported_parameters_detail": {
+            "duration": {
+              "supported": true,
+              "values": [4, 8, 12]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+```

@@ -60,7 +60,7 @@ assert_true(($response["availability_mode"] ?? null) === "all", "expected availa
 assert_true(($response["models"][0]["providers"][0]["availability_status"] ?? null) === "coming_soon", "expected availability_status");
 assert_true(($response["models"][0]["providers"][0]["availability_reason"] ?? null) === "scheduled", "expected availability_reason");
 assert_true($fake->calls === [
-    ["GET", "/models", ["availability" => "all"], null, null],
+    ["GET", "/gateway/models", ["availability" => "all"], null, null],
 ], "expected request call for models discovery");
 
 echo "php models tests ok" . PHP_EOL;

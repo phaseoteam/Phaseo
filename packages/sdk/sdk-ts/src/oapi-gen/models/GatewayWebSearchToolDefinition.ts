@@ -11,5 +11,5 @@ export interface GatewayWebSearchToolDefinition {
     include_text?: boolean;
     max_results?: number;
   };
-  type: "ai-stats:web_search";
+  type: "gateway:web_search";
 }

@@ -7,5 +7,5 @@ export interface GatewayWebFetchToolDefinition {
   parameters?: {
     max_chars?: number;
   };
-  type: "ai-stats:web_fetch";
+  type: "gateway:web_fetch";
 }

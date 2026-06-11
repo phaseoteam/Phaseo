@@ -32,7 +32,7 @@ curl https://api.phaseo.app/v1/batches \
     },
     "webhook": {
       "url": "https://example.com/api/batch-webhook",
-      "events": ["batch.completed", "batch.failed"],
+      "events": ["batch.progress", "batch.completed", "batch.failed", "batch.cancelled", "batch.expired"],
       "secret": "whsec_your_signing_secret"
     }
   }'
@@ -54,10 +54,26 @@ Use the normalized gateway fields when they are present:
 - `lifecycle_status` for a stable cross-job status
 - `polling_url` as the canonical status endpoint
 - `cancel_url` when the batch is still cancellable
+- `native_batch_id` only for provider correlation; continue polling with the gateway `id`
+- `billing.reservation_status` to distinguish held, settled, released, or failed billing state
+- webhook delivery summary fields to separate job execution from callback delivery
 
 That polling loop is your fallback when webhook delivery is delayed or your consumer is temporarily unavailable.
 
-## 4. Cancel stale work when needed
+## 4. Recover owned jobs after restarts
+
+Workers should list owned jobs during startup before creating replacements:
+
+```bash
+curl "https://api.phaseo.app/v1/batches?status=in_progress&status=pending&limit=50" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+The list response uses the same public batch object shape as create and retrieve, including lifecycle, webhook delivery, and billing reservation metadata.
+
+Resume work from the returned gateway `id` values. Provider-native ids are exposed for diagnostics, but they are not the durable handle for AI Stats polling or cancellation.
+
+## 5. Cancel stale work when needed
 
 If the batch is still pending or processing and your application no longer wants the result:
 
@@ -68,7 +84,7 @@ curl -X POST https://api.phaseo.app/v1/batches/BATCH_ID/cancel \
 
 Treat cancellation as another asynchronous state transition. Poll again until the batch reaches its next terminal lifecycle state.
 
-## 5. Consume webhook deliveries
+## 6. Consume webhook deliveries
 
 Gateway-managed async webhook payloads are normalized around:
 
@@ -86,12 +102,71 @@ Your webhook consumer should:
 3. treat retries as normal
 4. fetch the latest batch status when the payload and local state disagree
 
-## 6. Fetch outputs and reconcile failures
+When you configure `webhook.secret`, AI Stats signs each delivery with:
+
+- `x-ai-stats-timestamp`: Unix timestamp in seconds
+- `x-ai-stats-signature`: hex HMAC-SHA256 of `${timestamp}.${rawBody}` using your webhook secret
+- `x-ai-stats-event-id`: stable event id for this batch/event
+- `x-ai-stats-event-type`: event type such as `batch.progress` or `batch.completed`
+- `x-ai-stats-delivery-key`: idempotency key, including progress bucket when applicable
+- `x-ai-stats-attempt` and `x-ai-stats-max-attempts`: retry attempt metadata
+
+Verify the signature against the exact raw request body before parsing JSON:
+
+<CodeGroup>
+```typescript TypeScript
+import { verifyAsyncWebhookSignature } from "@ai-stats/sdk";
+
+export async function POST(request: Request) {
+  const rawBody = await request.text();
+  const ok = verifyAsyncWebhookSignature({
+    secret: process.env.AI_STATS_WEBHOOK_SECRET!,
+    body: rawBody,
+    headers: request.headers,
+  });
+
+  if (!ok) {
+    return new Response("invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(rawBody);
+  // Persist event.id or the x-ai-stats-delivery-key header before side effects.
+  return Response.json({ received: true });
+}
+```
+
+```python Python
+from ai_stats import verify_async_webhook_signature
+
+
+async def handle_batch_webhook(request):
+    raw_body = await request.body()
+    ok = verify_async_webhook_signature(
+        secret="whsec_your_signing_secret",
+        body=raw_body,
+        headers=request.headers,
+    )
+    if not ok:
+        return {"status": 401, "body": "invalid signature"}
+
+    event = await request.json()
+    # Persist event["id"] or the x-ai-stats-delivery-key header before side effects.
+    return {"received": True}
+```
+</CodeGroup>
+
+Store `x-ai-stats-delivery-key` or the payload `id` before side effects. Return any 2xx status only after your durable state has been updated; non-2xx responses are retried with the same event id and an incremented attempt number.
+
+Webhook subscriptions accept generic `job.*` events or matching `batch.*` events, including `batch.progress` / `job.progress` for request-count progress. Progress notifications are bucketed for idempotency and may be skipped when the provider has not reported usable `request_counts` yet. If you omit `events`, AI Stats subscribes the webhook to terminal `job.completed`, `job.failed`, `job.cancelled`, and `job.expired` notifications. If you provide `events`, at least one event must be valid for batch jobs; all-invalid or cross-kind-only lists such as `["video.completed"]` are rejected instead of being broadened silently.
+
+Webhook callback URLs must use HTTPS. Literal private, loopback, link-local, and wildcard hosts are rejected; `http://localhost`, `http://127.0.0.1`, and `http://[::1]` are accepted only for local development callbacks.
+
+## 7. Fetch outputs and reconcile failures
 
 Use the terminal batch object to decide the next step:
 
 - completed batches should move on to output retrieval and result ingestion
-- failed batches should capture both the batch failure state and the webhook delivery state
+- failed and expired batches should capture both the batch terminal state and the webhook delivery state
 - cancelled batches should stop downstream fan-out cleanly
 
 Operations should distinguish:
@@ -100,7 +175,7 @@ Operations should distinguish:
 - cancellation requested by operators or automation
 - webhook delivery failures after the batch itself already finished
 
-## 7. What to monitor
+## 8. What to monitor
 
 - batch `lifecycle_status`
 - provider and request correlation ids
@@ -114,5 +189,8 @@ Put those signals in the same async-jobs dashboard so operators can tell whether
 ## Related guides
 
 - [API Reference: Batches](../api-reference/endpoint/batches.mdx)
+- [API Reference: Batch List](../api-reference/endpoint/batches-list.mdx)
+- [API Reference: Batch Models](../api-reference/endpoint/batches-models.mdx)
 - [API Reference: Batch Status](../api-reference/endpoint/batches-status.mdx)
+- [API Reference: Cancel Batch](../api-reference/endpoint/batches-cancel.mdx)
 - [API Reference: Async Jobs WebSocket](../api-reference/endpoint/async-jobs-ws.mdx)

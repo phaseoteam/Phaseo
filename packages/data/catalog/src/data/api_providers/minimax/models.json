@@ -13,13 +13,45 @@
     "effective_from": "2026-03-24T00:00:00",
     "effective_to": null,
     "capabilities": [
-      {
-        "capability_id": "video.generate",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
+        {
+          "capability_id": "video.generate",
+          "status": "coming_soon",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "enum",
+              "values": [
+                6,
+                10
+              ],
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "enum",
+              "values": [
+                "512P",
+                "768P",
+                "1080P"
+              ],
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "quality": {
+              "type": "string"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
   {
     "api_model_id": "minimax/hailuo-2.3",
     "provider_api_model_id": "minimax:minimax/hailuo-2.3",
@@ -34,13 +66,44 @@
     "effective_from": "2026-03-24T00:00:00",
     "effective_to": null,
     "capabilities": [
-      {
-        "capability_id": "video.generate",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
+        {
+          "capability_id": "video.generate",
+          "status": "coming_soon",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "enum",
+              "values": [
+                6,
+                10
+              ],
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "enum",
+              "values": [
+                "768P",
+                "1080P"
+              ],
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "quality": {
+              "type": "string"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
   {
     "api_model_id": "minimax/hailuo-2.3-fast",
     "provider_api_model_id": "minimax:minimax/hailuo-2.3-fast",
@@ -55,13 +118,44 @@
     "effective_from": "2026-03-24T00:00:00",
     "effective_to": null,
     "capabilities": [
-      {
-        "capability_id": "video.generate",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
+        {
+          "capability_id": "video.generate",
+          "status": "coming_soon",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "enum",
+              "values": [
+                6,
+                10
+              ],
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "enum",
+              "values": [
+                "768P",
+                "1080P"
+              ],
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "quality": {
+              "type": "string"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
   {
     "api_model_id": "minimax/i2v-01-director",
     "provider_api_model_id": "minimax:minimax/i2v-01-director",

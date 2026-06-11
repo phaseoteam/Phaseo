@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import type { Endpoint } from "./types";
+import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
 	ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES,
@@ -1071,9 +1072,19 @@ const VideoOutputConfigSchema = z.object({
 }).default({ access: "both" });
 
 const VideoWebhookSchema = z.object({
-	url: z.string().url(),
+	url: z.string().min(1),
 	secret: z.string().min(1).optional(),
-	events: z.array(z.string().min(1)).default(["completed", "failed", "cancelled"]),
+	events: z.array(z.string().min(1)).optional(),
+}).strict().transform((value, ctx) => {
+	const parsed = parseAsyncWebhookConfig("video", value);
+	if (!parsed) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			message: "Invalid video webhook configuration",
+		});
+		return z.NEVER;
+	}
+	return parsed;
 });
 
 // Video Generation schema

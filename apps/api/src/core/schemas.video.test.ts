@@ -60,4 +60,44 @@ describe("VideoGenerationSchema", () => {
 
 		expect(result.success).toBe(false);
 	});
+
+	it("normalizes video webhook events with the shared async webhook parser", () => {
+		const parsed = VideoGenerationSchema.parse({
+			model: "google/veo-3.1",
+			prompt: "Webhook payload",
+			webhook: {
+				url: "https://example.com/hooks/video",
+				secret: "whsec_video",
+				events: ["completed", "video.failed", "job.cancelled"],
+			},
+		});
+
+		expect(parsed.webhook).toEqual({
+			url: "https://example.com/hooks/video",
+			secret: "whsec_video",
+			events: ["job.completed", "video.failed", "job.cancelled"],
+		});
+	});
+
+	it("rejects video webhook configs that cannot dispatch", () => {
+		expect(
+			VideoGenerationSchema.safeParse({
+				model: "google/veo-3.1",
+				prompt: "Cross-kind webhook",
+				webhook: {
+					url: "https://example.com/hooks/video",
+					events: ["batch.completed"],
+				},
+			}).success,
+		).toBe(false);
+		expect(
+			VideoGenerationSchema.safeParse({
+				model: "google/veo-3.1",
+				prompt: "Insecure webhook",
+				webhook: {
+					url: "http://example.com/hooks/video",
+				},
+			}).success,
+		).toBe(false);
+	});
 });

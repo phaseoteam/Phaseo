@@ -297,6 +297,117 @@ describe("handleModels", () => {
         });
     });
 
+    it("returns video capability metadata when filtering by the public videos route", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel({
+                model_id: "openai/sora",
+                name: "Sora",
+                endpoints: ["video.generate"],
+                input_types: ["text"],
+                output_types: ["video"],
+                providers: [
+                    {
+                        api_provider_id: "openai",
+                        api_provider_name: "OpenAI",
+                        is_active_gateway: true,
+                        availability_status: "active",
+                        availability_reason: "active",
+                        provider_status: "active",
+                        provider_routing_status: "active",
+                        model_routing_status: "active",
+                        capability_status: "active",
+                        effective_from: null,
+                        effective_to: null,
+                        endpoints: ["video.generate"],
+                        params: ["duration", "resolution"],
+                        params_detail: {
+                            duration: {
+                                supported: true,
+                                type: "enum",
+                                values: [4, 8, 12],
+                                default: 4,
+                            },
+                            resolution: {
+                                supported: true,
+                                type: "enum",
+                                values: ["720p", "1080p"],
+                                default: "720p",
+                            },
+                        },
+                    },
+                ],
+                supported_params: ["duration", "resolution"],
+                supported_params_detail: {
+                    duration: {
+                        supported: true,
+                        type: "enum",
+                        values: [4, 8, 12],
+                        default: 4,
+                        providers: ["openai"],
+                    },
+                    resolution: {
+                        supported: true,
+                        type: "enum",
+                        values: ["720p", "1080p"],
+                        default: "720p",
+                        providers: ["openai"],
+                    },
+                },
+            }),
+        ]);
+
+        const response = await handleModels(
+            new Request("https://api.example.com/?endpoints=/v1/videos"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({ endpoints: ["/v1/videos"] }),
+        );
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            models: [
+                {
+                    model_id: "openai/sora",
+                    endpoints: ["video.generate"],
+                    supported_parameters: ["duration", "resolution"],
+                    supported_params_detail: {
+                        resolution: {
+                            supported: true,
+                            type: "enum",
+                            values: ["720p", "1080p"],
+                            default: "720p",
+                            providers: ["openai"],
+                        },
+                    },
+                    supported_parameters_detail: {
+                        duration: {
+                            supported: true,
+                            type: "enum",
+                            values: [4, 8, 12],
+                            default: 4,
+                            providers: ["openai"],
+                        },
+                    },
+                    providers: [
+                        {
+                            api_provider_id: "openai",
+                            endpoints: ["video.generate"],
+                            supported_parameters: ["duration", "resolution"],
+                            supported_parameters_detail: {
+                                resolution: {
+                                    supported: true,
+                                    values: ["720p", "1080p"],
+                                },
+                            },
+                        },
+                    ],
+                },
+            ],
+        });
+    });
+
     it("prepends the free router model when the workspace has eligible free providers", async () => {
         fetchCatalogueMock.mockResolvedValue([
             buildCatalogueModel({

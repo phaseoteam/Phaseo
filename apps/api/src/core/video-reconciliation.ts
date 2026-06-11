@@ -16,6 +16,7 @@ import {
 	extractGoogleOperationError,
 	inferGoogleModelFromOperation,
 	isGoogleOperationsGetAuthFailure,
+	mapGoogleOperationErrorToVideoStatus,
 	normalizeGoogleVideoModelName,
 	redactSensitiveUrl,
 	resolveGoogleVideoAuth,
@@ -62,15 +63,19 @@ function toNonNegativeNumber(value: unknown): number | undefined {
 	return undefined;
 }
 
-function mapOpenAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+type VideoProviderLifecycleStatus = "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+
+function mapOpenAiVideoStatus(value: unknown): VideoProviderLifecycleStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "completed" || status === "succeeded") return "completed";
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "processing" || status === "in_progress" || status === "running") return "in_progress";
 	return "queued";
 }
 
-function mapXAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+function mapXAiVideoStatus(value: unknown): VideoProviderLifecycleStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (
 		status === "done" ||
@@ -81,72 +86,60 @@ function mapXAiVideoStatus(value: unknown): "queued" | "in_progress" | "complete
 	) {
 		return "completed";
 	}
-	if (
-		status === "expired" ||
-		status === "failed" ||
-		status === "error" ||
-		status === "cancelled" ||
-		status === "canceled"
-	) {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "pending" || status === "running" || status === "processing" || status === "in_progress") {
 		return "in_progress";
 	}
 	return "queued";
 }
 
-function mapMiniMaxVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+function mapMiniMaxVideoStatus(value: unknown): VideoProviderLifecycleStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (status === "fail" || status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "fail" || status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	return "queued";
 }
 
-function mapBytedanceVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+function mapBytedanceVideoStatus(value: unknown): VideoProviderLifecycleStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "succeeded" || status === "success" || status === "completed" || status === "done") {
 		return "completed";
 	}
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	return "queued";
 }
 
-function mapRunwayVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+function mapRunwayVideoStatus(value: unknown): VideoProviderLifecycleStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	if (status === "throttled") return "queued";
 	return "queued";
 }
 
-function mapAtlasCloudVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+function mapAtlasCloudVideoStatus(value: unknown): VideoProviderLifecycleStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (
-		status === "failed" ||
-		status === "error" ||
-		status === "cancelled" ||
-		status === "canceled" ||
-		status === "expired"
-	) {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress" || status === "pending") {
 		return "in_progress";
 	}
@@ -184,7 +177,7 @@ function resolveRunwayApiVersion(job: VideoJobRecord, bindings: Record<string, s
 }
 
 type VideoProviderStatusResult = {
-	status: "queued" | "in_progress" | "completed" | "failed";
+	status: VideoProviderLifecycleStatus;
 	providerId: string;
 	model?: string;
 	seconds?: number;
@@ -490,7 +483,11 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 	const done = Boolean((json as any).done);
 	const operationError = done ? extractGoogleOperationError(json) : undefined;
 	const failed = done && operationError !== undefined;
-	const status: VideoProviderStatusResult["status"] = failed ? "failed" : done ? "completed" : "in_progress";
+	const status: VideoProviderStatusResult["status"] = operationError !== undefined
+		? mapGoogleOperationErrorToVideoStatus(operationError)
+		: done
+			? "completed"
+			: "in_progress";
 	const generatedVideo = (json as any)?.response?.generateVideoResponse?.generatedSamples?.[0]?.video;
 	const generatedVideoUri =
 		typeof generatedVideo?.uri === "string" && generatedVideo.uri.trim().length > 0
@@ -581,7 +578,11 @@ async function fetchGoogleVertexVideoStatus(job: VideoJobRecord): Promise<VideoP
 	const done = Boolean((json as any).done);
 	const operationError = done ? extractGoogleOperationError(json) : undefined;
 	const failed = done && operationError !== undefined;
-	const status: VideoProviderStatusResult["status"] = failed ? "failed" : done ? "completed" : "in_progress";
+	const status: VideoProviderStatusResult["status"] = operationError !== undefined
+		? mapGoogleOperationErrorToVideoStatus(operationError)
+		: done
+			? "completed"
+			: "in_progress";
 	const generatedVideo = (json as any)?.response?.videos?.[0];
 	const generatedVideoUri =
 		typeof generatedVideo?.gcsUri === "string" && generatedVideo.gcsUri.trim().length > 0
@@ -646,8 +647,15 @@ async function fetchAlibabaVideoStatus(job: VideoJobRecord): Promise<VideoProvid
 
 	const taskStatus = String((json as any)?.output?.task_status ?? (json as any)?.status ?? "").toUpperCase();
 	const completed = taskStatus === "SUCCEEDED";
-	const failed = taskStatus === "FAILED" || taskStatus === "CANCELED" || taskStatus === "CANCELLED";
-	const status: VideoProviderStatusResult["status"] = completed ? "completed" : failed ? "failed" : "in_progress";
+	const cancelled = taskStatus === "CANCELED" || taskStatus === "CANCELLED";
+	const failed = taskStatus === "FAILED";
+	const status: VideoProviderStatusResult["status"] = completed
+		? "completed"
+		: cancelled
+			? "cancelled"
+			: failed
+				? "failed"
+				: "in_progress";
 
 	return {
 		status,

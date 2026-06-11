@@ -24,7 +24,7 @@ import type { ProviderExecuteArgs } from "@providers/types";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "@executors/types";
 import { saveVideoJobMeta } from "@core/video-jobs";
-import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import {
 	buildVideoPricingRequestOptions,
@@ -142,12 +142,13 @@ function withDefinedValues<T extends Record<string, any>>(value: T): Partial<T> 
 	) as Partial<T>;
 }
 
-function jsonErrorResponse(status: number, type: string, message: string): Response {
+function jsonErrorResponse(status: number, type: string, message: string, details?: Record<string, unknown>): Response {
 	return new Response(
 		JSON.stringify({
 			error: {
 				type,
 				message,
+				...(details ?? {}),
 			},
 		}),
 		{ status, headers: { "Content-Type": "application/json" } },
@@ -593,7 +594,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					message: "Video duration seconds and pricing must be resolvable before submission.",
 				};
 			}
-			if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+			if (reserved.amountNanos > 0 && !reserved.held && !isInsufficientVideoReservationStatus(reserved.status)) {
 				reservationGateError = {
 					status: 503,
 					type: "reservation_not_held",
@@ -634,7 +635,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	};
 
-	if (reservationStatus === "insufficient_funds") {
+	if (isInsufficientVideoReservationStatus(reservationStatus)) {
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -775,6 +776,25 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				note: "reservation_retained_for_manual_reconciliation",
 			});
+			return {
+				kind: "completed",
+				ir: undefined,
+				bill: adapterResult.bill,
+				upstream: jsonErrorResponse(
+					502,
+					"async_job_persistence_failed",
+					"Video job was created upstream, but AI Stats could not persist gateway ownership metadata.",
+					{
+						native_video_id: String(videoResponse.nativeId),
+						reservation_id: reservationId,
+						reservation_status: reservationStatus,
+					},
+				),
+				keySource,
+				byokKeyId,
+				mappedRequest,
+				rawResponse: normalized,
+			};
 		}
 	}
 

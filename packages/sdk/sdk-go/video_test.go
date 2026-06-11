@@ -58,7 +58,7 @@ func TestGetVideoDownloadURLReturnsPayload(t *testing.T) {
 func TestVideoLifecycleHelpersReturnPayloads(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/models":
+		case r.Method == http.MethodGet && r.URL.Path == "/gateway/models":
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"models":[{"model_id":"google/veo-3","status":"active"}]}`))
 		case r.Method == http.MethodPost && r.URL.Path == "/videos":

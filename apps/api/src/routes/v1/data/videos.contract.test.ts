@@ -6,11 +6,13 @@ import {
 } from "./videos";
 
 describe("videos route contract helpers", () => {
-	it("enables video api by default and supports explicit off flags", () => {
-		expect(isVideoApiEnabled(undefined)).toBe(true);
-		expect(isVideoApiEnabled("")).toBe(true);
+	it("keeps video api disabled unless explicitly enabled", () => {
+		expect(isVideoApiEnabled(undefined)).toBe(false);
+		expect(isVideoApiEnabled("")).toBe(false);
 		expect(isVideoApiEnabled("true")).toBe(true);
 		expect(isVideoApiEnabled("1")).toBe(true);
+		expect(isVideoApiEnabled("yes")).toBe(true);
+		expect(isVideoApiEnabled("on")).toBe(true);
 		expect(isVideoApiEnabled("false")).toBe(false);
 		expect(isVideoApiEnabled("0")).toBe(false);
 		expect(isVideoApiEnabled("off")).toBe(false);

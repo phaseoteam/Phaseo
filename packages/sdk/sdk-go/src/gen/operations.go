@@ -47,31 +47,31 @@ func CancelBatchAlias(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
-func CancelVideo(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+func CancelVideo(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/videos/" + url.PathEscape(path["video_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
 }
 
-func CancelVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+func CancelVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
-	var out interface{}
+	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
+		var zero map[string]interface{}
 		return zero, err
 	}
 	return out, nil
@@ -707,6 +707,81 @@ func ListApiKeys(client *Client, path map[string]string, query map[string]string
 	return out, nil
 }
 
+func ListBatches(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchesAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batches/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListBatchModelsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/batch/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListDataModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/data/models"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func ListEndpoints(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/endpoints"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
@@ -738,7 +813,7 @@ func ListFiles(client *Client, path map[string]string, query map[string]string, 
 }
 
 func ListModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
-	resolvedPath := "/models"
+	resolvedPath := "/gateway/models"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -784,6 +859,21 @@ func ListPricingModels(client *Client, path map[string]string, query map[string]
 
 func ListProviders(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/providers"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func ListTeamModels(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	resolvedPath := "/gateway/models/me"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}
@@ -867,6 +957,21 @@ func ListWorkspaces(client *Client, path map[string]string, query map[string]str
 	var out map[string]interface{}
 	if err := DecodeJSON(data, &out); err != nil {
 		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func OpenAsyncJobWebSocket(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	resolvedPath := "/async/" + url.PathEscape(path["kind"]) + "/" + url.PathEscape(path["id"]) + "/ws"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero interface{}
+		return zero, err
+	}
+	var out interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero interface{}
 		return zero, err
 	}
 	return out, nil

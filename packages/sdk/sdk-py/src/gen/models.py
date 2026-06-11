@@ -60,7 +60,7 @@ class AnthropicMessagesRequest(TypedDict):
 	system: NotRequired[Union[str, List[Dict[str, Any]]]]
 	temperature: NotRequired[float]
 	tool_choice: NotRequired[Union[Dict[str, Any], str]]
-	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
 	top_k: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
@@ -152,6 +152,50 @@ class ApiKeyWithValue(TypedDict):
 class ApiKeyWithValueResponse(TypedDict):
 	data: Dict[str, Any]
 
+class AsyncJobWebSocketClientEvent(TypedDict):
+	type: Literal["ping", "refresh"]
+
+class AsyncJobWebSocketServerEvent(TypedDict):
+	data: NotRequired[Optional[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	type: Literal["job.snapshot", "job.updated", "job.deleted", "pong"]
+
+class AsyncJobWebSocketUpgradeRequiredResponse(TypedDict):
+	error: NotRequired[Dict[str, Any]]
+
+class AsyncWebhookDeliveryAttempt(TypedDict):
+	attempt_number: NotRequired[int]
+	delivered_at: NotRequired[Optional[str]]
+	delivery_key: NotRequired[str]
+	error_message: NotRequired[Optional[str]]
+	event_type: NotRequired[str]
+	id: NotRequired[str]
+	max_attempts: NotRequired[int]
+	next_retry_at: NotRequired[Optional[str]]
+	response_body_preview: NotRequired[Optional[str]]
+	response_status: NotRequired[Optional[int]]
+	status: NotRequired[Literal["delivered", "scheduled_retry", "failed_permanently"]]
+	tried_at: NotRequired[str]
+
+class AsyncWebhookDeliverySummary(TypedDict):
+	delivered_event_types: NotRequired[List[str]]
+	delivered_events: NotRequired[int]
+	last_attempt_at: NotRequired[Optional[str]]
+	last_attempt_status: NotRequired[Optional[Literal["delivered", "scheduled_retry", "failed_permanently"]]]
+	last_delivered_at: NotRequired[Optional[str]]
+	last_error_message: NotRequired[Optional[str]]
+	last_failure_at: NotRequired[Optional[str]]
+	last_response_status: NotRequired[Optional[int]]
+	next_retry_at: NotRequired[Optional[str]]
+	pending_retries: NotRequired[int]
+	total_attempts: NotRequired[int]
+
+class AsyncWebhookPublicState(TypedDict):
+	attempts: NotRequired[List[Dict[str, Any]]]
+	delivery: NotRequired[Dict[str, Any]]
+	events: NotRequired[List[str]]
+	has_secret: NotRequired[bool]
+	url: NotRequired[Optional[str]]
+
 class AudioContentPart(TypedDict):
 	input_audio: Dict[str, Any]
 	type: Literal["input_audio"]
@@ -188,11 +232,56 @@ class AudioTranslationResponse(TypedDict):
 class BatchBillingSummary(TypedDict):
 	billed: NotRequired[bool]
 	charged: NotRequired[bool]
-	cost_nanos: NotRequired[int]
-	cost_usd: NotRequired[float]
-	finalized_at: NotRequired[str]
+	cost_nanos: NotRequired[Optional[int]]
+	cost_usd: NotRequired[Optional[float]]
+	currency: NotRequired[str]
+	estimated_nanos: NotRequired[Optional[int]]
+	estimated_provider_cost: NotRequired[Optional[str]]
+	estimated_user_cost: NotRequired[Optional[str]]
+	estimation_sample_size: NotRequired[Optional[int]]
+	estimation_total_rows: NotRequired[Optional[int]]
+	estimation_truncated: NotRequired[Optional[bool]]
+	finalized_at: NotRequired[Optional[str]]
 	pricing_breakdown: NotRequired[Dict[str, Any]]
 	reason: NotRequired[str]
+	reservation_id: NotRequired[Optional[str]]
+	reservation_status: NotRequired[Optional[str]]
+	reserved_nanos: NotRequired[Optional[int]]
+	settled_provider_cost: NotRequired[Optional[str]]
+	settled_user_cost: NotRequired[Optional[str]]
+	state: NotRequired[Literal["pending", "estimated", "settled", "void"]]
+	total_nanos: NotRequired[Optional[int]]
+
+class BatchListResponse(TypedDict):
+	data: NotRequired[List[Dict[str, Any]]]
+	first_id: NotRequired[Optional[str]]
+	has_more: NotRequired[bool]
+	last_id: NotRequired[Optional[str]]
+	object: NotRequired[str]
+
+class BatchModelCapability(TypedDict):
+	input_types: NotRequired[List[str]]
+	model: NotRequired[str]
+	name: NotRequired[str]
+	output_types: NotRequired[List[str]]
+	pricing: NotRequired[Dict[str, Any]]
+	providers: NotRequired[List[Dict[str, Any]]]
+	status: NotRequired[str]
+	supported_parameters: NotRequired[List[str]]
+	supported_parameters_detail: NotRequired[Dict[str, Any]]
+	supported_params: NotRequired[List[str]]
+	supported_params_detail: NotRequired[Dict[str, Any]]
+
+class BatchModelProviderCapability(TypedDict):
+	id: NotRequired[str]
+	supported_parameters: NotRequired[List[str]]
+	supported_parameters_detail: NotRequired[Dict[str, Any]]
+	supported_params: NotRequired[List[str]]
+	supported_params_detail: NotRequired[Dict[str, Any]]
+
+class BatchModelsResponse(TypedDict):
+	data: NotRequired[List[Dict[str, Any]]]
+	object: NotRequired[str]
 
 class BatchRequest(TypedDict):
 	completion_window: NotRequired[str]
@@ -211,6 +300,7 @@ class BatchRequestCounts(TypedDict):
 
 class BatchResponse(TypedDict):
 	billing: NotRequired[Dict[str, Any]]
+	cancel_url: NotRequired[Optional[str]]
 	cancelled_at: NotRequired[int]
 	cancelling_at: NotRequired[int]
 	completed_at: NotRequired[int]
@@ -222,20 +312,30 @@ class BatchResponse(TypedDict):
 	expired_at: NotRequired[int]
 	expires_at: NotRequired[int]
 	failed_at: NotRequired[int]
+	finalized_at: NotRequired[Optional[str]]
 	finalizing_at: NotRequired[int]
 	id: NotRequired[str]
 	in_progress_at: NotRequired[int]
 	input_file_id: NotRequired[str]
+	last_webhook_dispatched_at: NotRequired[Optional[str]]
+	last_webhook_progress: NotRequired[Optional[float]]
+	last_webhook_progress_at: NotRequired[Optional[str]]
+	lifecycle_status: NotRequired[Literal["pending", "running", "completed", "failed", "cancelled", "expired"]]
 	metadata: NotRequired[Dict[str, Any]]
+	native_batch_id: NotRequired[Optional[str]]
+	next_webhook_retry_at: NotRequired[Optional[str]]
 	object: NotRequired[str]
 	output_file_id: NotRequired[str]
+	polling_url: NotRequired[str]
 	pricing_lines: NotRequired[List[Dict[str, Any]]]
+	progress: NotRequired[int]
 	provider: NotRequired[str]
 	request_counts: NotRequired[Dict[str, Any]]
 	request_id: NotRequired[str]
 	session_id: NotRequired[str]
 	status: NotRequired[str]
 	webhook: NotRequired[Dict[str, Any]]
+	websocket_url: NotRequired[str]
 
 BenchmarkId = Literal["2-bench-retail", "2-bench-telecom", "aa-index", "aa-intelligence-index-v4", "aa-lcr", "aa-omniscience", "aa-t2v-rank", "ace-bench", "activitynet", "aethercode", "agieval", "ai2-reasoning-challenge-(arc)", "ai2-sciarena", "ai2d", "aidanbench", "aider", "aider-polyglot", "aider-polyglot-edit", "aime", "aime-2024", "aime-2025", "aime-2026", "ainstein-bench", "aitz-em", "alignbench", "all-angles", "alpacaeval-2.0", "amc", "amc-2022-23", "android-control-high-em", "android-control-low-em", "androidworld", "androidworld-sr", "apex", "apex-agents", "apex-shortlist", "arc", "arc-agi", "arc-agi-1", "arc-agi-2", "arc-c", "arc-e", "arcagi1-image", "arcagi2-image", "arena-chat-rank", "arena-hard", "arena-hard-v2", "arena-search-rank", "arkitscenes", "artifactsbench", "artificial-analysis", "attaq", "autologi", "automationbench", "babe", "babyvision", "balrog-ai", "bbh", "bcflv4", "beyondaime", "bfcl", "bfcl-overall-fc-v4", "bfcl-v2", "bfcl-v3", "bfcl-v3-multiturn", "bfcl-v4", "big-bench", "big-bench-extra-hard", "big-bench-hard", "bigcodebench", "biobench", "biolp-bench", "biomysterybench", "bird-sql-(dev)", "bixbench", "blink", "blueprint-bench-2", "boolq", "browsecomp", "browsecomp-long-128k", "browsecomp-long-256k", "browsecomp-long-context-128k", "browsecomp-long-context-256k", "browsecomp-vl", "browsecomp-zh", "c-eval", "cc-bench-v2-backend", "cc-bench-v2-frontend", "cc-bench-v2-repo", "cc-ocr", "cfeval", "cgbench", "charadessta", "chartqa", "chartqapro", "charxiv-d", "charxiv-dq", "charxiv-r", "charxiv-reasoning", "charxiv-rq", "chest-imagenome-anatomy-iou", "chexpert-cxr-top5-macro-f1", "chinese-simpleqa", "cl-bench", "claw-eval", "cloningscenarios", "cluewsc", "cmath", "cmmlu", "cnmo-2024", "codeforces", "codeforces-no-tool", "codesimpleqa", "collie", "common-voice-15", "commonsenseqa", "complexfuncbench", "confabulations", "contphy", "corpusqa-1m", "countbench", "covost2", "covost2-en-zh", "creative-story-writing", "creative-writing-v3", "critpt", "crossvid", "crperelation", "crux-o", "cruxeval-o", "csimpleqa", "ct-dataset-1-macro-accuracy", "ctf-challenge-tasks", "cursorbench-3.1", "cxr14-3cond-macro-f1", "cybench", "cybergym", "cybersecurity-ctfs", "da-2k", "dailyomni", "deep-planning", "deepconsult", "deepplanning-v1.1-avg-acc", "deepplanning-v1.1-shopping-case-acc", "deepplanning-v1.1-shopping-match-score", "deepplanning-v1.1-travel-case-acc", "deepplanning-v1.1-travel-comp-score", "deepplanning-v1.1-travel-cs-score", "deepplanning-v1.1-travel-ps-score", "deepresearchbench", "deepsearchqa", "deepswe", "der-2-bench", "design2code", "disco-x", "docvqa", "docvqatest", "drop", "ds-arena-code", "ds-fim-eval", "dubesor-llm", "dude", "dynamath", "egoschema", "egotempo", "elimination-game", "embspatialbench", "emma", "encyclo-k", "eq-bench", "eqbench", "erqa", "evalplus", "expert-swe", "exploitbench-cap", "eyepacs-accuracy", "facts", "facts-benchmark-suite", "facts-grounding", "facts-parametric", "factscore", "factscore-halluciation-rate", "fiction-live-bench", "figqa", "financeagent-v1.1", "finsearchcomp", "finsearchcomp-t2-t3", "finsearchcomp-t3", "flame-vlm-code", "flenqa", "fleurs", "flteval", "flteval-pass-16", "flteval-pass-2", "flteval-pass-4", "flteval-pass-8", "frames", "frontier-math", "frontiercode-diamond", "frontiermath", "frontiersci-olympiad", "frontiersci-research", "fsc-147-down", "fullstackbench-en", "fullstackbench-zh", "functionalmath", "galileo-agent", "gdp-pdf", "gdpval-aa", "gdpval-mm", "genebench", "giantsteps-tempo", "global-mmlu-lite", "global-pica", "global-piqa", "govreport", "gpqa", "gpqa-diamond", "graphwalks-bfs->128k", "graphwalks-bfs-1m-f1", "graphwalks-bfs-256k-f1", "graphwalks-bfs-lt-128k", "graphwalks-parents->128k", "graphwalks-parents-1m-f1", "graphwalks-parents-256k-f1", "graphwalks-parents-lt-128k", "gsm8k", "gsm8k-chat", "hallusion-bench", "hallusionbench", "healthbench", "healthbench-concensus", "healthbench-hard", "hellaswag", "hiddenmath", "hipho", "hle-no-tool-text-only", "hle-text", "hle-verified", "hle-vl", "hmmt-2025", "hmmt-2026-feb", "hmmt-feb-2025", "hmmt-feb-2026", "hmmt-feb-26", "hmmt-nov-2025", "hr-bench-4k", "humaneval", "humaneval-average", "humaneval-mul", "humaneval+", "humanevalfim-average", "humanitys-last-exam", "hypersim", "if", "if-bench", "if-eval", "ifbench", "imagemining", "imoanswerbench", "imoanswerbench-no-tool", "include", "infographicsqa", "infovqa", "infovqatest", "instruct-humaneval", "intergps", "internal-api-instruction-following-(hard)", "inverse-ifeval", "investment-banking-modeling", "iq-bench", "ivebench-consistency-vs-kling-o1", "ivebench-consistency-vs-runway-aleph", "ivebench-instruction-following-vs-kling-o1", "ivebench-instruction-following-vs-runway-aleph", "ivebench-overall-vs-kling-o1", "ivebench-overall-vs-runway-aleph", "korbench", "lbpp-(v2)", "legal-agent-benchmark", "lingoqa", "lisanbench", "livebench", "livebench-20241125", "livecodebench", "livecodebench-coding", "livecodebench-pro", "livecodebench-v5", "livecodebench-v5-24.12-25.2", "livecodebench-v6", "livecodebench(01-09)", "livesports-3k", "lmarena-text", "lmarena-webdev", "logicvista", "longbench-v2", "longbench-v2-128k", "longcodebench-1m", "longdocurl", "longfact-concepts", "longfact-concepts-hallucination-rate", "longfact-objects", "longfact-objects-hallucination-rate", "longvideobench", "lpfqa", "lsat", "lvbench", "mars-bench", "mask", "math", "math-500", "matharena", "matharena-apex", "matharenaapex", "matharenaapex-shortlist", "mathcanvas", "mathkangaroo", "mathverse-mini", "mathvision", "mathvista", "mathvista-mini", "maxife", "mbpp", "mbpp-evalplus", "mbpp+", "mc-bench", "mcp-mark", "medxpertqa", "medxpertqa-accuracy", "mega-mlqa", "mega-tydi-qa", "mega-udpos", "mega-xcopa", "mega-xstorycloze", "meld", "metr", "mewc", "mgsm", "miabench", "mimic-cxr-top5-macro-f1", "mimo-coding-bench", "minedojo-verified", "minerva", "misguided-attention", "mle-bench", "mle-bench-lite", "mlvu", "mlvu-m", "mm-browsecomp", "mm-browsercomp", "mm-clawbench", "mm-if-eval", "mm-mt-bench", "mmau", "mmau-music", "mmau-sound", "mmau-speech", "mmbench", "mmbench-test", "mmbench-v1.1", "mmbench-video", "mme", "mme-cc", "mme-realworld", "mmlongbench", "mmlongbench-doc", "mmlu", "mmlu-chat", "mmlu-french", "mmlu-multilingual", "mmlu-pro", "mmlu-prox", "mmlu-redux", "mmlu-redux-2.0", "mmlu-stem", "mmmlu", "mmmu", "mmmu-(val)", "mmmu-(validation)", "mmmu-pro", "mmmuval", "mmsearch", "mmsearch-plus", "mmsibench-circular", "mmstar", "mmt-bench", "mmvet", "mmvetgpt4turbo", "mmvu", "mobileminiwob++-sr", "morse-500", "motionbench", "mrcr", "mrcr-1m", "mrcr-1m-(pointwise)", "mrcr-v2", "mrcr-v2-(8-needle)", "mrcr-v2-8-needle", "mri-dataset-1-macro-accuracy", "ms-cxr-t-macro-accuracy", "mt-bench", "mtvqa", "muirbench", "multi-challenge", "multi-if", "multi-swe-bench", "multichallenge-(o3-mini-grader)", "multilf", "multilingual-mmlu", "multiloko", "multipl-e", "musiccaps", "mvbench", "natural-questions", "natural2code", "nl2repo", "nl2repo-bench", "nl2repo-pass-1", "nmos", "nova-63", "nuscene", "nyt-connections", "objectron", "ocrbench", "ocrbench-v2", "ocrbench-v2-(en)", "ocrbench-v2-(zh)", "ocrbenchv2", "octocodingbench", "odinw", "odvbench", "officeqa", "officeqa-pro", "ojbench", "ojbench-cpp", "olympiadbench", "omnibench", "omnibench-music", "omnidocbench-1-5-down", "omnidocbench-1.5", "omnigaia", "omnimath", "openai-mrcr-2-needle-128k", "openai-mrcr-2-needle-256k", "openai-mrcr-8-needle-128k", "openai-mrcr-8-needle-1m", "openai-mrcr-v2-8-needle", "openai-mrcr:-2-needle-128k", "openai-mrcr:-2-needle-1m", "openbookqa", "openrca", "os-world", "osworld-g", "ovbench", "ovobench", "paperbench", "pathmcqa-accuracy", "perceptiontest", "phibench", "phybench", "physicsfinals", "phyx-openended", "pinchbench", "piqa", "pmc-vqa", "point-bench", "pointgrounding", "polymath", "polymath-en", "pope", "popqa", "procbench", "protocolqa", "qasper", "qmsum", "qvhighlights", "realkie", "realworldqa", "refcoco-avg", "refspatialbench", "repobench", "repoqa", "researchrubrics", "robospatialhome", "ruler", "sat-math", "scale-mcp-atlas", "scale-multichallenge", "scicode", "scienceqa", "scienceqa-visual", "screenspot", "screenspot-pro", "seal-0", "seal-multichallenege", "seccodebench", "sfe", "sifo", "sifo-multiturn", "simplebench", "simpleqa", "simpleqa-verified", "simplevqa", "skillsbench", "slake-closed-accuracy", "slake-tokenized-f1", "slakevqa", "smolagents-llm", "snake-bench", "social-iqa", "solo-bench", "spider", "spreadsheetbench-verified", "squality", "summscreenfd", "sunrgbd", "superchem-text-only", "superglue", "supergpqa", "swe-bench", "swe-bench-live", "swe-bench-multilingual", "swe-bench-multimodal", "swe-bench-pro", "swe-evo", "swe-lancer", "swe-perf", "swe-review", "swt-bench", "symflower-coding", "tau-2-airline", "tau-2-bench", "tau-2-retail", "tau-2-telecom", "tau-bench", "tau-bench-airline", "tau-bench-retail", "tau2-airline", "tau3-bench", "tempcompass", "terminal-bench", "terminal-bench-2.0", "terminal-bench-2.1", "terminal-bench-hard", "textvqa", "thematic-generalisation", "theoremqa", "thinking-with-tracking", "tir-bench", "tomato", "tool-decathlon", "toolathlon", "treebench", "triviaqa", "truthfulqa", "tvbench", "tydiqa", "uniform-bar-exam", "us-dermmcqa-accuracy", "usamo-2025", "usamo-2026", "usamo25", "v-star", "vcr-en-easy", "vct", "vending-bench-2", "vibe", "vibe-android", "vibe-backend", "vibe-eval", "vibe-ios", "vibe-pro", "vibe-simulation", "vibe-web", "vibeeval", "video-mme", "video-mmmu", "videoeval-pro", "videoholmes", "videomme", "videomme-w-o-sub.", "videomme-w-sub.", "videoreasonbench", "videosimpleqa", "visfactor", "vision2web", "vispeak", "vistra-metricx", "visulogic", "vita-bench", "vitabench", "viverbench", "vlmsarebiased", "vlmsareblind", "vocalsound", "voicebench-avg", "vpct", "vqa-rad-closed-accuracy", "vqa-rad-tokenized-f1", "vqav2", "vqav2-(test)", "we-math", "webvoyager", "weirdml", "wide-search", "widesearch", "wildbench", "winogrande", "wmdp", "wmt23", "wmt24++", "wmt24pp-comet", "wmt24pp-metricx", "wmt25-mqm", "worldvqa", "writingbench", "wsi-path-rouge", "xlang-agent", "xlrs-bench-macro", "xlsum-english", "xstest", "zclawbench", "zebralogic", "zerobench", "zerobench-main", "zerobench-sub"]
 
@@ -286,8 +386,8 @@ class ChatCompletionsRequest(TypedDict):
 	stream: NotRequired[bool]
 	stream_options: NotRequired[Dict[str, Any]]
 	temperature: NotRequired[float]
-	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "ai-stats:web_search", "ai-stats:web_fetch", "ai-stats:advisor", "ai-stats:image_generation", "ai-stats:apply_patch"], Dict[str, Any]]]
-	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch"], Dict[str, Any]]]
+	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
 	top_logprobs: NotRequired[int]
 	top_p: NotRequired[float]
 	usage: NotRequired[bool]
@@ -451,40 +551,10 @@ class FunctionToolDefinition(TypedDict):
 	function: Dict[str, Any]
 	type: Literal["function"]
 
-class GatewayAdvisorToolDefinition(TypedDict):
-	forward_transcript: NotRequired[bool]
-	instructions: NotRequired[str]
-	max_completion_tokens: NotRequired[int]
-	max_tokens: NotRequired[int]
-	max_uses: NotRequired[int]
-	model: NotRequired[str]
-	name: NotRequired[str]
-	parameters: NotRequired[Dict[str, Any]]
-	reasoning: NotRequired[Dict[str, Any]]
-	temperature: NotRequired[float]
-	type: Literal["ai-stats:advisor"]
-
-class GatewayApplyPatchToolDefinition(TypedDict):
-	type: Literal["ai-stats:apply_patch"]
-
 class GatewayDatetimeToolDefinition(TypedDict):
 	parameters: NotRequired[Dict[str, Any]]
 	timezone: NotRequired[str]
 	type: Literal["gateway:datetime"]
-
-class GatewayImageGenerationToolDefinition(TypedDict):
-	aspect_ratio: NotRequired[str]
-	background: NotRequired[str]
-	description: NotRequired[str]
-	model: NotRequired[str]
-	moderation: NotRequired[str]
-	output_compression: NotRequired[int]
-	output_format: NotRequired[str]
-	parameters: NotRequired[Dict[str, Any]]
-	prompt: NotRequired[str]
-	quality: NotRequired[str]
-	size: NotRequired[str]
-	type: Literal["ai-stats:image_generation"]
 
 class GatewayModelsResponse(TypedDict):
 	availability_mode: Literal["active", "all"]
@@ -492,20 +562,20 @@ class GatewayModelsResponse(TypedDict):
 	models: List[Dict[str, Any]]
 	offset: int
 	ok: bool
-	privacy_scope: Literal["shared"]
+	privacy_scope: Literal["shared", "team"]
 	total: int
 
 class GatewayWebFetchToolDefinition(TypedDict):
 	max_chars: NotRequired[int]
 	parameters: NotRequired[Dict[str, Any]]
-	type: Literal["ai-stats:web_fetch"]
+	type: Literal["gateway:web_fetch"]
 
 class GatewayWebSearchToolDefinition(TypedDict):
 	include_highlights: NotRequired[bool]
 	include_text: NotRequired[bool]
 	max_results: NotRequired[int]
 	parameters: NotRequired[Dict[str, Any]]
-	type: Literal["ai-stats:web_search"]
+	type: Literal["gateway:web_search"]
 
 class GenerationResponse(TypedDict):
 	app_id: NotRequired[Optional[str]]
@@ -667,7 +737,9 @@ class Model(TypedDict):
 	retirement_date: NotRequired[Optional[str]]
 	status: NotRequired[Optional[str]]
 	supported_parameters: NotRequired[List[str]]
+	supported_parameters_detail: NotRequired[Dict[str, Any]]
 	supported_params: NotRequired[List[str]]
+	supported_params_detail: NotRequired[Dict[str, Any]]
 	top_provider: NotRequired[Dict[str, Any]]
 	top_provider_id: NotRequired[Optional[str]]
 
@@ -698,8 +770,18 @@ class ModelProviderAvailability(TypedDict):
 	is_active_gateway: bool
 	model_routing_status: Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
 	params: List[str]
+	params_detail: NotRequired[Dict[str, Any]]
 	provider_routing_status: Literal["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3", "disabled"]
 	provider_status: Literal["active", "beta", "alpha", "not_ready", "gated", "access_limited", "region_limited", "project_limited", "paused", "soft_blocked"]
+	supported_parameters: NotRequired[List[str]]
+	supported_parameters_detail: NotRequired[Dict[str, Any]]
+
+class ModelsPrivacyScopeNotImplementedResponse(TypedDict):
+	code: Literal["models_privacy_scope_not_implemented"]
+	error: Literal["not_implemented"]
+	message: str
+	ok: Literal[false]
+	privacy_scope: Literal["team"]
 
 class ModerationCategories(TypedDict):
 	harassment: NotRequired[bool]
@@ -937,8 +1019,8 @@ class ResponsesRequest(TypedDict):
 	stream: NotRequired[bool]
 	temperature: NotRequired[float]
 	text: NotRequired[Dict[str, Any]]
-	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "ai-stats:web_search", "ai-stats:web_fetch", "ai-stats:advisor", "ai-stats:image_generation", "ai-stats:apply_patch"], Dict[str, Any]]]
-	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
+	tool_choice: NotRequired[Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch"], Dict[str, Any]]]
+	tools: NotRequired[List[Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]]]
 	top_p: NotRequired[float]
 	truncation: NotRequired[Literal["auto", "disabled"]]
 	usage: NotRequired[bool]
@@ -976,14 +1058,9 @@ class ResponsesWebSocketUpgradeRequiredResponse(TypedDict):
 	error: NotRequired[Dict[str, Any]]
 
 class ServerToolUsage(TypedDict):
-	advisor_requests: NotRequired[int]
-	apply_patch_requests: NotRequired[int]
 	datetime_requests: NotRequired[int]
-	image_generation_requests: NotRequired[int]
 	web_fetch_requests: NotRequired[int]
-	web_search_extra_results: NotRequired[int]
 	web_search_requests: NotRequired[int]
-	web_search_results: NotRequired[int]
 
 class SupportedParameterDetails(TypedDict):
 	pass
@@ -992,13 +1069,13 @@ class TextContentPart(TypedDict):
 	text: str
 	type: Literal["text"]
 
-TextGenerateTool = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]
+TextGenerateTool = Union[Dict[str, Any], Dict[str, Any], Dict[str, Any], Dict[str, Any]]
 
 class TextModerationInput(TypedDict):
 	text: str
 	type: Literal["text"]
 
-TextToolChoice = Union[Literal["auto", "none", "required", "gateway:datetime", "ai-stats:web_search", "ai-stats:web_fetch", "ai-stats:advisor", "ai-stats:image_generation", "ai-stats:apply_patch"], Dict[str, Any]]
+TextToolChoice = Union[Literal["auto", "none", "required", "gateway:datetime", "gateway:web_search", "gateway:web_fetch"], Dict[str, Any]]
 
 class ToolCall(TypedDict):
 	function: Dict[str, Any]
@@ -1015,6 +1092,23 @@ class Usage(TypedDict):
 	prompt_tokens: NotRequired[int]
 	server_tool_use: NotRequired[Dict[str, Any]]
 	total_tokens: NotRequired[int]
+
+class VideoBillingSummary(TypedDict):
+	billable: NotRequired[bool]
+	billed_at: NotRequired[str]
+	charge_reason: NotRequired[Optional[str]]
+	charged: NotRequired[Optional[bool]]
+	currency: NotRequired[str]
+	estimated_nanos: NotRequired[Optional[int]]
+	estimated_provider_cost: NotRequired[Optional[str]]
+	estimated_user_cost: NotRequired[Optional[str]]
+	reservation_id: NotRequired[Optional[str]]
+	reservation_status: NotRequired[Optional[str]]
+	reserved_nanos: NotRequired[Optional[int]]
+	settled_provider_cost: NotRequired[Optional[str]]
+	settled_user_cost: NotRequired[Optional[str]]
+	state: NotRequired[Literal["pending", "estimated", "settled", "void"]]
+	total_nanos: NotRequired[Optional[int]]
 
 class VideoContentPart(TypedDict):
 	type: Literal["input_video"]
@@ -1050,6 +1144,7 @@ class VideoGenerationResponse(TypedDict):
 	asset: NotRequired[Optional[Dict[str, Any]]]
 	audio: NotRequired[bool]
 	billing: NotRequired[Dict[str, Any]]
+	cancel_url: NotRequired[Optional[str]]
 	completed_at: NotRequired[Optional[Union[int, str]]]
 	content_url: NotRequired[str]
 	created_at: NotRequired[Union[int, str]]
@@ -1058,7 +1153,13 @@ class VideoGenerationResponse(TypedDict):
 	expires_at: NotRequired[Optional[int]]
 	generation_id: NotRequired[Optional[str]]
 	id: NotRequired[str]
+	last_webhook_dispatched_at: NotRequired[Optional[str]]
+	last_webhook_progress: NotRequired[Optional[float]]
+	last_webhook_progress_at: NotRequired[Optional[str]]
+	lifecycle_status: NotRequired[Literal["pending", "running", "completed", "failed", "cancelled", "expired"]]
 	model: NotRequired[str]
+	native_video_id: NotRequired[Optional[str]]
+	next_webhook_retry_at: NotRequired[Optional[str]]
 	object: NotRequired[str]
 	output_access: NotRequired[Literal["bytes", "signed_url", "both"]]
 	outputs: NotRequired[List[Dict[str, Any]]]
@@ -1074,12 +1175,45 @@ class VideoGenerationResponse(TypedDict):
 	started_at: NotRequired[Optional[Union[int, str]]]
 	status: NotRequired[Literal["queued", "processing", "completed", "failed", "cancelled", "expired"]]
 	usage: NotRequired[Dict[str, Any]]
+	webhook: NotRequired[Dict[str, Any]]
+	websocket_url: NotRequired[str]
 
 class VideoInputReference(TypedDict):
 	image_url: NotRequired[Dict[str, Any]]
 	reference_type: NotRequired[str]
 	role: NotRequired[Literal["first_frame", "last_frame", "reference", "source", "mask"]]
 	type: Literal["image_url"]
+
+class VideoListResponse(TypedDict):
+	data: NotRequired[List[Dict[str, Any]]]
+	first_id: NotRequired[Optional[str]]
+	has_more: NotRequired[bool]
+	last_id: NotRequired[Optional[str]]
+	object: NotRequired[str]
+
+class VideoModelCapability(TypedDict):
+	input_types: NotRequired[List[str]]
+	model: NotRequired[str]
+	name: NotRequired[str]
+	output_types: NotRequired[List[str]]
+	pricing: NotRequired[Dict[str, Any]]
+	providers: NotRequired[List[Dict[str, Any]]]
+	status: NotRequired[str]
+	supported_parameters: NotRequired[List[str]]
+	supported_parameters_detail: NotRequired[Dict[str, Any]]
+	supported_params: NotRequired[List[str]]
+	supported_params_detail: NotRequired[Dict[str, Any]]
+
+class VideoModelProviderCapability(TypedDict):
+	id: NotRequired[str]
+	supported_parameters: NotRequired[List[str]]
+	supported_parameters_detail: NotRequired[Dict[str, Any]]
+	supported_params: NotRequired[List[str]]
+	supported_params_detail: NotRequired[Dict[str, Any]]
+
+class VideoModelsResponse(TypedDict):
+	data: NotRequired[List[Dict[str, Any]]]
+	object: NotRequired[str]
 
 class VideoOutput(TypedDict):
 	bytes_available: NotRequired[bool]
@@ -1134,4 +1268,4 @@ class WorkspaceUpdateRequest(TypedDict):
 	name: NotRequired[str]
 	slug: NotRequired[str]
 
-models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayAdvisorToolDefinition", "GatewayApplyPatchToolDefinition", "GatewayDatetimeToolDefinition", "GatewayImageGenerationToolDefinition", "GatewayModelsResponse", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "ServerToolUsage", "SupportedParameterDetails", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]
+models___all__ = ["ActivityEntry", "ActivityResponse", "AnalyticsAccessTokenRequiredResponse", "AnalyticsNotImplementedResponse", "AnthropicContentBlock", "AnthropicMessage", "AnthropicMessagesRequest", "AnthropicMessagesResponse", "AnthropicTool", "AnthropicUsage", "ApiKey", "ApiKeyCreateRequest", "ApiKeyListResponse", "ApiKeyResponse", "ApiKeyScopeValue", "ApiKeyUpdateRequest", "ApiKeyWithValue", "ApiKeyWithValueResponse", "AsyncJobWebSocketClientEvent", "AsyncJobWebSocketServerEvent", "AsyncJobWebSocketUpgradeRequiredResponse", "AsyncWebhookDeliveryAttempt", "AsyncWebhookDeliverySummary", "AsyncWebhookPublicState", "AudioContentPart", "AudioSpeechRequest", "AudioTranscriptionRequest", "AudioTranscriptionResponse", "AudioTranslationRequest", "AudioTranslationResponse", "BatchBillingSummary", "BatchListResponse", "BatchModelCapability", "BatchModelProviderCapability", "BatchModelsResponse", "BatchRequest", "BatchRequestCounts", "BatchResponse", "BenchmarkId", "CacheControl", "ChatAudioOutputPart", "ChatChoice", "ChatCompletionsRequest", "ChatCompletionsResponse", "ChatImageOutputPart", "ChatMessage", "CreditsResponse", "DataModel", "DataModelOrganisation", "DebugOptions", "DeletedResponse", "Embedding", "EmbeddingsMultimodalInput", "EmbeddingsRequest", "EmbeddingsResponse", "ErrorFailureSampleItem", "ErrorProviderCandidateDiagnostics", "ErrorProviderEnablementDiagnostics", "ErrorProviderFailureDiagnostics", "ErrorResponse", "ErrorRoutingDiagnostics", "ErrorUpstreamError", "FileResponse", "FileUploadRequest", "FunctionToolDefinition", "GatewayDatetimeToolDefinition", "GatewayModelsResponse", "GatewayWebFetchToolDefinition", "GatewayWebSearchToolDefinition", "GenerationResponse", "Image", "ImageConfig", "ImageContentPart", "ImageModerationInput", "ImagesEditRequest", "ImagesEditResponse", "ImagesGenerationRequest", "ImagesGenerationResponse", "InvalidRequestResponse", "KeyInvalidateResponse", "KnownModelId", "ListFilesResponse", "ManagementKeyCreateRequest", "ManagementKeyCreateResponse", "ManagementKeyDeleteResponse", "ManagementKeyDetailResponse", "ManagementKeyListResponse", "ManagementKeyUpdateRequest", "ManagementKeyUpdateResponse", "MessageContentPart", "Model", "ModelAvailability", "ModelId", "ModelLifecycle", "ModelProviderAvailability", "ModelsPrivacyScopeNotImplementedResponse", "ModerationCategories", "ModerationCategoryScores", "ModerationResult", "ModerationsRequest", "ModerationsResponse", "MusicGenerateRequest", "MusicGenerateResponse", "NotImplementedResponse", "OcrRequest", "OcrResponse", "OrganisationId", "OrganisationIdList", "Provider", "ProviderOptions", "ProviderRoutingOptions", "ProvisioningKey", "ProvisioningKeyDetail", "ProvisioningKeyWithValue", "RealtimeNotImplementedResponse", "ReasoningConfig", "RerankDocument", "RerankRequest", "RerankResponse", "RerankResult", "ResponsesInputItem", "ResponsesOutputAudioPart", "ResponsesOutputContentPart", "ResponsesOutputImagePart", "ResponsesOutputItem", "ResponsesOutputTextPart", "ResponsesRequest", "ResponsesResponse", "ResponsesWebSocketCreateEvent", "ResponsesWebSocketServerEvent", "ResponsesWebSocketUpgradeRequiredResponse", "ServerToolUsage", "SupportedParameterDetails", "TextContentPart", "TextGenerateTool", "TextModerationInput", "TextToolChoice", "ToolCall", "ToolCallContentPart", "Usage", "VideoBillingSummary", "VideoContentPart", "VideoDeleteResponse", "VideoGenerationRequest", "VideoGenerationResponse", "VideoInputReference", "VideoListResponse", "VideoModelCapability", "VideoModelProviderCapability", "VideoModelsResponse", "VideoOutput", "VideoOutputConfig", "Workspace", "WorkspaceActivityEntry", "WorkspaceActivityResponse", "WorkspaceCreateRequest", "WorkspaceListResponse", "WorkspaceResponse", "WorkspaceUpdateRequest"]

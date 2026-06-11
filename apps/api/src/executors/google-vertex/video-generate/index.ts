@@ -7,12 +7,14 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveVideoJobMeta } from "@core/video-jobs";
-import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
+import { asyncVideoJobPersistenceFailureResult } from "@executors/_shared/async-job-persistence";
 import {
 	encodeGoogleVertexOperationId,
 	extractGoogleOperationError,
+	mapGoogleOperationErrorToVideoStatus,
 	normalizeGoogleVideoModelName,
 	toGoogleVideoDurationSeconds,
 } from "@providers/google-video/shared";
@@ -158,7 +160,11 @@ function vertexVideoToIR(
 		nativeId: operationName ? encodeGoogleVertexOperationId(operationName) : undefined,
 		model,
 		provider,
-		status: failed ? "failed" : done ? "completed" : "queued",
+		status: operationError !== undefined
+			? mapGoogleOperationErrorToVideoStatus(operationError)
+			: done
+				? "completed"
+				: "queued",
 		output,
 		result: {
 			operation_name: operationName ?? undefined,
@@ -201,7 +207,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const reserved = await reserveVideoGenerationCredits({
 			workspaceId: args.workspaceId,
-			videoId: `req_${args.requestId}`,
+			videoId: args.requestId,
 			providerId: args.providerId,
 			model: modelForMeta,
 			seconds: requestedSeconds,
@@ -224,7 +230,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				message: "Video duration seconds and pricing must be resolvable before submission.",
 			};
 		}
-		if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+		if (reserved.amountNanos > 0 && !reserved.held && !isInsufficientVideoReservationStatus(reserved.status)) {
 			reservationGateError = {
 				status: 503,
 				type: "reservation_not_held",
@@ -262,7 +268,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	};
 
-	if (reservationStatus === "insufficient_funds") {
+	if (isInsufficientVideoReservationStatus(reservationStatus)) {
 		const upstream = new Response(
 			JSON.stringify({
 				error: {
@@ -380,6 +386,28 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		args.providerId,
 		requestedSeconds ?? undefined,
 	);
+	if (!irResponse.nativeId) {
+		await releaseReservationOnFailure();
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "invalid_upstream_response",
+					message: "Google Vertex video create response did not include an operation name.",
+				},
+			}),
+			{ status: 502, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill,
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+			rawResponse: json,
+		};
+	}
 	if (irResponse.nativeId) {
 		const firstOutput = Array.isArray(irResponse.output) ? irResponse.output[0] : null;
 		const operationName =
@@ -421,6 +449,17 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationId,
 				reservationStatus,
 				note: "reservation_retained_for_manual_reconciliation",
+			});
+			return asyncVideoJobPersistenceFailureResult({
+				providerLabel: "Google Vertex",
+				nativeVideoId: String(irResponse.nativeId),
+				reservationId,
+				reservationStatus,
+				bill,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				rawResponse: json,
 			});
 		}
 	}

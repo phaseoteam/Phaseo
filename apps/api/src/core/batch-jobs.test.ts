@@ -177,7 +177,7 @@ describe("batch-jobs metadata", () => {
 		expect(markAsyncOperationBilledMock).toHaveBeenCalledWith("team_1", "batch", "batch_1");
 	});
 
-	it("lists only pending batch jobs from shared async operations storage", async () => {
+	it("lists unbilled active and terminal batch jobs from shared async operations storage", async () => {
 		listAsyncOperationsMock.mockResolvedValueOnce([
 			{
 				workspaceId: "team_1",
@@ -218,13 +218,19 @@ describe("batch-jobs metadata", () => {
 		expect(listAsyncOperationsMock).toHaveBeenCalledWith({
 			kind: "batch",
 			limit: 25,
-			statuses: [null, "validating", "pending", "in_progress", "finalizing", "cancelling"],
+			unbilledOnly: true,
 		});
-		expect(jobs).toHaveLength(1);
+		expect(jobs).toHaveLength(2);
 		expect(jobs[0]).toMatchObject({
 			workspaceId: "team_1",
 			batchId: "batch_pending",
 			status: "pending",
+			provider: "openai",
+		});
+		expect(jobs[1]).toMatchObject({
+			workspaceId: "team_1",
+			batchId: "batch_done",
+			status: "completed",
 			provider: "openai",
 		});
 	});

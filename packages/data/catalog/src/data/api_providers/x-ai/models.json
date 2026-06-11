@@ -1163,12 +1163,76 @@
       {
         "capability_id": "video.generate",
         "status": "coming_soon",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "string",
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "quality": {
+            "type": "string"
+          },
+          "input_reference": {
+            "type": "string",
+            "aliases": [
+              "image_url"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
       },
       {
         "capability_id": "video.edit",
         "status": "coming_soon",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "enum",
+            "values": [
+              "480p",
+              "720p"
+            ],
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "quality": {
+            "type": "string"
+          },
+          "input_reference": {
+            "type": "string",
+            "aliases": [
+              "image_url"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
       }
     ]
   },
@@ -1189,12 +1253,76 @@
       {
         "capability_id": "video.generate",
         "status": "active",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "string",
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "quality": {
+            "type": "string"
+          },
+          "input_reference": {
+            "type": "string",
+            "aliases": [
+              "image_url"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
       },
       {
         "capability_id": "video.edit",
         "status": "active",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "enum",
+            "values": [
+              "480p",
+              "720p"
+            ],
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "quality": {
+            "type": "string"
+          },
+          "input_reference": {
+            "type": "string",
+            "aliases": [
+              "image_url"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          }
+        }
       }
     ]
   },

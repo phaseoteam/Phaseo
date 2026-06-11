@@ -53,6 +53,31 @@ export function extractGoogleOperationError(payload: unknown): unknown {
 	return (payload as any).error;
 }
 
+export function mapGoogleOperationErrorToVideoStatus(error: unknown): "failed" | "cancelled" | "expired" {
+	if (!error || typeof error !== "object") return "failed";
+	const record = error as Record<string, unknown>;
+	const status = String(record.status ?? record.reason ?? "")
+		.trim()
+		.toUpperCase()
+		.replace(/-/g, "_");
+	const message = String(record.message ?? "").toLowerCase();
+	const code = typeof record.code === "number" && Number.isFinite(record.code) ? record.code : undefined;
+
+	if (code === 1 || status === "CANCELLED" || status === "CANCELED") return "cancelled";
+	if (status === "EXPIRED" || message.includes("expired")) return "expired";
+	return "failed";
+}
+
+function videoWebhookEventForTerminalStatus(
+	status: string,
+): "video.completed" | "video.failed" | "video.cancelled" | "video.expired" | null {
+	if (status === "completed") return "video.completed";
+	if (status === "cancelled") return "video.cancelled";
+	if (status === "expired") return "video.expired";
+	if (status === "failed") return "video.failed";
+	return null;
+}
+
 export function isGoogleOperationsGetAuthFailure(status: number, payload: unknown): boolean {
 	if (status !== 401) return false;
 	if (!payload || typeof payload !== "object") return false;
@@ -79,41 +104,40 @@ export function resolveOpenAIVideoProxyTimeoutMs(bindings: Record<string, string
 	return DEFAULT_OPENAI_VIDEO_PROXY_TIMEOUT_MS;
 }
 
-export function mapOpenAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+type VideoInternalStatus = "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+
+export function mapOpenAiVideoStatus(value: unknown): VideoInternalStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "completed" || status === "succeeded") return "completed";
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") return "failed";
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "processing" || status === "in_progress" || status === "running") return "in_progress";
 	return "queued";
 }
 
-export function mapBytedanceVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+export function mapBytedanceVideoStatus(value: unknown): VideoInternalStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "succeeded" || status === "success" || status === "completed" || status === "done") {
 		return "completed";
 	}
-	if (status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress") {
 		return "in_progress";
 	}
 	return "queued";
 }
 
-export function mapRunwayVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+export function mapRunwayVideoStatus(value: unknown): VideoInternalStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "succeeded" || status === "success" || status === "completed" || status === "done") {
 		return "completed";
 	}
-	if (
-		status === "failed" ||
-		status === "error" ||
-		status === "canceled" ||
-		status === "cancelled"
-	) {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress") {
 		return "in_progress";
 	}
@@ -121,20 +145,14 @@ export function mapRunwayVideoStatus(value: unknown): "queued" | "in_progress" |
 	return "queued";
 }
 
-export function mapAtlasVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+export function mapAtlasVideoStatus(value: unknown): VideoInternalStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "succeeded" || status === "success" || status === "completed" || status === "done") {
 		return "completed";
 	}
-	if (
-		status === "failed" ||
-		status === "error" ||
-		status === "canceled" ||
-		status === "cancelled" ||
-		status === "expired"
-	) {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress" || status === "pending") {
 		return "in_progress";
 	}
@@ -412,7 +430,7 @@ export async function finalizeVideoStatusIfTerminal(args: {
 	videoId: string;
 	videoMeta: VideoJobMeta | null;
 	providerId: string;
-	status: "queued" | "in_progress" | "completed" | "failed";
+	status: "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
 	model?: string | null;
 	seconds?: number | null;
 	resolution?: string | null;
@@ -421,7 +439,12 @@ export async function finalizeVideoStatusIfTerminal(args: {
 	metaPatch?: Record<string, unknown>;
 	rawPayload?: unknown;
 }): Promise<void> {
-	if (args.status !== "completed" && args.status !== "failed") return;
+	if (
+		args.status !== "completed" &&
+		args.status !== "failed" &&
+		args.status !== "cancelled" &&
+		args.status !== "expired"
+	) return;
 	const inputImageCountCandidate = [
 		toFiniteNumber((args.requestOptions as any)?.input_image_count),
 		toFiniteNumber((args.requestOptions as any)?.video_params?.input_image_count),
@@ -488,7 +511,7 @@ export async function finalizeVideoStatusIfTerminal(args: {
 		...pricingRequestOptions,
 		video_params: { ...baseVideoParams, ...pricingVideoParams },
 	};
-	await finalizeVideoJob({
+	const finalized = await finalizeVideoJob({
 		workspaceId: args.auth.workspaceId,
 		videoId: args.videoId,
 		providerId: args.providerId,
@@ -503,11 +526,14 @@ export async function finalizeVideoStatusIfTerminal(args: {
 			polledStatus: args.status,
 		},
 	});
-	dispatchVideoWebhookEventInBackground({
-		workspaceId: args.auth.workspaceId,
-		videoId: args.videoId,
-		eventType: args.status === "completed" ? "video.completed" : "video.failed",
-	});
+	const finalizedEventType = videoWebhookEventForTerminalStatus(finalized.status);
+	if (finalizedEventType) {
+		dispatchVideoWebhookEventInBackground({
+			workspaceId: args.auth.workspaceId,
+			videoId: args.videoId,
+			eventType: finalizedEventType,
+		});
+	}
 }
 
 

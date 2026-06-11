@@ -2,7 +2,6 @@ import { setVideoJobStatus, type VideoJobMeta, type VideoJobRecord } from "@core
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
-import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
 
 import * as videoHelpers from "./videos.helpers";
 
@@ -16,6 +15,7 @@ const {
 	inferGoogleModelFromOperation,
 	extractGoogleOperationError,
 	isGoogleOperationsGetAuthFailure,
+	mapGoogleOperationErrorToVideoStatus,
 	mapOpenAiVideoStatus,
 	mapBytedanceVideoStatus,
 	mapRunwayVideoStatus,
@@ -54,13 +54,20 @@ const {
 	mapMiniMaxVideoStatus,
 	mapXAiVideoStatus,
 	extractVideoOutputFromPayload,
-	OPENAI_PROVIDER_ID,
+	resolveOpenAiCompatVideoProviderForFallback,
 	XAI_PROVIDER_ID,
 	MINIMAX_PROVIDER_ID,
 	BYTEDANCE_PROVIDER_ID,
 	RUNWAY_PROVIDER_ID,
 	ATLAS_PROVIDER_ID,
 } = videoHelpers;
+
+function videoContentUnavailableReason(status: string): "video_generation_failed" | "video_cancelled" | "video_expired" | "video_not_ready" {
+	if (status === "failed") return "video_generation_failed";
+	if (status === "cancelled") return "video_cancelled";
+	if (status === "expired") return "video_expired";
+	return "video_not_ready";
+}
 
 export async function getVideoContentHandler(req: Request): Promise<Response> {	const path = new URL(req.url).pathname;
 	const parts = path.split("/");
@@ -185,12 +192,13 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		}
 		const operationError = extractGoogleOperationError(json);
 		if (operationError !== undefined) {
+			const status = mapGoogleOperationErrorToVideoStatus(operationError);
 			await finalizeVideoStatusIfTerminal({
 				auth: authValue,
 				videoId: id,
 				videoMeta,
 				providerId,
-				status: "failed",
+				status,
 				model,
 				seconds,
 				resolution,
@@ -368,12 +376,13 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		}
 		const operationError = extractGoogleOperationError(json);
 		if (operationError !== undefined) {
+			const status = mapGoogleOperationErrorToVideoStatus(operationError);
 			await finalizeVideoStatusIfTerminal({
 				auth: authValue,
 				videoId: id,
 				videoMeta,
 				providerId,
-				status: "failed",
+				status,
 				model,
 				seconds,
 				resolution,
@@ -455,12 +464,15 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		const json = await res.clone().json().catch(() => null);
 		const taskStatus = String(json?.output?.task_status ?? json?.status ?? "").toUpperCase();
 		const completed = taskStatus === "SUCCEEDED";
-		const failed = taskStatus === "FAILED" || taskStatus === "CANCELED" || taskStatus === "CANCELLED";
-		const status: "queued" | "in_progress" | "completed" | "failed" = completed
+		const cancelled = taskStatus === "CANCELED" || taskStatus === "CANCELLED";
+		const failed = taskStatus === "FAILED";
+		const status: "queued" | "in_progress" | "completed" | "failed" | "cancelled" = completed
 			? "completed"
-			: failed
-				? "failed"
-				: "in_progress";
+			: cancelled
+				? "cancelled"
+				: failed
+					? "failed"
+					: "in_progress";
 		const providerId = videoMeta?.provider ?? "alibaba";
 		const model = String(
 			json?.output?.model ??
@@ -492,7 +504,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		});
 		if (status !== "completed") {
 			return err("not_ready", {
-				reason: failed ? "video_generation_failed" : "video_not_ready",
+				reason: videoContentUnavailableReason(status),
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 			});
@@ -578,7 +590,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		});
 		if (status !== "completed") {
 			return err("not_ready", {
-				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				reason: videoContentUnavailableReason(status),
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 			});
@@ -660,7 +672,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		});
 		if (status !== "completed") {
 			return err("not_ready", {
-				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				reason: videoContentUnavailableReason(status),
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 			});
@@ -779,7 +791,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		});
 		if (status !== "completed") {
 			return err("not_ready", {
-				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				reason: videoContentUnavailableReason(status),
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 			});
@@ -868,7 +880,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		});
 		if (status !== "completed") {
 			return err("not_ready", {
-				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				reason: videoContentUnavailableReason(status),
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 			});
@@ -953,7 +965,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 		});
 		if (status !== "completed") {
 			return err("not_ready", {
-				reason: status === "failed" ? "video_generation_failed" : "video_not_ready",
+				reason: videoContentUnavailableReason(status),
 				request_id: authValue.requestId,
 				workspace_id: authValue.workspaceId,
 				...(status === "failed"
@@ -994,11 +1006,11 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			filename: contentFilename,
 		});
 	}
-	const resolvedProviderForFallback =
+	const rawProviderForFallback =
 		normalizeText(ownedVideo.record?.provider)?.toLowerCase() ??
 		normalizeText(videoMeta?.provider)?.toLowerCase() ??
-		OPENAI_PROVIDER_ID;
-	if ((resolvedProviderForFallback === "atlascloud" || resolvedProviderForFallback === "atlas-cloud") && !atlasTaskId) {
+		null;
+	if ((rawProviderForFallback === "atlascloud" || rawProviderForFallback === "atlas-cloud") && !atlasTaskId) {
 		return err("not_ready", {
 			reason: "atlas_prediction_id_missing",
 			request_id: authValue.requestId,
@@ -1006,14 +1018,15 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			video_id: id,
 		});
 	}
-	const openAiCompatProviderId = resolvedProviderForFallback;
-	if (!isOpenAICompatProvider(openAiCompatProviderId)) {
+	const openAiCompatProviderId = resolveOpenAiCompatVideoProviderForFallback(ownedVideo.record, videoMeta);
+	if (!openAiCompatProviderId) {
 		return err("not_supported", {
 			reason: "video_content_unsupported",
 			request_id: authValue.requestId,
 			workspace_id: authValue.workspaceId,
 			video_id: id,
-			provider: openAiCompatProviderId,
+			provider: rawProviderForFallback,
+			native_video_id: normalizeText(ownedVideo.record?.nativeId) ?? normalizeText(videoMeta?.providerTaskId) ?? null,
 		});
 	}
 	const openAiNativeId = normalizeText(ownedVideo.record?.nativeId) ?? id;
@@ -1061,7 +1074,7 @@ export async function getVideoContentHandler(req: Request): Promise<Response> {	
 			}
 			if (openAiStatus !== "completed") {
 				return err("not_ready", {
-					reason: "video_not_ready",
+					reason: videoContentUnavailableReason(openAiStatus),
 					request_id: authValue.requestId,
 					workspace_id: authValue.workspaceId,
 				});

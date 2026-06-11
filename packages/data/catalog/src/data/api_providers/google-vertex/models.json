@@ -1663,15 +1663,40 @@
         "effective_from":  "2025-04-09T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "string",
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "aspect_ratio":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "generate_audio":  {
+                                                                          "type":  "boolean"
+                                                                      }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "google/veo-3.1-fast-preview",
         "provider_api_model_id":  "google-vertex:google/veo-3.1-fast-preview",
@@ -1686,15 +1711,45 @@
         "effective_from":  "2026-03-24T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                               "720p",
+                                                                               "1080p",
+                                                                               "4k"
+                                                                           ],
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "aspect_ratio":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "generate_audio":  {
+                                                                          "type":  "boolean"
+                                                                      }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "google/veo-3.1-lite-generate-preview",
         "provider_api_model_id":  "google-vertex:google/veo-3.1-lite-generate-preview",
@@ -1709,15 +1764,44 @@
         "effective_from":  "2026-03-31T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                               "720p",
+                                                                               "1080p"
+                                                                           ],
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "aspect_ratio":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "generate_audio":  {
+                                                                          "type":  "boolean"
+                                                                      }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "google/veo-3.1-preview",
         "provider_api_model_id":  "google-vertex:google/veo-3.1-preview",
@@ -1732,15 +1816,45 @@
         "effective_from":  "2026-03-24T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                               "720p",
+                                                                               "1080p",
+                                                                               "4k"
+                                                                           ],
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "aspect_ratio":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "generate_audio":  {
+                                                                          "type":  "boolean"
+                                                                      }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "google/gemini-embedding-2",
         "provider_api_model_id":  "google-vertex:google/gemini-embedding-2",

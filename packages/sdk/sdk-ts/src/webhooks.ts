@@ -56,7 +56,13 @@ function isFreshTimestamp(timestamp: string, toleranceSeconds: number | null | u
   if (!Number.isFinite(toleranceSeconds) || toleranceSeconds < 0) return false;
   const timestampMs = parseTimestampMs(timestamp);
   if (!Number.isFinite(timestampMs)) return false;
-  const nowMs = now instanceof Date ? now.getTime() : typeof now === "number" ? now : Date.now();
+  const nowMs = now instanceof Date
+    ? now.getTime()
+    : typeof now === "number"
+      ? now > 10_000_000_000
+        ? now
+        : now * 1000
+      : Date.now();
   if (!Number.isFinite(nowMs)) return false;
   return Math.abs(nowMs - timestampMs) <= toleranceSeconds * 1000;
 }

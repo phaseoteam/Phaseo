@@ -327,6 +327,210 @@ function validateCapabilityParams(
     return errors;
 }
 
+const VIDEO_CAPABILITIES_REQUIRING_STRUCTURED_PARAMS = new Set(['video.generate']);
+const VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA = new Set([
+    'alibaba-cloud',
+    'byteplus',
+    'google-ai-studio',
+    'google-vertex',
+    'minimax',
+    'openai',
+    'atlascloud',
+    'runway',
+    'x-ai',
+]);
+
+function isEnabledCapabilityStatus(value: unknown): boolean {
+    const status = typeof value === 'string' ? value.trim().toLowerCase() : '';
+    return status.length === 0 || status === 'active' || status.startsWith('deranked_');
+}
+
+function getCapabilityParamsObject(value: unknown): Record<string, unknown> | null {
+    return isPlainObject(value) ? value : null;
+}
+
+function getEnumValues(value: unknown): unknown[] {
+    return isPlainObject(value) && Array.isArray(value.values) ? value.values : [];
+}
+
+function getStringArrayField(value: Record<string, unknown>, field: string): string[] {
+    return Array.isArray(value[field])
+        ? value[field].filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+        : [];
+}
+
+function validateVideoDurationParam(
+    detail: Record<string, unknown>,
+    label: string,
+    paramName: string
+): string[] {
+    const errors: string[] = [];
+    const type = normalizeReference(detail.type);
+    if (type !== 'number' && type !== 'enum') {
+        errors.push(`${label} params.${paramName}.type must be number or enum`);
+    }
+    if (type === 'enum') {
+        const values = getEnumValues(detail);
+        if (values.length === 0) {
+            errors.push(`${label} params.${paramName}.values must not be empty when present`);
+        }
+        for (const value of values) {
+            if (parseNumericValue(value) === undefined) {
+                errors.push(`${label} params.${paramName}.values must contain numeric durations`);
+                break;
+            }
+        }
+    }
+    const aliases = getStringArrayField(detail, 'aliases');
+    if (!aliases.includes('duration_seconds') && !aliases.includes('durationSeconds')) {
+        errors.push(`${label} params.${paramName}.aliases must include duration_seconds or durationSeconds`);
+    }
+    return errors;
+}
+
+function validateVideoSizeParam(
+    detail: Record<string, unknown>,
+    label: string,
+    paramName: string
+): string[] {
+    const errors: string[] = [];
+    const type = normalizeReference(detail.type);
+    if (type !== 'string' && type !== 'enum') {
+        errors.push(`${label} params.${paramName}.type must be string or enum`);
+    }
+    if (type === 'enum') {
+        const values = getEnumValues(detail);
+        if (values.length === 0) {
+            errors.push(`${label} params.${paramName}.values must not be empty when present`);
+        }
+        for (const value of values) {
+            if (typeof value !== 'string' || value.trim().length === 0) {
+                errors.push(`${label} params.${paramName}.values must contain string resolutions`);
+                break;
+            }
+        }
+    }
+    const aliases = getStringArrayField(detail, 'aliases');
+    if (!aliases.includes('resolution')) {
+        errors.push(`${label} params.${paramName}.aliases must include resolution`);
+    }
+    return errors;
+}
+
+function pricingCapabilitiesForBatchEndpoint(endpoint: unknown): string[] {
+    switch (endpoint) {
+        case '/v1/embeddings':
+        case '/embeddings':
+            return ['text.embed'];
+        case '/v1/videos':
+        case '/videos':
+            return ['video.generate', 'video.generation'];
+        case '/v1/images/generations':
+        case '/images/generations':
+            return ['image.generate', 'image.generations', 'images.generations', 'images.generate'];
+        case '/v1/images/edits':
+        case '/images/edits':
+            return ['image.edit', 'images.edits'];
+        case '/v1/moderations':
+        case '/moderations':
+            return ['text.moderate', 'moderations.create', 'moderation'];
+        case '/v1/responses':
+        case '/responses':
+        case '/v1/chat/completions':
+        case '/chat/completions':
+            return ['text.generate', 'batch'];
+        default:
+            return ['batch'];
+    }
+}
+
+function buildPricingCapabilityIndex(): Set<string> {
+    const pricingDir = path.join(DATA_ROOT, 'pricing');
+    const keys = new Set<string>();
+    for (const filePath of listPricingFiles(pricingDir)) {
+        const data = safeReadJson(filePath, [], 'Pricing');
+        const providerId = normalizeReference(data?.api_provider_id);
+        const modelId = normalizeReference(data?.api_model_id ?? data?.model_id);
+        const capabilityId = normalizeReference(data?.capability_id ?? data?.endpoint);
+        if (providerId && modelId && capabilityId) {
+            keys.add(`${providerId}:${modelId}:${capabilityId}`);
+        }
+    }
+    return keys;
+}
+
+function validateAsyncCapabilityMetadata(args: {
+    providerId: string;
+    apiModelId: string | null;
+    rowLabel: string;
+    capability: Record<string, unknown>;
+    pricingKeys: Set<string>;
+}): string[] {
+    const errors: string[] = [];
+    const capabilityId = normalizeReference(args.capability.capability_id);
+    if (!capabilityId || !isEnabledCapabilityStatus(args.capability.status)) return errors;
+    const label = `API provider model ${args.rowLabel} capability ${capabilityId}`;
+    const params = getCapabilityParamsObject(args.capability.params);
+
+    if (capabilityId === 'batch') {
+        if (!params) {
+            errors.push(`${label} must expose structured params with endpoint and completion_window metadata`);
+            return errors;
+        }
+        const endpoint = getCapabilityParamsObject(params.endpoint);
+        const completionWindow = getCapabilityParamsObject(params.completion_window);
+        const endpointValues = getEnumValues(endpoint);
+        const completionWindowValues = getEnumValues(completionWindow);
+
+        if (!endpoint || endpoint.type !== 'enum' || endpointValues.length === 0) {
+            errors.push(`${label} params.endpoint must be an enum with at least one supported endpoint`);
+        }
+        if (!completionWindow || completionWindow.type !== 'enum' || !completionWindowValues.includes('24h')) {
+            errors.push(`${label} params.completion_window must be an enum that includes 24h`);
+        }
+        if (args.apiModelId && endpointValues.length > 0) {
+            for (const endpointValue of endpointValues) {
+                if (
+                    !pricingCapabilitiesForBatchEndpoint(endpointValue).some((pricingCapability) =>
+                        args.pricingKeys.has(`${args.providerId}:${args.apiModelId}:${pricingCapability}`)
+                    )
+                ) {
+                    errors.push(
+                        `${label} endpoint ${String(endpointValue)} has no matching pricing capability for ${args.providerId}:${args.apiModelId}`
+                    );
+                }
+            }
+        }
+    }
+
+    if (
+        VIDEO_CAPABILITIES_REQUIRING_STRUCTURED_PARAMS.has(capabilityId) &&
+        VIDEO_PROVIDERS_WITH_EXECUTOR_METADATA.has(args.providerId)
+    ) {
+        if (!params) {
+            errors.push(`${label} must expose structured video params with duration and size metadata`);
+            return errors;
+        }
+        for (const paramName of ['duration', 'size']) {
+            const detail = getCapabilityParamsObject(params[paramName]);
+            if (!detail) {
+                errors.push(`${label} params.${paramName} must include structured metadata`);
+                continue;
+            }
+            if (Array.isArray(detail.values) && detail.values.length === 0) {
+                errors.push(`${label} params.${paramName}.values must not be empty when present`);
+            }
+            if (paramName === 'duration') {
+                errors.push(...validateVideoDurationParam(detail, label, paramName));
+            } else {
+                errors.push(...validateVideoSizeParam(detail, label, paramName));
+            }
+        }
+    }
+
+    return errors;
+}
+
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];
 const DETAIL_DATE_HINTS = ['date', 'cutoff'];
 const GENERIC_MODEL_DESCRIPTION_FALLBACK =
@@ -736,6 +940,7 @@ function checkApiProviderModels(
     const warnings: string[] = [];
     let entryCount = 0;
     const providersDir = path.join(DATA_ROOT, 'api_providers');
+    const pricingKeys = buildPricingCapabilityIndex();
     const providerModalityKnowledge = new Map<
         string,
         { input: Set<string>; output: Set<string> }
@@ -808,6 +1013,20 @@ function checkApiProviderModels(
             });
             errors.push(...entryChecks.errors);
             warnings.push(...entryChecks.warnings);
+            for (const capability of Array.isArray((row as Record<string, unknown>)?.capabilities)
+                ? ((row as Record<string, unknown>).capabilities as unknown[])
+                : []) {
+                if (!isPlainObject(capability)) continue;
+                errors.push(
+                    ...validateAsyncCapabilityMetadata({
+                        providerId: provider,
+                        apiModelId,
+                        rowLabel,
+                        capability,
+                        pricingKeys,
+                    })
+                );
+            }
 
             if (!apiModelId) {
                 errors.push(`API provider model ${rowLabel} missing api_model_id`);

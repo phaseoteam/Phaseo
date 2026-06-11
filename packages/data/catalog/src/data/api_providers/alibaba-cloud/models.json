@@ -1754,15 +1754,54 @@
         "effective_from":  "2026-04-03T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "enum",
+                                                                "values":  [
+                                                                               "720P",
+                                                                               "720p",
+                                                                               "1280x720",
+                                                                               "720x1280",
+                                                                               "1280*720",
+                                                                               "720*1280",
+                                                                               "1080P",
+                                                                               "1080p",
+                                                                               "1920x1080",
+                                                                               "1080x1920",
+                                                                               "1920*1080",
+                                                                               "1080*1920"
+                                                                           ],
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "negative_prompt":  {
+                                                                          "type":  "string"
+                                                                      },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "seed":  {
+                                                                "type":  "integer"
+                                                            }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "qwen/qwen3.6-plus",
         "provider_api_model_id":  "alibaba-cloud:qwen/qwen3.6-plus",

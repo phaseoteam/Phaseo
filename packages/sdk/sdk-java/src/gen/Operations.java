@@ -241,6 +241,31 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Object listBatches(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchesAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batches/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listBatchModelsAlias(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/batch/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listDataModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/data/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Object listEndpoints(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/endpoints";
 		return client.request("GET", resolvedPath, query, headers, body);
@@ -252,7 +277,7 @@ public final class Operations {
 	}
 
 	public static Object listModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
-		String resolvedPath = "/models";
+		String resolvedPath = "/gateway/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -268,6 +293,11 @@ public final class Operations {
 
 	public static Object listProviders(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/providers";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listTeamModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/gateway/models/me";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
@@ -293,6 +323,11 @@ public final class Operations {
 
 	public static Object listWorkspaces(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/workspaces";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object openAsyncJobWebSocket(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/async/" + (path != null && path.containsKey("kind") ? path.get("kind") : "") + "/" + (path != null && path.containsKey("id") ? path.get("id") : "") + "/ws";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

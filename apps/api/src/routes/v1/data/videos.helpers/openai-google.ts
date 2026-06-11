@@ -228,6 +228,18 @@ export async function fetchOpenAIVideoStatus(
 	});
 }
 
+export async function cancelOpenAIVideo(
+	req: Request,
+	auth: VideoRouteAuth,
+	providerId: string,
+	id: string,
+	videoMeta: VideoJobMeta | null,
+): Promise<Response> {
+	return proxyOpenAIVideoRequest(req, auth, providerId, `/videos/${encodeURIComponent(id)}/cancel`, "POST", {
+		videoMeta,
+	});
+}
+
 export function decodeGoogleOperationId(videoId: string): string | null {
 	if (!videoId.startsWith(GOOGLE_OPERATION_PREFIX)) return null;
 	const b64 = videoId.slice(GOOGLE_OPERATION_PREFIX.length).replace(/-/g, "+").replace(/_/g, "/");

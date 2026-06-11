@@ -56,6 +56,34 @@ describe("async webhook signature helpers", () => {
     })).toBe(false);
   });
 
+  test("accepts numeric now values in Unix seconds", () => {
+    const signature = computeAsyncWebhookSignature(secret, timestamp, body);
+
+    expect(verifyAsyncWebhookSignature({
+      secret,
+      body,
+      headers: {
+        "x-ai-stats-timestamp": timestamp,
+        "x-ai-stats-signature": signature,
+      },
+      now: 1781166630,
+    })).toBe(true);
+  });
+
+  test("accepts uppercase hex signatures", () => {
+    const signature = computeAsyncWebhookSignature(secret, timestamp, body).toUpperCase();
+
+    expect(verifyAsyncWebhookSignature({
+      secret,
+      body,
+      headers: {
+        "x-ai-stats-timestamp": timestamp,
+        "x-ai-stats-signature": signature,
+      },
+      now: nowMs,
+    })).toBe(true);
+  });
+
   test("accepts Headers objects and binary bodies", () => {
     const bytes = new TextEncoder().encode(body);
     const signature = computeAsyncWebhookSignature(secret, timestamp, bytes);

@@ -18,10 +18,85 @@ export type VideoReservationResult = {
 	pricedUsage?: Record<string, unknown>;
 };
 
+export function isInsufficientVideoReservationStatus(status: unknown): boolean {
+	const normalized = typeof status === "string" ? status.trim().toLowerCase() : "";
+	return normalized === "insufficient_funds" || normalized === "insufficient_balance";
+}
+
 function toPositiveNumber(value: unknown): number | null {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed) || parsed <= 0) return null;
 	return parsed;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim().length > 0) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return null;
+}
+
+function extractPricedTotalNanos(pricedUsage: Record<string, unknown>): number {
+	const pricing =
+		pricedUsage.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	const pricingBreakdown =
+		pricedUsage.pricing_breakdown && typeof pricedUsage.pricing_breakdown === "object" && !Array.isArray(pricedUsage.pricing_breakdown)
+			? (pricedUsage.pricing_breakdown as Record<string, unknown>)
+			: null;
+	const nestedBreakdown =
+		pricing?.pricing_breakdown && typeof pricing.pricing_breakdown === "object" && !Array.isArray(pricing.pricing_breakdown)
+			? (pricing.pricing_breakdown as Record<string, unknown>)
+			: null;
+	return Math.max(
+		0,
+		Math.round(
+			toFiniteNumber(nestedBreakdown?.total_nanos) ??
+				toFiniteNumber(pricingBreakdown?.total_nanos) ??
+				toFiniteNumber(pricing?.total_nanos) ??
+				toFiniteNumber(pricedUsage.total_nanos) ??
+				0,
+		),
+	);
+}
+
+function hasPricingLines(pricedUsage: Record<string, unknown>): boolean {
+	const pricing =
+		pricedUsage.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	const pricingBreakdown =
+		pricedUsage.pricing_breakdown && typeof pricedUsage.pricing_breakdown === "object" && !Array.isArray(pricedUsage.pricing_breakdown)
+			? (pricedUsage.pricing_breakdown as Record<string, unknown>)
+			: null;
+	const nestedBreakdown =
+		pricing?.pricing_breakdown && typeof pricing.pricing_breakdown === "object" && !Array.isArray(pricing.pricing_breakdown)
+			? (pricing.pricing_breakdown as Record<string, unknown>)
+			: null;
+	return (
+		(Array.isArray(pricing?.lines) && pricing.lines.length > 0) ||
+		(Array.isArray(pricingBreakdown?.lines) && pricingBreakdown.lines.length > 0) ||
+		(Array.isArray(nestedBreakdown?.lines) && nestedBreakdown.lines.length > 0)
+	);
+}
+
+function hasPositiveVideoPricingRule(card: PriceCard): boolean {
+	const videoMeters = new Set([
+		"output_video_seconds",
+		"output_video",
+		"input_video_seconds",
+		"input_video_count",
+		"frame_rate",
+		"total_tokens",
+	]);
+	return card.rules.some((rule) => {
+		const meter = String((rule as any)?.meter ?? "").trim().toLowerCase();
+		if (!videoMeters.has(meter)) return false;
+		return (toFiniteNumber((rule as any)?.price_per_unit) ?? 0) > 0;
+	});
 }
 
 export async function reserveVideoGenerationCredits(args: {
@@ -67,10 +142,20 @@ export async function reserveVideoGenerationCredits(args: {
 			}),
 		},
 	});
+	const baseTotalNanos = extractPricedTotalNanos(pricedBase as Record<string, unknown>);
+	if (baseTotalNanos <= 0 && !hasPricingLines(pricedBase as Record<string, unknown>) && hasPositiveVideoPricingRule(args.pricingCard)) {
+		return {
+			reservationId,
+			held: false,
+			amountNanos: 0,
+			status: "skip_missing_seconds_or_pricing",
+			pricedUsage: pricedBase as Record<string, unknown>,
+		};
+	}
 	const byokAdjusted = await applyByokServiceFee({
 		workspaceId: args.workspaceId,
 		isByok: Boolean(args.isByok),
-		baseCostNanos: Number((pricedBase as any)?.pricing?.total_nanos ?? 0) || 0,
+		baseCostNanos: baseTotalNanos,
 		pricedUsage: pricedBase,
 		currencyHint: "USD",
 	});
