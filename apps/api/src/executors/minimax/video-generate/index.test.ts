@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { IRVideoGenerationRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "./index";
@@ -6,18 +6,46 @@ import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-f
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 
 const saveVideoJobMetaMock = vi.fn(async () => undefined);
+const state = vi.hoisted(() => ({
+	reservationResult: null as Record<string, unknown> | null,
+	releaseCalls: [] as Array<Record<string, unknown>>,
+	saveVideoJobMetaError: null as Error | null,
+}));
 
 vi.mock("@core/video-reservations", () => ({
-	reserveVideoGenerationCredits: vi.fn(async () => ({
-		reservationId: "video_hold:req_minimax_video_test",
-		held: false,
-		amountNanos: 0,
-		status: "skip_zero_cost",
-	})),
+	isInsufficientVideoReservationStatus: (status: unknown) =>
+		status === "insufficient_funds" || status === "insufficient_balance",
+	reserveVideoGenerationCredits: vi.fn(async () => (
+		state.reservationResult ?? {
+			reservationId: "video_hold:req_minimax_video_test",
+			held: false,
+			amountNanos: 0,
+			status: "skip_zero_cost",
+		}
+	)),
 }));
 
 vi.mock("@core/video-jobs", () => ({
-	saveVideoJobMeta: (...args: unknown[]) => saveVideoJobMetaMock(...args),
+	saveVideoJobMeta: (...args: unknown[]) => {
+		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		return saveVideoJobMetaMock(...args);
+	},
+}));
+
+vi.mock("@core/wallet-reservations", () => ({
+	releaseWalletReservation: vi.fn(async (args: Record<string, unknown>) => {
+		state.releaseCalls.push(args);
+		return {
+			status: "released",
+			applied: true,
+			alreadyApplied: false,
+			amountNanos: 123_000_000,
+			beforeBalanceNanos: null,
+			afterBalanceNanos: null,
+			beforeReservedNanos: null,
+			afterReservedNanos: null,
+		};
+	}),
 }));
 
 function buildArgs(
@@ -49,8 +77,14 @@ afterAll(() => {
 });
 
 describe("minimax video executor", () => {
-	it("stores upstream minimax task id for later polling", async () => {
+	beforeEach(() => {
 		saveVideoJobMetaMock.mockClear();
+		state.reservationResult = null;
+		state.releaseCalls = [];
+		state.saveVideoJobMetaError = null;
+	});
+
+	it("stores upstream minimax task id for later polling", async () => {
 		const mock = installFetchMock([
 			{
 				match: (url) => url.endsWith("/v1/video_generation"),
@@ -85,6 +119,50 @@ describe("minimax video executor", () => {
 			"task_123",
 			"queued",
 		);
+	});
+
+	it("fails the gateway response when MiniMax video metadata cannot be persisted", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_minimax_video_test",
+			held: true,
+			amountNanos: 123_000_000,
+			status: "held",
+		};
+		state.saveVideoJobMetaError = new Error("async operation store unavailable");
+		const mock = installFetchMock([
+			{
+				match: (url) => url.endsWith("/v1/video_generation"),
+				response: jsonResponse({ task_id: "task_meta_failed", status: "queued" }),
+			},
+		]);
+
+		const result = await execute(
+			buildArgs(
+				{
+					model: "minimax/hailuo-2.3",
+					prompt: "A MiniMax metadata persistence failure",
+					size: "1080P",
+					duration: 6,
+					inputReference: "https://example.com/first-frame.png",
+				},
+				"MiniMax-Hailuo-2.3",
+			),
+		);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "async_job_persistence_failed",
+				native_video_id: expect.stringContaining("mmxvid_"),
+				reservation_id: "video_hold:req_minimax_video_test",
+				reservation_status: "held",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([]);
 	});
 
 	it("rejects Hailuo 2.3 Fast without an input reference", async () => {
@@ -137,5 +215,91 @@ describe("minimax video executor", () => {
 		expect(capturedBody?.resolution).toBe("1080P");
 		expect(capturedBody?.size).toBeUndefined();
 		expect(capturedBody?.first_frame_image).toBe("https://example.com/first-frame.png");
+	});
+
+	it("releases a held reservation when MiniMax returns success without a task id", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_minimax_video_test",
+			held: true,
+			amountNanos: 123_000_000,
+			status: "held",
+		};
+		const mock = installFetchMock([
+			{
+				match: (url) => url.endsWith("/v1/video_generation"),
+				response: jsonResponse({ status: "queued" }),
+			},
+		]);
+
+		const result = await execute(
+			buildArgs(
+				{
+					model: "minimax/hailuo-2.3",
+					prompt: "A MiniMax response without task id",
+					size: "1080P",
+					duration: 6,
+					inputReference: "https://example.com/first-frame.png",
+				},
+				"MiniMax-Hailuo-2.3",
+			),
+		);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "invalid_upstream_response",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([
+			{
+				workspaceId: "team_test",
+				reservationId: "video_hold:req_minimax_video_test",
+				releaseRefId: "req_minimax_video_test",
+			},
+		]);
+	});
+
+	it("does not submit upstream when reservation pricing dimensions are missing", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_minimax_video_test",
+			held: false,
+			amountNanos: 0,
+			status: "skip_missing_seconds_or_pricing",
+		};
+		const mock = installFetchMock([
+			{
+				match: (url) => url.endsWith("/v1/video_generation"),
+				response: jsonResponse({ task_id: "task_should_not_submit", status: "queued" }),
+			},
+		]);
+
+		const result = await execute(
+			buildArgs(
+				{
+					model: "minimax/hailuo-2.3",
+					prompt: "A MiniMax request without duration pricing dimensions",
+					size: "1080P",
+					inputReference: "https://example.com/first-frame.png",
+				},
+				"MiniMax-Hailuo-2.3",
+			),
+		);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(400);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "missing_billing_dimensions",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([]);
+		expect(mock.calls).toEqual([]);
 	});
 });

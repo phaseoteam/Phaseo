@@ -10,7 +10,6 @@ import { VideoGenerationSchema } from "@core/schemas";
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
-import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
 import {
 	listTeamVideoJobs,
 	setVideoJobStatus,
@@ -26,6 +25,24 @@ import { getVideoContentHandler } from "./videos.get-content";
 import * as videoHelpers from "./videos.helpers";
 
 type VideoRouteAuth = videoHelpers.VideoRouteAuth;
+
+function mapVideoParamDetailProviders(value: unknown): unknown {
+	if (Array.isArray(value)) {
+		return value.map(mapVideoParamDetailProviders);
+	}
+	if (!value || typeof value !== "object") return value;
+	const out: Record<string, unknown> = {};
+	for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+		if (key === "providers" && Array.isArray(entry)) {
+			out[key] = Array.from(new Set(entry
+				.map((provider) => toPublicVideoProviderId(typeof provider === "string" ? provider : null))
+				.filter((provider): provider is string => Boolean(provider))));
+			continue;
+		}
+		out[key] = mapVideoParamDetailProviders(entry);
+	}
+	return out;
+}
 
 const {
 	normalizeText,
@@ -70,9 +87,11 @@ const {
 	resolveMetaDurationMs,
 	enrichVideoPayloadWithJobMetrics,
 	finalizeVideoStatusIfTerminal,
+	normalizeVideoUpstreamErrorResponse,
 	resolveVideoProviderKey,
 	proxyOpenAIVideoRequest,
 	fetchOpenAIVideoStatus,
+	cancelOpenAIVideo,
 	decodeGoogleOperationId,
 	decodeDashscopeTaskId,
 	decodeXAiVideoId,
@@ -98,7 +117,9 @@ const {
 	resolveByteplusTaskId,
 	resolveRunwayTaskId,
 	resolveAtlasTaskId,
+	resolveOpenAiCompatVideoProviderForFallback,
 	fetchDashscopeTask,
+	cancelDashscopeTask,
 	fetchXAiVideoStatus,
 	fetchXAiVideoContent,
 	fetchMiniMaxVideoTask,
@@ -106,6 +127,7 @@ const {
 	resolveRunwayApiVersion,
 	fetchBytedanceTask,
 	fetchRunwayTask,
+	cancelRunwayTask,
 	extractAtlasPredictionPayload,
 	fetchAtlasPrediction,
 	mapMiniMaxVideoStatus,
@@ -202,6 +224,15 @@ export function parseVideoDownloadUrlRequestBody(
 	};
 }
 
+function parseModelQueryValues(url: URL, name: string): string[] {
+	return Array.from(new Set(url.searchParams.getAll(name).flatMap((value) =>
+		String(value)
+			.split(",")
+			.map((part) => part.trim())
+			.filter((part) => part.length > 0),
+	)));
+}
+
 function notImplementedYetResponse(): Response {
 	return err("not_implemented_yet", {
 		reason: "video_api_temporarily_disabled",
@@ -254,6 +285,9 @@ videosRoutes.get("/", withRuntime(async (req) => {
 	return new Response(JSON.stringify({
 		object: "list",
 		data,
+		first_id: typeof data[0]?.id === "string" ? data[0].id : null,
+		last_id: typeof data[data.length - 1]?.id === "string" ? data[data.length - 1].id : null,
+		has_more: false,
 	}), {
 		status: 200,
 		headers: {
@@ -266,8 +300,10 @@ videosRoutes.get("/", withRuntime(async (req) => {
 videosRoutes.get("/models", withRuntime(async (req) => {
 	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
+	const url = new URL(req.url);
 	const catalogue = await fetchCatalogue({
 		endpoints: ["video.generation"],
+		params: parseModelQueryValues(url, "params"),
 		statuses: ["active"],
 	});
 	return new Response(JSON.stringify({
@@ -279,9 +315,15 @@ videosRoutes.get("/models", withRuntime(async (req) => {
 			input_types: model.input_types,
 			output_types: model.output_types,
 			supported_params: model.supported_params,
+			supported_parameters: model.supported_params,
+			supported_params_detail: mapVideoParamDetailProviders(model.supported_params_detail),
+			supported_parameters_detail: mapVideoParamDetailProviders(model.supported_params_detail),
 			providers: model.providers.map((provider) => ({
 				id: toPublicVideoProviderId(provider.api_provider_id),
 				supported_params: provider.params,
+				supported_parameters: provider.params,
+				supported_params_detail: mapVideoParamDetailProviders(provider.params_detail),
+				supported_parameters_detail: mapVideoParamDetailProviders(provider.params_detail),
 			})),
 			pricing: model.pricing,
 		})),
@@ -386,11 +428,164 @@ videosRoutes.post("/:videoId/cancel", withRuntime(async (req) => {
 			workspace_id: authValue.workspaceId,
 		});
 	}
-	return err("not_implemented_yet", {
-		reason: "video_cancel_temporarily_disabled",
-		request_id: authValue.requestId,
-		workspace_id: authValue.workspaceId,
-		video_id: id,
+	const ownedVideo = await requireOwnedVideoJob(authValue, id);
+	if (ownedVideo instanceof Response) return ownedVideo;
+	const publicStatus = toPublicVideoStatus(ownedVideo.record.status);
+	if (publicStatus === "cancelled") {
+		return new Response(JSON.stringify(await toPublicVideoResponse({
+			requestUrl: req.url,
+			id,
+			payload: enrichVideoPayloadWithJobMetrics({
+				id,
+				status: "cancelled",
+				provider: normalizeText(ownedVideo.record.provider) ?? ownedVideo.meta?.provider ?? null,
+				model: normalizeText(ownedVideo.record.model) ?? ownedVideo.meta?.model ?? null,
+				createdAt: ownedVideo.record.createdAt,
+				updatedAt: ownedVideo.record.updatedAt,
+			}, ownedVideo.record as VideoJobRecord, ownedVideo.meta),
+			record: ownedVideo.record as VideoJobRecord,
+			meta: ownedVideo.meta,
+		})), {
+			status: 200,
+			headers: {
+				"Content-Type": "application/json",
+				"Cache-Control": "no-store",
+			},
+		});
+	}
+	if (publicStatus === "completed" || publicStatus === "failed" || publicStatus === "expired") {
+		return err("validation_error", {
+			reason: "video_cancel_requires_non_terminal_status",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+			video_id: id,
+			status: publicStatus,
+		});
+	}
+
+	const providerId =
+		resolveOpenAiCompatVideoProviderForFallback(ownedVideo.record, ownedVideo.meta) ??
+		normalizeText(ownedVideo.record.provider) ??
+		normalizeText(ownedVideo.meta?.provider);
+	if (!providerId) {
+		return err("not_implemented_yet", {
+			reason: "video_cancel_provider_not_supported",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+			video_id: id,
+			provider: null,
+			native_video_id: normalizeText(ownedVideo.record.nativeId) ?? normalizeText(ownedVideo.meta?.providerTaskId) ?? null,
+		});
+	}
+	const normalizedProvider = providerId.trim().toLowerCase();
+	let upstream: Response;
+	let cancellationTargetId: string | null = null;
+	let upstreamFailureReason = "video_cancel_provider_upstream_error";
+	if (normalizedProvider === OPENAI_PROVIDER_ID) {
+		cancellationTargetId = normalizeText(ownedVideo.record.nativeId) ?? id;
+		upstream = await cancelOpenAIVideo(req, authValue, normalizedProvider, cancellationTargetId, ownedVideo.meta);
+	} else if (normalizedProvider === "alibaba" || normalizedProvider === "alibaba-cloud" || normalizedProvider === "qwen") {
+		cancellationTargetId = resolveDashscopeTaskId(ownedVideo.record, ownedVideo.meta, id);
+		if (!cancellationTargetId) {
+			return err("validation_error", {
+				reason: "video_cancel_missing_provider_task_id",
+				request_id: authValue.requestId,
+				workspace_id: authValue.workspaceId,
+				video_id: id,
+				provider: normalizedProvider,
+			});
+		}
+		upstreamFailureReason = "dashscope_task_cancel_failed";
+		upstream = await cancelDashscopeTask(authValue, ownedVideo.meta, cancellationTargetId);
+	} else if (normalizedProvider === RUNWAY_PROVIDER_ID) {
+		cancellationTargetId = resolveRunwayTaskId(ownedVideo.record, ownedVideo.meta, id);
+		if (!cancellationTargetId) {
+			return err("validation_error", {
+				reason: "video_cancel_missing_provider_task_id",
+				request_id: authValue.requestId,
+				workspace_id: authValue.workspaceId,
+				video_id: id,
+				provider: normalizedProvider,
+			});
+		}
+		upstreamFailureReason = "runway_task_cancel_failed";
+		upstream = await cancelRunwayTask(authValue, ownedVideo.meta, cancellationTargetId);
+	} else {
+		return err("not_implemented_yet", {
+			reason: "video_cancel_provider_not_supported",
+			request_id: authValue.requestId,
+			workspace_id: authValue.workspaceId,
+			video_id: id,
+			provider: normalizedProvider,
+			native_video_id: normalizeText(ownedVideo.record.nativeId) ?? null,
+		});
+	}
+
+	if (!upstream.ok) {
+		return normalizeVideoUpstreamErrorResponse({
+			response: upstream,
+			requestId: authValue.requestId,
+			workspaceId: authValue.workspaceId,
+			provider: normalizedProvider,
+			reason: upstreamFailureReason,
+			extra: {
+				video_id: id,
+				provider_task_id: cancellationTargetId,
+			},
+		});
+	}
+	const payload = await upstream.clone().json().catch(() => ({
+		id: cancellationTargetId,
+		status: "cancelled",
+	}));
+	const normalizedStatus = normalizeVideoStatus((payload as any)?.status);
+	const cancelStatus = normalizedStatus === "failed" ? "failed" : "cancelled";
+	await finalizeVideoStatusIfTerminal({
+		auth: authValue,
+		videoId: id,
+		videoMeta: ownedVideo.meta,
+		providerId: normalizedProvider,
+		status: cancelStatus,
+		model: normalizeText((payload as any)?.model) ?? ownedVideo.record.model ?? ownedVideo.meta?.model ?? null,
+		seconds: toFiniteNumber((payload as any)?.seconds) ?? ownedVideo.meta?.seconds ?? null,
+		resolution: normalizeText((payload as any)?.size) ?? ownedVideo.meta?.resolution ?? null,
+		quality: normalizeText((payload as any)?.quality) ?? ownedVideo.meta?.quality ?? null,
+		metaPatch: {
+			cancelledAt: new Date().toISOString(),
+			cancelledByRequestId: authValue.requestId,
+			cancelProviderStatus: normalizeText((payload as any)?.status) ?? null,
+			cancelProviderTaskId: cancellationTargetId,
+		},
+		rawPayload: payload,
+	});
+	const refreshed = await refreshOwnedVideoJob(authValue, id);
+	const record = refreshed?.record ?? {
+		...ownedVideo.record,
+		status: cancelStatus,
+		meta: {
+			...(ownedVideo.meta ?? {}),
+			cancelledAt: new Date().toISOString(),
+		},
+	};
+	const meta = refreshed?.meta ?? (record.meta as VideoJobMeta | null) ?? ownedVideo.meta;
+	return new Response(JSON.stringify(await toPublicVideoResponse({
+		requestUrl: req.url,
+		id,
+		payload: enrichVideoPayloadWithJobMetrics({
+			...(payload && typeof payload === "object" && !Array.isArray(payload) ? payload as Record<string, unknown> : {}),
+			id,
+			status: cancelStatus,
+			provider: normalizedProvider,
+			model: normalizeText((payload as any)?.model) ?? ownedVideo.record.model ?? ownedVideo.meta?.model ?? null,
+		}, record as VideoJobRecord, meta),
+		record: record as VideoJobRecord,
+		meta,
+	})), {
+		status: 200,
+		headers: {
+			"Content-Type": "application/json",
+			"Cache-Control": "no-store",
+		},
 	});
 }));
 

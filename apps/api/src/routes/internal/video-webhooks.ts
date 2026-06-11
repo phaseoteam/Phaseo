@@ -24,6 +24,49 @@ import {
 
 export const internalVideoWebhookRoutes = new Hono<Env>();
 
+function processOpenAiVideoWebhookInBackground(args: {
+	eventId: string;
+	eventType: string;
+	payload: any;
+}) {
+	dispatchBackground((async () => {
+		const releaseRuntime = ensureRuntimeForBackground();
+		try {
+			await processOpenAiVideoWebhook(args);
+		} catch (error) {
+			console.error("openai_video_webhook_processing_failed", {
+				error,
+				eventId: args.eventId,
+				eventType: args.eventType,
+			});
+		} finally {
+			releaseRuntime();
+		}
+	})());
+}
+
+function processAlibabaVideoWebhookInBackground(args: {
+	eventId: string;
+	eventType: string;
+	payload: any;
+	taskId: string;
+}) {
+	dispatchBackground((async () => {
+		const releaseRuntime = ensureRuntimeForBackground();
+		try {
+			await processAlibabaVideoWebhook(args);
+		} catch (error) {
+			console.error("alibaba_video_webhook_processing_failed", {
+				error,
+				eventId: args.eventId,
+				eventType: args.eventType,
+			});
+		} finally {
+			releaseRuntime();
+		}
+	})());
+}
+
 internalVideoWebhookRoutes.post("/openai", withRuntime(async (req) => {
 	const rawBody = await req.text();
 	const signatureOk = await verifyOpenAiWebhookSignature(req, rawBody);
@@ -54,29 +97,18 @@ internalVideoWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		headers: pickHeaders(req),
 	});
 	if (!dedupe.inserted) {
+		if (!dedupe.record?.processedAt) {
+			processOpenAiVideoWebhookInBackground({ eventId, eventType, payload });
+			return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
+				"Cache-Control": "no-store",
+			});
+		}
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
 			"Cache-Control": "no-store",
 		});
 	}
 
-	dispatchBackground((async () => {
-		const releaseRuntime = ensureRuntimeForBackground();
-		try {
-			await processOpenAiVideoWebhook({
-				eventId,
-				eventType,
-				payload,
-			});
-		} catch (error) {
-			console.error("openai_video_webhook_processing_failed", {
-				error,
-				eventId,
-				eventType,
-			});
-		} finally {
-			releaseRuntime();
-		}
-	})());
+	processOpenAiVideoWebhookInBackground({ eventId, eventType, payload });
 
 	return json({ ok: true, accepted: true }, 202, { "Cache-Control": "no-store" });
 }));
@@ -132,30 +164,18 @@ internalVideoWebhookRoutes.post("/alibaba", withRuntime(async (req) => {
 		headers: pickHeaders(req),
 	});
 	if (!dedupe.inserted) {
+		if (!dedupe.record?.processedAt) {
+			processAlibabaVideoWebhookInBackground({ eventId, eventType, payload, taskId });
+			return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
+				"Cache-Control": "no-store",
+			});
+		}
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
 			"Cache-Control": "no-store",
 		});
 	}
 
-	dispatchBackground((async () => {
-		const releaseRuntime = ensureRuntimeForBackground();
-		try {
-			await processAlibabaVideoWebhook({
-				eventId,
-				eventType,
-				payload,
-				taskId,
-			});
-		} catch (error) {
-			console.error("alibaba_video_webhook_processing_failed", {
-				error,
-				eventId,
-				eventType,
-			});
-		} finally {
-			releaseRuntime();
-		}
-	})());
+	processAlibabaVideoWebhookInBackground({ eventId, eventType, payload, taskId });
 
 	return json({ ok: true, accepted: true }, 202, { "Cache-Control": "no-store" });
 }));

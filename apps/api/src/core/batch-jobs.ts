@@ -6,6 +6,7 @@ import {
 	getAsyncOperation,
 	isAsyncOperationBilled,
 	listAsyncOperations,
+	listTeamAsyncOperations,
 	markAsyncOperationBilled,
 	patchAsyncOperationMeta,
 	setAsyncOperationStatus,
@@ -36,7 +37,11 @@ export type BatchJobMeta = {
 	billingReason?: string | null;
 	finalizedAt?: string | null;
 	pricedUsage?: Record<string, unknown> | null;
+	estimatedUsage?: Record<string, unknown> | null;
 	pricingBreakdown?: Record<string, unknown> | null;
+	reservationId?: string | null;
+	reservedNanos?: number | null;
+	reservationStatus?: string | null;
 	webhook?: Record<string, unknown> | null;
 	webhookDeliveries?: Record<string, string> | null;
 	webhookAttempts?: Record<string, unknown>[] | null;
@@ -45,6 +50,8 @@ export type BatchJobMeta = {
 	lastWebhookProgress?: number | null;
 	lastWebhookProgressAt?: string | null;
 	lastWebhookDispatchedAt?: string | null;
+	lastPolledAt?: string | null;
+	polledStatus?: string | null;
 	keySource?: "gateway" | "byok" | null;
 	byokKeyId?: string | null;
 	createdAt?: number;
@@ -127,12 +134,24 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (source.priced_usage && typeof source.priced_usage === "object" && !Array.isArray(source.priced_usage)) {
 		out.pricedUsage = source.priced_usage as Record<string, unknown>;
 	}
+	if (source.estimatedUsage && typeof source.estimatedUsage === "object" && !Array.isArray(source.estimatedUsage)) {
+		out.estimatedUsage = source.estimatedUsage as Record<string, unknown>;
+	}
+	if (source.estimated_usage && typeof source.estimated_usage === "object" && !Array.isArray(source.estimated_usage)) {
+		out.estimatedUsage = source.estimated_usage as Record<string, unknown>;
+	}
 	if (source.pricingBreakdown && typeof source.pricingBreakdown === "object" && !Array.isArray(source.pricingBreakdown)) {
 		out.pricingBreakdown = source.pricingBreakdown as Record<string, unknown>;
 	}
 	if (source.pricing_breakdown && typeof source.pricing_breakdown === "object" && !Array.isArray(source.pricing_breakdown)) {
 		out.pricingBreakdown = source.pricing_breakdown as Record<string, unknown>;
 	}
+	if (typeof source.reservationId === "string") out.reservationId = source.reservationId;
+	if (typeof source.reservation_id === "string") out.reservationId = source.reservation_id;
+	if (typeof source.reservedNanos === "number") out.reservedNanos = source.reservedNanos;
+	if (typeof source.reserved_nanos === "number") out.reservedNanos = source.reserved_nanos;
+	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
+	if (typeof source.reservation_status === "string") out.reservationStatus = source.reservation_status;
 	if (source.webhook && typeof source.webhook === "object" && !Array.isArray(source.webhook)) {
 		out.webhook = source.webhook as Record<string, unknown>;
 	}
@@ -158,6 +177,10 @@ function parseBatchMeta(value: unknown): BatchJobMeta | null {
 	if (typeof source.last_webhook_progress_at === "string") out.lastWebhookProgressAt = source.last_webhook_progress_at;
 	if (typeof source.lastWebhookDispatchedAt === "string") out.lastWebhookDispatchedAt = source.lastWebhookDispatchedAt;
 	if (typeof source.last_webhook_dispatched_at === "string") out.lastWebhookDispatchedAt = source.last_webhook_dispatched_at;
+	if (typeof source.lastPolledAt === "string") out.lastPolledAt = source.lastPolledAt;
+	if (typeof source.last_polled_at === "string") out.lastPolledAt = source.last_polled_at;
+	if (typeof source.polledStatus === "string") out.polledStatus = source.polledStatus;
+	if (typeof source.polled_status === "string") out.polledStatus = source.polled_status;
 	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
 	if (typeof source.createdAt === "number") out.createdAt = source.createdAt;
@@ -289,7 +312,7 @@ export async function listPendingBatchJobs(limit = 100): Promise<BatchJobRecord[
 	const records = await listAsyncOperations({
 		kind: "batch",
 		limit,
-		statuses: [null, "validating", "pending", "in_progress", "finalizing", "cancelling"],
+		unbilledOnly: true,
 	});
 	return records
 		.map((record) => toBatchJobRecord(record))
@@ -302,9 +325,32 @@ export async function listPendingBatchJobs(limit = 100): Promise<BatchJobRecord[
 				status === "pending" ||
 				status === "in_progress" ||
 				status === "finalizing" ||
-				status === "cancelling"
+				status === "cancelling" ||
+				status === "completed" ||
+				status === "failed" ||
+				status === "expired" ||
+				status === "cancelled" ||
+				status === "canceled"
 			);
 		});
+}
+
+export async function listTeamBatchJobs(args: {
+	workspaceId: string;
+	limit?: number;
+	statuses?: Array<string | null>;
+}): Promise<BatchJobRecord[]> {
+	if (!args.workspaceId) return [];
+	const records = await listTeamAsyncOperations({
+		workspaceId: args.workspaceId,
+		kind: "batch",
+		limit: args.limit,
+		statuses: args.statuses,
+	});
+	return records
+		.map((record) => toBatchJobRecord(record))
+		.filter((record): record is BatchJobRecord => Boolean(record))
+		.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX));
 }
 
 export async function setBatchJobStatus(

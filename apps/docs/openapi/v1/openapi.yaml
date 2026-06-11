@@ -14,7 +14,7 @@ servers:
 security:
   - BearerAuth: []
 paths:
-  /models:
+  /gateway/models:
     get:
       x-beta: true
       tags:
@@ -98,24 +98,190 @@ paths:
             type: array
             items:
               type: string
-        - name: model_id
+        - name: input_types
           in: query
-          description: Filter by model id
+          description: Filter by input types
+          schema:
+            type: array
+            items:
+              type: string
+        - name: output_types
+          in: query
+          description: Filter by output types
+          schema:
+            type: array
+            items:
+              type: string
+        - name: params
+          in: query
+          description: Filter by params
+          schema:
+            type: array
+            items:
+              type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
+        - name: limit
+          in: query
+          description: Limit the number of results
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 5000
+        - name: format
+          in: query
+          description: Response format. Defaults to json.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+            default: json
+        - name: feed
+          in: query
+          description: Alias for format. Accepts json, rss, or atom.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayModelsResponse'
+            application/rss+xml:
+              schema:
+                type: string
+                description: RSS 2.0 XML feed
+            application/atom+xml:
+              schema:
+                type: string
+                description: Atom XML feed
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /gateway/models/me:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listTeamModels
+      summary: List team-scoped gateway models
+      description: >-
+        Returns team-scoped gateway model listings. Defaults to currently
+        publicly routable models; use availability=all to include non-routable
+        availability records.
+      parameters:
+        - name: endpoints
+          in: query
+          description: Filter by endpoints
+          schema:
+            type: array
+            items:
+              type: string
+        - name: organisation
+          in: query
+          description: Filter by organisation
           schema:
             oneOf:
-              - type: string
+              - $ref: '#/components/schemas/OrganisationId'
               - type: array
                 items:
-                  type: string
-        - name: id
+                  $ref: '#/components/schemas/OrganisationId'
+        - name: provider
           in: query
-          description: Alias for model_id filter
+          description: Filter by provider id
           schema:
-            oneOf:
-              - type: string
-              - type: array
-                items:
-                  type: string
+            type: array
+            items:
+              type: string
+        - name: provider_status
+          in: query
+          description: Filter by provider rollout status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_routing_status
+          in: query
+          description: Filter by provider routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: model_routing_status
+          in: query
+          description: Filter by model routing status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: capability_status
+          in: query
+          description: Filter by provider capability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_status
+          in: query
+          description: Filter by provider availability status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider_availability_reason
+          in: query
+          description: Filter by provider availability reason
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: array
+            items:
+              type: string
         - name: input_types
           in: query
           description: Filter by input types
@@ -456,6 +622,82 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RealtimeNotImplementedResponse'
+  /async/{kind}/{id}/ws:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: openAsyncJobWebSocket
+      summary: Open async job websocket
+      description: >
+        Opens a persistent websocket session for owned async batch or video job
+        updates.
+
+        WebSocket handshake uses HTTP GET upgrade semantics and returns `101
+        Switching Protocols` on success (not `200`). The socket emits a
+        `job.snapshot` immediately after upgrade and subsequent `job.updated`
+        envelopes when the normalized async job payload changes.
+
+        If `close_on_terminal` is enabled, the gateway closes the socket after a
+        terminal `completed`, `failed`, `cancelled`, or `expired` update.
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          description: Async job kind.
+          schema:
+            type: string
+            enum:
+              - batch
+              - video
+        - name: id
+          in: path
+          required: true
+          description: Gateway-owned async job id.
+          schema:
+            type: string
+        - name: interval_ms
+          in: query
+          required: false
+          description: Polling interval used by the websocket recovery loop.
+          schema:
+            type: integer
+            minimum: 1000
+            maximum: 10000
+            default: 2500
+        - name: close_on_terminal
+          in: query
+          required: false
+          description: Close the socket after a terminal lifecycle update.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '101':
+          description: WebSocket upgrade accepted.
+          x-websocket:
+            clientEvent:
+              $ref: '#/components/schemas/AsyncJobWebSocketClientEvent'
+            serverEvent:
+              $ref: '#/components/schemas/AsyncJobWebSocketServerEvent'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Async job not found or not owned by the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '426':
+          description: WebSocket upgrade required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsyncJobWebSocketUpgradeRequiredResponse'
   /messages:
     post:
       tags:
@@ -674,14 +916,34 @@ paths:
       operationId: listVideos
       summary: List videos
       description: Lists async video generation jobs for the authenticated team.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of video jobs to return. Defaults to 50 and caps at
+            200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: >-
+            Video lifecycle status filter. Repeat the parameter or provide
+            comma-separated values.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         '200':
           description: Video list response
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/VideoListResponse'
     post:
       x-beta: true
       tags:
@@ -714,21 +976,27 @@ paths:
       description: >-
         Returns DB-backed video model/provider capability metadata for the video
         playground and SDK validation.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: >-
+            Optional supported-parameter filter. Repeat the parameter or pass a
+            comma-separated list. Canonical names and aliases are accepted, for
+            example `resolution`, `size`, `duration`, or `duration_seconds`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
       responses:
         '200':
           description: Video model capability list
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  object:
-                    type: string
-                    example: list
-                  data:
-                    type: array
-                    items:
-                      type: object
+                $ref: '#/components/schemas/VideoModelsResponse'
   /videos/{video_id}:
     get:
       x-beta: true
@@ -784,8 +1052,8 @@ paths:
       operationId: cancelVideo
       summary: Cancel video
       description: >-
-        Temporarily disabled while provider-level cancellation support is
-        standardized.
+        Cancels a non-terminal video generation request when the upstream
+        provider supports cancellation.
       parameters:
         - name: video_id
           in: path
@@ -794,8 +1062,14 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: Video cancellation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
         '501':
-          description: Video cancellation is currently disabled
+          description: Video cancellation is not supported for this provider
           content:
             application/json:
               schema:
@@ -1063,6 +1337,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
   /batches:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatches
+      summary: List batches
+      description: >-
+        Lists owned async batch jobs for the authenticated workspace from the
+        gateway's persisted async job store.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of batch jobs to return. Defaults to 20 and caps at
+            100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: >-
+            Batch lifecycle status filter. Repeat the parameter, use a
+            comma-separated status value, or use statuses for comma-separated
+            filters.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: Comma-separated lifecycle status filters.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch list response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       x-beta: true
       tags:
@@ -1086,6 +1409,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batches/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModels
+      summary: List batch model capabilities
+      description: >-
+        Returns DB-backed batch model/provider capability metadata, including
+        supported batch parameters such as allowed input endpoints and
+        completion windows.
+      parameters:
+        - name: params
+          in: query
+          required: false
+          description: >-
+            Optional supported-parameter filter. Repeat the parameter or pass a
+            comma-separated list. Canonical names and aliases are accepted, for
+            example `endpoint`, `request_endpoint`, `completion_window`, or
+            `window`.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+      responses:
+        '200':
+          description: Batch model capability list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
         '401':
           description: Unauthorized
           content:
@@ -1126,6 +1488,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch status refresh is not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batches/{batch_id}/cancel:
     post:
       x-beta: true
@@ -1147,8 +1515,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -1157,6 +1524,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Batch not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch cancellation is not supported for this provider
           content:
             application/json:
               schema:
@@ -2081,14 +2454,30 @@ paths:
       operationId: listVideosAlias
       summary: List videos (alias)
       description: Alias of /videos.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of video jobs to return. Defaults to 50 and caps at
+            200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: status
+          in: query
+          description: >-
+            Video lifecycle status filter. Repeat the parameter or provide
+            comma-separated values.
+          schema:
+            type: string
       responses:
         '200':
           description: Video list response
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/VideoListResponse'
     post:
       x-beta: true
       tags:
@@ -2123,15 +2512,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  object:
-                    type: string
-                    example: list
-                  data:
-                    type: array
-                    items:
-                      type: object
+                $ref: '#/components/schemas/VideoModelsResponse'
   /video/generations/{video_id}:
     get:
       x-beta: true
@@ -2180,7 +2561,7 @@ paths:
         - Gateway
       operationId: cancelVideoAlias
       summary: Cancel video (alias)
-      description: Alias of /videos/{video_id}/cancel (currently disabled).
+      description: Alias of /videos/{video_id}/cancel.
       parameters:
         - name: video_id
           in: path
@@ -2188,8 +2569,14 @@ paths:
           schema:
             type: string
       responses:
+        '200':
+          description: Video cancellation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VideoGenerationResponse'
         '501':
-          description: Video cancellation is currently disabled
+          description: Video cancellation is not supported for this provider
           content:
             application/json:
               schema:
@@ -2303,6 +2690,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/MusicGenerateResponse'
   /batch:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchesAlias
+      summary: List batches (alias)
+      description: Alias of /batches.
+      parameters:
+        - name: limit
+          in: query
+          description: >-
+            Maximum number of batch jobs to return. Defaults to 20 and caps at
+            100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: >-
+            Batch lifecycle status filter. Repeat the parameter, use a
+            comma-separated status value, or use statuses for comma-separated
+            filters.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: statuses
+          in: query
+          description: Comma-separated lifecycle status filters.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch list response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       x-beta: true
       tags:
@@ -2323,6 +2757,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BatchResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /batch/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listBatchModelsAlias
+      summary: List batch model capabilities (alias)
+      description: Alias of /batches/models.
+      responses:
+        '200':
+          description: Batch model capability list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchModelsResponse'
         '401':
           description: Unauthorized
           content:
@@ -2362,6 +2817,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch status refresh is not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /batch/{id}/cancel:
     post:
       x-beta: true
@@ -2382,8 +2843,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
+                $ref: '#/components/schemas/BatchResponse'
         '401':
           description: Unauthorized
           content:
@@ -2396,6 +2856,144 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '501':
+          description: Batch cancellation is not supported for this provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /data/models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listDataModels
+      summary: List data models
+      description: Returns source catalogue models from the data_models table.
+      parameters:
+        - name: include_hidden
+          in: query
+          description: Include hidden models in results
+          schema:
+            type: boolean
+            default: false
+        - name: status
+          in: query
+          description: Filter by model status
+          schema:
+            type: array
+            items:
+              type: string
+        - name: organisation
+          in: query
+          description: Filter by organisation
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/OrganisationId'
+              - type: array
+                items:
+                  $ref: '#/components/schemas/OrganisationId'
+        - name: model_id
+          in: query
+          description: Filter by model id
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: id
+          in: query
+          description: Alias for model_id filter
+          schema:
+            oneOf:
+              - type: string
+              - type: array
+                items:
+                  type: string
+        - name: limit
+          in: query
+          description: Limit the number of results
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: format
+          in: query
+          description: Response format. Defaults to json.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+            default: json
+        - name: feed
+          in: query
+          description: Alias for format. Accepts json, rss, or atom.
+          schema:
+            type: string
+            enum:
+              - json
+              - rss
+              - atom
+      responses:
+        '200':
+          description: List of data models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  include_hidden:
+                    type: boolean
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+                  total:
+                    type: integer
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DataModel'
+            application/rss+xml:
+              schema:
+                type: string
+                description: RSS 2.0 XML feed
+            application/atom+xml:
+              schema:
+                type: string
+                description: Atom XML feed
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  error:
+                    type: string
+                  message:
+                    type: string
   /endpoints:
     get:
       x-beta: true
@@ -2907,12 +3505,13 @@ components:
           type: array
           items:
             type: string
-        params_detail:
-          $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters:
           type: array
+          description: OpenRouter-compatible alias for params.
           items:
             type: string
+        params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
     SupportedParameterDetails:
@@ -3038,8 +3637,7 @@ components:
           description: >
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
-            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`,
-            `ai-stats:image_generation`, and `ai-stats:apply_patch`.
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         max_tool_calls:
@@ -3377,7 +3975,7 @@ components:
         type:
           type: string
           enum:
-            - ai-stats:web_search
+            - gateway:web_search
         parameters:
           type: object
           properties:
@@ -3411,7 +4009,7 @@ components:
         type:
           type: string
           enum:
-            - ai-stats:web_fetch
+            - gateway:web_fetch
         parameters:
           type: object
           properties:
@@ -3425,191 +4023,17 @@ components:
           minimum: 1
           maximum: 50000
       additionalProperties: false
-    GatewayAdvisorToolDefinition:
-      type: object
-      description: >
-        Gateway-managed Advisor server tool. The gateway calls the configured
-        advisor model and injects the advice back into the model tool loop.
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          enum:
-            - ai-stats:advisor
-        parameters:
-          type: object
-          properties:
-            name:
-              type: string
-              minLength: 1
-              maxLength: 64
-              pattern: ^[A-Za-z0-9 _-]+$
-              description: >-
-                Optional Advisor name. Use unique names to expose multiple
-                Advisor tools.
-            model:
-              type: string
-              description: >-
-                Optional pinned Advisor model ID. If omitted, the tool call may
-                provide `model`; otherwise the outer request model is used.
-            instructions:
-              type: string
-              description: Extra instructions for the Advisor model.
-            forward_transcript:
-              type: boolean
-              default: false
-              description: >-
-                Include the current conversation transcript in the Advisor
-                request.
-            max_uses:
-              type: integer
-              minimum: 1
-              default: 1
-            max_tokens:
-              type: integer
-              minimum: 1024
-              deprecated: true
-              description: Legacy alias for `max_completion_tokens`.
-            max_completion_tokens:
-              type: integer
-              minimum: 1024
-            reasoning:
-              type: object
-              additionalProperties: true
-            temperature:
-              type: number
-              minimum: 0
-              maximum: 2
-          additionalProperties: false
-        name:
-          type: string
-          minLength: 1
-          maxLength: 64
-          pattern: ^[A-Za-z0-9 _-]+$
-        model:
-          type: string
-        instructions:
-          type: string
-        forward_transcript:
-          type: boolean
-        max_uses:
-          type: integer
-          minimum: 1
-        max_tokens:
-          type: integer
-          minimum: 1024
-          deprecated: true
-        max_completion_tokens:
-          type: integer
-          minimum: 1024
-        reasoning:
-          type: object
-          additionalProperties: true
-        temperature:
-          type: number
-          minimum: 0
-          maximum: 2
-      additionalProperties: false
-    GatewayImageGenerationToolDefinition:
-      type: object
-      description: >
-        Gateway-managed image generation server tool. The gateway runs the
-        configured image model and injects the image result back into the model
-        tool loop.
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          enum:
-            - ai-stats:image_generation
-        parameters:
-          type: object
-          properties:
-            prompt:
-              type: string
-              description: >-
-                Optional image prompt. The model normally supplies this when it
-                calls the tool.
-            description:
-              type: string
-              description: Alias for `prompt`.
-            model:
-              type: string
-              description: >-
-                Optional image-capable model ID. Defaults to
-                `openai/gpt-image-2`.
-            quality:
-              type: string
-            size:
-              type: string
-            aspect_ratio:
-              type: string
-            background:
-              type: string
-            output_format:
-              type: string
-            output_compression:
-              type: integer
-              minimum: 0
-              maximum: 100
-            moderation:
-              type: string
-          additionalProperties: false
-        prompt:
-          type: string
-        description:
-          type: string
-        model:
-          type: string
-          description: Optional image-capable model ID. Defaults to `openai/gpt-image-2`.
-        quality:
-          type: string
-        size:
-          type: string
-        aspect_ratio:
-          type: string
-        background:
-          type: string
-        output_format:
-          type: string
-        output_compression:
-          type: integer
-          minimum: 0
-          maximum: 100
-        moderation:
-          type: string
-      additionalProperties: false
-    GatewayApplyPatchToolDefinition:
-      type: object
-      description: >
-        Gateway-managed apply-patch server tool for the Responses API. The
-        gateway validates patch operations and returns them to the client; it
-        does not mutate files.
-      required:
-        - type
-      properties:
-        type:
-          type: string
-          enum:
-            - ai-stats:apply_patch
-      additionalProperties: false
     TextGenerateTool:
       oneOf:
         - $ref: '#/components/schemas/FunctionToolDefinition'
         - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
         - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
         - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
-        - $ref: '#/components/schemas/GatewayAdvisorToolDefinition'
-        - $ref: '#/components/schemas/GatewayImageGenerationToolDefinition'
-        - $ref: '#/components/schemas/GatewayApplyPatchToolDefinition'
     TextToolChoice:
       description: >
-        Tool selection strategy. `gateway:datetime`, `ai-stats:web_search`,
-        `ai-stats:web_fetch`, `ai-stats:advisor`, `ai-stats:image_generation`,
-        and `ai-stats:apply_patch` are accepted and rewritten by the gateway
-        into upstream function/tool targets.
+        Tool selection strategy. `gateway:datetime`, `gateway:web_search`, and
+        `gateway:web_fetch` are accepted and rewritten by the gateway into
+        upstream function/tool targets.
       oneOf:
         - type: string
           enum:
@@ -3617,11 +4041,8 @@ components:
             - none
             - required
             - gateway:datetime
-            - ai-stats:web_search
-            - ai-stats:web_fetch
-            - ai-stats:advisor
-            - ai-stats:image_generation
-            - ai-stats:apply_patch
+            - gateway:web_search
+            - gateway:web_fetch
         - type: object
     ServerToolUsage:
       type: object
@@ -3632,22 +4053,7 @@ components:
         web_search_requests:
           type: integer
           minimum: 0
-        web_search_results:
-          type: integer
-          minimum: 0
-        web_search_extra_results:
-          type: integer
-          minimum: 0
         web_fetch_requests:
-          type: integer
-          minimum: 0
-        advisor_requests:
-          type: integer
-          minimum: 0
-        image_generation_requests:
-          type: integer
-          minimum: 0
-        apply_patch_requests:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -3805,22 +4211,18 @@ components:
           description: >
             Anthropic-compatible tools plus gateway server tools. The only
             built-in gateway server tools are `gateway:datetime`,
-            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`, and
-            `ai-stats:image_generation`.
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             oneOf:
               - $ref: '#/components/schemas/AnthropicTool'
               - $ref: '#/components/schemas/GatewayDatetimeToolDefinition'
               - $ref: '#/components/schemas/GatewayWebSearchToolDefinition'
               - $ref: '#/components/schemas/GatewayWebFetchToolDefinition'
-              - $ref: '#/components/schemas/GatewayAdvisorToolDefinition'
-              - $ref: '#/components/schemas/GatewayImageGenerationToolDefinition'
         tool_choice:
           description: >
             Anthropic tool choice object/string. `gateway:datetime`,
-            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`, and
-            `ai-stats:image_generation` are also accepted and rewritten by the
-            gateway.
+            `gateway:web_search`, and `gateway:web_fetch` are also accepted and
+            rewritten by the gateway.
           oneOf:
             - type: object
             - type: string
@@ -4012,8 +4414,7 @@ components:
           description: >
             Tool definitions for model function calls and gateway server tools.
             Built-in gateway server tools are `gateway:datetime`,
-            `ai-stats:web_search`, `ai-stats:web_fetch`, `ai-stats:advisor`,
-            `ai-stats:image_generation`, and `ai-stats:apply_patch`.
+            `gateway:web_search`, and `gateway:web_fetch`.
           items:
             $ref: '#/components/schemas/TextGenerateTool'
         top_p:
@@ -4273,6 +4674,66 @@ components:
             message:
               type: string
               example: Use WebSocket upgrade for /v1/responses/ws.
+    AsyncJobWebSocketClientEvent:
+      type: object
+      description: Client message for async job websocket sessions.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - ping
+            - refresh
+          description: >
+            Send `ping` for a `pong` keepalive response, or `refresh` to force
+            an immediate async job state refresh.
+      additionalProperties: false
+    AsyncJobWebSocketServerEvent:
+      type: object
+      description: >
+        Async job websocket envelope. `job.snapshot` is emitted immediately
+        after upgrade, `job.updated` is emitted when the normalized async
+        payload changes, `job.deleted` is emitted when the owned job record
+        disappears, and `pong` replies to client `ping` messages.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - job.snapshot
+            - job.updated
+            - job.deleted
+            - pong
+        data:
+          nullable: true
+          oneOf:
+            - $ref: '#/components/schemas/VideoGenerationResponse'
+            - $ref: '#/components/schemas/BatchResponse'
+            - type: object
+              properties:
+                id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                    - batch
+                    - video
+              additionalProperties: true
+      additionalProperties: true
+    AsyncJobWebSocketUpgradeRequiredResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: websocket_upgrade_required
+            message:
+              type: string
+              example: Use WebSocket upgrade for async job updates.
     EmbeddingsMultimodalInput:
       type: object
       description: Google multimodal embeddings extension item.
@@ -4881,14 +5342,157 @@ components:
             url:
               type: string
               format: uri
+              description: >-
+                HTTPS callback URL for gateway-managed webhooks. Literal
+                private, loopback, link-local, and wildcard hosts are rejected;
+                http://localhost, http://127.0.0.1, and http://[::1] are allowed
+                only for local development callbacks.
             secret:
               type: string
             events:
               type: array
+              description: >-
+                Optional event subscriptions. Use generic job.* events or
+                matching video.* events, for example video.progress or
+                video.completed. When omitted, terminal job.* events are used.
+                Include job.progress or video.progress explicitly for progress
+                callbacks. When supplied, at least one event must be valid for
+                video jobs; cross-kind-only or malformed event lists are
+                rejected.
               items:
                 type: string
         provider:
           $ref: '#/components/schemas/ProviderRoutingOptions'
+    AsyncWebhookDeliverySummary:
+      type: object
+      description: >-
+        Public delivery summary for gateway-managed async webhooks. Use this to
+        distinguish job execution state from webhook delivery health.
+      properties:
+        total_attempts:
+          type: integer
+          description: Total delivery attempts recorded for this job.
+        delivered_events:
+          type: integer
+          description: Number of delivery keys that have reached a delivered state.
+        delivered_event_types:
+          type: array
+          description: Delivery keys that have been delivered at least once.
+          items:
+            type: string
+          example:
+            - video.completed
+        pending_retries:
+          type: integer
+          description: Number of delivery keys currently scheduled for retry.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the next scheduled retry, when present.
+        last_attempt_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent delivery attempt.
+        last_attempt_status:
+          type: string
+          nullable: true
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+          description: Result of the most recent delivery attempt.
+        last_response_status:
+          type: integer
+          nullable: true
+          description: HTTP status returned by the webhook destination, when available.
+        last_delivered_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent successful delivery.
+        last_failure_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent failed or retrying attempt.
+        last_error_message:
+          type: string
+          nullable: true
+          description: Most recent delivery error message, when available.
+    AsyncWebhookDeliveryAttempt:
+      type: object
+      description: Recent gateway-managed async webhook delivery attempt.
+      properties:
+        id:
+          type: string
+          description: Stable attempt identifier for audit and debugging.
+        delivery_key:
+          type: string
+          description: Idempotency key for this event delivery.
+          example: video.completed
+        event_type:
+          type: string
+          description: Event type delivered to the webhook destination.
+          example: video.completed
+        status:
+          type: string
+          enum:
+            - delivered
+            - scheduled_retry
+            - failed_permanently
+        attempt_number:
+          type: integer
+          description: One-based attempt number for this delivery key.
+        max_attempts:
+          type: integer
+          description: Maximum attempts before the delivery is marked failed permanently.
+        tried_at:
+          type: string
+          description: ISO timestamp when this attempt was made.
+        delivered_at:
+          type: string
+          nullable: true
+          description: ISO timestamp when this attempt was delivered successfully.
+        next_retry_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the next retry after this attempt, when scheduled.
+        response_status:
+          type: integer
+          nullable: true
+          description: HTTP status returned by the webhook destination, when available.
+        error_message:
+          type: string
+          nullable: true
+          description: Delivery error message, when available.
+        response_body_preview:
+          type: string
+          nullable: true
+          description: Redacted response body preview from the webhook destination.
+    AsyncWebhookPublicState:
+      type: object
+      description: >-
+        Sanitized async webhook configuration plus delivery state. Secrets are
+        never returned; `has_secret` indicates whether signed deliveries are
+        enabled. Signed deliveries include x-ai-stats-signature,
+        x-ai-stats-timestamp, x-ai-stats-event-id, x-ai-stats-event-type,
+        x-ai-stats-delivery-key, x-ai-stats-attempt, and x-ai-stats-max-attempts
+        headers.
+      properties:
+        url:
+          type: string
+          format: uri
+          nullable: true
+        events:
+          type: array
+          items:
+            type: string
+        has_secret:
+          type: boolean
+        delivery:
+          $ref: '#/components/schemas/AsyncWebhookDeliverySummary'
+        attempts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsyncWebhookDeliveryAttempt'
     VideoGenerationResponse:
       type: object
       properties:
@@ -4896,6 +5500,12 @@ components:
           type: string
         polling_url:
           type: string
+        websocket_url:
+          type: string
+          format: uri
+          description: >-
+            WebSocket URL for subscribing to normalized async job lifecycle
+            updates.
         model:
           type: string
         request_id:
@@ -4911,6 +5521,22 @@ components:
             - failed
             - cancelled
             - expired
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: >-
+            Normalized async lifecycle status for polling, websocket, and
+            webhook consumers.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
         output_access:
           type: string
           enum:
@@ -4920,6 +5546,12 @@ components:
         generation_id:
           type: string
           nullable: true
+        native_video_id:
+          type: string
+          nullable: true
+          description: >-
+            Provider-native video/job id when it differs from the gateway-owned
+            id.
         created_at:
           oneOf:
             - type: integer
@@ -4987,8 +5619,29 @@ components:
           items:
             $ref: '#/components/schemas/VideoOutput'
         billing:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/VideoBillingSummary'
+        webhook:
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+          description: >-
+            ISO timestamp for the next scheduled user-webhook retry, when
+            queued.
+        last_webhook_progress:
+          type: number
+          nullable: true
+          description: Most recent coarse progress bucket dispatched to webhook consumers.
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+          description: >-
+            ISO timestamp when the most recent webhook progress bucket was
+            dispatched.
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+          description: ISO timestamp for the most recent webhook dispatch attempt.
         usage:
           type: object
           properties:
@@ -5056,6 +5709,204 @@ components:
         expires_at:
           type: integer
           description: Unix timestamp (seconds) when this output URL expires.
+    VideoBillingSummary:
+      type: object
+      properties:
+        currency:
+          type: string
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        billable:
+          type: boolean
+        total_nanos:
+          type: integer
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        charge_reason:
+          type: string
+          nullable: true
+        charged:
+          type: boolean
+          nullable: true
+        billed_at:
+          type: string
+      additionalProperties: true
+    VideoModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    VideoModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    VideoModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoModelCapability'
+    BatchModelProviderCapability:
+      type: object
+      properties:
+        id:
+          type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    BatchModelCapability:
+      type: object
+      properties:
+        model:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        input_types:
+          type: array
+          items:
+            type: string
+        output_types:
+          type: array
+          items:
+            type: string
+        supported_params:
+          type: array
+          items:
+            type: string
+        supported_parameters:
+          type: array
+          description: OpenRouter-compatible alias for supported_params.
+          items:
+            type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        providers:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelProviderCapability'
+        pricing:
+          type: object
+          additionalProperties: true
+    BatchModelsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchModelCapability'
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/VideoGenerationResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
     VideoDeleteResponse:
       type: object
       properties:
@@ -5200,10 +6051,23 @@ components:
             url:
               type: string
               format: uri
+              description: >-
+                HTTPS callback URL for gateway-managed webhooks. Literal
+                private, loopback, link-local, and wildcard hosts are rejected;
+                http://localhost, http://127.0.0.1, and http://[::1] are allowed
+                only for local development callbacks.
             secret:
               type: string
             events:
               type: array
+              description: >-
+                Optional event subscriptions. Use generic job.* events or
+                matching batch.* events, for example batch.progress or
+                batch.completed. When omitted, terminal job.* events are used.
+                Include job.progress or batch.progress explicitly for
+                request-count progress callbacks. When supplied, at least one
+                event must be valid for batch jobs; cross-kind-only or malformed
+                event lists are rejected.
               items:
                 type: string
         debug:
@@ -5215,6 +6079,10 @@ components:
       properties:
         id:
           type: string
+        native_batch_id:
+          type: string
+          nullable: true
+          description: Provider-native batch id when it differs from the gateway-owned id.
         object:
           type: string
         endpoint:
@@ -5227,6 +6095,38 @@ components:
           type: string
         status:
           type: string
+        lifecycle_status:
+          type: string
+          enum:
+            - pending
+            - running
+            - completed
+            - failed
+            - cancelled
+            - expired
+          description: >-
+            Normalized async lifecycle status for polling, websocket, and
+            webhook consumers.
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: >-
+            Coarse batch completion percentage derived from provider request
+            counts when available. Completed batches report 100.
+        polling_url:
+          type: string
+          format: uri
+        websocket_url:
+          type: string
+          format: uri
+          description: >-
+            WebSocket URL for subscribing to normalized async job lifecycle
+            updates.
+        cancel_url:
+          type: string
+          format: uri
+          nullable: true
         output_file_id:
           type: string
         error_file_id:
@@ -5260,17 +6160,22 @@ components:
         session_id:
           type: string
         webhook:
-          type: object
-          properties:
-            url:
-              type: string
-              format: uri
-            secret:
-              type: string
-            events:
-              type: array
-              items:
-                type: string
+          $ref: '#/components/schemas/AsyncWebhookPublicState'
+        next_webhook_retry_at:
+          type: string
+          nullable: true
+        last_webhook_progress:
+          type: number
+          nullable: true
+        last_webhook_progress_at:
+          type: string
+          nullable: true
+        last_webhook_dispatched_at:
+          type: string
+          nullable: true
+        finalized_at:
+          type: string
+          nullable: true
         pricing_lines:
           type: array
           items:
@@ -5278,6 +6183,24 @@ components:
             additionalProperties: true
         billing:
           $ref: '#/components/schemas/BatchBillingSummary'
+    BatchListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          example: list
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchResponse'
+        first_id:
+          type: string
+          nullable: true
+        last_id:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
     BatchRequestCounts:
       type: object
       properties:
@@ -5290,18 +6213,71 @@ components:
     BatchBillingSummary:
       type: object
       properties:
+        currency:
+          type: string
         billed:
           type: boolean
         charged:
           type: boolean
         reason:
           type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - estimated
+            - settled
+            - void
+        reservation_id:
+          type: string
+          nullable: true
+        reservation_status:
+          type: string
+          nullable: true
+        estimated_provider_cost:
+          type: string
+          nullable: true
+        estimated_user_cost:
+          type: string
+          nullable: true
+        settled_provider_cost:
+          type: string
+          nullable: true
+        settled_user_cost:
+          type: string
+          nullable: true
+        estimated_nanos:
+          type: integer
+          nullable: true
+        reserved_nanos:
+          type: integer
+          nullable: true
+        estimation_truncated:
+          type: boolean
+          nullable: true
+          description: >-
+            True when the reservation estimate was scaled from a bounded sample
+            of a larger batch input file.
+        estimation_sample_size:
+          type: integer
+          nullable: true
+          description: Number of input rows priced directly for the reservation estimate.
+        estimation_total_rows:
+          type: integer
+          nullable: true
+          description: Total input rows represented by the reservation estimate.
+        total_nanos:
+          type: integer
+          nullable: true
         cost_nanos:
           type: integer
+          nullable: true
         cost_usd:
           type: number
+          nullable: true
         finalized_at:
           type: string
+          nullable: true
         pricing_breakdown:
           type: object
           additionalProperties: true
@@ -5538,7 +6514,6 @@ components:
         - artificial-analysis
         - attaq
         - autologi
-        - automationbench
         - babe
         - babyvision
         - balrog-ai
@@ -5557,11 +6532,9 @@ components:
         - bigcodebench
         - biobench
         - biolp-bench
-        - biomysterybench
         - bird-sql-(dev)
         - bixbench
         - blink
-        - blueprint-bench-2
         - boolq
         - browsecomp
         - browsecomp-long-128k
@@ -5659,7 +6632,6 @@ components:
         - erqa
         - evalplus
         - expert-swe
-        - exploitbench-cap
         - eyepacs-accuracy
         - facts
         - facts-benchmark-suite
@@ -5683,7 +6655,6 @@ components:
         - flteval-pass-8
         - frames
         - frontier-math
-        - frontiercode-diamond
         - frontiermath
         - frontiersci-olympiad
         - frontiersci-research
@@ -5692,7 +6663,6 @@ components:
         - fullstackbench-zh
         - functionalmath
         - galileo-agent
-        - gdp-pdf
         - gdpval-aa
         - gdpval-mm
         - genebench
@@ -5764,7 +6734,6 @@ components:
         - ivebench-overall-vs-runway-aleph
         - korbench
         - lbpp-(v2)
-        - legal-agent-benchmark
         - lingoqa
         - lisanbench
         - livebench
@@ -6796,6 +7765,7 @@ components:
           type: string
           enum:
             - shared
+            - team
           example: shared
         availability_mode:
           type: string
@@ -6843,6 +7813,36 @@ components:
         max_offset:
           type: integer
           minimum: 0
+      additionalProperties: true
+    ModelsPrivacyScopeNotImplementedResponse:
+      type: object
+      required:
+        - ok
+        - error
+        - code
+        - message
+        - privacy_scope
+      properties:
+        ok:
+          type: boolean
+          enum:
+            - false
+          example: false
+        error:
+          type: string
+          enum:
+            - not_implemented
+          example: not_implemented
+        code:
+          type: string
+          enum:
+            - models_privacy_scope_not_implemented
+        message:
+          type: string
+        privacy_scope:
+          type: string
+          enum:
+            - team
       additionalProperties: true
     AnalyticsNotImplementedResponse:
       type: object
@@ -7279,7 +8279,6 @@ components:
         - allenai/olmo-3.1-32b
         - anthropic/claude-3.5-haiku
         - anthropic/claude-3.7-sonnet
-        - anthropic/claude-fable-5
         - anthropic/claude-haiku-4.5
         - anthropic/claude-opus-4
         - anthropic/claude-opus-4.1

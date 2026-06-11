@@ -329,6 +329,27 @@
         "capability_id": "text.generate",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -837,6 +858,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -915,6 +957,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -993,6 +1056,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -1360,6 +1444,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -1487,6 +1592,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -1614,6 +1740,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -1804,6 +1951,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -2154,6 +2322,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -2608,6 +2797,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -2870,6 +3080,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -3896,6 +4127,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -3974,6 +4226,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4052,6 +4325,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4129,6 +4423,26 @@
         "capability_id": "image.edit",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/images/generations"
+            ],
+            "default": "/v1/images/generations"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4155,6 +4469,27 @@
         "capability_id": "image.edit",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/images/generations",
+              "/v1/images/edits"
+            ],
+            "default": "/v1/images/generations"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4181,6 +4516,27 @@
         "capability_id": "image.edit",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/images/generations",
+              "/v1/images/edits"
+            ],
+            "default": "/v1/images/generations"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4207,6 +4563,27 @@
         "capability_id": "image.edit",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/images/generations",
+              "/v1/images/edits"
+            ],
+            "default": "/v1/images/generations"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4406,6 +4783,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4456,6 +4854,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4520,6 +4939,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4598,6 +5038,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4732,6 +5193,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4796,6 +5278,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4874,6 +5377,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -4952,6 +5476,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5086,6 +5631,27 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5115,6 +5681,26 @@
             "notes": null
           }
         ]
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/moderations"
+            ],
+            "default": "/v1/moderations"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5135,7 +5721,70 @@
       {
         "capability_id": "video.generate",
         "status": "active",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "enum",
+            "values": [
+              "720x1280",
+              "1280x720"
+            ],
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "input_image": {
+            "type": "string"
+          },
+          "input_video": {
+            "type": "string"
+          },
+          "last_frame": {
+            "type": "string"
+          },
+          "reference_images": {
+            "type": "array"
+          },
+          "generate_audio": {
+            "type": "boolean"
+          },
+          "callback_url": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/videos"
+            ],
+            "default": "/v1/videos"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5156,7 +5805,50 @@
       {
         "capability_id": "video.generate",
         "status": "active",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "enum",
+            "values": [
+              "720x1280",
+              "1280x720"
+            ],
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "input_image": {
+            "type": "string"
+          },
+          "input_video": {
+            "type": "string"
+          },
+          "last_frame": {
+            "type": "string"
+          },
+          "reference_images": {
+            "type": "array"
+          },
+          "generate_audio": {
+            "type": "boolean"
+          },
+          "callback_url": {
+            "type": "string"
+          }
+        }
       }
     ]
   },
@@ -5177,7 +5869,74 @@
       {
         "capability_id": "video.generate",
         "status": "active",
-        "params": []
+        "params": {
+          "prompt": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "min": 1,
+            "aliases": [
+              "seconds",
+              "duration_seconds"
+            ]
+          },
+          "size": {
+            "type": "enum",
+            "values": [
+              "720x1280",
+              "1280x720",
+              "1024x1792",
+              "1792x1024",
+              "1080x1920",
+              "1920x1080"
+            ],
+            "aliases": [
+              "resolution"
+            ]
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "input_image": {
+            "type": "string"
+          },
+          "input_video": {
+            "type": "string"
+          },
+          "last_frame": {
+            "type": "string"
+          },
+          "reference_images": {
+            "type": "array"
+          },
+          "generate_audio": {
+            "type": "boolean"
+          },
+          "callback_url": {
+            "type": "string"
+          }
+        }
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/videos"
+            ],
+            "default": "/v1/videos"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5199,6 +5958,26 @@
         "capability_id": "text.embed",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/embeddings"
+            ],
+            "default": "/v1/embeddings"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5220,6 +5999,26 @@
         "capability_id": "text.embed",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/embeddings"
+            ],
+            "default": "/v1/embeddings"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -5241,6 +6040,26 @@
         "capability_id": "text.embed",
         "status": "active",
         "params": []
+      },
+      {
+        "capability_id": "batch",
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/embeddings"
+            ],
+            "default": "/v1/embeddings"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },

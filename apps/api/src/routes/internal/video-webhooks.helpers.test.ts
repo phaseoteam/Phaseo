@@ -52,6 +52,11 @@ describe("video webhook helpers", () => {
 			ALIBABA_VIDEO_WEBHOOK_SECRET: "alibaba-secret",
 		});
 		buildVideoPricingRequestOptionsMock.mockImplementation((value) => value);
+		finalizeVideoJobMock.mockImplementation(async (args: any) => ({
+			status: args.status,
+			charged: false,
+			reason: "test",
+		}));
 	});
 
 	it("finalizes and dispatches OpenAI terminal video webhooks", async () => {
@@ -108,6 +113,85 @@ describe("video webhook helpers", () => {
 			providerEventId: "evt_openai_123",
 			workspaceId: "ws_video",
 			internalId: "video_123",
+		});
+	});
+
+	it("finalizes and dispatches OpenAI cancelled video webhooks as cancelled", async () => {
+		findVideoJobRecordByNativeIdMock.mockResolvedValue({
+			workspaceId: "ws_video",
+			videoId: "video_cancelled",
+			model: "sora-2",
+			meta: {
+				resolution: "720p",
+				quality: "standard",
+			},
+		});
+
+		await processOpenAiVideoWebhook({
+			eventId: "evt_openai_cancelled",
+			eventType: "video.cancelled",
+			payload: {
+				data: {
+					id: "vid_native_cancelled",
+					model: "openai/sora-2",
+					status: "cancelled",
+				},
+			},
+		});
+
+		expect(finalizeVideoJobMock).toHaveBeenCalledWith(expect.objectContaining({
+			workspaceId: "ws_video",
+			videoId: "video_cancelled",
+			providerId: "openai",
+			status: "cancelled",
+			model: "openai/sora-2",
+		}));
+		expect(dispatchVideoWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+			workspaceId: "ws_video",
+			videoId: "video_cancelled",
+			eventType: "video.cancelled",
+		});
+		expect(markProviderEventProcessedMock).toHaveBeenCalledWith({
+			provider: "openai",
+			providerEventId: "evt_openai_cancelled",
+			workspaceId: "ws_video",
+			internalId: "video_cancelled",
+		});
+	});
+
+	it("dispatches OpenAI provider webhooks using the finalized terminal status", async () => {
+		findVideoJobRecordByNativeIdMock.mockResolvedValue({
+			workspaceId: "ws_video",
+			videoId: "video_stale_openai",
+			model: "sora-2",
+			meta: {},
+		});
+		finalizeVideoJobMock.mockResolvedValueOnce({
+			status: "failed",
+			charged: false,
+			reason: "already_terminal",
+		});
+
+		await processOpenAiVideoWebhook({
+			eventId: "evt_openai_stale_completed",
+			eventType: "video.completed",
+			payload: {
+				data: {
+					id: "vid_native_stale_openai",
+					status: "completed",
+				},
+			},
+		});
+
+		expect(finalizeVideoJobMock).toHaveBeenCalledWith(expect.objectContaining({
+			workspaceId: "ws_video",
+			videoId: "video_stale_openai",
+			status: "completed",
+		}));
+		expect(dispatchVideoWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+			workspaceId: "ws_video",
+			videoId: "video_stale_openai",
+			eventType: "video.failed",
 		});
 	});
 
@@ -197,6 +281,85 @@ describe("video webhook helpers", () => {
 			providerEventId: "evt_alibaba_123",
 			workspaceId: "ws_video",
 			internalId: "video_456",
+		});
+	});
+
+	it("finalizes and dispatches Alibaba cancelled video webhooks as cancelled", async () => {
+		findVideoJobRecordByNativeIdMock.mockResolvedValue({
+			workspaceId: "ws_video",
+			videoId: "video_alibaba_cancelled",
+			model: "wan-2.1",
+			meta: {
+				resolution: "720p",
+				quality: "standard",
+			},
+		});
+
+		await processAlibabaVideoWebhook({
+			eventId: "evt_alibaba_cancelled",
+			eventType: "TASK_CANCELLED",
+			taskId: "task-cancelled",
+			payload: {
+				data: {
+					status: "CANCELED",
+					model: "alibaba/wan-2.1",
+				},
+			},
+		});
+
+		expect(finalizeVideoJobMock).toHaveBeenCalledWith(expect.objectContaining({
+			workspaceId: "ws_video",
+			videoId: "video_alibaba_cancelled",
+			providerId: "alibaba",
+			status: "cancelled",
+			model: "alibaba/wan-2.1",
+		}));
+		expect(dispatchVideoWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+			workspaceId: "ws_video",
+			videoId: "video_alibaba_cancelled",
+			eventType: "video.cancelled",
+		});
+		expect(markProviderEventProcessedMock).toHaveBeenCalledWith({
+			provider: "alibaba",
+			providerEventId: "evt_alibaba_cancelled",
+			workspaceId: "ws_video",
+			internalId: "video_alibaba_cancelled",
+		});
+	});
+
+	it("dispatches Alibaba provider webhooks using the finalized terminal status", async () => {
+		findVideoJobRecordByNativeIdMock.mockResolvedValue({
+			workspaceId: "ws_video",
+			videoId: "video_stale_alibaba",
+			model: "wan-2.1",
+			meta: {},
+		});
+		finalizeVideoJobMock.mockResolvedValueOnce({
+			status: "cancelled",
+			charged: false,
+			reason: "already_terminal",
+		});
+
+		await processAlibabaVideoWebhook({
+			eventId: "evt_alibaba_stale_failed",
+			eventType: "TASK_FAILED",
+			taskId: "task-stale-failed",
+			payload: {
+				data: {
+					status: "FAILED",
+				},
+			},
+		});
+
+		expect(finalizeVideoJobMock).toHaveBeenCalledWith(expect.objectContaining({
+			workspaceId: "ws_video",
+			videoId: "video_stale_alibaba",
+			status: "failed",
+		}));
+		expect(dispatchVideoWebhookEventInBackgroundMock).toHaveBeenCalledWith({
+			workspaceId: "ws_video",
+			videoId: "video_stale_alibaba",
+			eventType: "video.cancelled",
 		});
 	});
 

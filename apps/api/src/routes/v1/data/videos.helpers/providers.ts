@@ -1,5 +1,5 @@
 import { getBindings } from "@/runtime/env";
-import { openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
+import { isOpenAICompatProvider, openAICompatHeaders, openAICompatUrl } from "@providers/openai-compatible/config";
 import { decodeGoogleVertexOperationId } from "@providers/google-video/shared";
 import { err } from "@pipeline/before/http";
 
@@ -30,6 +30,21 @@ import {
 
 function normalizedProvider(record: VideoJobRecord | null, meta: VideoJobMeta | null): string | null {
 	return normalizeText(record?.provider ?? meta?.provider)?.toLowerCase() ?? null;
+}
+
+function looksLikeOpenAiVideoId(value: string | null | undefined): boolean {
+	const id = normalizeText(value);
+	if (!id) return false;
+	return /^video_[A-Za-z0-9_-]+$/.test(id);
+}
+
+export function resolveOpenAiCompatVideoProviderForFallback(
+	record: VideoJobRecord | null,
+	meta: VideoJobMeta | null,
+): string | null {
+	const provider = normalizedProvider(record, meta);
+	if (provider) return isOpenAICompatProvider(provider) ? provider : null;
+	return looksLikeOpenAiVideoId(record?.nativeId) ? "openai" : null;
 }
 
 function nativeIdForProviders(
@@ -131,6 +146,30 @@ export async function fetchDashscopeTask(
 		headers: {
 			Authorization: `Bearer ${key}`,
 			"Content-Type": "application/json",
+		},
+	});
+}
+
+export async function cancelDashscopeTask(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	taskId: string,
+) {
+	const providerId = String(videoMeta?.provider ?? "alibaba").trim() || "alibaba";
+	const key = await resolveVideoProviderKey(auth, videoMeta, providerId, "ALIBABA_CLOUD_API_KEY");
+	if (!key) {
+		return err("upstream_error", {
+			reason: "dashscope_key_missing",
+		});
+	}
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const baseUrl = (bindings.ALIBABA_BASE_URL || "https://dashscope-intl.aliyuncs.com").replace(/\/+$/, "");
+	return fetch(`${baseUrl}/api/v1/tasks/${encodeURIComponent(taskId)}/cancel`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${key}`,
+			"Content-Type": "application/json",
+			Accept: "application/json",
 		},
 	});
 }
@@ -285,6 +324,33 @@ export async function fetchRunwayTask(
 	});
 }
 
+export async function cancelRunwayTask(
+	auth: VideoRouteAuth,
+	videoMeta: VideoJobMeta | null,
+	taskId: string,
+) {
+	const providerId = String(videoMeta?.provider ?? RUNWAY_PROVIDER_ID).trim() || RUNWAY_PROVIDER_ID;
+	const key = await resolveVideoProviderKey(auth, videoMeta, providerId, "RUNWAY_API_KEY");
+	if (!key) {
+		return err("upstream_error", {
+			reason: "runway_key_missing",
+		});
+	}
+	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	const baseUrl = String(bindings.RUNWAY_BASE_URL || DEFAULT_RUNWAY_BASE_URL).replace(/\/+$/, "");
+	const apiVersion = resolveRunwayApiVersion(videoMeta, bindings);
+	const headers: Record<string, string> = {
+		Authorization: `Bearer ${key}`,
+		"Content-Type": "application/json",
+		Accept: "application/json",
+	};
+	if (apiVersion) headers["X-Runway-Version"] = apiVersion;
+	return fetch(`${baseUrl}/v1/tasks/${encodeURIComponent(taskId)}`, {
+		method: "DELETE",
+		headers,
+	});
+}
+
 export function extractAtlasPredictionPayload(payload: unknown): Record<string, unknown> {
 	if (!payload || typeof payload !== "object" || Array.isArray(payload)) return {};
 	const top = payload as Record<string, unknown>;
@@ -327,32 +393,28 @@ export async function fetchAtlasPrediction(
 	return predictionRes;
 }
 
-export function mapMiniMaxVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+type VideoInternalStatus = "queued" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+
+export function mapMiniMaxVideoStatus(value: unknown): VideoInternalStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (status === "fail" || status === "failed" || status === "error" || status === "cancelled" || status === "canceled") {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "fail" || status === "failed" || status === "error") return "failed";
 	if (status === "running" || status === "processing" || status === "in_progress") return "in_progress";
 	return "queued";
 }
 
-export function mapXAiVideoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
+export function mapXAiVideoStatus(value: unknown): VideoInternalStatus {
 	const status = String(value ?? "").toLowerCase();
 	if (status === "done" || status === "success" || status === "succeeded" || status === "completed" || status === "finished") {
 		return "completed";
 	}
-	if (
-		status === "expired" ||
-		status === "failed" ||
-		status === "error" ||
-		status === "cancelled" ||
-		status === "canceled"
-	) {
-		return "failed";
-	}
+	if (status === "cancelled" || status === "canceled") return "cancelled";
+	if (status === "expired") return "expired";
+	if (status === "failed" || status === "error") return "failed";
 	if (status === "pending" || status === "running" || status === "processing" || status === "in_progress") {
 		return "in_progress";
 	}

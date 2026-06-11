@@ -1,5 +1,5 @@
 import { getBindings } from "@/runtime/env";
-import { buildPublicAsyncWebhook, toAsyncLifecycleStatus } from "@core/async-notifications";
+import { buildAsyncWebSocketUrl, buildPublicAsyncWebhook, toAsyncLifecycleStatus } from "@core/async-notifications";
 
 import {
 	DEFAULT_VIDEO_DOWNLOAD_TTL_SECONDS,
@@ -34,6 +34,28 @@ export function toPublicVideoStatus(
 
 export function buildVideoPollingUrl(requestUrl: string, id: string): string {
 	return new URL(`/v1/videos/${encodeURIComponent(id)}`, requestUrl).toString();
+}
+
+export function buildVideoCancelUrl(requestUrl: string, id: string): string {
+	return new URL(`/v1/videos/${encodeURIComponent(id)}/cancel`, requestUrl).toString();
+}
+
+function normalizeIsoDate(value: unknown): string | null {
+	const text = normalizeText(value);
+	if (!text) return null;
+	const parsed = Date.parse(text);
+	return Number.isFinite(parsed) ? new Date(parsed).toISOString() : null;
+}
+
+export function isVideoCancelSupportedProvider(value: string | null | undefined): boolean {
+	const provider = normalizeText(value)?.toLowerCase();
+	return (
+		provider === "openai" ||
+		provider === "alibaba" ||
+		provider === "alibaba-cloud" ||
+		provider === "qwen" ||
+		provider === "runway"
+	);
 }
 
 export function buildVideoContentUrl(requestUrl: string, id: string, index: number): string {
@@ -192,19 +214,43 @@ export function buildVideoBilling(
 	meta: VideoJobMeta | null,
 	status: "queued" | "processing" | "completed" | "failed" | "cancelled" | "expired",
 ) {
-	const estimated = resolveMetaCostUsd(meta);
+	const settledNanos = toFiniteNumber(meta?.costNanos);
+	const settledUsd =
+		toFiniteNumber(meta?.costUsd) ??
+		(settledNanos != null ? Math.max(0, settledNanos) / 1e9 : null);
+	const pricedUsage =
+		meta?.pricedUsage && typeof meta.pricedUsage === "object" && !Array.isArray(meta.pricedUsage)
+			? (meta.pricedUsage as Record<string, unknown>)
+			: null;
+	const pricedUsagePricing =
+		pricedUsage?.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	const estimatedNanos =
+		toFiniteNumber(pricedUsagePricing?.total_nanos) ??
+		toFiniteNumber((pricedUsage as any)?.total_nanos) ??
+		toFiniteNumber(meta?.reservedNanos);
+	const estimated =
+		toFiniteNumber(pricedUsagePricing?.cost_usd) ??
+		toFiniteNumber((pricedUsage as any)?.cost_usd) ??
+		(estimatedNanos != null ? Math.max(0, estimatedNanos) / 1e9 : null);
 	const settled =
 		status === "completed"
-			? estimated
+			? settledUsd
 			: status === "failed" || status === "cancelled" || status === "expired"
 				? 0
 				: null;
 	const state =
-		status === "completed"
-			? "settled"
-			: status === "failed" || status === "cancelled" || status === "expired"
+		status === "failed" || status === "cancelled" || status === "expired"
 				? "void"
-				: "estimated";
+				: settledUsd != null
+					? "settled"
+					: status === "completed"
+						? "pending"
+					: estimated != null
+						? "estimated"
+						: "pending";
+	const charged = typeof meta?.charged === "boolean" ? meta.charged : null;
 	return {
 		currency: "usd",
 		estimated_provider_cost: estimated != null ? estimated.toFixed(2) : null,
@@ -212,7 +258,14 @@ export function buildVideoBilling(
 		settled_provider_cost: settled != null ? settled.toFixed(2) : null,
 		settled_user_cost: settled != null ? settled.toFixed(2) : null,
 		state,
-		billable: status === "completed",
+		billable: charged === true || (settledNanos != null && settledNanos > 0),
+		total_nanos: settledNanos ?? null,
+		estimated_nanos: estimatedNanos ?? null,
+		reserved_nanos: typeof meta?.reservedNanos === "number" ? meta.reservedNanos : null,
+		reservation_id: normalizeText(meta?.reservationId),
+		reservation_status: normalizeText(meta?.reservationStatus),
+		charge_reason: normalizeText(meta?.billingReason),
+		charged,
 		...(record?.billedAt ? { billed_at: record.billedAt } : {}),
 	};
 }
@@ -240,9 +293,11 @@ export async function toPublicVideoResponse(args: {
 	record: VideoJobRecord | null;
 	meta: VideoJobMeta | null;
 }): Promise<Record<string, unknown>> {
-	const provider = toPublicVideoProviderId(
-		typeof args.payload.provider === "string" ? args.payload.provider : args.record?.provider ?? args.meta?.provider ?? null,
-	);
+	const rawProvider =
+		typeof args.payload.provider === "string"
+			? args.payload.provider
+			: args.record?.provider ?? args.meta?.provider ?? null;
+	const provider = toPublicVideoProviderId(rawProvider);
 	const status = toPublicVideoStatus(args.payload.status);
 	const createdAt =
 		(typeof args.payload.created_at === "number" ? args.payload.created_at : null) ??
@@ -300,12 +355,20 @@ export async function toPublicVideoResponse(args: {
 			});
 		}
 	}
+	const metaProgress = toFiniteNumber(args.meta?.progress ?? (args.meta as any)?.progress);
 	const progress = typeof args.payload.progress === "number"
 		? Math.max(0, Math.min(100, Math.round(args.payload.progress)))
-		: status === "completed"
-			? 100
-			: 0;
-	const progressSource = typeof args.payload.progress === "number" ? "provider" : "none";
+		: metaProgress != null
+			? Math.max(0, Math.min(100, Math.round(metaProgress)))
+			: status === "completed"
+				? 100
+				: 0;
+	const metaProgressSource = normalizeText(args.meta?.progressSource ?? (args.meta as any)?.progress_source);
+	const progressSource = typeof args.payload.progress === "number"
+		? "provider"
+		: metaProgress != null && (metaProgressSource === "provider" || metaProgressSource === "estimated")
+			? metaProgressSource
+			: "none";
 	const durationSeconds =
 		typeof args.meta?.seconds === "number"
 			? args.meta.seconds
@@ -316,6 +379,11 @@ export async function toPublicVideoResponse(args: {
 		normalizeText((args.payload as any)?.generation_id) ??
 		normalizeText(args.record?.requestId) ??
 		normalizeText(args.meta?.requestId);
+	const nativeVideoId =
+		normalizeText((args.payload as any)?.native_video_id) ??
+		normalizeText((args.payload as any)?.native_id) ??
+		normalizeText(args.record?.nativeId) ??
+		normalizeText(args.meta?.providerTaskId);
 	const usageSource =
 		args.payload.usage && typeof args.payload.usage === "object" && !Array.isArray(args.payload.usage)
 			? { ...(args.payload.usage as Record<string, unknown>) }
@@ -361,9 +429,13 @@ export async function toPublicVideoResponse(args: {
 		progress,
 		progress_source: progressSource,
 		polling_url: buildVideoPollingUrl(args.requestUrl, args.id),
+		websocket_url: buildAsyncWebSocketUrl(args.requestUrl, "video", args.id),
 		poll_after_seconds: DEFAULT_VIDEO_POLL_SECONDS,
-		cancel_url: null,
+		cancel_url: (status === "queued" || status === "processing") && isVideoCancelSupportedProvider(rawProvider)
+			? buildVideoCancelUrl(args.requestUrl, args.id)
+			: null,
 		generation_id: generationId ?? null,
+		native_video_id: nativeVideoId ?? null,
 		created_at: createdAt,
 		started_at: normalizeText((args.payload as any)?.started_at) ?? null,
 		completed_at:
@@ -389,6 +461,16 @@ export async function toPublicVideoResponse(args: {
 	if (webhook) {
 		response.webhook = webhook;
 	}
+	const nextWebhookRetryAt = normalizeIsoDate(args.meta?.nextWebhookRetryAt ?? (args.meta as any)?.next_webhook_retry_at);
+	if (nextWebhookRetryAt) response.next_webhook_retry_at = nextWebhookRetryAt;
+	const lastWebhookProgress = toFiniteNumber(args.meta?.lastWebhookProgress ?? (args.meta as any)?.last_webhook_progress);
+	if (lastWebhookProgress != null) response.last_webhook_progress = lastWebhookProgress;
+	const lastWebhookProgressAt = normalizeIsoDate(args.meta?.lastWebhookProgressAt ?? (args.meta as any)?.last_webhook_progress_at);
+	if (lastWebhookProgressAt) response.last_webhook_progress_at = lastWebhookProgressAt;
+	const lastWebhookDispatchedAt = normalizeIsoDate(
+		args.meta?.lastWebhookDispatchedAt ?? (args.meta as any)?.last_webhook_dispatched_at,
+	);
+	if (lastWebhookDispatchedAt) response.last_webhook_dispatched_at = lastWebhookDispatchedAt;
 	if (includeUnsignedUrls) {
 		response.content_url = buildVideoContentUrl(args.requestUrl, args.id, 0);
 	}

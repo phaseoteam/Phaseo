@@ -3262,15 +3262,40 @@
         "effective_from":  "2025-04-09T00:00:00",
         "effective_to":  null,
         "capabilities":  [
-                             {
-                                 "capability_id":  "video.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
-                             }
-                         ]
-    },
+                               {
+                                   "capability_id":  "video.generate",
+                                   "status":  "coming_soon",
+                                   "params":  {
+                                                   "prompt":  {
+                                                                  "type":  "string"
+                                                              },
+                                                   "duration":  {
+                                                                    "type":  "number",
+                                                                    "min":  1,
+                                                                    "aliases":  [
+                                                                                    "seconds",
+                                                                                    "duration_seconds"
+                                                                                ]
+                                                                },
+                                                   "size":  {
+                                                                "type":  "string",
+                                                                "aliases":  [
+                                                                                "resolution"
+                                                                            ]
+                                                            },
+                                                   "aspect_ratio":  {
+                                                                        "type":  "string"
+                                                                    },
+                                                   "input_image":  {
+                                                                       "type":  "string"
+                                                                   },
+                                                   "generate_audio":  {
+                                                                          "type":  "boolean"
+                                                                      }
+                                               }
+                               }
+                           ]
+      },
     {
         "api_model_id":  "google/gemini-3.5-live-translate-preview",
         "provider_api_model_id":  "google-ai-studio:google/gemini-3.5-live-translate-preview",

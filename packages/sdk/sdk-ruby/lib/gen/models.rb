@@ -244,6 +244,76 @@ module AiStats
     # @!attribute [rw] data
     #   @return [Hash{String => Object}]
     ApiKeyWithValueResponse = Struct.new(:data, keyword_init: true)
+    # @!attribute [rw] type
+    #   @return [String]
+    AsyncJobWebSocketClientEvent = Struct.new(:type, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    AsyncJobWebSocketServerEvent = Struct.new(:data, :type, keyword_init: true)
+    # @!attribute [rw] error
+    #   @return [Hash{String => Object}, nil]
+    AsyncJobWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
+    # @!attribute [rw] attempt_number
+    #   @return [Integer, nil]
+    # @!attribute [rw] delivered_at
+    #   @return [String, nil]
+    # @!attribute [rw] delivery_key
+    #   @return [String, nil]
+    # @!attribute [rw] error_message
+    #   @return [String, nil]
+    # @!attribute [rw] event_type
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] max_attempts
+    #   @return [Integer, nil]
+    # @!attribute [rw] next_retry_at
+    #   @return [String, nil]
+    # @!attribute [rw] response_body_preview
+    #   @return [String, nil]
+    # @!attribute [rw] response_status
+    #   @return [Integer, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] tried_at
+    #   @return [String, nil]
+    AsyncWebhookDeliveryAttempt = Struct.new(:attempt_number, :delivered_at, :delivery_key, :error_message, :event_type, :id, :max_attempts, :next_retry_at, :response_body_preview, :response_status, :status, :tried_at, keyword_init: true)
+    # @!attribute [rw] delivered_event_types
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] delivered_events
+    #   @return [Integer, nil]
+    # @!attribute [rw] last_attempt_at
+    #   @return [String, nil]
+    # @!attribute [rw] last_attempt_status
+    #   @return [String, nil]
+    # @!attribute [rw] last_delivered_at
+    #   @return [String, nil]
+    # @!attribute [rw] last_error_message
+    #   @return [String, nil]
+    # @!attribute [rw] last_failure_at
+    #   @return [String, nil]
+    # @!attribute [rw] last_response_status
+    #   @return [Integer, nil]
+    # @!attribute [rw] next_retry_at
+    #   @return [String, nil]
+    # @!attribute [rw] pending_retries
+    #   @return [Integer, nil]
+    # @!attribute [rw] total_attempts
+    #   @return [Integer, nil]
+    AsyncWebhookDeliverySummary = Struct.new(:delivered_event_types, :delivered_events, :last_attempt_at, :last_attempt_status, :last_delivered_at, :last_error_message, :last_failure_at, :last_response_status, :next_retry_at, :pending_retries, :total_attempts, keyword_init: true)
+    # @!attribute [rw] attempts
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] delivery
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] events
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] has_secret
+    #   @return [Boolean, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    AsyncWebhookPublicState = Struct.new(:attempts, :delivery, :events, :has_secret, :url, keyword_init: true)
     # @!attribute [rw] input_audio
     #   @return [Hash{String => Object}]
     # @!attribute [rw] type
@@ -300,13 +370,91 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] cost_usd
     #   @return [Float, nil]
+    # @!attribute [rw] currency
+    #   @return [String, nil]
+    # @!attribute [rw] estimated_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] estimated_provider_cost
+    #   @return [String, nil]
+    # @!attribute [rw] estimated_user_cost
+    #   @return [String, nil]
+    # @!attribute [rw] estimation_sample_size
+    #   @return [Integer, nil]
+    # @!attribute [rw] estimation_total_rows
+    #   @return [Integer, nil]
+    # @!attribute [rw] estimation_truncated
+    #   @return [Boolean, nil]
     # @!attribute [rw] finalized_at
     #   @return [String, nil]
     # @!attribute [rw] pricing_breakdown
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reason
     #   @return [String, nil]
-    BatchBillingSummary = Struct.new(:billed, :charged, :cost_nanos, :cost_usd, :finalized_at, :pricing_breakdown, :reason, keyword_init: true)
+    # @!attribute [rw] reservation_id
+    #   @return [String, nil]
+    # @!attribute [rw] reservation_status
+    #   @return [String, nil]
+    # @!attribute [rw] reserved_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] settled_provider_cost
+    #   @return [String, nil]
+    # @!attribute [rw] settled_user_cost
+    #   @return [String, nil]
+    # @!attribute [rw] state
+    #   @return [String, nil]
+    # @!attribute [rw] total_nanos
+    #   @return [Integer, nil]
+    BatchBillingSummary = Struct.new(:billed, :charged, :cost_nanos, :cost_usd, :currency, :estimated_nanos, :estimated_provider_cost, :estimated_user_cost, :estimation_sample_size, :estimation_total_rows, :estimation_truncated, :finalized_at, :pricing_breakdown, :reason, :reservation_id, :reservation_status, :reserved_nanos, :settled_provider_cost, :settled_user_cost, :state, :total_nanos, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] first_id
+    #   @return [String, nil]
+    # @!attribute [rw] has_more
+    #   @return [Boolean, nil]
+    # @!attribute [rw] last_id
+    #   @return [String, nil]
+    # @!attribute [rw] object
+    #   @return [String, nil]
+    BatchListResponse = Struct.new(:data, :first_id, :has_more, :last_id, :object, keyword_init: true)
+    # @!attribute [rw] input_types
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] output_types
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] pricing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] providers
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] supported_parameters
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_parameters_detail
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] supported_params
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_params_detail
+    #   @return [Hash{String => Object}, nil]
+    BatchModelCapability = Struct.new(:input_types, :model, :name, :output_types, :pricing, :providers, :status, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] supported_parameters
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_parameters_detail
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] supported_params
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_params_detail
+    #   @return [Hash{String => Object}, nil]
+    BatchModelProviderCapability = Struct.new(:id, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] object
+    #   @return [String, nil]
+    BatchModelsResponse = Struct.new(:data, :object, keyword_init: true)
     # @!attribute [rw] completion_window
     #   @return [String, nil]
     # @!attribute [rw] debug
@@ -333,6 +481,8 @@ module AiStats
     BatchRequestCounts = Struct.new(:completed, :failed, :total, keyword_init: true)
     # @!attribute [rw] billing
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] cancel_url
+    #   @return [String, nil]
     # @!attribute [rw] cancelled_at
     #   @return [Integer, nil]
     # @!attribute [rw] cancelling_at
@@ -355,6 +505,8 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] failed_at
     #   @return [Integer, nil]
+    # @!attribute [rw] finalized_at
+    #   @return [String, nil]
     # @!attribute [rw] finalizing_at
     #   @return [Integer, nil]
     # @!attribute [rw] id
@@ -363,14 +515,30 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] input_file_id
     #   @return [String, nil]
+    # @!attribute [rw] last_webhook_dispatched_at
+    #   @return [String, nil]
+    # @!attribute [rw] last_webhook_progress
+    #   @return [Float, nil]
+    # @!attribute [rw] last_webhook_progress_at
+    #   @return [String, nil]
+    # @!attribute [rw] lifecycle_status
+    #   @return [String, nil]
     # @!attribute [rw] metadata
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] native_batch_id
+    #   @return [String, nil]
+    # @!attribute [rw] next_webhook_retry_at
+    #   @return [String, nil]
     # @!attribute [rw] object
     #   @return [String, nil]
     # @!attribute [rw] output_file_id
     #   @return [String, nil]
+    # @!attribute [rw] polling_url
+    #   @return [String, nil]
     # @!attribute [rw] pricing_lines
     #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] progress
+    #   @return [Integer, nil]
     # @!attribute [rw] provider
     #   @return [String, nil]
     # @!attribute [rw] request_counts
@@ -383,7 +551,9 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] webhook
     #   @return [Hash{String => Object}, nil]
-    BatchResponse = Struct.new(:billing, :cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :metadata, :object, :output_file_id, :pricing_lines, :provider, :request_counts, :request_id, :session_id, :status, :webhook, keyword_init: true)
+    # @!attribute [rw] websocket_url
+    #   @return [String, nil]
+    BatchResponse = Struct.new(:billing, :cancel_url, :cancelled_at, :cancelling_at, :completed_at, :completion_window, :created_at, :endpoint, :error_file_id, :errors, :expired_at, :expires_at, :failed_at, :finalized_at, :finalizing_at, :id, :in_progress_at, :input_file_id, :last_webhook_dispatched_at, :last_webhook_progress, :last_webhook_progress_at, :lifecycle_status, :metadata, :native_batch_id, :next_webhook_retry_at, :object, :output_file_id, :polling_url, :pricing_lines, :progress, :provider, :request_counts, :request_id, :session_id, :status, :webhook, :websocket_url, keyword_init: true)
     BenchmarkId = Object
     # @!attribute [rw] scope
     #   @return [String, nil]
@@ -731,32 +901,6 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     FunctionToolDefinition = Struct.new(:function, :type, keyword_init: true)
-    # @!attribute [rw] forward_transcript
-    #   @return [Boolean, nil]
-    # @!attribute [rw] instructions
-    #   @return [String, nil]
-    # @!attribute [rw] max_completion_tokens
-    #   @return [Integer, nil]
-    # @!attribute [rw] max_tokens
-    #   @return [Integer, nil]
-    # @!attribute [rw] max_uses
-    #   @return [Integer, nil]
-    # @!attribute [rw] model
-    #   @return [String, nil]
-    # @!attribute [rw] name
-    #   @return [String, nil]
-    # @!attribute [rw] parameters
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] reasoning
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] temperature
-    #   @return [Float, nil]
-    # @!attribute [rw] type
-    #   @return [String]
-    GatewayAdvisorToolDefinition = Struct.new(:forward_transcript, :instructions, :max_completion_tokens, :max_tokens, :max_uses, :model, :name, :parameters, :reasoning, :temperature, :type, keyword_init: true)
-    # @!attribute [rw] type
-    #   @return [String]
-    GatewayApplyPatchToolDefinition = Struct.new(:type, keyword_init: true)
     # @!attribute [rw] parameters
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] timezone
@@ -764,31 +908,6 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     GatewayDatetimeToolDefinition = Struct.new(:parameters, :timezone, :type, keyword_init: true)
-    # @!attribute [rw] aspect_ratio
-    #   @return [String, nil]
-    # @!attribute [rw] background
-    #   @return [String, nil]
-    # @!attribute [rw] description
-    #   @return [String, nil]
-    # @!attribute [rw] model
-    #   @return [String, nil]
-    # @!attribute [rw] moderation
-    #   @return [String, nil]
-    # @!attribute [rw] output_compression
-    #   @return [Integer, nil]
-    # @!attribute [rw] output_format
-    #   @return [String, nil]
-    # @!attribute [rw] parameters
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] prompt
-    #   @return [String, nil]
-    # @!attribute [rw] quality
-    #   @return [String, nil]
-    # @!attribute [rw] size
-    #   @return [String, nil]
-    # @!attribute [rw] type
-    #   @return [String]
-    GatewayImageGenerationToolDefinition = Struct.new(:aspect_ratio, :background, :description, :model, :moderation, :output_compression, :output_format, :parameters, :prompt, :quality, :size, :type, keyword_init: true)
     # @!attribute [rw] availability_mode
     #   @return [String]
     # @!attribute [rw] limit
@@ -1142,6 +1261,17 @@ module AiStats
     # @!attribute [rw] supported_parameters_detail
     #   @return [Hash{String => Object}, nil]
     ModelProviderAvailability = Struct.new(:api_provider_id, :api_provider_name, :availability_reason, :availability_status, :capability_status, :effective_from, :effective_to, :endpoints, :is_active_gateway, :model_routing_status, :params, :params_detail, :provider_routing_status, :provider_status, :supported_parameters, :supported_parameters_detail, keyword_init: true)
+    # @!attribute [rw] code
+    #   @return [String]
+    # @!attribute [rw] error
+    #   @return [String]
+    # @!attribute [rw] message
+    #   @return [String]
+    # @!attribute [rw] ok
+    #   @return [String]
+    # @!attribute [rw] privacy_scope
+    #   @return [String]
+    ModelsPrivacyScopeNotImplementedResponse = Struct.new(:code, :error, :message, :ok, :privacy_scope, keyword_init: true)
     # @!attribute [rw] harassment
     #   @return [Boolean, nil]
     # @!attribute [rw] harassment_threatening
@@ -1581,23 +1711,13 @@ module AiStats
     # @!attribute [rw] error
     #   @return [Hash{String => Object}, nil]
     ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
-    # @!attribute [rw] advisor_requests
-    #   @return [Integer, nil]
-    # @!attribute [rw] apply_patch_requests
-    #   @return [Integer, nil]
     # @!attribute [rw] datetime_requests
-    #   @return [Integer, nil]
-    # @!attribute [rw] image_generation_requests
     #   @return [Integer, nil]
     # @!attribute [rw] web_fetch_requests
     #   @return [Integer, nil]
-    # @!attribute [rw] web_search_extra_results
-    #   @return [Integer, nil]
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
-    # @!attribute [rw] web_search_results
-    #   @return [Integer, nil]
-    ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :image_generation_requests, :web_fetch_requests, :web_search_extra_results, :web_search_requests, :web_search_results, keyword_init: true)
+    ServerToolUsage = Struct.new(:datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
     SupportedParameterDetails = Struct.new(:_unused, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
@@ -1634,6 +1754,37 @@ module AiStats
     # @!attribute [rw] total_tokens
     #   @return [Integer, nil]
     Usage = Struct.new(:completion_tokens, :prompt_tokens, :server_tool_use, :total_tokens, keyword_init: true)
+    # @!attribute [rw] billable
+    #   @return [Boolean, nil]
+    # @!attribute [rw] billed_at
+    #   @return [String, nil]
+    # @!attribute [rw] charge_reason
+    #   @return [String, nil]
+    # @!attribute [rw] charged
+    #   @return [Boolean, nil]
+    # @!attribute [rw] currency
+    #   @return [String, nil]
+    # @!attribute [rw] estimated_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] estimated_provider_cost
+    #   @return [String, nil]
+    # @!attribute [rw] estimated_user_cost
+    #   @return [String, nil]
+    # @!attribute [rw] reservation_id
+    #   @return [String, nil]
+    # @!attribute [rw] reservation_status
+    #   @return [String, nil]
+    # @!attribute [rw] reserved_nanos
+    #   @return [Integer, nil]
+    # @!attribute [rw] settled_provider_cost
+    #   @return [String, nil]
+    # @!attribute [rw] settled_user_cost
+    #   @return [String, nil]
+    # @!attribute [rw] state
+    #   @return [String, nil]
+    # @!attribute [rw] total_nanos
+    #   @return [Integer, nil]
+    VideoBillingSummary = Struct.new(:billable, :billed_at, :charge_reason, :charged, :currency, :estimated_nanos, :estimated_provider_cost, :estimated_user_cost, :reservation_id, :reservation_status, :reserved_nanos, :settled_provider_cost, :settled_user_cost, :state, :total_nanos, keyword_init: true)
     # @!attribute [rw] type
     #   @return [String]
     # @!attribute [rw] video_url
@@ -1691,6 +1842,8 @@ module AiStats
     #   @return [Boolean, nil]
     # @!attribute [rw] billing
     #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] cancel_url
+    #   @return [String, nil]
     # @!attribute [rw] completed_at
     #   @return [Integer, String, nil]
     # @!attribute [rw] content_url
@@ -1707,7 +1860,19 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] id
     #   @return [String, nil]
+    # @!attribute [rw] last_webhook_dispatched_at
+    #   @return [String, nil]
+    # @!attribute [rw] last_webhook_progress
+    #   @return [Float, nil]
+    # @!attribute [rw] last_webhook_progress_at
+    #   @return [String, nil]
+    # @!attribute [rw] lifecycle_status
+    #   @return [String, nil]
     # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] native_video_id
+    #   @return [String, nil]
+    # @!attribute [rw] next_webhook_retry_at
     #   @return [String, nil]
     # @!attribute [rw] object
     #   @return [String, nil]
@@ -1739,7 +1904,11 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
-    VideoGenerationResponse = Struct.new(:asset, :audio, :billing, :completed_at, :content_url, :created_at, :download_url, :error, :expires_at, :generation_id, :id, :model, :object, :output_access, :outputs, :poll_after_seconds, :polling_url, :progress, :progress_source, :provider, :request_id, :seconds, :session_id, :size, :started_at, :status, :usage, keyword_init: true)
+    # @!attribute [rw] webhook
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] websocket_url
+    #   @return [String, nil]
+    VideoGenerationResponse = Struct.new(:asset, :audio, :billing, :cancel_url, :completed_at, :content_url, :created_at, :download_url, :error, :expires_at, :generation_id, :id, :last_webhook_dispatched_at, :last_webhook_progress, :last_webhook_progress_at, :lifecycle_status, :model, :native_video_id, :next_webhook_retry_at, :object, :output_access, :outputs, :poll_after_seconds, :polling_url, :progress, :progress_source, :provider, :request_id, :seconds, :session_id, :size, :started_at, :status, :usage, :webhook, :websocket_url, keyword_init: true)
     # @!attribute [rw] image_url
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] reference_type
@@ -1749,6 +1918,56 @@ module AiStats
     # @!attribute [rw] type
     #   @return [String]
     VideoInputReference = Struct.new(:image_url, :reference_type, :role, :type, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] first_id
+    #   @return [String, nil]
+    # @!attribute [rw] has_more
+    #   @return [Boolean, nil]
+    # @!attribute [rw] last_id
+    #   @return [String, nil]
+    # @!attribute [rw] object
+    #   @return [String, nil]
+    VideoListResponse = Struct.new(:data, :first_id, :has_more, :last_id, :object, keyword_init: true)
+    # @!attribute [rw] input_types
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] output_types
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] pricing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] providers
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] supported_parameters
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_parameters_detail
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] supported_params
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_params_detail
+    #   @return [Hash{String => Object}, nil]
+    VideoModelCapability = Struct.new(:input_types, :model, :name, :output_types, :pricing, :providers, :status, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] supported_parameters
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_parameters_detail
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] supported_params
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_params_detail
+    #   @return [Hash{String => Object}, nil]
+    VideoModelProviderCapability = Struct.new(:id, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] object
+    #   @return [String, nil]
+    VideoModelsResponse = Struct.new(:data, :object, keyword_init: true)
     # @!attribute [rw] bytes_available
     #   @return [Boolean, nil]
     # @!attribute [rw] content_url

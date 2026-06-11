@@ -230,6 +230,7 @@ class BatchResponse(TypedDict):
 	object: NotRequired[str]
 	output_file_id: NotRequired[str]
 	pricing_lines: NotRequired[List[Dict[str, Any]]]
+	progress: NotRequired[int]
 	provider: NotRequired[str]
 	request_counts: NotRequired[Dict[str, Any]]
 	request_id: NotRequired[str]

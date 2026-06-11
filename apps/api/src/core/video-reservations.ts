@@ -18,10 +18,48 @@ export type VideoReservationResult = {
 	pricedUsage?: Record<string, unknown>;
 };
 
+export function isInsufficientVideoReservationStatus(status: unknown): boolean {
+	const normalized = typeof status === "string" ? status.trim().toLowerCase() : "";
+	return normalized === "insufficient_funds" || normalized === "insufficient_balance";
+}
+
 function toPositiveNumber(value: unknown): number | null {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed) || parsed <= 0) return null;
 	return parsed;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim().length > 0) {
+		const parsed = Number(value.trim());
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return null;
+}
+
+function extractPricedTotalNanos(pricedUsage: Record<string, unknown>): number {
+	const pricing =
+		pricedUsage.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	return Math.max(0, Math.round(toFiniteNumber(pricing?.total_nanos ?? pricedUsage.total_nanos) ?? 0));
+}
+
+function hasPricingLines(pricedUsage: Record<string, unknown>): boolean {
+	const pricing =
+		pricedUsage.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	return Array.isArray(pricing?.lines) && pricing.lines.length > 0;
+}
+
+function hasPositiveVideoPricingRule(card: PriceCard): boolean {
+	return card.rules.some((rule) => {
+		const meter = String((rule as any)?.meter ?? "").trim().toLowerCase();
+		if (meter !== "output_video_seconds" && meter !== "output_video" && meter !== "total_tokens") return false;
+		return (toFiniteNumber((rule as any)?.price_per_unit) ?? 0) > 0;
+	});
 }
 
 export async function reserveVideoGenerationCredits(args: {
@@ -67,10 +105,20 @@ export async function reserveVideoGenerationCredits(args: {
 			}),
 		},
 	});
+	const baseTotalNanos = extractPricedTotalNanos(pricedBase as Record<string, unknown>);
+	if (baseTotalNanos <= 0 && !hasPricingLines(pricedBase as Record<string, unknown>) && hasPositiveVideoPricingRule(args.pricingCard)) {
+		return {
+			reservationId,
+			held: false,
+			amountNanos: 0,
+			status: "skip_missing_seconds_or_pricing",
+			pricedUsage: pricedBase as Record<string, unknown>,
+		};
+	}
 	const byokAdjusted = await applyByokServiceFee({
 		workspaceId: args.workspaceId,
 		isByok: Boolean(args.isByok),
-		baseCostNanos: Number((pricedBase as any)?.pricing?.total_nanos ?? 0) || 0,
+		baseCostNanos: baseTotalNanos,
 		pricedUsage: pricedBase,
 		currencyHint: "USD",
 	});

@@ -282,105 +282,125 @@ describe("fetchCatalogue", () => {
         });
     });
 
-    it("matches public video.generation filters to catalogue video.generate capabilities", async () => {
-        const state: QueryState = { emptyCapabilityInCalled: false };
-        const responses: Record<string, QueryResult[]> = {
-            data_models: [{
-                data: [{
-                    model_id: "test/mixed-video-model",
-                    name: "Mixed Video Model",
-                    release_date: null,
-                    deprecation_date: null,
-                    retirement_date: null,
-                    status: "available",
-                    organisation_id: null,
-                    input_types: ["text"],
-                    output_types: ["text", "video"],
-                    organisation: null,
+    it("matches public and route-style video filters to catalogue video.generate capabilities", async () => {
+        const buildResponses = (): { state: QueryState; responses: Record<string, QueryResult[]> } => ({
+            state: { emptyCapabilityInCalled: false },
+            responses: {
+                data_models: [{
+                    data: [{
+                        model_id: "test/mixed-video-model",
+                        name: "Mixed Video Model",
+                        release_date: null,
+                        deprecation_date: null,
+                        retirement_date: null,
+                        status: "available",
+                        organisation_id: null,
+                        input_types: ["text"],
+                        output_types: ["text", "video"],
+                        organisation: null,
+                    }],
+                    error: null,
                 }],
-                error: null,
-            }],
-            data_api_provider_models: [{
-                data: [{
-                    provider_api_model_id: "pam_mixed_video_1",
-                    provider_id: "openai",
-                    api_model_id: "test/mixed-video-model",
-                    model_id: "test/mixed-video-model",
-                    provider_model_slug: "mixed-video-model",
-                    is_active_gateway: true,
-                    routing_status: "active",
-                    input_modalities: ["text"],
-                    output_modalities: ["text", "video"],
-                    effective_from: null,
-                    effective_to: null,
-                }],
-                error: null,
-            }],
-            data_api_provider_model_capabilities: [{
-                data: [
-                    {
+                data_api_provider_models: [{
+                    data: [{
                         provider_api_model_id: "pam_mixed_video_1",
-                        capability_id: "responses",
-                        status: "active",
-                        params: { temperature: true },
+                        provider_id: "openai",
+                        api_model_id: "test/mixed-video-model",
+                        model_id: "test/mixed-video-model",
+                        provider_model_slug: "mixed-video-model",
+                        is_active_gateway: true,
+                        routing_status: "active",
+                        input_modalities: ["text"],
+                        output_modalities: ["text", "video"],
                         effective_from: null,
                         effective_to: null,
-                    },
-                    {
-                        provider_api_model_id: "pam_mixed_video_1",
-                        capability_id: "video.generate",
-                        status: "active",
-                        params: {
-                            duration: { type: "enum", values: [4, 8, 12] },
-                            resolution: ["720p", "1080p"],
+                    }],
+                    error: null,
+                }],
+                data_api_provider_model_capabilities: [{
+                    data: [
+                        {
+                            provider_api_model_id: "pam_mixed_video_1",
+                            capability_id: "responses",
+                            status: "active",
+                            params: { temperature: true },
+                            effective_from: null,
+                            effective_to: null,
                         },
-                        effective_from: null,
-                        effective_to: null,
-                    },
-                ],
-                error: null,
-            }],
-            data_api_model_aliases: [{ data: [], error: null }],
-            data_api_providers: [{
-                data: [{
-                    api_provider_id: "openai",
-                    api_provider_name: "OpenAI",
-                    link: null,
-                    country_code: null,
-                    status: "active",
-                    routing_status: "active",
+                        {
+                            provider_api_model_id: "pam_mixed_video_1",
+                            capability_id: "video.generate",
+                            status: "active",
+                            params: {
+                                duration: { type: "enum", values: [4, 8, 12], aliases: ["duration_seconds"] },
+                                resolution: { type: "enum", values: ["720p", "1080p"], aliases: ["size"] },
+                            },
+                            effective_from: null,
+                            effective_to: null,
+                        },
+                    ],
+                    error: null,
                 }],
-                error: null,
-            }],
-            data_api_pricing_rules: [{ data: [], error: null }],
-        };
+                data_api_model_aliases: [{ data: [], error: null }],
+                data_api_providers: [{
+                    data: [{
+                        api_provider_id: "openai",
+                        api_provider_name: "OpenAI",
+                        link: null,
+                        country_code: null,
+                        status: "active",
+                        routing_status: "active",
+                    }],
+                    error: null,
+                }],
+                data_api_pricing_rules: [{ data: [], error: null }],
+            },
+        });
 
-        getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(responses, state));
         const { fetchCatalogue } = await import("./models.catalogue");
 
-        const models = await fetchCatalogue({ endpoints: ["video.generation"] });
+        for (const endpoint of ["video.generation", "videos", "/v1/videos"]) {
+            const { state, responses } = buildResponses();
+            getSupabaseAdminMock.mockReturnValueOnce(buildSupabaseMock(responses, state));
 
-        expect(models).toHaveLength(1);
-        expect(models[0]?.endpoints).toEqual(["video.generate"]);
-        expect(models[0]?.supported_params).toEqual(["duration", "resolution"]);
-        expect(models[0]?.supported_params_detail).toMatchObject({
-            duration: {
-                supported: true,
-                type: "enum",
-                values: [12, 4, 8],
-                providers: ["openai"],
-            },
-            resolution: {
-                supported: true,
-                values: ["1080p", "720p"],
-                providers: ["openai"],
-            },
-        });
-        expect(models[0]?.providers[0]).toMatchObject({
-            api_provider_id: "openai",
-            endpoints: ["video.generate"],
-            params: ["duration", "resolution"],
-        });
+            const models = await fetchCatalogue({ endpoints: [endpoint] });
+
+            expect(models).toHaveLength(1);
+            expect(models[0]?.endpoints).toEqual(["video.generate"]);
+            expect(models[0]?.supported_params).toEqual(["duration", "resolution"]);
+            expect(models[0]?.supported_params_detail).toMatchObject({
+                duration: {
+                    supported: true,
+                    type: "enum",
+                    values: [12, 4, 8],
+                    aliases: ["duration_seconds"],
+                    providers: ["openai"],
+                },
+                resolution: {
+                    supported: true,
+                    type: "enum",
+                    values: ["1080p", "720p"],
+                    aliases: ["size"],
+                    providers: ["openai"],
+                },
+            });
+            expect(models[0]?.providers[0]).toMatchObject({
+                api_provider_id: "openai",
+                endpoints: ["video.generate"],
+                params: ["duration", "resolution"],
+            });
+        }
+
+        for (const param of ["duration_seconds", "size"]) {
+            const { state, responses } = buildResponses();
+            getSupabaseAdminMock.mockReturnValueOnce(buildSupabaseMock(responses, state));
+
+            const models = await fetchCatalogue({ endpoints: ["video.generate"], params: [param] });
+
+            expect(models).toHaveLength(1);
+            expect(models[0]?.model_id).toBe("test/mixed-video-model");
+            expect(models[0]?.supported_params).toEqual(["duration", "resolution"]);
+        }
     });
 
     it("preserves voice and format capability metadata for audio speech models", async () => {

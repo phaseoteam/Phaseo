@@ -8,9 +8,12 @@ const state = vi.hoisted(() => ({
 	reservationResult: null as Record<string, unknown> | null,
 	reservationCalls: [] as Array<Record<string, unknown>>,
 	releaseCalls: [] as Array<Record<string, unknown>>,
+	saveVideoJobMetaError: null as Error | null,
 }));
 
 vi.mock("@core/video-reservations", () => ({
+	isInsufficientVideoReservationStatus: (status: unknown) =>
+		status === "insufficient_funds" || status === "insufficient_balance",
 	reserveVideoGenerationCredits: vi.fn(async (args: Record<string, unknown>) => {
 		state.reservationCalls.push(args);
 		return state.reservationResult ?? {
@@ -23,7 +26,10 @@ vi.mock("@core/video-reservations", () => ({
 }));
 
 vi.mock("@core/video-jobs", () => ({
-	saveVideoJobMeta: (...args: unknown[]) => saveVideoJobMetaMock(...args),
+	saveVideoJobMeta: (...args: unknown[]) => {
+		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		return saveVideoJobMetaMock(...args);
+	},
 }));
 
 vi.mock("@core/wallet-reservations", () => ({
@@ -56,6 +62,7 @@ describe("non-text adapter bridge", () => {
 		state.reservationResult = null;
 		state.reservationCalls = [];
 		state.releaseCalls = [];
+		state.saveVideoJobMetaError = null;
 	});
 
 	it("routes ElevenLabs audio.speech and emits audio data + character usage", async () => {
@@ -266,6 +273,108 @@ describe("non-text adapter bridge", () => {
 				releaseRefId: "req_bridge_video_1",
 			},
 		]);
+	});
+
+	it("fails the compat video response when async job metadata cannot be persisted", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_bridge_video_1",
+			held: true,
+			amountNanos: 123_000_000,
+			status: "held",
+		};
+		state.saveVideoJobMetaError = new Error("async operation store unavailable");
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/videos"),
+				response: jsonResponse({ id: "vid_bridge_meta_failed", status: "queued" }),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "google/veo-3.1-generate-preview",
+				prompt: "A quiet sunrise over the ocean.",
+				seconds: 6,
+				size: "1280x720",
+			},
+			requestId: "req_bridge_video_1",
+			workspaceId: "team_test",
+			providerId: "novita",
+			endpoint: "video.generation",
+			byokMeta: [],
+			pricingCard: {
+				provider: "novita",
+				model: "google/veo-3.1-generate-preview",
+				endpoint: "video.generation",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "async_job_persistence_failed",
+				native_video_id: "vid_bridge_meta_failed",
+				reservation_id: "video_hold:req_bridge_video_1",
+				reservation_status: "held",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([]);
+	});
+
+	it("does not submit compat video upstream when reservation pricing dimensions are missing", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_bridge_video_1",
+			held: false,
+			amountNanos: 0,
+			status: "skip_missing_seconds_or_pricing",
+		};
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/videos"),
+				response: jsonResponse({ id: "vid_should_not_submit", status: "queued" }),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "google/veo-3.1-generate-preview",
+				prompt: "A quiet sunrise over the ocean.",
+				size: "1280x720",
+			},
+			requestId: "req_bridge_video_1",
+			workspaceId: "team_test",
+			providerId: "novita",
+			endpoint: "video.generation",
+			byokMeta: [],
+			pricingCard: {
+				provider: "novita",
+				model: "google/veo-3.1-generate-preview",
+				endpoint: "video.generation",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(400);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "missing_billing_dimensions",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([]);
+		expect(mock.calls).toEqual([]);
 	});
 
 	it("preserves cancelled compat video lifecycle status instead of storing it as failed", async () => {

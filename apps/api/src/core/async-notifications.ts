@@ -1,4 +1,4 @@
-import { dispatchBackground } from "@/runtime/env";
+import { dispatchBackground, getBindings } from "@/runtime/env";
 import {
 	getAsyncOperation,
 	listAsyncOperations,
@@ -15,12 +15,12 @@ import {
 } from "@core/video-public";
 
 export type SupportedAsyncNotificationKind = "video" | "batch";
-export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled";
+export type AsyncNotificationPhase = "created" | "progress" | "completed" | "failed" | "cancelled" | "expired";
 export type AsyncNotificationEventType =
 	| `job.${AsyncNotificationPhase}`
 	| `video.${AsyncNotificationPhase}`
 	| `batch.${AsyncNotificationPhase}`;
-export type AsyncJobLifecycleStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
+export type AsyncJobLifecycleStatus = "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
 export type AsyncWebhookAttemptStatus = "delivered" | "scheduled_retry" | "failed_permanently";
 export type AsyncWebhookDeliveryAttempt = {
 	id: string;
@@ -55,6 +55,10 @@ type AsyncWebhookRetryQueue = Record<string, AsyncWebhookRetryState>;
 const WEBHOOK_RETRY_DELAYS_MS = [60_000, 5 * 60_000, 15 * 60_000] as const;
 const MAX_WEBHOOK_ATTEMPTS = WEBHOOK_RETRY_DELAYS_MS.length + 1;
 const MAX_WEBHOOK_ATTEMPT_HISTORY = 50;
+const MAX_PUBLIC_WEBHOOK_ATTEMPTS = 10;
+const DEFAULT_WEBHOOK_DELIVERY_TIMEOUT_MS = 30_000;
+const MIN_WEBHOOK_DELIVERY_TIMEOUT_MS = 1_000;
+const MAX_WEBHOOK_DELIVERY_TIMEOUT_MS = 120_000;
 
 function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -191,6 +195,17 @@ function computeRetryDelayMsForAttempt(attemptNumber: number): number | null {
 	return WEBHOOK_RETRY_DELAYS_MS[retryIndex] ?? null;
 }
 
+function resolveWebhookDeliveryTimeoutMs(): number {
+	const bindings = getBindings() as unknown as Record<string, unknown>;
+	const raw = bindings.ASYNC_WEBHOOK_DELIVERY_TIMEOUT_MS ?? bindings.ASYNC_WEBHOOK_TIMEOUT_MS;
+	const parsed = toFiniteNumber(raw);
+	if (parsed == null) return DEFAULT_WEBHOOK_DELIVERY_TIMEOUT_MS;
+	return Math.max(
+		MIN_WEBHOOK_DELIVERY_TIMEOUT_MS,
+		Math.min(MAX_WEBHOOK_DELIVERY_TIMEOUT_MS, Math.trunc(parsed)),
+	);
+}
+
 type AsyncWebhookRequestResult = {
 	ok: boolean;
 	statusCode: number | null;
@@ -203,10 +218,11 @@ function resolveWebhookUrl(value: unknown): string | null {
 	if (!text) return null;
 	try {
 		const parsed = new URL(text);
-		if (parsed.protocol === "https:") return parsed.toString();
+		const hostname = parsed.hostname.toLowerCase();
+		if (parsed.protocol === "https:" && !isLocalOrPrivateWebhookHost(hostname)) return parsed.toString();
 		if (
 			parsed.protocol === "http:" &&
-			(parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "::1")
+			isLocalDevelopmentWebhookHost(hostname)
 		) {
 			return parsed.toString();
 		}
@@ -216,27 +232,46 @@ function resolveWebhookUrl(value: unknown): string | null {
 	}
 }
 
+function isLocalDevelopmentWebhookHost(hostname: string): boolean {
+	return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]";
+}
+
+function isLocalOrPrivateWebhookHost(hostname: string): boolean {
+	if (isLocalDevelopmentWebhookHost(hostname)) return true;
+	if (hostname === "0.0.0.0" || hostname === "[::]" || hostname === "::") return true;
+	const parts = hostname.split(".").map((part) => Number(part));
+	if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+		return false;
+	}
+	const [first, second] = parts;
+	return (
+		first === 10 ||
+		first === 127 ||
+		(first === 169 && second === 254) ||
+		(first === 172 && second >= 16 && second <= 31) ||
+		(first === 192 && second === 168)
+	);
+}
+
 function normalizeWebhookEvent(kind: SupportedAsyncNotificationKind, value: unknown): AsyncNotificationEventType | null {
 	const text = normalizeText(value)?.toLowerCase();
 	if (!text) return null;
-	const supportedPhases: AsyncNotificationPhase[] = ["created", "progress", "completed", "failed", "cancelled"];
-	const matchPhase = supportedPhases.find((phase) => phase === text);
+	const supportedPhases: AsyncNotificationPhase[] = ["created", "progress", "completed", "failed", "cancelled", "expired"];
+	const normalizedText = text === "canceled" ? "cancelled" : text.replace(/\.canceled$/, ".cancelled");
+	const matchPhase = supportedPhases.find((phase) => phase === normalizedText);
 	if (matchPhase) return `job.${matchPhase}`;
-	if (
-		text.startsWith("job.") ||
-		text.startsWith("video.") ||
-		text.startsWith("batch.")
-	) {
-		const [, phase] = text.split(".", 2);
+	if (normalizedText.startsWith("job.") || normalizedText.startsWith(`${kind}.`)) {
+		const [, phase] = normalizedText.split(".", 2);
 		if (phase && supportedPhases.includes(phase as AsyncNotificationPhase)) {
-			return text as AsyncNotificationEventType;
+			return normalizedText as AsyncNotificationEventType;
 		}
 	}
-	if (text === `${kind}.created`) return `${kind}.created`;
-	if (text === `${kind}.progress`) return `${kind}.progress`;
-	if (text === `${kind}.completed`) return `${kind}.completed`;
-	if (text === `${kind}.failed`) return `${kind}.failed`;
-	if (text === `${kind}.cancelled`) return `${kind}.cancelled`;
+	if (normalizedText === `${kind}.created`) return `${kind}.created`;
+	if (normalizedText === `${kind}.progress`) return `${kind}.progress`;
+	if (normalizedText === `${kind}.completed`) return `${kind}.completed`;
+	if (normalizedText === `${kind}.failed`) return `${kind}.failed`;
+	if (normalizedText === `${kind}.cancelled`) return `${kind}.cancelled`;
+	if (normalizedText === `${kind}.expired`) return `${kind}.expired`;
 	return null;
 }
 
@@ -386,7 +421,7 @@ export function buildPublicAsyncWebhook(
 			attempts,
 			retryQueue,
 		}),
-		attempts,
+		attempts: attempts.slice(-MAX_PUBLIC_WEBHOOK_ATTEMPTS),
 	};
 }
 
@@ -403,14 +438,17 @@ export function parseAsyncWebhookConfig(
 	const url = resolveWebhookUrl(record.url);
 	if (!url) return null;
 	const secret = normalizeText(record.secret);
+	if ("events" in record && record.events != null && !Array.isArray(record.events)) return null;
 	const rawEvents = Array.isArray(record.events) ? record.events : [];
 	const normalizedEvents = rawEvents
 		.map((entry) => normalizeWebhookEvent(kind, entry))
 		.filter((entry): entry is AsyncNotificationEventType => Boolean(entry));
+	const uniqueEvents = [...new Set(normalizedEvents)];
+	if (rawEvents.length > 0 && uniqueEvents.length === 0) return null;
 	return {
 		url,
 		secret,
-		events: normalizedEvents.length > 0 ? normalizedEvents : ["job.completed", "job.failed", "job.cancelled"],
+		events: uniqueEvents.length > 0 ? uniqueEvents : ["job.completed", "job.failed", "job.cancelled", "job.expired"],
 	};
 }
 
@@ -450,7 +488,19 @@ function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 	const settledUsd =
 		toFiniteNumber(meta.costUsd ?? meta.cost_usd) ??
 		(settledNanos != null ? settledNanos / 1e9 : null);
-	const estimated = settledUsd;
+	const reservedNanos = toFiniteNumber(meta.reservedNanos ?? meta.reserved_nanos);
+	const pricedUsage =
+		meta.pricedUsage && typeof meta.pricedUsage === "object" && !Array.isArray(meta.pricedUsage)
+			? (meta.pricedUsage as Record<string, unknown>)
+			: meta.priced_usage && typeof meta.priced_usage === "object" && !Array.isArray(meta.priced_usage)
+				? (meta.priced_usage as Record<string, unknown>)
+				: null;
+	const pricedUsagePricing =
+		pricedUsage?.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
+			? (pricedUsage.pricing as Record<string, unknown>)
+			: null;
+	const estimatedNanos = toFiniteNumber(pricedUsagePricing?.total_nanos) ?? reservedNanos;
+	const estimatedUsd = estimatedNanos != null ? estimatedNanos / 1e9 : null;
 	const status = toPublicVideoStatus(record.status);
 	const chargeReason = normalizeText(meta.billingReason ?? meta.billing_reason);
 	const charged = toBoolean(meta.charged);
@@ -463,13 +513,26 @@ function resolveVideoBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 				: null;
 	return {
 		currency: "usd",
-		estimated_provider_cost: estimated != null ? estimated.toFixed(2) : null,
-		estimated_user_cost: estimated != null ? estimated.toFixed(2) : null,
+		estimated_provider_cost: estimatedUsd != null ? estimatedUsd.toFixed(2) : null,
+		estimated_user_cost: estimatedUsd != null ? estimatedUsd.toFixed(2) : null,
 		settled_provider_cost: settled != null ? settled.toFixed(2) : null,
 		settled_user_cost: settled != null ? settled.toFixed(2) : null,
-		state: status === "completed" ? "settled" : isVoided ? "void" : "estimated",
-		billable: charged === true || status === "completed",
+		state:
+			isVoided
+				? "void"
+				: settledUsd != null
+					? "settled"
+					: status === "completed"
+						? "pending"
+					: estimatedUsd != null
+						? "estimated"
+						: "pending",
+		billable: charged === true || (settledNanos != null && settledNanos > 0),
 		total_nanos: settledNanos,
+		estimated_nanos: estimatedNanos,
+		reserved_nanos: reservedNanos,
+		reservation_id: normalizeText(meta.reservationId ?? meta.reservation_id),
+		reservation_status: normalizeText(meta.reservationStatus ?? meta.reservation_status),
 		charge_reason: chargeReason,
 		charged,
 		...(record.billedAt ? { billed_at: record.billedAt } : {}),
@@ -481,22 +544,49 @@ function resolveBatchBilling(record: AsyncOperationRecord, meta: AsyncNotificati
 	const settledUsd =
 		toFiniteNumber(meta.costUsd ?? meta.cost_usd) ??
 		(settledNanos != null ? settledNanos / 1e9 : null);
+	const reservedNanos = toFiniteNumber(meta.reservedNanos ?? meta.reserved_nanos);
+	const estimatedUsage =
+		meta.estimatedUsage && typeof meta.estimatedUsage === "object" && !Array.isArray(meta.estimatedUsage)
+			? (meta.estimatedUsage as Record<string, unknown>)
+			: meta.estimated_usage && typeof meta.estimated_usage === "object" && !Array.isArray(meta.estimated_usage)
+				? (meta.estimated_usage as Record<string, unknown>)
+				: null;
+	const estimatedPricing =
+		estimatedUsage?.pricing && typeof estimatedUsage.pricing === "object" && !Array.isArray(estimatedUsage.pricing)
+			? (estimatedUsage.pricing as Record<string, unknown>)
+			: null;
+	const estimatedNanos = toFiniteNumber(estimatedPricing?.total_nanos) ?? reservedNanos;
+	const estimatedUsd = estimatedNanos != null ? estimatedNanos / 1e9 : null;
 	const status = toPublicBatchStatus(record.status ?? meta.status);
 	const chargeReason = normalizeText(meta.billingReason ?? meta.billing_reason);
 	const charged = toBoolean(meta.charged);
-	const isVoided = status === "failed" || status === "cancelled";
+	const isVoided = status === "failed" || status === "expired" || status === "cancelled";
+	const displaySettledUsd = settledUsd ?? (isVoided ? 0 : null);
 	return {
 		currency: "usd",
-		settled_provider_cost: settledUsd != null ? settledUsd.toFixed(2) : null,
-		settled_user_cost: settledUsd != null ? settledUsd.toFixed(2) : null,
+		estimated_provider_cost: estimatedUsd != null ? estimatedUsd.toFixed(2) : null,
+		estimated_user_cost: estimatedUsd != null ? estimatedUsd.toFixed(2) : null,
+		settled_provider_cost: displaySettledUsd != null ? displaySettledUsd.toFixed(2) : null,
+		settled_user_cost: displaySettledUsd != null ? displaySettledUsd.toFixed(2) : null,
 		state:
-			settledUsd != null
-				? "settled"
-				: isVoided
-					? "void"
-					: "pending",
+			isVoided
+				? "void"
+				: settledUsd != null
+					? "settled"
+					: status === "completed"
+						? "pending"
+					: estimatedUsd != null
+						? "estimated"
+						: "pending",
 		billable: charged === true || (settledNanos != null && settledNanos > 0),
 		total_nanos: settledNanos,
+		estimated_nanos: estimatedNanos,
+		reserved_nanos: reservedNanos,
+		estimation_truncated: estimatedUsage?.estimation_truncated === true ? true : null,
+		estimation_sample_size: toFiniteNumber(estimatedUsage?.estimation_sample_size),
+		estimation_total_rows: toFiniteNumber(estimatedUsage?.estimation_total_rows),
+		reservation_id: normalizeText(meta.reservationId ?? meta.reservation_id),
+		reservation_status: normalizeText(meta.reservationStatus ?? meta.reservation_status),
 		charge_reason: chargeReason,
 		charged,
 		...(record.billedAt ? { billed_at: record.billedAt } : {}),
@@ -520,6 +610,17 @@ function resolveBatchRequestCounts(meta: AsyncNotificationMeta): {
 		completed: toFiniteNumber(counts.completed),
 		failed: toFiniteNumber(counts.failed),
 	};
+}
+
+function resolveBatchProgressPercent(meta: AsyncNotificationMeta): number | null {
+	const counts = resolveBatchRequestCounts(meta);
+	const total = toFiniteNumber(counts?.total);
+	if (total == null || total <= 0) return null;
+	const completed = Math.max(0, toFiniteNumber(counts?.completed) ?? 0);
+	const failed = Math.max(0, toFiniteNumber(counts?.failed) ?? 0);
+	const finished = Math.max(0, Math.min(total, completed + failed));
+	const progress = Math.round((finished / total) * 100);
+	return Math.max(0, Math.min(100, progress));
 }
 
 function resolveBatchPricingLines(meta: AsyncNotificationMeta): Record<string, unknown>[] {
@@ -546,10 +647,11 @@ function resolveBatchPricingLines(meta: AsyncNotificationMeta): Record<string, u
 						? (((meta.priced_usage as Record<string, unknown>).pricing as Record<string, unknown>).lines as unknown[])
 						: null;
 	if (directLines) {
-		return directLines.filter(
+		const filtered = directLines.filter(
 			(line): line is Record<string, unknown> =>
 				Boolean(line) && typeof line === "object" && !Array.isArray(line),
 		);
+		if (filtered.length > 0) return filtered;
 	}
 
 	const totalNanos = toFiniteNumber(meta.costNanos ?? meta.cost_nanos);
@@ -584,11 +686,12 @@ function resolveBatchPricingLines(meta: AsyncNotificationMeta): Record<string, u
 	];
 }
 
-function toPublicBatchStatus(value: unknown): "pending" | "in_progress" | "completed" | "failed" | "cancelled" {
+function toPublicBatchStatus(value: unknown): "pending" | "in_progress" | "completed" | "failed" | "expired" | "cancelled" {
 	const status = normalizeText(value)?.toLowerCase() ?? "";
 	if (status === "completed") return "completed";
 	if (status === "cancelled" || status === "canceled") return "cancelled";
-	if (status === "failed" || status === "expired") return "failed";
+	if (status === "expired") return "expired";
+	if (status === "failed") return "failed";
 	if (status === "in_progress" || status === "finalizing" || status === "cancelling") return "in_progress";
 	return "pending";
 }
@@ -604,7 +707,14 @@ function buildBatchCancelUrl(baseUrlOrRequestUrl: string, id: string): string {
 	).toString();
 }
 
-function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyncNotificationKind, id: string): string {
+function buildVideoCancelUrl(baseUrlOrRequestUrl: string, id: string): string {
+	return new URL(
+		`/v1/videos/${encodeURIComponent(id)}/cancel`,
+		resolveNotificationBaseUrl(baseUrlOrRequestUrl),
+	).toString();
+}
+
+export function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyncNotificationKind, id: string): string {
 	const url = new URL(
 		`/v1/async/${encodeURIComponent(kind)}/${encodeURIComponent(id)}/ws`,
 		resolveNotificationBaseUrl(baseUrlOrRequestUrl),
@@ -614,14 +724,31 @@ function buildAsyncWebSocketUrl(baseUrlOrRequestUrl: string, kind: SupportedAsyn
 	return url.toString();
 }
 
+function isVideoCancelSupportedProvider(value: unknown): boolean {
+	const provider = normalizeText(value)?.toLowerCase();
+	return (
+		provider === "openai" ||
+		provider === "alibaba" ||
+		provider === "alibaba-cloud" ||
+		provider === "qwen" ||
+		provider === "runway"
+	);
+}
+
+function isBatchCancelSupportedProvider(value: unknown): boolean {
+	return normalizeText(value)?.toLowerCase() === "openai";
+}
+
 export function toAsyncLifecycleStatus(status: string): AsyncJobLifecycleStatus {
-	switch (status) {
+	switch (status.trim().toLowerCase()) {
 		case "completed":
 			return "completed";
 		case "failed":
-		case "expired":
 			return "failed";
+		case "expired":
+			return "expired";
 		case "cancelled":
+		case "canceled":
 			return "cancelled";
 		case "processing":
 		case "in_progress":
@@ -633,6 +760,7 @@ export function toAsyncLifecycleStatus(status: string): AsyncJobLifecycleStatus 
 
 async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, meta: AsyncNotificationMeta, progress?: number | null) {
 	const status = toPublicVideoStatus(record.status);
+	const rawProvider = record.provider ?? normalizeText(meta.provider);
 	const errorMeta = resolveAsyncErrorMeta(meta);
 	const webhook = buildPublicAsyncWebhook("video", meta);
 	const download = status === "completed"
@@ -653,11 +781,21 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 		native_id: normalizeText(record.nativeId),
 		session_id: normalizeText(record.sessionId),
 		app_id: normalizeText(record.appId),
-		progress: typeof progress === "number" ? Math.max(0, Math.min(100, Math.round(progress))) : status === "completed" ? 100 : 0,
-		provider: toPublicVideoProviderId(record.provider ?? normalizeText(meta.provider)),
+		progress: typeof progress === "number"
+			? Math.max(0, Math.min(100, Math.round(progress)))
+			: toFiniteNumber(meta.progress) != null
+				? Math.max(0, Math.min(100, Math.round(toFiniteNumber(meta.progress) ?? 0)))
+				: status === "completed"
+					? 100
+					: 0,
+		provider: toPublicVideoProviderId(rawProvider),
 		model: normalizeText(record.model) ?? normalizeText(meta.model),
 		polling_url: buildVideoPollingUrl(baseUrl, record.internalId),
 		websocket_url: buildAsyncWebSocketUrl(baseUrl, "video", record.internalId),
+		cancel_url:
+			(status === "queued" || status === "processing") && isVideoCancelSupportedProvider(rawProvider)
+				? buildVideoCancelUrl(baseUrl, record.internalId)
+				: null,
 		content_url: buildVideoContentUrl(baseUrl, record.internalId, 0),
 		download_url: download?.download_url ?? null,
 		expires_at: download?.expires_at ?? null,
@@ -700,9 +838,10 @@ async function buildVideoJobData(baseUrl: string, record: AsyncOperationRecord, 
 	};
 }
 
-function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: AsyncNotificationMeta) {
+function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: AsyncNotificationMeta, progress?: number | null) {
 	const status = toPublicBatchStatus(record.status ?? meta.status);
-	const cancellable = status === "pending" || status === "in_progress";
+	const rawProvider = normalizeText(record.provider) ?? normalizeText(meta.provider);
+	const cancellable = (status === "pending" || status === "in_progress") && isBatchCancelSupportedProvider(rawProvider);
 	const requestCounts = resolveBatchRequestCounts(meta);
 	const errorMeta = resolveAsyncErrorMeta(meta);
 	const webhook = buildPublicAsyncWebhook("batch", meta);
@@ -712,11 +851,16 @@ function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: 
 		kind: "batch",
 		status,
 		lifecycle_status: toAsyncLifecycleStatus(status),
+		progress: typeof progress === "number"
+			? Math.max(0, Math.min(100, Math.round(progress)))
+			: status === "completed"
+				? 100
+				: resolveBatchProgressPercent(meta) ?? 0,
 		request_id: normalizeText(record.requestId),
 		session_id: normalizeText(record.sessionId),
 		app_id: normalizeText(record.appId),
 		native_id: normalizeText(record.nativeId),
-		provider: normalizeText(record.provider) ?? normalizeText(meta.provider),
+		provider: rawProvider,
 		model: normalizeText(record.model) ?? normalizeText(meta.model),
 		polling_url: buildBatchPollingUrl(baseUrl, record.internalId),
 		websocket_url: buildAsyncWebSocketUrl(baseUrl, "batch", record.internalId),
@@ -729,11 +873,15 @@ function buildBatchJobData(baseUrl: string, record: AsyncOperationRecord, meta: 
 		error_file_id: normalizeText(meta.errorFileId) ?? normalizeText(meta.error_file_id),
 		key_source: normalizeText(meta.keySource ?? meta.key_source),
 		byok_key_id: normalizeText(meta.byokKeyId ?? meta.byok_key_id),
+		reservation_id: normalizeText(meta.reservationId ?? meta.reservation_id),
+		reservation_status: normalizeText(meta.reservationStatus ?? meta.reservation_status),
 		pricing_lines: resolveBatchPricingLines(meta),
 		next_webhook_retry_at: normalizeIsoDate(meta.nextWebhookRetryAt ?? meta.next_webhook_retry_at),
 		last_webhook_progress: toFiniteNumber(meta.lastWebhookProgress ?? meta.last_webhook_progress),
 		last_webhook_progress_at: normalizeIsoDate(meta.lastWebhookProgressAt ?? meta.last_webhook_progress_at),
 		last_webhook_dispatched_at: normalizeIsoDate(meta.lastWebhookDispatchedAt ?? meta.last_webhook_dispatched_at),
+		last_polled_at: normalizeIsoDate(meta.lastPolledAt ?? meta.last_polled_at),
+		polled_status: normalizeText(meta.polledStatus ?? meta.polled_status),
 		finalized_at: normalizeIsoDate(meta.finalizedAt ?? meta.finalized_at),
 		request_counts: requestCounts,
 		upstream_error: errorMeta.upstreamError,
@@ -761,7 +909,7 @@ export async function buildAsyncNotificationData(args: {
 		return buildVideoJobData(baseUrl, args.record, meta, args.progress);
 	}
 	if (kind === "batch") {
-		return buildBatchJobData(baseUrl, args.record, meta);
+		return buildBatchJobData(baseUrl, args.record, meta, args.progress);
 	}
 	return null;
 }
@@ -782,21 +930,35 @@ async function sendAsyncWebhookRequest(args: {
 	url: string;
 	secret?: string | null;
 	body: string;
+	eventId: string;
+	eventType: AsyncNotificationEventType;
+	deliveryKey: string;
+	attemptNumber: number;
+	maxAttempts: number;
 }): Promise<AsyncWebhookRequestResult> {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
 		"User-Agent": "AI-Stats-Async-Webhook/1.0",
+		"x-ai-stats-event-id": args.eventId,
+		"x-ai-stats-event-type": args.eventType,
+		"x-ai-stats-delivery-key": args.deliveryKey,
+		"x-ai-stats-attempt": String(args.attemptNumber),
+		"x-ai-stats-max-attempts": String(args.maxAttempts),
 	};
 	if (args.secret) {
 		const timestamp = String(Math.floor(Date.now() / 1000));
 		headers["x-ai-stats-timestamp"] = timestamp;
 		headers["x-ai-stats-signature"] = await signWebhook(args.secret, timestamp, args.body);
 	}
+	const timeoutMs = resolveWebhookDeliveryTimeoutMs();
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 	try {
 		const response = await fetch(args.url, {
 			method: "POST",
 			headers,
 			body: args.body,
+			signal: controller.signal,
 		});
 		const preview = await response.text().catch(() => "");
 		if (!response.ok) {
@@ -814,13 +976,81 @@ async function sendAsyncWebhookRequest(args: {
 			errorMessage: null,
 		};
 	} catch (error) {
+		const isAbort =
+			(error instanceof DOMException && error.name === "AbortError") ||
+			(error instanceof Error && error.name === "AbortError");
 		return {
 			ok: false,
 			statusCode: null,
 			bodyPreview: null,
-			errorMessage: error instanceof Error ? error.message : String(error),
+			errorMessage: isAbort
+				? `Webhook request timed out after ${timeoutMs}ms`
+				: error instanceof Error
+					? error.message
+					: String(error),
 		};
+	} finally {
+		clearTimeout(timeoutId);
 	}
+}
+
+function buildWebhookEventId(args: {
+	kind: SupportedAsyncNotificationKind;
+	internalId: string;
+	deliveryKey: string;
+}): string {
+	return [
+		"evt",
+		args.kind,
+		args.internalId,
+		args.deliveryKey,
+	]
+		.join("_")
+		.replace(/[^a-zA-Z0-9_-]+/g, "_")
+		.slice(0, 160);
+}
+
+async function markQueuedWebhookRetryUndeliverable(args: {
+	workspaceId: string;
+	kind: SupportedAsyncNotificationKind;
+	internalId: string;
+	deliveryKey: string;
+	eventType: AsyncNotificationEventType;
+	retryQueue: AsyncWebhookRetryQueue;
+	webhookAttempts: AsyncWebhookDeliveryAttempt[];
+	reason: string;
+}): Promise<void> {
+	const existingRetry = args.retryQueue[args.deliveryKey];
+	if (!existingRetry) return;
+	const nowIso = new Date().toISOString();
+	const nextRetryQueue = { ...args.retryQueue };
+	delete nextRetryQueue[args.deliveryKey];
+	const attemptNumber = Math.max(1, existingRetry.attemptCount);
+	const attempts = appendWebhookAttempt(args.webhookAttempts, {
+		id: `${args.deliveryKey}:undeliverable:${nowIso}`,
+		delivery_key: args.deliveryKey,
+		event_type: args.eventType,
+		status: "failed_permanently",
+		attempt_number: attemptNumber,
+		max_attempts: MAX_WEBHOOK_ATTEMPTS,
+		tried_at: nowIso,
+		delivered_at: null,
+		next_retry_at: null,
+		response_status: null,
+		error_message: args.reason,
+		response_body_preview: null,
+	});
+	await patchAsyncOperationMeta({
+		workspaceId: args.workspaceId,
+		kind: args.kind,
+		internalId: args.internalId,
+		metaPatch: {
+			webhookAttempts: attempts,
+			webhookRetryQueue: nextRetryQueue,
+			nextWebhookRetryAt: computeNextRetryAtFromQueue(nextRetryQueue),
+			lastWebhookDispatchedAt: nowIso,
+		},
+	});
 }
 
 export async function dispatchAsyncWebhookEvent(args: {
@@ -835,13 +1065,10 @@ export async function dispatchAsyncWebhookEvent(args: {
 	const record = await getAsyncOperation(args.workspaceId, args.kind, args.internalId);
 	if (!record) return false;
 	const meta = (record.meta ?? {}) as AsyncNotificationMeta;
-	const webhook = parseAsyncWebhookConfig(args.kind, meta.webhook);
-	if (!webhook) return false;
-	if (!isWebhookEventSubscribed({ kind: args.kind, phase: args.phase, configuredEvents: webhook.events })) {
-		return false;
-	}
 	const progressBucket = args.phase === "progress" ? normalizeProgressBucket(args.progress ?? null) : null;
 	if (args.phase === "progress" && progressBucket == null) return false;
+	const specificEvent = resolveSpecificEvent(args.kind, args.phase);
+	const deliveryKey = progressBucket != null ? `${specificEvent}:${progressBucket}` : specificEvent;
 	const deliveries =
 		meta.webhookDeliveries && typeof meta.webhookDeliveries === "object" && !Array.isArray(meta.webhookDeliveries)
 			? (meta.webhookDeliveries as Record<string, string>)
@@ -852,28 +1079,98 @@ export async function dispatchAsyncWebhookEvent(args: {
 	const retryQueue = normalizeAsyncWebhookRetryQueue(
 		meta.webhookRetryQueue ?? meta.webhook_retry_queue,
 	);
-	const specificEvent = resolveSpecificEvent(args.kind, args.phase);
-	const deliveryKey = progressBucket != null ? `${specificEvent}:${progressBucket}` : specificEvent;
-	if (!args.force && deliveries[deliveryKey]) return false;
+	const webhook = parseAsyncWebhookConfig(args.kind, meta.webhook);
+	if (!webhook) {
+		if (args.force && retryQueue[deliveryKey]) {
+			await markQueuedWebhookRetryUndeliverable({
+				workspaceId: args.workspaceId,
+				kind: args.kind,
+				internalId: args.internalId,
+				deliveryKey,
+				eventType: specificEvent,
+				retryQueue,
+				webhookAttempts,
+				reason: "Webhook configuration is no longer valid.",
+			});
+		}
+		return false;
+	}
+	if (!isWebhookEventSubscribed({ kind: args.kind, phase: args.phase, configuredEvents: webhook.events })) {
+		if (args.force && retryQueue[deliveryKey]) {
+			await markQueuedWebhookRetryUndeliverable({
+				workspaceId: args.workspaceId,
+				kind: args.kind,
+				internalId: args.internalId,
+				deliveryKey,
+				eventType: specificEvent,
+				retryQueue,
+				webhookAttempts,
+				reason: "Webhook configuration no longer subscribes to this event.",
+			});
+		}
+		return false;
+	}
+	if (deliveries[deliveryKey]) {
+		if (retryQueue[deliveryKey]) {
+			const nextRetryQueue = { ...retryQueue };
+			delete nextRetryQueue[deliveryKey];
+			await patchAsyncOperationMeta({
+				workspaceId: args.workspaceId,
+				kind: args.kind,
+				internalId: args.internalId,
+				metaPatch: {
+					webhookRetryQueue: nextRetryQueue,
+					nextWebhookRetryAt: computeNextRetryAtFromQueue(nextRetryQueue),
+				},
+			});
+		}
+		return false;
+	}
 	if (!args.force && retryQueue[deliveryKey]) return false;
+	if (
+		!args.force &&
+		webhookAttempts.some(
+			(attempt) =>
+				attempt.delivery_key === deliveryKey &&
+				attempt.status === "failed_permanently",
+		)
+	) {
+		return false;
+	}
+	const existingRetry = retryQueue[deliveryKey];
+	const attemptNumber = Math.max(1, (existingRetry?.attemptCount ?? 0) + 1);
+	const eventId = buildWebhookEventId({
+		kind: args.kind,
+		internalId: args.internalId,
+		deliveryKey,
+	});
 	const payload = {
+		id: eventId,
 		type: specificEvent,
 		created_at: Math.floor(Date.now() / 1000),
+		delivery: {
+			key: deliveryKey,
+			attempt: attemptNumber,
+			max_attempts: MAX_WEBHOOK_ATTEMPTS,
+		},
 		data: await buildAsyncNotificationData({
 			baseUrl: args.baseUrl ?? null,
 			record,
-			progress: args.progress ?? null,
+			progress: progressBucket ?? args.progress ?? null,
 		}),
 	};
 	if (!payload.data) return false;
 	const body = JSON.stringify(payload);
 	const nowIso = new Date().toISOString();
-	const existingRetry = retryQueue[deliveryKey];
-	const attemptNumber = Math.max(1, (existingRetry?.attemptCount ?? 0) + 1);
 	const requestResult = await sendAsyncWebhookRequest({
 		url: webhook.url,
 		secret: webhook.secret,
 		body,
+		eventId,
+		eventType: specificEvent,
+		deliveryKey,
+		attemptNumber,
+		maxAttempts: MAX_WEBHOOK_ATTEMPTS,
 	});
 	if (!requestResult.ok) {
 		const nextRetryDelayMs = computeRetryDelayMsForAttempt(attemptNumber);
@@ -999,6 +1296,7 @@ export type AsyncWebhookRetrySummary = {
 	startedAt: string;
 	finishedAt: string;
 	jobsScanned: number;
+	pagesScanned: number;
 	deliveriesRetried: number;
 	deliveriesSucceeded: number;
 	deliveriesStillPending: number;
@@ -1008,46 +1306,81 @@ export type AsyncWebhookRetrySummary = {
 export async function runAsyncWebhookRetriesJob(args?: {
 	limitPerKind?: number;
 	maxDeliveries?: number;
+	maxPagesPerKind?: number;
 	baseUrl?: string | null;
+	now?: string | number | Date | null;
 }): Promise<AsyncWebhookRetrySummary> {
 	const startedAt = new Date().toISOString();
 	const limitPerKind = Math.max(1, Math.min(500, Math.trunc(args?.limitPerKind ?? 200)));
 	const maxDeliveries = Math.max(1, Math.min(500, Math.trunc(args?.maxDeliveries ?? 100)));
-	const nowMs = Date.now();
-	const [videoRecords, batchRecords] = await Promise.all([
-		listAsyncOperations({ kind: "video", limit: limitPerKind }),
-		listAsyncOperations({ kind: "batch", limit: limitPerKind }),
-	]);
-	const allRecords = [...videoRecords, ...batchRecords];
-	const dueDeliveries = allRecords.flatMap((record) => {
-		const kind = resolveKind(record.kind);
-		if (!kind) return [];
-		const meta = (record.meta ?? {}) as AsyncNotificationMeta;
-		const retryQueue = normalizeAsyncWebhookRetryQueue(
-			meta.webhookRetryQueue ?? meta.webhook_retry_queue,
-		);
-		return Object.values(retryQueue)
-			.filter((entry) => {
-				const nextRetryAtMs = entry.nextRetryAt ? Date.parse(entry.nextRetryAt) : Number.NaN;
-				return Number.isFinite(nextRetryAtMs) && nextRetryAtMs <= nowMs;
-			})
-			.map((entry) => ({
-				workspaceId: record.workspaceId,
+	const maxPagesPerKind = Math.max(1, Math.min(20, Math.trunc(args?.maxPagesPerKind ?? 5)));
+	const explicitNowMs = args?.now == null ? Number.NaN : new Date(args.now).getTime();
+	const nowMs = Number.isFinite(explicitNowMs) ? explicitNowMs : Date.now();
+	const dueDeliveries: Array<{
+		workspaceId: string;
+		kind: SupportedAsyncNotificationKind;
+		internalId: string;
+		deliveryKey: string;
+		phase: AsyncNotificationPhase;
+		progress: number | null;
+		nextRetryAt: string;
+	}> = [];
+	let jobsScanned = 0;
+	let pagesScanned = 0;
+
+	const collectDueDeliveries = (records: AsyncOperationRecord[]) => {
+		jobsScanned += records.length;
+		for (const record of records) {
+			if (dueDeliveries.length >= maxDeliveries) return;
+			const kind = resolveKind(record.kind);
+			if (!kind) continue;
+			const meta = (record.meta ?? {}) as AsyncNotificationMeta;
+			const retryQueue = normalizeAsyncWebhookRetryQueue(
+				meta.webhookRetryQueue ?? meta.webhook_retry_queue,
+			);
+			const recordDueDeliveries = Object.values(retryQueue)
+				.filter((entry) => {
+					const nextRetryAtMs = entry.nextRetryAt ? Date.parse(entry.nextRetryAt) : Number.NaN;
+					return Number.isFinite(nextRetryAtMs) && nextRetryAtMs <= nowMs;
+				})
+				.sort((a, b) => String(a.nextRetryAt ?? "").localeCompare(String(b.nextRetryAt ?? "")))
+				.map((entry) => ({
+					workspaceId: record.workspaceId,
+					kind,
+					internalId: record.internalId,
+					deliveryKey: entry.deliveryKey,
+					phase: entry.phase,
+					progress: entry.progress,
+					nextRetryAt: entry.nextRetryAt ?? "",
+				}));
+			for (const retry of recordDueDeliveries) {
+				if (dueDeliveries.length >= maxDeliveries) return;
+				dueDeliveries.push(retry);
+			}
+		}
+	};
+
+	for (const kind of ["video", "batch"] as const) {
+		for (let page = 0; page < maxPagesPerKind && dueDeliveries.length < maxDeliveries; page += 1) {
+			const records = await listAsyncOperations({
 				kind,
-				internalId: record.internalId,
-				phase: entry.phase,
-				progress: entry.progress,
-				nextRetryAt: entry.nextRetryAt ?? "",
-			}));
-	})
-		.sort((a, b) => a.nextRetryAt.localeCompare(b.nextRetryAt))
-		.slice(0, maxDeliveries);
+				limit: limitPerKind,
+				offset: page * limitPerKind,
+			});
+			pagesScanned += 1;
+			collectDueDeliveries(records);
+			if (records.length < limitPerKind) break;
+		}
+	}
+
+	dueDeliveries.sort((a, b) => a.nextRetryAt.localeCompare(b.nextRetryAt));
+	const retriesToAttempt = dueDeliveries.slice(0, maxDeliveries);
 
 	let deliveriesSucceeded = 0;
 	let deliveriesStillPending = 0;
 	let deliveriesFailedPermanently = 0;
 
-	for (const retry of dueDeliveries) {
+	for (const retry of retriesToAttempt) {
 		await dispatchAsyncWebhookEvent({
 			workspaceId: retry.workspaceId,
 			kind: retry.kind,
@@ -1065,13 +1398,15 @@ export async function runAsyncWebhookRetriesJob(args?: {
 		const attempts = normalizeAsyncWebhookAttempts(
 			meta.webhookAttempts ?? meta.webhook_attempts,
 		);
-		const latestAttempt = attempts[attempts.length - 1] ?? null;
-		if (!record || !latestAttempt) continue;
-		if (retryQueue[latestAttempt.delivery_key]) {
+		const latestAttemptForDelivery = attempts
+			.filter((attempt) => attempt.delivery_key === retry.deliveryKey)
+			.at(-1) ?? null;
+		if (!record || !latestAttemptForDelivery) continue;
+		if (retryQueue[retry.deliveryKey]) {
 			deliveriesStillPending += 1;
-		} else if (latestAttempt.status === "delivered") {
+		} else if (latestAttemptForDelivery.status === "delivered") {
 			deliveriesSucceeded += 1;
-		} else if (latestAttempt.status === "failed_permanently") {
+		} else if (latestAttemptForDelivery.status === "failed_permanently") {
 			deliveriesFailedPermanently += 1;
 		}
 	}
@@ -1079,8 +1414,9 @@ export async function runAsyncWebhookRetriesJob(args?: {
 	return {
 		startedAt,
 		finishedAt: new Date().toISOString(),
-		jobsScanned: allRecords.length,
-		deliveriesRetried: dueDeliveries.length,
+		jobsScanned,
+		pagesScanned,
+		deliveriesRetried: retriesToAttempt.length,
 		deliveriesSucceeded,
 		deliveriesStillPending,
 		deliveriesFailedPermanently,

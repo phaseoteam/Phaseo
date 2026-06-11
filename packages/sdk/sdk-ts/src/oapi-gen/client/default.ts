@@ -58,12 +58,226 @@ export async function cancelBatch(
   client: Client,
   args: CancelBatchParams = {},
 ): Promise<{
-  [key: string]: unknown;
+  billing?: {
+    billed?: boolean;
+    charged?: boolean;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    estimation_sample_size?: number | null;
+    estimation_total_rows?: number | null;
+    estimation_truncated?: boolean | null;
+    finalized_at?: string | null;
+    pricing_breakdown?: {
+      [key: string]: unknown;
+    };
+    reason?: string;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
+  };
+  cancel_url?: string | null;
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalized_at?: string | null;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
+  metadata?: {};
+  native_batch_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  object?: string;
+  output_file_id?: string;
+  polling_url?: string;
+  pricing_lines?: {
+    [key: string]: unknown;
+  }[];
+  progress?: number;
+  provider?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  request_id?: string;
+  session_id?: string;
+  status?: string;
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}/cancel`;
   return client.request<{
-    [key: string]: unknown;
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+    };
+    cancel_url?: string | null;
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalized_at?: string | null;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_file_id?: string;
+    polling_url?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    progress?: number;
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -89,12 +303,226 @@ export async function cancelBatchAlias(
   client: Client,
   args: CancelBatchAliasParams = {},
 ): Promise<{
-  [key: string]: unknown;
+  billing?: {
+    billed?: boolean;
+    charged?: boolean;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    estimation_sample_size?: number | null;
+    estimation_total_rows?: number | null;
+    estimation_truncated?: boolean | null;
+    finalized_at?: string | null;
+    pricing_breakdown?: {
+      [key: string]: unknown;
+    };
+    reason?: string;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
+  };
+  cancel_url?: string | null;
+  cancelled_at?: number;
+  cancelling_at?: number;
+  completed_at?: number;
+  completion_window?: string;
+  created_at?: number;
+  endpoint?: string;
+  error_file_id?: string;
+  errors?: {};
+  expired_at?: number;
+  expires_at?: number;
+  failed_at?: number;
+  finalized_at?: string | null;
+  finalizing_at?: number;
+  id?: string;
+  in_progress_at?: number;
+  input_file_id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
+  metadata?: {};
+  native_batch_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  object?: string;
+  output_file_id?: string;
+  polling_url?: string;
+  pricing_lines?: {
+    [key: string]: unknown;
+  }[];
+  progress?: number;
+  provider?: string;
+  request_counts?: {
+    completed?: number;
+    failed?: number;
+    total?: number;
+  };
+  request_id?: string;
+  session_id?: string;
+  status?: string;
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}/cancel`;
   return client.request<{
-    [key: string]: unknown;
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+    };
+    cancel_url?: string | null;
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalized_at?: string | null;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_file_id?: string;
+    polling_url?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    progress?: number;
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -114,15 +542,255 @@ export type CancelVideoParams = {
 };
 
 /**
- * Temporarily disabled while provider-level cancellation support is standardized.
+ * Cancels a non-terminal video generation request when the upstream provider supports cancellation.
  */
 export async function cancelVideo(
   client: Client,
   args: CancelVideoParams = {},
-): Promise<unknown> {
+): Promise<{
+  asset?: {
+    bytes?: number;
+    duration_seconds?: number;
+    height?: number;
+    id?: string;
+    mime_type?: string;
+    sha256?: string;
+    width?: number;
+  } | null;
+  audio?: boolean;
+  billing?: {
+    billable?: boolean;
+    billed_at?: string;
+    charge_reason?: string | null;
+    charged?: boolean | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
+    [key: string]: unknown;
+  };
+  cancel_url?: string | null;
+  completed_at?: number | string | null;
+  content_url?: string;
+  created_at?: number | string;
+  download_url?: string | null;
+  error?: unknown | null;
+  expires_at?: number | null;
+  generation_id?: string | null;
+  id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
+  model?: string;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  object?: string;
+  output_access?: "bytes" | "signed_url" | "both";
+  outputs?: {
+    bytes_available?: boolean;
+    content_url?: string;
+    download_url?: string;
+    expires_at?: number;
+    index?: number;
+    mime_type?: string;
+  }[];
+  poll_after_seconds?: number;
+  polling_url?: string;
+  progress?: number | null;
+  progress_source?: string;
+  provider?: string;
+  request_id?: string;
+  seconds?: number;
+  session_id?: string;
+  size?: string;
+  started_at?: number | string | null;
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
+  usage?: {
+    cost?: number;
+    is_byok?: boolean;
+    [key: string]: unknown;
+  };
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}/cancel`;
-  return client.request<unknown>({
+  return client.request<{
+    asset?: {
+      bytes?: number;
+      duration_seconds?: number;
+      height?: number;
+      id?: string;
+      mime_type?: string;
+      sha256?: string;
+      width?: number;
+    } | null;
+    audio?: boolean;
+    billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+      [key: string]: unknown;
+    };
+    cancel_url?: string | null;
+    completed_at?: number | string | null;
+    content_url?: string;
+    created_at?: number | string;
+    download_url?: string | null;
+    error?: unknown | null;
+    expires_at?: number | null;
+    generation_id?: string | null;
+    id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_access?: "bytes" | "signed_url" | "both";
+    outputs?: {
+      bytes_available?: boolean;
+      content_url?: string;
+      download_url?: string;
+      expires_at?: number;
+      index?: number;
+      mime_type?: string;
+    }[];
+    poll_after_seconds?: number;
+    polling_url?: string;
+    progress?: number | null;
+    progress_source?: string;
+    provider?: string;
+    request_id?: string;
+    seconds?: number;
+    session_id?: string;
+    size?: string;
+    started_at?: number | string | null;
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    usage?: {
+      cost?: number;
+      is_byok?: boolean;
+      [key: string]: unknown;
+    };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
+  }>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -141,15 +809,255 @@ export type CancelVideoAliasParams = {
 };
 
 /**
- * Alias of /videos/{video_id}/cancel (currently disabled).
+ * Alias of /videos/{video_id}/cancel.
  */
 export async function cancelVideoAlias(
   client: Client,
   args: CancelVideoAliasParams = {},
-): Promise<unknown> {
+): Promise<{
+  asset?: {
+    bytes?: number;
+    duration_seconds?: number;
+    height?: number;
+    id?: string;
+    mime_type?: string;
+    sha256?: string;
+    width?: number;
+  } | null;
+  audio?: boolean;
+  billing?: {
+    billable?: boolean;
+    billed_at?: string;
+    charge_reason?: string | null;
+    charged?: boolean | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
+    [key: string]: unknown;
+  };
+  cancel_url?: string | null;
+  completed_at?: number | string | null;
+  content_url?: string;
+  created_at?: number | string;
+  download_url?: string | null;
+  error?: unknown | null;
+  expires_at?: number | null;
+  generation_id?: string | null;
+  id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
+  model?: string;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  object?: string;
+  output_access?: "bytes" | "signed_url" | "both";
+  outputs?: {
+    bytes_available?: boolean;
+    content_url?: string;
+    download_url?: string;
+    expires_at?: number;
+    index?: number;
+    mime_type?: string;
+  }[];
+  poll_after_seconds?: number;
+  polling_url?: string;
+  progress?: number | null;
+  progress_source?: string;
+  provider?: string;
+  request_id?: string;
+  seconds?: number;
+  session_id?: string;
+  size?: string;
+  started_at?: number | string | null;
+  status?:
+    | "queued"
+    | "processing"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
+  usage?: {
+    cost?: number;
+    is_byok?: boolean;
+    [key: string]: unknown;
+  };
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
+}> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}/cancel`;
-  return client.request<unknown>({
+  return client.request<{
+    asset?: {
+      bytes?: number;
+      duration_seconds?: number;
+      height?: number;
+      id?: string;
+      mime_type?: string;
+      sha256?: string;
+      width?: number;
+    } | null;
+    audio?: boolean;
+    billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+      [key: string]: unknown;
+    };
+    cancel_url?: string | null;
+    completed_at?: number | string | null;
+    content_url?: string;
+    created_at?: number | string;
+    download_url?: string | null;
+    error?: unknown | null;
+    expires_at?: number | null;
+    generation_id?: string | null;
+    id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_access?: "bytes" | "signed_url" | "both";
+    outputs?: {
+      bytes_available?: boolean;
+      content_url?: string;
+      download_url?: string;
+      expires_at?: number;
+      index?: number;
+      mime_type?: string;
+    }[];
+    poll_after_seconds?: number;
+    polling_url?: string;
+    progress?: number | null;
+    progress_source?: string;
+    provider?: string;
+    request_id?: string;
+    seconds?: number;
+    session_id?: string;
+    size?: string;
+    started_at?: number | string | null;
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    usage?: {
+      cost?: number;
+      is_byok?: boolean;
+      [key: string]: unknown;
+    };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
+  }>({
     method: "POST",
     path: resolvedPath,
     query,
@@ -312,66 +1220,14 @@ export type CreateAnthropicMessageParams = {
             include_text?: boolean;
             max_results?: number;
           };
-          type: "ai-stats:web_search";
+          type: "gateway:web_search";
         }
       | {
           max_chars?: number;
           parameters?: {
             max_chars?: number;
           };
-          type: "ai-stats:web_fetch";
-        }
-      | {
-          forward_transcript?: boolean;
-          instructions?: string;
-          max_completion_tokens?: number;
-          max_tokens?: number;
-          max_uses?: number;
-          model?: string;
-          name?: string;
-          parameters?: {
-            forward_transcript?: boolean;
-            instructions?: string;
-            max_completion_tokens?: number;
-            max_tokens?: number;
-            max_uses?: number;
-            model?: string;
-            name?: string;
-            reasoning?: {
-              [key: string]: unknown;
-            };
-            temperature?: number;
-          };
-          reasoning?: {
-            [key: string]: unknown;
-          };
-          temperature?: number;
-          type: "ai-stats:advisor";
-        }
-      | {
-          aspect_ratio?: string;
-          background?: string;
-          description?: string;
-          model?: string;
-          moderation?: string;
-          output_compression?: number;
-          output_format?: string;
-          parameters?: {
-            aspect_ratio?: string;
-            background?: string;
-            description?: string;
-            model?: string;
-            moderation?: string;
-            output_compression?: number;
-            output_format?: string;
-            prompt?: string;
-            quality?: string;
-            size?: string;
-          };
-          prompt?: string;
-          quality?: string;
-          size?: string;
-          type: "ai-stats:image_generation";
+          type: "gateway:web_fetch";
         }[];
     top_k?: number;
     top_p?: number;
@@ -608,14 +1464,29 @@ export async function createBatch(
   billing?: {
     billed?: boolean;
     charged?: boolean;
-    cost_nanos?: number;
-    cost_usd?: number;
-    finalized_at?: string;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    estimation_sample_size?: number | null;
+    estimation_total_rows?: number | null;
+    estimation_truncated?: boolean | null;
+    finalized_at?: string | null;
     pricing_breakdown?: {
       [key: string]: unknown;
     };
     reason?: string;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
   };
+  cancel_url?: string | null;
   cancelled_at?: number;
   cancelling_at?: number;
   completed_at?: number;
@@ -627,16 +1498,31 @@ export async function createBatch(
   expired_at?: number;
   expires_at?: number;
   failed_at?: number;
+  finalized_at?: string | null;
   finalizing_at?: number;
   id?: string;
   in_progress_at?: number;
   input_file_id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   metadata?: {};
+  native_batch_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_file_id?: string;
+  polling_url?: string;
   pricing_lines?: {
     [key: string]: unknown;
   }[];
+  progress?: number;
   provider?: string;
   request_counts?: {
     completed?: number;
@@ -647,10 +1533,42 @@ export async function createBatch(
   session_id?: string;
   status?: string;
   webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
     events?: string[];
-    secret?: string;
-    url?: string;
+    has_secret?: boolean;
+    url?: string | null;
   };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/batches";
@@ -658,14 +1576,29 @@ export async function createBatch(
     billing?: {
       billed?: boolean;
       charged?: boolean;
-      cost_nanos?: number;
-      cost_usd?: number;
-      finalized_at?: string;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
       pricing_breakdown?: {
         [key: string]: unknown;
       };
       reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
     };
+    cancel_url?: string | null;
     cancelled_at?: number;
     cancelling_at?: number;
     completed_at?: number;
@@ -677,16 +1610,31 @@ export async function createBatch(
     expired_at?: number;
     expires_at?: number;
     failed_at?: number;
+    finalized_at?: string | null;
     finalizing_at?: number;
     id?: string;
     in_progress_at?: number;
     input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_file_id?: string;
+    polling_url?: string;
     pricing_lines?: {
       [key: string]: unknown;
     }[];
+    progress?: number;
     provider?: string;
     request_counts?: {
       completed?: number;
@@ -697,10 +1645,42 @@ export async function createBatch(
     session_id?: string;
     status?: string;
     webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
       events?: string[];
-      secret?: string;
-      url?: string;
+      has_secret?: boolean;
+      url?: string | null;
     };
+    websocket_url?: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -784,14 +1764,29 @@ export async function createBatchAlias(
   billing?: {
     billed?: boolean;
     charged?: boolean;
-    cost_nanos?: number;
-    cost_usd?: number;
-    finalized_at?: string;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    estimation_sample_size?: number | null;
+    estimation_total_rows?: number | null;
+    estimation_truncated?: boolean | null;
+    finalized_at?: string | null;
     pricing_breakdown?: {
       [key: string]: unknown;
     };
     reason?: string;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
   };
+  cancel_url?: string | null;
   cancelled_at?: number;
   cancelling_at?: number;
   completed_at?: number;
@@ -803,16 +1798,31 @@ export async function createBatchAlias(
   expired_at?: number;
   expires_at?: number;
   failed_at?: number;
+  finalized_at?: string | null;
   finalizing_at?: number;
   id?: string;
   in_progress_at?: number;
   input_file_id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   metadata?: {};
+  native_batch_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_file_id?: string;
+  polling_url?: string;
   pricing_lines?: {
     [key: string]: unknown;
   }[];
+  progress?: number;
   provider?: string;
   request_counts?: {
     completed?: number;
@@ -823,10 +1833,42 @@ export async function createBatchAlias(
   session_id?: string;
   status?: string;
   webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
     events?: string[];
-    secret?: string;
-    url?: string;
+    has_secret?: boolean;
+    url?: string | null;
   };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/batch";
@@ -834,14 +1876,29 @@ export async function createBatchAlias(
     billing?: {
       billed?: boolean;
       charged?: boolean;
-      cost_nanos?: number;
-      cost_usd?: number;
-      finalized_at?: string;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
       pricing_breakdown?: {
         [key: string]: unknown;
       };
       reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
     };
+    cancel_url?: string | null;
     cancelled_at?: number;
     cancelling_at?: number;
     completed_at?: number;
@@ -853,16 +1910,31 @@ export async function createBatchAlias(
     expired_at?: number;
     expires_at?: number;
     failed_at?: number;
+    finalized_at?: string | null;
     finalizing_at?: number;
     id?: string;
     in_progress_at?: number;
     input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_file_id?: string;
+    polling_url?: string;
     pricing_lines?: {
       [key: string]: unknown;
     }[];
+    progress?: number;
     provider?: string;
     request_counts?: {
       completed?: number;
@@ -873,10 +1945,42 @@ export async function createBatchAlias(
     session_id?: string;
     status?: string;
     webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
       events?: string[];
-      secret?: string;
-      url?: string;
+      has_secret?: boolean;
+      url?: string | null;
     };
+    websocket_url?: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1088,11 +2192,8 @@ export type CreateChatCompletionParams = {
       | "none"
       | "required"
       | "gateway:datetime"
-      | "ai-stats:web_search"
-      | "ai-stats:web_fetch"
-      | "ai-stats:advisor"
-      | "ai-stats:image_generation"
-      | "ai-stats:apply_patch"
+      | "gateway:web_search"
+      | "gateway:web_fetch"
       | {};
     tools?:
       | {
@@ -1120,69 +2221,14 @@ export type CreateChatCompletionParams = {
             include_text?: boolean;
             max_results?: number;
           };
-          type: "ai-stats:web_search";
+          type: "gateway:web_search";
         }
       | {
           max_chars?: number;
           parameters?: {
             max_chars?: number;
           };
-          type: "ai-stats:web_fetch";
-        }
-      | {
-          forward_transcript?: boolean;
-          instructions?: string;
-          max_completion_tokens?: number;
-          max_tokens?: number;
-          max_uses?: number;
-          model?: string;
-          name?: string;
-          parameters?: {
-            forward_transcript?: boolean;
-            instructions?: string;
-            max_completion_tokens?: number;
-            max_tokens?: number;
-            max_uses?: number;
-            model?: string;
-            name?: string;
-            reasoning?: {
-              [key: string]: unknown;
-            };
-            temperature?: number;
-          };
-          reasoning?: {
-            [key: string]: unknown;
-          };
-          temperature?: number;
-          type: "ai-stats:advisor";
-        }
-      | {
-          aspect_ratio?: string;
-          background?: string;
-          description?: string;
-          model?: string;
-          moderation?: string;
-          output_compression?: number;
-          output_format?: string;
-          parameters?: {
-            aspect_ratio?: string;
-            background?: string;
-            description?: string;
-            model?: string;
-            moderation?: string;
-            output_compression?: number;
-            output_format?: string;
-            prompt?: string;
-            quality?: string;
-            size?: string;
-          };
-          prompt?: string;
-          quality?: string;
-          size?: string;
-          type: "ai-stats:image_generation";
-        }
-      | {
-          type: "ai-stats:apply_patch";
+          type: "gateway:web_fetch";
         }[];
     top_logprobs?: number;
     top_p?: number;
@@ -1281,14 +2327,9 @@ export async function createChatCompletion(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
-      advisor_requests?: number;
-      apply_patch_requests?: number;
       datetime_requests?: number;
-      image_generation_requests?: number;
       web_fetch_requests?: number;
-      web_search_extra_results?: number;
       web_search_requests?: number;
-      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -1378,14 +2419,9 @@ export async function createChatCompletion(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
-        advisor_requests?: number;
-        apply_patch_requests?: number;
         datetime_requests?: number;
-        image_generation_requests?: number;
         web_fetch_requests?: number;
-        web_search_extra_results?: number;
         web_search_requests?: number;
-        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -1568,14 +2604,9 @@ export async function createEmbedding(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
-      advisor_requests?: number;
-      apply_patch_requests?: number;
       datetime_requests?: number;
-      image_generation_requests?: number;
       web_fetch_requests?: number;
-      web_search_extra_results?: number;
       web_search_requests?: number;
-      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -1594,14 +2625,9 @@ export async function createEmbedding(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
-        advisor_requests?: number;
-        apply_patch_requests?: number;
         datetime_requests?: number;
-        image_generation_requests?: number;
         web_fetch_requests?: number;
-        web_search_extra_results?: number;
         web_search_requests?: number;
-        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -2106,14 +3132,9 @@ export async function createRerank(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
-      advisor_requests?: number;
-      apply_patch_requests?: number;
       datetime_requests?: number;
-      image_generation_requests?: number;
       web_fetch_requests?: number;
-      web_search_extra_results?: number;
       web_search_requests?: number;
-      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -2138,14 +3159,9 @@ export async function createRerank(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
-        advisor_requests?: number;
-        apply_patch_requests?: number;
         datetime_requests?: number;
-        image_generation_requests?: number;
         web_fetch_requests?: number;
-        web_search_extra_results?: number;
         web_search_requests?: number;
-        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -2288,11 +3304,8 @@ export type CreateResponseParams = {
       | "none"
       | "required"
       | "gateway:datetime"
-      | "ai-stats:web_search"
-      | "ai-stats:web_fetch"
-      | "ai-stats:advisor"
-      | "ai-stats:image_generation"
-      | "ai-stats:apply_patch"
+      | "gateway:web_search"
+      | "gateway:web_fetch"
       | {};
     tools?:
       | {
@@ -2320,69 +3333,14 @@ export type CreateResponseParams = {
             include_text?: boolean;
             max_results?: number;
           };
-          type: "ai-stats:web_search";
+          type: "gateway:web_search";
         }
       | {
           max_chars?: number;
           parameters?: {
             max_chars?: number;
           };
-          type: "ai-stats:web_fetch";
-        }
-      | {
-          forward_transcript?: boolean;
-          instructions?: string;
-          max_completion_tokens?: number;
-          max_tokens?: number;
-          max_uses?: number;
-          model?: string;
-          name?: string;
-          parameters?: {
-            forward_transcript?: boolean;
-            instructions?: string;
-            max_completion_tokens?: number;
-            max_tokens?: number;
-            max_uses?: number;
-            model?: string;
-            name?: string;
-            reasoning?: {
-              [key: string]: unknown;
-            };
-            temperature?: number;
-          };
-          reasoning?: {
-            [key: string]: unknown;
-          };
-          temperature?: number;
-          type: "ai-stats:advisor";
-        }
-      | {
-          aspect_ratio?: string;
-          background?: string;
-          description?: string;
-          model?: string;
-          moderation?: string;
-          output_compression?: number;
-          output_format?: string;
-          parameters?: {
-            aspect_ratio?: string;
-            background?: string;
-            description?: string;
-            model?: string;
-            moderation?: string;
-            output_compression?: number;
-            output_format?: string;
-            prompt?: string;
-            quality?: string;
-            size?: string;
-          };
-          prompt?: string;
-          quality?: string;
-          size?: string;
-          type: "ai-stats:image_generation";
-        }
-      | {
-          type: "ai-stats:apply_patch";
+          type: "gateway:web_fetch";
         }[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -2470,14 +3428,9 @@ export async function createResponse(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
-      advisor_requests?: number;
-      apply_patch_requests?: number;
       datetime_requests?: number;
-      image_generation_requests?: number;
       web_fetch_requests?: number;
-      web_search_extra_results?: number;
       web_search_requests?: number;
-      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -2557,14 +3510,9 @@ export async function createResponse(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
-        advisor_requests?: number;
-        apply_patch_requests?: number;
         datetime_requests?: number;
-        image_generation_requests?: number;
         web_fetch_requests?: number;
-        web_search_extra_results?: number;
         web_search_requests?: number;
-        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -2884,8 +3832,24 @@ export async function createVideo(
   } | null;
   audio?: boolean;
   billing?: {
+    billable?: boolean;
+    billed_at?: string;
+    charge_reason?: string | null;
+    charged?: boolean | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
     [key: string]: unknown;
   };
+  cancel_url?: string | null;
   completed_at?: number | string | null;
   content_url?: string;
   created_at?: number | string;
@@ -2894,7 +3858,19 @@ export async function createVideo(
   expires_at?: number | null;
   generation_id?: string | null;
   id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   model?: string;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_access?: "bytes" | "signed_url" | "both";
   outputs?: {
@@ -2927,6 +3903,43 @@ export async function createVideo(
     is_byok?: boolean;
     [key: string]: unknown;
   };
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/videos";
@@ -2942,8 +3955,24 @@ export async function createVideo(
     } | null;
     audio?: boolean;
     billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
       [key: string]: unknown;
     };
+    cancel_url?: string | null;
     completed_at?: number | string | null;
     content_url?: string;
     created_at?: number | string;
@@ -2952,7 +3981,19 @@ export async function createVideo(
     expires_at?: number | null;
     generation_id?: string | null;
     id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_access?: "bytes" | "signed_url" | "both";
     outputs?: {
@@ -2985,6 +4026,43 @@ export async function createVideo(
       is_byok?: boolean;
       [key: string]: unknown;
     };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -3090,8 +4168,24 @@ export async function createVideoAlias(
   } | null;
   audio?: boolean;
   billing?: {
+    billable?: boolean;
+    billed_at?: string;
+    charge_reason?: string | null;
+    charged?: boolean | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
     [key: string]: unknown;
   };
+  cancel_url?: string | null;
   completed_at?: number | string | null;
   content_url?: string;
   created_at?: number | string;
@@ -3100,7 +4194,19 @@ export async function createVideoAlias(
   expires_at?: number | null;
   generation_id?: string | null;
   id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   model?: string;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_access?: "bytes" | "signed_url" | "both";
   outputs?: {
@@ -3133,6 +4239,43 @@ export async function createVideoAlias(
     is_byok?: boolean;
     [key: string]: unknown;
   };
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/video/generations";
@@ -3148,8 +4291,24 @@ export async function createVideoAlias(
     } | null;
     audio?: boolean;
     billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
       [key: string]: unknown;
     };
+    cancel_url?: string | null;
     completed_at?: number | string | null;
     content_url?: string;
     created_at?: number | string;
@@ -3158,7 +4317,19 @@ export async function createVideoAlias(
     expires_at?: number | null;
     generation_id?: string | null;
     id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_access?: "bytes" | "signed_url" | "both";
     outputs?: {
@@ -3191,6 +4362,43 @@ export async function createVideoAlias(
       is_byok?: boolean;
       [key: string]: unknown;
     };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
   }>({
     method: "POST",
     path: resolvedPath,
@@ -4198,8 +5406,24 @@ export async function getVideo(
   } | null;
   audio?: boolean;
   billing?: {
+    billable?: boolean;
+    billed_at?: string;
+    charge_reason?: string | null;
+    charged?: boolean | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
     [key: string]: unknown;
   };
+  cancel_url?: string | null;
   completed_at?: number | string | null;
   content_url?: string;
   created_at?: number | string;
@@ -4208,7 +5432,19 @@ export async function getVideo(
   expires_at?: number | null;
   generation_id?: string | null;
   id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   model?: string;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_access?: "bytes" | "signed_url" | "both";
   outputs?: {
@@ -4241,6 +5477,43 @@ export async function getVideo(
     is_byok?: boolean;
     [key: string]: unknown;
   };
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/videos/${encodeURIComponent(String(path?.video_id))}`;
@@ -4256,8 +5529,24 @@ export async function getVideo(
     } | null;
     audio?: boolean;
     billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
       [key: string]: unknown;
     };
+    cancel_url?: string | null;
     completed_at?: number | string | null;
     content_url?: string;
     created_at?: number | string;
@@ -4266,7 +5555,19 @@ export async function getVideo(
     expires_at?: number | null;
     generation_id?: string | null;
     id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_access?: "bytes" | "signed_url" | "both";
     outputs?: {
@@ -4299,6 +5600,43 @@ export async function getVideo(
       is_byok?: boolean;
       [key: string]: unknown;
     };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -4335,8 +5673,24 @@ export async function getVideoAlias(
   } | null;
   audio?: boolean;
   billing?: {
+    billable?: boolean;
+    billed_at?: string;
+    charge_reason?: string | null;
+    charged?: boolean | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
     [key: string]: unknown;
   };
+  cancel_url?: string | null;
   completed_at?: number | string | null;
   content_url?: string;
   created_at?: number | string;
@@ -4345,7 +5699,19 @@ export async function getVideoAlias(
   expires_at?: number | null;
   generation_id?: string | null;
   id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   model?: string;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_access?: "bytes" | "signed_url" | "both";
   outputs?: {
@@ -4378,6 +5744,43 @@ export async function getVideoAlias(
     is_byok?: boolean;
     [key: string]: unknown;
   };
+  webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
+    events?: string[];
+    has_secret?: boolean;
+    url?: string | null;
+  };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/video/generations/${encodeURIComponent(String(path?.video_id))}`;
@@ -4393,8 +5796,24 @@ export async function getVideoAlias(
     } | null;
     audio?: boolean;
     billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
       [key: string]: unknown;
     };
+    cancel_url?: string | null;
     completed_at?: number | string | null;
     content_url?: string;
     created_at?: number | string;
@@ -4403,7 +5822,19 @@ export async function getVideoAlias(
     expires_at?: number | null;
     generation_id?: string | null;
     id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_access?: "bytes" | "signed_url" | "both";
     outputs?: {
@@ -4436,6 +5867,43 @@ export async function getVideoAlias(
       is_byok?: boolean;
       [key: string]: unknown;
     };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -4612,6 +6080,923 @@ export async function listApiKeys(
   });
 }
 
+export type ListBatchesParams = {
+  path?: Record<string, never>;
+  query?: {
+    limit?: number;
+    status?: string[];
+    statuses?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Lists owned async batch jobs for the authenticated workspace from the gateway's persisted async job store.
+ */
+export async function listBatches(
+  client: Client,
+  args: ListBatchesParams = {},
+): Promise<{
+  data?: {
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+    };
+    cancel_url?: string | null;
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalized_at?: string | null;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_file_id?: string;
+    polling_url?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    progress?: number;
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
+  }[];
+  first_id?: string | null;
+  has_more?: boolean;
+  last_id?: string | null;
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batches";
+  return client.request<{
+    data?: {
+      billing?: {
+        billed?: boolean;
+        charged?: boolean;
+        cost_nanos?: number | null;
+        cost_usd?: number | null;
+        currency?: string;
+        estimated_nanos?: number | null;
+        estimated_provider_cost?: string | null;
+        estimated_user_cost?: string | null;
+        estimation_sample_size?: number | null;
+        estimation_total_rows?: number | null;
+        estimation_truncated?: boolean | null;
+        finalized_at?: string | null;
+        pricing_breakdown?: {
+          [key: string]: unknown;
+        };
+        reason?: string;
+        reservation_id?: string | null;
+        reservation_status?: string | null;
+        reserved_nanos?: number | null;
+        settled_provider_cost?: string | null;
+        settled_user_cost?: string | null;
+        state?: "pending" | "estimated" | "settled" | "void";
+        total_nanos?: number | null;
+      };
+      cancel_url?: string | null;
+      cancelled_at?: number;
+      cancelling_at?: number;
+      completed_at?: number;
+      completion_window?: string;
+      created_at?: number;
+      endpoint?: string;
+      error_file_id?: string;
+      errors?: {};
+      expired_at?: number;
+      expires_at?: number;
+      failed_at?: number;
+      finalized_at?: string | null;
+      finalizing_at?: number;
+      id?: string;
+      in_progress_at?: number;
+      input_file_id?: string;
+      last_webhook_dispatched_at?: string | null;
+      last_webhook_progress?: number | null;
+      last_webhook_progress_at?: string | null;
+      lifecycle_status?:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "expired";
+      metadata?: {};
+      native_batch_id?: string | null;
+      next_webhook_retry_at?: string | null;
+      object?: string;
+      output_file_id?: string;
+      polling_url?: string;
+      pricing_lines?: {
+        [key: string]: unknown;
+      }[];
+      progress?: number;
+      provider?: string;
+      request_counts?: {
+        completed?: number;
+        failed?: number;
+        total?: number;
+      };
+      request_id?: string;
+      session_id?: string;
+      status?: string;
+      webhook?: {
+        attempts?: {
+          attempt_number?: number;
+          delivered_at?: string | null;
+          delivery_key?: string;
+          error_message?: string | null;
+          event_type?: string;
+          id?: string;
+          max_attempts?: number;
+          next_retry_at?: string | null;
+          response_body_preview?: string | null;
+          response_status?: number | null;
+          status?: "delivered" | "scheduled_retry" | "failed_permanently";
+          tried_at?: string;
+        }[];
+        delivery?: {
+          delivered_event_types?: string[];
+          delivered_events?: number;
+          last_attempt_at?: string | null;
+          last_attempt_status?:
+            | "delivered"
+            | "scheduled_retry"
+            | "failed_permanently"
+            | null;
+          last_delivered_at?: string | null;
+          last_error_message?: string | null;
+          last_failure_at?: string | null;
+          last_response_status?: number | null;
+          next_retry_at?: string | null;
+          pending_retries?: number;
+          total_attempts?: number;
+        };
+        events?: string[];
+        has_secret?: boolean;
+        url?: string | null;
+      };
+      websocket_url?: string;
+    }[];
+    first_id?: string | null;
+    has_more?: boolean;
+    last_id?: string | null;
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchesAliasParams = {
+  path?: Record<string, never>;
+  query?: {
+    limit?: number;
+    status?: string[];
+    statuses?: string;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches.
+ */
+export async function listBatchesAlias(
+  client: Client,
+  args: ListBatchesAliasParams = {},
+): Promise<{
+  data?: {
+    billing?: {
+      billed?: boolean;
+      charged?: boolean;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
+      pricing_breakdown?: {
+        [key: string]: unknown;
+      };
+      reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+    };
+    cancel_url?: string | null;
+    cancelled_at?: number;
+    cancelling_at?: number;
+    completed_at?: number;
+    completion_window?: string;
+    created_at?: number;
+    endpoint?: string;
+    error_file_id?: string;
+    errors?: {};
+    expired_at?: number;
+    expires_at?: number;
+    failed_at?: number;
+    finalized_at?: string | null;
+    finalizing_at?: number;
+    id?: string;
+    in_progress_at?: number;
+    input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_file_id?: string;
+    polling_url?: string;
+    pricing_lines?: {
+      [key: string]: unknown;
+    }[];
+    progress?: number;
+    provider?: string;
+    request_counts?: {
+      completed?: number;
+      failed?: number;
+      total?: number;
+    };
+    request_id?: string;
+    session_id?: string;
+    status?: string;
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
+  }[];
+  first_id?: string | null;
+  has_more?: boolean;
+  last_id?: string | null;
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batch";
+  return client.request<{
+    data?: {
+      billing?: {
+        billed?: boolean;
+        charged?: boolean;
+        cost_nanos?: number | null;
+        cost_usd?: number | null;
+        currency?: string;
+        estimated_nanos?: number | null;
+        estimated_provider_cost?: string | null;
+        estimated_user_cost?: string | null;
+        estimation_sample_size?: number | null;
+        estimation_total_rows?: number | null;
+        estimation_truncated?: boolean | null;
+        finalized_at?: string | null;
+        pricing_breakdown?: {
+          [key: string]: unknown;
+        };
+        reason?: string;
+        reservation_id?: string | null;
+        reservation_status?: string | null;
+        reserved_nanos?: number | null;
+        settled_provider_cost?: string | null;
+        settled_user_cost?: string | null;
+        state?: "pending" | "estimated" | "settled" | "void";
+        total_nanos?: number | null;
+      };
+      cancel_url?: string | null;
+      cancelled_at?: number;
+      cancelling_at?: number;
+      completed_at?: number;
+      completion_window?: string;
+      created_at?: number;
+      endpoint?: string;
+      error_file_id?: string;
+      errors?: {};
+      expired_at?: number;
+      expires_at?: number;
+      failed_at?: number;
+      finalized_at?: string | null;
+      finalizing_at?: number;
+      id?: string;
+      in_progress_at?: number;
+      input_file_id?: string;
+      last_webhook_dispatched_at?: string | null;
+      last_webhook_progress?: number | null;
+      last_webhook_progress_at?: string | null;
+      lifecycle_status?:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "expired";
+      metadata?: {};
+      native_batch_id?: string | null;
+      next_webhook_retry_at?: string | null;
+      object?: string;
+      output_file_id?: string;
+      polling_url?: string;
+      pricing_lines?: {
+        [key: string]: unknown;
+      }[];
+      progress?: number;
+      provider?: string;
+      request_counts?: {
+        completed?: number;
+        failed?: number;
+        total?: number;
+      };
+      request_id?: string;
+      session_id?: string;
+      status?: string;
+      webhook?: {
+        attempts?: {
+          attempt_number?: number;
+          delivered_at?: string | null;
+          delivery_key?: string;
+          error_message?: string | null;
+          event_type?: string;
+          id?: string;
+          max_attempts?: number;
+          next_retry_at?: string | null;
+          response_body_preview?: string | null;
+          response_status?: number | null;
+          status?: "delivered" | "scheduled_retry" | "failed_permanently";
+          tried_at?: string;
+        }[];
+        delivery?: {
+          delivered_event_types?: string[];
+          delivered_events?: number;
+          last_attempt_at?: string | null;
+          last_attempt_status?:
+            | "delivered"
+            | "scheduled_retry"
+            | "failed_permanently"
+            | null;
+          last_delivered_at?: string | null;
+          last_error_message?: string | null;
+          last_failure_at?: string | null;
+          last_response_status?: number | null;
+          next_retry_at?: string | null;
+          pending_retries?: number;
+          total_attempts?: number;
+        };
+        events?: string[];
+        has_secret?: boolean;
+        url?: string | null;
+      };
+      websocket_url?: string;
+    }[];
+    first_id?: string | null;
+    has_more?: boolean;
+    last_id?: string | null;
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchModelsParams = {
+  path?: Record<string, never>;
+  query?: {
+    params?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns DB-backed batch model/provider capability metadata, including supported batch parameters such as allowed input endpoints and completion windows.
+ */
+export async function listBatchModels(
+  client: Client,
+  args: ListBatchModelsParams = {},
+): Promise<{
+  data?: {
+    input_types?: string[];
+    model?: string;
+    name?: string;
+    output_types?: string[];
+    pricing?: {
+      [key: string]: unknown;
+    };
+    providers?: {
+      id?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    status?: string;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+  }[];
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batches/models";
+  return client.request<{
+    data?: {
+      input_types?: string[];
+      model?: string;
+      name?: string;
+      output_types?: string[];
+      pricing?: {
+        [key: string]: unknown;
+      };
+      providers?: {
+        id?: string;
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        supported_params?: string[];
+        supported_params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      status?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListBatchModelsAliasParams = {
+  path?: Record<string, never>;
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Alias of /batches/models.
+ */
+export async function listBatchModelsAlias(
+  client: Client,
+  args: ListBatchModelsAliasParams = {},
+): Promise<{
+  data?: {
+    input_types?: string[];
+    model?: string;
+    name?: string;
+    output_types?: string[];
+    pricing?: {
+      [key: string]: unknown;
+    };
+    providers?: {
+      id?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    status?: string;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+  }[];
+  object?: string;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/batch/models";
+  return client.request<{
+    data?: {
+      input_types?: string[];
+      model?: string;
+      name?: string;
+      output_types?: string[];
+      pricing?: {
+        [key: string]: unknown;
+      };
+      providers?: {
+        id?: string;
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        supported_params?: string[];
+        supported_params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      status?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    object?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListDataModelsParams = {
+  path?: Record<string, never>;
+  query?: {
+    feed?: "json" | "rss" | "atom";
+    format?: "json" | "rss" | "atom";
+    id?: string | string[];
+    include_hidden?: boolean;
+    limit?: number;
+    model_id?: string | string[];
+    offset?: number;
+    organisation?:
+      | "ai21"
+      | "aion-labs"
+      | "allenai"
+      | "amazon"
+      | "anthropic"
+      | "arcee-ai"
+      | "baidu"
+      | "black-forest-labs"
+      | "bytedance"
+      | "cohere"
+      | "cursor"
+      | "deepseek"
+      | "eleven-labs"
+      | "essential-ai"
+      | "github"
+      | "google"
+      | "ibm"
+      | "inception"
+      | "inclusionai"
+      | "kwaipilot"
+      | "lg"
+      | "liquid-ai"
+      | "meituan"
+      | "meta"
+      | "microsoft"
+      | "minimax"
+      | "mistral"
+      | "moonshotai"
+      | "naver-hyperclova"
+      | "nex-agi"
+      | "nous"
+      | "nvidia"
+      | "openai"
+      | "perplexity"
+      | "poe"
+      | "prime-intellect"
+      | "qwen"
+      | "relace"
+      | "sourceful"
+      | "stepfun"
+      | "suno"
+      | "upstage"
+      | "vercel"
+      | "voyage"
+      | "windsurf"
+      | "x-ai"
+      | "xiaomi"
+      | "z-ai"
+      | "ai21"
+      | "aion-labs"
+      | "allenai"
+      | "amazon"
+      | "anthropic"
+      | "arcee-ai"
+      | "baidu"
+      | "black-forest-labs"
+      | "bytedance"
+      | "cohere"
+      | "cursor"
+      | "deepseek"
+      | "eleven-labs"
+      | "essential-ai"
+      | "github"
+      | "google"
+      | "ibm"
+      | "inception"
+      | "inclusionai"
+      | "kwaipilot"
+      | "lg"
+      | "liquid-ai"
+      | "meituan"
+      | "meta"
+      | "microsoft"
+      | "minimax"
+      | "mistral"
+      | "moonshotai"
+      | "naver-hyperclova"
+      | "nex-agi"
+      | "nous"
+      | "nvidia"
+      | "openai"
+      | "perplexity"
+      | "poe"
+      | "prime-intellect"
+      | "qwen"
+      | "relace"
+      | "sourceful"
+      | "stepfun"
+      | "suno"
+      | "upstage"
+      | "vercel"
+      | "voyage"
+      | "windsurf"
+      | "x-ai"
+      | "xiaomi"
+      | "z-ai"[];
+    status?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns source catalogue models from the data_models table.
+ */
+export async function listDataModels(
+  client: Client,
+  args: ListDataModelsParams = {},
+): Promise<{
+  include_hidden?: boolean;
+  limit?: number;
+  models?: {
+    deprecation_date?: string | null;
+    hidden?: boolean;
+    input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
+    model_id?: string | null;
+    name?: string | null;
+    organisation?: {
+      colour?: string | null;
+      country_code?: string | null;
+      name?: string | null;
+      organisation_id?: string | null;
+    } | null;
+    output_types?: string[];
+    release_date?: string | null;
+    retirement_date?: string | null;
+    status?: string | null;
+  }[];
+  offset?: number;
+  ok?: boolean;
+  total?: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/data/models";
+  return client.request<{
+    include_hidden?: boolean;
+    limit?: number;
+    models?: {
+      deprecation_date?: string | null;
+      hidden?: boolean;
+      input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
+      model_id?: string | null;
+      name?: string | null;
+      organisation?: {
+        colour?: string | null;
+        country_code?: string | null;
+        name?: string | null;
+        organisation_id?: string | null;
+      } | null;
+      output_types?: string[];
+      release_date?: string | null;
+      retirement_date?: string | null;
+      status?: string | null;
+    }[];
+    offset?: number;
+    ok?: boolean;
+    total?: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListEndpointsParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -4678,10 +7063,8 @@ export type ListModelsParams = {
     endpoints?: string[];
     feed?: "json" | "rss" | "atom";
     format?: "json" | "rss" | "atom";
-    id?: string | string[];
     input_types?: string[];
     limit?: number;
-    model_id?: string | string[];
     model_routing_status?: string[];
     offset?: number;
     organisation?:
@@ -4954,11 +7337,11 @@ export async function listModels(
   }[];
   offset: number;
   ok: boolean;
-  privacy_scope: "shared";
+  privacy_scope: "shared" | "team";
   total: number;
 }> {
   const { path, query, headers, body } = args;
-  const resolvedPath = "/models";
+  const resolvedPath = "/gateway/models";
   return client.request<{
     availability_mode: "active" | "all";
     limit: number;
@@ -5113,7 +7496,7 @@ export async function listModels(
     }[];
     offset: number;
     ok: boolean;
-    privacy_scope: "shared";
+    privacy_scope: "shared" | "team";
     total: number;
   }>({
     method: "GET",
@@ -5263,9 +7646,463 @@ export async function listProviders(
   });
 }
 
+export type ListTeamModelsParams = {
+  path?: Record<string, never>;
+  query?: {
+    availability?: "active" | "all";
+    capability_status?: string[];
+    endpoints?: string[];
+    feed?: "json" | "rss" | "atom";
+    format?: "json" | "rss" | "atom";
+    input_types?: string[];
+    limit?: number;
+    model_routing_status?: string[];
+    offset?: number;
+    organisation?:
+      | "ai21"
+      | "aion-labs"
+      | "allenai"
+      | "amazon"
+      | "anthropic"
+      | "arcee-ai"
+      | "baidu"
+      | "black-forest-labs"
+      | "bytedance"
+      | "cohere"
+      | "cursor"
+      | "deepseek"
+      | "eleven-labs"
+      | "essential-ai"
+      | "github"
+      | "google"
+      | "ibm"
+      | "inception"
+      | "inclusionai"
+      | "kwaipilot"
+      | "lg"
+      | "liquid-ai"
+      | "meituan"
+      | "meta"
+      | "microsoft"
+      | "minimax"
+      | "mistral"
+      | "moonshotai"
+      | "naver-hyperclova"
+      | "nex-agi"
+      | "nous"
+      | "nvidia"
+      | "openai"
+      | "perplexity"
+      | "poe"
+      | "prime-intellect"
+      | "qwen"
+      | "relace"
+      | "sourceful"
+      | "stepfun"
+      | "suno"
+      | "upstage"
+      | "vercel"
+      | "voyage"
+      | "windsurf"
+      | "x-ai"
+      | "xiaomi"
+      | "z-ai"
+      | "ai21"
+      | "aion-labs"
+      | "allenai"
+      | "amazon"
+      | "anthropic"
+      | "arcee-ai"
+      | "baidu"
+      | "black-forest-labs"
+      | "bytedance"
+      | "cohere"
+      | "cursor"
+      | "deepseek"
+      | "eleven-labs"
+      | "essential-ai"
+      | "github"
+      | "google"
+      | "ibm"
+      | "inception"
+      | "inclusionai"
+      | "kwaipilot"
+      | "lg"
+      | "liquid-ai"
+      | "meituan"
+      | "meta"
+      | "microsoft"
+      | "minimax"
+      | "mistral"
+      | "moonshotai"
+      | "naver-hyperclova"
+      | "nex-agi"
+      | "nous"
+      | "nvidia"
+      | "openai"
+      | "perplexity"
+      | "poe"
+      | "prime-intellect"
+      | "qwen"
+      | "relace"
+      | "sourceful"
+      | "stepfun"
+      | "suno"
+      | "upstage"
+      | "vercel"
+      | "voyage"
+      | "windsurf"
+      | "x-ai"
+      | "xiaomi"
+      | "z-ai"[];
+    output_types?: string[];
+    params?: string[];
+    provider?: string[];
+    provider_availability_reason?: string[];
+    provider_availability_status?: string[];
+    provider_routing_status?: string[];
+    provider_status?: string[];
+    status?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
+ */
+export async function listTeamModels(
+  client: Client,
+  args: ListTeamModelsParams = {},
+): Promise<{
+  availability_mode: "active" | "all";
+  limit: number;
+  models: {
+    aliases?: string[];
+    architecture?: {
+      input_modalities?: string[];
+      instruct_type?: string | null;
+      modality?: string;
+      output_modalities?: string[];
+      tokenizer?: string | null;
+    };
+    availability?: {
+      active_provider_count: number;
+      inactive_provider_count: number;
+      provider_count: number;
+      status: "active" | "coming_soon" | "inactive" | "not_listed";
+    };
+    canonical_slug?: string;
+    created?: number | null;
+    deprecation_date?: string | null;
+    description?: string;
+    endpoints?: string[];
+    id?: string;
+    input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
+    model_id?: string;
+    name?: string | null;
+    organisation_colour?: string | null;
+    organisation_id?: string | null;
+    organisation_name?: string | null;
+    output_types?: string[];
+    per_request_limits?: {
+      [key: string]: unknown;
+    } | null;
+    pricing?: {
+      completion?: string | null;
+      image?: string | null;
+      input_cache_read?: string | null;
+      input_cache_write?: string | null;
+      prompt?: string | null;
+      request?: string | null;
+      web_search?: string | null;
+    };
+    pricing_detail?: {
+      meters?: {
+        [key: string]: unknown;
+      };
+      pricing_plan?: string;
+    };
+    providers?: {
+      api_provider_id: string;
+      api_provider_name?: string | null;
+      availability_reason:
+        | "active"
+        | "preview_only"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "internal_testing"
+        | "scheduled"
+        | "coming_soon"
+        | "provider_disabled"
+        | "model_disabled"
+        | "capability_disabled"
+        | "provider_not_ready"
+        | "provider_inactive"
+        | "inactive"
+        | "retired";
+      availability_status: "active" | "coming_soon" | "inactive";
+      capability_status:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
+      effective_from?: string | null;
+      effective_to?: string | null;
+      endpoints: string[];
+      is_active_gateway: boolean;
+      model_routing_status:
+        | "active"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled";
+      params: string[];
+      params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      provider_routing_status:
+        | "active"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled";
+      provider_status:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    release_date?: string | null;
+    retirement_date?: string | null;
+    status?: string | null;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    top_provider?: {
+      context_length?: number | null;
+      is_moderated?: boolean;
+      max_completion_tokens?: number | null;
+    };
+    top_provider_id?: string | null;
+  }[];
+  offset: number;
+  ok: boolean;
+  privacy_scope: "shared" | "team";
+  total: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/gateway/models/me";
+  return client.request<{
+    availability_mode: "active" | "all";
+    limit: number;
+    models: {
+      aliases?: string[];
+      architecture?: {
+        input_modalities?: string[];
+        instruct_type?: string | null;
+        modality?: string;
+        output_modalities?: string[];
+        tokenizer?: string | null;
+      };
+      availability?: {
+        active_provider_count: number;
+        inactive_provider_count: number;
+        provider_count: number;
+        status: "active" | "coming_soon" | "inactive" | "not_listed";
+      };
+      canonical_slug?: string;
+      created?: number | null;
+      deprecation_date?: string | null;
+      description?: string;
+      endpoints?: string[];
+      id?: string;
+      input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
+      model_id?: string;
+      name?: string | null;
+      organisation_colour?: string | null;
+      organisation_id?: string | null;
+      organisation_name?: string | null;
+      output_types?: string[];
+      per_request_limits?: {
+        [key: string]: unknown;
+      } | null;
+      pricing?: {
+        completion?: string | null;
+        image?: string | null;
+        input_cache_read?: string | null;
+        input_cache_write?: string | null;
+        prompt?: string | null;
+        request?: string | null;
+        web_search?: string | null;
+      };
+      pricing_detail?: {
+        meters?: {
+          [key: string]: unknown;
+        };
+        pricing_plan?: string;
+      };
+      providers?: {
+        api_provider_id: string;
+        api_provider_name?: string | null;
+        availability_reason:
+          | "active"
+          | "preview_only"
+          | "gated"
+          | "access_limited"
+          | "region_limited"
+          | "project_limited"
+          | "paused"
+          | "soft_blocked"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "internal_testing"
+          | "scheduled"
+          | "coming_soon"
+          | "provider_disabled"
+          | "model_disabled"
+          | "capability_disabled"
+          | "provider_not_ready"
+          | "provider_inactive"
+          | "inactive"
+          | "retired";
+        availability_status: "active" | "coming_soon" | "inactive";
+        capability_status:
+          | "active"
+          | "coming_soon"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled"
+          | "internal_testing";
+        effective_from?: string | null;
+        effective_to?: string | null;
+        endpoints: string[];
+        is_active_gateway: boolean;
+        model_routing_status:
+          | "active"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled";
+        params: string[];
+        params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        provider_routing_status:
+          | "active"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled";
+        provider_status:
+          | "active"
+          | "beta"
+          | "alpha"
+          | "not_ready"
+          | "gated"
+          | "access_limited"
+          | "region_limited"
+          | "project_limited"
+          | "paused"
+          | "soft_blocked";
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      release_date?: string | null;
+      retirement_date?: string | null;
+      status?: string | null;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      top_provider?: {
+        context_length?: number | null;
+        is_moderated?: boolean;
+        max_completion_tokens?: number | null;
+      };
+      top_provider_id?: string | null;
+    }[];
+    offset: number;
+    ok: boolean;
+    privacy_scope: "shared" | "team";
+    total: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type ListVideoModelsParams = {
   path?: Record<string, never>;
-  query?: Record<string, never>;
+  query?: {
+    params?: string[];
+  };
   headers?: Record<string, never>;
   body?: never;
 };
@@ -5277,13 +8114,85 @@ export async function listVideoModels(
   client: Client,
   args: ListVideoModelsParams = {},
 ): Promise<{
-  data?: {}[];
+  data?: {
+    input_types?: string[];
+    model?: string;
+    name?: string;
+    output_types?: string[];
+    pricing?: {
+      [key: string]: unknown;
+    };
+    providers?: {
+      id?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    status?: string;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+  }[];
   object?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/videos/models";
   return client.request<{
-    data?: {}[];
+    data?: {
+      input_types?: string[];
+      model?: string;
+      name?: string;
+      output_types?: string[];
+      pricing?: {
+        [key: string]: unknown;
+      };
+      providers?: {
+        id?: string;
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        supported_params?: string[];
+        supported_params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      status?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
     object?: string;
   }>({
     method: "GET",
@@ -5308,13 +8217,85 @@ export async function listVideoModelsAlias(
   client: Client,
   args: ListVideoModelsAliasParams = {},
 ): Promise<{
-  data?: {}[];
+  data?: {
+    input_types?: string[];
+    model?: string;
+    name?: string;
+    output_types?: string[];
+    pricing?: {
+      [key: string]: unknown;
+    };
+    providers?: {
+      id?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    status?: string;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+  }[];
   object?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/video/generations/models";
   return client.request<{
-    data?: {}[];
+    data?: {
+      input_types?: string[];
+      model?: string;
+      name?: string;
+      output_types?: string[];
+      pricing?: {
+        [key: string]: unknown;
+      };
+      providers?: {
+        id?: string;
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        supported_params?: string[];
+        supported_params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      status?: string;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
     object?: string;
   }>({
     method: "GET",
@@ -5327,7 +8308,10 @@ export async function listVideoModelsAlias(
 
 export type ListVideosParams = {
   path?: Record<string, never>;
-  query?: Record<string, never>;
+  query?: {
+    limit?: number;
+    status?: string[];
+  };
   headers?: Record<string, never>;
   body?: never;
 };
@@ -5339,12 +8323,260 @@ export async function listVideos(
   client: Client,
   args: ListVideosParams = {},
 ): Promise<{
-  [key: string]: unknown;
+  data?: {
+    asset?: {
+      bytes?: number;
+      duration_seconds?: number;
+      height?: number;
+      id?: string;
+      mime_type?: string;
+      sha256?: string;
+      width?: number;
+    } | null;
+    audio?: boolean;
+    billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+      [key: string]: unknown;
+    };
+    cancel_url?: string | null;
+    completed_at?: number | string | null;
+    content_url?: string;
+    created_at?: number | string;
+    download_url?: string | null;
+    error?: unknown | null;
+    expires_at?: number | null;
+    generation_id?: string | null;
+    id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_access?: "bytes" | "signed_url" | "both";
+    outputs?: {
+      bytes_available?: boolean;
+      content_url?: string;
+      download_url?: string;
+      expires_at?: number;
+      index?: number;
+      mime_type?: string;
+    }[];
+    poll_after_seconds?: number;
+    polling_url?: string;
+    progress?: number | null;
+    progress_source?: string;
+    provider?: string;
+    request_id?: string;
+    seconds?: number;
+    session_id?: string;
+    size?: string;
+    started_at?: number | string | null;
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    usage?: {
+      cost?: number;
+      is_byok?: boolean;
+      [key: string]: unknown;
+    };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
+  }[];
+  first_id?: string | null;
+  has_more?: boolean;
+  last_id?: string | null;
+  object?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/videos";
   return client.request<{
-    [key: string]: unknown;
+    data?: {
+      asset?: {
+        bytes?: number;
+        duration_seconds?: number;
+        height?: number;
+        id?: string;
+        mime_type?: string;
+        sha256?: string;
+        width?: number;
+      } | null;
+      audio?: boolean;
+      billing?: {
+        billable?: boolean;
+        billed_at?: string;
+        charge_reason?: string | null;
+        charged?: boolean | null;
+        currency?: string;
+        estimated_nanos?: number | null;
+        estimated_provider_cost?: string | null;
+        estimated_user_cost?: string | null;
+        reservation_id?: string | null;
+        reservation_status?: string | null;
+        reserved_nanos?: number | null;
+        settled_provider_cost?: string | null;
+        settled_user_cost?: string | null;
+        state?: "pending" | "estimated" | "settled" | "void";
+        total_nanos?: number | null;
+        [key: string]: unknown;
+      };
+      cancel_url?: string | null;
+      completed_at?: number | string | null;
+      content_url?: string;
+      created_at?: number | string;
+      download_url?: string | null;
+      error?: unknown | null;
+      expires_at?: number | null;
+      generation_id?: string | null;
+      id?: string;
+      last_webhook_dispatched_at?: string | null;
+      last_webhook_progress?: number | null;
+      last_webhook_progress_at?: string | null;
+      lifecycle_status?:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "expired";
+      model?: string;
+      native_video_id?: string | null;
+      next_webhook_retry_at?: string | null;
+      object?: string;
+      output_access?: "bytes" | "signed_url" | "both";
+      outputs?: {
+        bytes_available?: boolean;
+        content_url?: string;
+        download_url?: string;
+        expires_at?: number;
+        index?: number;
+        mime_type?: string;
+      }[];
+      poll_after_seconds?: number;
+      polling_url?: string;
+      progress?: number | null;
+      progress_source?: string;
+      provider?: string;
+      request_id?: string;
+      seconds?: number;
+      session_id?: string;
+      size?: string;
+      started_at?: number | string | null;
+      status?:
+        | "queued"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "expired";
+      usage?: {
+        cost?: number;
+        is_byok?: boolean;
+        [key: string]: unknown;
+      };
+      webhook?: {
+        attempts?: {
+          attempt_number?: number;
+          delivered_at?: string | null;
+          delivery_key?: string;
+          error_message?: string | null;
+          event_type?: string;
+          id?: string;
+          max_attempts?: number;
+          next_retry_at?: string | null;
+          response_body_preview?: string | null;
+          response_status?: number | null;
+          status?: "delivered" | "scheduled_retry" | "failed_permanently";
+          tried_at?: string;
+        }[];
+        delivery?: {
+          delivered_event_types?: string[];
+          delivered_events?: number;
+          last_attempt_at?: string | null;
+          last_attempt_status?:
+            | "delivered"
+            | "scheduled_retry"
+            | "failed_permanently"
+            | null;
+          last_delivered_at?: string | null;
+          last_error_message?: string | null;
+          last_failure_at?: string | null;
+          last_response_status?: number | null;
+          next_retry_at?: string | null;
+          pending_retries?: number;
+          total_attempts?: number;
+        };
+        events?: string[];
+        has_secret?: boolean;
+        url?: string | null;
+      };
+      websocket_url?: string;
+    }[];
+    first_id?: string | null;
+    has_more?: boolean;
+    last_id?: string | null;
+    object?: string;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -5356,7 +8588,10 @@ export async function listVideos(
 
 export type ListVideosAliasParams = {
   path?: Record<string, never>;
-  query?: Record<string, never>;
+  query?: {
+    limit?: number;
+    status?: string;
+  };
   headers?: Record<string, never>;
   body?: never;
 };
@@ -5368,12 +8603,260 @@ export async function listVideosAlias(
   client: Client,
   args: ListVideosAliasParams = {},
 ): Promise<{
-  [key: string]: unknown;
+  data?: {
+    asset?: {
+      bytes?: number;
+      duration_seconds?: number;
+      height?: number;
+      id?: string;
+      mime_type?: string;
+      sha256?: string;
+      width?: number;
+    } | null;
+    audio?: boolean;
+    billing?: {
+      billable?: boolean;
+      billed_at?: string;
+      charge_reason?: string | null;
+      charged?: boolean | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
+      [key: string]: unknown;
+    };
+    cancel_url?: string | null;
+    completed_at?: number | string | null;
+    content_url?: string;
+    created_at?: number | string;
+    download_url?: string | null;
+    error?: unknown | null;
+    expires_at?: number | null;
+    generation_id?: string | null;
+    id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    model?: string;
+    native_video_id?: string | null;
+    next_webhook_retry_at?: string | null;
+    object?: string;
+    output_access?: "bytes" | "signed_url" | "both";
+    outputs?: {
+      bytes_available?: boolean;
+      content_url?: string;
+      download_url?: string;
+      expires_at?: number;
+      index?: number;
+      mime_type?: string;
+    }[];
+    poll_after_seconds?: number;
+    polling_url?: string;
+    progress?: number | null;
+    progress_source?: string;
+    provider?: string;
+    request_id?: string;
+    seconds?: number;
+    session_id?: string;
+    size?: string;
+    started_at?: number | string | null;
+    status?:
+      | "queued"
+      | "processing"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
+    usage?: {
+      cost?: number;
+      is_byok?: boolean;
+      [key: string]: unknown;
+    };
+    webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
+      events?: string[];
+      has_secret?: boolean;
+      url?: string | null;
+    };
+    websocket_url?: string;
+  }[];
+  first_id?: string | null;
+  has_more?: boolean;
+  last_id?: string | null;
+  object?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/video/generations";
   return client.request<{
-    [key: string]: unknown;
+    data?: {
+      asset?: {
+        bytes?: number;
+        duration_seconds?: number;
+        height?: number;
+        id?: string;
+        mime_type?: string;
+        sha256?: string;
+        width?: number;
+      } | null;
+      audio?: boolean;
+      billing?: {
+        billable?: boolean;
+        billed_at?: string;
+        charge_reason?: string | null;
+        charged?: boolean | null;
+        currency?: string;
+        estimated_nanos?: number | null;
+        estimated_provider_cost?: string | null;
+        estimated_user_cost?: string | null;
+        reservation_id?: string | null;
+        reservation_status?: string | null;
+        reserved_nanos?: number | null;
+        settled_provider_cost?: string | null;
+        settled_user_cost?: string | null;
+        state?: "pending" | "estimated" | "settled" | "void";
+        total_nanos?: number | null;
+        [key: string]: unknown;
+      };
+      cancel_url?: string | null;
+      completed_at?: number | string | null;
+      content_url?: string;
+      created_at?: number | string;
+      download_url?: string | null;
+      error?: unknown | null;
+      expires_at?: number | null;
+      generation_id?: string | null;
+      id?: string;
+      last_webhook_dispatched_at?: string | null;
+      last_webhook_progress?: number | null;
+      last_webhook_progress_at?: string | null;
+      lifecycle_status?:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "expired";
+      model?: string;
+      native_video_id?: string | null;
+      next_webhook_retry_at?: string | null;
+      object?: string;
+      output_access?: "bytes" | "signed_url" | "both";
+      outputs?: {
+        bytes_available?: boolean;
+        content_url?: string;
+        download_url?: string;
+        expires_at?: number;
+        index?: number;
+        mime_type?: string;
+      }[];
+      poll_after_seconds?: number;
+      polling_url?: string;
+      progress?: number | null;
+      progress_source?: string;
+      provider?: string;
+      request_id?: string;
+      seconds?: number;
+      session_id?: string;
+      size?: string;
+      started_at?: number | string | null;
+      status?:
+        | "queued"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "cancelled"
+        | "expired";
+      usage?: {
+        cost?: number;
+        is_byok?: boolean;
+        [key: string]: unknown;
+      };
+      webhook?: {
+        attempts?: {
+          attempt_number?: number;
+          delivered_at?: string | null;
+          delivery_key?: string;
+          error_message?: string | null;
+          event_type?: string;
+          id?: string;
+          max_attempts?: number;
+          next_retry_at?: string | null;
+          response_body_preview?: string | null;
+          response_status?: number | null;
+          status?: "delivered" | "scheduled_retry" | "failed_permanently";
+          tried_at?: string;
+        }[];
+        delivery?: {
+          delivered_event_types?: string[];
+          delivered_events?: number;
+          last_attempt_at?: string | null;
+          last_attempt_status?:
+            | "delivered"
+            | "scheduled_retry"
+            | "failed_permanently"
+            | null;
+          last_delivered_at?: string | null;
+          last_error_message?: string | null;
+          last_failure_at?: string | null;
+          last_response_status?: number | null;
+          next_retry_at?: string | null;
+          pending_retries?: number;
+          total_attempts?: number;
+        };
+        events?: string[];
+        has_secret?: boolean;
+        url?: string | null;
+      };
+      websocket_url?: string;
+    }[];
+    first_id?: string | null;
+    has_more?: boolean;
+    last_id?: string | null;
+    object?: string;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -5423,6 +8906,40 @@ export async function listWorkspaces(
     }[];
     total_count: number;
   }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type OpenAsyncJobWebSocketParams = {
+  path?: {
+    id: string;
+    kind: "batch" | "video";
+  };
+  query?: {
+    close_on_terminal?: boolean;
+    interval_ms?: number;
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Opens a persistent websocket session for owned async batch or video job updates.
+ * WebSocket handshake uses HTTP GET upgrade semantics and returns `101 Switching Protocols` on success (not `200`). The socket emits a `job.snapshot` immediately after upgrade and subsequent `job.updated` envelopes when the normalized async job payload changes.
+ * If `close_on_terminal` is enabled, the gateway closes the socket after a terminal `completed`, `failed`, `cancelled`, or `expired` update.
+ *
+ */
+export async function openAsyncJobWebSocket(
+  client: Client,
+  args: OpenAsyncJobWebSocketParams = {},
+): Promise<unknown> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/async/${encodeURIComponent(String(path?.kind))}/${encodeURIComponent(String(path?.id))}/ws`;
+  return client.request<unknown>({
     method: "GET",
     path: resolvedPath,
     query,
@@ -5491,14 +9008,29 @@ export async function retrieveBatch(
   billing?: {
     billed?: boolean;
     charged?: boolean;
-    cost_nanos?: number;
-    cost_usd?: number;
-    finalized_at?: string;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    estimation_sample_size?: number | null;
+    estimation_total_rows?: number | null;
+    estimation_truncated?: boolean | null;
+    finalized_at?: string | null;
     pricing_breakdown?: {
       [key: string]: unknown;
     };
     reason?: string;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
   };
+  cancel_url?: string | null;
   cancelled_at?: number;
   cancelling_at?: number;
   completed_at?: number;
@@ -5510,16 +9042,31 @@ export async function retrieveBatch(
   expired_at?: number;
   expires_at?: number;
   failed_at?: number;
+  finalized_at?: string | null;
   finalizing_at?: number;
   id?: string;
   in_progress_at?: number;
   input_file_id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   metadata?: {};
+  native_batch_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_file_id?: string;
+  polling_url?: string;
   pricing_lines?: {
     [key: string]: unknown;
   }[];
+  progress?: number;
   provider?: string;
   request_counts?: {
     completed?: number;
@@ -5530,10 +9077,42 @@ export async function retrieveBatch(
   session_id?: string;
   status?: string;
   webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
     events?: string[];
-    secret?: string;
-    url?: string;
+    has_secret?: boolean;
+    url?: string | null;
   };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batches/${encodeURIComponent(String(path?.batch_id))}`;
@@ -5541,14 +9120,29 @@ export async function retrieveBatch(
     billing?: {
       billed?: boolean;
       charged?: boolean;
-      cost_nanos?: number;
-      cost_usd?: number;
-      finalized_at?: string;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
       pricing_breakdown?: {
         [key: string]: unknown;
       };
       reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
     };
+    cancel_url?: string | null;
     cancelled_at?: number;
     cancelling_at?: number;
     completed_at?: number;
@@ -5560,16 +9154,31 @@ export async function retrieveBatch(
     expired_at?: number;
     expires_at?: number;
     failed_at?: number;
+    finalized_at?: string | null;
     finalizing_at?: number;
     id?: string;
     in_progress_at?: number;
     input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_file_id?: string;
+    polling_url?: string;
     pricing_lines?: {
       [key: string]: unknown;
     }[];
+    progress?: number;
     provider?: string;
     request_counts?: {
       completed?: number;
@@ -5580,10 +9189,42 @@ export async function retrieveBatch(
     session_id?: string;
     status?: string;
     webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
       events?: string[];
-      secret?: string;
-      url?: string;
+      has_secret?: boolean;
+      url?: string | null;
     };
+    websocket_url?: string;
   }>({
     method: "GET",
     path: resolvedPath,
@@ -5612,14 +9253,29 @@ export async function retrieveBatchAlias(
   billing?: {
     billed?: boolean;
     charged?: boolean;
-    cost_nanos?: number;
-    cost_usd?: number;
-    finalized_at?: string;
+    cost_nanos?: number | null;
+    cost_usd?: number | null;
+    currency?: string;
+    estimated_nanos?: number | null;
+    estimated_provider_cost?: string | null;
+    estimated_user_cost?: string | null;
+    estimation_sample_size?: number | null;
+    estimation_total_rows?: number | null;
+    estimation_truncated?: boolean | null;
+    finalized_at?: string | null;
     pricing_breakdown?: {
       [key: string]: unknown;
     };
     reason?: string;
+    reservation_id?: string | null;
+    reservation_status?: string | null;
+    reserved_nanos?: number | null;
+    settled_provider_cost?: string | null;
+    settled_user_cost?: string | null;
+    state?: "pending" | "estimated" | "settled" | "void";
+    total_nanos?: number | null;
   };
+  cancel_url?: string | null;
   cancelled_at?: number;
   cancelling_at?: number;
   completed_at?: number;
@@ -5631,16 +9287,31 @@ export async function retrieveBatchAlias(
   expired_at?: number;
   expires_at?: number;
   failed_at?: number;
+  finalized_at?: string | null;
   finalizing_at?: number;
   id?: string;
   in_progress_at?: number;
   input_file_id?: string;
+  last_webhook_dispatched_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  lifecycle_status?:
+    | "pending"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "expired";
   metadata?: {};
+  native_batch_id?: string | null;
+  next_webhook_retry_at?: string | null;
   object?: string;
   output_file_id?: string;
+  polling_url?: string;
   pricing_lines?: {
     [key: string]: unknown;
   }[];
+  progress?: number;
   provider?: string;
   request_counts?: {
     completed?: number;
@@ -5651,10 +9322,42 @@ export async function retrieveBatchAlias(
   session_id?: string;
   status?: string;
   webhook?: {
+    attempts?: {
+      attempt_number?: number;
+      delivered_at?: string | null;
+      delivery_key?: string;
+      error_message?: string | null;
+      event_type?: string;
+      id?: string;
+      max_attempts?: number;
+      next_retry_at?: string | null;
+      response_body_preview?: string | null;
+      response_status?: number | null;
+      status?: "delivered" | "scheduled_retry" | "failed_permanently";
+      tried_at?: string;
+    }[];
+    delivery?: {
+      delivered_event_types?: string[];
+      delivered_events?: number;
+      last_attempt_at?: string | null;
+      last_attempt_status?:
+        | "delivered"
+        | "scheduled_retry"
+        | "failed_permanently"
+        | null;
+      last_delivered_at?: string | null;
+      last_error_message?: string | null;
+      last_failure_at?: string | null;
+      last_response_status?: number | null;
+      next_retry_at?: string | null;
+      pending_retries?: number;
+      total_attempts?: number;
+    };
     events?: string[];
-    secret?: string;
-    url?: string;
+    has_secret?: boolean;
+    url?: string | null;
   };
+  websocket_url?: string;
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/batch/${encodeURIComponent(String(path?.id))}`;
@@ -5662,14 +9365,29 @@ export async function retrieveBatchAlias(
     billing?: {
       billed?: boolean;
       charged?: boolean;
-      cost_nanos?: number;
-      cost_usd?: number;
-      finalized_at?: string;
+      cost_nanos?: number | null;
+      cost_usd?: number | null;
+      currency?: string;
+      estimated_nanos?: number | null;
+      estimated_provider_cost?: string | null;
+      estimated_user_cost?: string | null;
+      estimation_sample_size?: number | null;
+      estimation_total_rows?: number | null;
+      estimation_truncated?: boolean | null;
+      finalized_at?: string | null;
       pricing_breakdown?: {
         [key: string]: unknown;
       };
       reason?: string;
+      reservation_id?: string | null;
+      reservation_status?: string | null;
+      reserved_nanos?: number | null;
+      settled_provider_cost?: string | null;
+      settled_user_cost?: string | null;
+      state?: "pending" | "estimated" | "settled" | "void";
+      total_nanos?: number | null;
     };
+    cancel_url?: string | null;
     cancelled_at?: number;
     cancelling_at?: number;
     completed_at?: number;
@@ -5681,16 +9399,31 @@ export async function retrieveBatchAlias(
     expired_at?: number;
     expires_at?: number;
     failed_at?: number;
+    finalized_at?: string | null;
     finalizing_at?: number;
     id?: string;
     in_progress_at?: number;
     input_file_id?: string;
+    last_webhook_dispatched_at?: string | null;
+    last_webhook_progress?: number | null;
+    last_webhook_progress_at?: string | null;
+    lifecycle_status?:
+      | "pending"
+      | "running"
+      | "completed"
+      | "failed"
+      | "cancelled"
+      | "expired";
     metadata?: {};
+    native_batch_id?: string | null;
+    next_webhook_retry_at?: string | null;
     object?: string;
     output_file_id?: string;
+    polling_url?: string;
     pricing_lines?: {
       [key: string]: unknown;
     }[];
+    progress?: number;
     provider?: string;
     request_counts?: {
       completed?: number;
@@ -5701,10 +9434,42 @@ export async function retrieveBatchAlias(
     session_id?: string;
     status?: string;
     webhook?: {
+      attempts?: {
+        attempt_number?: number;
+        delivered_at?: string | null;
+        delivery_key?: string;
+        error_message?: string | null;
+        event_type?: string;
+        id?: string;
+        max_attempts?: number;
+        next_retry_at?: string | null;
+        response_body_preview?: string | null;
+        response_status?: number | null;
+        status?: "delivered" | "scheduled_retry" | "failed_permanently";
+        tried_at?: string;
+      }[];
+      delivery?: {
+        delivered_event_types?: string[];
+        delivered_events?: number;
+        last_attempt_at?: string | null;
+        last_attempt_status?:
+          | "delivered"
+          | "scheduled_retry"
+          | "failed_permanently"
+          | null;
+        last_delivered_at?: string | null;
+        last_error_message?: string | null;
+        last_failure_at?: string | null;
+        last_response_status?: number | null;
+        next_retry_at?: string | null;
+        pending_retries?: number;
+        total_attempts?: number;
+      };
       events?: string[];
-      secret?: string;
-      url?: string;
+      has_secret?: boolean;
+      url?: string | null;
     };
+    websocket_url?: string;
   }>({
     method: "GET",
     path: resolvedPath,

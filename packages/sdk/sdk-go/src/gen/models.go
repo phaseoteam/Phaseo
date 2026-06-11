@@ -166,6 +166,56 @@ type ApiKeyWithValueResponse struct {
 	Data map[string]interface{} `json:"data"`
 }
 
+type AsyncJobWebSocketClientEvent struct {
+	Type string `json:"type"`
+}
+
+type AsyncJobWebSocketServerEvent struct {
+	Data *interface{} `json:"data,omitempty"`
+	Type string `json:"type"`
+}
+
+type AsyncJobWebSocketUpgradeRequiredResponse struct {
+	Error *map[string]interface{} `json:"error,omitempty"`
+}
+
+type AsyncWebhookDeliveryAttempt struct {
+	AttemptNumber *int `json:"attempt_number,omitempty"`
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+	DeliveryKey *string `json:"delivery_key,omitempty"`
+	ErrorMessage *string `json:"error_message,omitempty"`
+	EventType *string `json:"event_type,omitempty"`
+	Id *string `json:"id,omitempty"`
+	MaxAttempts *int `json:"max_attempts,omitempty"`
+	NextRetryAt *string `json:"next_retry_at,omitempty"`
+	ResponseBodyPreview *string `json:"response_body_preview,omitempty"`
+	ResponseStatus *int `json:"response_status,omitempty"`
+	Status *string `json:"status,omitempty"`
+	TriedAt *string `json:"tried_at,omitempty"`
+}
+
+type AsyncWebhookDeliverySummary struct {
+	DeliveredEventTypes *[]string `json:"delivered_event_types,omitempty"`
+	DeliveredEvents *int `json:"delivered_events,omitempty"`
+	LastAttemptAt *string `json:"last_attempt_at,omitempty"`
+	LastAttemptStatus *string `json:"last_attempt_status,omitempty"`
+	LastDeliveredAt *string `json:"last_delivered_at,omitempty"`
+	LastErrorMessage *string `json:"last_error_message,omitempty"`
+	LastFailureAt *string `json:"last_failure_at,omitempty"`
+	LastResponseStatus *int `json:"last_response_status,omitempty"`
+	NextRetryAt *string `json:"next_retry_at,omitempty"`
+	PendingRetries *int `json:"pending_retries,omitempty"`
+	TotalAttempts *int `json:"total_attempts,omitempty"`
+}
+
+type AsyncWebhookPublicState struct {
+	Attempts *[]map[string]interface{} `json:"attempts,omitempty"`
+	Delivery *map[string]interface{} `json:"delivery,omitempty"`
+	Events *[]string `json:"events,omitempty"`
+	HasSecret *bool `json:"has_secret,omitempty"`
+	Url *string `json:"url,omitempty"`
+}
+
 type AudioContentPart struct {
 	InputAudio map[string]interface{} `json:"input_audio"`
 	Type string `json:"type"`
@@ -210,9 +260,58 @@ type BatchBillingSummary struct {
 	Charged *bool `json:"charged,omitempty"`
 	CostNanos *int `json:"cost_nanos,omitempty"`
 	CostUsd *float64 `json:"cost_usd,omitempty"`
+	Currency *string `json:"currency,omitempty"`
+	EstimatedNanos *int `json:"estimated_nanos,omitempty"`
+	EstimatedProviderCost *string `json:"estimated_provider_cost,omitempty"`
+	EstimatedUserCost *string `json:"estimated_user_cost,omitempty"`
+	EstimationSampleSize *int `json:"estimation_sample_size,omitempty"`
+	EstimationTotalRows *int `json:"estimation_total_rows,omitempty"`
+	EstimationTruncated *bool `json:"estimation_truncated,omitempty"`
 	FinalizedAt *string `json:"finalized_at,omitempty"`
 	PricingBreakdown *map[string]interface{} `json:"pricing_breakdown,omitempty"`
 	Reason *string `json:"reason,omitempty"`
+	ReservationId *string `json:"reservation_id,omitempty"`
+	ReservationStatus *string `json:"reservation_status,omitempty"`
+	ReservedNanos *int `json:"reserved_nanos,omitempty"`
+	SettledProviderCost *string `json:"settled_provider_cost,omitempty"`
+	SettledUserCost *string `json:"settled_user_cost,omitempty"`
+	State *string `json:"state,omitempty"`
+	TotalNanos *int `json:"total_nanos,omitempty"`
+}
+
+type BatchListResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	FirstId *string `json:"first_id,omitempty"`
+	HasMore *bool `json:"has_more,omitempty"`
+	LastId *string `json:"last_id,omitempty"`
+	Object *string `json:"object,omitempty"`
+}
+
+type BatchModelCapability struct {
+	InputTypes *[]string `json:"input_types,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Name *string `json:"name,omitempty"`
+	OutputTypes *[]string `json:"output_types,omitempty"`
+	Pricing *map[string]interface{} `json:"pricing,omitempty"`
+	Providers *[]map[string]interface{} `json:"providers,omitempty"`
+	Status *string `json:"status,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type BatchModelProviderCapability struct {
+	Id *string `json:"id,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type BatchModelsResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Object *string `json:"object,omitempty"`
 }
 
 type BatchRequest struct {
@@ -234,6 +333,7 @@ type BatchRequestCounts struct {
 
 type BatchResponse struct {
 	Billing *map[string]interface{} `json:"billing,omitempty"`
+	CancelUrl *string `json:"cancel_url,omitempty"`
 	CancelledAt *int `json:"cancelled_at,omitempty"`
 	CancellingAt *int `json:"cancelling_at,omitempty"`
 	CompletedAt *int `json:"completed_at,omitempty"`
@@ -245,20 +345,30 @@ type BatchResponse struct {
 	ExpiredAt *int `json:"expired_at,omitempty"`
 	ExpiresAt *int `json:"expires_at,omitempty"`
 	FailedAt *int `json:"failed_at,omitempty"`
+	FinalizedAt *string `json:"finalized_at,omitempty"`
 	FinalizingAt *int `json:"finalizing_at,omitempty"`
 	Id *string `json:"id,omitempty"`
 	InProgressAt *int `json:"in_progress_at,omitempty"`
 	InputFileId *string `json:"input_file_id,omitempty"`
+	LastWebhookDispatchedAt *string `json:"last_webhook_dispatched_at,omitempty"`
+	LastWebhookProgress *float64 `json:"last_webhook_progress,omitempty"`
+	LastWebhookProgressAt *string `json:"last_webhook_progress_at,omitempty"`
+	LifecycleStatus *string `json:"lifecycle_status,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	NativeBatchId *string `json:"native_batch_id,omitempty"`
+	NextWebhookRetryAt *string `json:"next_webhook_retry_at,omitempty"`
 	Object *string `json:"object,omitempty"`
 	OutputFileId *string `json:"output_file_id,omitempty"`
+	PollingUrl *string `json:"polling_url,omitempty"`
 	PricingLines *[]map[string]interface{} `json:"pricing_lines,omitempty"`
+	Progress *int `json:"progress,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 	RequestCounts *map[string]interface{} `json:"request_counts,omitempty"`
 	RequestId *string `json:"request_id,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Webhook *map[string]interface{} `json:"webhook,omitempty"`
+	WebsocketUrl *string `json:"websocket_url,omitempty"`
 }
 
 type BenchmarkId string
@@ -317,7 +427,6 @@ const (
 	BenchmarkIdArtificialAnalysis BenchmarkId = "artificial-analysis"
 	BenchmarkIdAttaq BenchmarkId = "attaq"
 	BenchmarkIdAutologi BenchmarkId = "autologi"
-	BenchmarkIdAutomationbench BenchmarkId = "automationbench"
 	BenchmarkIdBabe BenchmarkId = "babe"
 	BenchmarkIdBabyvision BenchmarkId = "babyvision"
 	BenchmarkIdBalrogAi BenchmarkId = "balrog-ai"
@@ -336,11 +445,9 @@ const (
 	BenchmarkIdBigcodebench BenchmarkId = "bigcodebench"
 	BenchmarkIdBiobench BenchmarkId = "biobench"
 	BenchmarkIdBiolpBench BenchmarkId = "biolp-bench"
-	BenchmarkIdBiomysterybench BenchmarkId = "biomysterybench"
 	BenchmarkIdBirdSqlDev BenchmarkId = "bird-sql-(dev)"
 	BenchmarkIdBixbench BenchmarkId = "bixbench"
 	BenchmarkIdBlink BenchmarkId = "blink"
-	BenchmarkIdBlueprintBench2 BenchmarkId = "blueprint-bench-2"
 	BenchmarkIdBoolq BenchmarkId = "boolq"
 	BenchmarkIdBrowsecomp BenchmarkId = "browsecomp"
 	BenchmarkIdBrowsecompLong128k BenchmarkId = "browsecomp-long-128k"
@@ -438,7 +545,6 @@ const (
 	BenchmarkIdErqa BenchmarkId = "erqa"
 	BenchmarkIdEvalplus BenchmarkId = "evalplus"
 	BenchmarkIdExpertSwe BenchmarkId = "expert-swe"
-	BenchmarkIdExploitbenchCap BenchmarkId = "exploitbench-cap"
 	BenchmarkIdEyepacsAccuracy BenchmarkId = "eyepacs-accuracy"
 	BenchmarkIdFacts BenchmarkId = "facts"
 	BenchmarkIdFactsBenchmarkSuite BenchmarkId = "facts-benchmark-suite"
@@ -462,7 +568,6 @@ const (
 	BenchmarkIdFltevalPass8 BenchmarkId = "flteval-pass-8"
 	BenchmarkIdFrames BenchmarkId = "frames"
 	BenchmarkIdFrontierMath BenchmarkId = "frontier-math"
-	BenchmarkIdFrontiercodeDiamond BenchmarkId = "frontiercode-diamond"
 	BenchmarkIdFrontiermath BenchmarkId = "frontiermath"
 	BenchmarkIdFrontiersciOlympiad BenchmarkId = "frontiersci-olympiad"
 	BenchmarkIdFrontiersciResearch BenchmarkId = "frontiersci-research"
@@ -471,7 +576,6 @@ const (
 	BenchmarkIdFullstackbenchZh BenchmarkId = "fullstackbench-zh"
 	BenchmarkIdFunctionalmath BenchmarkId = "functionalmath"
 	BenchmarkIdGalileoAgent BenchmarkId = "galileo-agent"
-	BenchmarkIdGdpPdf BenchmarkId = "gdp-pdf"
 	BenchmarkIdGdpvalAa BenchmarkId = "gdpval-aa"
 	BenchmarkIdGdpvalMm BenchmarkId = "gdpval-mm"
 	BenchmarkIdGenebench BenchmarkId = "genebench"
@@ -543,7 +647,6 @@ const (
 	BenchmarkIdIvebenchOverallVsRunwayAleph BenchmarkId = "ivebench-overall-vs-runway-aleph"
 	BenchmarkIdKorbench BenchmarkId = "korbench"
 	BenchmarkIdLbppV2 BenchmarkId = "lbpp-(v2)"
-	BenchmarkIdLegalAgentBenchmark BenchmarkId = "legal-agent-benchmark"
 	BenchmarkIdLingoqa BenchmarkId = "lingoqa"
 	BenchmarkIdLisanbench BenchmarkId = "lisanbench"
 	BenchmarkIdLivebench BenchmarkId = "livebench"
@@ -1130,42 +1233,9 @@ type FunctionToolDefinition struct {
 	Type string `json:"type"`
 }
 
-type GatewayAdvisorToolDefinition struct {
-	ForwardTranscript *bool `json:"forward_transcript,omitempty"`
-	Instructions *string `json:"instructions,omitempty"`
-	MaxCompletionTokens *int `json:"max_completion_tokens,omitempty"`
-	MaxTokens *int `json:"max_tokens,omitempty"`
-	MaxUses *int `json:"max_uses,omitempty"`
-	Model *string `json:"model,omitempty"`
-	Name *string `json:"name,omitempty"`
-	Parameters *map[string]interface{} `json:"parameters,omitempty"`
-	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
-	Temperature *float64 `json:"temperature,omitempty"`
-	Type string `json:"type"`
-}
-
-type GatewayApplyPatchToolDefinition struct {
-	Type string `json:"type"`
-}
-
 type GatewayDatetimeToolDefinition struct {
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 	Timezone *string `json:"timezone,omitempty"`
-	Type string `json:"type"`
-}
-
-type GatewayImageGenerationToolDefinition struct {
-	AspectRatio *string `json:"aspect_ratio,omitempty"`
-	Background *string `json:"background,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Model *string `json:"model,omitempty"`
-	Moderation *string `json:"moderation,omitempty"`
-	OutputCompression *int `json:"output_compression,omitempty"`
-	OutputFormat *string `json:"output_format,omitempty"`
-	Parameters *map[string]interface{} `json:"parameters,omitempty"`
-	Prompt *string `json:"prompt,omitempty"`
-	Quality *string `json:"quality,omitempty"`
-	Size *string `json:"size,omitempty"`
 	Type string `json:"type"`
 }
 
@@ -1308,7 +1378,6 @@ const (
 	KnownModelIdAllenaiOlmo3132b KnownModelId = "allenai/olmo-3.1-32b"
 	KnownModelIdAnthropicClaude35Haiku KnownModelId = "anthropic/claude-3.5-haiku"
 	KnownModelIdAnthropicClaude37Sonnet KnownModelId = "anthropic/claude-3.7-sonnet"
-	KnownModelIdAnthropicClaudeFable5 KnownModelId = "anthropic/claude-fable-5"
 	KnownModelIdAnthropicClaudeHaiku45 KnownModelId = "anthropic/claude-haiku-4.5"
 	KnownModelIdAnthropicClaudeOpus4 KnownModelId = "anthropic/claude-opus-4"
 	KnownModelIdAnthropicClaudeOpus41 KnownModelId = "anthropic/claude-opus-4.1"
@@ -1867,6 +1936,14 @@ type ModelProviderAvailability struct {
 	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 }
 
+type ModelsPrivacyScopeNotImplementedResponse struct {
+	Code string `json:"code"`
+	Error string `json:"error"`
+	Message string `json:"message"`
+	Ok string `json:"ok"`
+	PrivacyScope string `json:"privacy_scope"`
+}
+
 type ModerationCategories struct {
 	Harassment *bool `json:"harassment,omitempty"`
 	HarassmentThreatening *bool `json:"harassment/threatening,omitempty"`
@@ -2223,14 +2300,9 @@ type ResponsesWebSocketUpgradeRequiredResponse struct {
 }
 
 type ServerToolUsage struct {
-	AdvisorRequests *int `json:"advisor_requests,omitempty"`
-	ApplyPatchRequests *int `json:"apply_patch_requests,omitempty"`
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
-	ImageGenerationRequests *int `json:"image_generation_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
-	WebSearchExtraResults *int `json:"web_search_extra_results,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
-	WebSearchResults *int `json:"web_search_results,omitempty"`
 }
 
 type SupportedParameterDetails struct {
@@ -2267,6 +2339,24 @@ type Usage struct {
 	PromptTokens *int `json:"prompt_tokens,omitempty"`
 	ServerToolUse *map[string]interface{} `json:"server_tool_use,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
+type VideoBillingSummary struct {
+	Billable *bool `json:"billable,omitempty"`
+	BilledAt *string `json:"billed_at,omitempty"`
+	ChargeReason *string `json:"charge_reason,omitempty"`
+	Charged *bool `json:"charged,omitempty"`
+	Currency *string `json:"currency,omitempty"`
+	EstimatedNanos *int `json:"estimated_nanos,omitempty"`
+	EstimatedProviderCost *string `json:"estimated_provider_cost,omitempty"`
+	EstimatedUserCost *string `json:"estimated_user_cost,omitempty"`
+	ReservationId *string `json:"reservation_id,omitempty"`
+	ReservationStatus *string `json:"reservation_status,omitempty"`
+	ReservedNanos *int `json:"reserved_nanos,omitempty"`
+	SettledProviderCost *string `json:"settled_provider_cost,omitempty"`
+	SettledUserCost *string `json:"settled_user_cost,omitempty"`
+	State *string `json:"state,omitempty"`
+	TotalNanos *int `json:"total_nanos,omitempty"`
 }
 
 type VideoContentPart struct {
@@ -2306,6 +2396,7 @@ type VideoGenerationResponse struct {
 	Asset *map[string]interface{} `json:"asset,omitempty"`
 	Audio *bool `json:"audio,omitempty"`
 	Billing *map[string]interface{} `json:"billing,omitempty"`
+	CancelUrl *string `json:"cancel_url,omitempty"`
 	CompletedAt *interface{} `json:"completed_at,omitempty"`
 	ContentUrl *string `json:"content_url,omitempty"`
 	CreatedAt interface{} `json:"created_at,omitempty"`
@@ -2314,7 +2405,13 @@ type VideoGenerationResponse struct {
 	ExpiresAt *int `json:"expires_at,omitempty"`
 	GenerationId *string `json:"generation_id,omitempty"`
 	Id *string `json:"id,omitempty"`
+	LastWebhookDispatchedAt *string `json:"last_webhook_dispatched_at,omitempty"`
+	LastWebhookProgress *float64 `json:"last_webhook_progress,omitempty"`
+	LastWebhookProgressAt *string `json:"last_webhook_progress_at,omitempty"`
+	LifecycleStatus *string `json:"lifecycle_status,omitempty"`
 	Model *string `json:"model,omitempty"`
+	NativeVideoId *string `json:"native_video_id,omitempty"`
+	NextWebhookRetryAt *string `json:"next_webhook_retry_at,omitempty"`
 	Object *string `json:"object,omitempty"`
 	OutputAccess *string `json:"output_access,omitempty"`
 	Outputs *[]map[string]interface{} `json:"outputs,omitempty"`
@@ -2330,6 +2427,8 @@ type VideoGenerationResponse struct {
 	StartedAt *interface{} `json:"started_at,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+	Webhook *map[string]interface{} `json:"webhook,omitempty"`
+	WebsocketUrl *string `json:"websocket_url,omitempty"`
 }
 
 type VideoInputReference struct {
@@ -2337,6 +2436,41 @@ type VideoInputReference struct {
 	ReferenceType *string `json:"reference_type,omitempty"`
 	Role *string `json:"role,omitempty"`
 	Type string `json:"type"`
+}
+
+type VideoListResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	FirstId *string `json:"first_id,omitempty"`
+	HasMore *bool `json:"has_more,omitempty"`
+	LastId *string `json:"last_id,omitempty"`
+	Object *string `json:"object,omitempty"`
+}
+
+type VideoModelCapability struct {
+	InputTypes *[]string `json:"input_types,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Name *string `json:"name,omitempty"`
+	OutputTypes *[]string `json:"output_types,omitempty"`
+	Pricing *map[string]interface{} `json:"pricing,omitempty"`
+	Providers *[]map[string]interface{} `json:"providers,omitempty"`
+	Status *string `json:"status,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type VideoModelProviderCapability struct {
+	Id *string `json:"id,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type VideoModelsResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Object *string `json:"object,omitempty"`
 }
 
 type VideoOutput struct {

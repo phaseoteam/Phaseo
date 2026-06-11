@@ -459,6 +459,21 @@ function withProviderOnParamDetails(details: SupportedParamDetails, providerId: 
     );
 }
 
+function paramDetailAliases(detail: SupportedParamDetail | undefined): string[] {
+    const aliases = detail?.aliases;
+    if (!Array.isArray(aliases)) return [];
+    return aliases
+        .map((alias) => (typeof alias === "string" ? alias.trim() : ""))
+        .filter((alias) => alias.length > 0);
+}
+
+function providerEntrySupportsParam(entry: Pick<CatalogueProvider, "params" | "params_detail">, param: string): boolean {
+    if (entry.params.includes(param)) return true;
+    return Object.entries(entry.params_detail).some(([name, detail]) =>
+        name === param || paramDetailAliases(detail).includes(param)
+    );
+}
+
 function toParamsDetail(value: unknown): SupportedParamDetails {
     const out: SupportedParamDetails = {};
     if (Array.isArray(value)) {
@@ -522,9 +537,11 @@ const ENDPOINT_ALIASES: Record<string, string[]> = {
     "chat/completions": ["chat/completions", "chat.completions"],
     "audio.speech": ["audio.speech", "audio/speech"],
     "audio/speech": ["audio/speech", "audio.speech"],
-    "video.generation": ["video.generation", "video.generate", "video.generations"],
-    "video.generate": ["video.generate", "video.generation", "video.generations"],
-    "video.generations": ["video.generations", "video.generation", "video.generate"],
+    "video.generation": ["video.generation", "video.generate", "video.generations", "videos", "/v1/videos"],
+    "video.generate": ["video.generate", "video.generation", "video.generations", "videos", "/v1/videos"],
+    "video.generations": ["video.generations", "video.generation", "video.generate", "videos", "/v1/videos"],
+    "videos": ["videos", "/v1/videos", "video.generation", "video.generate", "video.generations"],
+    "/v1/videos": ["/v1/videos", "videos", "video.generation", "video.generate", "video.generations"],
     "batch": ["batch", "batches", "/v1/batches"],
     "batches": ["batches", "batch", "/v1/batches"],
     "/v1/batches": ["/v1/batches", "batch", "batches"],
@@ -1510,8 +1527,9 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         }
 
         if (paramsFilter?.length) {
-            const modelParams = filteredProviderEntries.flatMap((entry) => entry.params);
-            const hasParam = paramsFilter.some((param) => modelParams.includes(param));
+            const hasParam = paramsFilter.some((param) =>
+                filteredProviderEntries.some((entry) => providerEntrySupportsParam(entry, param))
+            );
             if (!hasParam) continue;
         }
 

@@ -332,6 +332,41 @@ function listApiKeys(Client $client, ?array $path = null, ?array $query = null, 
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
+function listBatches(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchesAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batches/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listBatchModelsAlias(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/batch/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listDataModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/data/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
 function listEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
@@ -349,7 +384,7 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
-	$resolvedPath = "/models";
+	$resolvedPath = "/gateway/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -371,6 +406,13 @@ function listProviders(Client $client, ?array $path = null, ?array $query = null
 {
 	$path = $path ?? [];
 	$resolvedPath = "/providers";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listTeamModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/gateway/models/me";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
@@ -406,6 +448,13 @@ function listWorkspaces(Client $client, ?array $path = null, ?array $query = nul
 {
 	$path = $path ?? [];
 	$resolvedPath = "/workspaces";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function openAsyncJobWebSocket(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/async/{$path["kind"]}/{$path["id"]}/ws";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

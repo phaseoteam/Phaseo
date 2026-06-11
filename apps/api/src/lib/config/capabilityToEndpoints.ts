@@ -4,7 +4,7 @@
 
 // Config file mapping capabilities to supported endpoints
 export const capabilityToEndpoints: Record<string, string[]> = {
-    "text.generate": ["/chat/completions", "/responses", "/messages"],
+    "text.generate": ["/chat/completions", "/responses", "/messages", "/completions"],
     "text.embed": ["/embeddings"],
     "text.rerank": ["/rerank"],
     "rerank": ["/rerank"],
@@ -46,6 +46,7 @@ for (const [cap, endpoints] of Object.entries(capabilityToEndpoints)) {
 
 const ENDPOINT_TO_PATH: Record<string, string> = {
     "chat.completions": "/chat/completions",
+    completions: "/completions",
     responses: "/responses",
     messages: "/messages",
     embeddings: "/embeddings",

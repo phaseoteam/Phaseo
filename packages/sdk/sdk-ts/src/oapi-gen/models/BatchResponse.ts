@@ -31,6 +31,7 @@ export interface BatchResponse {
   pricing_lines?: {
     [key: string]: unknown;
   }[];
+  progress?: number;
   provider?: string;
   request_counts?: {
     completed?: number;
