@@ -17,7 +17,7 @@ public class AIStatsModelsTest {
 	@Test
 	void listModelsPreservesAvailabilityReason() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/models", new HttpHandler() {
+		server.createContext("/gateway/models", new HttpHandler() {
 			@Override
 			public void handle(HttpExchange exchange) throws IOException {
 				assertEquals("GET", exchange.getRequestMethod());

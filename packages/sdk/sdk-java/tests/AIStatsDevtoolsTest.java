@@ -23,7 +23,7 @@ public class AIStatsDevtoolsTest {
 	void capturesResponsesEntriesToDevtoolsDirectory() throws Exception {
 		AtomicInteger responseCalls = new AtomicInteger(0);
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/models", jsonHandler(new AtomicInteger(0), """
+		server.createContext("/gateway/models", jsonHandler(new AtomicInteger(0), """
 			{"models":[{"model_id":"openai/gpt-5-nano","status":"Available","lifecycle":{"status":"active"}}]}
 			"""));
 		server.createContext("/responses", jsonHandler(responseCalls, """
@@ -79,7 +79,7 @@ public class AIStatsDevtoolsTest {
 	@Test
 	void capturesStructuredErrorResponsesToDevtoolsDirectory() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/models", jsonHandler(new AtomicInteger(0), """
+		server.createContext("/gateway/models", jsonHandler(new AtomicInteger(0), """
 			{"models":[{"model_id":"openai/gpt-5-nano","status":"Available","lifecycle":{"status":"active"}}]}
 			"""));
 		server.createContext("/responses", errorJsonHandler("""
@@ -281,7 +281,7 @@ public class AIStatsDevtoolsTest {
 	@Test
 	void capturesControlPlaneEntriesToDevtoolsDirectory() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/models", new HttpHandler() {
+		server.createContext("/gateway/models", new HttpHandler() {
 			@Override
 			public void handle(HttpExchange exchange) throws IOException {
 				assertEquals("GET", exchange.getRequestMethod());
@@ -513,7 +513,7 @@ public class AIStatsDevtoolsTest {
 	@Test
 	void capturesVideoLifecycleEntriesToDevtoolsDirectory() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/models", jsonHandler(new AtomicInteger(0), """
+		server.createContext("/gateway/models", jsonHandler(new AtomicInteger(0), """
 			{"models":[{"model_id":"google/veo-3","status":"active"}]}
 			"""));
 		server.createContext("/videos", new HttpHandler() {

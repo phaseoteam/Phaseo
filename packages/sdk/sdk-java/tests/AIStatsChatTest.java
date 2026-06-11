@@ -15,7 +15,7 @@ public class AIStatsChatTest {
 	@Test
 	void createChatCompletionPreservesGatewayMetadata() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-		server.createContext("/models", new HttpHandler() {
+		server.createContext("/gateway/models", new HttpHandler() {
 			@Override
 			public void handle(HttpExchange exchange) throws IOException {
 				byte[] bytes = "{\"models\":[{\"model_id\":\"openai/gpt-5-nano\",\"status\":\"active\"}]}".getBytes(StandardCharsets.UTF_8);
