@@ -6,6 +6,7 @@ import {
 import { decodeOpenAIChatRequest } from "../../../../protocols/openai-chat/decode";
 import { decodeAnthropicMessagesRequest } from "../../../../protocols/anthropic-messages/decode";
 import {
+	anthropicMessagesToIR,
 	irToAnthropicMessages,
 	resolveAnthropicInferenceGeo,
 } from "../index";
@@ -30,6 +31,161 @@ afterEach(() => {
 });
 
 describe("irToAnthropicMessages service controls", () => {
+	it("passes Anthropic native web fetch tools through unchanged", () => {
+		const request = createBaseRequest();
+		request.tools = [
+			{
+				name: "web_fetch",
+				type: "web_fetch_20260209",
+				parameters: {},
+				raw: {
+					type: "web_fetch_20260209",
+					name: "web_fetch",
+					max_content_tokens: 9000,
+					allowed_domains: ["docs.ai-stats.com"],
+				},
+			},
+		];
+		request.toolChoice = { name: "web_fetch" };
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.tools).toEqual([
+			{
+				type: "web_fetch_20260209",
+				name: "web_fetch",
+				max_content_tokens: 9000,
+				allowed_domains: ["docs.ai-stats.com"],
+			},
+		]);
+		expect(payload.tool_choice).toEqual({ type: "tool", name: "web_fetch" });
+	});
+
+	it("passes Anthropic native advisor tools through unchanged", () => {
+		const request = createBaseRequest();
+		request.tools = [
+			{
+				name: "advisor",
+				type: "advisor_20260301",
+				parameters: {},
+				raw: {
+					type: "advisor_20260301",
+					name: "advisor",
+					model: "claude-opus-4-8",
+					max_tokens: 1400,
+					caching: { type: "ephemeral", ttl: "5m" },
+				},
+			},
+		];
+		request.toolChoice = { name: "advisor" };
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.tools).toEqual([
+			{
+				type: "advisor_20260301",
+				name: "advisor",
+				model: "claude-opus-4-8",
+				max_tokens: 1400,
+				caching: { type: "ephemeral", ttl: "5m" },
+			},
+		]);
+		expect(payload.tool_choice).toEqual({ type: "tool", name: "advisor" });
+	});
+
+	it("preserves Anthropic advisor provider blocks in request history", () => {
+		const request = createBaseRequest();
+		request.messages = [
+			{
+				role: "assistant",
+				content: [
+					{
+						type: "provider_block",
+						block: {
+							type: "server_tool_use",
+							id: "srvu_123",
+							name: "advisor",
+							input: {},
+						},
+					},
+					{
+						type: "provider_block",
+						block: {
+							type: "advisor_tool_result",
+							tool_use_id: "srvu_123",
+							content: [{ type: "text", text: "Use smaller steps." }],
+						},
+					},
+				],
+			},
+			{
+				role: "user",
+				content: [{ type: "text", text: "Continue" }],
+			},
+		] as any;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.messages[0].content).toEqual([
+			{
+				type: "server_tool_use",
+				id: "srvu_123",
+				name: "advisor",
+				input: {},
+			},
+			{
+				type: "advisor_tool_result",
+				tool_use_id: "srvu_123",
+				content: [{ type: "text", text: "Use smaller steps." }],
+			},
+		]);
+	});
+
+	it("preserves provider-native blocks in response history", () => {
+		const ir = anthropicMessagesToIR(
+			{
+				id: "msg_provider_blocks",
+				content: [
+					{ type: "text", text: "I checked this." },
+					{
+						type: "server_tool_use",
+						id: "srvu_123",
+						name: "web_search",
+						input: { query: "AI Stats" },
+					},
+					{
+						type: "web_search_tool_result",
+						tool_use_id: "srvu_123",
+						content: [{ type: "web_search_result", title: "AI Stats", url: "https://ai-stats.phaseo.app" }],
+					},
+				],
+				stop_reason: "end_turn",
+				usage: { input_tokens: 10, output_tokens: 5 },
+			},
+			"req_provider_blocks",
+			"anthropic/claude-sonnet-4",
+			"anthropic",
+		);
+
+		expect(ir.choices[0]?.message.content).toEqual([
+			{ type: "text", text: "I checked this." },
+			{
+				type: "provider_block",
+				block: {
+					type: "server_tool_use",
+					id: "srvu_123",
+					name: "web_search",
+					input: { query: "AI Stats" },
+				},
+			},
+			{
+				type: "provider_block",
+				block: {
+					type: "web_search_tool_result",
+					tool_use_id: "srvu_123",
+					content: [{ type: "web_search_result", title: "AI Stats", url: "https://ai-stats.phaseo.app" }],
+				},
+			},
+		]);
+	});
+
 	it("maps priority tier to auto service tier without fast mode", () => {
 		const request = createBaseRequest();
 		request.serviceTier = "priority";

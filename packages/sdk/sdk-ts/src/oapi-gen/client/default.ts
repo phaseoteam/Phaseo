@@ -312,14 +312,66 @@ export type CreateAnthropicMessageParams = {
             include_text?: boolean;
             max_results?: number;
           };
-          type: "gateway:web_search";
+          type: "ai-stats:web_search";
         }
       | {
           max_chars?: number;
           parameters?: {
             max_chars?: number;
           };
-          type: "gateway:web_fetch";
+          type: "ai-stats:web_fetch";
+        }
+      | {
+          forward_transcript?: boolean;
+          instructions?: string;
+          max_completion_tokens?: number;
+          max_tokens?: number;
+          max_uses?: number;
+          model?: string;
+          name?: string;
+          parameters?: {
+            forward_transcript?: boolean;
+            instructions?: string;
+            max_completion_tokens?: number;
+            max_tokens?: number;
+            max_uses?: number;
+            model?: string;
+            name?: string;
+            reasoning?: {
+              [key: string]: unknown;
+            };
+            temperature?: number;
+          };
+          reasoning?: {
+            [key: string]: unknown;
+          };
+          temperature?: number;
+          type: "ai-stats:advisor";
+        }
+      | {
+          aspect_ratio?: string;
+          background?: string;
+          description?: string;
+          model?: string;
+          moderation?: string;
+          output_compression?: number;
+          output_format?: string;
+          parameters?: {
+            aspect_ratio?: string;
+            background?: string;
+            description?: string;
+            model?: string;
+            moderation?: string;
+            output_compression?: number;
+            output_format?: string;
+            prompt?: string;
+            quality?: string;
+            size?: string;
+          };
+          prompt?: string;
+          quality?: string;
+          size?: string;
+          type: "ai-stats:image_generation";
         }[];
     top_k?: number;
     top_p?: number;
@@ -1036,8 +1088,11 @@ export type CreateChatCompletionParams = {
       | "none"
       | "required"
       | "gateway:datetime"
-      | "gateway:web_search"
-      | "gateway:web_fetch"
+      | "ai-stats:web_search"
+      | "ai-stats:web_fetch"
+      | "ai-stats:advisor"
+      | "ai-stats:image_generation"
+      | "ai-stats:apply_patch"
       | {};
     tools?:
       | {
@@ -1065,14 +1120,69 @@ export type CreateChatCompletionParams = {
             include_text?: boolean;
             max_results?: number;
           };
-          type: "gateway:web_search";
+          type: "ai-stats:web_search";
         }
       | {
           max_chars?: number;
           parameters?: {
             max_chars?: number;
           };
-          type: "gateway:web_fetch";
+          type: "ai-stats:web_fetch";
+        }
+      | {
+          forward_transcript?: boolean;
+          instructions?: string;
+          max_completion_tokens?: number;
+          max_tokens?: number;
+          max_uses?: number;
+          model?: string;
+          name?: string;
+          parameters?: {
+            forward_transcript?: boolean;
+            instructions?: string;
+            max_completion_tokens?: number;
+            max_tokens?: number;
+            max_uses?: number;
+            model?: string;
+            name?: string;
+            reasoning?: {
+              [key: string]: unknown;
+            };
+            temperature?: number;
+          };
+          reasoning?: {
+            [key: string]: unknown;
+          };
+          temperature?: number;
+          type: "ai-stats:advisor";
+        }
+      | {
+          aspect_ratio?: string;
+          background?: string;
+          description?: string;
+          model?: string;
+          moderation?: string;
+          output_compression?: number;
+          output_format?: string;
+          parameters?: {
+            aspect_ratio?: string;
+            background?: string;
+            description?: string;
+            model?: string;
+            moderation?: string;
+            output_compression?: number;
+            output_format?: string;
+            prompt?: string;
+            quality?: string;
+            size?: string;
+          };
+          prompt?: string;
+          quality?: string;
+          size?: string;
+          type: "ai-stats:image_generation";
+        }
+      | {
+          type: "ai-stats:apply_patch";
         }[];
     top_logprobs?: number;
     top_p?: number;
@@ -1171,9 +1281,14 @@ export async function createChatCompletion(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      advisor_requests?: number;
+      apply_patch_requests?: number;
       datetime_requests?: number;
+      image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -1263,9 +1378,14 @@ export async function createChatCompletion(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        advisor_requests?: number;
+        apply_patch_requests?: number;
         datetime_requests?: number;
+        image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -1448,9 +1568,14 @@ export async function createEmbedding(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      advisor_requests?: number;
+      apply_patch_requests?: number;
       datetime_requests?: number;
+      image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -1469,9 +1594,14 @@ export async function createEmbedding(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        advisor_requests?: number;
+        apply_patch_requests?: number;
         datetime_requests?: number;
+        image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -1976,9 +2106,14 @@ export async function createRerank(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      advisor_requests?: number;
+      apply_patch_requests?: number;
       datetime_requests?: number;
+      image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -2003,9 +2138,14 @@ export async function createRerank(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        advisor_requests?: number;
+        apply_patch_requests?: number;
         datetime_requests?: number;
+        image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -2148,8 +2288,11 @@ export type CreateResponseParams = {
       | "none"
       | "required"
       | "gateway:datetime"
-      | "gateway:web_search"
-      | "gateway:web_fetch"
+      | "ai-stats:web_search"
+      | "ai-stats:web_fetch"
+      | "ai-stats:advisor"
+      | "ai-stats:image_generation"
+      | "ai-stats:apply_patch"
       | {};
     tools?:
       | {
@@ -2177,14 +2320,69 @@ export type CreateResponseParams = {
             include_text?: boolean;
             max_results?: number;
           };
-          type: "gateway:web_search";
+          type: "ai-stats:web_search";
         }
       | {
           max_chars?: number;
           parameters?: {
             max_chars?: number;
           };
-          type: "gateway:web_fetch";
+          type: "ai-stats:web_fetch";
+        }
+      | {
+          forward_transcript?: boolean;
+          instructions?: string;
+          max_completion_tokens?: number;
+          max_tokens?: number;
+          max_uses?: number;
+          model?: string;
+          name?: string;
+          parameters?: {
+            forward_transcript?: boolean;
+            instructions?: string;
+            max_completion_tokens?: number;
+            max_tokens?: number;
+            max_uses?: number;
+            model?: string;
+            name?: string;
+            reasoning?: {
+              [key: string]: unknown;
+            };
+            temperature?: number;
+          };
+          reasoning?: {
+            [key: string]: unknown;
+          };
+          temperature?: number;
+          type: "ai-stats:advisor";
+        }
+      | {
+          aspect_ratio?: string;
+          background?: string;
+          description?: string;
+          model?: string;
+          moderation?: string;
+          output_compression?: number;
+          output_format?: string;
+          parameters?: {
+            aspect_ratio?: string;
+            background?: string;
+            description?: string;
+            model?: string;
+            moderation?: string;
+            output_compression?: number;
+            output_format?: string;
+            prompt?: string;
+            quality?: string;
+            size?: string;
+          };
+          prompt?: string;
+          quality?: string;
+          size?: string;
+          type: "ai-stats:image_generation";
+        }
+      | {
+          type: "ai-stats:apply_patch";
         }[];
     top_p?: number;
     truncation?: "auto" | "disabled";
@@ -2272,9 +2470,14 @@ export async function createResponse(
     completion_tokens?: number;
     prompt_tokens?: number;
     server_tool_use?: {
+      advisor_requests?: number;
+      apply_patch_requests?: number;
       datetime_requests?: number;
+      image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -2354,9 +2557,14 @@ export async function createResponse(
       completion_tokens?: number;
       prompt_tokens?: number;
       server_tool_use?: {
+        advisor_requests?: number;
+        apply_patch_requests?: number;
         datetime_requests?: number;
+        image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };

@@ -23,7 +23,12 @@ function buildServerToolUsePayload(
 		| {
 			datetime_requests?: number;
 			web_search_requests?: number;
+			web_search_results?: number;
+			web_search_extra_results?: number;
 			web_fetch_requests?: number;
+			advisor_requests?: number;
+			image_generation_requests?: number;
+			apply_patch_requests?: number;
 		}
 		| undefined,
 ) {
@@ -35,8 +40,23 @@ function buildServerToolUsePayload(
 		...(typeof serverToolUse.web_search_requests === "number"
 			? { web_search_requests: serverToolUse.web_search_requests }
 			: {}),
+		...(typeof serverToolUse.web_search_results === "number"
+			? { web_search_results: serverToolUse.web_search_results }
+			: {}),
+		...(typeof serverToolUse.web_search_extra_results === "number"
+			? { web_search_extra_results: serverToolUse.web_search_extra_results }
+			: {}),
 		...(typeof serverToolUse.web_fetch_requests === "number"
 			? { web_fetch_requests: serverToolUse.web_fetch_requests }
+			: {}),
+		...(typeof serverToolUse.advisor_requests === "number"
+			? { advisor_requests: serverToolUse.advisor_requests }
+			: {}),
+		...(typeof serverToolUse.image_generation_requests === "number"
+			? { image_generation_requests: serverToolUse.image_generation_requests }
+			: {}),
+		...(typeof serverToolUse.apply_patch_requests === "number"
+			? { apply_patch_requests: serverToolUse.apply_patch_requests }
 			: {}),
 	};
 	return Object.keys(payload).length > 0 ? payload : undefined;

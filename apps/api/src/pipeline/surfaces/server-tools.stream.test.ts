@@ -37,6 +37,8 @@ describe("consumeTextProtocolStreamToIR", () => {
 				total_tokens: 16,
 				server_tool_use: {
 					datetime_requests: 1,
+					image_generation_requests: 1,
+					apply_patch_requests: 1,
 				},
 			},
 		};
@@ -59,6 +61,8 @@ describe("consumeTextProtocolStreamToIR", () => {
 			{ type: "text", text: "Current time is 12:00 UTC." },
 		]);
 		expect(consumed.ir.usage?._ext?.serverToolUse?.datetime_requests).toBe(1);
+		expect(consumed.ir.usage?._ext?.serverToolUse?.image_generation_requests).toBe(1);
+		expect(consumed.ir.usage?._ext?.serverToolUse?.apply_patch_requests).toBe(1);
 	});
 
 	it("backfills real tool call ids when earlier chat deltas omit them", async () => {

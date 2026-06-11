@@ -502,9 +502,42 @@ pub struct FunctionToolDefinition {
 	pub r#type: String,
 }
 
+pub struct GatewayAdvisorToolDefinition {
+	pub forward_transcript: Option<bool>,
+	pub instructions: Option<String>,
+	pub max_completion_tokens: Option<i64>,
+	pub max_tokens: Option<i64>,
+	pub max_uses: Option<i64>,
+	pub model: Option<String>,
+	pub name: Option<String>,
+	pub parameters: Option<HashMap<String, String>>,
+	pub reasoning: Option<HashMap<String, String>>,
+	pub temperature: Option<f64>,
+	pub r#type: String,
+}
+
+pub struct GatewayApplyPatchToolDefinition {
+	pub r#type: String,
+}
+
 pub struct GatewayDatetimeToolDefinition {
 	pub parameters: Option<HashMap<String, String>>,
 	pub timezone: Option<String>,
+	pub r#type: String,
+}
+
+pub struct GatewayImageGenerationToolDefinition {
+	pub aspect_ratio: Option<String>,
+	pub background: Option<String>,
+	pub description: Option<String>,
+	pub model: Option<String>,
+	pub moderation: Option<String>,
+	pub output_compression: Option<i64>,
+	pub output_format: Option<String>,
+	pub parameters: Option<HashMap<String, String>>,
+	pub prompt: Option<String>,
+	pub quality: Option<String>,
+	pub size: Option<String>,
 	pub r#type: String,
 }
 
@@ -1053,9 +1086,14 @@ pub struct ResponsesWebSocketUpgradeRequiredResponse {
 }
 
 pub struct ServerToolUsage {
+	pub advisor_requests: Option<i64>,
+	pub apply_patch_requests: Option<i64>,
 	pub datetime_requests: Option<i64>,
+	pub image_generation_requests: Option<i64>,
 	pub web_fetch_requests: Option<i64>,
+	pub web_search_extra_results: Option<i64>,
 	pub web_search_requests: Option<i64>,
+	pub web_search_results: Option<i64>,
 }
 
 pub struct TextContentPart {

@@ -7,6 +7,7 @@ const onCallEndMock = vi.fn();
 const reportProbeResultMock = vi.fn();
 const maybeOpenOnRecentErrorsMock = vi.fn();
 const maybeWriteStickyRoutingFromUsageMock = vi.fn();
+const classifyProviderHealthImpactMock = vi.fn();
 
 vi.mock("../audit", () => ({
 	auditSuccess: (...args: any[]) => auditSuccessMock(...args),
@@ -24,6 +25,8 @@ vi.mock("./charge", () => ({
 }));
 
 vi.mock("../execute/health", () => ({
+	classifyProviderHealthImpact: (...args: any[]) =>
+		classifyProviderHealthImpactMock(...args),
 	onCallEnd: (...args: any[]) => onCallEndMock(...args),
 	reportProbeResult: (...args: any[]) => reportProbeResultMock(...args),
 	maybeOpenOnRecentErrors: (...args: any[]) =>
@@ -138,6 +141,7 @@ describe("handleStreamResponse search observability", () => {
 		reportProbeResultMock.mockReset();
 		maybeOpenOnRecentErrorsMock.mockReset();
 		maybeWriteStickyRoutingFromUsageMock.mockReset();
+		classifyProviderHealthImpactMock.mockReset();
 		auditSuccessMock.mockResolvedValue(undefined);
 		emitGatewayRequestEventMock.mockResolvedValue(undefined);
 		recordUsageAndChargeOnceMock.mockResolvedValue(undefined);
@@ -145,6 +149,7 @@ describe("handleStreamResponse search observability", () => {
 		reportProbeResultMock.mockResolvedValue(undefined);
 		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
 		maybeWriteStickyRoutingFromUsageMock.mockResolvedValue(undefined);
+		classifyProviderHealthImpactMock.mockReturnValue("success");
 
 		const upstream = makeSseResponse([
 			{
@@ -238,7 +243,7 @@ describe("handleStreamResponse search observability", () => {
 					type: "url_citation",
 					title: "AI Stats Docs",
 					url: "https://example.com/docs",
-					text: expect.stringMatching(/^\[redacted \d+ chars\]$/),
+					text: "Useful streamed source text",
 				},
 			],
 			nativeSearches: [
@@ -260,6 +265,7 @@ describe("handleStreamResponse search observability", () => {
 		reportProbeResultMock.mockReset();
 		maybeOpenOnRecentErrorsMock.mockReset();
 		maybeWriteStickyRoutingFromUsageMock.mockReset();
+		classifyProviderHealthImpactMock.mockReset();
 		auditSuccessMock.mockResolvedValue(undefined);
 		emitGatewayRequestEventMock.mockResolvedValue(undefined);
 		recordUsageAndChargeOnceMock.mockResolvedValue(undefined);
@@ -267,6 +273,7 @@ describe("handleStreamResponse search observability", () => {
 		reportProbeResultMock.mockResolvedValue(undefined);
 		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
 		maybeWriteStickyRoutingFromUsageMock.mockResolvedValue(undefined);
+		classifyProviderHealthImpactMock.mockReturnValue("success");
 
 		const upstream = makeSseResponse([
 			{
@@ -301,13 +308,13 @@ describe("handleStreamResponse search observability", () => {
 					tools: [
 						{
 							type: "function",
-							function: { name: "gateway_web_search" },
+							function: { name: "ai_stats_web_search" },
 						},
 					],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "gateway:web_search" }],
+					tools: [{ type: "ai-stats:web_search" }],
 				},
 				searchObservability: {
 					usedNativeWebSearch: false,
@@ -390,7 +397,7 @@ describe("handleStreamResponse search observability", () => {
 					type: "managed_web_search_result",
 					title: "AI Stats Docs",
 					url: "https://example.com/docs",
-					text: expect.stringMatching(/^\[redacted \d+ chars\]$/),
+					text: "Managed highlight",
 				},
 			],
 			nativeSearches: [],

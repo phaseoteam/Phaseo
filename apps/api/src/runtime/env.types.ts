@@ -82,6 +82,8 @@ export type GatewayBindings = {
     DIGITALOCEAN_TOKEN?: string;
     EXA_API_KEY?: string;
     EXA_BASE_URL?: string;
+    FIRECRAWL_API_KEY?: string;
+    FIRECRAWL_BASE_URL?: string;
     FEATHERLESS_API_KEY?: string;
     FEATHERLESS_BASE_URL?: string;
     FIREWORKS_API_KEY?: string;
@@ -157,6 +159,8 @@ export type GatewayBindings = {
     XIAOMI_MIMO_BASE_URL?: string;
     NOVITA_API_KEY?: string;
     NOVITA_BASE_URL?: string;
+    PARALLEL_API_KEY?: string;
+    PARALLEL_BASE_URL?: string;
     PARASAIL_API_KEY?: string;
     PARASAIL_BASE_URL?: string;
     RUNWAY_API_KEY?: string;

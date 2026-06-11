@@ -9,7 +9,12 @@ describe("extractUsageMeters", () => {
 			server_tool_use: {
 				datetime_requests: 1,
 				web_search_requests: 2,
+				web_search_results: 12,
+				web_search_extra_results: 2,
 				web_fetch_requests: 3,
+				advisor_requests: 1,
+				image_generation_requests: 1,
+				apply_patch_requests: 1,
 			},
 		});
 
@@ -17,7 +22,12 @@ describe("extractUsageMeters", () => {
 			expect.arrayContaining([
 				expect.objectContaining({ key: "datetime_requests", value: 1, label: "Datetime tool requests" }),
 				expect.objectContaining({ key: "web_search_requests", value: 2, label: "Web search requests" }),
+				expect.objectContaining({ key: "web_search_results", value: 12, label: "Web search results" }),
+				expect.objectContaining({ key: "web_search_extra_results", value: 2, label: "Web search extra results" }),
 				expect.objectContaining({ key: "web_fetch_requests", value: 3, label: "Web fetch requests" }),
+				expect.objectContaining({ key: "advisor_requests", value: 1, label: "Advisor requests" }),
+				expect.objectContaining({ key: "image_generation_requests", value: 1, label: "Image generation requests" }),
+				expect.objectContaining({ key: "apply_patch_requests", value: 1, label: "Apply patch requests" }),
 			]),
 		);
 	});

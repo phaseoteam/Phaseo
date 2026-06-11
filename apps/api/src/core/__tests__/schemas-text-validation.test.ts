@@ -35,37 +35,112 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts gateway web search server tool on chat requests", () => {
+	it("accepts AI Stats web search server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "find recent AI news" }],
 			tools: [{
-				type: "gateway:web_search",
+				type: "ai-stats:web_search",
 				parameters: {
 					max_results: 5,
 					include_highlights: true,
 				},
 			}],
-			tool_choice: "gateway:web_search",
+			tool_choice: "ai-stats:web_search",
 		});
 
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts gateway web fetch server tool on chat requests", () => {
+	it("accepts AI Stats web search engine parameters on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "find recent AI news" }],
+			tools: [{
+				type: "ai-stats:web_search",
+				parameters: {
+					engine: "native",
+					max_characters: 2048,
+					user_location: { type: "approximate", country: "US" },
+				},
+			}],
+			tool_choice: "ai-stats:web_search",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats web fetch server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "fetch this page" }],
 			tools: [{
-				type: "gateway:web_fetch",
+				type: "ai-stats:web_fetch",
 				parameters: {
 					max_chars: 8000,
 				},
 			}],
-			tool_choice: "gateway:web_fetch",
+			tool_choice: "ai-stats:web_fetch",
 		});
 
 		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats advisor server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "review this plan" }],
+			tools: [{
+				type: "ai-stats:advisor",
+				parameters: {
+					name: "reviewer",
+					model: "claude-opus-4-8",
+					instructions: "Review for correctness and missing edge cases.",
+					forward_transcript: true,
+					max_uses: 2,
+					max_completion_tokens: 1400,
+					reasoning: { effort: "high" },
+					temperature: 0.2,
+				},
+			}],
+			tool_choice: "ai-stats:advisor",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats image generation server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "make an image" }],
+			tools: [{
+				type: "ai-stats:image_generation",
+				parameters: {
+					model: "openai/gpt-image-2",
+					quality: "high",
+					aspect_ratio: "16:9",
+					output_format: "png",
+					output_compression: 80,
+				},
+			}],
+			tool_choice: "ai-stats:image_generation",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("rejects AI Stats apply patch server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "propose a patch" }],
+			tools: [{
+				type: "ai-stats:apply_patch",
+				parameters: { engine: "auto" },
+			}],
+			tool_choice: "ai-stats:apply_patch",
+		});
+
+		expect(parsed.success).toBe(false);
 	});
 
 	it("rejects chat n", () => {
@@ -109,34 +184,77 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts gateway web search server tool on responses requests", () => {
+	it("accepts AI Stats web search server tool on responses requests", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "find recent AI news",
 			tools: [{
-				type: "gateway:web_search",
+				type: "ai-stats:web_search",
 				parameters: {
 					max_results: 4,
 					include_text: false,
 				},
 			}],
-			tool_choice: "gateway:web_search",
+			tool_choice: "ai-stats:web_search",
 		});
 
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts gateway web fetch server tool on responses requests", () => {
+	it("accepts AI Stats web fetch server tool on responses requests", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "gpt-4.1",
 			input: "fetch this page",
 			tools: [{
-				type: "gateway:web_fetch",
+				type: "ai-stats:web_fetch",
 				parameters: {
 					max_chars: 12000,
 				},
 			}],
-			tool_choice: "gateway:web_fetch",
+			tool_choice: "ai-stats:web_fetch",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats advisor server tool on responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "review this plan",
+			tools: [{
+				type: "ai-stats:advisor",
+				parameters: {
+					name: "architect",
+					instructions: "Focus on system design tradeoffs.",
+					forward_transcript: false,
+					max_uses: 1,
+					max_completion_tokens: 1600,
+				},
+			}],
+			tool_choice: { type: "tool", name: "ai-stats:advisor" },
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats image generation and apply patch server tools on responses requests", () => {
+		const parsed = ResponsesSchema.safeParse({
+			model: "gpt-4.1",
+			input: "create an image and propose a patch",
+			tools: [
+				{
+					type: "ai-stats:image_generation",
+					parameters: {
+						model: "openai/gpt-image-2",
+						size: "1024x1024",
+					},
+				},
+				{
+					type: "ai-stats:apply_patch",
+					parameters: { engine: "auto" },
+				},
+			],
+			tool_choice: "ai-stats:apply_patch",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -269,13 +387,13 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts gateway web search server tool on anthropic messages requests", () => {
+	it("accepts AI Stats web search server tool on anthropic messages requests", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "anthropic/claude-3.7-sonnet",
 			max_tokens: 128,
 			messages: [{ role: "user", content: "find recent AI news" }],
 			tools: [{
-				type: "gateway:web_search",
+				type: "ai-stats:web_search",
 				parameters: { max_results: 3 },
 			}],
 		});
@@ -298,16 +416,133 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
-	it("accepts gateway web fetch server tool on anthropic messages requests", () => {
+	it("accepts AI Stats web fetch server tool on anthropic messages requests", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "anthropic/claude-3.7-sonnet",
 			max_tokens: 128,
 			messages: [{ role: "user", content: "fetch this page" }],
 			tools: [{
-				type: "gateway:web_fetch",
+				type: "ai-stats:web_fetch",
 				parameters: { max_chars: 4000 },
 			}],
 		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats image generation server tool on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-3.7-sonnet",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "make an image" }],
+			tools: [{
+				type: "ai-stats:image_generation",
+				parameters: {
+					model: "openai/gpt-image-2",
+					aspect_ratio: "1:1",
+				},
+			}],
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats advisor server tool on chat requests", () => {
+		const parsed = ChatCompletionsSchema.safeParse({
+			model: "anthropic/claude-sonnet-4.6",
+			messages: [{ role: "user", content: "plan this refactor" }],
+			tools: [{
+				type: "ai-stats:advisor",
+				parameters: {
+					model: "claude-opus-4-8",
+					max_uses: 2,
+					max_tokens: 1400,
+				},
+			}],
+			tool_choice: "ai-stats:advisor",
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts Anthropic native web fetch on anthropic messages requests", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "claude-sonnet-4.6",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "read https://docs.ai-stats.com" }],
+			tools: [{
+				type: "web_fetch_20260209",
+				name: "web_fetch",
+				max_content_tokens: 9000,
+				allowed_domains: ["docs.ai-stats.com"],
+			}],
+			tool_choice: { type: "tool", name: "web_fetch" },
+		});
+
+		expect(parsed.success).toBe(true);
+	});
+
+	it("accepts AI Stats advisor and native Anthropic advisor on messages requests", () => {
+		const aiStatsParsed = AnthropicMessagesSchema.safeParse({
+			model: "claude-sonnet-4.6",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "plan this refactor" }],
+			tools: [{
+				type: "ai-stats:advisor",
+				parameters: {
+					name: "reviewer",
+					model: "claude-opus-4-8",
+					instructions: "Review for correctness and missing edge cases.",
+					forward_transcript: true,
+					max_uses: 2,
+					max_completion_tokens: 1400,
+					reasoning: { effort: "high" },
+					temperature: 0.2,
+				},
+			}],
+			tool_choice: { type: "tool", name: "ai-stats:advisor" },
+		});
+		expect(aiStatsParsed.success).toBe(true);
+
+		const nativeParsed = AnthropicMessagesSchema.safeParse({
+			model: "claude-sonnet-4.6",
+			max_tokens: 1024,
+			messages: [{ role: "user", content: "plan this refactor" }],
+			tools: [{
+				type: "advisor_20260301",
+				name: "advisor",
+				model: "claude-opus-4-8",
+				max_uses: 2,
+				max_tokens: 1400,
+			}],
+			tool_choice: { type: "tool", name: "advisor" },
+		});
+		expect(nativeParsed.success).toBe(true);
+	});
+
+	it("accepts Anthropic advisor server-tool blocks in messages history", () => {
+		const parsed = AnthropicMessagesSchema.safeParse({
+			model: "claude-sonnet-4.6",
+			max_tokens: 1024,
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						{
+							type: "server_tool_use",
+							id: "srvu_123",
+							name: "advisor",
+							input: {},
+						},
+						{
+							type: "advisor_tool_result",
+							tool_use_id: "srvu_123",
+							content: [{ type: "text", text: "Use a smaller patch." }],
+						},
+					],
+				},
+				{ role: "user", content: "continue" },
+			],
+		});
+
 		expect(parsed.success).toBe(true);
 	});
 

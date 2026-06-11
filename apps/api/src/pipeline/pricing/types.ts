@@ -44,6 +44,14 @@ export type PricingDimensionKey =
     | "cached_read_audio_tokens"
     | "embedding_tokens"
     | "bfl_credits"
+    | "server_tool_web_search_requests"
+    | "server_tool_web_search_extra_results"
+    | "server_tool_web_fetch_requests"
+    | "server_tool_advisor_requests"
+    | "server_tool_image_generation_requests"
+    | "server_tool_apply_patch_requests"
+    | "native_web_search_requests"
+    | "native_web_fetch_requests"
     | "requests";
 
 export type ConditionOp =

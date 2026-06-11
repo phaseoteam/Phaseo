@@ -1,0 +1,45 @@
+---
+title: "PydanticAI"
+description: "Build typed Python agents with PydanticAI and AI Stats."
+---
+
+Use PydanticAI when you want Python agents with typed outputs, validation, and a compact OpenAI-compatible model setup.
+
+## Install
+
+```bash
+pip install "pydantic-ai-slim[openai]"
+```
+
+## Configure the model
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-5-nano",
+    provider=OpenAIProvider(
+        api_key=os.environ["AI_STATS_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+
+agent = Agent(model, system_prompt="Answer concisely.")
+result = agent.run_sync("Reply with only: ok")
+print(result.output)
+```
+
+## Notes
+
+- PydanticAI's OpenAI-compatible path uses OpenAI-style chat behavior.
+- Use direct AI Stats Responses calls for Responses-only features such as `ai-stats:apply_patch`.
+- Keep structured output schemas small enough for the selected model's context window.
+
+## Related
+
+- [Structured Outputs](../structured-outputs.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)
+- [Models](../../api-reference/endpoint/models.mdx)

@@ -9,8 +9,10 @@ description: "Generate chat-based completions using the OpenAI-compatible chat e
 `/v1/chat/completions` supports regular function tools and these gateway-managed server tools:
 
 - `gateway:datetime`
-- `gateway:web_search`
-- `gateway:web_fetch`
+- `ai-stats:web_search`
+- `ai-stats:web_fetch`
+- `ai-stats:advisor`
+- `ai-stats:image_generation`
 
 ### Datetime example
 
@@ -49,7 +51,7 @@ When a server tool is used, usage includes:
 }
 ```
 
-`gateway:web_search` adds `server_tool_use.web_search_requests` and may also add `server_tool_use.web_fetch_requests` when fetched result content is returned. `gateway:web_fetch` adds `server_tool_use.web_fetch_requests`.
+`ai-stats:web_search` adds `server_tool_use.web_search_requests`, `server_tool_use.web_search_results`, and `server_tool_use.web_search_extra_results`. `ai-stats:web_fetch` adds `server_tool_use.web_fetch_requests`.
 
 ## Streaming note
 
