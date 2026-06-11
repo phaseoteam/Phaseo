@@ -45,6 +45,11 @@ const OPENAI_BATCH_ENDPOINTS = [
 ] as const;
 const OPENAI_BATCH_ENDPOINT_SET = new Set<string>(OPENAI_BATCH_ENDPOINTS);
 
+export function isBatchApiEnabled(raw: unknown): boolean {
+	const normalized = String(raw ?? "").trim().toLowerCase();
+	return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
 function resolveOpenAiBaseUrl(bindings: Record<string, string | undefined>): string {
 	const base = String(bindings.OPENAI_BASE_URL || OPENAI_BASE_URL).replace(/\/+$/, "");
 	return /\/v1$/i.test(base) ? base : `${base}/v1`;
@@ -1317,6 +1322,20 @@ async function handleCancel(req: Request, id: string) {
 }
 
 export const batchRoutes = new Hono<Env>();
+
+function batchNotImplementedYetResponse(): Response {
+	return err("not_implemented_yet", {
+		reason: "batch_api_temporarily_disabled",
+		message: "Batch endpoints are temporarily disabled while the public contract is finalized.",
+	});
+}
+
+batchRoutes.use("*", async (c, next) => {
+	if (c.env && !isBatchApiEnabled(c.env.BATCH_API_ENABLED)) {
+		return batchNotImplementedYetResponse();
+	}
+	await next();
+});
 
 batchRoutes.post("/", withRuntime(handleCreate));
 batchRoutes.get("/", withRuntime(handleList));

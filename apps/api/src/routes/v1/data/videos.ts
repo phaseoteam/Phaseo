@@ -163,13 +163,7 @@ const MAX_VIDEO_DOWNLOAD_TTL_SECONDS = 3600;
 
 export function isVideoApiEnabled(raw: unknown): boolean {
 	const normalized = String(raw ?? "").trim().toLowerCase();
-	if (!normalized) return true;
-	return !(
-		normalized === "0" ||
-		normalized === "false" ||
-		normalized === "no" ||
-		normalized === "off"
-	);
+	return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }
 
 type VideoDownloadUrlRequest = {
@@ -241,7 +235,7 @@ function notImplementedYetResponse(): Response {
 }
 
 videosRoutes.use("*", async (c, next) => {
-	if (!isVideoApiEnabled(c.env.VIDEO_API_ENABLED)) {
+	if (c.env && !isVideoApiEnabled(c.env.VIDEO_API_ENABLED)) {
 		return notImplementedYetResponse();
 	}
 	await next();

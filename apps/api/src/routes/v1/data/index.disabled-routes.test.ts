@@ -8,6 +8,7 @@ const testEnv = {
 	KEY_PEPPER: "test-pepper",
 	OPENAI_API_KEY: "test-openai-key",
 	VIDEO_API_ENABLED: "true",
+	BATCH_API_ENABLED: "true",
 	GATEWAY_CACHE: {
 		get: async () => null,
 		put: async () => undefined,
@@ -39,6 +40,39 @@ describe("inferenceRouter disabled feature mounts", () => {
 		expect(batchResponse.status).not.toBe(501);
 		expect(batchAliasResponse.status).not.toBe(501);
 		expect(fileResponse.status).not.toBe(501);
+	});
+
+	it("keeps videos and batches disabled unless explicitly enabled", async () => {
+		const disabledEnv = {
+			...testEnv,
+			VIDEO_API_ENABLED: undefined,
+			BATCH_API_ENABLED: undefined,
+		};
+		const requestWithEnv = (url: string, init?: RequestInit) =>
+			inferenceRouter.fetch(
+				new Request(url, init),
+				disabledEnv,
+				{
+					waitUntil: () => undefined,
+					passThroughOnException: () => undefined,
+				} as any,
+			);
+
+		const videoResponse = await requestWithEnv("https://example.com/videos/");
+		const batchResponse = await requestWithEnv("https://example.com/batches", {
+			method: "POST",
+		});
+
+		expect(videoResponse.status).toBe(501);
+		expect(await videoResponse.json()).toMatchObject({
+			error: "not_implemented_yet",
+			reason: "video_api_temporarily_disabled",
+		});
+		expect(batchResponse.status).toBe(501);
+		expect(await batchResponse.json()).toMatchObject({
+			error: "not_implemented_yet",
+			reason: "batch_api_temporarily_disabled",
+		});
 	});
 
 	it("keeps music routes behind disabled placeholders", async () => {
