@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Bug, ClipboardCopy, ExternalLink, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
 	Dialog,
 	DialogContent,
@@ -37,6 +38,7 @@ type ChatRequestErrorNoticeProps = {
 	error: ChatRequestErrorDetails;
 	threadTitle?: string | null;
 	onDismiss: () => void;
+	className?: string;
 };
 
 function buildSummary(error: ChatRequestErrorDetails): string {
@@ -76,6 +78,7 @@ export function ChatRequestErrorNotice({
 	error,
 	threadTitle,
 	onDismiss,
+	className,
 }: ChatRequestErrorNoticeProps) {
 	const [open, setOpen] = useState(false);
 	const [notes, setNotes] = useState("");
@@ -136,7 +139,12 @@ export function ChatRequestErrorNotice({
 
 	return (
 		<>
-			<div className="mx-auto mb-4 flex w-full max-w-5xl items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-950 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-100">
+			<div
+				className={cn(
+					"mx-auto mb-4 flex w-full max-w-5xl items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-950 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-100",
+					className,
+				)}
+			>
 				<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
 				<div className="min-w-0 flex-1">
 					<p className="text-sm font-medium">

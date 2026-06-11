@@ -28,7 +28,6 @@ import {
 import { ChatHeader } from "@/components/(chat)/ChatHeader";
 import { ModelSettingsDialog } from "@/components/(chat)/ModelSettingsDialog";
 import {
-	ChatRequestErrorNotice,
 	type ChatRequestErrorDetails,
 } from "@/components/(chat)/ChatRequestErrorNotice";
 import { ChatSearchDialog } from "@/components/(chat)/ChatSearchDialog";
@@ -1416,6 +1415,7 @@ function ChatPlaygroundContent({
 					latestThread = result.nextThread;
 					variantIndex = result.variantIndex;
 					assistantContent = initialVariant.content;
+					streamingMessageId = targetAssistantId;
 					placeholderReady = true;
 					await updateThreadState(latestThread, false);
 				} else {
@@ -2145,8 +2145,6 @@ function ChatPlaygroundContent({
 					typeof structuredError?.code === "string"
 						? structuredError.code
 						: "";
-				const isGatewayUnavailable =
-					errorCode === "gateway_unreachable";
 				setError(message);
 				const nextRequestError: ChatRequestErrorDetails = {
 					status:
@@ -2175,32 +2173,11 @@ function ChatPlaygroundContent({
 					timestamp: nowIso(),
 				};
 				setRequestError(nextRequestError);
-				const isGatewayError =
-					message.includes('"description":"all_candidates_failed"') ||
-					message.includes('"errorCode":"upstream_error"') ||
-					message.includes("all_candidates_failed");
-				const summary =
-					nextRequestError.description ||
-					nextRequestError.details[0]?.message ||
-					message;
-				const errorContent = isGatewayError
-					? `All Providers Failed\n${summary}${
-							nextRequestError.requestId
-								? `\nRequest ID: ${nextRequestError.requestId}`
-								: ""
-						}`
-					: isGatewayUnavailable
-						? message
-						: `Request failed${
-								nextRequestError.status
-									? ` (${nextRequestError.status})`
-									: ""
-							}\n${summary}${
-								nextRequestError.requestId
-									? `\nRequest ID: ${nextRequestError.requestId}`
-									: ""
-							}`;
 				if (latestThread) {
+					const errorMeta = {
+						...(compareMeta ?? {}),
+						chat_request_error: nextRequestError,
+					};
 					const existingMessage = latestThread.messages.find(
 						(m) => m.id === streamingMessageId
 					);
@@ -2209,16 +2186,16 @@ function ChatPlaygroundContent({
 							latestThread,
 							streamingMessageId,
 							variantIndex,
-							errorContent,
+							"",
 							undefined,
-							compareMeta ?? undefined,
+							errorMeta,
 						);
 					} else {
 						const orgId = getOrgId(selectedModelId);
 						const errorMessage: ChatMessage = {
 							id: generateId(),
 							role: "assistant",
-							content: errorContent,
+							content: "",
 							createdAt: nowIso(),
 							modelId: selectedModelId,
 							providerId: latestThread.settings.providerId,
@@ -2227,13 +2204,13 @@ function ChatPlaygroundContent({
 							variants: [
 								{
 									id: generateId(),
-									content: errorContent,
+									content: "",
 									createdAt: nowIso(),
-									meta: compareMeta ?? undefined,
+									meta: errorMeta,
 								},
 							],
 							activeVariantIndex: 0,
-							meta: compareMeta ?? undefined,
+							meta: errorMeta,
 						};
 						latestThread = {
 							...latestThread,
@@ -3627,18 +3604,6 @@ function ChatPlaygroundContent({
 				<SidebarRail />
 			</Sidebar>
 			<SidebarInset className="flex h-full min-w-0 min-h-0 flex-1 flex-col overflow-hidden bg-background">
-				{requestError ? (
-					<div className="px-4 pt-4 md:px-8">
-						<ChatRequestErrorNotice
-							error={requestError}
-							threadTitle={activeThread?.title ?? null}
-							onDismiss={() => {
-								setRequestError(null);
-								setError(null);
-							}}
-						/>
-					</div>
-				) : null}
 				<ChatHeader
 					activeThread={activeThread}
 					modelOptions={modelOptions}
@@ -3725,6 +3690,11 @@ function ChatPlaygroundContent({
 					onAudioAttachmentRequirementChange={(requiresAudioInput) =>
 						setComposerRequiresAudioInput(requiresAudioInput)
 					}
+					requestError={requestError}
+					onDismissRequestError={() => {
+						setRequestError(null);
+						setError(null);
+					}}
 				/>
 			</SidebarInset>
 			<ModelSettingsDialog

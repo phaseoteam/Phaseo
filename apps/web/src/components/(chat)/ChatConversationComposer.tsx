@@ -1,6 +1,11 @@
 "use client";
 
-import type { ChangeEvent, RefObject } from "react";
+import {
+	useEffect,
+	useRef,
+	type ChangeEvent,
+	type RefObject,
+} from "react";
 import Link from "next/link";
 import {
 	Brain,
@@ -22,6 +27,10 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	ScrollArea,
+	ScrollBar,
+} from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -37,6 +46,100 @@ type ReasoningOption = {
 	value: NonNullable<ChatSettings["reasoningEffort"]>;
 	label: string;
 };
+
+const EVALUATION_PROMPTS = [
+	{
+		title: "Palindrome Quest",
+		description: "Find the next palindrome",
+		prompt:
+			"Find the smallest palindrome number greater than 12932. Explain your reasoning briefly.",
+	},
+	{
+		title: "Car Wash Test",
+		description: "Should you walk or drive?",
+		prompt:
+			"A person needs to go through a car wash. Should they walk through it or drive through it? Explain the safest and most sensible answer.",
+	},
+	{
+		title: "Personal Finance",
+		description: "Draft a portfolio proposal",
+		prompt:
+			"Draft a practical portfolio management proposal for a 35-year-old with moderate risk tolerance, a 20-year time horizon, and a preference for low-fee diversified funds.",
+	},
+	{
+		title: "9.9 vs 9.11",
+		description: "Which one is larger?",
+		prompt: "Which is bigger, 9.11 or 9.9? Explain your answer briefly.",
+	},
+	{
+		title: "The Missing Dollar",
+		description: "Classic money logic puzzle",
+		prompt:
+			"Three guests pay $30 for a room. The manager realizes it should cost $25 and gives $5 to the bellhop to return. The bellhop keeps $2 and gives $1 back to each guest. Each guest paid $9, totaling $27, plus the bellhop's $2 makes $29. Where is the missing dollar?",
+	},
+	{
+		title: "Career Development",
+		description: "Build a growth roadmap",
+		prompt:
+			"Create a 90-day professional growth roadmap for a mid-level software engineer who wants to become a technical lead.",
+	},
+	{
+		title: "Strawberry Test",
+		description: "How many r's are in the word?",
+		prompt:
+			"How many times does the letter r appear in the word strawberry? Think carefully and answer with one sentence.",
+	},
+	{
+		title: "Small Business Strategy",
+		description: "Plan an expansion",
+		prompt:
+			"Develop a concise expansion plan for a small local coffee shop that wants to add online ordering and corporate catering.",
+	},
+	{
+		title: "Poem Riddle",
+		description: "Compose a 13-line poem",
+		prompt:
+			"Compose a 13-line poem where the first letter of each line spells REASONINGTEST.",
+	},
+	{
+		title: "Alphabet Series",
+		description: "Find the next letter",
+		prompt:
+			"What is the next letter in this sequence: A, C, F, J, O, ? Explain the pattern briefly.",
+	},
+	{
+		title: "Healthy Lifestyle",
+		description: "Diet and exercise plan",
+		prompt:
+			"Design a balanced weekly diet and exercise regimen for a busy office worker with beginner fitness experience.",
+	},
+	{
+		title: "Anagram Challenge",
+		description: "Unscramble the letters",
+		prompt:
+			"Unscramble the letters 'TCAOR' into a common English word. If there is more than one possibility, list them and explain which is most likely.",
+	},
+	{
+		title: "Educational Advancement",
+		description: "Plan higher education",
+		prompt:
+			"Create a decision plan for someone choosing between a part-time master's degree, a professional certificate, and self-study.",
+	},
+	{
+		title: "Word Transformation",
+		description: "Change one letter at a time",
+		prompt:
+			"Transform COLD into WARM by changing one letter at a time, with every intermediate step being a valid English word.",
+	},
+	{
+		title: "JSON Only",
+		description: "Return a strict object",
+		prompt:
+			"Return only valid JSON with keys answer, confidence, and reasoning. The question is: which is larger, 9.11 or 9.9?",
+	},
+];
+
+const PROMPT_SCROLL_COPIES = [0, 1, 2];
 
 interface ChatConversationComposerProps {
 	sendGateType: SendGateType;
@@ -72,6 +175,7 @@ interface ChatConversationComposerProps {
 	onToggleRecording: () => void;
 	onOpenModelPicker: () => void;
 	onSubmit: () => void;
+	onSelectEvaluationPrompt: (prompt: string) => void;
 	onComposerChange: (value: string) => void;
 	onRemoveAttachment: (index: number) => void;
 	onFileSelect: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -108,13 +212,63 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		onToggleRecording,
 		onOpenModelPicker,
 		onSubmit,
+		onSelectEvaluationPrompt,
 		onComposerChange,
 		onRemoveAttachment,
 		onFileSelect,
 	} = props;
+	const promptScrollAreaRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		const root = promptScrollAreaRef.current;
+		const viewport = root?.querySelector(
+			"[data-radix-scroll-area-viewport]",
+		) as HTMLDivElement | null;
+		if (!viewport) return;
+
+		let isAdjusting = false;
+		let rafId = 0;
+		const getSegmentWidth = () => viewport.scrollWidth / PROMPT_SCROLL_COPIES.length;
+		const moveToMiddle = () => {
+			const segmentWidth = getSegmentWidth();
+			if (segmentWidth > 0) {
+				viewport.scrollLeft = segmentWidth;
+			}
+		};
+		const unlockAdjustment = () => {
+			isAdjusting = false;
+		};
+		const handleScroll = () => {
+			if (isAdjusting) return;
+			const segmentWidth = getSegmentWidth();
+			if (segmentWidth <= 0) return;
+			const left = viewport.scrollLeft;
+			if (left < segmentWidth * 0.35) {
+				isAdjusting = true;
+				viewport.scrollLeft = left + segmentWidth;
+				rafId = requestAnimationFrame(unlockAdjustment);
+				return;
+			}
+			if (left > segmentWidth * 1.65) {
+				isAdjusting = true;
+				viewport.scrollLeft = left - segmentWidth;
+				rafId = requestAnimationFrame(unlockAdjustment);
+			}
+		};
+
+		rafId = requestAnimationFrame(moveToMiddle);
+		viewport.addEventListener("scroll", handleScroll, { passive: true });
+		window.addEventListener("resize", moveToMiddle);
+
+		return () => {
+			cancelAnimationFrame(rafId);
+			viewport.removeEventListener("scroll", handleScroll);
+			window.removeEventListener("resize", moveToMiddle);
+		};
+	}, []);
 
 	return (
-		<div className="border-t border-border px-4 py-4 md:px-8">
+		<div className="border-t border-border bg-background px-4 py-4 md:px-8">
 			<div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
 				{sendGateType === "auth" ? (
 					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/30 dark:text-amber-100">
@@ -139,7 +293,40 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</div>
 					</div>
 				) : null}
-				<div className="rounded-2xl border border-border bg-background px-3 py-2">
+				<ScrollArea
+					ref={promptScrollAreaRef}
+					className="-mx-4 w-[calc(100%+2rem)] whitespace-nowrap px-4 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8"
+					aria-label="Prompt presets"
+				>
+					<div className="flex w-max gap-3 py-1">
+						{PROMPT_SCROLL_COPIES.map((copyIndex) => (
+							<div
+								key={copyIndex}
+								className="flex shrink-0 gap-3"
+								aria-hidden={copyIndex !== 1}
+							>
+								{EVALUATION_PROMPTS.map((item) => (
+									<button
+										key={`${item.title}-${copyIndex}`}
+										type="button"
+										className="group/card flex h-16 w-56 shrink-0 flex-col justify-center overflow-hidden rounded-xl bg-card px-4 text-left text-foreground shadow-sm ring-1 ring-border/40 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-60"
+										onClick={() => onSelectEvaluationPrompt(item.prompt)}
+										tabIndex={copyIndex === 1 ? 0 : -1}
+									>
+										<span className="w-full truncate text-[13px] font-medium transition-colors group-hover/card:text-foreground sm:text-sm">
+											{item.title}
+										</span>
+										<span className="mt-1 w-full truncate text-xs text-muted-foreground">
+											{item.description}
+										</span>
+									</button>
+								))}
+							</div>
+						))}
+					</div>
+					<ScrollBar className="hidden" orientation="horizontal" />
+				</ScrollArea>
+				<div className="rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
 					<input
 						ref={fileInputRef}
 						type="file"
@@ -167,7 +354,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						}}
 						rows={2}
 						placeholder={placeholder}
-						className="min-h-[56px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
+						className="min-h-[56px] resize-none border-0 !bg-transparent px-1 py-2 shadow-none focus-visible:ring-0 dark:!bg-transparent"
 					/>
 					{attachments.length > 0 ? (
 						<div className="flex flex-wrap gap-1 pb-1">

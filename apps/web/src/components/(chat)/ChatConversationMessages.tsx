@@ -12,6 +12,10 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import {
+	ChatRequestErrorNotice,
+	type ChatRequestErrorDetails,
+} from "@/components/(chat)/ChatRequestErrorNotice";
+import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -102,6 +106,8 @@ type ChatConversationMessagesProps = {
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	onCopy: (text: string) => boolean | Promise<boolean>;
+	requestError?: ChatRequestErrorDetails | null;
+	onDismissRequestError?: () => void;
 };
 
 export function ChatConversationMessages({
@@ -124,8 +130,13 @@ export function ChatConversationMessages({
 	onBranchAssistant,
 	onSelectVariant,
 	onCopy,
+	requestError = null,
+	onDismissRequestError,
 }: ChatConversationMessagesProps) {
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
+	const [dismissedErrorMessageIds, setDismissedErrorMessageIds] = useState<
+		Set<string>
+	>(() => new Set());
 	const copiedResetTimeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
@@ -266,6 +277,26 @@ export function ChatConversationMessages({
 				(activeVariant?.meta as Record<string, unknown> | null) ??
 				(message.meta as Record<string, unknown> | null) ??
 				null;
+			let messageRequestError: ChatRequestErrorDetails | null = null;
+			if (!isUser) {
+				if (
+					activeMeta?.chat_request_error &&
+					typeof activeMeta.chat_request_error === "object" &&
+					!Array.isArray(activeMeta.chat_request_error)
+				) {
+					messageRequestError =
+						activeMeta.chat_request_error as ChatRequestErrorDetails;
+				} else if (
+					requestError &&
+					lastMessageId === message.id &&
+					!dismissedErrorMessageIds.has(message.id)
+				) {
+					messageRequestError = requestError;
+				}
+			}
+			const showRequestError =
+				Boolean(messageRequestError) &&
+				!dismissedErrorMessageIds.has(message.id);
 			const videoUrl = isUser
 				? null
 				: sanitizeHttpMediaUrl(extractGeneratedVideoUrl(content));
@@ -320,16 +351,21 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
-			const responseProviderId =
+			const routingSelectedProvider =
+				(activeMeta?.routing as any)?.selected_provider;
+			let responseProviderId = message.providerId?.trim() || null;
+			if (
+				typeof routingSelectedProvider === "string" &&
+				routingSelectedProvider.trim().length > 0
+			) {
+				responseProviderId = routingSelectedProvider.trim();
+			}
+			if (
 				typeof activeMeta?.provider === "string" &&
 				activeMeta.provider.trim().length > 0
-					? activeMeta.provider.trim()
-					: typeof (activeMeta?.routing as any)?.selected_provider ===
-							  "string" &&
-						  (activeMeta?.routing as any).selected_provider.trim()
-								.length > 0
-						? (activeMeta?.routing as any).selected_provider.trim()
-						: message.providerId?.trim() || null;
+			) {
+				responseProviderId = activeMeta.provider.trim();
+			}
 			const responseProviderLabel =
 				message.providerName?.trim() || responseProviderId || null;
 			const isEditing = editingId === message.id;
@@ -546,8 +582,21 @@ export function ChatConversationMessages({
 									) : null}
 								</div>
 							)
-						) : isSending &&
-						  (!content || content === "Generating...") ? (
+						) : showRequestError && messageRequestError ? (
+							<ChatRequestErrorNotice
+								error={messageRequestError}
+								threadTitle={activeThread.title}
+								className="not-prose"
+								onDismiss={() => {
+									setDismissedErrorMessageIds((current) => {
+										const next = new Set(current);
+										next.add(message.id);
+										return next;
+									});
+									onDismissRequestError?.();
+								}}
+							/>
+						) : isSending && (!content || content === "Generating...") ? (
 							<div className="flex min-h-7 items-center">
 								<Shimmer className="text-sm text-muted-foreground">
 									Generating...
@@ -923,6 +972,9 @@ export function ChatConversationMessages({
 		modelLinkById,
 		accentColor,
 		onCopy,
+		requestError,
+		onDismissRequestError,
+		dismissedErrorMessageIds,
 		handleCopyForMessage,
 		copiedMessageKey,
 		onEditingValueChange,
