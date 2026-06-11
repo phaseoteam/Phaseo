@@ -86,53 +86,17 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 	}
 
 	const hasToolCalls = (mainChoice.message.toolCalls?.length ?? 0) > 0;
-	const { text, reasoningParts, imageParts, providerBlocks } = splitContentParts(mainChoice.message.content as IRContentPart[]);
-	const contentText = mainChoice.message.refusal ?? text;
+	const contentParts = mainChoice.message.content as IRContentPart[];
+	const reasoningCount = countReasoningParts(contentParts);
 
-	if (typeof contentText === "string") {
-		const shouldIncludeText =
-			Boolean(mainChoice.message.refusal) ||
-			contentText.length > 0 ||
-			(contentText === "" && !hasToolCalls && reasoningParts.length === 0);
-
-		if (shouldIncludeText) {
-			content.push({
-				type: "text",
-				text: contentText,
-				citations: null,
-			});
-		}
-	}
-
-	if (imageParts.length > 0) {
-		for (const imagePart of imageParts) {
-			if (imagePart.source === "data") {
-				content.push({
-					type: "image",
-					source: {
-						type: "base64",
-						media_type: imagePart.mimeType,
-						data: imagePart.data,
-					},
-				});
-				continue;
-			}
-
-			content.push({
-				type: "image",
-				source: {
-					type: "url",
-					media_type: imagePart.mimeType,
-					url: imagePart.data,
-				},
-			});
-		}
-	}
-
-	if (providerBlocks.length > 0) {
-		for (const block of providerBlocks) {
-			content.push(block);
-		}
+	if (typeof mainChoice.message.refusal === "string") {
+		content.push({
+			type: "text",
+			text: mainChoice.message.refusal,
+			citations: null,
+		});
+	} else {
+		content.push(...encodeOrderedContentParts(contentParts));
 	}
 
 	// CRITICAL FIX: Add tool_use blocks from tool calls
@@ -147,16 +111,8 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 		}
 	}
 
-	if (reasoningParts.length > 0) {
-		for (const reasoning of reasoningParts) {
-			if (reasoning.text.length > 0) {
-				content.push({
-					type: "thinking",
-					thinking: reasoning.text,
-					signature: reasoning.signature ?? "",
-				});
-			}
-		}
+	if (content.length === 0 && !hasToolCalls && reasoningCount === 0) {
+		content.push({ type: "text", text: "", citations: null });
 	}
 
 	// Map finish reason
@@ -263,31 +219,61 @@ function safeParseToolArguments(raw: string): Record<string, any> {
 	}
 }
 
-function splitContentParts(
-	parts: IRContentPart[],
-): {
-	text: string;
-	reasoningParts: Array<{ text: string; signature?: string }>;
-	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
-	providerBlocks: Array<Record<string, any>>;
-} {
-	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [], providerBlocks: [] };
-	const text = parts
-		.filter((part) => part.type === "text")
-		.map((part) => part.text)
-		.join("");
-	const reasoningParts = parts
-		.filter((part) => part.type === "reasoning_text")
-		.map((part) => ({
-			text: part.text,
-			signature: part.thoughtSignature,
-		}));
-	const imageParts = parts.filter((part) => part.type === "image") as Array<
-		Extract<IRContentPart, { type: "image" }>
-	>;
-	const providerBlocks = parts
-		.filter((part) => part.type === "provider_block")
-		.map((part) => part.block);
-	return { text, reasoningParts, imageParts, providerBlocks };
+function countReasoningParts(parts: IRContentPart[]): number {
+	if (!Array.isArray(parts)) return 0;
+	return parts.filter((part) => part.type === "reasoning_text").length;
+}
+
+function encodeOrderedContentParts(parts: IRContentPart[]): AnthropicResponseContent[] {
+	if (!Array.isArray(parts)) return [];
+	const content: AnthropicResponseContent[] = [];
+	for (const part of parts) {
+		if (part.type === "text") {
+			if (part.text.length > 0) {
+				content.push({
+					type: "text",
+					text: part.text,
+					citations: null,
+				});
+			}
+			continue;
+		}
+		if (part.type === "reasoning_text") {
+			if (part.text.length > 0) {
+				content.push({
+					type: "thinking",
+					thinking: part.text,
+					signature: part.thoughtSignature ?? "",
+				});
+			}
+			continue;
+		}
+		if (part.type === "image") {
+			if (part.source === "data") {
+				content.push({
+					type: "image",
+					source: {
+						type: "base64",
+						media_type: part.mimeType,
+						data: part.data,
+					},
+				});
+				continue;
+			}
+			content.push({
+				type: "image",
+				source: {
+					type: "url",
+					media_type: part.mimeType,
+					url: part.data,
+				},
+			});
+			continue;
+		}
+		if (part.type === "provider_block") {
+			content.push(part.block);
+		}
+	}
+	return content;
 }
 

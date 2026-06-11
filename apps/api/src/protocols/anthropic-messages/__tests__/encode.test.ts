@@ -373,14 +373,14 @@ describe("encodeAnthropicMessagesResponse", () => {
 
 		expect(response.content).toHaveLength(2);
 		expect(response.content[0]).toEqual({
-			type: "text",
-			text: "Final answer",
-			citations: null,
-		});
-		expect(response.content[1]).toEqual({
 			type: "thinking",
 			thinking: "Thinking...",
 			signature: "",
+		});
+		expect(response.content[1]).toEqual({
+			type: "text",
+			text: "Final answer",
+			citations: null,
 		});
 	});
 
@@ -640,7 +640,6 @@ describe("encodeAnthropicMessagesResponse", () => {
 
 		const response = encodeAnthropicMessagesResponse(ir);
 		expect(response.content).toEqual([
-			{ type: "text", text: "Done.", citations: null },
 			{
 				type: "server_tool_use",
 				id: "srvu_123",
@@ -652,6 +651,7 @@ describe("encodeAnthropicMessagesResponse", () => {
 				tool_use_id: "srvu_123",
 				content: [{ type: "text", text: "Use the smaller patch." }],
 			},
+			{ type: "text", text: "Done.", citations: null },
 		]);
 	});
 });
