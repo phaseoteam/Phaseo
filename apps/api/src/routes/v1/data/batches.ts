@@ -223,7 +223,8 @@ function resolveBatchProgressPercentFromCounts(meta: BatchJobMeta | null | undef
 	const failed = Math.max(0, toFiniteNumber(counts?.failed) ?? 0);
 	const finished = Math.max(0, Math.min(total, completed + failed));
 	const progress = Math.round((finished / total) * 100);
-	return Math.max(0, Math.min(100, progress));
+	if (progress <= 0 || progress >= 100) return null;
+	return progress;
 }
 
 function buildBatchPricingLines(meta: BatchJobMeta | null | undefined): Record<string, unknown>[] {
@@ -290,9 +291,8 @@ function buildBatchBilling(
 			? (estimatedUsage.pricing as Record<string, unknown>)
 			: null;
 	const estimatedNanos =
-		typeof meta?.reservedNanos === "number"
-			? meta.reservedNanos
-			: toFiniteNumber(estimatedPricing?.total_nanos);
+		toFiniteNumber(estimatedPricing?.total_nanos) ??
+		(typeof meta?.reservedNanos === "number" ? meta.reservedNanos : null);
 	const settledNanos = typeof meta?.costNanos === "number" ? meta.costNanos : null;
 	const estimatedUsd = estimatedNanos != null ? Math.max(0, estimatedNanos) / 1e9 : null;
 	const settledUsd =
