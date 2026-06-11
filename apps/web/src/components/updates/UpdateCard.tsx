@@ -10,11 +10,33 @@ import { cn } from "@/lib/utils";
 import type React from "react";
 import { Logo } from "@/components/Logo";
 import TimeDisplay from "./TimeDisplay";
+import { Archive, Ban, Globe, Megaphone, MonitorPlay, Rocket } from "lucide-react";
+
+export type UpdateBadgeIconName =
+	| "archive"
+	| "ban"
+	| "globe"
+	| "megaphone"
+	| "monitor-play"
+	| "rocket";
+
+const BADGE_ICONS: Record<
+	UpdateBadgeIconName,
+	React.ComponentType<{ className?: string }>
+> = {
+	archive: Archive,
+	ban: Ban,
+	globe: Globe,
+	megaphone: Megaphone,
+	"monitor-play": MonitorPlay,
+	rocket: Rocket,
+};
 
 export type UpdateBadge = {
 	label: string;
 	// many callers use React.ComponentType<{ className?: string }>
 	icon?: React.ComponentType<{ className?: string }> | null;
+	iconName?: UpdateBadgeIconName | null;
 	className?: string;
 };
 
@@ -110,7 +132,9 @@ export default function UpdateCard({
 					>
 						<div className="flex flex-wrap items-center gap-2">
 							{visibleBadges.map((badge) => {
-								const Icon = badge.icon;
+								const Icon =
+									badge.icon ??
+									(badge.iconName ? BADGE_ICONS[badge.iconName] : null);
 								return (
 									<span
 										key={`${id}-${badge.label}`}

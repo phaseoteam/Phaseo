@@ -1,16 +1,16 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
-import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import PresetsPanel from "@/components/(gateway)/settings/presets/PresetsPanel";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Store } from "lucide-react";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import {
+	fetchFrontendAPIProviders,
+	fetchFrontendModels,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
@@ -75,58 +75,25 @@ export default function PresetsPage() {
 }
 
 async function PresetsContent() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	const { data: teamUsers } = await supabase
-		.from("workspace_members")
-		.select("workspace_id, teams:workspaces(id, name)")
-		.eq("user_id", user?.id);
-
-	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
-
-	const { data: presets } = await supabase
-		.from("presets")
-		.select("*")
-		.eq("workspace_id", initialTeamId);
-
-	const [models, providers] = await Promise.all([
-		getAllModelsCached(await resolveIncludeHidden()),
-		getAllAPIProvidersCached(),
+	const [initialData, models, providers] = await Promise.all([
+		fetchSettingsPresetsInitialData(),
+		fetchFrontendModels(),
+		fetchFrontendAPIProviders(),
 	]);
 
-	const teams: any[] = [];
-
-	if (teamUsers) {
-		for (const tu of teamUsers) {
-			if (tu?.teams) {
-				const team = Array.isArray(tu.teams) ? tu.teams[0] : tu.teams;
-				if (team?.id && team?.name) {
-					teams.push({ id: team.id, name: team.name });
-				}
-			}
-		}
-	}
-
-	const presetsArray = (presets ?? []).map((p: any) => ({
-		...p,
-		all_models: models,
+	const teamsWithPresets = initialData.teamsWithPresets.map((team) => ({
+		...team,
+		presets: team.presets.map((preset: any) => ({
+			...preset,
+			all_models: models,
+		})),
 	}));
-
-	const activeTeam = teams.find((t) => t.id === initialTeamId);
-
-	const teamsWithPresets = activeTeam
-		? [{ ...activeTeam, presets: presetsArray }]
-		: [];
 
 	return (
 		<PresetsPanel
 			teamsWithPresets={teamsWithPresets}
-			initialTeamId={initialTeamId}
-			currentUserId={user?.id}
+			initialTeamId={initialData.initialTeamId}
+			currentUserId={initialData.currentUserId}
 			providers={providers}
 		/>
 	);

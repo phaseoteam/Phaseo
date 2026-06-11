@@ -1,10 +1,9 @@
 // lib/fetchers/updates/getLatestModelUpdate.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
-import type React from "react";
-import { Megaphone, Rocket, Ban, Archive } from "lucide-react";
+import type { UpdateBadgeIconName } from "@/components/updates/UpdateCard";
 
 // --------------------------------------
 // Types
@@ -37,7 +36,7 @@ export type UpdateCardProps = {
     id?: string | number;
     badges?: Array<{
         label: string;
-        icon?: React.ComponentType<{ className?: string }> | null;
+        iconName?: UpdateBadgeIconName | null;
         className?: string;
     }>;
     avatar?: { organisationId: string; name?: string | null } | null;
@@ -64,29 +63,29 @@ const TYPE_RANK: Record<EventType, number> = {
 
 const EVENT_BADGE_META: Record<
     EventType,
-    { label: string; icon: React.ComponentType<{ className?: string }>; className: string }
+    { label: string; iconName: UpdateBadgeIconName; className: string }
 > = {
     Announced: {
         label: "Announcement",
-        icon: Megaphone,
+        iconName: "megaphone",
         className:
             "bg-blue-100 text-blue-800 border border-blue-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-blue-200 hover:text-blue-900 hover:border-blue-400 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900 dark:hover:text-blue-200 dark:hover:border-blue-700 rounded-full",
     },
     Released: {
         label: "Release",
-        icon: Rocket,
+        iconName: "rocket",
         className:
             "bg-green-100 text-green-800 border border-green-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-green-200 hover:text-green-900 hover:border-green-400 dark:bg-green-950 dark:text-green-300 dark:border-green-800 dark:hover:bg-green-900 dark:hover:text-green-200 dark:hover:border-green-700 rounded-full",
     },
     Deprecated: {
         label: "Deprecation",
-        icon: Ban,
+        iconName: "ban",
         className:
             "bg-red-100 text-red-800 border border-red-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-red-200 hover:text-red-900 hover:border-red-400 dark:bg-red-950 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900 dark:hover:text-red-200 dark:hover:border-red-700 rounded-full",
     },
     Retired: {
         label: "Retirement",
-        icon: Archive,
+        iconName: "archive",
         className:
             "bg-zinc-300 text-zinc-800 border border-zinc-400 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-zinc-400 hover:text-zinc-900 hover:border-zinc-500 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:hover:border-zinc-600 rounded-full",
     },
@@ -136,7 +135,7 @@ function relTime(iso: string, nowMs: number) {
 // Build serialisable events from DB rows
 // --------------------------------------
 async function fetchAllModelRows(includeHidden: boolean): Promise<ModelRow[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await applyHiddenFilter(
         supabase
@@ -229,7 +228,9 @@ async function getSerialisedModelEventsCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:model-updates");
+    cacheTag("frontend:model-update-cards");
 
     const now = new Date();
     const rows = await fetchAllModelRows(includeHidden);
@@ -258,7 +259,7 @@ export async function getLatestModelUpdateCards(
         const badges = [
             {
                 label: badgeMeta.label,
-                icon: badgeMeta.icon,
+                iconName: badgeMeta.iconName,
                 className: badgeMeta.className,
             },
         ];

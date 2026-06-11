@@ -3,18 +3,15 @@
 // Why: Provides quick overview of activity in last 24h
 // How: Fetches and displays summary stats in cards
 
-import { getRankings } from "@/lib/fetchers/rankings/getRankingsData";
+import { fetchFrontendModelRankings } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, Zap, Server, Clock, CheckCircle2, Hash } from "lucide-react";
 
 export async function SummaryStats() {
-    const data = await getRankings();
+    const data = await fetchFrontendModelRankings();
     const summary = data.summary;
 
-    console.log("[SummaryStats] Data received:", { summary, ok: data.ok });
-
     if (!summary) {
-        console.warn("[SummaryStats] No summary data available");
         return null;
     }
 

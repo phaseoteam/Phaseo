@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 import UpdateCard from "@/components/updates/UpdateCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getLatestModelUpdateCards } from "@/lib/fetchers/updates/getLatestModelUpdates";
+import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 const CARD_LIMIT = 5;
 
@@ -28,7 +28,7 @@ export function HomeModelUpdatesSectionFallback() {
 }
 
 export default async function HomeModelUpdatesSection() {
-	const modelCards = await getLatestModelUpdateCards(CARD_LIMIT, false);
+	const modelCards = await fetchFrontendModelUpdateCards(CARD_LIMIT, false);
 
 	return (
 		<section className="w-full">

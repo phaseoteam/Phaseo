@@ -2,8 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Boxes, Coins, Route } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { getGatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
-import { getTopModelsWithMetadata } from "@/lib/fetchers/rankings/getRankingsData";
+import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 
 function formatCompact(value: number) {
@@ -29,11 +28,11 @@ export function ExperimentalGatewayShowcaseFallback() {
 }
 
 export default async function ExperimentalGatewayShowcase() {
-	const monthlyWindowHours = 24 * 30;
-	const [metrics, topModelsRes] = await Promise.all([
-		getGatewayMarketingMetrics(monthlyWindowHours),
-		getTopModelsWithMetadata("week", 4),
-	]);
+	const { metrics, topModels: topModelsRes } =
+		await fetchFrontendGatewayShowcase({
+			topAppsLimit: 0,
+			topModelsLimit: 4,
+		});
 
 	const topModels = (topModelsRes.data ?? [])
 		.filter((row) => Number(row.total_tokens ?? 0) > 0)

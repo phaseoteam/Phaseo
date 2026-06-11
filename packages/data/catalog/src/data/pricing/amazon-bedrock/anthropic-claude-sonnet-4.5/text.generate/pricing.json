@@ -44,7 +44,7 @@
       "priority": 100
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_write_text_tokens_5m",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 3.75,
@@ -58,19 +58,12 @@
           "or_group": 1,
           "and_index": 1,
           "value": 200000
-        },
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 2,
-          "value": "5m"
         }
       ],
       "priority": 100
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_write_text_tokens_1h",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 6,
@@ -84,13 +77,6 @@
           "or_group": 1,
           "and_index": 1,
           "value": 200000
-        },
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 2,
-          "value": "1h"
         }
       ],
       "priority": 100
@@ -172,7 +158,7 @@
       "priority": 100
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_write_text_tokens_5m",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 12,
@@ -186,13 +172,6 @@
           "or_group": 1,
           "and_index": 1,
           "value": 200000
-        },
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 2,
-          "value": "5m"
         }
       ],
       "priority": 100

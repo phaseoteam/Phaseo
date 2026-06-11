@@ -64,7 +64,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 70
+      "rank": 76
     },
     {
       "benchmark_id": "lmarena-text",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 71
+      "rank": 72
     },
     {
       "benchmark_id": "if-eval",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_1-nemotron-ultra-253b-v1/modelcard",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "math-500",

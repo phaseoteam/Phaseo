@@ -341,7 +341,11 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean): any {
  */
 function mapContentPart(part: IRContentPart): any {
 	if (part.type === "text") {
-		return { type: "input_text", text: part.text };
+		return {
+			type: "input_text",
+			text: part.text,
+			...(part.cacheControl ? { cache_control: part.cacheControl } : {}),
+		};
 	}
 
 	if (part.type === "reasoning_text") {
@@ -763,6 +767,10 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
 	const cachedInputTokens = inputDetails?.cached_tokens;
+	const cachedWriteTokens =
+		inputDetails?.cache_creation_input_tokens ??
+		inputDetails?.cache_creation_tokens ??
+		outputDetails?.cached_tokens;
 	const reasoningTokens = outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 	const serverToolUseRaw =
@@ -838,7 +846,7 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			outputImageTokens: outputDetails?.output_images,
 			outputAudioTokens: outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
-			cachedWriteTokens: outputDetails?.cached_tokens,
+			cachedWriteTokens,
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

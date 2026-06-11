@@ -1,8 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import type { UpdateCardProps } from "@/lib/fetchers/updates/getLatestUpdates";
-import type React from "react";
-import { MonitorPlay } from "lucide-react";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type DbRow = {
 	id: string;
@@ -27,8 +25,6 @@ const YOUTUBE_BADGE_LABEL = "YouTube Watcher";
 const YOUTUBE_BADGE_CLASS =
 	"px-2 py-1 text-xs flex items-center gap-1 transition-colors bg-rose-100 text-rose-900 border border-rose-300 hover:bg-rose-200 hover:text-rose-900 hover:border-rose-400 dark:bg-rose-900/60 dark:text-rose-200 dark:border-rose-700 dark:hover:bg-rose-900 dark:hover:text-rose-200 dark:hover:border-rose-600 rounded-full";
 const YOUTUBE_ACCENT_CLASS = "bg-rose-500";
-const YouTubeIcon =
-	MonitorPlay as unknown as React.ComponentType<{ className?: string }>;
 
 function normaliseLimit(limit: number): number {
 	if (!Number.isFinite(limit)) return DEFAULT_LIMIT;
@@ -46,7 +42,7 @@ function isExternal(href: string) {
 }
 
 async function fetchYouTubeUpdateRows(limit: number): Promise<CachedRow[]> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data, error } = (await supabase
 		.from(TABLE_NAME)
@@ -73,7 +69,9 @@ async function getYouTubeUpdateRowsCached(limit: number): Promise<CachedRow[]> {
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:latest-youtube-updates");
+	cacheTag("frontend:youtube-updates");
 
 	return fetchYouTubeUpdateRows(limit);
 }
@@ -93,7 +91,7 @@ function toUpdateCard(row: CachedRow): UpdateCardProps {
 		badges: [
 			{
 				label: YOUTUBE_BADGE_LABEL,
-				icon: YouTubeIcon,
+				iconName: "monitor-play",
 				className: YOUTUBE_BADGE_CLASS,
 			},
 		],

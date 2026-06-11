@@ -2,7 +2,14 @@ import { join } from "path";
 import { promises as fs } from "fs";
 import { DIR_ORGS, DIR_PROVIDERS } from "../paths";
 import { listDirs, readJsonWithHash, chunk } from "../util";
-import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
+import {
+    client,
+    isDryRun,
+    logWrite,
+    assertOk,
+    pruneRowsByColumn,
+    touchModelTimestamps,
+} from "../supa";
 import { ChangeTracker } from "../state";
 
 type ProviderStatus = "Active" | "Beta" | "Alpha" | "NotReady";
@@ -393,21 +400,20 @@ const compactNullish = (value: unknown): unknown => {
     return value;
 };
 
-const squashCapabilityParams = (value: unknown): Record<string, unknown> => {
+export const squashCapabilityParams = (value: unknown): Record<string, unknown> => {
     if (Array.isArray(value)) {
         const out: Record<string, unknown> = {};
         for (const entry of value) {
             if (entry && typeof entry === "object") {
                 const obj = entry as Record<string, unknown>;
-                const paramId = typeof obj.param_id === "string" ? obj.param_id : null;
+                const paramId = typeof obj.param_id === "string" ? obj.param_id.trim() : null;
                 if (!paramId) continue;
-                const metadata = compactNullish({
-                    provider_min: obj.provider_min ?? null,
-                    provider_max: obj.provider_max ?? null,
-                    provider_default: obj.provider_default ?? null,
-                    notes: obj.notes ?? null,
-                }) as Record<string, unknown> | undefined;
-                out[paramId] = metadata ?? {};
+                const { param_id: _paramId, ...metadataInput } = obj;
+                const metadata = compactNullish(metadataInput);
+                out[paramId] =
+                    metadata && typeof metadata === "object" && !Array.isArray(metadata)
+                        ? metadata as Record<string, unknown>
+                        : {};
             } else if (typeof entry === "string" && entry.trim()) {
                 out[entry.trim()] = {};
             }
@@ -555,6 +561,36 @@ const loadExistingModelIds = async (
     return { modelIds, apiToModelId, normalizedModelIdToModelId };
 };
 
+function resolveTouchedModelIds(
+    rawModelIds: Iterable<string | null | undefined>,
+    lookups: {
+        knownModelIds: Set<string>;
+        apiToModelId: Map<string, string>;
+        normalizedModelIdToModelId: Map<string, string>;
+    }
+): string[] {
+    const resolved = new Set<string>();
+
+    for (const value of rawModelIds) {
+        const normalizedValue = typeof value === "string" ? value.trim() : "";
+        if (!normalizedValue) continue;
+
+        const modelId =
+            (lookups.knownModelIds.has(normalizedValue) ? normalizedValue : "") ||
+            lookups.apiToModelId.get(normalizedValue) ||
+            lookups.normalizedModelIdToModelId.get(
+                normalizeModelIdForMatch(normalizedValue)
+            ) ||
+            "";
+
+        if (modelId) {
+            resolved.add(modelId);
+        }
+    }
+
+    return Array.from(resolved);
+}
+
 export async function loadProviders(
     tracker: ChangeTracker,
     opts?: { modelId?: string | null }
@@ -583,6 +619,7 @@ export async function loadProviders(
         provider_api_model_id: string;
         internal_model_id: string;
     }> = [];
+    const touchedModelIds = new Set<string>();
     const providerIds = new Set<string>();
     const providerModelIds = new Set<string>();
     const capabilityKeys = new Set<string>();
@@ -729,11 +766,26 @@ export async function loadProviders(
         try {
             await fs.access(modelsPath);
             const { data: models, hash: modelsHash } = await readJsonWithHash<any[]>(modelsPath);
+            const linkedModelIds = Array.from(
+                new Set(
+                    (models ?? []).flatMap((model) => [
+                        typeof model?.internal_model_id === "string"
+                            ? model.internal_model_id.trim()
+                            : "",
+                        typeof model?.api_model_id === "string"
+                            ? model.api_model_id.trim()
+                            : "",
+                    ]).filter(Boolean)
+                )
+            );
             const modelsChange = tracker.track(modelsPath, modelsHash, {
                 api_provider_id: j.api_provider_id,
                 kind: "provider_models",
+                linked_model_ids: linkedModelIds,
             });
             if (modelsChange.status !== "unchanged") touched = true;
+            const shouldTouchProviderModels =
+                change.status !== "unchanged" || modelsChange.status !== "unchanged";
 
             for (const model of models ?? []) {
                 const apiModelId =
@@ -778,6 +830,9 @@ export async function loadProviders(
                 const effectiveInternalModelId =
                     (hasValidInternalModelId ? internalModelId : "") ||
                     (hasResolvedModelId ? resolvedModelId : null);
+                if (shouldTouchProviderModels && hasResolvedModelId) {
+                    touchedModelIds.add(resolvedModelId);
+                }
                 const provider_api_model_id = model.provider_api_model_id;
                 providerModelIds.add(provider_api_model_id);
                 providerModelsToUpsert.push({
@@ -912,6 +967,18 @@ export async function loadProviders(
     }
 
     const deletions = tracker.getDeleted(DIR_PROVIDERS);
+    for (const deletion of deletions) {
+        const linkedModelIds = Array.isArray(deletion.info.meta?.linked_model_ids)
+            ? deletion.info.meta.linked_model_ids
+            : [];
+        for (const touchedModelId of resolveTouchedModelIds(linkedModelIds, {
+            knownModelIds,
+            apiToModelId,
+            normalizedModelIdToModelId,
+        })) {
+            touchedModelIds.add(touchedModelId);
+        }
+    }
     touched = touched || deletions.length > 0;
 
     if (touched) {
@@ -1014,4 +1081,6 @@ export async function loadProviders(
             }
         }
     }
+
+    await touchModelTimestamps(supa, touchedModelIds);
 }

@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 6
+      "rank": 11
     },
     {
       "benchmark_id": "swe-bench",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 15
+      "rank": 19
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.z.ai/guides/llm/glm-5",
-      "rank": 24
+      "rank": 28
     },
     {
       "benchmark_id": "simplebench",
@@ -87,7 +87,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/",
-      "rank": 23
+      "rank": 14
     },
     {
       "benchmark_id": "nyt-connections",

@@ -1,7 +1,7 @@
 "use server";
 
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { mapRawToModelCard } from "@/lib/fetchers/models/getAllModels";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
@@ -24,7 +24,7 @@ export async function getModelCardsByIds(
 	includeHidden: boolean
 ): Promise<ModelCard[]> {
 	if (!modelIds.length) return [];
-	const supabase = createClient();
+	const supabase = createAdminClient();
 	const { data, error } = await applyHiddenFilter(
 		supabase.from("data_models").select(MODEL_SELECT),
 		includeHidden
@@ -51,7 +51,9 @@ export async function getModelCardsByIdsCached(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:models");
+	cacheTag("frontend:models");
 
 	return getModelCardsByIds(modelIds, includeHidden);
 }

@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 48
+      "rank": 53
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250528",
-      "rank": 83
+      "rank": 88
     },
     {
       "benchmark_id": "livebench",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 20
+      "rank": 30
     },
     {
       "benchmark_id": "lmarena-text",
@@ -102,7 +102,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 12
+      "rank": 22
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": "Confab 12.9%; non-response 16.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 21
+      "rank": 42
     },
     {
       "benchmark_id": "elimination-game",
@@ -134,7 +134,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.204; games 565; avg points 0.581",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 8
+      "rank": 7
     }
   ]
 }

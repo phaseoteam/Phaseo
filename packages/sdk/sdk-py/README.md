@@ -60,6 +60,7 @@ for chunk in client.stream_text(
 - `client.get_health()`
 - `client.models.get_deprecation_info(model_id)`
 - `client.models.validate(model_id)`
+- `client.batches.list_models()` for batch-capable models and supported batch parameter metadata
 
 Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 

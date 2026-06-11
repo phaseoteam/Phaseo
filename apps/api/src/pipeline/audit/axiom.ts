@@ -249,7 +249,10 @@ export function buildAxiomEvent(a: AxiomArgs) {
     const costCachedRead =
         (lineNanosByDim.get("implicit_cached_input_text_tokens") ?? 0) +
         (lineNanosByDim.get("cached_read_text_tokens") ?? 0);
-    const costCachedWrite = lineNanosByDim.get("cached_write_text_tokens") ?? 0;
+    const costCachedWrite =
+        (lineNanosByDim.get("cached_write_text_tokens") ?? 0) +
+        (lineNanosByDim.get("cached_write_text_tokens_5m") ?? 0) +
+        (lineNanosByDim.get("cached_write_text_tokens_1h") ?? 0);
     const costInputTotal =
         costInputText +
         costInputAggregate +

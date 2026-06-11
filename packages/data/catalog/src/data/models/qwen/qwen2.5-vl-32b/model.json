@@ -48,7 +48,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 136
+      "rank": 142
     },
     {
       "benchmark_id": "aitz-em",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 188
+      "rank": 189
     },
     {
       "benchmark_id": "humaneval",
@@ -192,7 +192,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 116
+      "rank": 119
     },
     {
       "benchmark_id": "mmmu",
@@ -200,7 +200,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 72
+      "rank": 73
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -208,7 +208,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 85
+      "rank": 89
     },
     {
       "benchmark_id": "mmstar",
@@ -240,7 +240,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-32B-Instruct",
-      "rank": 49
+      "rank": 52
     },
     {
       "benchmark_id": "screenspot",

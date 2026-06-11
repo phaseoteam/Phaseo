@@ -27,6 +27,7 @@ interface RequestsSectionProps {
 	initialRows: RequestRow[];
 	initialTotal: number;
 	initialTotalPages: number;
+	detailBasePath?: string;
 }
 
 export default function RequestsSection({
@@ -40,6 +41,7 @@ export default function RequestsSection({
 	initialRows,
 	initialTotal,
 	initialTotalPages,
+	detailBasePath,
 }: RequestsSectionProps) {
 	const exportRef = useRef<((format: "csv" | "pdf") => void) | null>(null);
 	const [refreshing, setRefreshing] = React.useState(false);
@@ -109,6 +111,7 @@ export default function RequestsSection({
 				initialRows={initialRows}
 				initialTotal={initialTotal}
 				initialTotalPages={initialTotalPages}
+				detailBasePath={detailBasePath}
 				onExportRef={exportRef}
 			/>
 		</div>

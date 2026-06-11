@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from "next/server";
+import { PUBLIC_CDN_CACHE_HEADERS } from "@/lib/cache/publicCacheHeaders";
+import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
+
+export async function GET(
+	_request: NextRequest,
+	context: { params: Promise<{ organisationId: string; modelId: string }> },
+) {
+	try {
+		const { organisationId, modelId } = await context.params;
+		const fullModelId = `${organisationId}/${modelId}`;
+		const metadata = await getModelGatewayMetadataCached(fullModelId, false);
+		return NextResponse.json(metadata, {
+			headers: PUBLIC_CDN_CACHE_HEADERS,
+		});
+	} catch (error) {
+		console.error(
+			"[api/frontend/models/gateway-metadata] failed to fetch gateway metadata",
+			error,
+		);
+		return NextResponse.json(
+			{ error: "Failed to load model gateway metadata" },
+			{ status: 500 },
+		);
+	}
+}

@@ -1,8 +1,8 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
 import { extractSupportedParameters } from "@/lib/fetchers/models/table-view/helpers";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface GatewayProviderDetails {
     api_provider_id: string;
@@ -291,7 +291,7 @@ export default async function getModelGatewayMetadata(
     modelId: string,
     includeHidden: boolean
 ): Promise<ModelGatewayMetadata> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: modelRow, error: modelError } = await supabase
         .from("data_models")
@@ -773,11 +773,13 @@ export async function getModelGatewayMetadataCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_provider_models");
     cacheTag("data:model_aliases");
+    cacheTag("frontend:model-gateway-metadata");
 
     console.log("[fetch] HIT DB for model gateway metadata", modelId);
     return getModelGatewayMetadata(modelId, includeHidden);

@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 35
+      "rank": 36
     },
     {
       "benchmark_id": "charxiv-r",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "gpqa",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 56
+      "rank": 57
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 98
+      "rank": 104
     },
     {
       "benchmark_id": "mathvista",
@@ -137,7 +137,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from o4-mini",
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 55
+      "rank": 59
     },
     {
       "benchmark_id": "tau-bench-airline",

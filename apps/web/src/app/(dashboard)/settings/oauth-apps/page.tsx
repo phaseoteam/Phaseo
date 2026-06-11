@@ -1,7 +1,5 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";
 import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
 import { Button } from "@/components/ui/button";
@@ -19,6 +17,7 @@ import {
 	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
 	isThirdPartyOAuthEnabled,
 } from "@/lib/oauth/thirdPartyOAuth";
+import { fetchSettingsOAuthAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsOAuthAppsInitialData";
 
 export const metadata = {
 	title: "OAuth Apps - Settings",
@@ -99,14 +98,9 @@ export default function OAuthAppsPage() {
 }
 
 async function OAuthAppsContent() {
-	const supabase = await createClient();
+	const initialData = await fetchSettingsOAuthAppsInitialData();
 
-	// Get current user
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user) {
+	if (!initialData.signedIn) {
 		return (
 			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -121,14 +115,6 @@ async function OAuthAppsContent() {
 			</Empty>
 		);
 	}
-
-	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
-
-	const { data: oauthApps } = await supabase
-		.from("oauth_apps_with_stats")
-		.select("*")
-		.eq("workspace_id", initialTeamId)
-		.order("created_at", { ascending: false });
 
 	return (
 		<div className="space-y-6">
@@ -152,13 +138,13 @@ async function OAuthAppsContent() {
 							</Button>
 						</Link>
 						<CreateOAuthAppDialog
-							currentTeamId={initialTeamId}
+							currentTeamId={initialData.initialTeamId}
 						/>
 					</>
 				}
 			/>
 			<OAuthAppsPanel
-				oauthApps={oauthApps ?? []}
+				oauthApps={initialData.oauthApps}
 			/>
 		</div>
 	);

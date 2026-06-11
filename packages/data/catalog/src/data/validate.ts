@@ -219,6 +219,15 @@ export function checkApiProviderModelEntrySafety(
           )
         : [];
 
+    for (const capability of configuredCapabilities) {
+        const capabilityId = String(capability.capability_id).trim();
+        const paramsErrors = validateCapabilityParams((capability as Record<string, unknown>).params, {
+            rowLabel,
+            capabilityId,
+        });
+        errors.push(...paramsErrors);
+    }
+
     if (row?.is_active_gateway === true && configuredCapabilities.length === 0) {
         warnings.push(`API provider model ${rowLabel} is active on gateway but has no configured non-disabled capabilities`);
     }
@@ -244,6 +253,78 @@ export function checkApiProviderModelEntrySafety(
     }
 
     return { errors, warnings };
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isJsonScalar(value: unknown): boolean {
+    return (
+        value === null ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean'
+    );
+}
+
+function isJsonLike(value: unknown): boolean {
+    if (isJsonScalar(value)) return true;
+    if (Array.isArray(value)) return value.every(isJsonLike);
+    if (isPlainObject(value)) return Object.values(value).every(isJsonLike);
+    return false;
+}
+
+function validateCapabilityParams(
+    value: unknown,
+    context: { rowLabel: string; capabilityId: string }
+): string[] {
+    const errors: string[] = [];
+    const label = `API provider model ${context.rowLabel} capability ${context.capabilityId} params`;
+
+    if (value == null) return errors;
+    if (Array.isArray(value)) {
+        for (const [index, entry] of value.entries()) {
+            if (typeof entry === 'string') {
+                if (!entry.trim()) {
+                    errors.push(`${label}[${index}] has empty parameter name`);
+                }
+                continue;
+            }
+            if (!isPlainObject(entry)) {
+                errors.push(`${label}[${index}] must be a parameter name string or object`);
+                continue;
+            }
+            const paramId = normalizeReference(entry.param_id ?? entry.name ?? entry.id);
+            if (!paramId) {
+                errors.push(`${label}[${index}] missing param_id`);
+            }
+            if (!isJsonLike(entry)) {
+                errors.push(`${label}[${index}] contains non-JSON metadata`);
+            }
+        }
+        return errors;
+    }
+
+    if (!isPlainObject(value)) {
+        errors.push(`${label} must be an array or object`);
+        return errors;
+    }
+
+    for (const [paramName, detail] of Object.entries(value)) {
+        if (!paramName.trim()) {
+            errors.push(`${label} contains an empty parameter name`);
+            continue;
+        }
+        if (detail === undefined) {
+            errors.push(`${label}.${paramName} is undefined`);
+            continue;
+        }
+        if (!isJsonLike(detail)) {
+            errors.push(`${label}.${paramName} contains non-JSON metadata`);
+        }
+    }
+    return errors;
 }
 
 const MODEL_DATE_FIELDS = ['announced_date', 'release_date', 'deprecation_date', 'retirement_date'];

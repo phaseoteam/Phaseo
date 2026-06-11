@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2-72b-instruct (score=0.4667; benches=17)",
       "source_link": "https://huggingface.co/Qwen/Qwen2-72B",
-      "rank": 194
+      "rank": 195
     },
     {
       "benchmark_id": "gsm8k",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2-72b-instruct (score=0.4667; benches=17)",
       "source_link": "https://huggingface.co/Qwen/Qwen2-72B",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "hellaswag",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from qwen2-72b-instruct (score=0.4667; benches=17)",
       "source_link": "https://huggingface.co/Qwen/Qwen2-72B",
-      "rank": 123
+      "rank": 126
     },
     {
       "benchmark_id": "multipl-e",

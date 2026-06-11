@@ -481,8 +481,11 @@ export async function getRankings(
     metric: string = "tokens",
     limit: number = 50
 ): Promise<RankingsResponse> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-rankings");
+    cacheTag("frontend:model-rankings");
 
     console.log("[getRankings] Starting fetch with params:", { timeRange, metric, limit });
 
@@ -530,6 +533,8 @@ export async function getRankings(
 }
 
 export async function getPublicSummaryStats(): Promise<SummaryStats> {
+	"use cache";
+
 	cacheLife("hours");
 	cacheTag("public-rankings");
 	cacheTag("data:gateway_requests");
@@ -580,6 +585,8 @@ export async function getPublicSummaryStats(): Promise<SummaryStats> {
 }
 
 export async function getPublicMonthlyTokenTotal(): Promise<number> {
+	"use cache";
+
 	cacheLife("days");
 	cacheTag("public-rankings");
 	cacheTag("data:gateway_requests");
@@ -594,8 +601,11 @@ export async function getPublicMonthlyTokenTotal(): Promise<number> {
  * Get performance data for scatter chart
  */
 export async function getPerformanceData(hours: number = 24): Promise<{ data: PerformanceData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-performance");
+    cacheTag("frontend:rankings-performance");
 
     console.log("[getPerformanceData] Starting fetch with hours:", hours);
 
@@ -620,8 +630,11 @@ export async function getMarketShare(
     dimension: "organization" | "provider" = "organization",
     timeRange: string = "week"
 ): Promise<{ data: MarketShareData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-market-share");
+    cacheTag("frontend:rankings-market-share");
 
     console.log("[getMarketShare] Starting fetch with params:", { dimension, timeRange });
 
@@ -648,8 +661,11 @@ export async function getTimeseriesData(
     bucketSize: string = "hour",
     topN: number = 10
 ): Promise<{ data: TimeseriesData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-timeseries");
+    cacheTag("frontend:rankings-timeseries");
 
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("get_public_usage_timeseries", {
@@ -671,8 +687,12 @@ export async function getTimeseriesData(
 export async function getModelNamesByIds(
     modelIds: string[]
 ): Promise<Record<string, string>> {
+    "use cache";
+
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
+    cacheTag("frontend:model-names");
 
     const uniqueIds = Array.from(new Set(modelIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};
@@ -703,8 +723,12 @@ export async function getModelNamesByIds(
 export async function getProviderNamesByIds(
     providerIds: string[]
 ): Promise<Record<string, string>> {
+    "use cache";
+
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:api_providers");
+    cacheTag("frontend:provider-names");
 
     const uniqueIds = Array.from(new Set(providerIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};
@@ -741,8 +765,12 @@ export type ProviderMeta = {
 export async function getProviderMetaByIds(
     providerIds: string[]
 ): Promise<Record<string, ProviderMeta>> {
+    "use cache";
+
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:api_providers");
+    cacheTag("frontend:provider-meta");
 
     const uniqueIds = Array.from(new Set(providerIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};
@@ -776,8 +804,12 @@ export async function getProviderMetaByIds(
 export async function getOrganisationLogoIdsByNames(
     names: string[]
 ): Promise<Record<string, string>> {
+    "use cache";
+
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:organisations");
+    cacheTag("frontend:organisation-logo-ids");
 
     const uniqueNames = Array.from(new Set(names.filter(Boolean)));
     if (uniqueNames.length === 0) return {};
@@ -834,8 +866,12 @@ export type ModelLeaderboardMeta = {
 export async function getModelLeaderboardMetaByIds(
     modelIds: string[]
 ): Promise<Record<string, ModelLeaderboardMeta>> {
+    "use cache";
+
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
+    cacheTag("frontend:model-leaderboard-meta");
 
     const uniqueIds = Array.from(new Set(modelIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};
@@ -878,8 +914,11 @@ export async function getMarketShareTimeseries(
     bucketSize: string = "week",
     topN: number = 8
 ): Promise<{ data: MarketShareTimeseriesData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-market-share-timeseries");
+    cacheTag("frontend:rankings-market-share-timeseries");
 
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("get_public_market_share_timeseries", {
@@ -902,6 +941,8 @@ export async function getMarketShareTimeseries(
 export async function getReliabilityMetrics(
     timeRange: string = "week"
 ): Promise<{ data: ReliabilityData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-reliability");
 
@@ -920,6 +961,8 @@ export async function getGeographicDistribution(
     timeRange: string = "week",
     limit: number = 20
 ): Promise<{ data: GeographyData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-geography");
 
@@ -938,6 +981,8 @@ export async function getGeographicDistribution(
 export async function getMultimodalBreakdown(
     timeRange: string = "week"
 ): Promise<{ data: MultimodalData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-multimodal");
 
@@ -956,8 +1001,11 @@ export async function getTopApps(
     timeRange: string = "week",
     limit: number = 20
 ): Promise<{ data: TopAppData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-top-apps");
+    cacheTag("frontend:app-rankings");
 
     let supabase: ReturnType<typeof createAdminClient> | null = null;
     try {
@@ -1012,6 +1060,11 @@ export async function getTopApps(
 }
 
 export async function getRankingsIndexabilitySnapshot(): Promise<RankingsIndexabilitySnapshot> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("frontend:rankings-indexability");
+
 	const [rankingsResult, performanceResult, usageResult, appsResult] =
 		await Promise.all([
 			getRankings("week", "tokens", 1),
@@ -1061,8 +1114,11 @@ export async function getModelRankingsRows(
     metric: string = "tokens",
     limit: number = 50
 ): Promise<RankingModel[]> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-rankings");
+    cacheTag("frontend:model-rankings");
 
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("get_public_model_rankings", {
@@ -1086,8 +1142,11 @@ export async function getTrendingApps(
     limit: number = 20,
     minWeekTokens: number = 0
 ): Promise<{ data: TrendingAppData[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-top-apps");
+    cacheTag("frontend:app-rankings");
 
     let supabase: ReturnType<typeof createAdminClient> | null = null;
     try {
@@ -1142,6 +1201,12 @@ export async function getTrendingApps(
 }
 
 export async function getAppsIndexabilitySnapshot(): Promise<AppsIndexabilitySnapshot> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("frontend:apps");
+	cacheTag("frontend:rankings-indexability");
+
 	const [publicAppIds, topAppsResult, trendingAppsResult] = await Promise.all([
 		getPublicAppIdsCached(),
 		getTopApps("4w", APPS_INDEXABILITY_QUERY_LIMIT),
@@ -1170,6 +1235,8 @@ export async function getAppsIndexabilitySnapshot(): Promise<AppsIndexabilitySna
 export async function getWeeklyModelProviderTokens(): Promise<{
     data: WeeklyModelProviderTokens[];
 }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-rankings");
 
@@ -1193,6 +1260,8 @@ export async function getWeeklyModelProviderTokens(): Promise<{
 export async function getDailyAppRollup(
     sinceIso?: string,
 ): Promise<{ data: DailyAppRollup[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-top-apps");
 
@@ -1217,6 +1286,8 @@ export async function getTopModelsWithMetadata(
     timeRange: string = "week",
     limit: number = 6
 ): Promise<{ data: TopModelWithMetadata[] }> {
+    "use cache";
+
     cacheLife("hours");
     cacheTag("public-rankings");
 
@@ -1251,8 +1322,12 @@ export async function getTopModelsWithMetadata(
 export async function getAppImageUrlsByIds(
     appIds: string[]
 ): Promise<Record<string, string | null>> {
+    "use cache";
+
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:apps");
+    cacheTag("frontend:app-images");
 
     const uniqueIds = Array.from(new Set(appIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};

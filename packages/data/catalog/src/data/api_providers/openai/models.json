@@ -3121,8 +3121,24 @@
       },
       {
         "capability_id": "batch",
-        "status": "coming_soon",
-        "params": []
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -3374,8 +3390,24 @@
       },
       {
         "capability_id": "batch",
-        "status": "coming_soon",
-        "params": []
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -3499,8 +3531,24 @@
       },
       {
         "capability_id": "batch",
-        "status": "coming_soon",
-        "params": []
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },
@@ -3624,8 +3672,24 @@
       },
       {
         "capability_id": "batch",
-        "status": "coming_soon",
-        "params": []
+        "status": "active",
+        "params": {
+          "endpoint": {
+            "type": "enum",
+            "values": [
+              "/v1/responses",
+              "/v1/chat/completions"
+            ],
+            "default": "/v1/responses"
+          },
+          "completion_window": {
+            "type": "enum",
+            "values": [
+              "24h"
+            ],
+            "default": "24h"
+          }
+        }
       }
     ]
   },

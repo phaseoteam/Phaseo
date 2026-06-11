@@ -1321,8 +1321,12 @@ class Model
 	public $status;
 	/** @var array|null */
 	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
 	/** @var array|null */
 	public $supported_params;
+	/** @var array<string, mixed>|null */
+	public $supported_params_detail;
 	/** @var array<string, mixed>|null */
 	public $top_provider;
 	/** @var string|null */
@@ -1381,10 +1385,16 @@ class ModelProviderAvailability
 	public $model_routing_status;
 	/** @var array */
 	public $params;
+	/** @var array<string, mixed>|null */
+	public $params_detail;
 	/** @var string */
 	public $provider_routing_status;
 	/** @var string */
 	public $provider_status;
+	/** @var array|null */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
 }
 
 class ModerationCategories
@@ -1941,6 +1951,10 @@ class ServerToolUsage
 	public $web_search_requests;
 	/** @var int|null */
 	public $web_search_results;
+}
+
+class SupportedParameterDetails
+{
 }
 
 class TextContentPart

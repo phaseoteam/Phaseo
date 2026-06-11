@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import getOrganisationOverviewHeader from "@/lib/fetchers/organisations/getOrganisationOverviewHeader";
+import { fetchFrontendOrganisationHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import TabBar from "@/components/(data)/organisation/OrganisationTabs";
 import { Logo } from "@/components/Logo";
 import OrganisationEditButton from "./edit/OrganisationEditButton";
@@ -16,7 +16,7 @@ export default async function OrganisationDetailShell({
 	organisationId,
 	children,
 }: OrganisationDetailShellProps) {
-	const header = await getOrganisationOverviewHeader(organisationId);
+	const header = await fetchFrontendOrganisationHeader(organisationId);
 
 	if (!header) {
 		return (

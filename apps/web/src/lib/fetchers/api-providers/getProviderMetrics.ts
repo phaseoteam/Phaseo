@@ -364,6 +364,7 @@ export async function getProviderMetrics(
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${providerId}`);
 	cacheTag(`data:api_providers:${providerId}`);
+	cacheTag("frontend:api-provider-metrics");
 
 	if (!providerId) {
 		return {

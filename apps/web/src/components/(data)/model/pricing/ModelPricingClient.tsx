@@ -85,6 +85,9 @@ const PRICING_METER_PREFERENCE = [
     "input_text_tokens",
     "output_text_tokens",
     "cached_read_text_tokens",
+    "cached_write_text_tokens",
+    "cached_write_text_tokens_5m",
+    "cached_write_text_tokens_1h",
     "input_image_tokens",
     "output_image_tokens",
     "input_audio_tokens",
@@ -346,9 +349,9 @@ export default function ModelPricingClient({
     workspacePrivacySettings?: WorkspacePrivacySettings | null;
     showHeader?: boolean;
 }) {
-    const pathname = usePathname();
+    const pathname = usePathname() ?? "/";
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const searchParams = useSearchParams() ?? new URLSearchParams();
     const displayProviders = useMemo(
         () => mergeProviderPricingOffers(providers),
         [providers]

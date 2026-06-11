@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 6
+      "rank": 2
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 38
+      "rank": 43
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-o3-and-o4-mini/",
-      "rank": 72
+      "rank": 77
     },
     {
       "benchmark_id": "lisanbench",
@@ -197,7 +197,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 1
+      "rank": 4
     },
     {
       "benchmark_id": "livebench",
@@ -205,7 +205,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 7
+      "rank": 12
     },
     {
       "benchmark_id": "livebench",
@@ -213,7 +213,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 18
+      "rank": 26
     },
     {
       "benchmark_id": "lmarena-text",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 7
+      "rank": 1
     },
     {
       "benchmark_id": "longfact-objects-hallucination-rate",
@@ -253,7 +253,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 6
+      "rank": 2
     },
     {
       "benchmark_id": "openai-mrcr-2-needle-128k",
@@ -269,7 +269,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 6
+      "rank": 15
     },
     {
       "benchmark_id": "videomme",
@@ -285,7 +285,7 @@
       "is_self_reported": false,
       "other_info": "High reasoning; Confab 24.8%; non-response 4.0%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 20
+      "rank": 43
     },
     {
       "benchmark_id": "elimination-game",
@@ -293,7 +293,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; sigma 0.192; games 656; avg points 0.523",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 22
+      "rank": 21
     }
   ]
 }

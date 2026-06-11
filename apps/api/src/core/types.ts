@@ -234,6 +234,8 @@ export type GatewayUsage = {
     reasoning_tokens?: number;
 
     cached_write_text_tokens?: number;
+    cached_write_text_tokens_5m?: number;
+    cached_write_text_tokens_1h?: number;
 
     server_tool_use?: {
         datetime_requests?: number;

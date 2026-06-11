@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from ministral-3b-latest",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 174
+      "rank": 175
     },
     {
       "benchmark_id": "livecodebench",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from ministral-3b-latest",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 43
+      "rank": 44
     }
   ]
 }

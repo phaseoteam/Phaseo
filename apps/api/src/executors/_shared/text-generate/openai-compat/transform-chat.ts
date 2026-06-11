@@ -27,12 +27,12 @@ export function irToOpenAIChat(
 		if (msg.role === "system") {
 			messages.push({
 				role: "system",
-				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+				content: mapSystemLikeContentToOpenAI(msg.content),
 			});
 		} else if (msg.role === "developer") {
 			messages.push({
 				role: "developer",
-				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+				content: mapSystemLikeContentToOpenAI(msg.content),
 			});
 		} else if (msg.role === "user") {
 			messages.push({
@@ -234,14 +234,35 @@ function toOpenAIChatTool(tool: IRTool): any {
 /**
  * Map IR content to OpenAI Chat content
  */
+function hasCacheControl(content: IRContentPart[]): boolean {
+	return content.some((part) => part.type === "text" && part.cacheControl);
+}
+
+function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {
+	return {
+		type,
+		text: part.text,
+		...(part.cacheControl ? { cache_control: part.cacheControl } : {}),
+	};
+}
+
+function mapSystemLikeContentToOpenAI(content: IRContentPart[]): any {
+	if (!hasCacheControl(content)) {
+		return content.map((c) => (c.type === "text" ? c.text : "")).join("");
+	}
+	return content
+		.filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text")
+		.map((part) => mapTextPartToOpenAI(part));
+}
+
 function mapIRContentToOpenAI(content: IRContentPart[]): any {
-	if (content.length === 1 && content[0].type === "text") {
+	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
 
 	return content.map((part) => {
 		if (part.type === "text") {
-			return { type: "text", text: part.text };
+			return mapTextPartToOpenAI(part);
 		}
 
 		if (part.type === "image") {
@@ -512,6 +533,10 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
 	const cachedInputTokens = inputDetails?.cached_tokens;
+	const cachedWriteTokens =
+		inputDetails?.cache_creation_input_tokens ??
+		inputDetails?.cache_creation_tokens ??
+		outputDetails?.cached_tokens;
 	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 	const inputTokens = usage.prompt_tokens ?? usage.input_tokens ?? usage.input_text_tokens ?? 0;
@@ -590,7 +615,7 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 			outputImageTokens: outputDetails?.output_images,
 			outputAudioTokens: outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
-			cachedWriteTokens: outputDetails?.cached_tokens,
+			cachedWriteTokens,
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};

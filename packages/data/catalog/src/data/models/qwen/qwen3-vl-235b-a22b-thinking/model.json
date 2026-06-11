@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "countbench",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 101
+      "rank": 107
     },
     {
       "benchmark_id": "hypersim",
@@ -198,7 +198,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "lvbench",
@@ -278,7 +278,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 24
+      "rank": 26
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -310,7 +310,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 37
+      "rank": 39
     },
     {
       "benchmark_id": "mmmuval",
@@ -390,7 +390,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 22
+      "rank": 25
     },
     {
       "benchmark_id": "osworld-g",
@@ -510,7 +510,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "visulogic",

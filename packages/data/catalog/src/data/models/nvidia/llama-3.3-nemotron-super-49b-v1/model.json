@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
-      "rank": 98
+      "rank": 104
     },
     {
       "benchmark_id": "lmarena-text",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://build.nvidia.com/nvidia/llama-3_3-nemotron-super-49b-v1/modelcard",
-      "rank": 127
+      "rank": 128
     },
     {
       "benchmark_id": "math-500",

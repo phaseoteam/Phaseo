@@ -1,4 +1,4 @@
-import { getProviderMetrics } from "@/lib/fetchers/api-providers/getProviderMetrics";
+import { fetchFrontendAPIProviderMetrics } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import PerformanceCardsClient, {
 	type MetricCardSummary,
 	type Trend,
@@ -35,7 +35,7 @@ export default async function PerformanceCards({
 	const resolvedParams = params ? await params : undefined;
 	const apiProvider = resolvedParams?.apiProvider ?? "";
 
-	const metrics = await getProviderMetrics(apiProvider, 24 * 7);
+	const metrics = await fetchFrontendAPIProviderMetrics(apiProvider, 24 * 7);
 
 	const throughputData = metrics.timeseries.throughput;
 	const latencyData = metrics.timeseries.latency;

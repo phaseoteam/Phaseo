@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 88
+      "rank": 89
     },
     {
       "benchmark_id": "humaneval",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 51
+      "rank": 52
     },
     {
       "benchmark_id": "math-500",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 34
+      "rank": 36
     },
     {
       "benchmark_id": "swe-bench",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 87
+      "rank": 91
     },
     {
       "benchmark_id": "tau2-airline",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 27
+      "rank": 29
     },
     {
       "benchmark_id": "terminal-bench",
@@ -150,7 +150,7 @@
       "is_self_reported": false,
       "other_info": "Thinking; 940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 59
+      "rank": 58
     }
   ]
 }

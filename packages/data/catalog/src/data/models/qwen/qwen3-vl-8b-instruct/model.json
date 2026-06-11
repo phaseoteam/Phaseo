@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 49
+      "rank": 50
     },
     {
       "benchmark_id": "docvqatest",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 57
+      "rank": 58
     },
     {
       "benchmark_id": "lvbench",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 107
+      "rank": 110
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -238,7 +238,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 78
+      "rank": 82
     },
     {
       "benchmark_id": "mmmu-(val)",
@@ -318,7 +318,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 28
+      "rank": 31
     },
     {
       "benchmark_id": "polymath",
@@ -366,7 +366,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 27
+      "rank": 28
     },
     {
       "benchmark_id": "video-mmmu",
@@ -374,7 +374,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 42
+      "rank": 43
     },
     {
       "benchmark_id": "writingbench",

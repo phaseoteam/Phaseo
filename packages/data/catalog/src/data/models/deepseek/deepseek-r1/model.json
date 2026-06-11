@@ -22,7 +22,7 @@
       "is_self_reported": false,
       "other_info": "Confab 17.3%; non-response 8.0%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 11
+      "rank": 52
     },
     {
       "benchmark_id": "elimination-game",
@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.142; games 1165; avg points 0.512",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 32
+      "rank": 30
     }
   ]
 }

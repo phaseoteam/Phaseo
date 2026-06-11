@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 57
+      "rank": 62
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://docs.x.ai/docs/models",
-      "rank": 30
+      "rank": 32
     },
     {
       "benchmark_id": "simplebench",
@@ -96,7 +96,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 16
+      "rank": 26
     },
     {
       "benchmark_id": "aime-2024",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 33
+      "rank": 34
     },
     {
       "benchmark_id": "livecodebench",

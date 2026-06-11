@@ -15,6 +15,7 @@ from gen import models
 from gen import operations as ops
 from ai_stats_devtools import TelemetryRecorder, create_ai_stats_devtools
 from .model_ids import MODEL_IDS, ModelIds
+from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "ai-stats-python"
@@ -111,6 +112,12 @@ class _BatchesResource:
 
     def create(self, params: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         return self._parent.create_batch(params)
+
+    def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._parent.list_batches(params)
+
+    def list_models(self) -> dict[str, Any]:
+        return self._parent.list_batch_models()
 
     def retrieve(self, batch_id: str) -> dict[str, Any]:
         return self._parent.get_batch(batch_id)
@@ -918,6 +925,30 @@ class AIStats:
                 started_at=started,
             )
             raise
+
+    def list_batches(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        query = dict(params or {})
+        started = time.time()
+        try:
+            response = self.request("GET", "/batches", query=query or None)
+            self._capture_success(
+                endpoint="batches.list",
+                request=query,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="batches.list",
+                request=query,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
+    def list_batch_models(self) -> dict[str, Any]:
+        return self.request("GET", "/batches/models")
 
     def get_batch(self, batch_id: str) -> dict[str, Any]:
         request = {"batch_id": batch_id}

@@ -803,4 +803,75 @@ describe("decodeAnthropicMessagesRequest cache control", () => {
 			expect((ir.messages[0].content[1] as any).cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
 		}
 	});
+
+	it("preserves cache_control on system blocks, tool results, and tool definitions", () => {
+		const request = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			system: [{
+				type: "text",
+				text: "Stable system prompt",
+				cache_control: { type: "ephemeral", ttl: "1h" },
+			}],
+			messages: [
+				{
+					role: "user",
+					content: [{
+						type: "tool_result",
+						tool_use_id: "toolu_123",
+						content: "Tool output",
+						cache_control: { type: "ephemeral", ttl: "5m" },
+					}],
+				},
+			],
+			tools: [{
+				name: "lookup",
+				input_schema: { type: "object", properties: {} },
+				cache_control: { type: "ephemeral", ttl: "1h" },
+			}],
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.messages[0].role).toBe("system");
+		if (ir.messages[0].role === "system") {
+			expect((ir.messages[0].content[0] as any).cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
+		}
+		expect(ir.messages[1].role).toBe("tool");
+		if (ir.messages[1].role === "tool") {
+			expect(ir.messages[1].toolResults[0].cacheControl).toEqual({ type: "ephemeral", ttl: "5m" });
+		}
+		expect(ir.tools?.[0].cacheControl).toEqual({ type: "ephemeral", ttl: "1h" });
+	});
+
+	it("decodes Anthropic cache defaults from provider options and top-level aliases", () => {
+		const providerOptionsRequest = {
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			messages: [{ role: "user", content: "Hello" }],
+			provider_options: {
+				anthropic: {
+					cache_control: { type: "ephemeral", ttl: "5m", scope: "last_user_message" },
+				},
+			},
+		};
+
+		const providerOptionsIr = decodeAnthropicMessagesRequest(providerOptionsRequest as any);
+		expect(providerOptionsIr.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+			scope: "last_user_message",
+		});
+
+		const camelAliasIr = decodeAnthropicMessagesRequest({
+			model: "claude-3-5-sonnet-20241022",
+			max_tokens: 512,
+			messages: [{ role: "user", content: "Hello" }],
+			cacheControl: { type: "ephemeral", ttl: "1h" },
+		} as any);
+		expect(camelAliasIr.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "1h",
+		});
+	});
 });

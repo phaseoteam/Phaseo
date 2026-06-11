@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 66
+      "rank": 72
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "2024-11-25 ",
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 5
+      "rank": 9
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 44
+      "rank": 45
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwZe3kIbEAEnbw0?format=jpg&name=large",
-      "rank": 31
+      "rank": 33
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -158,7 +158,7 @@
       "is_self_reported": false,
       "other_info": "Instruct 2507; sigma 0.274; games 305; avg points 0.507",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 25
+      "rank": 23
     }
   ]
 }

@@ -2,8 +2,10 @@ import UpdateCard from "@/components/updates/UpdateCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { getLatestUpdateCards } from "@/lib/fetchers/updates/getLatestUpdates";
-import { getLatestModelUpdateCards } from "@/lib/fetchers/updates/getLatestModelUpdates";
+import {
+	fetchFrontendModelUpdateCards,
+	fetchFrontendUpdateCards,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 const CARD_LIMIT = 4;
 
@@ -41,8 +43,8 @@ export default async function LatestUpdatesCards() {
 	const includeHidden = false;
 
 	const [modelCards, watcherCards] = await Promise.all([
-		getLatestModelUpdateCards(CARD_LIMIT, includeHidden),
-		getLatestUpdateCards(CARD_LIMIT),
+		fetchFrontendModelUpdateCards(CARD_LIMIT, includeHidden),
+		fetchFrontendUpdateCards(CARD_LIMIT),
 	]);
 
 	return (

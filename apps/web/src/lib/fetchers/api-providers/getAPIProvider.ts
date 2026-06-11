@@ -1,7 +1,7 @@
 // lib/fetchers/api-providers/getAPIProvider.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 import {
 	filterVisibleAPIProviders,
 	isAPIProviderHidden,
@@ -147,8 +147,11 @@ function toMeterLabel(meter: string): string {
 		output_tokens: "Output Tokens",
 		output_text_tokens: "Output Text Tokens",
 		output_reasoning_tokens: "Output Reasoning Tokens",
-		cached_read_text_tokens: "Cached Read Text Tokens",
-		cached_write_text_tokens: "Cached Write Text Tokens",
+		implicit_cached_input_text_tokens: "Implicit Cached Input Text Tokens",
+		cached_read_text_tokens: "Cache Read Tokens",
+		cached_write_text_tokens: "Cache Write Tokens",
+		cached_write_text_tokens_5m: "Cache Write Tokens (5 Min TTL)",
+		cached_write_text_tokens_1h: "Cache Write Tokens (1 Hour TTL)",
 		input_image_tokens: "Input Image Tokens",
 		output_image_tokens: "Output Image Tokens",
 		image_pixels: "Image Pixels",
@@ -212,7 +215,7 @@ function toPricingMeter(rule: PricingRuleRow): APIProviderModelPricingMeter | nu
 }
 
 export async function getAPIProvider(): Promise<APIProvider[]> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data, error } = await supabase
 		.from("data_api_providers")
@@ -242,6 +245,7 @@ export async function getAPIProviderPricesCached(): Promise<APIProvider[]> {
 	cacheLife("days");
 	cacheTag("data:api_providers");
 	cacheTag("data:api_providers:list");
+	cacheTag("frontend:api-providers");
 
 	console.log("[fetch] HIT JSON for API providers");
 	return getAPIProvider();
@@ -276,7 +280,7 @@ export async function getAPIProviderModels(
 		throw new Error(`Unsupported output type: ${outputType}`);
 	}
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	const { data: providerModels, error: modelsError } = await supabase
 		.from("data_api_provider_models")
 		.select(`
@@ -490,7 +494,7 @@ export async function getAPIProviderModelsListByModelDate(
 		return [];
 	}
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	const { data: providerModels, error: modelsError } = await supabase
 		.from("data_api_provider_models")
 		.select(`
@@ -678,6 +682,8 @@ export async function getAPIProviderModelsListByModelDate(
 			"output_text_tokens",
 			"cached_read_text_tokens",
 			"cached_write_text_tokens",
+			"cached_write_text_tokens_5m",
+			"cached_write_text_tokens_1h",
 			"total_tokens",
 			"image_pixels",
 			"video_pixels",
@@ -820,6 +826,8 @@ export async function getAPIProviderModelsListByModelDateCached(
 }
 
 function cacheAPIProviderTags(apiProviderId: string) {
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:api-providers");
 	cacheTag("data:api_providers");
 	cacheTag(`data:api_providers:${apiProviderId}`);
 }

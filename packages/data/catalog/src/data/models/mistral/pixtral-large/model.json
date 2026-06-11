@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/pixtral-large/",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "mm-mt-bench",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/pixtral-large/",
-      "rank": 84
+      "rank": 85
     },
     {
       "benchmark_id": "vqav2",

@@ -49,9 +49,22 @@ function buildCatalogueModel(overrides: Record<string, unknown> = {}) {
                 effective_to: null,
                 endpoints: ["responses"],
                 params: ["temperature"],
+                params_detail: {
+                    temperature: {
+                        supported: true,
+                        range: [0, 2],
+                    },
+                },
             },
         ],
         supported_params: ["temperature"],
+        supported_params_detail: {
+            temperature: {
+                supported: true,
+                range: [0, 2],
+                providers: ["openai"],
+            },
+        },
         top_provider: "openai",
         pricing: {
             pricing_plan: "standard",
@@ -114,6 +127,173 @@ describe("handleModels", () => {
         await expect(response.json()).resolves.toMatchObject({
             ok: true,
             availability_mode: "active",
+        });
+    });
+
+    it("returns structured supported parameter metadata alongside legacy parameter arrays", async () => {
+        const response = await handleModels(
+            new Request("https://api.example.com/"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            models: [
+                {
+                    model_id: "openai/gpt-4o-mini",
+                    supported_parameters: ["temperature"],
+                    supported_params_detail: {
+                        temperature: {
+                            supported: true,
+                            range: [0, 2],
+                            providers: ["openai"],
+                        },
+                    },
+                    supported_parameters_detail: {
+                        temperature: {
+                            supported: true,
+                            range: [0, 2],
+                            providers: ["openai"],
+                        },
+                    },
+                    providers: [
+                        {
+                            api_provider_id: "openai",
+                            params: ["temperature"],
+                            supported_parameters: ["temperature"],
+                            params_detail: {
+                                temperature: {
+                                    supported: true,
+                                    range: [0, 2],
+                                },
+                            },
+                            supported_parameters_detail: {
+                                temperature: {
+                                    supported: true,
+                                    range: [0, 2],
+                                },
+                            },
+                        },
+                    ],
+                },
+            ],
+        });
+    });
+
+    it("returns voice capability metadata through supported parameter detail aliases", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel({
+                model_id: "x-ai/grok-tts",
+                name: "Grok TTS",
+                endpoints: ["audio/speech"],
+                input_types: ["text"],
+                output_types: ["audio_tts"],
+                providers: [
+                    {
+                        api_provider_id: "x-ai",
+                        api_provider_name: "xAI",
+                        is_active_gateway: true,
+                        availability_status: "active",
+                        availability_reason: "active",
+                        provider_status: "active",
+                        provider_routing_status: "active",
+                        model_routing_status: "active",
+                        capability_status: "active",
+                        effective_from: null,
+                        effective_to: null,
+                        endpoints: ["audio/speech"],
+                        params: ["response_format", "voice"],
+                        params_detail: {
+                            voice: {
+                                supported: true,
+                                type: "enum",
+                                values: ["aurora", "cedar", "orion"],
+                                default: "aurora",
+                            },
+                            response_format: {
+                                supported: true,
+                                type: "enum",
+                                values: ["mp3", "wav", "opus"],
+                                default: "mp3",
+                            },
+                        },
+                    },
+                ],
+                supported_params: ["response_format", "voice"],
+                supported_params_detail: {
+                    voice: {
+                        supported: true,
+                        type: "enum",
+                        values: ["aurora", "cedar", "orion"],
+                        default: "aurora",
+                        providers: ["x-ai"],
+                    },
+                    response_format: {
+                        supported: true,
+                        type: "enum",
+                        values: ["mp3", "opus", "wav"],
+                        default: "mp3",
+                        providers: ["x-ai"],
+                    },
+                },
+            }),
+        ]);
+
+        const response = await handleModels(
+            new Request("https://api.example.com/?endpoints=audio/speech"),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({ endpoints: ["audio/speech"] }),
+        );
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            models: [
+                {
+                    model_id: "x-ai/grok-tts",
+                    supported_parameters: ["response_format", "voice"],
+                    supported_params_detail: {
+                        voice: {
+                            supported: true,
+                            type: "enum",
+                            values: ["aurora", "cedar", "orion"],
+                            default: "aurora",
+                            providers: ["x-ai"],
+                        },
+                    },
+                    supported_parameters_detail: {
+                        voice: {
+                            supported: true,
+                            type: "enum",
+                            values: ["aurora", "cedar", "orion"],
+                            default: "aurora",
+                            providers: ["x-ai"],
+                        },
+                    },
+                    providers: [
+                        {
+                            api_provider_id: "x-ai",
+                            params: ["response_format", "voice"],
+                            supported_parameters: ["response_format", "voice"],
+                            params_detail: {
+                                voice: {
+                                    supported: true,
+                                    values: ["aurora", "cedar", "orion"],
+                                },
+                            },
+                            supported_parameters_detail: {
+                                voice: {
+                                    supported: true,
+                                    values: ["aurora", "cedar", "orion"],
+                                },
+                            },
+                        },
+                    ],
+                },
+            ],
         });
     });
 
@@ -188,6 +368,28 @@ describe("handleModels", () => {
                             params: ["temperature", "top_p"],
                         },
                     ],
+                    supported_params_detail: {
+                        temperature: {
+                            supported: true,
+                            range: [0, 2],
+                            providers: ["openai"],
+                        },
+                        top_p: {
+                            supported: true,
+                            providers: ["openai"],
+                        },
+                    },
+                    supported_parameters_detail: {
+                        temperature: {
+                            supported: true,
+                            range: [0, 2],
+                            providers: ["openai"],
+                        },
+                        top_p: {
+                            supported: true,
+                            providers: ["openai"],
+                        },
+                    },
                     pricing: {
                         prompt: "0",
                     },

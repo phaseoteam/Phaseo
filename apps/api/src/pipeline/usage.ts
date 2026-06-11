@@ -136,11 +136,30 @@ export function shapeUsageForClient(
     const cachedRead =
         pickNumber(base, "cached_read_text_tokens") ??
         pickNumber(base, "input_tokens_details.cached_tokens") ??
+        pickNumber(base, "prompt_tokens_details.cached_tokens") ??
+        pickNumber(base, "cached_tokens") ??
+        pickNumber(base, "prompt_cache_hit_tokens") ??
         pickNumber(base, "cache_read_input_tokens");
     const cachedWrite =
         pickNumber(base, "cached_write_text_tokens") ??
         pickNumber(base, "output_tokens_details.cached_tokens") ??
+        pickNumber(base, "input_tokens_details.cache_creation_input_tokens") ??
+        pickNumber(base, "prompt_tokens_details.cache_creation_input_tokens") ??
+        pickNumber(base, "input_tokens_details.cache_creation_tokens") ??
+        pickNumber(base, "prompt_tokens_details.cache_creation_tokens") ??
         pickNumber(base, "cache_creation_input_tokens");
+    const cachedWrite5m =
+        pickNumber(base, "cached_write_text_tokens_5m") ??
+        pickNumber(base, "_ext.cachedWriteTokens5m") ??
+        pickNumber(base, "cache_creation.ephemeral_5m_input_tokens") ??
+        pickNumber(base, "cache_creation_5m_input_tokens") ??
+        pickNumber(base, "cache_creation_ephemeral_5m_input_tokens");
+    const cachedWrite1h =
+        pickNumber(base, "cached_write_text_tokens_1h") ??
+        pickNumber(base, "_ext.cachedWriteTokens1h") ??
+        pickNumber(base, "cache_creation.ephemeral_1h_input_tokens") ??
+        pickNumber(base, "cache_creation_1h_input_tokens") ??
+        pickNumber(base, "cache_creation_ephemeral_1h_input_tokens");
     const reasoningTokens = pickNumber(base, "reasoning_tokens") ?? pickNumber(base, "output_tokens_details.reasoning_tokens");
     const cachedReadIsSubsetHint = ((): boolean => {
         const explicit = (base as any).cached_read_tokens_are_subset_of_input;
@@ -203,11 +222,49 @@ export function shapeUsageForClient(
     const passthroughKeys = [
         "requests",
         "embedding_tokens",
+        "input_characters",
+        "output_characters",
+        "total_characters",
+        "characters",
+        "input_quad_tokens",
+        "output_quad_tokens",
+        "total_quad_tokens",
+        "text_quad_tokens",
+        "rerank_quad_tokens",
+        "embedding_quad_tokens",
+        "moderation_quad_tokens",
+        "ocr_quad_tokens",
+        "cached_write_text_tokens",
+        "cached_write_text_tokens_5m",
+        "cached_write_text_tokens_1h",
+        "cache_creation",
         "output_image",
+        "input_image_pixels",
+        "output_image_pixels",
         "output_video_seconds",
         "output_audio_seconds",
         "image_pixels",
+        "input_image_megapixels",
+        "output_image_megapixels",
+        "image_megapixels",
+        "input_audio_seconds",
+        "audio_seconds",
+        "input_audio_minutes",
+        "output_audio_minutes",
+        "audio_minutes",
+        "input_video_seconds",
+        "video_seconds",
+        "input_video_pixels",
+        "output_video_pixels",
         "video_pixels",
+        "input_video_pixel_seconds",
+        "output_video_pixel_seconds",
+        "video_pixel_seconds",
+        "input_pages",
+        "output_pages",
+        "pages",
+        "doc_size_bytes",
+        "document_bytes",
         "bfl_credits",
         "server_tool_use",
         "service_tier",
@@ -217,6 +274,14 @@ export function shapeUsageForClient(
     ];
     for (const key of passthroughKeys) {
         if (base[key] !== undefined) shaped[key] = base[key];
+    }
+    if (cachedWrite5m !== undefined) shaped.cached_write_text_tokens_5m = cachedWrite5m;
+    if (cachedWrite1h !== undefined) shaped.cached_write_text_tokens_1h = cachedWrite1h;
+    if (
+        shaped.cached_write_text_tokens == null &&
+        (cachedWrite5m !== undefined || cachedWrite1h !== undefined)
+    ) {
+        shaped.cached_write_text_tokens = (cachedWrite5m ?? 0) + (cachedWrite1h ?? 0);
     }
 
     shaped.input_tokens = tokensIn;

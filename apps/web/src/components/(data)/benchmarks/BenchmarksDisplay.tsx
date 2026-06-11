@@ -5,7 +5,7 @@ import { useQueryState } from "nuqs";
 import BenchmarkCard from "./BenchmarkCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { BenchmarkCard as BenchmarkCardType } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
+import type { BenchmarkCard as BenchmarkCardType } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
 
 interface BenchmarksDisplayProps {
 	benchmarks: BenchmarkCardType[];

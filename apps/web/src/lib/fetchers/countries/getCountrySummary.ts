@@ -2,6 +2,7 @@ import {
 	CountrySummary,
 	getCountrySummariesCached,
 } from "@/lib/fetchers/countries/getCountrySummaries";
+import { cacheLife, cacheTag } from "next/cache";
 import { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
 
@@ -20,6 +21,26 @@ export async function getCountrySummaryByIso(
 
 	const summaries = await getCountrySummariesCached(includeHidden);
 	return summaries.find((entry) => entry.iso === iso);
+}
+
+export async function getCountrySummaryByIsoCached(
+	isoInput: string | undefined,
+	includeHidden: boolean
+): Promise<CountrySummary | undefined> {
+	"use cache";
+
+	const iso = normaliseIso(isoInput);
+
+	cacheLife("days");
+	cacheTag("public-model-catalogue");
+	cacheTag("data:organisations");
+	cacheTag("data:models");
+	cacheTag("frontend:countries");
+	if (iso) {
+		cacheTag(`frontend:countries:${iso}`);
+	}
+
+	return getCountrySummaryByIso(iso, includeHidden);
 }
 
 export function getUniqueCountryModels(

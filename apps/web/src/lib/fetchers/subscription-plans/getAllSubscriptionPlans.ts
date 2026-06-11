@@ -1,6 +1,6 @@
 // lib/fetchers/subscription-plans/getAllSubscriptionPlans.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface SubscriptionPlanSummary {
     plan_uuid: string;
@@ -24,7 +24,7 @@ export interface SubscriptionPlanSummary {
 }
 
 export async function getAllSubscriptionPlans(): Promise<SubscriptionPlanSummary[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
         .from("data_subscription_plans")
@@ -91,6 +91,8 @@ export async function getAllSubscriptionPlansCached(): Promise<SubscriptionPlanS
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:subscription-plans");
     cacheTag("data:subscription_plans");
 
     console.log("[fetch] HIT DB for subscription plans");

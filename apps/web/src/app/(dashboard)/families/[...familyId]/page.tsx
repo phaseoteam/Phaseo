@@ -11,8 +11,8 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { buildMetadata } from "@/lib/seo";
+import { fetchFrontendFamily } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
-	getFamilyModelsCached,
 	type FamilyModelItem,
 } from "@/lib/fetchers/models/getFamilyModels";
 
@@ -38,7 +38,7 @@ function parseFamilyId(input: string[] | string | undefined): string {
 
 async function fetchFamily(familyId: string) {
 	try {
-		return await getFamilyModelsCached(familyId, false);
+		return await fetchFrontendFamily(familyId);
 	} catch (error) {
 		console.warn("[seo] failed to load family metadata", {
 			familyId,
@@ -92,7 +92,7 @@ export default async function Page({
 }) {
 	const { familyId: rawFamilyId } = await params;
 	const familyId = parseFamilyId(rawFamilyId);
-	const family = await getFamilyModelsCached(familyId, false);
+	const family = await fetchFrontendFamily(familyId);
 
 	if (!family) {
 		notFound();

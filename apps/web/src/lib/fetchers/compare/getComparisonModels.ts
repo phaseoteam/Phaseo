@@ -296,7 +296,10 @@ async function fetchComparisonModels(
 ): Promise<ComparisonMap> {
 	"use cache";
 	cacheLife("days");              // use preset profile
+	cacheTag("public-model-catalogue");
 	cacheTag("data:models");        // tag for revalidation
+	cacheTag("frontend:compare-models");
+	cacheTag("frontend:compare-model-details");
 
 	if (!serializedKey) return {};
 

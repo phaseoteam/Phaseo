@@ -46,6 +46,8 @@ const HISTORY_METER_ORDER = [
 	"output_text_tokens",
 	"cached_read_text_tokens",
 	"cached_write_text_tokens",
+	"cached_write_text_tokens_5m",
+	"cached_write_text_tokens_1h",
 ] as const;
 
 type EffectiveRow = {
@@ -82,6 +84,10 @@ const MONTH_SHORT_LABELS = [
 
 function meterLabel(meter: string): string {
 	if (meter === BLENDED_METER) return "Blended Tokens (90/10)";
+	if (meter === "cached_read_text_tokens") return "Cache Read Tokens";
+	if (meter === "cached_write_text_tokens") return "Cache Write Tokens";
+	if (meter === "cached_write_text_tokens_5m") return "Cache Write Tokens (5 Min TTL)";
+	if (meter === "cached_write_text_tokens_1h") return "Cache Write Tokens (1 Hour TTL)";
 	return meter
 		.split("_")
 		.filter(Boolean)

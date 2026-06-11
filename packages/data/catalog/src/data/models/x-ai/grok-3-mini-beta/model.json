@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": "Think, Cons@64",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 35
+      "rank": 40
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 34
+      "rank": 39
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": "Think",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 52
+      "rank": 57
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 101
+      "rank": 107
     },
     {
       "benchmark_id": "lmarena-text",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 54
+      "rank": 56
     },
     {
       "benchmark_id": "mmmu",
@@ -136,7 +136,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 75
+      "rank": 76
     },
     {
       "benchmark_id": "simpleqa",
@@ -144,7 +144,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 71
+      "rank": 72
     },
     {
       "benchmark_id": "confabulations",
@@ -152,7 +152,7 @@
       "is_self_reported": false,
       "other_info": "High reasoning; Confab 6.9%; non-response 14.7%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 3
+      "rank": 59
     },
     {
       "benchmark_id": "confabulations",
@@ -160,7 +160,7 @@
       "is_self_reported": false,
       "other_info": "Low reasoning; Confab 10.9%; non-response 17.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 17
+      "rank": 46
     },
     {
       "benchmark_id": "elimination-game",

@@ -1,5 +1,5 @@
 import { MonitorHistoryClient } from "@/components/monitor/MonitorHistoryClient";
-import { getMonitorHistoryInitialData } from "@/lib/fetchers/monitor/getMonitorHistory";
+import { fetchFrontendMonitorHistoryInitialData } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 async function MonitorHistorySection() {
-	const initialData = await getMonitorHistoryInitialData();
+	const initialData = await fetchFrontendMonitorHistoryInitialData();
 
 	return (
 		<MonitorHistoryClient

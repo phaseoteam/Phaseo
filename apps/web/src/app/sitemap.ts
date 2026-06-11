@@ -4,15 +4,17 @@ import {
 	getHelpCategoryParams,
 } from "@/lib/content/helpCenter";
 import { getMigrationPosts } from "@/lib/content/migrations";
-import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
-import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
-import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
-import { getAllOrganisationsCached } from "@/lib/fetchers/organisations/getAllOrganisations";
-import { getAllBenchmarksCached } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
-import { getAllSubscriptionPlansCached } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
-import { getCountrySummariesCached } from "@/lib/fetchers/countries/getCountrySummaries";
+import {
+	fetchFrontendAPIProviders,
+	fetchFrontendBenchmarks,
+	fetchFrontendCountrySummaries,
+	fetchFrontendMarketplacePresets,
+	fetchFrontendModels,
+	fetchFrontendOrganisations,
+	fetchFrontendPublicAppIds,
+	fetchFrontendSubscriptionPlans,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
-import { createAdminClient } from "@/utils/supabase/admin";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
@@ -39,10 +41,6 @@ type ModelSitemapSource = {
 	updated_at?: string | null;
 	primary_date?: string | null;
 	announcement_date?: string | null;
-};
-
-type PresetSitemapSource = {
-	id?: string | null;
 };
 
 const baseUrl = SITE_URL;
@@ -236,34 +234,6 @@ function fromSettled<T>(
 	return fallback;
 }
 
-async function getPublicMarketplacePresetIds(): Promise<string[]> {
-	try {
-		const supabase = createAdminClient();
-		const { data, error } = await supabase
-			.from("presets")
-			.select("id")
-			.eq("visibility", "public");
-
-		if (error) {
-			console.warn(
-				"[sitemap] failed to load marketplace presets for sitemap",
-				error
-			);
-			return [];
-		}
-
-		return normalizeSingleSegmentSlugs(
-			(data as PresetSitemapSource[] | null | undefined)?.map(
-				(preset) => String(preset.id ?? "").trim()
-			) ?? [],
-			"marketplace preset"
-		);
-	} catch (error) {
-		console.warn("[sitemap] failed to load marketplace presets for sitemap", error);
-		return [];
-	}
-}
-
 function applySuffixes(
     prefix: string,
     slugs: string[],
@@ -353,14 +323,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
-		getAllModelsCached(false),
-		getAllAPIProvidersCached(),
-		getAllOrganisationsCached(),
-		getAllBenchmarksCached(false),
-		getAllSubscriptionPlansCached(),
-		getCountrySummariesCached(false),
-		getPublicMarketplacePresetIds(),
-		getPublicAppIdsCached(),
+		fetchFrontendModels(),
+		fetchFrontendAPIProviders(),
+		fetchFrontendOrganisations(),
+		fetchFrontendBenchmarks(false),
+		fetchFrontendSubscriptionPlans(),
+		fetchFrontendCountrySummaries(),
+		fetchFrontendMarketplacePresets(),
+		fetchFrontendPublicAppIds(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
@@ -426,10 +396,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		),
 		"country",
 	);
-	const marketplacePresetSlugs = fromSettled(
-		marketplacePresetsResult,
-		"marketplace presets for sitemap",
-		[]
+	const marketplacePresetSlugs = normalizeSingleSegmentSlugs(
+		fromSettled(
+			marketplacePresetsResult,
+			"marketplace presets for sitemap",
+			[],
+		).map((preset) => String(preset.id ?? "").trim()),
+		"marketplace preset",
 	);
 	const publicAppIds = normalizeSingleSegmentSlugs(
 		fromSettled(publicAppsResult, "public apps for sitemap", []),

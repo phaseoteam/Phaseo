@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": null,
-      "rank": 55
+      "rank": 60
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 67
+      "rank": 73
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": "Medium Reasoning Effort",
       "source_link": null,
-      "rank": 68
+      "rank": 74
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "Low Reasoning Effort",
       "source_link": null,
-      "rank": 87
+      "rank": 93
     },
     {
       "benchmark_id": "lisanbench",
@@ -165,7 +165,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 4
+      "rank": 7
     },
     {
       "benchmark_id": "lmarena-text",
@@ -205,7 +205,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 28
+      "rank": 38
     },
     {
       "benchmark_id": "aider-polyglot",
@@ -253,7 +253,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 68
+      "rank": 69
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -365,7 +365,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-4-5/",
-      "rank": 74
+      "rank": 75
     },
     {
       "benchmark_id": "swe-bench",
@@ -373,7 +373,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o3-mini/",
-      "rank": 104
+      "rank": 107
     },
     {
       "benchmark_id": "swe-lancer",
@@ -413,7 +413,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; Confab 27.2%; non-response 8.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 38
+      "rank": 27
     },
     {
       "benchmark_id": "confabulations",
@@ -421,7 +421,7 @@
       "is_self_reported": false,
       "other_info": "High reasoning; Confab 30.7%; non-response 6.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 40
+      "rank": 26
     },
     {
       "benchmark_id": "elimination-game",
@@ -429,7 +429,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; sigma 0.139; games 1194; avg points 0.531",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 26
+      "rank": 24
     }
   ]
 }

@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GtG5biebMAIpBhq?format=png&name=4096x4096",
-      "rank": 33
+      "rank": 38
     },
     {
       "benchmark_id": "confabulations",
@@ -129,7 +129,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; Confab 23.4%; non-response 5.1%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 19
+      "rank": 44
     }
   ]
 }

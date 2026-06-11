@@ -1,12 +1,11 @@
 import { Suspense } from "react";
 import ModelsDisplay from "@/components/(data)/models/Models/ModelsDisplay";
 import { ModelsPageSkeleton } from "@/components/(data)/models/Models/ModelsPageSkeleton";
+import type { ModelCard } from "@/lib/fetchers/models/getAllModels";
 import {
-	getAllModelsCached,
-	type ModelCard,
-} from "@/lib/fetchers/models/getAllModels";
-import { getFreeRouterOverview } from "@/lib/fetchers/models/getFreeRouterOverview";
-import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
+	fetchFrontendFreeRouterOverview,
+	fetchFrontendModels,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
@@ -545,7 +544,7 @@ function createEmptyGatewaySignals(): GatewaySignals {
 }
 
 function aggregateGatewaySignals(
-	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
 ): Map<string, GatewaySignals> {
 	const byModelId = new Map<string, GatewaySignals>();
 
@@ -788,7 +787,7 @@ function normalizeRankingModelKey(value: string): string {
 }
 
 function buildWeeklyMetricsByModel(
-	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
 ): Map<string, WeeklyRankingMetrics> {
 	const metricsByKey = new Map<string, WeeklyRankingMetrics>();
 
@@ -867,7 +866,7 @@ function resolveModelWeeklyMetrics(
 
 function withGatewayMetadata(
 	baseModels: ModelCard[],
-	monitorRows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
 ): ModelsPageModel[] {
 	const signalsByModelId = aggregateGatewaySignals(monitorRows);
 	const weeklyMetricsByKey = buildWeeklyMetricsByModel(monitorRows);
@@ -1119,7 +1118,7 @@ function withGatewayMetadata(
 }
 
 function buildFreeRouterModelsPageEntry(
-	overview: Awaited<ReturnType<typeof getFreeRouterOverview>>,
+	overview: Awaited<ReturnType<typeof fetchFrontendFreeRouterOverview>>,
 ): ModelsPageModel {
 	const inputModalities = Array.from(
 		new Set(overview.models.flatMap((model) => model.inputModalities ?? [])),
@@ -1178,13 +1177,14 @@ function buildFreeRouterModelsPageEntry(
 }
 
 async function ModelsPageDataSection() {
-	const includeHidden = false;
-	const [monitorResult, allModels, freeRouterOverview] = await Promise.all([
-		getMonitorModels({}, includeHidden),
-		getAllModelsCached(includeHidden),
-		getFreeRouterOverview(),
+	const [allModels, freeRouterOverview] = await Promise.all([
+		fetchFrontendModels(),
+		fetchFrontendFreeRouterOverview(),
 	]);
-	const models = withGatewayMetadata(allModels, monitorResult.models);
+	const monitorRows = allModels.flatMap(
+		(model) => model.gateway_monitor_rows ?? [],
+	);
+	const models = withGatewayMetadata(allModels, monitorRows);
 	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
 	const modelsWithFreeRouter = [
 		freeRouterModel,

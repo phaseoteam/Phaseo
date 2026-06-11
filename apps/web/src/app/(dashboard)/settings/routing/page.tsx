@@ -1,8 +1,7 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import RoutingSettingsClient from "@/components/(gateway)/settings/routing/RoutingSettingsClient";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import { fetchSettingsRoutingInitialData } from "@/lib/fetchers/internal/fetchSettingsRoutingInitialData";
 
 export const metadata = {
 	title: "Routing - Settings",
@@ -26,10 +25,9 @@ export default function RoutingSettingsPage() {
 }
 
 async function RoutingSettingsContent() {
-	const supabase = await createClient();
-	const workspaceId = await getWorkspaceIdFromCookie();
+	const initialData = await fetchSettingsRoutingInitialData();
 
-	if (!workspaceId) {
+	if (!initialData.workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Select a workspace to manage routing preferences.
@@ -37,28 +35,15 @@ async function RoutingSettingsContent() {
 		);
 	}
 
-	const [{ data: teamRow }, { data: settingsRow }] = await Promise.all([
-		supabase.from("workspaces").select("id, name").eq("id", workspaceId).maybeSingle(),
-		supabase
-			.from("workspace_settings")
-			.select(
-				"routing_mode, beta_channel_enabled, alpha_channel_enabled, response_healing_enabled, response_healing_locked, response_healing_mode",
-			)
-			.eq("workspace_id", workspaceId)
-			.maybeSingle(),
-	]);
-
 	return (
 		<RoutingSettingsClient
-			initialMode={(settingsRow?.routing_mode as any) ?? "balanced"}
-			initialBetaChannelEnabled={Boolean(settingsRow?.beta_channel_enabled)}
-			initialAlphaChannelEnabled={Boolean(settingsRow?.alpha_channel_enabled)}
-			initialResponseHealingEnabled={Boolean(settingsRow?.response_healing_enabled)}
-			initialResponseHealingLocked={Boolean(settingsRow?.response_healing_locked)}
-			initialResponseHealingMode={
-				settingsRow?.response_healing_mode === "strict" ? "strict" : "safe"
-			}
-			teamName={teamRow?.name ?? null}
+			initialMode={initialData.routingMode}
+			initialBetaChannelEnabled={initialData.betaChannelEnabled}
+			initialAlphaChannelEnabled={initialData.alphaChannelEnabled}
+			initialResponseHealingEnabled={initialData.responseHealingEnabled}
+			initialResponseHealingLocked={initialData.responseHealingLocked}
+			initialResponseHealingMode={initialData.responseHealingMode}
+			teamName={initialData.teamName}
 		/>
 	);
 }

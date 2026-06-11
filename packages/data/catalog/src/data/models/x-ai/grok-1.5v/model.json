@@ -40,7 +40,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-1.5v",
-      "rank": 113
+      "rank": 114
     },
     {
       "benchmark_id": "ai2d",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-1.5v",
-      "rank": 56
+      "rank": 57
     },
     {
       "benchmark_id": "realworldqa",

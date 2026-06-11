@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 import {
 	benchmarkOrderFromAscending,
@@ -120,7 +120,7 @@ async function fetchBenchmarkResultsRaw(
 	modelId: string,
 	includeHidden: boolean
 ): Promise<RawBenchmarkPayload> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data, error } = await applyHiddenFilter(
 		supabase.from("data_models").select(
@@ -555,7 +555,7 @@ async function fetchBenchmarkComparisonCharts(
 		return [];
 	}
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	const charts: BenchmarkComparisonChart[] = [];
 	const processedBenchmarks = new Set<string>();
 
@@ -646,7 +646,9 @@ export async function getModelBenchmarkHighlights(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:benchmarks");
+	cacheTag("frontend:model-benchmarks");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:highlights:${modelId}`);
@@ -667,7 +669,9 @@ export async function getModelBenchmarkTableData(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:benchmarks");
+	cacheTag("frontend:model-benchmarks");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:table:${modelId}`);
@@ -688,7 +692,9 @@ export async function getModelBenchmarkComparisonData(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:benchmarks");
+	cacheTag("frontend:model-benchmarks");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(modelBenchmarkTag(modelId));
 	cacheTag(`model:benchmarks:comparisons:${modelId}`);

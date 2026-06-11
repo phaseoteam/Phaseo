@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": "TranslateGemma model card benchmark table",
       "source_link": "https://huggingface.co/google/translategemma-4b-it",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "wmt24pp-comet",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "TranslateGemma model card benchmark table",
       "source_link": "https://huggingface.co/google/translategemma-4b-it",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "vistra-metricx",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "TranslateGemma model card benchmark table",
       "source_link": "https://huggingface.co/google/translategemma-4b-it",
-      "rank": 1
+      "rank": 3
     }
   ]
 }

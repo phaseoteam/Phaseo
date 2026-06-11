@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 49
+      "rank": 54
     },
     {
       "benchmark_id": "mmmlu",
@@ -93,7 +93,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/",
-      "rank": 3
+      "rank": 11
     },
     {
       "benchmark_id": "swe-bench",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-opus-4-1",
-      "rank": 27
+      "rank": 31
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -133,7 +133,7 @@
       "is_self_reported": false,
       "other_info": "16K thinking; Confab 2.5%; non-response 31.7%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 35
+      "rank": 29
     },
     {
       "benchmark_id": "confabulations",
@@ -141,7 +141,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; Confab 4.0%; non-response 33.1%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 41
+      "rank": 24
     },
     {
       "benchmark_id": "elimination-game",
@@ -149,7 +149,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; sigma 0.290; games 276; avg points 0.578",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 10
+      "rank": 9
     }
   ]
 }

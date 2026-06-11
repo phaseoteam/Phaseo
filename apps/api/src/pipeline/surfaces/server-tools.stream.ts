@@ -328,6 +328,9 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	const cachedInputTokens =
 		parseUsageNumber(usageRaw.cached_read_tokens) ??
 		parseUsageNumber(usageRaw.cached_input_tokens) ??
+		parseUsageNumber(usageRaw.cached_tokens) ??
+		parseUsageNumber(usageRaw.prompt_cache_hit_tokens) ??
+		parseUsageNumber(usageRaw.prompt_tokens_details?.cached_tokens) ??
 		parseUsageNumber(usageRaw.input_tokens_details?.cached_tokens);
 	const reasoningTokens =
 		parseUsageNumber(usageRaw.reasoning_tokens) ??
@@ -360,8 +363,22 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	if (outputVideoTokens != null) ext.outputVideoTokens = outputVideoTokens;
 	const cachedWriteTokens =
 		parseUsageNumber(usageRaw.output_tokens_details?.cached_tokens) ??
+		parseUsageNumber(usageRaw.input_tokens_details?.cache_creation_input_tokens) ??
+		parseUsageNumber(usageRaw.prompt_tokens_details?.cache_creation_input_tokens) ??
+		parseUsageNumber(usageRaw.input_tokens_details?.cache_creation_tokens) ??
+		parseUsageNumber(usageRaw.prompt_tokens_details?.cache_creation_tokens) ??
+		parseUsageNumber(usageRaw.cache_creation_input_tokens) ??
+		parseUsageNumber(usageRaw.cached_write_text_tokens) ??
 		parseUsageNumber(usageRaw.cached_write_tokens);
 	if (cachedWriteTokens != null) ext.cachedWriteTokens = cachedWriteTokens;
+	const cachedWriteTokens5m =
+		parseUsageNumber(usageRaw.cached_write_text_tokens_5m) ??
+		parseUsageNumber(usageRaw.cache_creation?.ephemeral_5m_input_tokens);
+	if (cachedWriteTokens5m != null) ext.cachedWriteTokens5m = cachedWriteTokens5m;
+	const cachedWriteTokens1h =
+		parseUsageNumber(usageRaw.cached_write_text_tokens_1h) ??
+		parseUsageNumber(usageRaw.cache_creation?.ephemeral_1h_input_tokens);
+	if (cachedWriteTokens1h != null) ext.cachedWriteTokens1h = cachedWriteTokens1h;
 	const datetimeRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.datetime_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.datetime_requests);

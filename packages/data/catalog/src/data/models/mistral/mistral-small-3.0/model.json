@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-24B-Base-2501",
-      "rank": 160
+      "rank": 166
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501",
-      "rank": 138
+      "rank": 144
     },
     {
       "benchmark_id": "confabulations",
@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": "Confab 38.6%; non-response 11.8%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 56
+      "rank": 11
     },
     {
       "benchmark_id": "elimination-game",
@@ -71,7 +71,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.161; games 889; avg points 0.475",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 46
+      "rank": 42
     }
   ]
 }

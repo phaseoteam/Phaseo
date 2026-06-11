@@ -43,91 +43,104 @@
       "score": 77.2,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 73
     },
     {
       "benchmark_id": "aime-2026",
       "score": 77.5,
       "is_self_reported": true,
       "other_info": "No tools",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 11
     },
     {
       "benchmark_id": "livecodebench-v6",
-      "score": 72.0,
+      "score": 72,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 21
     },
     {
       "benchmark_id": "codeforces",
       "score": 1659,
       "is_self_reported": true,
       "other_info": "ELO",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 15
     },
     {
       "benchmark_id": "gpqa-diamond",
       "score": 78.8,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 65
     },
     {
       "benchmark_id": "tau-2-bench",
-      "score": 69.0,
+      "score": 69,
       "is_self_reported": true,
       "other_info": "Average over 3",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 21
     },
     {
       "benchmark_id": "humanitys-last-exam",
       "score": 5.2,
       "is_self_reported": true,
       "other_info": "No tools",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 150
     },
     {
       "benchmark_id": "big-bench-extra-hard",
-      "score": 53.0,
+      "score": 53,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 1
     },
     {
       "benchmark_id": "mmmlu",
       "score": 83.4,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 31
     },
     {
       "benchmark_id": "mmmu-pro",
       "score": 69.1,
       "is_self_reported": true,
       "other_info": null,
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 40
     },
     {
       "benchmark_id": "omnidocbench-1.5",
       "score": 16.4,
       "is_self_reported": true,
       "other_info": "Average edit distance (lower is better)",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 13
     },
     {
       "benchmark_id": "fleurs",
       "score": 0.069,
       "is_self_reported": true,
       "other_info": "Lower is better; excluding Chinese language",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 6
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
       "score": 43.4,
       "is_self_reported": true,
       "other_info": "Average",
-      "source_link": "https://huggingface.co/google/gemma-4-12B-it"
+      "source_link": "https://huggingface.co/google/gemma-4-12B-it",
+      "rank": 10
     }
   ]
 }

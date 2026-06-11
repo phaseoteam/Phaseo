@@ -9,6 +9,7 @@ import { buildAdapterPayload } from "../../utils";
 import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 
 const BASE_URL = "https://api.ai21.com";
 
@@ -116,10 +117,10 @@ export function mapAI21ToGatewayChat(json: any, requestId?: string): any {
         model: json.model,
         provider: "ai21",
         choices,
-        usage: {
-            input_text_tokens: json.usage?.input_tokens || 0,
-            output_text_tokens: json.usage?.output_tokens || 0,
-            total_tokens: (json.usage?.input_tokens || 0) + (json.usage?.output_tokens || 0),
+        usage: normalizeTextUsageForPricing(json.usage) ?? {
+            input_tokens: 0,
+            output_tokens: 0,
+            total_tokens: 0,
         },
     };
 }

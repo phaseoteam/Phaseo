@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 45
+      "rank": 46
     },
     {
       "benchmark_id": "humaneval",

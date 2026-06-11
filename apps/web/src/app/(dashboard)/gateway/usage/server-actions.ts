@@ -79,7 +79,55 @@ export interface RequestDetailMetadata {
 	[key: string]: unknown;
 }
 
-export interface RequestRow {
+export interface NormalizedRequestUsageColumns {
+	usage_total_tokens?: number | string | null;
+	usage_input_tokens?: number | string | null;
+	usage_output_tokens?: number | string | null;
+	usage_reasoning_tokens?: number | string | null;
+	usage_input_text_tokens?: number | string | null;
+	usage_output_text_tokens?: number | string | null;
+	usage_input_image_tokens?: number | string | null;
+	usage_output_image_tokens?: number | string | null;
+	usage_input_audio_tokens?: number | string | null;
+	usage_output_audio_tokens?: number | string | null;
+	usage_input_video_tokens?: number | string | null;
+	usage_output_video_tokens?: number | string | null;
+	usage_image_inputs?: number | string | null;
+	usage_image_outputs?: number | string | null;
+	usage_audio_inputs?: number | string | null;
+	usage_audio_outputs?: number | string | null;
+	usage_video_inputs?: number | string | null;
+	usage_video_outputs?: number | string | null;
+	usage_cached_read_tokens?: number | string | null;
+	usage_cached_write_tokens?: number | string | null;
+	usage_cached_read_text_tokens?: number | string | null;
+	usage_cached_write_text_tokens?: number | string | null;
+	usage_cached_write_text_tokens_5m?: number | string | null;
+	usage_cached_write_text_tokens_1h?: number | string | null;
+	usage_cached_read_image_tokens?: number | string | null;
+	usage_cached_write_image_tokens?: number | string | null;
+	usage_cached_read_audio_tokens?: number | string | null;
+	usage_cached_write_audio_tokens?: number | string | null;
+	usage_cached_read_video_tokens?: number | string | null;
+	usage_cached_write_video_tokens?: number | string | null;
+	usage_input_quad_tokens?: number | string | null;
+	usage_output_quad_tokens?: number | string | null;
+	usage_total_quad_tokens?: number | string | null;
+	usage_text_quad_tokens?: number | string | null;
+	usage_rerank_quad_tokens?: number | string | null;
+	usage_embedding_quad_tokens?: number | string | null;
+	usage_moderation_quad_tokens?: number | string | null;
+	usage_ocr_quad_tokens?: number | string | null;
+	usage_image_megapixels?: number | string | null;
+	usage_audio_seconds?: number | string | null;
+	usage_video_pixel_seconds?: number | string | null;
+	usage_input_characters?: number | string | null;
+	usage_output_characters?: number | string | null;
+	usage_total_characters?: number | string | null;
+	usage_normalized_at?: string | null;
+}
+
+export interface RequestRow extends NormalizedRequestUsageColumns {
 	request_id: string;
 	created_at: string;
 	endpoint: string | null;
@@ -145,6 +193,54 @@ export interface PaginatedRequestsResult {
 	pageSize: number;
 	totalPages: number;
 }
+
+const NORMALIZED_REQUEST_USAGE_SELECT = `
+	usage_total_tokens,
+	usage_input_tokens,
+	usage_output_tokens,
+	usage_reasoning_tokens,
+	usage_input_text_tokens,
+	usage_output_text_tokens,
+	usage_input_image_tokens,
+	usage_output_image_tokens,
+	usage_input_audio_tokens,
+	usage_output_audio_tokens,
+	usage_input_video_tokens,
+	usage_output_video_tokens,
+	usage_image_inputs,
+	usage_image_outputs,
+	usage_audio_inputs,
+	usage_audio_outputs,
+	usage_video_inputs,
+	usage_video_outputs,
+	usage_cached_read_tokens,
+	usage_cached_write_tokens,
+	usage_cached_read_text_tokens,
+	usage_cached_write_text_tokens,
+	usage_cached_write_text_tokens_5m,
+	usage_cached_write_text_tokens_1h,
+	usage_cached_read_image_tokens,
+	usage_cached_write_image_tokens,
+	usage_cached_read_audio_tokens,
+	usage_cached_write_audio_tokens,
+	usage_cached_read_video_tokens,
+	usage_cached_write_video_tokens,
+	usage_input_quad_tokens,
+	usage_output_quad_tokens,
+	usage_total_quad_tokens,
+	usage_text_quad_tokens,
+	usage_rerank_quad_tokens,
+	usage_embedding_quad_tokens,
+	usage_moderation_quad_tokens,
+	usage_ocr_quad_tokens,
+	usage_image_megapixels,
+	usage_audio_seconds,
+	usage_video_pixel_seconds,
+	usage_input_characters,
+	usage_output_characters,
+	usage_total_characters,
+	usage_normalized_at
+`;
 
 function normalizeProviderAttempts(
 	value: unknown,
@@ -302,6 +398,7 @@ export async function fetchPaginatedRequests(
 				image_url
 			),
 			usage,
+			${NORMALIZED_REQUEST_USAGE_SELECT},
 			cost_nanos,
 			generation_ms,
 			latency_ms,
@@ -377,7 +474,7 @@ export async function fetchPaginatedRequests(
 	let rows = data as any[] | null;
 	let totalCount = count ?? 0;
 	if (error) {
-		console.error("Error fetching paginated requests (with app join):", error);
+		console.warn("Falling back after request app join failed:", error);
 		// Fallback: retry without api_apps embedded relation.
 		let fallback = supabase
 			.from("gateway_requests")
@@ -395,6 +492,7 @@ export async function fetchPaginatedRequests(
                                 session_id,
                                 app_id,
 				usage,
+				${NORMALIZED_REQUEST_USAGE_SELECT},
 				cost_nanos,
 				generation_ms,
 				latency_ms,
@@ -446,7 +544,7 @@ export async function fetchPaginatedRequests(
 			count: fallbackCount,
 		} = await fallback;
 		if (fallbackError) {
-			console.error("Error fetching paginated requests (fallback):", fallbackError);
+			console.warn("Falling back after normalized request select failed:", fallbackError);
 			let legacyFallback = supabase
 				.from("gateway_requests")
 				.select(
@@ -474,7 +572,6 @@ export async function fetchPaginatedRequests(
                                         error_code,
                                         error_message,
                                         error_payload,
-                                        detail_metadata,
                                         key_id,
                                         throughput
                                 `,
@@ -515,17 +612,78 @@ export async function fetchPaginatedRequests(
 				.order(sortColumn, { ascending: params.sortDirection === "asc" })
 				.range(offset, offset + pageSize - 1);
 			if (legacyError) {
-				console.error("Error fetching paginated requests (legacy fallback):", legacyError);
-				return {
-					data: [],
-					total: 0,
-					page: params.page,
-					pageSize,
-					totalPages: 0,
-				};
+				console.warn("Falling back after legacy request select failed:", legacyError);
+				let minimalFallback = supabase
+					.from("gateway_requests")
+					.select(
+						`
+						request_id,
+						created_at,
+						endpoint,
+						model_id,
+						provider,
+						stream,
+						app_id,
+						usage,
+						cost_nanos,
+						generation_ms,
+						latency_ms,
+						finish_reason,
+						success,
+						key_id
+					`,
+						{ count: "exact" },
+					)
+					.eq("workspace_id", workspaceId)
+					.gte("created_at", params.timeRange.from)
+					.lte("created_at", params.timeRange.to)
+					.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS));
+				if (params.modelFilter) minimalFallback = minimalFallback.eq("model_id", params.modelFilter);
+				if (params.providerFilter) minimalFallback = minimalFallback.eq("provider", params.providerFilter);
+				if (params.appFilter) minimalFallback = minimalFallback.eq("app_id", params.appFilter);
+				if (params.endpointFilter) minimalFallback = minimalFallback.eq("endpoint", params.endpointFilter);
+				if (params.finishReasonFilter) {
+					minimalFallback = minimalFallback.eq("finish_reason", params.finishReasonFilter);
+				}
+				if (params.streamFilter === "streaming") {
+					minimalFallback = minimalFallback.eq("stream", true);
+				} else if (params.streamFilter === "non_streaming") {
+					minimalFallback = minimalFallback.eq("stream", false);
+				}
+				if (params.keyFilter) minimalFallback = minimalFallback.eq("key_id", params.keyFilter);
+				if (params.requestFilter) minimalFallback = minimalFallback.eq("request_id", params.requestFilter);
+				if (params.statusFilter === "success") minimalFallback = minimalFallback.eq("success", true);
+				else if (params.statusFilter === "error") minimalFallback = minimalFallback.eq("success", false);
+
+				let minimalData: any[] | null = null;
+				let minimalError: unknown = null;
+				let minimalCount: number | null = 0;
+				try {
+					const minimalResult = await minimalFallback
+						.order(sortColumn, { ascending: params.sortDirection === "asc" })
+						.range(offset, offset + pageSize - 1);
+					minimalData = minimalResult.data as any[] | null;
+					minimalError = minimalResult.error;
+					minimalCount = minimalResult.count ?? 0;
+				} catch (error) {
+					minimalError = error;
+				}
+				if (minimalError) {
+					console.warn("Unable to fetch paginated requests:", minimalError);
+					return {
+						data: [],
+						total: 0,
+						page: params.page,
+						pageSize,
+						totalPages: 0,
+					};
+				}
+				rows = (minimalData as any[]) ?? [];
+				totalCount = minimalCount ?? 0;
+			} else {
+				rows = (legacyData as any[]) ?? [];
+				totalCount = legacyCount ?? 0;
 			}
-			rows = (legacyData as any[]) ?? [];
-			totalCount = legacyCount ?? 0;
 		} else {
 			rows = (fallbackData as any[]) ?? [];
 			totalCount = fallbackCount ?? 0;
@@ -1510,6 +1668,7 @@ export async function investigateGeneration(
 			image_url
 		),
 		usage,
+		${NORMALIZED_REQUEST_USAGE_SELECT},
 		cost_nanos,
 		generation_ms,
 		latency_ms,
@@ -2528,6 +2687,7 @@ export async function fetchSessionRequests(params: {
 				image_url
 			),
 			usage,
+			${NORMALIZED_REQUEST_USAGE_SELECT},
 			cost_nanos,
 			generation_ms,
 			latency_ms,
@@ -2561,7 +2721,67 @@ export async function fetchSessionRequests(params: {
 	const { data, error } = await query;
 	if (error) {
 		console.error("Error fetching session requests:", error);
-		return [];
+		let fallback = supabase
+			.from("gateway_requests")
+			.select(
+				`
+			request_id,
+			created_at,
+			model_id,
+			provider,
+			native_response_id,
+			stream,
+			session_id,
+			app_id,
+			app:api_apps!gateway_requests_app_id_fkey (
+				id,
+				app_key,
+				title,
+				image_url
+			),
+			usage,
+			cost_nanos,
+			generation_ms,
+			latency_ms,
+			finish_reason,
+			success,
+			status_code,
+			error_code,
+			error_message,
+			error_payload,
+			key_id,
+			pricing_lines,
+			throughput,
+			provider_attempts,
+			session_id,
+			endpoint,
+			end_user_id
+		`
+			)
+			.eq("workspace_id", workspaceId)
+			.eq("session_id", sessionId)
+			.order("created_at", { ascending: true })
+			.limit(500);
+
+		if (params.timeRange?.from) {
+			fallback = fallback.gte("created_at", params.timeRange.from);
+		}
+		if (params.timeRange?.to) {
+			fallback = fallback.lte("created_at", params.timeRange.to);
+		}
+
+		const { data: fallbackData, error: fallbackError } = await fallback;
+		if (fallbackError) {
+			console.error("Error fetching session requests fallback:", fallbackError);
+			return [];
+		}
+		return (
+			(fallbackData as any[] | null)?.map((row) => {
+				return {
+					...toRequestRow(row),
+				} as SessionRequestRow;
+			}) ?? []
+		);
 	}
 
 	return (

@@ -17,6 +17,7 @@ import { extractToolNameOrType, isNativeAdvisorTool, isNativeWebFetchTool, isNat
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
 import {
 	normalizeProviderGeoPreferences,
+	normalizeProviderCacheOptions,
 	resolveTextServiceTier,
 } from "../shared/text-normalizers";
 
@@ -37,6 +38,10 @@ export type AnthropicMessagesRequest = {
 	tool_choice?: AnthropicToolChoice;
 	metadata?: Record<string, any>;
 	service_tier?: string;
+	provider_options?: Record<string, any>;
+	providerOptions?: Record<string, any>;
+	cache_control?: AnthropicCacheControl;
+	cacheControl?: AnthropicCacheControl;
 	inference_geo?: "global" | "us" | string;
 	web_search_options?: Record<string, any>;
 	webSearchOptions?: Record<string, any>;
@@ -79,6 +84,7 @@ export type AnthropicTool = {
 	name: string;
 	description?: string;
 	input_schema: Record<string, any>;
+	cache_control?: AnthropicCacheControl;
 };
 
 export type AnthropicNativeWebSearchTool = {
@@ -160,6 +166,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 					toolResults.push({
 						toolCallId: block.tool_use_id,
 						content: normalizeToolResultContent(block.content),
+						cacheControl: normalizeAnthropicCacheControl((block as any).cache_control),
 					});
 					continue;
 				}
@@ -225,6 +232,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 	// Transform tool choice
 	const toolChoice = normalizeAnthropicToolChoice(req.tool_choice);
+	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
 	const providerGeo = normalizeProviderGeoPreferences(req as any);
 	const explicitInferenceGeo =
 		typeof req.inference_geo === "string" && req.inference_geo.trim().length > 0
@@ -268,6 +276,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		serviceTier: resolveTextServiceTier({
 			service_tier: req.service_tier,
 		}),
+		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
@@ -451,5 +460,6 @@ function decodeAnthropicTool(
 		name: (tool as AnthropicTool).name,
 		description: (tool as AnthropicTool).description,
 		parameters: (tool as AnthropicTool).input_schema,
+		cacheControl: normalizeAnthropicCacheControl((tool as AnthropicTool).cache_control),
 	};
 }

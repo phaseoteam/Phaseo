@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 117
+      "rank": 123
     },
     {
       "benchmark_id": "lmarena-text",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 169
+      "rank": 170
     },
     {
       "benchmark_id": "humaneval",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 38
+      "rank": 52
     },
     {
       "benchmark_id": "math",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 111
+      "rank": 114
     },
     {
       "benchmark_id": "phibench",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 84
+      "rank": 85
     },
     {
       "benchmark_id": "confabulations",
@@ -181,7 +181,7 @@
       "is_self_reported": false,
       "other_info": "Confab 52.5%; non-response 6.4%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 61
+      "rank": 6
     },
     {
       "benchmark_id": "elimination-game",
@@ -189,7 +189,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.136; games 1254; avg points 0.425",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 53
+      "rank": 49
     }
   ]
 }

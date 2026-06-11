@@ -70,6 +70,9 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		(usage as any).input_tokens ??
 		(usage as any).input_text_tokens ??
 		(usage as any).prompt_tokens ??
+		(usage as any).promptTokens ??
+		(usage as any).prompt_token_count ??
+		(usage as any).total_input_tokens ??
 		0,
 	);
 	const outputTokens = Number(
@@ -77,11 +80,15 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 		(usage as any).output_tokens ??
 		(usage as any).output_text_tokens ??
 		(usage as any).completion_tokens ??
+		(usage as any).completionTokens ??
+		(usage as any).completion_token_count ??
+		(usage as any).total_output_tokens ??
 		0,
 	);
 	const totalTokens = Number(
 		(usage as any).totalTokens ??
 		(usage as any).total_tokens ??
+		(usage as any).totalTokenCount ??
 		inputTokens + outputTokens,
 	);
 
@@ -94,12 +101,48 @@ function decodeUsage(usage: IRUsage | undefined): Record<string, any> | undefine
 	const passthroughNumericKeys = [
 		"requests",
 		"input_characters",
+		"output_characters",
+		"total_characters",
+		"characters",
+		"input_quad_tokens",
+		"output_quad_tokens",
+		"total_quad_tokens",
+		"text_quad_tokens",
+		"rerank_quad_tokens",
+		"embedding_quad_tokens",
+		"moderation_quad_tokens",
+		"ocr_quad_tokens",
+		"cached_write_text_tokens",
+		"cached_write_text_tokens_5m",
+		"cached_write_text_tokens_1h",
 		"input_pages",
+		"output_pages",
+		"pages",
+		"doc_size_bytes",
+		"document_bytes",
+		"input_image_pixels",
+		"output_image_pixels",
+		"image_pixels",
+		"input_image_megapixels",
+		"output_image_megapixels",
+		"image_megapixels",
+		"input_audio_seconds",
+		"audio_seconds",
 		"input_audio_minutes",
+		"output_audio_minutes",
+		"audio_minutes",
 		"output_image",
 		"output_audio_count",
 		"output_audio_seconds",
+		"input_video_seconds",
+		"video_seconds",
 		"output_video_seconds",
+		"input_video_pixels",
+		"output_video_pixels",
+		"video_pixels",
+		"input_video_pixel_seconds",
+		"output_video_pixel_seconds",
+		"video_pixel_seconds",
 		"input_image_tokens",
 		"input_audio_tokens",
 		"input_video_tokens",

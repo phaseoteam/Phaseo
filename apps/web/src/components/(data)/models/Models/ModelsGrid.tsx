@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
-import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;

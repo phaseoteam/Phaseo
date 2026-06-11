@@ -99,7 +99,26 @@ Provider entries can also include:
             "tools",
             "top_k",
             "top_p"
-          ]
+          ],
+          "supported_parameters": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters_detail": {
+            "temperature": {
+              "supported": true,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
         }
       ],
       "supported_params": [
@@ -113,6 +132,15 @@ Provider entries can also include:
         "top_k",
         "top_p"
       ],
+      "supported_params_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
       "supported_parameters": [
         "max_tokens",
         "response_format",
@@ -124,6 +152,15 @@ Provider entries can also include:
         "top_k",
         "top_p"
       ],
+      "supported_parameters_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
       "top_provider_id": null,
       "top_provider": {
         "context_length": null,

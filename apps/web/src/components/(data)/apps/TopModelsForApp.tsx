@@ -1,14 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAppUsageOverTime } from "@/lib/fetchers/apps/getAppUsageOverTime";
-import { TrendingUp, Zap } from "lucide-react";
+import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { Zap } from "lucide-react";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
-
-type ModelStats = {
-	model: string;
-	requests: number;
-	tokens: number;
-};
 
 export default async function TopModelsForApp({
 	appId,
@@ -17,7 +11,7 @@ export default async function TopModelsForApp({
 	appId: string;
 	range?: RangeKey;
 }) {
-	const rows = await getAppUsageOverTime(appId, range);
+	const rows = await fetchFrontendAppUsage(appId, range);
 
 	// Aggregate by model
 	const modelAgg = new Map<string, {

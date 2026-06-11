@@ -23,6 +23,8 @@ const CORE_PRICING_METER_VALUES = [
   "cached_read_audio_tokens",
   "output_audio_tokens",
   "cached_write_text_tokens",
+  "cached_write_text_tokens_5m",
+  "cached_write_text_tokens_1h",
   "output_video_seconds",
   "bfl_credits",
   "total_tokens",
@@ -41,6 +43,10 @@ const CORE_PRICING_METER_VALUES = [
 
 const PRICING_METER_LABELS: Partial<Record<(typeof CORE_PRICING_METER_VALUES)[number], string>> = {
   implicit_cached_input_text_tokens: "Implicit Cached Input Text Tokens",
+  cached_read_text_tokens: "Cache Read Tokens",
+  cached_write_text_tokens: "Cache Write Tokens",
+  cached_write_text_tokens_5m: "Cache Write Tokens (5 Min TTL)",
+  cached_write_text_tokens_1h: "Cache Write Tokens (1 Hour TTL)",
   server_tool_web_search_requests: "Server Tool Web Search Requests",
   server_tool_web_search_extra_results: "Server Tool Web Search Extra Results",
   server_tool_web_fetch_requests: "Server Tool Web Fetch Requests",

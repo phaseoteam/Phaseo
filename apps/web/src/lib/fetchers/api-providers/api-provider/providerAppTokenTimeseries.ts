@@ -196,6 +196,8 @@ export async function getProviderAppTokenTimeseries(
 		topApps?: number;
 	},
 ): Promise<ProviderAppTokenTimeseries> {
+	"use cache";
+
 	const requestedDays = options?.days;
 	const days =
 		typeof requestedDays === "number" &&
@@ -213,6 +215,7 @@ export async function getProviderAppTokenTimeseries(
 	cacheTag("data:gateway_usage_rollups");
 	cacheTag(`data:gateway_usage_rollups:provider:${apiProviderId}`);
 	cacheTag(`data:api_providers:${apiProviderId}`);
+	cacheTag("frontend:api-provider-token-timeseries");
 
 	if (!apiProviderId) return { apps: [], points: [] };
 

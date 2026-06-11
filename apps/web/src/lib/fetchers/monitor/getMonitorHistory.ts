@@ -204,6 +204,11 @@ async function fetchMonitorHistoryPageFromDbUncached(
 export async function fetchMonitorHistoryPageFromDb(
 	filters: MonitorHistoryPageFilters = {},
 ): Promise<MonitorHistoryDbPage> {
+	"use cache";
+
+	cacheLife("minutes");
+	cacheTag(MONITOR_HISTORY_CACHE_TAG);
+
 	return fetchMonitorHistoryPageFromDbUncached(normalizeFilters(filters));
 }
 
@@ -221,6 +226,11 @@ async function getInitialMonitorHistoryPageCached(): Promise<MonitorHistoryDbPag
 }
 
 export async function getMonitorHistoryInitialData(): Promise<MonitorHistoryInitialData> {
+	"use cache";
+
+	cacheLife("minutes");
+	cacheTag(MONITOR_HISTORY_CACHE_TAG);
+
 	const [{ modelOptions, providerOptions }, initialPage] = await Promise.all([
 		fetchFilterOptionsFromDb(),
 		getInitialMonitorHistoryPageCached(),

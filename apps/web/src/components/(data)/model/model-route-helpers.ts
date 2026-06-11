@@ -1,6 +1,8 @@
-import { resolveCanonicalModelId } from "@/lib/fetchers/models/resolveCanonicalModelId";
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
-import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
+import {
+	fetchFrontendCanonicalModelId,
+	fetchFrontendModelHeader,
+	fetchFrontendModelOverview,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	buildGeneratedModelDescription,
 	resolveModelDescription,
@@ -49,10 +51,15 @@ export async function getModelMetadataIdentity(
 	}
 
 	try {
-		const header = await getModelOverviewHeader(requestedModelId, includeHidden);
-		const modelOverview = await getModelOverviewCached(
+		const header = await fetchFrontendModelHeader(
 			requestedModelId,
 			includeHidden,
+		);
+		if (!header) {
+			throw new Error(`Model not found: ${requestedModelId}`);
+		}
+		const modelOverview = await fetchFrontendModelOverview(
+			requestedModelId,
 		).catch(() => null);
 		return {
 			modelId: requestedModelId,
@@ -70,16 +77,21 @@ export async function getModelMetadataIdentity(
 		};
 	} catch {
 		try {
-			const resolved = await resolveCanonicalModelId(requestedModelId, includeHidden);
+			const resolved = await fetchFrontendCanonicalModelId(
+				requestedModelId,
+				includeHidden,
+			);
 			const canonicalModelId = resolved.canonicalModelId ?? requestedModelId;
 			if (canonicalModelId !== requestedModelId) {
-				const canonicalHeader = await getModelOverviewHeader(
+				const canonicalHeader = await fetchFrontendModelHeader(
 					canonicalModelId,
 					includeHidden,
 				);
-				const canonicalModelOverview = await getModelOverviewCached(
+				if (!canonicalHeader) {
+					throw new Error(`Model not found: ${canonicalModelId}`);
+				}
+				const canonicalModelOverview = await fetchFrontendModelOverview(
 					canonicalModelId,
-					includeHidden,
 				).catch(() => null);
 				return {
 					modelId: canonicalModelId,
@@ -128,7 +140,10 @@ export async function resolveModelRouteIds(
 			internalModelId: null,
 		};
 	}
-	const resolved = await resolveCanonicalModelId(requestedModelId, includeHidden);
+	const resolved = await fetchFrontendCanonicalModelId(
+		requestedModelId,
+		includeHidden,
+	);
 	return {
 		requestedModelId,
 		canonicalModelId: resolved.canonicalModelId ?? requestedModelId,

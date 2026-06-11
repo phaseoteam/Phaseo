@@ -10,12 +10,7 @@ import { Logo } from "@/components/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getGatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
-import {
-	getAppImageUrlsByIds,
-	getTopApps,
-	getTopModelsWithMetadata,
-} from "@/lib/fetchers/rankings/getRankingsData";
+import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 
 type TopModelRow = {
@@ -92,24 +87,17 @@ function EmptyTelemetry({ text }: { text: string }) {
 }
 
 async function GatewayShowcaseData() {
-	const monthlyWindowHours = 24 * 30;
-	const [metrics, topModelsRes, topAppsRes] = await Promise.all([
-		getGatewayMarketingMetrics(monthlyWindowHours),
-		getTopModelsWithMetadata("week", 6),
-		getTopApps("week", 25),
-	]);
+	const { appImageUrls, metrics, topApps: topAppsRes, topModels: topModelsRes } =
+		await fetchFrontendGatewayShowcase({
+			topAppsLimit: 25,
+			topModelsLimit: 6,
+		});
 
 	const topAppRows = [...topAppsRes.data]
 		.filter((row) => Number(row.tokens ?? 0) > 0)
 		.filter((row) => Boolean(row.app_id))
 		.sort((a, b) => Number(b.tokens ?? 0) - Number(a.tokens ?? 0))
 		.slice(0, 6);
-
-	const appIds = Array.from(
-		new Set(topAppRows.map((row) => row.app_id).filter(Boolean))
-	);
-
-	const appImageMap = await getAppImageUrlsByIds(appIds);
 
 	const topModels: TopModelRow[] = (topModelsRes.data ?? [])
 		.filter((row) => Number(row.total_tokens ?? 0) > 0)
@@ -136,7 +124,7 @@ async function GatewayShowcaseData() {
 	const topApps: TopAppRow[] = topAppRows.map((row) => ({
 		appId: row.app_id,
 		name: row.app_name ?? row.app_id,
-		imageUrl: appImageMap[row.app_id] ?? row.image_url ?? null,
+		imageUrl: appImageUrls[row.app_id] ?? row.image_url ?? null,
 		tokens: Number(row.tokens ?? 0),
 	}));
 

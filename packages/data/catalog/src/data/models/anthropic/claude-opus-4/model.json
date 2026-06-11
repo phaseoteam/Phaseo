@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 37
+      "rank": 42
     },
     {
       "benchmark_id": "livebench",
@@ -165,7 +165,7 @@
       "is_self_reported": false,
       "other_info": "32k Thinking",
       "source_link": "https://livebench.ai/#/",
-      "rank": 16
+      "rank": 24
     },
     {
       "benchmark_id": "livebench",
@@ -173,7 +173,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 24
+      "rank": 37
     },
     {
       "benchmark_id": "lmarena-text",
@@ -205,7 +205,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 4
+      "rank": 12
     },
     {
       "benchmark_id": "confabulations",
@@ -213,7 +213,7 @@
       "is_self_reported": false,
       "other_info": "16K thinking; Confab 2.5%; non-response 29.4%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 29
+      "rank": 34
     },
     {
       "benchmark_id": "confabulations",
@@ -221,7 +221,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; Confab 3.0%; non-response 31.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 34
+      "rank": 30
     },
     {
       "benchmark_id": "elimination-game",
@@ -229,7 +229,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; sigma 0.292; games 273; avg points 0.527",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 24
+      "rank": 22
     },
     {
       "benchmark_id": "elimination-game",
@@ -237,7 +237,7 @@
       "is_self_reported": false,
       "other_info": "16K thinking; sigma 0.309; games 247; avg points 0.490",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 33
+      "rank": 31
     }
   ]
 }

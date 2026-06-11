@@ -111,6 +111,7 @@ export async function getAppDetailsCached(appId: string): Promise<AppDetails | n
 	cacheLife("days");
 	cacheTag("data:app_details");
 	cacheTag(`data:app_details:${appId}`);
+	cacheTag("frontend:app-details");
 	return getAppDetails(appId);
 }
 
@@ -141,5 +142,6 @@ export async function getPublicAppIdsCached(): Promise<string[]> {
 
 	cacheLife("days");
 	cacheTag("data:public_apps");
+	cacheTag("frontend:apps");
 	return getPublicAppIds();
 }

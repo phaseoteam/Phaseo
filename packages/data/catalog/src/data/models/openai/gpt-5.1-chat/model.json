@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 22
+      "rank": 26
     },
     {
       "benchmark_id": "tau2-airline",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.1-2025-11-13",
       "source_link": "https://openai.com/index/gpt-5-1/",
-      "rank": 14
+      "rank": 15
     }
   ]
 }

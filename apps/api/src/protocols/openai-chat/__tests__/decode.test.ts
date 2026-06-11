@@ -716,7 +716,7 @@ describe("decodeOpenAIChatRequest cache options", () => {
 	});
 
 
-	it("ignores top-level cache aliases", () => {
+	it("decodes top-level cache_control and ignores unrelated top-level cache aliases", () => {
 		const request = {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "Hello" }],
@@ -727,7 +727,10 @@ describe("decodeOpenAIChatRequest cache options", () => {
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 		expect(ir.promptCacheRetention).toBeUndefined();
-		expect(ir.anthropicCacheControl).toBeUndefined();
+		expect(ir.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+		});
 		expect(ir.googleCachedContent).toBeUndefined();
 	});
 

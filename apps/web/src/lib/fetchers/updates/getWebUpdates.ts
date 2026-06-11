@@ -1,8 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import type { UpdateCardProps } from "@/lib/fetchers/updates/getLatestUpdates";
-import type React from "react";
-import { Globe } from "lucide-react";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 type DbRow = {
 	id: string;
@@ -27,8 +25,6 @@ const WEB_BADGE_LABEL = "Web Update";
 const WEB_BADGE_CLASS =
 	"px-2 py-1 text-xs flex items-center gap-1 transition-colors bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200 hover:text-sky-900 hover:border-sky-400 dark:bg-sky-900/60 dark:text-sky-200 dark:border-sky-700 dark:hover:bg-sky-900 dark:hover:text-sky-200 dark:hover:border-sky-600 rounded-full";
 const WEB_ACCENT_CLASS = "bg-sky-500";
-const WebIcon =
-	Globe as unknown as React.ComponentType<{ className?: string }>;
 
 function normaliseLimit(limit: number): number {
 	if (!Number.isFinite(limit)) return DEFAULT_LIMIT;
@@ -46,7 +42,7 @@ function isExternal(href: string) {
 }
 
 async function fetchWebUpdateRows(limit: number): Promise<CachedRow[]> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data, error } = (await supabase
 		.from(TABLE_NAME)
@@ -73,7 +69,9 @@ async function getWebUpdateRowsCached(limit: number): Promise<CachedRow[]> {
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:latest-web-updates");
+	cacheTag("frontend:web-updates");
 
 	return fetchWebUpdateRows(limit);
 }
@@ -94,7 +92,7 @@ function toUpdateCard(row: CachedRow): UpdateCardProps {
 		badges: [
 			{
 				label: WEB_BADGE_LABEL,
-				icon: WebIcon,
+				iconName: "globe",
 				className: WEB_BADGE_CLASS,
 			},
 		],

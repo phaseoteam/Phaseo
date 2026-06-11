@@ -1,8 +1,16 @@
 // lib/fetchers/models/getAllModels.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { applyHiddenFilter } from "./visibility";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
+import {
+	type GatewaySupportedModel,
+	getGatewaySupportedModels,
+} from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import {
+	type MonitorModelData,
+	getMonitorModels,
+} from "@/lib/fetchers/models/table-view/getMonitorModels";
 
 export interface ModelCard {
     model_id: string;
@@ -61,6 +69,8 @@ export interface ModelCard {
     popularity_tokens_week?: number | null;
     throughput_week?: number | null;
     latency_week?: number | null;
+    gateway_supported_models?: GatewaySupportedModel[];
+    gateway_monitor_rows?: MonitorModelData[];
 }
 
 type PrimaryDateInfo = {
@@ -192,7 +202,7 @@ async function fetchPagedRows(
 }
 
 async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const includeHidden = Boolean(filters.includeHidden);
 
     const search = filters.search?.trim() ?? "";
@@ -302,10 +312,41 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
 }
 
 export async function getAllModels(includeHidden: boolean): Promise<ModelCard[]> {
-    const rows = await fetchModelsFromDb({ includeHidden });
+    const [rows, gatewayModels, monitorResult] = await Promise.all([
+        fetchModelsFromDb({ includeHidden }),
+        getGatewaySupportedModels(includeHidden),
+        getMonitorModels({}, includeHidden),
+    ]);
+
+    const gatewayModelsByInternalId = new Map<string, GatewaySupportedModel[]>();
+    for (const gatewayModel of gatewayModels) {
+        const internalModelId = gatewayModel.internalModelId?.trim();
+        if (!internalModelId) continue;
+        const list = gatewayModelsByInternalId.get(internalModelId) ?? [];
+        list.push(gatewayModel);
+        gatewayModelsByInternalId.set(internalModelId, list);
+    }
+    const monitorRowsByModelId = new Map<string, MonitorModelData[]>();
+    for (const monitorRow of monitorResult.models) {
+        const modelId = String(monitorRow.modelId ?? "").trim();
+        if (!modelId) continue;
+        const list = monitorRowsByModelId.get(modelId) ?? [];
+        list.push(monitorRow);
+        monitorRowsByModelId.set(modelId, list);
+    }
 
     const models: ModelCard[] = rows
-        .map((raw: any) => mapRawToModelCard(raw))
+        .map((raw: any) => {
+            const modelId = String(raw.model_id ?? raw.id ?? raw.slug ?? "").trim();
+            return mapRawToModelCard(raw, {
+                gateway_supported_models: modelId
+                    ? gatewayModelsByInternalId.get(modelId) ?? []
+                    : [],
+                gateway_monitor_rows: modelId
+                    ? monitorRowsByModelId.get(modelId) ?? []
+                    : [],
+            });
+        })
         .filter((m) => !!m.model_id);
 
     return models;
@@ -329,7 +370,9 @@ export async function getModelsFilteredCached(
 	"use cache";
 
 	cacheLife("hours");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:models");
+	cacheTag("frontend:models");
 
 	return getModelsFiltered(filters);
 }
@@ -338,8 +381,10 @@ export async function getAllModelsCached(includeHidden: boolean): Promise<ModelC
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag("models:list-base");
+    cacheTag("frontend:models");
 
     console.log("[fetch] HIT DB for models");
     return getAllModels(includeHidden);

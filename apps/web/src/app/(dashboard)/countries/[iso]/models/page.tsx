@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import CountryDetailShell from "@/components/(data)/countries/CountryDetailShell";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import {
-	getCountrySummaryByIso,
 	getUniqueCountryModels,
 	normaliseIso,
-} from "@/lib/fetchers/countries/getCountrySummary";
-import { formatCountryDate } from "@/components/(data)/countries/utils";
+	formatCountryDate,
+} from "@/components/(data)/countries/utils";
+import { fetchFrontendCountry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 
 export async function generateMetadata({
@@ -17,8 +17,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const { iso } = await params;
 	const isoNormalized = normaliseIso(iso);
-	const includeHidden = false;
-	const country = await getCountrySummaryByIso(isoNormalized, includeHidden);
+	const country = await fetchFrontendCountry(isoNormalized);
 	const path = `/countries/${isoNormalized.toLowerCase()}/models`;
 	const imagePath = `/og/countries/${isoNormalized.toLowerCase()}`;
 
@@ -49,8 +48,7 @@ export default async function CountryModelsPage({
 }) {
 	const { iso } = await params;
 	const isoNormalized = normaliseIso(iso);
-	const includeHidden = false;
-	const country = await getCountrySummaryByIso(isoNormalized, includeHidden);
+	const country = await fetchFrontendCountry(isoNormalized);
 
 	if (!country) {
 		return (

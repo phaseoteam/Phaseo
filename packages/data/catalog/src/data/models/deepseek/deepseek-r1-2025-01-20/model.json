@@ -116,7 +116,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
-      "rank": 81
+      "rank": 87
     },
     {
       "benchmark_id": "livebench",
@@ -124,7 +124,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 25
+      "rank": 39
     },
     {
       "benchmark_id": "lmarena-text",
@@ -148,7 +148,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 19
+      "rank": 29
     },
     {
       "benchmark_id": "arc-agi-1",

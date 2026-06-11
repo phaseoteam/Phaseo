@@ -75,7 +75,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 42
+      "rank": 43
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 82
+      "rank": 87
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -131,7 +131,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 73
+      "rank": 77
     },
     {
       "benchmark_id": "vibe-eval",
@@ -147,7 +147,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 7
+      "rank": 8
     }
   ]
 }

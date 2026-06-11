@@ -83,7 +83,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from pixtral-12b-2409",
       "source_link": "https://mistral.ai/news/pixtral-12b/",
-      "rank": 42
+      "rank": 43
     },
     {
       "benchmark_id": "mm-if-eval",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from pixtral-12b-2409",
       "source_link": "https://mistral.ai/news/pixtral-12b/",
-      "rank": 114
+      "rank": 115
     },
     {
       "benchmark_id": "mt-bench",

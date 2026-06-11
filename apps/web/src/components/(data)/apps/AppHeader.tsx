@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
-import { getAppDetailsCached } from "@/lib/fetchers/apps/getAppDetails";
+import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function AppHeader({ appId }: { appId: string }) {
-	const app = await getAppDetailsCached(appId);
+	const app = await fetchFrontendAppDetails(appId);
 
 	if (!app) {
 		return (

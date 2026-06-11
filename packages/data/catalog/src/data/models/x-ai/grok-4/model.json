@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 20
+      "rank": 24
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": "Tool Use",
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 49
+      "rank": 52
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://x.ai/news/grok-4",
-      "rank": 64
+      "rank": 69
     },
     {
       "benchmark_id": "usamo-2025",
@@ -176,7 +176,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.com/xai/status/1943158495588815072",
-      "rank": 41
+      "rank": 44
     },
     {
       "benchmark_id": "livecodebench",
@@ -200,7 +200,7 @@
       "is_self_reported": false,
       "other_info": "Confab 4.0%; non-response 20.9%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 9
+      "rank": 54
     },
     {
       "benchmark_id": "elimination-game",
@@ -208,7 +208,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.228; games 455; avg points 0.565",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 12
+      "rank": 11
     }
   ]
 }

@@ -220,6 +220,7 @@ describe("openAIResponsesToIR", () => {
 					total_tokens: 120,
 					input_tokens_details: {
 						cached_tokens: 40,
+						cache_creation_input_tokens: 9,
 						input_images: 3,
 					},
 					output_tokens_details: {
@@ -235,6 +236,7 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.usage?.reasoningTokens).toBe(8);
 			expect(ir.usage?._ext?.inputImageTokens).toBe(3);
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
+			expect(ir.usage?._ext?.cachedWriteTokens).toBe(9);
 		});
 
 		it("maps server-side web search usage into IR usage", () => {
@@ -347,6 +349,29 @@ describe("openAIResponsesToIR", () => {
 });
 
 describe("irToOpenAIResponses", () => {
+	it("preserves cache_control markers for explicit cache providers", () => {
+		const request = irToOpenAIResponses({
+			model: "qwen/qwen3.7-max",
+			messages: [{
+				role: "user",
+				content: [{
+					type: "text",
+					text: "stable context",
+					cacheControl: { type: "ephemeral" },
+				}],
+			}],
+			stream: false,
+		} as any, "qwen3.7-max", "alibaba-cloud");
+
+		expect(request.input_items[0].content).toEqual([
+			{
+				type: "input_text",
+				text: "stable context",
+				cache_control: { type: "ephemeral" },
+			},
+		]);
+	});
+
 	it("preserves native web search tools and tool choice", () => {
 		const request = irToOpenAIResponses({
 			model: "openai/gpt-4.1",

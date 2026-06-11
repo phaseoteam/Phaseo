@@ -23,7 +23,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 18
+      "rank": 24
     },
     {
       "benchmark_id": "gpqa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias of gemini-3.1-pro-preview",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "tau-2-bench",

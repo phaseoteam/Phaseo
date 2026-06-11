@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/magistral",
-      "rank": 86
+      "rank": 92
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": "Text Only Subset",
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
-      "rank": 121
+      "rank": 127
     },
     {
       "benchmark_id": "mmmu",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/static/research/magistral.pdf",
-      "rank": 69
+      "rank": 70
     }
   ]
 }

@@ -97,6 +97,7 @@ export class OpenAI {
   public readonly batches: {
     create(params: BatchRequest): Promise<BatchResponse>;
     retrieve(batchId: string): Promise<BatchResponse>;
+    cancel(batchId: string): Promise<BatchResponse>;
   };
 
   constructor(config: OpenAIConfig) {
@@ -158,7 +159,8 @@ export class OpenAI {
     // Batches
     this.batches = {
       create: (params) => this.aiStats.createBatch(params),
-      retrieve: (batchId) => this.aiStats.getBatch(batchId)
+      retrieve: (batchId) => this.aiStats.getBatch(batchId),
+      cancel: (batchId) => this.aiStats.cancelBatch(batchId)
     };
   }
 

@@ -1,7 +1,10 @@
 import { ReactNode, Suspense } from "react";
 import Link from "next/link";
-import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
+import {
+	fetchFrontendModelHeader,
+	fetchFrontendModelOverview,
+	fetchFrontendModelPageNotice,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import TabBar from "@/components/(data)/model/ModelTabs";
 import { Logo } from "@/components/Logo";
 import ModelEditButton from "./edit/ModelEditButton";
@@ -14,7 +17,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import ModelPageNotice from "./ModelPageNotice";
-import { getModelPageNotice } from "@/lib/fetchers/models/getModelPageNotice";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -84,14 +86,14 @@ export default async function ModelDetailShell({
 				null,
 			]
 		: await Promise.all([
-				getModelOverviewHeader(modelId, includeHidden).catch((error) => {
+				fetchFrontendModelHeader(modelId, includeHidden).catch((error) => {
 					if (isModelNotFoundError(error)) {
 						return null;
 					}
 					throw error;
 				}),
-				getModelOverviewCached(modelId, includeHidden).catch(() => null),
-				getModelPageNotice(modelId, includeHidden).catch(() => null),
+				fetchFrontendModelOverview(modelId).catch(() => null),
+				fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null),
 			]);
 
 	if (!header) {

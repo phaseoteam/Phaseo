@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 46
+      "rank": 47
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 110
+      "rank": 116
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 57
+      "rank": 58
     },
     {
       "benchmark_id": "swe-bench",
@@ -119,7 +119,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-2.5-flash",
       "source_link": "https://developers.googleblog.com/en/start-building-with-gemini-25-flash/",
-      "rank": 80
+      "rank": 84
     },
     {
       "benchmark_id": "vibe-eval",

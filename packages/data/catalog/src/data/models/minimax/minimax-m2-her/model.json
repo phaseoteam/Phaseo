@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 39
+      "rank": 40
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 67
+      "rank": 68
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 103
+      "rank": 109
     },
     {
       "benchmark_id": "if",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 39
+      "rank": 41
     },
     {
       "benchmark_id": "multi-swe-bench",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 22
+      "rank": 23
     },
     {
       "benchmark_id": "swe-bench",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 52
+      "rank": 56
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from minimax-m2",
       "source_link": null,
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "tau-bench",

@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/blog/gpt-4o",
-      "rank": 173
+      "rank": 174
     },
     {
       "benchmark_id": "humaneval",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/blog/gpt-4o",
-      "rank": 29
+      "rank": 30
     },
     {
       "benchmark_id": "mgsm",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/blog/gpt-4o",
-      "rank": 104
+      "rank": 107
     }
   ]
 }

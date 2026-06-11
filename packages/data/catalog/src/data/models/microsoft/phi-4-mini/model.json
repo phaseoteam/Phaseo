@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
-      "rank": 232
+      "rank": 233
     },
     {
       "benchmark_id": "gsm8k",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "hellaswag",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
-      "rank": 133
+      "rank": 136
     },
     {
       "benchmark_id": "multilingual-mmlu",

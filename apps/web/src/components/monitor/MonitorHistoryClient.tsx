@@ -63,8 +63,10 @@ const PROVIDER_NAME_OVERRIDES: Record<string, string> = {
 };
 
 const METER_LABELS: Record<string, string> = {
-	cached_read_text_tokens: "Implicit cache read",
+	cached_read_text_tokens: "Cache read",
 	cached_write_text_tokens: "Cache write",
+	cached_write_text_tokens_5m: "Cache write (5 min TTL)",
+	cached_write_text_tokens_1h: "Cache write (1 hour TTL)",
 	input_audio_tokens: "Audio input",
 	input_image_tokens: "Image input",
 	input_text_tokens: "Text input",
@@ -84,6 +86,8 @@ const METER_ORDER: Record<string, number> = {
 	input_tokens: 0,
 	cached_read_text_tokens: 1,
 	cached_write_text_tokens: 2,
+	cached_write_text_tokens_5m: 2,
+	cached_write_text_tokens_1h: 3,
 	output_text_tokens: 4,
 	output_tokens: 4,
 	input_audio_tokens: 10,

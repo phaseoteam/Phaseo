@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
+import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import TabBar from "@/components/(data)/api-providers/APIProviderTabs";
 import { Logo } from "@/components/Logo";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
@@ -16,7 +16,7 @@ export default async function APIProviderDetailShell({
 	apiProviderId,
 	children,
 }: APIProviderDetailShellProps) {
-	const header = await getAPIProviderHeader(apiProviderId);
+	const header = await fetchFrontendAPIProviderHeader(apiProviderId);
 
 	if (!header) {
 		return (

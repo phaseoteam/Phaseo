@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "functionalmath",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 164
+      "rank": 165
     },
     {
       "benchmark_id": "gsm8k",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://arxiv.org/pdf/2403.05530",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "hellaswag",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "mgsm",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 82
+      "rank": 85
     },
     {
       "benchmark_id": "mmmu",
@@ -142,7 +142,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 82
+      "rank": 83
     },
     {
       "benchmark_id": "mrcr",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from gemini-1.5-pro (score=0.3717; benches=23)",
       "source_link": "https://deepmind.google/technologies/gemini/pro/",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "wmt23",

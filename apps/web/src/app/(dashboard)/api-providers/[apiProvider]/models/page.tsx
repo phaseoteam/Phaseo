@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import APIProviderDetailShell from "@/components/(data)/api-providers/APIProviderDetailShell";
-import { getAPIProviderModelsListByModelDateCached } from "@/lib/fetchers/api-providers/getAPIProvider";
-import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
+import {
+	fetchFrontendAPIProviderHeader,
+	fetchFrontendAPIProviderModels,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import ProviderModelsClient from "./ProviderModelsClient";
 
 async function fetchProviderMeta(apiProviderId: string) {
 	try {
-		return await getAPIProviderHeader(apiProviderId);
+		return await fetchFrontendAPIProviderHeader(apiProviderId);
 	} catch (error) {
 		console.warn("[seo] failed to load api provider metadata", {
 			apiProviderId,
@@ -53,7 +55,7 @@ export default async function Page({
 	const header = await fetchProviderMeta(apiProvider);
 	const providerLabel = header?.api_provider_name ?? apiProvider;
 
-	const models = await getAPIProviderModelsListByModelDateCached(apiProvider, false);
+	const models = await fetchFrontendAPIProviderModels(apiProvider);
 
 	return (
 		<APIProviderDetailShell apiProviderId={apiProvider}>
