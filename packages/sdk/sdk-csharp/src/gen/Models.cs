@@ -2665,8 +2665,14 @@ public sealed class ServerToolUsage
 	[JsonPropertyName("web_fetch_requests")]
 	public int? WebFetchRequests { get; set; }
 
+	[JsonPropertyName("web_search_extra_results")]
+	public int? WebSearchExtraResults { get; set; }
+
 	[JsonPropertyName("web_search_requests")]
 	public int? WebSearchRequests { get; set; }
+
+	[JsonPropertyName("web_search_results")]
+	public int? WebSearchResults { get; set; }
 
 }
 

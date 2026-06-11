@@ -19,7 +19,7 @@ npm install effect @effect/platform
 
 ```ts
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
-import { Config, Effect, Layer, Redacted } from "effect";
+import { Config, Effect, Redacted } from "effect";
 
 const generate = Effect.gen(function* () {
 	const apiKey = yield* Config.redacted("AI_STATS_API_KEY");
@@ -40,7 +40,7 @@ const generate = Effect.gen(function* () {
 	);
 });
 
-const runnable = generate.pipe(Layer.provide(FetchHttpClient.layer));
+const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 ```
 
 ## Wrap the OpenAI SDK in an Effect service

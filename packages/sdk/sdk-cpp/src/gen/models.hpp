@@ -1095,7 +1095,9 @@ struct ServerToolUsage {
 	std::optional<int> datetime_requests;
 	std::optional<int> image_generation_requests;
 	std::optional<int> web_fetch_requests;
+	std::optional<int> web_search_extra_results;
 	std::optional<int> web_search_requests;
+	std::optional<int> web_search_results;
 };
 
 struct TextContentPart {

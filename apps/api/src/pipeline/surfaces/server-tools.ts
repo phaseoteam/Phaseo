@@ -29,6 +29,8 @@ const DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS = 25;
 const MAX_WEB_SEARCH_MAX_TOTAL_RESULTS = 100;
 const DEFAULT_WEB_FETCH_MAX_CHARS = 12000;
 const MAX_WEB_FETCH_MAX_CHARS = 50000;
+const SERVER_TOOL_FETCH_TIMEOUT_MS = 15000;
+const SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS = 5;
 const DEFAULT_EXA_BASE_URL = "https://api.exa.ai";
 const DEFAULT_PARALLEL_BASE_URL = "https://api.parallel.ai";
 const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
@@ -1496,18 +1498,64 @@ function hostnameMatchesDomain(hostname: string, domain: string): boolean {
 	return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
 }
 
+function parseIPv4Address(hostname: string): number[] | null {
+	const parts = hostname.split(".");
+	if (parts.length !== 4) return null;
+	const bytes = parts.map((part) => {
+		if (!/^\d{1,3}$/.test(part)) return Number.NaN;
+		const value = Number(part);
+		return Number.isInteger(value) && value >= 0 && value <= 255 ? value : Number.NaN;
+	});
+	return bytes.every((value) => Number.isFinite(value)) ? bytes : null;
+}
+
+function isPrivateOrLocalHostname(hostname: string): boolean {
+	const normalized = hostname.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+	if (!normalized) return true;
+	if (
+		normalized === "localhost" ||
+		normalized.endsWith(".localhost") ||
+		normalized.endsWith(".local") ||
+		normalized.endsWith(".internal")
+	) {
+		return true;
+	}
+	const ipv4 = parseIPv4Address(normalized);
+	if (ipv4) {
+		const [a, b] = ipv4;
+		return (
+			a === 0 ||
+			a === 10 ||
+			a === 127 ||
+			(a === 100 && b >= 64 && b <= 127) ||
+			(a === 169 && b === 254) ||
+			(a === 172 && b >= 16 && b <= 31) ||
+			(a === 192 && b === 168)
+		);
+	}
+	return (
+		normalized === "::1" ||
+		normalized.startsWith("fc") ||
+		normalized.startsWith("fd") ||
+		normalized.startsWith("fe80:")
+	);
+}
+
 function isUrlAllowedByDomainPolicy(
 	url: string,
 	allowedDomains: string[],
 	blockedDomains: string[],
 ): boolean {
-	if (allowedDomains.length === 0 && blockedDomains.length === 0) return true;
 	let hostname: string;
 	try {
 		hostname = new URL(url).hostname;
 	} catch {
 		return false;
 	}
+	if (isPrivateOrLocalHostname(hostname)) {
+		return false;
+	}
+	if (allowedDomains.length === 0 && blockedDomains.length === 0) return true;
 	if (blockedDomains.some((domain) => hostnameMatchesDomain(hostname, domain))) {
 		return false;
 	}
@@ -1515,6 +1563,19 @@ function isUrlAllowedByDomainPolicy(
 		return allowedDomains.some((domain) => hostnameMatchesDomain(hostname, domain));
 	}
 	return true;
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), SERVER_TOOL_FETCH_TIMEOUT_MS);
+	try {
+		return await fetch(input, {
+			...init,
+			signal: controller.signal,
+		});
+	} finally {
+		clearTimeout(timeout);
+	}
 }
 
 function parseWebFetchMaxChars(
@@ -1646,7 +1707,7 @@ async function executeExaFetchToolCall(args: {
 	searchConfig: { apiKey: string; baseUrl: string };
 }): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
 	try {
-		const response = await fetch(`${args.searchConfig.baseUrl}/contents`, {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/contents`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -1758,7 +1819,7 @@ async function executeParallelSearchToolCall(args: {
 	if (country) advancedSettings.location = country.toLowerCase();
 
 	try {
-		const response = await fetch(`${args.searchConfig.baseUrl}/v1/search`, {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/search`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -1886,7 +1947,7 @@ async function executeFirecrawlSearchToolCall(args: {
 	}
 
 	try {
-		const response = await fetch(`${args.searchConfig.baseUrl}/v2/search`, {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v2/search`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -1974,7 +2035,7 @@ async function executeParallelFetchToolCall(args: {
 	searchConfig: { apiKey: string; baseUrl: string };
 }): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
 	try {
-		const response = await fetch(`${args.searchConfig.baseUrl}/v1/extract`, {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/extract`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -2056,7 +2117,7 @@ async function executeFirecrawlFetchToolCall(args: {
 	searchConfig: { apiKey: string; baseUrl: string };
 }): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
 	try {
-		const response = await fetch(`${args.searchConfig.baseUrl}/v2/scrape`, {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v2/scrape`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -2234,14 +2295,52 @@ async function executeWebFetchToolCall(
 	}
 
 	try {
-		const response = await fetch(url, {
-			method: "GET",
-			headers: {
-				Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
-				"User-Agent": "AI-Stats-Gateway/1.0 (+https://ai-stats.phaseo.app)",
-			},
-			redirect: "follow",
-		});
+		let currentUrl = url;
+		let response: Response | null = null;
+		for (let redirectCount = 0; redirectCount <= SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS; redirectCount += 1) {
+			response = await fetchWithTimeout(currentUrl, {
+				method: "GET",
+				headers: {
+					Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
+					"User-Agent": "AI-Stats-Gateway/1.0 (+https://ai-stats.phaseo.app)",
+				},
+				redirect: "manual",
+			});
+			if (response.status < 300 || response.status >= 400) break;
+			const location = response.headers.get("location");
+			if (!location) break;
+			const nextUrl = new URL(location, currentUrl).toString();
+			if (!isUrlAllowedByDomainPolicy(nextUrl, allowedDomains, blockedDomains)) {
+				return {
+					toolResult: {
+						toolCallId: call.id,
+						isError: true,
+						content: JSON.stringify({
+							error: "redirect_blocked_by_domain_policy",
+							message: "redirect target is not allowed by this gateway web fetch domain policy",
+						}),
+					},
+					webFetchRequests: 0,
+				};
+			}
+			currentUrl = nextUrl;
+		}
+		if (!response) {
+			throw new Error("web fetch did not return a response");
+		}
+		if (response.status >= 300 && response.status < 400) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "too_many_redirects",
+						message: "gateway web fetch exceeded the redirect limit",
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
 
 		if (!response.ok) {
 			const failureText = await response.text();
@@ -2294,7 +2393,7 @@ async function executeWebFetchToolCall(
 					provider: "fetch",
 					engine: "direct",
 					url,
-					final_url: toNonEmptyString(response.url) ?? url,
+					final_url: toNonEmptyString(response.url) ?? currentUrl,
 					status: response.status,
 					content_type: contentType,
 					title,
@@ -2489,7 +2588,7 @@ async function executeWebSearchToolCall(
 	if (excludedDomains.length > 0) exaBody.excludeDomains = excludedDomains;
 
 	try {
-		const response = await fetch(`${searchConfig.baseUrl}/search`, {
+		const response = await fetchWithTimeout(`${searchConfig.baseUrl}/search`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

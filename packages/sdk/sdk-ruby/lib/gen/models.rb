@@ -1581,9 +1581,13 @@ module AiStats
     #   @return [Integer, nil]
     # @!attribute [rw] web_fetch_requests
     #   @return [Integer, nil]
+    # @!attribute [rw] web_search_extra_results
+    #   @return [Integer, nil]
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
-    ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :image_generation_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    # @!attribute [rw] web_search_results
+    #   @return [Integer, nil]
+    ServerToolUsage = Struct.new(:advisor_requests, :apply_patch_requests, :datetime_requests, :image_generation_requests, :web_fetch_requests, :web_search_extra_results, :web_search_requests, :web_search_results, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type

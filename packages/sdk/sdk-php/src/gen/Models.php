@@ -1936,7 +1936,11 @@ class ServerToolUsage
 	/** @var int|null */
 	public $web_fetch_requests;
 	/** @var int|null */
+	public $web_search_extra_results;
+	/** @var int|null */
 	public $web_search_requests;
+	/** @var int|null */
+	public $web_search_results;
 }
 
 class TextContentPart

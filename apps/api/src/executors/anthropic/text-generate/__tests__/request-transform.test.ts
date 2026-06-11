@@ -6,6 +6,7 @@ import {
 import { decodeOpenAIChatRequest } from "../../../../protocols/openai-chat/decode";
 import { decodeAnthropicMessagesRequest } from "../../../../protocols/anthropic-messages/decode";
 import {
+	anthropicMessagesToIR,
 	irToAnthropicMessages,
 	resolveAnthropicInferenceGeo,
 } from "../index";
@@ -133,6 +134,54 @@ describe("irToAnthropicMessages service controls", () => {
 				type: "advisor_tool_result",
 				tool_use_id: "srvu_123",
 				content: [{ type: "text", text: "Use smaller steps." }],
+			},
+		]);
+	});
+
+	it("preserves provider-native blocks in response history", () => {
+		const ir = anthropicMessagesToIR(
+			{
+				id: "msg_provider_blocks",
+				content: [
+					{ type: "text", text: "I checked this." },
+					{
+						type: "server_tool_use",
+						id: "srvu_123",
+						name: "web_search",
+						input: { query: "AI Stats" },
+					},
+					{
+						type: "web_search_tool_result",
+						tool_use_id: "srvu_123",
+						content: [{ type: "web_search_result", title: "AI Stats", url: "https://ai-stats.phaseo.app" }],
+					},
+				],
+				stop_reason: "end_turn",
+				usage: { input_tokens: 10, output_tokens: 5 },
+			},
+			"req_provider_blocks",
+			"anthropic/claude-sonnet-4",
+			"anthropic",
+		);
+
+		expect(ir.choices[0]?.message.content).toEqual([
+			{ type: "text", text: "I checked this." },
+			{
+				type: "provider_block",
+				block: {
+					type: "server_tool_use",
+					id: "srvu_123",
+					name: "web_search",
+					input: { query: "AI Stats" },
+				},
+			},
+			{
+				type: "provider_block",
+				block: {
+					type: "web_search_tool_result",
+					tool_use_id: "srvu_123",
+					content: [{ type: "web_search_result", title: "AI Stats", url: "https://ai-stats.phaseo.app" }],
+				},
 			},
 		]);
 	});

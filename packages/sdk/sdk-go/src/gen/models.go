@@ -2223,7 +2223,9 @@ type ServerToolUsage struct {
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
 	ImageGenerationRequests *int `json:"image_generation_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
+	WebSearchExtraResults *int `json:"web_search_extra_results,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
+	WebSearchResults *int `json:"web_search_results,omitempty"`
 }
 
 type TextContentPart struct {

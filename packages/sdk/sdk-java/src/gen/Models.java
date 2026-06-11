@@ -1102,7 +1102,9 @@ public final class Models {
 		public Integer datetime_requests;
 		public Integer image_generation_requests;
 		public Integer web_fetch_requests;
+		public Integer web_search_extra_results;
 		public Integer web_search_requests;
+		public Integer web_search_results;
 	}
 
 	public static class TextContentPart {

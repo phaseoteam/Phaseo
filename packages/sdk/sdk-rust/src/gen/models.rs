@@ -1091,7 +1091,9 @@ pub struct ServerToolUsage {
 	pub datetime_requests: Option<i64>,
 	pub image_generation_requests: Option<i64>,
 	pub web_fetch_requests: Option<i64>,
+	pub web_search_extra_results: Option<i64>,
 	pub web_search_requests: Option<i64>,
+	pub web_search_results: Option<i64>,
 }
 
 pub struct TextContentPart {

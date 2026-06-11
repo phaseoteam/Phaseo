@@ -1286,7 +1286,9 @@ export async function createChatCompletion(
       datetime_requests?: number;
       image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -1381,7 +1383,9 @@ export async function createChatCompletion(
         datetime_requests?: number;
         image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -1569,7 +1573,9 @@ export async function createEmbedding(
       datetime_requests?: number;
       image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -1593,7 +1599,9 @@ export async function createEmbedding(
         datetime_requests?: number;
         image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -2103,7 +2111,9 @@ export async function createRerank(
       datetime_requests?: number;
       image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -2133,7 +2143,9 @@ export async function createRerank(
         datetime_requests?: number;
         image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };
@@ -2463,7 +2475,9 @@ export async function createResponse(
       datetime_requests?: number;
       image_generation_requests?: number;
       web_fetch_requests?: number;
+      web_search_extra_results?: number;
       web_search_requests?: number;
+      web_search_results?: number;
     };
     total_tokens?: number;
   };
@@ -2548,7 +2562,9 @@ export async function createResponse(
         datetime_requests?: number;
         image_generation_requests?: number;
         web_fetch_requests?: number;
+        web_search_extra_results?: number;
         web_search_requests?: number;
+        web_search_results?: number;
       };
       total_tokens?: number;
     };

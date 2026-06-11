@@ -981,7 +981,9 @@ class ServerToolUsage(TypedDict):
 	datetime_requests: NotRequired[int]
 	image_generation_requests: NotRequired[int]
 	web_fetch_requests: NotRequired[int]
+	web_search_extra_results: NotRequired[int]
 	web_search_requests: NotRequired[int]
+	web_search_results: NotRequired[int]
 
 class TextContentPart(TypedDict):
 	text: str

@@ -1323,7 +1323,8 @@ describe("buildServerToolContinuation", () => {
 				"https://example.com/page",
 				expect.objectContaining({
 					method: "GET",
-					redirect: "follow",
+					redirect: "manual",
+					signal: expect.any(AbortSignal),
 				}),
 			);
 			expect(continuation?.usage).toEqual({
@@ -1344,6 +1345,99 @@ describe("buildServerToolContinuation", () => {
 				title: "Example Page",
 				text: "Example Page Hello World",
 				truncated: false,
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("rejects direct web fetch calls to private network targets", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_private_fetch",
+								name: "ai_stats_web_fetch",
+								arguments: JSON.stringify({
+									url: "http://127.0.0.1:8787/admin",
+								}),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezone: "UTC",
+					webSearchEnabled: false,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: true,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(fetchMock).not.toHaveBeenCalled();
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toMatchObject({
+				error: "url_blocked_by_domain_policy",
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("rejects direct web fetch redirects to private network targets", async () => {
+		const fetchMock = vi.fn(async () =>
+			new Response("", {
+				status: 302,
+				headers: { location: "http://169.254.169.254/latest/meta-data" },
+			}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_redirect_private_fetch",
+								name: "ai_stats_web_fetch",
+								arguments: JSON.stringify({
+									url: "https://example.com/redirect",
+								}),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezone: "UTC",
+					webSearchEnabled: false,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: true,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(fetchMock).toHaveBeenCalledTimes(1);
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toMatchObject({
+				error: "redirect_blocked_by_domain_policy",
 			});
 		} finally {
 			vi.unstubAllGlobals();

@@ -3612,6 +3612,12 @@ components:
         web_search_requests:
           type: integer
           minimum: 0
+        web_search_results:
+          type: integer
+          minimum: 0
+        web_search_extra_results:
+          type: integer
+          minimum: 0
         web_fetch_requests:
           type: integer
           minimum: 0
