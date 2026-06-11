@@ -1212,6 +1212,65 @@ describe("buildServerToolContinuation", () => {
 		}
 	});
 
+	it("rejects Firecrawl web search calls with both include and exclude domain filters", async () => {
+		getBindingsMock.mockReturnValue({
+			FIRECRAWL_API_KEY: "firecrawl_test_key",
+			FIRECRAWL_BASE_URL: "https://api.firecrawl.dev",
+		});
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_firecrawl_domains",
+								name: "ai_stats_web_search",
+								arguments: JSON.stringify({
+									query: "latest AI policy",
+									engine: "firecrawl",
+									allowed_domains: ["example.com"],
+									excluded_domains: ["reddit.com"],
+								}),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezone: "UTC",
+					webSearchEnabled: true,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(fetchMock).not.toHaveBeenCalled();
+			expect(continuation?.usage).toMatchObject({
+				webSearchRequests: 1,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
+			});
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toMatchObject({
+				error: "invalid_domain_policy",
+				engine: "firecrawl",
+				allowed_domains: ["example.com"],
+				excluded_domains: ["reddit.com"],
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
 	it("executes AI Stats web fetch calls and returns bounded text", async () => {
 		const fetchMock = vi.fn(async () =>
 			new Response(

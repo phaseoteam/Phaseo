@@ -336,20 +336,6 @@ async function executeImageGenerationModel(args: {
 		...(typeof args.outputCompression === "number" ? { output_compression: args.outputCompression } : {}),
 		...(args.moderation ? { moderation: args.moderation } : {}),
 	};
-	const imageIr: IRChatRequest = {
-		model: args.model,
-		stream: false,
-		modalities: ["text", "image"],
-		...(Object.keys(imageConfig).length > 0 ? { imageConfig } : {}),
-		messages: [
-			{
-				role: "user",
-				content: [{ type: "text", text: args.prompt }],
-			},
-		],
-		tools: [],
-		toolChoice: "none",
-	};
 	const rawBody = {
 		model: args.model,
 		messages: [{ role: "user", content: args.prompt }],
@@ -363,6 +349,21 @@ async function executeImageGenerationModel(args: {
 			}
 			: {}),
 		...(Object.keys(providerOptions).length > 0 ? providerOptions : {}),
+	};
+	const imageIr: IRChatRequest = {
+		model: args.model,
+		stream: false,
+		modalities: ["text", "image"],
+		...(Object.keys(imageConfig).length > 0 ? { imageConfig } : {}),
+		messages: [
+			{
+				role: "user",
+				content: [{ type: "text", text: args.prompt }],
+			},
+		],
+		tools: [],
+		toolChoice: "none",
+		rawRequest: rawBody,
 	};
 	const imageCtx: PipelineContext = {
 		...args.pre.ctx,

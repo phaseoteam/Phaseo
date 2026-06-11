@@ -196,6 +196,14 @@ export function irToOpenAIChat(
 				: {}),
 		};
 	}
+	const rawRequest = ir.rawRequest && typeof ir.rawRequest === "object" && !Array.isArray(ir.rawRequest)
+		? ir.rawRequest as Record<string, any>
+		: {};
+	if (rawRequest.quality !== undefined) request.quality = rawRequest.quality;
+	if (rawRequest.background !== undefined) request.background = rawRequest.background;
+	if (rawRequest.output_format !== undefined) request.output_format = rawRequest.output_format;
+	if (rawRequest.output_compression !== undefined) request.output_compression = rawRequest.output_compression;
+	if (rawRequest.moderation !== undefined) request.moderation = rawRequest.moderation;
 	if (ir.userId !== undefined) request.user = ir.userId;
 	if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
 
@@ -535,18 +543,36 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 		typeof serverToolUseRaw?.web_fetch_requests === "number"
 			? serverToolUseRaw.web_fetch_requests
 			: undefined;
+	const advisorRequests =
+		typeof serverToolUseRaw?.advisor_requests === "number"
+			? serverToolUseRaw.advisor_requests
+			: undefined;
+	const imageGenerationRequests =
+		typeof serverToolUseRaw?.image_generation_requests === "number"
+			? serverToolUseRaw.image_generation_requests
+			: undefined;
+	const applyPatchRequests =
+		typeof serverToolUseRaw?.apply_patch_requests === "number"
+			? serverToolUseRaw.apply_patch_requests
+			: undefined;
 	const serverToolUse =
 		datetimeRequests != null ||
 		webSearchRequests != null ||
 		webSearchResults != null ||
 		webSearchExtraResults != null ||
-		webFetchRequests != null
+		webFetchRequests != null ||
+		advisorRequests != null ||
+		imageGenerationRequests != null ||
+		applyPatchRequests != null
 			? {
 				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
 				...(webSearchResults != null ? { web_search_results: webSearchResults } : {}),
 				...(webSearchExtraResults != null ? { web_search_extra_results: webSearchExtraResults } : {}),
 				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+				...(advisorRequests != null ? { advisor_requests: advisorRequests } : {}),
+				...(imageGenerationRequests != null ? { image_generation_requests: imageGenerationRequests } : {}),
+				...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
 			}
 			: undefined;
 

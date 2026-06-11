@@ -259,6 +259,8 @@ describe("encodeAnthropicMessagesResponse", () => {
 						web_search_extra_results: 4,
 						web_fetch_requests: 1,
 						advisor_requests: 1,
+						image_generation_requests: 1,
+						apply_patch_requests: 1,
 					},
 				},
 			},
@@ -272,6 +274,8 @@ describe("encodeAnthropicMessagesResponse", () => {
 			web_search_extra_results: 4,
 			web_fetch_requests: 1,
 			advisor_requests: 1,
+			image_generation_requests: 1,
+			apply_patch_requests: 1,
 		});
 	});
 

@@ -1849,6 +1849,23 @@ async function executeFirecrawlSearchToolCall(args: {
 	userLocation?: unknown;
 	searchConfig: { apiKey: string; baseUrl: string };
 }): Promise<{ toolResult: IRToolResult; webSearchResults: number; webSearchExtraResults: number }> {
+	if (args.allowedDomains.length > 0 && args.excludedDomains.length > 0) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "invalid_domain_policy",
+					engine: "firecrawl",
+					message: "Firecrawl web search supports allowed_domains or excluded_domains, not both.",
+					allowed_domains: args.allowedDomains,
+					excluded_domains: args.excludedDomains,
+				}),
+			},
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
 	const body: Record<string, unknown> = {
 		query: args.query,
 		limit: args.maxResults,

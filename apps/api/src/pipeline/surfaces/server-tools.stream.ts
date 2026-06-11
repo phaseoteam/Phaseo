@@ -380,13 +380,21 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	const advisorRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.advisor_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.advisor_requests);
+	const imageGenerationRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.image_generation_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.image_generation_requests);
+	const applyPatchRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.apply_patch_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.apply_patch_requests);
 	if (
 		datetimeRequests != null ||
 		webSearchRequests != null ||
 		webSearchResults != null ||
 		webSearchExtraResults != null ||
 		webFetchRequests != null ||
-		advisorRequests != null
+		advisorRequests != null ||
+		imageGenerationRequests != null ||
+		applyPatchRequests != null
 	) {
 		ext.serverToolUse = {
 			...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
@@ -395,6 +403,8 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 			...(webSearchExtraResults != null ? { web_search_extra_results: webSearchExtraResults } : {}),
 			...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
 			...(advisorRequests != null ? { advisor_requests: advisorRequests } : {}),
+			...(imageGenerationRequests != null ? { image_generation_requests: imageGenerationRequests } : {}),
+			...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
 		};
 	}
 

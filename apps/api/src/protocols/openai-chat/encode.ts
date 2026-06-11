@@ -186,7 +186,9 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 		typeof serverToolUse?.web_search_results === "number" ||
 		typeof serverToolUse?.web_search_extra_results === "number" ||
 		typeof serverToolUse?.web_fetch_requests === "number" ||
-		typeof serverToolUse?.advisor_requests === "number"
+		typeof serverToolUse?.advisor_requests === "number" ||
+		typeof serverToolUse?.image_generation_requests === "number" ||
+		typeof serverToolUse?.apply_patch_requests === "number"
 	) {
 		(result as any).server_tool_use = {
 			...(typeof serverToolUse?.datetime_requests === "number"
@@ -206,6 +208,12 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 				: {}),
 			...(typeof serverToolUse?.advisor_requests === "number"
 				? { advisor_requests: serverToolUse.advisor_requests }
+				: {}),
+			...(typeof serverToolUse?.image_generation_requests === "number"
+				? { image_generation_requests: serverToolUse.image_generation_requests }
+				: {}),
+			...(typeof serverToolUse?.apply_patch_requests === "number"
+				? { apply_patch_requests: serverToolUse.apply_patch_requests }
 				: {}),
 		};
 	}
