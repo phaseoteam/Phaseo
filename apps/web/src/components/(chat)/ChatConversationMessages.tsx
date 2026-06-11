@@ -355,16 +355,16 @@ export function ChatConversationMessages({
 				(activeMeta?.routing as any)?.selected_provider;
 			let responseProviderId = message.providerId?.trim() || null;
 			if (
-				typeof routingSelectedProvider === "string" &&
-				routingSelectedProvider.trim().length > 0
-			) {
-				responseProviderId = routingSelectedProvider.trim();
-			}
-			if (
 				typeof activeMeta?.provider === "string" &&
 				activeMeta.provider.trim().length > 0
 			) {
 				responseProviderId = activeMeta.provider.trim();
+			}
+			if (
+				typeof routingSelectedProvider === "string" &&
+				routingSelectedProvider.trim().length > 0
+			) {
+				responseProviderId = routingSelectedProvider.trim();
 			}
 			const responseProviderLabel =
 				message.providerName?.trim() || responseProviderId || null;
