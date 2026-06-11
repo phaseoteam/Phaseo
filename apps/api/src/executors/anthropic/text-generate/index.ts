@@ -738,13 +738,14 @@ export function anthropicMessagesToIR(
 	provider: string,
 ): IRChatResponse {
 	const toolCalls: IRToolCall[] = [];
-	const textParts: string[] = [];
-	const providerBlocks: any[] = [];
+	const contentParts: IRContent[] = [];
 
 	// Extract content blocks
 	for (const block of json.content || []) {
 		if (block.type === "text") {
-			textParts.push(block.text);
+			if (block.text.length > 0) {
+				contentParts.push({ type: "text", text: block.text });
+			}
 		} else if (block.type === "tool_use") {
 			// CRITICAL: Extract tool_use blocks
 			toolCalls.push({
@@ -753,7 +754,7 @@ export function anthropicMessagesToIR(
 				arguments: JSON.stringify(block.input),
 			});
 		} else if (block && typeof block === "object") {
-			providerBlocks.push(block);
+			contentParts.push({ type: "provider_block", block });
 		}
 	}
 
@@ -771,12 +772,7 @@ export function anthropicMessagesToIR(
 		index: 0,
 		message: {
 			role: "assistant",
-			content: [
-				...textParts
-					.filter((text) => text.length > 0)
-					.map((text) => ({ type: "text" as const, text })),
-				...providerBlocks.map((block) => ({ type: "provider_block" as const, block })),
-			],
+			content: contentParts,
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 		},
 		finishReason,
