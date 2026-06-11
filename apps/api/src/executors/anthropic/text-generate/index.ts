@@ -7,7 +7,7 @@
 // CRITICAL FIX: Properly extracts tool_use blocks from responses!
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
-import type { IRChatRequest, IRChatResponse, IRChoice, IRToolCall } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { upstreamTestHeaders } from "@providers/shared/testing";
@@ -738,7 +738,7 @@ export function anthropicMessagesToIR(
 	provider: string,
 ): IRChatResponse {
 	const toolCalls: IRToolCall[] = [];
-	const contentParts: IRContent[] = [];
+	const contentParts: IRContentPart[] = [];
 
 	// Extract content blocks
 	for (const block of json.content || []) {
