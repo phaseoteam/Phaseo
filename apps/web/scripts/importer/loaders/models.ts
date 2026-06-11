@@ -1,8 +1,14 @@
 import { join } from "path";
 import { promises as fs } from "fs";
 import { DIR_MODELS, DIR_FAMILIES } from "../paths";
-import { listDirs, readJson, readJsonWithHash, chunk, toInList } from "../util";
-import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
+import { listDirs, readJson, readJsonWithHash, toInList } from "../util";
+import {
+    client,
+    isDryRun,
+    logWrite,
+    assertOk,
+    pruneRowsByColumn,
+} from "../supa";
 import { createHash } from "crypto";
 import { ChangeTracker } from "../state";
 
@@ -121,6 +127,7 @@ export async function loadModels(
     { modelId }: { modelId: string | null }
 ) {
     const supa = client();
+    const nowIso = new Date().toISOString();
     const hasApiModelIdColumn = await dataModelsHasApiModelIdColumn(supa);
     const existingBenchmarkIds = await loadExistingBenchmarkIds(supa);
     if (!modelId) tracker.touchPrefix(DIR_MODELS);
@@ -285,6 +292,9 @@ export async function loadModels(
                 family_id:
                     m.family_id && familyExists.has(`${m.organisation_id}::${m.family_id}`) ? m.family_id : null,
             };
+            if (changedModels.has(m.model_id)) {
+                coreRow.updated_at = nowIso;
+            }
             if (hasApiModelIdColumn) {
                 coreRow.api_model_id =
                     typeof m.api_model_id === "string" && m.api_model_id.trim()

@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/openai-o3-mini/",
-      "rank": 64
+      "rank": 70
     },
     {
       "benchmark_id": "lisanbench",
@@ -96,7 +96,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 2
+      "rank": 5
     },
     {
       "benchmark_id": "lmarena-text",
@@ -120,7 +120,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 13
+      "rank": 23
     },
     {
       "benchmark_id": "simplebench",
@@ -128,7 +128,7 @@
       "is_self_reported": false,
       "other_info": "Medium Reasoning Effort",
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 15
+      "rank": 25
     },
     {
       "benchmark_id": "confabulations",
@@ -136,7 +136,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; Confab 10.9%; non-response 12.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 6
+      "rank": 56
     },
     {
       "benchmark_id": "elimination-game",
@@ -144,7 +144,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; sigma 0.171; games 798; avg points 0.510",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 34
+      "rank": 32
     }
   ]
 }

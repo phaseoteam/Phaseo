@@ -81,7 +81,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 			},
 			{
 				href: "/settings/usage",
-				label: "Usage",
+				label: "Observability",
 				icon: BarChart3,
 				match: ["/settings/usage", "/settings/usage/logs", "/settings/usage/alerts"],
 			},

@@ -16,10 +16,7 @@ import { cn } from "@/lib/utils";
 import { Search as SearchIcon, Sparkles } from "lucide-react";
 import { curatedGroups } from "./Search.constants";
 import { SearchRowItem } from "./SearchRowItem";
-import type {
-	CompactSearchData,
-	SearchData,
-} from "@/lib/fetchers/search/getSearchData";
+import type { CompactSearchData, SearchData } from "@/lib/fetchers/search/getSearchData";
 
 interface Props {
 	className?: string;

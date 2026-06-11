@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 168
+      "rank": 169
     },
     {
       "benchmark_id": "humaneval",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 37
+      "rank": 51
     },
     {
       "benchmark_id": "math",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 110
+      "rank": 113
     },
     {
       "benchmark_id": "phibench",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from phi-4 (score=0.3100; benches=13)",
       "source_link": "https://arxiv.org/pdf/2412.08905",
-      "rank": 83
+      "rank": 84
     }
   ]
 }

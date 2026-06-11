@@ -42,42 +42,26 @@
       "effective_from": "2024-11-04T00:00:00Z"
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_write_text_tokens_5m",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 1,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
-      "match": [
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
-          "value": "5m"
-        }
-      ],
+      "match": [],
       "priority": 100,
       "effective_from": "2024-11-04T00:00:00Z"
     },
     {
-      "meter": "cached_write_text_tokens",
+      "meter": "cached_write_text_tokens_1h",
       "unit": "token",
       "unit_size": 1000000,
       "price_per_unit": 1.6,
       "currency": "USD",
       "pricing_plan": "standard",
       "note": null,
-      "match": [
-        {
-          "path": "cache_ttl",
-          "op": "eq",
-          "or_group": 1,
-          "and_index": 1,
-          "value": "1h"
-        }
-      ],
+      "match": [],
       "priority": 100,
       "effective_from": "2024-11-04T00:00:00Z"
     }

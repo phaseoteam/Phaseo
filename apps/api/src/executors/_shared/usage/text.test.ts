@@ -53,6 +53,62 @@ describe("normalizeTextUsageForPricing", () => {
 		expect(usage?.requests).toBe(1);
 	});
 
+	it("maps OpenAI-compatible prompt/completion usage shapes", () => {
+		const usage = normalizeTextUsageForPricing({
+			prompt_tokens: 17,
+			completion_tokens: 9,
+			total_tokens: 26,
+			prompt_tokens_details: {
+				cached_tokens: 4,
+			},
+			completion_tokens_details: {
+				reasoning_tokens: 3,
+			},
+		});
+
+		expect(usage?.input_tokens).toBe(17);
+		expect(usage?.output_tokens).toBe(9);
+		expect(usage?.total_tokens).toBe(26);
+		expect(usage?.cached_read_text_tokens).toBe(4);
+		expect(usage?.reasoning_tokens).toBe(3);
+	});
+
+	it("maps China-lab cache hit aliases to cached-read meters", () => {
+		const usage = normalizeTextUsageForPricing({
+			prompt_tokens: 100,
+			completion_tokens: 5,
+			total_tokens: 105,
+			prompt_cache_hit_tokens: 42,
+		});
+
+		expect(usage?.input_tokens).toBe(100);
+		expect(usage?.output_tokens).toBe(5);
+		expect(usage?.cached_read_text_tokens).toBe(42);
+	});
+
+	it("maps top-level cached_tokens to cached-read meters", () => {
+		const usage = normalizeTextUsageForPricing({
+			prompt_tokens: 100,
+			completion_tokens: 5,
+			total_tokens: 105,
+			cached_tokens: 24,
+		});
+
+		expect(usage?.cached_read_text_tokens).toBe(24);
+	});
+
+	it("maps provider camelCase and token-count usage aliases", () => {
+		const usage = normalizeTextUsageForPricing({
+			promptTokens: 11,
+			completionTokens: 7,
+			totalTokenCount: 18,
+		});
+
+		expect(usage?.input_tokens).toBe(11);
+		expect(usage?.output_tokens).toBe(7);
+		expect(usage?.total_tokens).toBe(18);
+	});
+
 	it("infers missing token split from total-only usage payloads", () => {
 		const usage = normalizeTextUsageForPricing({
 			total_tokens: 21,
@@ -71,11 +127,17 @@ describe("normalizeTextUsageForPricing", () => {
 			total_tokens: 1500,
 			cache_read_input_tokens: 800,
 			cache_creation_input_tokens: 500,
+			cache_creation: {
+				ephemeral_5m_input_tokens: 300,
+				ephemeral_1h_input_tokens: 200,
+			},
 		});
 
 		expect(usage?.input_text_tokens).toBe(1200);
 		expect(usage?.cached_read_text_tokens).toBe(800);
 		expect(usage?.cached_write_text_tokens).toBe(500);
+		expect(usage?.cached_write_text_tokens_5m).toBe(300);
+		expect(usage?.cached_write_text_tokens_1h).toBe(200);
 		expect((usage as any)?.cached_read_tokens_are_subset_of_input).toBeUndefined();
 	});
 

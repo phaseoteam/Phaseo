@@ -972,6 +972,8 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 		outputAudioTokens: sumMaybe(base._ext?.outputAudioTokens, incoming._ext?.outputAudioTokens),
 		outputVideoTokens: sumMaybe(base._ext?.outputVideoTokens, incoming._ext?.outputVideoTokens),
 		cachedWriteTokens: sumMaybe(base._ext?.cachedWriteTokens, incoming._ext?.cachedWriteTokens),
+		cachedWriteTokens5m: sumMaybe(base._ext?.cachedWriteTokens5m, incoming._ext?.cachedWriteTokens5m),
+		cachedWriteTokens1h: sumMaybe(base._ext?.cachedWriteTokens1h, incoming._ext?.cachedWriteTokens1h),
 	};
 
 	return {

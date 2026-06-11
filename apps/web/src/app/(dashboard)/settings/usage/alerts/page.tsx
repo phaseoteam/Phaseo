@@ -2,37 +2,56 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import DeprecationWarnings from "@/components/(gateway)/usage/DeprecationWarnings/DeprecationWarnings";
-import { getDeprecationWarningsForTeam } from "@/lib/fetchers/usage/deprecationWarnings";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
+import { fetchSettingsUsageAlertsInitialData } from "@/lib/fetchers/internal/fetchSettingsUsageAlertsInitialData";
+import {
+	getUsageRangeParamKeys,
+	parseUsageDateInput,
+	parseUsageRangePreset,
+} from "@/lib/gateway/usage/timeRange";
 
 export const metadata: Metadata = {
 	title: "Lifecycle Alerts - Settings",
 };
 
-export default function Page() {
+type SearchParams = Record<string, string | string[] | undefined>;
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value[0];
+	return undefined;
+}
+
+export default function Page(props: {
+	searchParams: Promise<SearchParams>;
+}) {
 	return (
 		<Suspense fallback={<SettingsSectionFallback />}>
-			<UsageAlertsContent />
+			<UsageAlertsContent searchParams={props.searchParams} />
 		</Suspense>
 	);
 }
 
-async function UsageAlertsContent() {
-	const supabase = await createClient();
+async function UsageAlertsContent({
+	searchParams,
+}: {
+	searchParams: Promise<SearchParams>;
+}) {
+	const sp = await searchParams;
+	const rangeKeys = getUsageRangeParamKeys();
+	const preset = parseUsageRangePreset(firstParam(sp[rangeKeys.preset]));
+	const customFrom = parseUsageDateInput(firstParam(sp[rangeKeys.from]));
+	const customTo = parseUsageDateInput(firstParam(sp[rangeKeys.to]));
+	const initialData = await fetchSettingsUsageAlertsInitialData();
 
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	if (!user) redirect("/sign-in");
+	if (!initialData.signedIn) redirect("/sign-in");
 
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) {
+	if (!initialData.workspaceId) {
 		return (
 			<Card>
 				<CardHeader>
@@ -47,16 +66,22 @@ async function UsageAlertsContent() {
 		);
 	}
 
-	const warnings = await getDeprecationWarningsForTeam(workspaceId);
-
 	return (
 		<div className="space-y-6">
-			<SettingsPageHeader
-				title="Lifecycle Alerts"
-				description="Models you used recently that are deprecated or retired, and what to swap to."
-			/>
+			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+				<SettingsPageHeader
+					title="Lifecycle Alerts"
+					description="Models you used recently that are deprecated or retired, and what to swap to."
+				/>
+				<UsageLogsToolbar
+					view="logs"
+					preset={preset}
+					customFrom={customFrom}
+					customTo={customTo}
+				/>
+			</div>
 
-			{warnings.length === 0 ? (
+			{initialData.warnings.length === 0 ? (
 				<Card>
 					<CardHeader>
 						<CardTitle>No lifecycle alerts</CardTitle>
@@ -68,7 +93,7 @@ async function UsageAlertsContent() {
 					</CardContent>
 				</Card>
 			) : (
-				<DeprecationWarnings warnings={warnings} showHeader={false} />
+				<DeprecationWarnings warnings={initialData.warnings} showHeader={false} />
 			)}
 		</div>
 	);

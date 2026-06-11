@@ -1,7 +1,7 @@
 // lib/fetchers/landing/getModelUpdates.ts
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 import { cacheLife, cacheTag } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export type EventType = "Announced" | "Released" | "Deprecated" | "Retired";
 
@@ -119,11 +119,13 @@ export async function getRecentModelUpdatesSplit(
 ): Promise<ModelEventSegments> {
     "use cache";
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:model-updates");
     cacheTag("data:models");
+    cacheTag("frontend:model-updates");
 
     const now = nowInput ?? new Date();
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await applyHiddenFilter(
         supabase
@@ -208,15 +210,17 @@ export async function getOrganisationReleaseEvents(
 ): Promise<ModelEvent[]> {
     "use cache";
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:model-updates");
     cacheTag("data:models");
     cacheTag(`data:model-updates:organisation:${organisationId}`);
+    cacheTag("frontend:model-updates");
 
     if (!organisationId) return [];
 
     const now = nowInput ?? new Date();
     const nowMs = +now;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await applyHiddenFilter(
         supabase

@@ -23,7 +23,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 27
+      "rank": 28
     },
     {
       "benchmark_id": "gpqa",
@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 93
+      "rank": 94
     },
     {
       "benchmark_id": "healthbench",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "healthbench-hard",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-oss-20b (score=0.5137; benches=7)",
       "source_link": "https://openai.com/index/introducing-gpt-oss/",
-      "rank": 118
+      "rank": 124
     },
     {
       "benchmark_id": "mmlu",

@@ -2680,10 +2680,14 @@ components:
           type: array
           items:
             type: string
+        supported_params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters:
           type: array
           items:
             type: string
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
         architecture:
           type: object
           properties:
@@ -2903,6 +2907,22 @@ components:
           type: array
           items:
             type: string
+        params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters:
+          type: array
+          items:
+            type: string
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+    SupportedParameterDetails:
+      type: object
+      description: >-
+        Structured constraints and provider support for request parameters,
+        keyed by parameter name.
+      additionalProperties:
+        type: object
+        additionalProperties: true
     DataModelOrganisation:
       type: object
       nullable: true

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import ModelsTableDisplay from "@/components/(data)/models/Models/ModelsTableDisplay";
-import { getMonitorModels } from "@/lib/fetchers/models/table-view/getMonitorModels";
+import { fetchFrontendMonitorModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export const metadata: Metadata = {
 	title: "Models table view",
@@ -20,7 +19,7 @@ function normalizeRankingModelKey(value: string): string {
 }
 
 function buildWeeklyTokensMaps(
-	rows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	rows: Awaited<ReturnType<typeof fetchFrontendMonitorModels>>["models"],
 ): {
 	weeklyTokensByModel: Record<string, number>;
 	weeklyTokensByModelProvider: Record<string, number>;
@@ -53,7 +52,7 @@ function buildWeeklyTokensMaps(
 }
 
 function toCompactTableRows(
-	rows: Awaited<ReturnType<typeof getMonitorModels>>["models"],
+	rows: Awaited<ReturnType<typeof fetchFrontendMonitorModels>>["models"],
 	weeklyTokensByModel: Record<string, number>,
 	weeklyTokensByModelProvider: Record<string, number>,
 ): MonitorModelTableRow[] {
@@ -113,8 +112,7 @@ function toCompactTableRows(
 export default async function ModelsTablePage() {
 	// Ensure request-scoped rendering before time-dependent calculations.
 	await headers();
-	const includeHidden = await resolveIncludeHidden();
-	const monitorResult = await getMonitorModels({}, includeHidden);
+	const monitorResult = await fetchFrontendMonitorModels();
 	const {
 		models: modelData,
 		allTiers,

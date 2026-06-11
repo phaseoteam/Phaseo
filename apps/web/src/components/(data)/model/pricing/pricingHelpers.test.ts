@@ -239,4 +239,49 @@ describe("buildProviderSections", () => {
 			basePer1M: 6,
 		});
 	});
+
+	test("labels split Anthropic cache write TTL pricing clearly", () => {
+		const provider = makeProviderPricing();
+		provider.provider.api_provider_id = "anthropic";
+		provider.provider.api_provider_name = "Anthropic";
+		provider.pricing_rules = [
+			{
+				id: "anthropic-cache-write-5m",
+				model_key: "openai:openai/gpt-5.5:responses",
+				pricing_plan: "standard",
+				meter: "cached_write_text_tokens_5m",
+				unit: "token",
+				unit_size: 1000000,
+				price_per_unit: 3.75,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-01-01T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+			{
+				id: "anthropic-cache-write-1h",
+				model_key: "openai:openai/gpt-5.5:responses",
+				pricing_plan: "standard",
+				meter: "cached_write_text_tokens_1h",
+				unit: "token",
+				unit_size: 1000000,
+				price_per_unit: 6,
+				currency: "USD",
+				note: null,
+				priority: 100,
+				effective_from: "2026-01-01T00:00:00.000Z",
+				effective_to: null,
+				match: [],
+			},
+		];
+
+		const sections = buildProviderSections(provider, "standard");
+
+		expect(sections.textTokens?.write).toEqual([
+			expect.objectContaining({ per1M: 3.75, label: "5 min TTL" }),
+			expect.objectContaining({ per1M: 6, label: "1 hour TTL" }),
+		]);
+	});
 });

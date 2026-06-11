@@ -442,6 +442,8 @@ export async function getAllAPIProvidersCached(): Promise<APIProviderCard[]> {
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:api-providers");
     cacheTag("data:api_providers");
     cacheTag("data:api_providers:list");
 

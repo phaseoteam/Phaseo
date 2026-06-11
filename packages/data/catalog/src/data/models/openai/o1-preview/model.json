@@ -48,7 +48,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 78
+      "rank": 84
     },
     {
       "benchmark_id": "lmarena-text",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 10
+      "rank": 20
     },
     {
       "benchmark_id": "gpqa",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 87
+      "rank": 88
     },
     {
       "benchmark_id": "livebench",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 32
+      "rank": 46
     },
     {
       "benchmark_id": "math",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 37
+      "rank": 38
     },
     {
       "benchmark_id": "swe-bench",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/learning-to-reason-with-llms/",
-      "rank": 111
+      "rank": 114
     },
     {
       "benchmark_id": "confabulations",
@@ -128,7 +128,7 @@
       "is_self_reported": false,
       "other_info": "Confab 18.3%; non-response 7.8%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 12
+      "rank": 51
     }
   ]
 }

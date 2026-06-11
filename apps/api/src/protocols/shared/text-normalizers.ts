@@ -282,7 +282,7 @@ export function normalizeProviderCacheOptions(rawRequest: any): {
 	googleCachedContent?: string;
 	xaiConversationId?: string;
 } {
-	const providerOptions = rawRequest?.provider_options;
+	const providerOptions = rawRequest?.provider_options ?? rawRequest?.providerOptions ?? {};
 	const openaiOptions = providerOptions?.openai ?? {};
 	const anthropicOptions = providerOptions?.anthropic ?? {};
 	const googleOptions = providerOptions?.google ?? {};
@@ -293,10 +293,14 @@ export function normalizeProviderCacheOptions(rawRequest: any): {
 			openaiOptions?.prompt_cache_retention,
 		),
 		anthropicCacheControl: normalizeCacheControl(
-			anthropicOptions?.cache_control,
+			anthropicOptions?.cache_control ??
+				anthropicOptions?.cacheControl ??
+				rawRequest?.cache_control ??
+				rawRequest?.cacheControl,
 		),
 		googleCachedContent: pickFirstNonEmptyString(
 			googleOptions?.cached_content,
+			googleOptions?.cachedContent,
 		),
 		xaiConversationId: pickFirstNonEmptyString(
 			xaiOptions?.conversation_id,

@@ -1026,13 +1026,17 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] supported_parameters
     #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_parameters_detail
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] supported_params
     #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_params_detail
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] top_provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] top_provider_id
     #   @return [String, nil]
-    Model = Struct.new(:aliases, :architecture, :availability, :canonical_slug, :created, :deprecation_date, :description, :endpoints, :id, :input_types, :lifecycle, :model_id, :name, :organisation_colour, :organisation_id, :organisation_name, :output_types, :per_request_limits, :pricing, :pricing_detail, :providers, :release_date, :retirement_date, :status, :supported_parameters, :supported_params, :top_provider, :top_provider_id, keyword_init: true)
+    Model = Struct.new(:aliases, :architecture, :availability, :canonical_slug, :created, :deprecation_date, :description, :endpoints, :id, :input_types, :lifecycle, :model_id, :name, :organisation_colour, :organisation_id, :organisation_name, :output_types, :per_request_limits, :pricing, :pricing_detail, :providers, :release_date, :retirement_date, :status, :supported_parameters, :supported_parameters_detail, :supported_params, :supported_params_detail, :top_provider, :top_provider_id, keyword_init: true)
     # @!attribute [rw] active_provider_count
     #   @return [Integer]
     # @!attribute [rw] inactive_provider_count
@@ -1076,11 +1080,17 @@ module AiStats
     #   @return [String]
     # @!attribute [rw] params
     #   @return [Array<String>]
+    # @!attribute [rw] params_detail
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_routing_status
     #   @return [String]
     # @!attribute [rw] provider_status
     #   @return [String]
-    ModelProviderAvailability = Struct.new(:api_provider_id, :api_provider_name, :availability_reason, :availability_status, :capability_status, :effective_from, :effective_to, :endpoints, :is_active_gateway, :model_routing_status, :params, :provider_routing_status, :provider_status, keyword_init: true)
+    # @!attribute [rw] supported_parameters
+    #   @return [Array<String>, nil]
+    # @!attribute [rw] supported_parameters_detail
+    #   @return [Hash{String => Object}, nil]
+    ModelProviderAvailability = Struct.new(:api_provider_id, :api_provider_name, :availability_reason, :availability_status, :capability_status, :effective_from, :effective_to, :endpoints, :is_active_gateway, :model_routing_status, :params, :params_detail, :provider_routing_status, :provider_status, :supported_parameters, :supported_parameters_detail, keyword_init: true)
     # @!attribute [rw] harassment
     #   @return [Boolean, nil]
     # @!attribute [rw] harassment_threatening
@@ -1527,6 +1537,7 @@ module AiStats
     # @!attribute [rw] web_search_requests
     #   @return [Integer, nil]
     ServerToolUsage = Struct.new(:datetime_requests, :web_fetch_requests, :web_search_requests, keyword_init: true)
+    SupportedParameterDetails = Struct.new(:_unused, keyword_init: true)
     # @!attribute [rw] text
     #   @return [String]
     # @!attribute [rw] type

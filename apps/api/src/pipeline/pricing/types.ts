@@ -35,6 +35,8 @@ export type PricingDimensionKey =
     | "output_video_seconds"
     | "implicit_cached_input_text_tokens"
     | "cached_write_text_tokens"
+    | "cached_write_text_tokens_5m"
+    | "cached_write_text_tokens_1h"
     | "cached_write_image_tokens"
     | "cached_write_audio_tokens"
     | "cached_write_video_tokens"

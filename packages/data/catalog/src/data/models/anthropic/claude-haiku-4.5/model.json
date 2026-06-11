@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 90
+      "rank": 91
     },
     {
       "benchmark_id": "mmmlu",
@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 30
+      "rank": 32
     },
     {
       "benchmark_id": "mmmu-(validation)",
@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 19
+      "rank": 22
     },
     {
       "benchmark_id": "swe-bench",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 37
+      "rank": 41
     },
     {
       "benchmark_id": "tau2-airline",
@@ -113,7 +113,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from claude-haiku-4-5-20251001",
       "source_link": "https://www.anthropic.com/news/claude-haiku-4-5",
-      "rank": 24
+      "rank": 26
     },
     {
       "benchmark_id": "terminal-bench",
@@ -129,7 +129,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 67
+      "rank": 66
     }
   ]
 }

@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 91
+      "rank": 92
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 40
+      "rank": 41
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 48
+      "rank": 50
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-next/",
-      "rank": 44
+      "rank": 46
     },
     {
       "benchmark_id": "tau-bench-airline",

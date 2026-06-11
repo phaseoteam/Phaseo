@@ -23,7 +23,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; 24% +/-2%; avg cost $3.16; avg time 56m; out tok 84k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 9
+      "rank": 8
     },
     {
       "benchmark_id": "creative-story-writing",

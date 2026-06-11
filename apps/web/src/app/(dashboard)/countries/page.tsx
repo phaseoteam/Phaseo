@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { MapPin } from "lucide-react";
 
 import CountriesGrid from "@/components/(data)/countries/CountryGrid";
-import { getCountrySummariesCached } from "@/lib/fetchers/countries/getCountrySummaries";
+import { fetchFrontendCountrySummaries } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export const metadata: Metadata = {
 	title: "AI Models By Country - Global Model Landscape",
@@ -22,8 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CountriesPage() {
-	const includeHidden = false;
-	const countries = await getCountrySummariesCached(includeHidden);
+	const countries = await fetchFrontendCountrySummaries();
 
 	return (
 		<main className="flex min-h-screen flex-col">

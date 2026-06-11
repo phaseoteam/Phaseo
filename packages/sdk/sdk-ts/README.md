@@ -59,6 +59,7 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
 - `client.ocr.create(...)`, `client.rerank.create(...)`, and `client.music.create(...)` for OCR, rerank, and music generation
+- `client.dataModels.list(...)` for `/data/models`
 - `client.responses.websocketUrl(...)` for Responses websocket connection URLs
 
 Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.

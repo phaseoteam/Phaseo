@@ -172,7 +172,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 68
+      "rank": 69
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 83
+      "rank": 87
     },
     {
       "benchmark_id": "mmstar",
@@ -236,7 +236,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-72B-Instruct",
-      "rank": 47
+      "rank": 50
     },
     {
       "benchmark_id": "perceptiontest",

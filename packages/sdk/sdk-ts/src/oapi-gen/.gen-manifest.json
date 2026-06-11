@@ -125,6 +125,7 @@
     "models/ResponsesWebSocketServerEvent.ts",
     "models/ResponsesWebSocketUpgradeRequiredResponse.ts",
     "models/ServerToolUsage.ts",
+    "models/SupportedParameterDetails.ts",
     "models/TextContentPart.ts",
     "models/TextGenerateTool.ts",
     "models/TextModerationInput.ts",

@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 3
+      "rank": 7
     },
     {
       "benchmark_id": "deepsearchqa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 12
+      "rank": 17
     },
     {
       "benchmark_id": "pinchbench",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "swe-bench",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 14
+      "rank": 18
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from mimo-v2-pro",
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 22
+      "rank": 25
     }
   ]
 }

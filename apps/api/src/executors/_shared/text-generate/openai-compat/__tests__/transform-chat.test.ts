@@ -207,6 +207,7 @@ describe("openAIChatToIR", () => {
 					total_tokens: 150,
 					input_tokens_details: {
 						cached_tokens: 70,
+						cache_creation_input_tokens: 13,
 						input_images: 4,
 					},
 					completion_tokens_details: {
@@ -222,6 +223,7 @@ describe("openAIChatToIR", () => {
 			expect(ir.usage?.reasoningTokens).toBe(11);
 			expect(ir.usage?._ext?.inputImageTokens).toBe(4);
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
+			expect(ir.usage?._ext?.cachedWriteTokens).toBe(13);
 		});
 
 		it("maps server-side web search usage into IR usage", () => {
@@ -588,6 +590,46 @@ describe("openAIChatToIR", () => {
 });
 
 describe("irToOpenAIChat", () => {
+	it("preserves cache_control markers for explicit cache providers", () => {
+		const request = irToOpenAIChat({
+			model: "qwen/qwen3.7-max",
+			messages: [
+				{
+					role: "system",
+					content: [{
+						type: "text",
+						text: "stable system prompt",
+						cacheControl: { type: "ephemeral" },
+					}],
+				},
+				{
+					role: "user",
+					content: [{
+						type: "text",
+						text: "current question",
+						cacheControl: { type: "ephemeral" },
+					}],
+				},
+			],
+			stream: false,
+		} as any, "qwen3.7-max", "alibaba");
+
+		expect(request.messages[0].content).toEqual([
+			{
+				type: "text",
+				text: "stable system prompt",
+				cache_control: { type: "ephemeral" },
+			},
+		]);
+		expect(request.messages[1].content).toEqual([
+			{
+				type: "text",
+				text: "current question",
+				cache_control: { type: "ephemeral" },
+			},
+		]);
+	});
+
 	it("preserves native web search tools and tool choice", () => {
 		const request = irToOpenAIChat({
 			model: "openai/gpt-4.1",

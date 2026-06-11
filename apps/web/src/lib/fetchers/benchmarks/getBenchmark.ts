@@ -1,5 +1,5 @@
 // lib/fetchers/benchmarks/getBenchmark.ts
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
 
 // BenchmarkPage (with results) is defined later in this file.
@@ -52,7 +52,7 @@ export default async function getBenchmark(
     benchmark_id: string,
     includeHidden: boolean
 ): Promise<BenchmarkPage | null> {
-    const supabase = await createClient(); // must allow read via RLS for these tables
+    const supabase = createAdminClient();
 
     // Fetch the single benchmark and include nested results -> models -> organisations
     const { data: benchmarks, error } = await supabase
@@ -167,6 +167,8 @@ export async function getBenchmarkCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:benchmarks");
     cacheTag("data:benchmarks");
     cacheTag(`data:benchmarks:${benchmark_id}`);
 

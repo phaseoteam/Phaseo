@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 2
+      "rank": 6
     },
     {
       "benchmark_id": "deepsearchqa",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 11
+      "rank": 16
     },
     {
       "benchmark_id": "pinchbench",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "swe-bench",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 13
+      "rank": 17
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-pro",
-      "rank": 21
+      "rank": 24
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -95,7 +95,7 @@
       "is_self_reported": false,
       "other_info": "win prob 0.45; 95% CI -0.7..-0.2",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 19
+      "rank": 18
     },
     {
       "benchmark_id": "nyt-connections",
@@ -111,7 +111,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 68.8%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 22
+      "rank": 9
     }
   ]
 }

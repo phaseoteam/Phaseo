@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": "5-shot, CoT",
       "source_link": "https://huggingface.co/ibm-granite/granite-4.1-3b",
-      "rank": 136
+      "rank": 139
     },
     {
       "benchmark_id": "bbh",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": "0-shot, CoT",
       "source_link": "https://huggingface.co/ibm-granite/granite-4.1-3b",
-      "rank": 214
+      "rank": 215
     },
     {
       "benchmark_id": "simpleqa",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/ibm-granite/granite-4.1-3b",
-      "rank": 81
+      "rank": 82
     },
     {
       "benchmark_id": "alpacaeval-2.0",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": "8-shot",
       "source_link": "https://huggingface.co/ibm-granite/granite-4.1-3b",
-      "rank": 33
+      "rank": 34
     },
     {
       "benchmark_id": "minerva",
@@ -180,7 +180,7 @@
       "is_self_reported": true,
       "other_info": "5-shot",
       "source_link": "https://huggingface.co/ibm-granite/granite-4.1-3b",
-      "rank": 53
+      "rank": 55
     },
     {
       "benchmark_id": "include",

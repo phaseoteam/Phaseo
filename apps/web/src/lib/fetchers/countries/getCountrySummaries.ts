@@ -170,8 +170,10 @@ export async function getCountrySummariesCached(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:organisations");
 	cacheTag("data:models");
+	cacheTag("frontend:countries");
 
 	console.log("[fetch] HIT DB for country summaries");
 	return getCountrySummaries(includeHidden);

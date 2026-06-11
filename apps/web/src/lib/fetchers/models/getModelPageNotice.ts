@@ -1,8 +1,8 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { z } from "zod";
 import { isFreeRouterModelId } from "@/lib/models/freeRouter";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "./visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export type ModelPageNoticeTone = "info" | "warning" | "critical";
 
@@ -62,7 +62,7 @@ export async function resolveApiModelIdForModelPageUncached(
 ): Promise<string | null> {
 	if (isFreeRouterModelId(modelId)) return null;
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	const [apiModelRes, aliasRes, internalRes, providerRes] = await Promise.all([
 		supabase
 			.from("data_api_models")
@@ -115,6 +115,8 @@ async function resolveApiModelIdForModelPage(
 	cacheTag("data:data_api_models");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:model_aliases");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:model-notice");
 	cacheTag(`model:notice:resolve:${modelId}`);
 
 	return resolveApiModelIdForModelPageUncached(modelId, includeHidden);
@@ -127,7 +129,7 @@ async function getModelPageNoticeUncached(
 	const apiModelId = await resolveApiModelIdForModelPage(modelId, includeHidden);
 	if (!apiModelId) return null;
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	const { data, error } = await supabase
 		.from("data_api_model_page_notices")
 		.select("api_model_id, tone, markdown")
@@ -146,5 +148,20 @@ export async function getModelPageNotice(
 	modelId: string,
 	includeHidden: boolean,
 ): Promise<ModelPageNotice | null> {
+	"use cache";
+
+	cacheLife({
+		stale: 60 * 60 * 24,
+		revalidate: 60 * 60 * 24 * 7,
+		expire: 60 * 60 * 24 * 30,
+	});
+	cacheTag("data:models");
+	cacheTag("data:data_api_models");
+	cacheTag("data:data_api_provider_models");
+	cacheTag("data:model_aliases");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:model-notice");
+	cacheTag(`model:notice:${modelId}`);
+
 	return getModelPageNoticeUncached(modelId, includeHidden);
 }

@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "browsecomp",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Raw score: 2028",
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "countbench",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 35
+      "rank": 36
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -206,7 +206,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 24
+      "rank": 26
     },
     {
       "benchmark_id": "hypersim",
@@ -222,7 +222,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 11
+      "rank": 13
     },
     {
       "benchmark_id": "if-eval",
@@ -334,7 +334,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -358,7 +358,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "mmmu",
@@ -374,7 +374,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 28
+      "rank": 30
     },
     {
       "benchmark_id": "mmstar",
@@ -454,7 +454,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 16
+      "rank": 3
     },
     {
       "benchmark_id": "os-world",
@@ -462,7 +462,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 18
+      "rank": 21
     },
     {
       "benchmark_id": "pmc-vqa",
@@ -558,7 +558,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 53
+      "rank": 57
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -574,7 +574,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 42
+      "rank": 46
     },
     {
       "benchmark_id": "tir-bench",
@@ -614,7 +614,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.5",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "vita-bench",

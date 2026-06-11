@@ -119,6 +119,7 @@ export type { ResponsesWebSocketCreateEvent } from "./ResponsesWebSocketCreateEv
 export type { ResponsesWebSocketServerEvent } from "./ResponsesWebSocketServerEvent.js";
 export type { ResponsesWebSocketUpgradeRequiredResponse } from "./ResponsesWebSocketUpgradeRequiredResponse.js";
 export type { ServerToolUsage } from "./ServerToolUsage.js";
+export type { SupportedParameterDetails } from "./SupportedParameterDetails.js";
 export type { TextContentPart } from "./TextContentPart.js";
 export type { TextGenerateTool } from "./TextGenerateTool.js";
 export type { TextModerationInput } from "./TextModerationInput.js";

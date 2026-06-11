@@ -27,7 +27,7 @@
       "is_self_reported": true,
       "other_info": "8-Lang Average",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 27
+      "rank": 28
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot, No Reasoning",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 140
+      "rank": 146
     },
     {
       "benchmark_id": "simpleqa",
@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": "Exact Match",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 69
+      "rank": 70
     },
     {
       "benchmark_id": "amc",
@@ -67,7 +67,7 @@
       "is_self_reported": false,
       "other_info": "win prob 0.28; 95% CI -1.8..-1.3",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 23
+      "rank": 22
     },
     {
       "benchmark_id": "elimination-game",
@@ -75,7 +75,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.262; games 337; avg points 0.456",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 37
+      "rank": 34
     },
     {
       "benchmark_id": "nyt-connections",
@@ -83,7 +83,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 78
+      "rank": 77
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -91,7 +91,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 34.0%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 28
+      "rank": 3
     }
   ]
 }

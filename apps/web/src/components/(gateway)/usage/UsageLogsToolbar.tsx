@@ -157,8 +157,8 @@ export default function UsageLogsToolbar({
 	customTo?: string | null;
 }) {
 	const router = useRouter();
-	const pathname = usePathname();
-	const searchParams = useSearchParams();
+	const pathname = usePathname() ?? "/settings/usage/logs";
+	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const [isRefreshing, startRefreshing] = React.useTransition();
 	const [isRevalidating, setIsRevalidating] = React.useState(false);
 	const [pendingTargetQuery, setPendingTargetQuery] = React.useState<string | null>(
@@ -482,7 +482,7 @@ export default function UsageLogsToolbar({
 										rangeInputRef.current?.blur();
 									}
 								}}
-								aria-label="Usage log time range"
+								aria-label="Usage time range"
 								placeholder="YYYY-MM-DD HH:mm -> YYYY-MM-DD HH:mm"
 								className={cn(
 									"h-9 rounded-full border-zinc-200 bg-white pl-9 pr-10 text-[13px] font-medium shadow-none",

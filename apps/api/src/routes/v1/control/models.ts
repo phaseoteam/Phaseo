@@ -14,6 +14,8 @@ import {
     type CatalogueModel,
     type PricingMeterSummary,
     type PricingSummary,
+    type SupportedParamDetail,
+    type SupportedParamDetails,
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
@@ -216,7 +218,11 @@ function toCompatibilityPricing(pricing: PricingSummary): CompatibilityPricing {
         input_cache_read: meterToUnitPrice(
             meters.implicit_cached_input_text_tokens ?? meters.cached_read_text_tokens
         ),
-        input_cache_write: meterToUnitPrice(meters.cached_write_text_tokens),
+        input_cache_write: meterToUnitPrice(
+            meters.cached_write_text_tokens ??
+                meters.cached_write_text_tokens_5m ??
+                meters.cached_write_text_tokens_1h
+        ),
         web_search: meterToUnitPrice(meters.web_search),
     };
 }
@@ -284,6 +290,62 @@ function buildFreeRouterPricingMeters(args: {
     return meters;
 }
 
+function cloneJsonObject<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value ?? {}));
+}
+
+function toRichModelProvider(provider: CatalogueModel["providers"][number]) {
+    return {
+        ...provider,
+        supported_parameters: [...provider.params],
+        supported_parameters_detail: cloneJsonObject(provider.params_detail ?? {}),
+    };
+}
+
+function mergeParamDetail(a: SupportedParamDetail, b: SupportedParamDetail): SupportedParamDetail {
+    const merged: SupportedParamDetail = { ...a, ...b };
+    const values = [
+        ...(Array.isArray(a.values) ? a.values : []),
+        ...(Array.isArray(b.values) ? b.values : []),
+    ];
+    if (values.length > 0) {
+        merged.values = Array.from(new Set(values.map((value) => JSON.stringify(value))))
+            .map((value) => JSON.parse(value))
+            .sort((left, right) => String(left).localeCompare(String(right)));
+    }
+    const providers = [
+        ...(Array.isArray(a.providers) ? a.providers : []),
+        ...(Array.isArray(b.providers) ? b.providers : []),
+    ].filter((provider): provider is string => typeof provider === "string" && provider.length > 0);
+    if (providers.length > 0) {
+        merged.providers = Array.from(new Set(providers)).sort((left, right) => left.localeCompare(right));
+    }
+    return merged;
+}
+
+function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
+    const out: SupportedParamDetails = {};
+    for (const item of items) {
+        if (!item) continue;
+        for (const [name, detail] of Object.entries(item)) {
+            out[name] = out[name] ? mergeParamDetail(out[name], detail) : { ...detail };
+        }
+    }
+    return out;
+}
+
+function detailsForParamNames(params: string[], providerId: string): SupportedParamDetails {
+    return Object.fromEntries(
+        params.map((param) => [
+            param,
+            {
+                supported: true,
+                providers: [providerId],
+            },
+        ])
+    );
+}
+
 async function buildFreeRouterCatalogueModel(args: {
     workspaceId: string;
     apiKeyId: string;
@@ -327,6 +389,10 @@ async function buildFreeRouterCatalogueModel(args: {
                         ...Object.keys(snapshot.capabilityParams ?? {}),
                     ])
                 ).sort(),
+                params_detail: mergeParamDetails(
+                    concreteProvider.params_detail,
+                    detailsForParamNames(Object.keys(snapshot.capabilityParams ?? {}), providerId)
+                ),
             });
         }
 
@@ -349,6 +415,10 @@ async function buildFreeRouterCatalogueModel(args: {
                 ...providers.flatMap((provider) => provider.params),
             ])
         ).sort();
+        const supportedParamsDetail = mergeParamDetails(
+            ...matchedConcreteModels.map((model) => model.supported_params_detail),
+            ...providers.map((provider) => provider.params_detail)
+        );
 
         return {
             model_id: FREE_ROUTER_MODEL_ID,
@@ -368,6 +438,7 @@ async function buildFreeRouterCatalogueModel(args: {
             output_types: outputTypes,
             providers,
             supported_params: supportedParams,
+            supported_params_detail: supportedParamsDetail,
             top_provider: providers[0]?.api_provider_id ?? null,
             pricing: {
                 pricing_plan: "standard",
@@ -392,7 +463,11 @@ async function buildFreeRouterCatalogueModel(args: {
 }
 
 function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
-    const { previous_model_id: _previousModelId, ...publicModel } = model;
+    const {
+        previous_model_id: _previousModelId,
+        supported_params_detail: _supportedParamsDetail,
+        ...publicModel
+    } = model;
     const legacyTopProvider = model.top_provider;
     const legacyPricing = model.pricing;
     const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
@@ -403,6 +478,7 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
         created: toUnixSeconds(model.release_date),
         description: buildDescription(model),
         architecture: toCompatibilityArchitecture(model),
+        providers: model.providers.map(toRichModelProvider),
         top_provider_id: legacyTopProvider,
         top_provider: toCompatibilityTopProvider(model),
         lifecycle: {
@@ -418,6 +494,8 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
             ),
         },
         supported_parameters: [...model.supported_params],
+        supported_params_detail: cloneJsonObject(model.supported_params_detail ?? {}),
+        supported_parameters_detail: cloneJsonObject(model.supported_params_detail ?? {}),
         pricing_detail: legacyPricing,
         pricing: toCompatibilityPricing(legacyPricing),
         per_request_limits: null,

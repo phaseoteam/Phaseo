@@ -99,3 +99,35 @@ export async function pruneRowsByColumn(
         assertOk(res, `${ctx} (prune by ${column})`);
     }
 }
+
+export async function touchModelTimestamps(
+    supa: ReturnType<typeof createAdminClient>,
+    modelIds: Iterable<string>,
+    updatedAt: string = new Date().toISOString()
+) {
+    const normalizedModelIds = Array.from(
+        new Set(
+            Array.from(modelIds)
+                .map((value) => value.trim())
+                .filter(Boolean)
+        )
+    );
+
+    if (normalizedModelIds.length === 0) return;
+
+    if (isDryRun()) {
+        logWrite("public.data_models", "TOUCH_UPDATED_AT", {
+            model_ids: normalizedModelIds,
+            updated_at: updatedAt,
+        });
+        return;
+    }
+
+    for (const group of chunk(normalizedModelIds, 500)) {
+        const res = await supa
+            .from("data_models")
+            .update({ updated_at: updatedAt })
+            .in("model_id", group);
+        assertOk(res, "touch data_models.updated_at");
+    }
+}

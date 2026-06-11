@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Users } from "lucide-react";
-import { getTopAppsCached } from "@/lib/fetchers/api-providers/api-provider/top-apps";
+import { fetchFrontendAPIProviderTopApps } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	Empty,
@@ -20,7 +20,11 @@ export default async function TopApps({
 	apiProviderId: string;
 	period?: "day" | "week" | "month";
 }) {
-	const topApps = await getTopAppsCached(apiProviderId, period, count);
+	const topApps = await fetchFrontendAPIProviderTopApps(
+		apiProviderId,
+		period,
+		count,
+	);
 
 	return (
 		<section className="space-y-4">

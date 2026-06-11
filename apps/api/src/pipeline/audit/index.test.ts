@@ -118,8 +118,16 @@ describe("audit request detail persistence", () => {
 						api_model_id: "openai/gpt-5-nano",
 					}),
 				],
+				usage_input_tokens: 2,
+				usage_output_tokens: 1,
+				usage_total_tokens: 3,
+				usage_input_quad_tokens: expect.any(Number),
+				usage_output_quad_tokens: expect.any(Number),
+				usage_total_quad_tokens: expect.any(Number),
 			}),
 		);
+		expect(gatewayRequestRows[0].usage_input_quad_tokens).toBeGreaterThan(0);
+		expect(gatewayRequestRows[0].usage_output_quad_tokens).toBeGreaterThan(0);
 		expect(detailRows).toHaveLength(1);
 		expect(detailRows[0]).toEqual(
 			expect.objectContaining({

@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 41
+      "rank": 42
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "gpqa",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 62
+      "rank": 63
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 73
+      "rank": 78
     },
     {
       "benchmark_id": "livecodebench",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 16
+      "rank": 18
     },
     {
       "benchmark_id": "simpleqa",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 19
+      "rank": 20
     },
     {
       "benchmark_id": "swe-bench",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from deepseek-v3.2-exp (score=0.3809; benches=14)",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp",
-      "rank": 57
+      "rank": 61
     },
     {
       "benchmark_id": "terminal-bench",

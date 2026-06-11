@@ -1,15 +1,12 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
 import CreateKeyDialog from "@/components/(gateway)/settings/keys/CreateKeyDialog";
 import KeysPanel from "@/components/(gateway)/settings/keys/KeysPanel";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Button } from "@/components/ui/button";
-import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
+import { fetchSettingsKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsKeysInitialData";
 
 const QUICKSTART_DOCS_HREF = "https://docs.ai-stats.phaseo.app/v1/quickstart";
 
@@ -34,19 +31,6 @@ async function KeysContent({
 }: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-	const supabase = await createClient();
-	let adminClient: ReturnType<typeof createAdminClient> | null = null;
-	try {
-		adminClient = createAdminClient();
-	} catch {
-		adminClient = null;
-	}
-	const readClient: any = adminClient ?? supabase;
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
 	const sp = await searchParams;
 	const preferredWorkspaceId =
 		typeof sp?.workspace_id === "string"
@@ -54,145 +38,12 @@ async function KeysContent({
 			: Array.isArray(sp?.workspace_id)
 				? sp?.workspace_id?.[0]
 				: undefined;
-	const resolvedWorkspaceId = await getWorkspaceIdFromCookie();
-
-	let membershipWorkspaceIds: string[] = [];
-	let ownedWorkspaceIds: string[] = [];
-	if (user?.id) {
-		const { data: membershipRows } = await readClient
-			.from("workspace_members")
-			.select("workspace_id")
-			.eq("user_id", user.id);
-		membershipWorkspaceIds = Array.from(
-			new Set(
-				(membershipRows ?? [])
-					.map((row: any) => String(row?.workspace_id ?? "").trim())
-					.filter(Boolean),
-			),
-		);
-
-		const { data: ownedRows } = await readClient
-			.from("workspaces")
-			.select("id")
-			.eq("owner_user_id", user.id);
-		ownedWorkspaceIds = Array.from(
-			new Set(
-				(ownedRows ?? [])
-					.map((row: any) => String(row?.id ?? "").trim())
-					.filter(Boolean),
-			),
-		);
-	}
-	const accessibleWorkspaceIds = Array.from(
-		new Set([...membershipWorkspaceIds, ...ownedWorkspaceIds]),
-	);
-
-	const { data: workspaceUsers } = await supabase
-		.from("workspace_members")
-		.select("workspace_id, workspaces(id, name)")
-		.eq("user_id", user?.id);
-
-	const workspaces: Array<{ id: string; name: string }> = [];
-	const seenTeamIds = new Set<string>();
-	for (const workspaceUser of workspaceUsers ?? []) {
-		if (!workspaceUser?.workspaces) continue;
-		const workspace = Array.isArray(workspaceUser.workspaces)
-			? workspaceUser.workspaces[0]
-			: workspaceUser.workspaces;
-		const teamId = String(workspace?.id ?? "").trim();
-		const teamName = String(workspace?.name ?? "").trim();
-		if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
-		seenTeamIds.add(teamId);
-		workspaces.push({ id: teamId, name: teamName });
-	}
-
-	if (accessibleWorkspaceIds.length) {
-		const { data: scopedTeams } = await readClient
-			.from("workspaces")
-			.select("id, name")
-			.in("id", accessibleWorkspaceIds);
-		for (const team of scopedTeams ?? []) {
-			const teamId = String(team?.id ?? "").trim();
-			const teamName = String(team?.name ?? "").trim();
-			if (!teamId || !teamName || seenTeamIds.has(teamId)) continue;
-			seenTeamIds.add(teamId);
-			workspaces.push({ id: teamId, name: teamName });
-		}
-	}
-
-	const initialWorkspaceCandidate =
-		String(preferredWorkspaceId ?? "").trim() ||
-		String(resolvedWorkspaceId ?? "").trim() ||
-		"";
-	const initialWorkspaceId =
-		(initialWorkspaceCandidate &&
-		workspaces.some((workspace) => workspace.id === initialWorkspaceCandidate)
-			? initialWorkspaceCandidate
-			: workspaces[0]?.id) ?? null;
-
-	const apiKeys = initialWorkspaceId
-		? (
-				await supabase
-					.from("keys")
-					.select("*")
-					.eq("workspace_id", initialWorkspaceId)
-					.neq("status", "deleted")
-					.neq("name", CHAT_MANAGED_KEY_NAME)
-		  ).data
-		: [];
-
-	const usageByKey = new Map<
-		string,
-		{ requests: number; costNanos: number; lastUsedAt: string | null }
-	>();
-	if (initialWorkspaceId) {
-		const dayStart = new Date();
-		dayStart.setUTCHours(0, 0, 0, 0);
-		const dayStartIso = dayStart.toISOString();
-
-		const { data: usageRows, error: usageError } = await supabase.rpc(
-			"get_workspace_key_usage",
-			{
-				p_workspace_id: initialWorkspaceId,
-				p_day_start: dayStartIso,
-			},
-		);
-
-		if (usageError) {
-			console.error("[settings/keys] failed to load key usage", usageError);
-		}
-
-		for (const row of usageRows ?? []) {
-			const keyId = typeof row?.key_id === "string" ? row.key_id : null;
-			if (!keyId) continue;
-			usageByKey.set(keyId, {
-				requests: Number(row?.daily_request_count ?? 0) || 0,
-				costNanos: Number(row?.daily_cost_nanos ?? 0) || 0,
-				lastUsedAt:
-					typeof row?.last_used_at === "string" ? row.last_used_at : null,
-			});
-		}
-	}
-
-	const keysArray = (apiKeys ?? []).map((k: any) => {
-		const usage = usageByKey.get(k.id) ?? {
-			requests: 0,
-			costNanos: 0,
-			lastUsedAt: null,
-		};
-		return {
-			...k,
-			current_usage_daily: usage.requests,
-			current_usage_daily_cost_nanos: usage.costNanos,
-			last_used_at:
-				typeof k?.last_used_at === "string" && k.last_used_at.length > 0
-					? k.last_used_at
-					: usage.lastUsedAt,
-		};
-	});
-
-	const activeTeam = workspaces.find((t) => t.id === initialWorkspaceId);
-	const teamsWithKeys = activeTeam ? [{ ...activeTeam, keys: keysArray }] : [];
+	const {
+		currentUserId,
+		initialWorkspaceId,
+		teamsWithKeys,
+		workspaces,
+	} = await fetchSettingsKeysInitialData(preferredWorkspaceId);
 
 	return (
 		<div className="space-y-6">
@@ -212,7 +63,7 @@ async function KeysContent({
 							</Link>
 						</Button>
 						<CreateKeyDialog
-							currentUserId={user?.id}
+							currentUserId={currentUserId}
 							currentWorkspaceId={initialWorkspaceId}
 							workspaces={workspaces}
 						/>
@@ -222,7 +73,7 @@ async function KeysContent({
 			<KeysPanel
 				teamsWithKeys={teamsWithKeys}
 				initialTeamId={initialWorkspaceId}
-				currentUserId={user?.id}
+				currentUserId={currentUserId}
 			/>
 		</div>
 	);

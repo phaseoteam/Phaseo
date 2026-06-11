@@ -374,14 +374,14 @@ export function irToAnthropicMessages(
 	},
 ): any {
 	const messages: any[] = [];
-	let system: string | undefined;
+	let system: string | any[] | undefined;
 	const resolvedModel = modelHint || ir.model;
 	const isOpus47 = isClaudeOpus47Model(resolvedModel);
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
 			// Anthropic has system as a separate field
-			system = msg.content.map((c) => (c.type === "text" ? c.text : "")).join("");
+			system = mapSystemContentToAnthropic(msg.content);
 		} else if (msg.role === "user") {
 			messages.push({
 				role: "user",
@@ -393,7 +393,7 @@ export function irToAnthropicMessages(
 			// Add text content
 			for (const part of msg.content) {
 				if (part.type === "text") {
-					content.push({ type: "text", text: part.text });
+					content.push(mapIRContentToAnthropic(part));
 				}
 			}
 
@@ -414,11 +414,15 @@ export function irToAnthropicMessages(
 			// Tool results as user message with tool_result blocks
 			messages.push({
 				role: "user",
-				content: msg.toolResults.map((result) => ({
-					type: "tool_result",
-					tool_use_id: result.toolCallId,
-					content: result.content,
-				})),
+				content: msg.toolResults.map((result) => {
+					const cacheControl = normalizeAnthropicCacheControlValue(result.cacheControl);
+					return {
+						type: "tool_result",
+						tool_use_id: result.toolCallId,
+						content: result.content,
+						...(cacheControl ? { cache_control: cacheControl } : {}),
+					};
+				}),
 			});
 		}
 	}
@@ -444,11 +448,15 @@ export function irToAnthropicMessages(
 
 	// Add tools
 	if (ir.tools && ir.tools.length > 0) {
-		request.tools = ir.tools.map((t) => ({
-			name: t.name,
-			description: t.description,
-			input_schema: t.parameters,
-		}));
+		request.tools = ir.tools.map((t) => {
+			const cacheControl = normalizeAnthropicCacheControlValue(t.cacheControl ?? t.raw?.cache_control);
+			return {
+				name: t.name,
+				description: t.description,
+				input_schema: t.parameters,
+				...(cacheControl ? { cache_control: cacheControl } : {}),
+			};
+		});
 	}
 
 	if (ir.toolChoice) {
@@ -510,9 +518,7 @@ export function irToAnthropicMessages(
 
 	const structuredOutputInstruction = buildAnthropicStructuredOutputInstruction(ir);
 	if (structuredOutputInstruction) {
-		system = system
-			? `${system}\n\n${structuredOutputInstruction}`
-			: structuredOutputInstruction;
+		system = appendAnthropicSystemText(system, structuredOutputInstruction);
 		request.system = system;
 	}
 	applyAnthropicCacheControlDefaults(request, ir.anthropicCacheControl);
@@ -573,6 +579,27 @@ function buildAnthropicStructuredOutputInstruction(ir: IRChatRequest): string | 
 	}
 
 	return undefined;
+}
+
+function mapSystemContentToAnthropic(content: any[]): string | any[] | undefined {
+	const textBlocks = content
+		.filter((part) => part?.type === "text")
+		.map(mapIRContentToAnthropic);
+	if (textBlocks.length === 0) return undefined;
+	const hasStructuredMetadata = textBlocks.some((block) => block?.cache_control);
+	if (hasStructuredMetadata) return textBlocks;
+	return textBlocks.map((block) => block.text ?? "").join("");
+}
+
+function appendAnthropicSystemText(system: string | any[] | undefined, text: string): string | any[] {
+	if (!system) return text;
+	if (Array.isArray(system)) {
+		return [
+			...system,
+			{ type: "text", text },
+		];
+	}
+	return `${system}\n\n${text}`;
 }
 
 
@@ -767,7 +794,17 @@ export function anthropicMessagesToIR(
 						: undefined,
 				_ext:
 					typeof json.usage.cache_creation_input_tokens === "number"
-						? { cachedWriteTokens: json.usage.cache_creation_input_tokens }
+						? {
+							cachedWriteTokens: json.usage.cache_creation_input_tokens,
+							cachedWriteTokens5m:
+								typeof json.usage.cache_creation?.ephemeral_5m_input_tokens === "number"
+									? json.usage.cache_creation.ephemeral_5m_input_tokens
+									: undefined,
+							cachedWriteTokens1h:
+								typeof json.usage.cache_creation?.ephemeral_1h_input_tokens === "number"
+									? json.usage.cache_creation.ephemeral_1h_input_tokens
+									: undefined,
+						}
 						: undefined,
 			}
 			: undefined,

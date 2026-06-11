@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {

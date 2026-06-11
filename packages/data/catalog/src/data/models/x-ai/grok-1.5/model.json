@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 157
+      "rank": 163
     },
     {
       "benchmark_id": "docvqa",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 210
+      "rank": 211
     },
     {
       "benchmark_id": "gsm8k",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-1.5",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "humaneval",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 55
+      "rank": 56
     },
     {
       "benchmark_id": "mmlu",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 135
+      "rank": 138
     },
     {
       "benchmark_id": "mmmu",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 112
+      "rank": 113
     }
   ]
 }

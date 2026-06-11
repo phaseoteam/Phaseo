@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 15
+      "rank": 17
     },
     {
       "benchmark_id": "aime-2026",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 32
+      "rank": 37
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 75
+      "rank": 80
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "With search",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 63
+      "rank": 68
     },
     {
       "benchmark_id": "mmmlu",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Average edit distance (lower is better)",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 5
+      "rank": 15
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
@@ -118,7 +118,7 @@
       "is_self_reported": false,
       "other_info": "Reasoning; win prob 0.26; 95% CI -1.9..-1.5",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 24
+      "rank": 23
     },
     {
       "benchmark_id": "nyt-connections",
@@ -134,7 +134,7 @@
       "is_self_reported": false,
       "other_info": "IT; 940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 61
+      "rank": 60
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -142,7 +142,7 @@
       "is_self_reported": false,
       "other_info": "Reasoning; Top-1 accuracy 76.1%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 19
+      "rank": 12
     }
   ]
 }

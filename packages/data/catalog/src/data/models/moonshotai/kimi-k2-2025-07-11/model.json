@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": "Avg@8",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 130
+      "rank": 136
     },
     {
       "benchmark_id": "gsm8k",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 13
+      "rank": 14
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -128,7 +128,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 60
+      "rank": 61
     },
     {
       "benchmark_id": "math",
@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": "EM",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 112
+      "rank": 115
     },
     {
       "benchmark_id": "mmlu-redux-2.0",
@@ -168,7 +168,7 @@
       "is_self_reported": true,
       "other_info": "Correct",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Base",
-      "rank": 47
+      "rank": 48
     },
     {
       "benchmark_id": "supergpqa",

@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 178
+      "rank": 179
     },
     {
       "benchmark_id": "hiddenmath",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://developers.googleblog.com/en/gemini-2-family-expands/",
-      "rank": 106
+      "rank": 109
     },
     {
       "benchmark_id": "mmmu",
@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 76
+      "rank": 77
     },
     {
       "benchmark_id": "mrcr-1m",
@@ -145,7 +145,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemini-api/docs/models",
-      "rank": 70
+      "rank": 71
     }
   ]
 }

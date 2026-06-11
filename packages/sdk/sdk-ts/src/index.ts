@@ -4,6 +4,7 @@ import type {
   AudioTranscriptionResponse,
   AudioTranslationRequest,
   AudioTranslationResponse,
+  BatchBillingSummary,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -68,6 +69,7 @@ type Options = {
 
 export type AIStatsLogLevel = "info" | "warn" | "error";
 export type AIStatsLogger = (level: AIStatsLogLevel, message: string, meta?: Record<string, unknown>) => void;
+export type QueryParamValue = string | number | boolean | readonly (string | number | boolean)[];
 
 export type ModelLifecycleInfo = {
   modelId: string;
@@ -93,6 +95,11 @@ export type VideoInputReference = {
   asset_id?: string;
 };
 
+type AsyncWebhookDeliveryAttempt = Record<string, unknown>;
+type AsyncWebhookDeliverySummary = Record<string, unknown>;
+type AsyncWebhookPublicState = Record<string, unknown>;
+type VideoBillingSummary = Record<string, unknown>;
+
 export type VideoCreateRequest = {
   model: ModelId;
   prompt: string;
@@ -117,11 +124,17 @@ export type VideoCreateRequest = {
   beta?: Record<string, unknown>;
 };
 
-export type VideoStatusResponse = {
+export type VideoStatusResponse = Omit<
+  VideoGenerationResponse,
+  "id" | "object" | "status" | "polling_url" | "webhook" | "billing" | "asset" | "outputs" | "progress_source"
+> & {
   id: string;
   object: "video";
-  status: "queued" | "in_progress" | "completed" | "failed" | "cancelled";
+  status: "queued" | "processing" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+  lifecycle_status?: "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   polling_url: string;
+  cancel_url?: string | null;
+  websocket_url?: string;
   poll_after_seconds?: number;
   provider?: string | null;
   model?: string | null;
@@ -157,7 +170,13 @@ export type VideoStatusResponse = {
     download_url?: string;
     expires_at?: number | null;
   }>;
-  billing?: Record<string, unknown>;
+  billing?: VideoBillingSummary;
+  webhook?: AsyncWebhookPublicState;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  last_webhook_dispatched_at?: string | null;
   usage?: Record<string, unknown>;
   error?: unknown;
 };
@@ -195,6 +214,10 @@ export type {
   AudioTranscriptionResponse,
   AudioTranslationRequest,
   AudioTranslationResponse,
+  AsyncWebhookDeliveryAttempt,
+  AsyncWebhookDeliverySummary,
+  AsyncWebhookPublicState,
+  BatchBillingSummary,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -217,18 +240,30 @@ export type {
   RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
-export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
-export type VideoListResponse = { object: "list"; data: VideoStatusResponse[] };
+export type VideoListResponse = {
+  object: "list";
+  data: VideoStatusResponse[];
+  first_id?: string | null;
+  last_id?: string | null;
+  has_more?: boolean;
+};
 export type Healthz200Response = {
   status: string;
 };
 export { ops as operations };
 export { ModelIds, MODEL_IDS, MODEL_ID_SET } from "./modelIds.js";
+export {
+  computeAsyncWebhookSignature,
+  verifyAsyncWebhookSignature,
+  type AsyncWebhookHeaders,
+  type VerifyAsyncWebhookSignatureOptions
+} from "./webhooks.js";
 export type AIStatsOptions = Options;
 
 export class AIStats {
@@ -292,7 +327,6 @@ export class AIStats {
     cancel: async (videoId: string): Promise<VideoStatusResponse> => this.cancelVideo(videoId),
     delete: async (videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> =>
       this.deleteVideo(videoId),
-    listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
     websocketUrl: (videoId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("video", videoId, options),
   };
@@ -347,14 +381,20 @@ export class AIStats {
   }
 
   async request(method: string, path: string, options: {
-    query?: Record<string, string | number | boolean>;
+    query?: Record<string, QueryParamValue>;
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
     const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
     if (options.query) {
       for (const [key, value] of Object.entries(options.query)) {
-        url.searchParams.set(key, String(value));
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            url.searchParams.append(key, String(item));
+          }
+        } else {
+          url.searchParams.set(key, String(value));
+        }
       }
     }
     const res = await this.fetchImpl(url.toString(), {
@@ -611,7 +651,7 @@ export class AIStats {
     );
   }
 
-  listVideos(params: Record<string, string | number | boolean> = {}): Promise<VideoListResponse> {
+  listVideos(params: Record<string, QueryParamValue> = {}): Promise<VideoListResponse> {
     return this.telemetry.wrap(
       "video.list",
       () => ops.listVideos(this.client, { query: params as any }) as Promise<VideoListResponse>,
@@ -659,10 +699,6 @@ export class AIStats {
 
   deleteVideo(videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> {
     return this.request("DELETE", `/videos/${encodeURIComponent(videoId)}`) as Promise<{ id: string; object: "video"; deleted: boolean }>;
-  }
-
-  listVideoModels(): Promise<VideoModelsResponse> {
-    return this.request("GET", "/videos/models") as Promise<VideoModelsResponse>;
   }
 
   generateEmbedding(body: Record<string, unknown>): Promise<unknown> {

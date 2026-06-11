@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": null,
-      "rank": 29
+      "rank": 31
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "Search + Code",
       "source_link": null,
-      "rank": 12
+      "rank": 14
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "Terminus-2 Harness",
       "source_link": null,
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "swe-bench",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": null,
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -93,7 +93,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": null,
-      "rank": 15
+      "rank": 21
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 14
+      "rank": 20
     },
     {
       "benchmark_id": "tau-2-retail",
@@ -149,7 +149,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 5
+      "rank": 9
     },
     {
       "benchmark_id": "browsecomp",
@@ -205,7 +205,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 15
+      "rank": 21
     },
     {
       "benchmark_id": "gpqa",
@@ -229,7 +229,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 16
+      "rank": 22
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -261,7 +261,7 @@
       "is_self_reported": true,
       "other_info": "Higher is better",
       "source_link": "https://deepmind.google/models/evals-methodology/gemini-3-1-pro",
-      "rank": 17
+      "rank": 23
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -285,7 +285,7 @@
       "is_self_reported": false,
       "other_info": "High thinking; path length avg; difficulty-weighted 1929.1071; max 11728; avg validity 95.98%; 50 starting words",
       "source_link": "https://lisanbench.com/?tab=leaderboard&models=claude-opus-4.7%3Athinking-xhigh%2Cgpt-5.5%3Athinking-medium%2Cgemini-3.1-pro-preview%3Athinking-high",
-      "rank": 6
+      "rank": 3
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -293,7 +293,7 @@
       "is_self_reported": false,
       "other_info": "win prob 0.29; 95% CI -1.7..-1.3",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 22
+      "rank": 21
     },
     {
       "benchmark_id": "nyt-connections",
@@ -309,7 +309,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 91.5%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 3
+      "rank": 28
     }
   ]
 }

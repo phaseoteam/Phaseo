@@ -1735,8 +1735,14 @@ public sealed class Model
 	[JsonPropertyName("supported_parameters")]
 	public List<string>? SupportedParameters { get; set; }
 
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
+
 	[JsonPropertyName("supported_params")]
 	public List<string>? SupportedParams { get; set; }
+
+	[JsonPropertyName("supported_params_detail")]
+	public Dictionary<string, object>? SupportedParamsDetail { get; set; }
 
 	[JsonPropertyName("top_provider")]
 	public Dictionary<string, object>? TopProvider { get; set; }
@@ -1818,11 +1824,20 @@ public sealed class ModelProviderAvailability
 	[JsonPropertyName("params")]
 	public List<string> Params { get; set; }
 
+	[JsonPropertyName("params_detail")]
+	public Dictionary<string, object>? ParamsDetail { get; set; }
+
 	[JsonPropertyName("provider_routing_status")]
 	public string ProviderRoutingStatus { get; set; }
 
 	[JsonPropertyName("provider_status")]
 	public string ProviderStatus { get; set; }
+
+	[JsonPropertyName("supported_parameters")]
+	public List<string>? SupportedParameters { get; set; }
+
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
 
 }
 
@@ -2575,6 +2590,10 @@ public sealed class ServerToolUsage
 	[JsonPropertyName("web_search_requests")]
 	public int? WebSearchRequests { get; set; }
 
+}
+
+public sealed class SupportedParameterDetails
+{
 }
 
 public sealed class TextContentPart

@@ -5,7 +5,7 @@ import { useQueryState } from "nuqs";
 import SubscriptionPlanCard from "./SubscriptionPlanCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
+import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
 
 interface SubscriptionPlansDisplayProps {
 	plans: SubscriptionPlanSummary[];

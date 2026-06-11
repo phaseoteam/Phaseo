@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 4
+      "rank": 8
     },
     {
       "benchmark_id": "countbench",
@@ -150,7 +150,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 60
+      "rank": 65
     },
     {
       "benchmark_id": "ifbench",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "if-eval",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "include",
@@ -222,7 +222,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 3
+      "rank": 6
     },
     {
       "benchmark_id": "mcp-mark",
@@ -230,7 +230,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "mlvu",
@@ -334,7 +334,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 18
+      "rank": 1
     },
     {
       "benchmark_id": "os-world",
@@ -342,7 +342,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 13
+      "rank": 16
     },
     {
       "benchmark_id": "polymath",
@@ -390,7 +390,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "supergpqa",
@@ -406,7 +406,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -414,7 +414,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 9
+      "rank": 13
     },
     {
       "benchmark_id": "swe-bench",
@@ -422,7 +422,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 11
+      "rank": 15
     },
     {
       "benchmark_id": "tau3-bench",
@@ -438,7 +438,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 14
+      "rank": 17
     },
     {
       "benchmark_id": "tir-bench",
@@ -454,7 +454,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 10
+      "rank": 12
     },
     {
       "benchmark_id": "v-star",
@@ -470,7 +470,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "video-mmmu",
@@ -478,7 +478,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwen.ai/blog?id=qwen3.6",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "vita-bench",
@@ -518,7 +518,7 @@
       "is_self_reported": false,
       "other_info": "2026-01-08 release",
       "source_link": "https://livebench.ai/#/",
-      "rank": 31
+      "rank": 28
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -526,7 +526,7 @@
       "is_self_reported": false,
       "other_info": "win prob 0.20; 95% CI -2.5..-1.7",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 28
+      "rank": 27
     },
     {
       "benchmark_id": "nyt-connections",
@@ -542,7 +542,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 81.5%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 17
+      "rank": 14
     }
   ]
 }

@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 118
+      "rank": 124
     },
     {
       "benchmark_id": "simplebench",
@@ -52,7 +52,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 29
+      "rank": 39
     },
     {
       "benchmark_id": "docvqa",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 170
+      "rank": 171
     },
     {
       "benchmark_id": "humaneval",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "mmlu",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 84
+      "rank": 87
     },
     {
       "benchmark_id": "mmmu",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/blog/grok-2",
-      "rank": 77
+      "rank": 78
     },
     {
       "benchmark_id": "confabulations",
@@ -124,7 +124,7 @@
       "is_self_reported": false,
       "other_info": "Confab 25.7%; non-response 14.5%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 46
+      "rank": 19
     },
     {
       "benchmark_id": "elimination-game",
@@ -132,7 +132,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.171; games 792; avg points 0.475",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 47
+      "rank": 43
     }
   ]
 }

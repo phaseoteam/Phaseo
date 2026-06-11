@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 83
+      "rank": 89
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 88
+      "rank": 94
     },
     {
       "benchmark_id": "lisanbench",
@@ -113,7 +113,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 6
+      "rank": 9
     },
     {
       "benchmark_id": "livebench",
@@ -121,7 +121,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 28
+      "rank": 42
     },
     {
       "benchmark_id": "lmarena-text",
@@ -137,7 +137,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 17
+      "rank": 27
     },
     {
       "benchmark_id": "swe-bench",
@@ -145,7 +145,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 113
+      "rank": 116
     },
     {
       "benchmark_id": "aider-polyglot-edit",
@@ -169,7 +169,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "collie",
@@ -193,7 +193,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 120
+      "rank": 121
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -249,7 +249,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "mmlu",
@@ -265,7 +265,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 29
+      "rank": 30
     },
     {
       "benchmark_id": "mmmu",
@@ -353,7 +353,7 @@
       "is_self_reported": false,
       "other_info": "Confab 11.9%; non-response 15.4%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 16
+      "rank": 47
     },
     {
       "benchmark_id": "elimination-game",
@@ -361,7 +361,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.217; games 499; avg points 0.597",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 13
+      "rank": 12
     }
   ]
 }

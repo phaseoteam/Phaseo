@@ -22,6 +22,7 @@ export type EndpointType =
   | "responses"
   | "responses.websocket"
   | "batches.create"
+  | "batches.list"
   | "batches.retrieve"
   | "batches.cancel"
   | "files.list"

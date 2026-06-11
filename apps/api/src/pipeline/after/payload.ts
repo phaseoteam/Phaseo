@@ -252,6 +252,15 @@ function encodeResponsesUsage(usage: IRUsage) {
 		output_tokens: usage.outputTokens,
 		total_tokens: usage.totalTokens,
 	};
+	if (typeof usage._ext?.cachedWriteTokens === "number") {
+		out.cached_write_text_tokens = usage._ext.cachedWriteTokens;
+	}
+	if (typeof usage._ext?.cachedWriteTokens5m === "number") {
+		out.cached_write_text_tokens_5m = usage._ext.cachedWriteTokens5m;
+	}
+	if (typeof usage._ext?.cachedWriteTokens1h === "number") {
+		out.cached_write_text_tokens_1h = usage._ext.cachedWriteTokens1h;
+	}
 	const serverToolUse = buildServerToolUsePayload(usage._ext?.serverToolUse);
 	if (serverToolUse) out.server_tool_use = serverToolUse;
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
@@ -722,6 +731,8 @@ function encodeChatUsage(usage: IRUsage) {
         cached_read_tokens_are_subset_of_input: usage.cachedReadTokensAreSubsetOfInput,
         reasoning_tokens: usage.reasoningTokens,
         cached_write_text_tokens: usage._ext?.cachedWriteTokens,
+        cached_write_text_tokens_5m: usage._ext?.cachedWriteTokens5m,
+        cached_write_text_tokens_1h: usage._ext?.cachedWriteTokens1h,
         server_tool_use: buildServerToolUsePayload(usage._ext?.serverToolUse),
     };
 }

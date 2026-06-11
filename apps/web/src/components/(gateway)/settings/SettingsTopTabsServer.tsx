@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronRight, PanelLeftIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ type Tab = {
 	label: string;
 	match?: string[];
 	badge?: string;
+	observabilityTab?: string;
 };
 
 function getBillingTabs(): Tab[] {
@@ -34,7 +35,14 @@ function getBillingTabs(): Tab[] {
 }
 
 const USAGE_TABS: Tab[] = [
-	{ href: "/settings/usage", label: "Usage" },
+	{ href: "/settings/usage?tab=overview", label: "Overview", observabilityTab: "overview" },
+	{ href: "/settings/usage?tab=trends", label: "Trends", observabilityTab: "trends" },
+	{ href: "/settings/usage?tab=explore", label: "Explore", observabilityTab: "explore" },
+	{
+		href: "/settings/usage?tab=guardrails",
+		label: "Guardrails",
+		observabilityTab: "guardrails",
+	},
 	{ href: "/settings/usage/logs", label: "Logs" },
 	{ href: "/settings/usage/alerts", label: "Alerts" },
 ];
@@ -122,6 +130,7 @@ export default function SettingsTopTabsServer({
 } = {}) {
 	void isEnterpriseInvoiceMode;
 	const pathname = usePathname() ?? "";
+	const searchParams = useSearchParams();
 	const { toggleSidebar } = useSidebar();
 	const tabs = resolveTabs(pathname);
 	const activeNav = React.useMemo(
@@ -134,6 +143,13 @@ export default function SettingsTopTabsServer({
 	const [indicator, setIndicator] = React.useState({ left: 0, width: 0, opacity: 0 });
 
 	const matchScore = React.useCallback((t: Tab) => {
+		if (pathname === "/settings/usage" && t.observabilityTab) {
+			const current = searchParams?.get("tab") ?? "overview";
+			return current === t.observabilityTab
+				? { exact: true, len: t.href.length + t.observabilityTab.length }
+				: null;
+		}
+
 		// Treat the account index route as details, since `/settings/account` redirects.
 		if (pathname === "/settings/account" && t.href === "/settings/account/details") {
 			return { exact: true, len: t.href.length };
@@ -151,7 +167,7 @@ export default function SettingsTopTabsServer({
 		}
 		if (best > 0) return { exact: false, len: best };
 		return null;
-	}, [pathname]);
+	}, [pathname, searchParams]);
 
 	const activeTab =
 		tabs && tabs.length > 0

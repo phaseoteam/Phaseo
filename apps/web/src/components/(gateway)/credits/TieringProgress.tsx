@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowRight, Check, Lock, TrendingUp, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/utils/supabase/server";
+import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTierSummary";
 import {
 	GATEWAY_TIERS,
 	computeTierInfo,
@@ -30,47 +30,25 @@ export default async function TieringProgress({
 	currency = "USD",
 	teamId,
 }: Props) {
-	const supabase = await createClient();
-
 	let lastMonthCents = 0;
 	let mtdCents = 0;
 
 	if (teamId) {
 		try {
-			const [{ data: prev, error: e1 }, { data: mtd, error: e2 }] =
-				await Promise.all([
-					supabase
-						.rpc("monthly_spend_prev_cents", {
-							p_team: teamId,
-						})
-						.single(),
-					supabase
-						.rpc("mtd_spend_cents", {
-							p_team: teamId,
-						})
-						.single(),
-				]);
-
-			if (e1) console.log("[WARN] previous month spend:", e1);
-			if (e2) console.log("[WARN] month-to-date spend:", e2);
-
-			lastMonthCents = Number(prev ?? 0);
-			mtdCents = Number(mtd ?? 0);
-		} catch (err) {
-			console.log("[ERROR] spend RPCs:", String(err));
+			const summary = await fetchCreditsTierSummary(teamId);
+			lastMonthCents = summary.lastMonthCents;
+			mtdCents = summary.mtdCents;
+		} catch {
+			// Keep the pricing tier card renderable with empty spend values.
 		}
 	}
 
 	const lastMonth = lastMonthCents / 1_000_000_000;
 	const mtd = mtdCents / 1_000_000_000;
 
-	console.log("[TIER PROGRESS] lastMonth:", lastMonth, "mtd:", mtd);
-
 	const tiers = GATEWAY_TIERS as GatewayTier[];
 	const {
 		current,
-		currentIndex,
-		topTier,
 		remainingToNext,
 		savingVsBase,
 		projectedSavings,
@@ -316,7 +294,7 @@ export default async function TieringProgress({
 						</div>
 					</div>
 					<p className="mt-3 text-xs text-muted-foreground">
-						Tiers are automatically updated on the 1st of each month based on the previous month's spend.
+						Tiers are automatically updated on the 1st of each month based on the previous-month spend.
 					</p>
 					<p className="mt-2 text-xs text-muted-foreground">
 						Questions? Contact support for custom pricing or volume discounts.

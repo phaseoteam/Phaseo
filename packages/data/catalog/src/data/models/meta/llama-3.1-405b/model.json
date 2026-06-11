@@ -23,7 +23,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Meta-Llama-3.1-405B-Instruct",
-      "rank": 124
+      "rank": 130
     },
     {
       "benchmark_id": "simplebench",
@@ -31,7 +31,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 27
+      "rank": 37
     },
     {
       "benchmark_id": "confabulations",
@@ -39,7 +39,7 @@
       "is_self_reported": false,
       "other_info": "Confab 14.4%; non-response 20.9%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 37
+      "rank": 28
     },
     {
       "benchmark_id": "elimination-game",
@@ -47,7 +47,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.172; games 784; avg points 0.459",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 51
+      "rank": 48
     }
   ]
 }

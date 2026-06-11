@@ -1,8 +1,7 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import type { SignInModel } from "@/lib/fetchers/landing/sign-in/getMainModels";
-import { getMainModelsCached } from "@/lib/fetchers/landing/sign-in/getMainModels";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import { fetchFrontendSignInMainModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function KeyModels() {
 	// If consumer didn't provide data, fetch main models by ID from Supabase
@@ -18,11 +17,9 @@ export default async function KeyModels() {
 		"veo-3.1-generate-preview",
 	];
 	try {
-		const includeHidden = await resolveIncludeHidden();
-		models = await getMainModelsCached(defaultIds, includeHidden);
-	} catch (e) {
+		models = await fetchFrontendSignInMainModels(defaultIds);
+	} catch {
 		// On error, fallback to empty list
-		console.error("getMainModelsCached error", e);
 		models = [];
 	}
 
@@ -39,7 +36,6 @@ export default async function KeyModels() {
 		if (!defaultIds.includes(m.model_id)) ordered.push(m);
 	}
 
-	console.log("[KeyModels] rendering with models", { ordered });
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="rounded-full border border-border bg-white/80 px-4 py-2 text-center text-sm font-medium text-muted-foreground shadow-sm dark:bg-black/70">

@@ -1,6 +1,6 @@
 import BenchmarkDetailShell from "@/components/(data)/benchmark/BenchmarkDetailShell";
 import BenchmarkOverview from "@/components/(data)/benchmark/BenchmarkOverview";
-import { getBenchmarkCached } from "@/lib/fetchers/benchmarks/getBenchmark";
+import { fetchFrontendBenchmark } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
@@ -18,9 +18,9 @@ function parseScore(score: string | number | null | undefined): number | null {
 	return null;
 }
 
-async function fetchBenchmark(benchmarkId: string, includeHidden: boolean) {
+async function fetchBenchmark(benchmarkId: string) {
 	try {
-		return await getBenchmarkCached(benchmarkId, includeHidden);
+		return await fetchFrontendBenchmark(benchmarkId);
 	} catch (error) {
 		console.warn("[seo] failed to load benchmark metadata", {
 			benchmarkId,
@@ -34,8 +34,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ benchmarkId: string }>;
 }): Promise<Metadata> {
 	const { benchmarkId } = await props.params;
-	const includeHidden = false;
-	const benchmark = await fetchBenchmark(benchmarkId, includeHidden);
+	const benchmark = await fetchBenchmark(benchmarkId);
 	const path = `/benchmarks/${benchmarkId}`;
 	const imagePath = `/og/benchmarks/${benchmarkId}`;
 
@@ -123,8 +122,7 @@ export default async function Page({
 	params: Promise<{ benchmarkId: string }>;
 }) {
 	const { benchmarkId } = await params;
-	const includeHidden = false;
-	const benchmark = await getBenchmarkCached(benchmarkId, includeHidden);
+	const benchmark = await fetchFrontendBenchmark(benchmarkId);
 
 	if (!benchmark) {
 		notFound();

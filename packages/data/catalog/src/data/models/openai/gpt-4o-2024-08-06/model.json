@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 135
+      "rank": 141
     },
     {
       "benchmark_id": "swe-bench",
@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 124
+      "rank": 127
     },
     {
       "benchmark_id": "activitynet",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "collie",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 101
+      "rank": 102
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 135
+      "rank": 141
     },
     {
       "benchmark_id": "if-eval",
@@ -213,7 +213,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "mmlu",
@@ -229,7 +229,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/spaces/TIGER-Lab/MMLU-Pro",
-      "rank": 85
+      "rank": 88
     },
     {
       "benchmark_id": "mmmlu",
@@ -237,7 +237,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 32
+      "rank": 34
     },
     {
       "benchmark_id": "mmmu",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 50
+      "rank": 51
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -253,7 +253,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 60
+      "rank": 64
     },
     {
       "benchmark_id": "multichallenge-(o3-mini-grader)",
@@ -293,7 +293,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-4-5/",
-      "rank": 38
+      "rank": 39
     },
     {
       "benchmark_id": "swe-bench",
@@ -301,7 +301,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 115
+      "rank": 118
     },
     {
       "benchmark_id": "swe-lancer",
@@ -341,7 +341,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 35
+      "rank": 37
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -365,7 +365,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 44
+      "rank": 45
     },
     {
       "benchmark_id": "multi-challenge",
@@ -381,7 +381,7 @@
       "is_self_reported": false,
       "other_info": "Confab 22.3%; non-response 8.4%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 24
+      "rank": 39
     }
   ]
 }

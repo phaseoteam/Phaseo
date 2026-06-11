@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getRecentAppRequests } from "@/lib/fetchers/apps/getAppUsageOverTime";
+import { fetchFrontendRecentAppRequests } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Clock, Zap } from "lucide-react";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
@@ -12,7 +12,7 @@ export default async function RecentRequestsForApp({
 	range?: RangeKey;
 }) {
 	void range;
-	const rows = await getRecentAppRequests(appId, 25);
+	const rows = await fetchFrontendRecentAppRequests(appId, 25);
 
 	// Get recent successful requests
 	const recentRequests = rows

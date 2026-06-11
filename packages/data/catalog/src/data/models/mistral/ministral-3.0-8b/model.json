@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 37
+      "rank": 38
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 96
+      "rank": 102
     },
     {
       "benchmark_id": "hmmt-2025",

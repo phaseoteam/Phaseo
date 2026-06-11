@@ -5,6 +5,7 @@
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { GatewayCompletionsResponse, GatewayUsage } from "@core/types";
 import { ChatCompletionsSchema, type ChatCompletionsRequest } from "@core/schemas";
+import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { azureDeployment, azureHeaders, azureUrl, resolveAzureConfig, resolveAzureKey } from "../config";
@@ -34,15 +35,13 @@ function mapGatewayToAzureChat(body: ChatCompletionsRequest) {
 
 function normalizeUsage(usage: any): GatewayUsage | undefined {
     if (!usage) return undefined;
-    const input = usage.prompt_tokens ?? 0;
-    const output = usage.completion_tokens ?? 0;
-    const total = usage.total_tokens ?? (input + output);
+    const tokens = resolveCanonicalTokenUsage(usage);
     return {
-        input_tokens: input,
-        output_tokens: output,
-        total_tokens: total,
-        input_text_tokens: input,
-        output_text_tokens: output,
+        input_tokens: tokens.inputTokens,
+        output_tokens: tokens.outputTokens,
+        total_tokens: tokens.totalTokens,
+        input_text_tokens: tokens.inputTokens,
+        output_text_tokens: tokens.outputTokens,
     };
 }
 

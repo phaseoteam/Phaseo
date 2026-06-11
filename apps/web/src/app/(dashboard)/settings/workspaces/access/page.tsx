@@ -1,12 +1,12 @@
 import TeamsSettingsContainer from "@/components/(gateway)/settings/teams/TeamsSettingsContainer";
-import { getTeamsSettingsData } from "@/app/(dashboard)/settings/teams/teamsData";
+import { fetchSettingsTeamsInitialData } from "@/lib/fetchers/internal/fetchSettingsTeamsInitialData";
 
 export const metadata = {
 	title: "Workspace Access - Settings",
 };
 
 export default async function WorkspaceAccessPage() {
-	const data = await getTeamsSettingsData();
+	const data = await fetchSettingsTeamsInitialData();
 
 	return (
 		<TeamsSettingsContainer

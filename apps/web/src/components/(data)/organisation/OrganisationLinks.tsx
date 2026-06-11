@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/getOrganisation";
+import type { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/getOrganisation";
 import { cn } from "@/lib/utils";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
 

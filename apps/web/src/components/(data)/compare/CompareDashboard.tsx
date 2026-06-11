@@ -150,7 +150,7 @@ export default function CompareDashboard({
 	comparisonData,
 	usageByModel,
 }: CompareDashboardProps) {
-	const searchParams = useSearchParams();
+	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const router = useRouter();
 	const selected = searchParams
 		.getAll("models")

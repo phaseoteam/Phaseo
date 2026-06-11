@@ -13,10 +13,10 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { getPublicMarketplacePresetDetailCached } from "@/lib/fetchers/gateway/marketplace";
+import { fetchFrontendMarketplacePresetDetail } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
-import { createClient } from "@/utils/supabase/server";
 import CopyPresetButton from "@/components/(gateway)/marketplace/CopyPresetButton";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
 type PresetDetailPageProps = {
 	params: Promise<{ presetId: string }>;
@@ -38,7 +38,7 @@ export default async function PresetMarketplaceDetailPage({
 	params,
 }: PresetDetailPageProps) {
 	const { presetId } = await params;
-	const detail = await getPublicMarketplacePresetDetailCached(presetId);
+	const detail = await fetchFrontendMarketplacePresetDetail(presetId);
 
 	if (!detail) {
 		return (
@@ -62,10 +62,7 @@ export default async function PresetMarketplaceDetailPage({
 		);
 	}
 
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	const authStatus = await fetchInternalAuthStatus();
 	const { preset, sourcePreset } = detail;
 
 	return (
@@ -101,7 +98,7 @@ export default async function PresetMarketplaceDetailPage({
 				</div>
 
 				<div className="flex items-center gap-3">
-					{user ? (
+					{authStatus.signedIn ? (
 						<CopyPresetButton sourcePresetId={preset.id} />
 					) : (
 						<Button asChild variant="outline">

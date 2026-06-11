@@ -1,4 +1,5 @@
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
+import { fetchFrontendModelOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
 	ModelCreatorModelsSection,
 	ModelCreatorModelsSkeleton,
@@ -33,7 +34,7 @@ async function ModelOverviewSectionsContent({
 }: {
 	modelId: string;
 	includeHidden: boolean;
-	modelPromise: ReturnType<typeof getModelOverviewCached>;
+	modelPromise: Promise<ModelOverviewPage | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
 	const model = await modelPromise;
@@ -55,7 +56,7 @@ async function ModelCreatorModelsSectionContent({
 }: {
 	modelId: string;
 	includeHidden: boolean;
-	modelPromise: ReturnType<typeof getModelOverviewCached>;
+	modelPromise: Promise<ModelOverviewPage | null>;
 }) {
 	const model = await modelPromise;
 	if (!model) return null;
@@ -132,7 +133,7 @@ export default async function Page({
 			</ModelDetailShell>
 		);
 	}
-	const modelPromise = getModelOverviewCached(modelId, includeHidden);
+	const modelPromise = fetchFrontendModelOverview(modelId);
 	const modelOverview = await modelPromise;
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =

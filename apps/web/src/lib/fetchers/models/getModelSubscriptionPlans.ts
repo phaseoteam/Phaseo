@@ -1,6 +1,6 @@
 // lib/fetchers/models/getModelSubscriptionPlans.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface SubscriptionPlan {
     plan_id: string;
@@ -33,7 +33,7 @@ export default async function getModelSubscriptionPlans(
     modelId: string,
     includeHidden: boolean
 ): Promise<SubscriptionPlan[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: modelRow, error: modelError } = await supabase
         .from("data_models")
@@ -150,11 +150,13 @@ export async function getModelSubscriptionPlansCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:data:${modelId}`);
     cacheTag("data:subscription_plans");
     cacheTag("data:subscription_plan_models");
+    cacheTag("frontend:model-subscription-plans");
 
     console.log("[fetch] HIT DB for model subscription plans", modelId);
     return getModelSubscriptionPlans(modelId, includeHidden);

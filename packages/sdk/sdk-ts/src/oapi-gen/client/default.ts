@@ -4693,6 +4693,11 @@ export async function listModels(
         | "deranked_lvl3"
         | "disabled";
       params: string[];
+      params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
       provider_routing_status:
         | "active"
         | "deranked_lvl1"
@@ -4710,12 +4715,28 @@ export async function listModels(
         | "project_limited"
         | "paused"
         | "soft_blocked";
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
     }[];
     release_date?: string | null;
     retirement_date?: string | null;
     status?: string | null;
     supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
     supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
     top_provider?: {
       context_length?: number | null;
       is_moderated?: boolean;
@@ -4831,6 +4852,11 @@ export async function listModels(
           | "deranked_lvl3"
           | "disabled";
         params: string[];
+        params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
         provider_routing_status:
           | "active"
           | "deranked_lvl1"
@@ -4848,12 +4874,28 @@ export async function listModels(
           | "project_limited"
           | "paused"
           | "soft_blocked";
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
       }[];
       release_date?: string | null;
       retirement_date?: string | null;
       status?: string | null;
       supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
       supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
       top_provider?: {
         context_length?: number | null;
         is_moderated?: boolean;

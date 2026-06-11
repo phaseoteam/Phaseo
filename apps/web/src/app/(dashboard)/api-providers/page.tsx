@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
 import type { APIProviderCard } from "@/lib/fetchers/api-providers/getAllAPIProviders";
+import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildMetadata } from "@/lib/seo";
@@ -22,7 +22,7 @@ export const metadata: Metadata = buildMetadata({
 
 async function APIProvidersSection() {
 	const apiProviders =
-		(await getAllAPIProvidersCached()) as APIProviderCard[];
+		(await fetchFrontendAPIProviders()) as APIProviderCard[];
 
 	return <APIProvidersDisplay providers={apiProviders} />;
 }

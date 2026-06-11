@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from qwen2-7b-instruct",
       "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
-      "rank": 230
+      "rank": 231
     },
     {
       "benchmark_id": "gsm8k",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from qwen2-7b-instruct",
       "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
-      "rank": 38
+      "rank": 39
     },
     {
       "benchmark_id": "humaneval",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from qwen2-7b-instruct",
       "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
-      "rank": 65
+      "rank": 66
     },
     {
       "benchmark_id": "math",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from qwen2-7b-instruct",
       "source_link": "https://huggingface.co/Qwen/Qwen2-7B-Instruct",
-      "rank": 147
+      "rank": 150
     },
     {
       "benchmark_id": "mt-bench",

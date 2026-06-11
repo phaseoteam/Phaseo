@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-small-2506",
       "source_link": "https://huggingface.co/mistralai/Magistral-Small-2506",
-      "rank": 125
+      "rank": 126
     },
     {
       "benchmark_id": "livecodebench",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from magistral-small-2506",
       "source_link": "https://mistral.ai/news/codestral/",
-      "rank": 47
+      "rank": 48
     }
   ]
 }

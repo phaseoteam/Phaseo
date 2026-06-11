@@ -1,17 +1,18 @@
 export {};
 
 /* eslint-disable no-var */
-var createClient = jest.fn();
+var createAdminClient = jest.fn();
 var isFreeRouterModelId = jest.fn();
-var applyHiddenFilter = jest.fn((query: unknown, _includeHidden: boolean) => query);
+var applyHiddenFilter: jest.Mock = jest.fn((query) => query);
+/* eslint-enable no-var */
 
 jest.mock("next/cache", () => ({
 	cacheLife: jest.fn(),
 	cacheTag: jest.fn(),
 }));
 
-jest.mock("@/utils/supabase/client", () => ({
-	createClient: () => createClient(),
+jest.mock("@/utils/supabase/admin", () => ({
+	createAdminClient: (...args: unknown[]) => createAdminClient(...args),
 }));
 
 jest.mock("@/lib/models/freeRouter", () => ({
@@ -105,7 +106,7 @@ describe("resolveApiModelIdForModelPageUncached", () => {
 		});
 		const providerModelsQuery = createProviderQuery({ data: [], error: null });
 
-		createClient.mockResolvedValue({
+		createAdminClient.mockReturnValue({
 			from: jest.fn((table: string) => {
 				switch (table) {
 					case "data_api_models":

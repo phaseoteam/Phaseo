@@ -1791,7 +1791,9 @@ type Model struct {
 	RetirementDate *string `json:"retirement_date,omitempty"`
 	Status *string `json:"status,omitempty"`
 	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
 	TopProvider *map[string]interface{} `json:"top_provider,omitempty"`
 	TopProviderId *string `json:"top_provider_id,omitempty"`
 }
@@ -1825,8 +1827,11 @@ type ModelProviderAvailability struct {
 	IsActiveGateway bool `json:"is_active_gateway"`
 	ModelRoutingStatus string `json:"model_routing_status"`
 	Params []string `json:"params"`
+	ParamsDetail *map[string]interface{} `json:"params_detail,omitempty"`
 	ProviderRoutingStatus string `json:"provider_routing_status"`
 	ProviderStatus string `json:"provider_status"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 }
 
 type ModerationCategories struct {
@@ -2188,6 +2193,9 @@ type ServerToolUsage struct {
 	DatetimeRequests *int `json:"datetime_requests,omitempty"`
 	WebFetchRequests *int `json:"web_fetch_requests,omitempty"`
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
+}
+
+type SupportedParameterDetails struct {
 }
 
 type TextContentPart struct {

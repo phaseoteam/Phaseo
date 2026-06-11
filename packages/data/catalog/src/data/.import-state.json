@@ -55,7 +55,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/alibaba-cloud/models.json": {
-      "hash": "caf70343ed78d07b76546fc1ef456db8",
+      "hash": "17608c0fa5886ea3361732fcb334ee32",
       "meta": {
         "api_provider_id": "alibaba-cloud",
         "kind": "provider_models"
@@ -68,7 +68,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/amazon-bedrock/models.json": {
-      "hash": "ee423bda3ca406167e7128205b61c6a8",
+      "hash": "f37fdd2fc233c46cd367ff2f5fa1edc3",
       "meta": {
         "api_provider_id": "amazon-bedrock",
         "kind": "provider_models"
@@ -81,7 +81,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/anthropic/models.json": {
-      "hash": "cf2eb92c24ed2469879e2c97f46f78c3",
+      "hash": "79591c0b176c8e9c21a65a94d6e781fb",
       "meta": {
         "api_provider_id": "anthropic",
         "kind": "provider_models"
@@ -107,7 +107,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "ec0bd2b614e26c9bddd5ba656d9d00c0",
+      "hash": "06d0b21b8cbe7c5944af411ea1536b10",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -133,7 +133,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/baseten/models.json": {
-      "hash": "7158849d8c83244e457178ae8c88a13c",
+      "hash": "369430247a071b7c01b94d39f4540559",
       "meta": {
         "api_provider_id": "baseten",
         "kind": "provider_models"
@@ -216,14 +216,14 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cohere/models.json": {
-      "hash": "405870e45652b9847c78a831c6806e48",
+      "hash": "a36cd31cfc131df82e8f6f8e0ae7124c",
       "meta": {
         "api_provider_id": "cohere",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/crofai/api_provider.json": {
-      "hash": "61b165e4355c9804c7d18ae3e6a433e6",
+      "hash": "1f9b8278c4872017045f27bf1a1cb109",
       "meta": {
         "api_provider_id": "crofai"
       }
@@ -248,7 +248,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/deepinfra/models.json": {
-      "hash": "b5d63114e026ab92f8ccdb60215612d0",
+      "hash": "5ffa4a5366ba5f55fced1abe2e698d07",
       "meta": {
         "api_provider_id": "deepinfra",
         "kind": "provider_models"
@@ -313,7 +313,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/gmicloud/models.json": {
-      "hash": "e08198d0c50add46b00b23f4f1e8e2c5",
+      "hash": "7ad8b176f3c4d34faccca6d1abcd42f5",
       "meta": {
         "api_provider_id": "gmicloud",
         "kind": "provider_models"
@@ -326,7 +326,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-ai-studio/models.json": {
-      "hash": "0abf3c377ae4f838ee55888315589fef",
+      "hash": "664165e49971faee7a558b060eee0410",
       "meta": {
         "api_provider_id": "google-ai-studio",
         "kind": "provider_models"
@@ -339,7 +339,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/google-vertex/models.json": {
-      "hash": "3ab126ae65bda222aa5536370eac6a12",
+      "hash": "7d103fc8e39d108b087211dcc8294124",
       "meta": {
         "api_provider_id": "google-vertex",
         "kind": "provider_models"
@@ -533,7 +533,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/nebius-token-factory/models.json": {
-      "hash": "e2adaa7ef6b6c1ec58639ffcdfe59151",
+      "hash": "2e4fa5cbd3b29f3191d00dbce46a4788",
       "meta": {
         "api_provider_id": "nebius-token-factory",
         "kind": "provider_models"
@@ -559,20 +559,20 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/api_provider.json": {
-      "hash": "faffcfe7a5116179f4fb75322710ef83",
+      "hash": "3e6f734f6a6ae630209d66dad4fde58f",
       "meta": {
         "api_provider_id": "novita"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/novita/models.json": {
-      "hash": "97dc8a34dca718ffb5cd47bda467d527",
+      "hash": "aa71b1811e544986d1c610154f050b25",
       "meta": {
         "api_provider_id": "novita",
         "kind": "provider_models"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/nvidia/api_provider.json": {
-      "hash": "0bb143b16c13ded83faa1e8e4777e589",
+      "hash": "fe6147037c99d60bb5caf353d04947e3",
       "meta": {
         "api_provider_id": "nvidia"
       }
@@ -584,7 +584,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/openai/models.json": {
-      "hash": "60653ba456e8295571e22391abde5f4e",
+      "hash": "4efa211c45f40e6a903165404c39788e",
       "meta": {
         "api_provider_id": "openai",
         "kind": "provider_models"
@@ -615,7 +615,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/poolside/models.json": {
-      "hash": "99c0224d00c712a1fb34ba64cc2d6542",
+      "hash": "a26c880a0e973d0dbb803edbc7c8c297",
       "meta": {
         "api_provider_id": "poolside",
         "kind": "provider_models"
@@ -634,7 +634,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/siliconflow/models.json": {
-      "hash": "4241893b01ba6386efbc66a4f59b6824",
+      "hash": "bbc6be951ba932399bd4be5a6f3ce55a",
       "meta": {
         "api_provider_id": "siliconflow",
         "kind": "provider_models"
@@ -653,7 +653,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/stepfun/models.json": {
-      "hash": "72395f120abacfcdc49675d5c7c820e6",
+      "hash": "9ead2f640d640213c6fbb55b65898d0d",
       "meta": {
         "api_provider_id": "stepfun",
         "kind": "provider_models"
@@ -686,13 +686,13 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice/api_provider.json": {
-      "hash": "d2a7d8da64df39e3c56c46e003a0fdba",
+      "hash": "5d0e0056c46c58dc07e4339c10bbc703",
       "meta": {
         "api_provider_id": "venice"
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice/models.json": {
-      "hash": "b7fc86df1ae29205832b9e2fa49e5ae1",
+      "hash": "91777400785988cbe27131cdbe129245",
       "meta": {
         "api_provider_id": "venice",
         "kind": "provider_models"
@@ -705,7 +705,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/models.json": {
-      "hash": "da18a57d9098f13c14381472b9eda707",
+      "hash": "33d4a2e83030d7e56260dd70ec02adb0",
       "meta": {
         "api_provider_id": "venice-e2ee",
         "kind": "provider_models"
@@ -22825,7 +22825,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/cloudflare/models.json": {
-      "hash": "2f194772191b31a9bf51bbe54aebcb2f",
+      "hash": "184170dbc75e96a39ade8b38d119e95d",
       "meta": {
         "api_provider_id": "cloudflare",
         "kind": "provider_models"
@@ -23182,7 +23182,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/anthropic-us/models.json": {
-      "hash": "fd81efe9cbb1222de5f182548cfca5f2",
+      "hash": "7884104734895589482cde64329c9343",
       "meta": {
         "api_provider_id": "anthropic-us",
         "kind": "provider_models"
@@ -24014,7 +24014,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/anthropic-aws/models.json": {
-      "hash": "092ccf69db2eb59270bf909d6ba6003a",
+      "hash": "3d714f323cce185fd69f7713d126266d",
       "meta": {
         "api_provider_id": "anthropic-aws",
         "kind": "provider_models"
@@ -24153,7 +24153,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/anthropic-aws-us/models.json": {
-      "hash": "91e19959da39052cf624099bbf9ceba9",
+      "hash": "44adc0075e5d376ffd0e61374f7bd765",
       "meta": {
         "api_provider_id": "anthropic-aws-us",
         "kind": "provider_models"
@@ -25274,6 +25274,49 @@
         "capability_id": "text.generate",
         "model_id": "z-ai/glm-5.1",
         "model_key": "z-ai:z-ai/glm-5.1:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/anthropic/claude-fable-5/model.json": {
+      "hash": "6723333c6d9327fc3fd8df55a8157148",
+      "meta": {
+        "model_id": "anthropic/claude-fable-5",
+        "organisation_id": "anthropic",
+        "previous_model_id": null,
+        "api_model_id": "anthropic/claude-fable-5",
+        "has_page_notice": false
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/digitalocean/api_provider.json": {
+      "hash": "ddbb2d056da78fe92ee980601974666d",
+      "meta": {
+        "api_provider_id": "digitalocean"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/digitalocean/models.json": {
+      "hash": "f910cbf868542b9cfa6e5cfc0d7a8d70",
+      "meta": {
+        "api_provider_id": "digitalocean",
+        "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/nvidia/models.json": {
+      "hash": "246038e8b92c157c20fcb68a57312882",
+      "meta": {
+        "api_provider_id": "nvidia",
+        "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/thinking-machines/api_provider.json": {
+      "hash": "c0d744d1e183b3b3e1978408cc7a1490",
+      "meta": {
+        "api_provider_id": "thinking-machines"
+      }
+    },
+    "../../packages/data/catalog/src/data/api_providers/thinking-machines/models.json": {
+      "hash": "a566a1e9733c535d39c188c2915340ad",
+      "meta": {
+        "api_provider_id": "thinking-machines",
+        "kind": "provider_models"
       }
     }
   }

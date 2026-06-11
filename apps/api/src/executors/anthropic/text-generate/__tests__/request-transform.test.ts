@@ -276,4 +276,68 @@ describe("irToAnthropicMessages cache control", () => {
 			ttl: "1h",
 		});
 	});
+
+	it("preserves cache control on system text blocks", () => {
+		const request = createBaseRequest();
+		request.messages = [
+			{
+				role: "system",
+				content: [{
+					type: "text",
+					text: "Stable system prompt",
+					cacheControl: { type: "ephemeral", ttl: "1h" },
+				}],
+			},
+			...request.messages,
+		] as any;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.system).toEqual([{
+			type: "text",
+			text: "Stable system prompt",
+			cache_control: { type: "ephemeral", ttl: "1h" },
+		}]);
+	});
+
+	it("preserves cache control on assistant text, tool results, and tools", () => {
+		const request = createBaseRequest();
+		request.messages = [
+			{
+				role: "assistant",
+				content: [{
+					type: "text",
+					text: "Cached assistant context",
+					cacheControl: { type: "ephemeral", ttl: "5m" },
+				}],
+			},
+			{
+				role: "tool",
+				toolResults: [{
+					toolCallId: "toolu_123",
+					content: "Tool output",
+					cacheControl: { type: "ephemeral", ttl: "1h" },
+				}],
+			},
+		] as any;
+		request.tools = [{
+			name: "lookup",
+			description: "Lookup stable data",
+			parameters: { type: "object", properties: {} },
+			cacheControl: { type: "ephemeral", ttl: "5m" },
+		}];
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.messages[0].content[0].cache_control).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+		});
+		expect(payload.messages[1].content[0].cache_control).toEqual({
+			type: "ephemeral",
+			ttl: "1h",
+		});
+		expect(payload.tools[0].cache_control).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+		});
+	});
 });

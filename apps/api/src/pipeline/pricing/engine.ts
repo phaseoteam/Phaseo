@@ -15,7 +15,8 @@ const KNOWN_METERS = new Set<string>([
     "output_text_tokens", "output_reasoning_tokens", "output_image_tokens", "output_audio_tokens", "output_video_tokens",
     "output_image", "output_video", "output_video_seconds",
     "implicit_cached_input_text_tokens",
-    "cached_write_text_tokens", "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
+    "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
+    "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",
     "cached_read_text_tokens", "cached_read_image_tokens", "cached_read_video_tokens", "cached_read_audio_tokens",
     "embedding_tokens", "bfl_credits", "requests",
 ]);
@@ -181,6 +182,8 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     const cachedReadTokens = pickFirstFiniteNumber(usageRaw, [
         "cached_read_text_tokens",
         "cache_read_input_tokens",
+        "cached_tokens",
+        "prompt_cache_hit_tokens",
         "cachedInputTokens",
         "cachedContentTokenCount",
         "input_tokens_details.cached_tokens",
@@ -190,9 +193,27 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     const cachedWriteTokens = pickFirstFiniteNumber(usageRaw, [
         "cached_write_text_tokens",
         "cache_creation_input_tokens",
+        "input_tokens_details.cache_creation_input_tokens",
+        "prompt_tokens_details.cache_creation_input_tokens",
+        "input_tokens_details.cache_creation_tokens",
+        "prompt_tokens_details.cache_creation_tokens",
         "_ext.cachedWriteTokens",
         "output_tokens_details.cached_tokens",
         "completion_tokens_details.cached_tokens",
+    ]);
+    const cachedWrite5mTokens = pickFirstFiniteNumber(usageRaw, [
+        "cached_write_text_tokens_5m",
+        "_ext.cachedWriteTokens5m",
+        "cache_creation.ephemeral_5m_input_tokens",
+        "cache_creation_5m_input_tokens",
+        "cache_creation_ephemeral_5m_input_tokens",
+    ]);
+    const cachedWrite1hTokens = pickFirstFiniteNumber(usageRaw, [
+        "cached_write_text_tokens_1h",
+        "_ext.cachedWriteTokens1h",
+        "cache_creation.ephemeral_1h_input_tokens",
+        "cache_creation_1h_input_tokens",
+        "cache_creation_ephemeral_1h_input_tokens",
     ]);
     const reasoningTokens = pickFirstFiniteNumber(usageRaw, [
         "output_reasoning_tokens",
@@ -213,6 +234,49 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
     }
     if (typeof cachedWriteTokens === "number" && meters.cached_write_text_tokens == null) {
         meters.cached_write_text_tokens = cachedWriteTokens;
+    }
+    if (typeof cachedWrite5mTokens === "number" && meters.cached_write_text_tokens_5m == null) {
+        meters.cached_write_text_tokens_5m = cachedWrite5mTokens;
+    }
+    if (typeof cachedWrite1hTokens === "number" && meters.cached_write_text_tokens_1h == null) {
+        meters.cached_write_text_tokens_1h = cachedWrite1hTokens;
+    }
+    if (
+        meters.cached_write_text_tokens == null &&
+        (typeof cachedWrite5mTokens === "number" || typeof cachedWrite1hTokens === "number")
+    ) {
+        meters.cached_write_text_tokens = (cachedWrite5mTokens ?? 0) + (cachedWrite1hTokens ?? 0);
+    }
+    const hasSplitCachedWriteRules = card.rules.some((rule) =>
+        rule.meter === "cached_write_text_tokens_5m" ||
+        rule.meter === "cached_write_text_tokens_1h"
+    );
+    if (
+        hasSplitCachedWriteRules &&
+        typeof cachedWriteTokens === "number" &&
+        typeof cachedWrite5mTokens !== "number" &&
+        typeof cachedWrite1hTokens !== "number"
+    ) {
+        const ttlHint = String(
+            usageRaw?.cache_ttl ??
+            usageRaw?.cache_ttl_seconds ??
+            usageRaw?.context?.cache_ttl ??
+            "5m",
+        ).trim().toLowerCase();
+        if (ttlHint === "1h" || ttlHint === "60m" || ttlHint === "3600") {
+            meters.cached_write_text_tokens_1h = cachedWriteTokens;
+        } else {
+            meters.cached_write_text_tokens_5m = cachedWriteTokens;
+        }
+    }
+    if (
+        hasSplitCachedWriteRules &&
+        (
+            (meters.cached_write_text_tokens_5m ?? 0) > 0 ||
+            (meters.cached_write_text_tokens_1h ?? 0) > 0
+        )
+    ) {
+        delete meters.cached_write_text_tokens;
     }
     if (typeof reasoningTokens === "number" && meters.output_reasoning_tokens == null) {
         meters.output_reasoning_tokens = reasoningTokens;
@@ -269,7 +333,9 @@ function splitUsage(usageRaw: any, card: PriceCard): { meters: Record<string, nu
         (meters.input_text_tokens ?? 0) +
         (meters.implicit_cached_input_text_tokens ?? 0) +
         (meters.cached_read_text_tokens ?? 0) +
-        (meters.cached_write_text_tokens ?? 0);
+        (meters.cached_write_text_tokens ?? 0) +
+        (meters.cached_write_text_tokens_5m ?? 0) +
+        (meters.cached_write_text_tokens_1h ?? 0);
 
     logPricingDebug("splitUsage_output", {
         meters,

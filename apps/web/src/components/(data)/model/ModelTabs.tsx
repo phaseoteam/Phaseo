@@ -34,8 +34,8 @@ export default function TabBar({
 	visibleTabKeys?: string[];
 }) {
 	// With layouts removed, derive the active tab from the pathname.
-	const pathname = usePathname();
-	const searchParams = useSearchParams();
+	const pathname = usePathname() ?? "";
+	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const pathnameSegments = pathname
 		? pathname.split("/").filter(Boolean)
 		: [];

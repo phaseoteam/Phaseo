@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-5.0",
       "source_link": "https://www.baidu.com/",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-5.0",
       "source_link": "https://www.baidu.com/",
-      "rank": 48
+      "rank": 51
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred version-family alias from ernie-5.0",
       "source_link": "https://www.baidu.com/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "simpleqa",

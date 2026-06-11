@@ -29,17 +29,41 @@ const MODEL_DATA_GLOBAL_TAGS = [
 	"audit-models",
 	"search:data",
 	"data:model-updates",
+	"frontend:model-updates",
+	"frontend:model-update-cards",
+	"frontend:update-cards",
 	"data:models",
 	"data:organisations",
 	"data:organisations:list",
+	"frontend:organisations",
+	"frontend:organisation-models",
+	"frontend:organisation-header",
 	"data:families",
+	"frontend:families",
 	"data:benchmarks",
 	"data:benchmarks:list",
+	"frontend:benchmarks",
 	"data:sign-in:models",
 	"data:sign-in:supported-models-stats",
+	"frontend:sign-in-main-models",
+	"frontend:sign-in-supported-models-stats",
 	"landing:db-stats",
+	"frontend:landing-stats",
+	"frontend:gateway-showcase",
+	"gateway:marketing-metrics",
 	"page:models",
 	"models:list-base",
+	"frontend:models",
+	"frontend:model-collections",
+	"frontend:model-overview",
+	"frontend:model-header",
+	"frontend:model-notice",
+	"frontend:model-canonical",
+	"frontend:model-pending-api-release",
+	"frontend:model-timeline",
+	"frontend:compare-models",
+	"frontend:compare-model-details",
+	"frontend:comparison-models",
 ] as const;
 
 const MODEL_API_GLOBAL_TAGS = [
@@ -58,6 +82,34 @@ const MODEL_API_GLOBAL_TAGS = [
 	"models:monitor",
 	"page:models",
 	"gateway-supported-models",
+	"frontend:monitor-models",
+	"frontend:free-router-overview",
+	"monitor-history",
+	"frontend:monitor-history",
+	"frontend:api-providers",
+	"frontend:api-provider-models",
+	"frontend:api-provider-top-apps",
+	"frontend:api-provider-top-models",
+	"frontend:api-provider-token-timeseries",
+	"frontend:api-provider-metrics",
+	"frontend:api-provider-updates",
+	"frontend:gateway-models",
+	"frontend:model-pricing",
+	"frontend:model-pricing-history",
+	"frontend:model-subscription-plans",
+	"frontend:model-gateway-metadata",
+	"frontend:model-availability",
+	"frontend:model-apps",
+	"frontend:model-performance",
+	"frontend:model-activity",
+	"frontend:model-token-trajectory",
+	"frontend:model-realtime-window",
+	"frontend:model-runtime-stats",
+	"frontend:model-usage-daily",
+	"frontend:model-routing-health",
+	"frontend:model-benchmarks",
+	"frontend:model-leaderboard-meta",
+	"frontend:pricing-models",
 ] as const;
 
 const MODEL_CANONICAL_RESOLVER_TAGS = [
@@ -74,8 +126,39 @@ const PUBLIC_MODEL_CATALOGUE_GLOBAL_TAGS = [
 	"public-model-catalogue",
 	"data:data_api_provider_model_capabilities",
 	"data:subscription_plans",
+	"frontend:subscription-plans",
 	"data:country_summaries",
+	"frontend:countries",
+	"frontend:sources",
+	"frontend:marketplace-presets",
+	"frontend:web-updates",
+	"frontend:youtube-updates",
+	"data:public_apps",
+	"data:app_details",
+	"data:app_usage",
+	"data:apps",
+	"public-top-apps",
+	"frontend:rankings",
+	"frontend:rankings-indexability",
+	"frontend:rankings-performance",
+	"frontend:rankings-market-share",
+	"frontend:rankings-market-share-timeseries",
+	"frontend:rankings-timeseries",
+	"frontend:model-rankings",
+	"frontend:model-names",
+	"frontend:provider-names",
+	"frontend:provider-meta",
+	"frontend:organisation-logo-ids",
+	"frontend:apps",
+	"frontend:app-details",
+	"frontend:app-usage",
+	"frontend:app-images",
+	"frontend:app-rankings",
+	"frontend:app-provider-model-mappings",
+	"frontend:profile",
+	"data:profiles",
 	"og:payload",
+	"frontend:og-payload",
 ] as const;
 
 function revalidateTagList(tags: readonly string[]) {
@@ -101,24 +184,93 @@ function revalidatePublicCataloguePaths(options: RevalidateModelDataTagOptions) 
 	revalidatePath("/models", "layout");
 	revalidatePath("/models/table");
 	revalidatePath("/models/collections");
+	revalidatePath("/monitor");
+	revalidatePath("/api/frontend/models/collections");
+	revalidatePath("/api/frontend/models/monitor");
+	revalidatePath("/api/frontend/models/free-router");
+	revalidatePath("/api/frontend/landing/stats");
+	revalidatePath("/api/frontend/landing/gateway-showcase");
+	revalidatePath("/api/frontend/sign-in/main-models");
+	revalidatePath("/api/frontend/sign-in/supported-models-stats");
+	revalidatePath("/api/frontend/monitor/history");
 	revalidatePath("/compare");
 	revalidatePath("/pricing");
 	revalidatePath("/api-providers", "layout");
 	revalidatePath("/organisations", "layout");
 	revalidatePath("/updates");
 	revalidatePath("/updates/models");
+	revalidatePath("/apps");
 	revalidatePath("/api/frontend/search");
-	revalidatePath("/api/pricing/models");
+	revalidatePath("/api/frontend/models");
+	revalidatePath("/api/frontend/compare/models");
+	revalidatePath("/api/frontend/compare/models/details");
+	revalidatePath("/api/frontend/models/leaderboard-meta");
+	revalidatePath("/api/frontend/api-providers");
+	revalidatePath("/api/frontend/gateway-models");
+	revalidatePath("/api/frontend/organisations");
+	revalidatePath("/api/frontend/benchmarks");
+	revalidatePath("/api/frontend/families");
+	revalidatePath("/api/frontend/subscription-plans");
+	revalidatePath("/api/frontend/countries");
+	revalidatePath("/api/frontend/apps/public-ids");
+	revalidatePath("/api/frontend/apps/images");
+	revalidatePath("/api/frontend/apps/rankings/top");
+	revalidatePath("/api/frontend/apps/rankings/trending");
+	revalidatePath("/api/frontend/apps/indexability");
+	revalidatePath("/api/frontend/rankings/indexability");
+	revalidatePath("/api/frontend/rankings/performance");
+	revalidatePath("/api/frontend/rankings/market-share");
+	revalidatePath("/api/frontend/rankings/market-share-timeseries");
+	revalidatePath("/api/frontend/rankings/timeseries");
+	revalidatePath("/api/frontend/rankings/model-rankings");
+	revalidatePath("/api/frontend/rankings/model-names");
+	revalidatePath("/api/frontend/rankings/provider-names");
+	revalidatePath("/api/frontend/rankings/provider-meta");
+	revalidatePath("/api/frontend/rankings/organisation-logo-ids");
+	revalidatePath("/api/frontend/pricing/models");
+	revalidatePath("/api/frontend/gateway/marketplace/presets");
+	revalidatePath("/api/frontend/landing/stats");
+	revalidatePath("/api/frontend/landing/gateway-showcase");
+	revalidatePath("/api/frontend/updates/web");
+	revalidatePath("/api/frontend/updates/youtube");
+	revalidatePath("/api/frontend/updates/models");
+	revalidatePath("/api/frontend/updates/cards");
+	revalidatePath("/api/frontend/updates/model-cards");
 	revalidatePath("/sitemap.xml");
 
 	if (options.modelId) {
 		revalidatePath(`/models/${options.modelId}`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/header`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/notice`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/canonical`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/pending-api-release`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/overview`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/pricing`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/pricing-history`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/subscription-plans`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/gateway-metadata`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/timeline`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/apps`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/performance`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/activity`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/token-trajectory`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/realtime-window`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/runtime-stats`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/usage-daily`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/health`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/routing-health`);
+		revalidatePath(`/api/frontend/models/${options.modelId}/benchmark-highlights`);
+		revalidatePath("/api/frontend/compare/models/details");
 	}
 
 	for (const organisationId of options.organisationIds ?? []) {
 		if (!organisationId) continue;
 		revalidatePath(`/organisations/${organisationId}`);
 		revalidatePath(`/organisations/${organisationId}/models`);
+		revalidatePath(`/api/frontend/organisations/${organisationId}/header`);
+		revalidatePath(
+			`/api/frontend/updates/organisations/${organisationId}/releases`,
+		);
 	}
 }
 

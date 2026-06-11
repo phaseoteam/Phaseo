@@ -641,6 +641,7 @@ const AnthropicToolResultContentSchema = z.object({
     type: z.literal("tool_result"),
     tool_use_id: z.string(),
     content: z.union([z.string(), z.array(z.any())]),
+    cache_control: CacheControlSchema.optional(),
 });
 
 const AnthropicContentBlockSchema = z.union([
@@ -659,6 +660,7 @@ const AnthropicToolSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
     input_schema: z.record(z.string(), z.any()),
+    cache_control: CacheControlSchema.optional(),
 });
 
 const AnthropicToolChoiceSchema = z.union([

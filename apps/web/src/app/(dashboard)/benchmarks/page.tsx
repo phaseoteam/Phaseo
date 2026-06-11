@@ -1,8 +1,6 @@
 import BenchmarksDisplay from "@/components/(data)/benchmarks/BenchmarksDisplay";
-import {
-	BenchmarkCard,
-	getAllBenchmarksCached,
-} from "@/lib/fetchers/benchmarks/getAllBenchmarks";
+import type { BenchmarkCard } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
+import { fetchFrontendBenchmarks } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 async function BenchmarksSection() {
-	const benchmarks = (await getAllBenchmarksCached(true)) as BenchmarkCard[];
+	const benchmarks = (await fetchFrontendBenchmarks(true)) as BenchmarkCard[];
 	return <BenchmarksDisplay benchmarks={benchmarks} />;
 }
 

@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 47
+      "rank": 52
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": "Text Only",
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 77
+      "rank": 82
     },
     {
       "benchmark_id": "if-eval",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "2024-11-25 ",
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 21
+      "rank": 23
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3-235B-A22B-Thinking-2507",
-      "rank": 30
+      "rank": 32
     },
     {
       "benchmark_id": "matharena-apex",
@@ -191,7 +191,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3-thinking/",
-      "rank": 57
+      "rank": 58
     },
     {
       "benchmark_id": "include",

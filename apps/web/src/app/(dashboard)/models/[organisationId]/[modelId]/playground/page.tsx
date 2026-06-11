@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import ModelPlayground from "@/components/(data)/model/playground/ModelPlayground";
-import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
-import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
 import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import {
+	fetchFrontendModelGatewayMetadata,
+	fetchFrontendModelHeader,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { buildMetadata } from "@/lib/seo";
 import {
@@ -62,20 +64,17 @@ export default async function Page({
 		permanentRedirect(getModelPath(canonicalModelId, "playground"));
 	}
 	const modelId = canonicalModelId;
-	const modelDisplayName = await getModelOverviewHeader(
+	const modelDisplayName = await fetchFrontendModelHeader(
 		modelId,
 		includeHidden,
 	)
-		.then((header) => header.name?.trim() || modelId)
+		.then((header) => header?.name?.trim() || modelId)
 		.catch(() => modelId);
 	let requestModelId = modelId;
 	let primaryModelIdentifierByEndpoint: Record<string, string> = {};
 	const scopedModelIdentifiers = new Set<string>([modelId]);
 	try {
-		const gatewayMetadata = await getModelGatewayMetadataCached(
-			modelId,
-			includeHidden,
-		);
+		const gatewayMetadata = await fetchFrontendModelGatewayMetadata(modelId);
 		primaryModelIdentifierByEndpoint =
 			gatewayMetadata.primaryModelIdentifierByEndpoint;
 		for (const identifier of Object.values(

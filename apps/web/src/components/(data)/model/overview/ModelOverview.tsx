@@ -6,7 +6,7 @@ import Modalities from "./Modalities";
 import OtherInfo from "./OtherInfo";
 import ModelLinks, { hasModelLinks } from "./ModelLinks";
 import ModelStatusBanner from "./ModelStatusBanner";
-import { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 
 export interface ModelOverviewProps {
 	model: ModelOverviewPage;

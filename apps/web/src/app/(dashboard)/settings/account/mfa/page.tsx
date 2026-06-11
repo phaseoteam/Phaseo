@@ -1,8 +1,8 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import AccountMFAClient from "@/components/(gateway)/settings/account/AccountMFAClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { fetchSettingsAccountMfaInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountMfaInitialData";
 
 export const metadata = {
 	title: "MFA - Settings",
@@ -23,11 +23,9 @@ export default function AccountMFAPage() {
 }
 
 async function AccountMFAContent() {
-	const supabase = await createClient();
-	const { data: authData } = await supabase.auth.getUser();
-	const authUser = authData.user;
+	const initialData = await fetchSettingsAccountMfaInitialData();
 
-	if (!authUser) {
+	if (!initialData.signedIn) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Not signed in.
@@ -35,20 +33,11 @@ async function AccountMFAContent() {
 		);
 	}
 
-	const { data: mfaData } = await supabase.auth.mfa.listFactors();
-	const mfaFactor = mfaData?.totp?.find((f) => f.status === "verified");
-	const mfaEnabled = !!mfaFactor;
-	const mfaFactorId = mfaFactor?.id ?? null;
-
-	const provider = authUser.app_metadata?.provider;
-	const isOAuthUser = provider && provider !== "email";
-	const hasPassword = !isOAuthUser;
-
 	return (
 		<AccountMFAClient
-			mfaEnabled={mfaEnabled}
-			mfaFactorId={mfaFactorId}
-			hasPassword={hasPassword}
+			mfaEnabled={initialData.mfaEnabled}
+			mfaFactorId={initialData.mfaFactorId}
+			hasPassword={initialData.hasPassword}
 		/>
 	);
 }

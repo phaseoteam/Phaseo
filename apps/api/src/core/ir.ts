@@ -64,6 +64,7 @@ export type IRTool = {
 	type?: string; // Provider-native tool type (for example web_search_preview)
 	description?: string;
 	parameters: Record<string, any>; // JSON Schema
+	cacheControl?: IRCacheControl;
 	raw?: Record<string, any>; // Original provider-native tool payload for passthrough
 };
 
@@ -91,6 +92,7 @@ export type IRToolResult = {
 	toolCallId: string; // References IRToolCall.id
 	content: string; // Result (can be structured JSON string)
 	isError?: boolean; // Optional error flag
+	cacheControl?: IRCacheControl;
 };
 
 // ============================================================================
@@ -727,6 +729,8 @@ export type IRUsage = {
 		outputAudioTokens?: number;
 		outputVideoTokens?: number;
 		cachedWriteTokens?: number;
+		cachedWriteTokens5m?: number;
+		cachedWriteTokens1h?: number;
 		serverToolUse?: {
 			datetime_requests?: number;
 			web_search_requests?: number;

@@ -5,6 +5,7 @@
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import type { ResponsesRequest } from "@core/schemas";
 import { ResponsesSchema } from "@core/schemas";
+import { pickFirstFiniteNumber, resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import {
@@ -113,17 +114,33 @@ function mapResponsesToChat(body: ResponsesRequest): ChatMessage[] {
 
 function normalizeUsage(usage: any) {
     if (!usage || typeof usage !== "object") return undefined;
-    const input = usage.prompt_tokens ?? 0;
-    const output = usage.completion_tokens ?? 0;
-    const total = usage.total_tokens ?? input + output;
-    const reasoningTokens = usage.output_tokens_details?.reasoning_tokens ?? 0;
+    const tokens = resolveCanonicalTokenUsage(usage);
+    const reasoningTokens = pickFirstFiniteNumber(usage, [
+        "output_tokens_details.reasoning_tokens",
+        "completion_tokens_details.reasoning_tokens",
+        "reasoning_tokens",
+        "reasoningTokens",
+    ]) ?? 0;
+    const cachedTokens = pickFirstFiniteNumber(usage, [
+        "prompt_tokens_details.cached_tokens",
+        "input_tokens_details.cached_tokens",
+        "cached_read_text_tokens",
+        "cachedInputTokens",
+    ]) ?? 0;
+    const inputImages = pickFirstFiniteNumber(usage, [
+        "prompt_tokens_details.audio_tokens",
+        "input_tokens_details.input_images",
+        "input_image_tokens",
+    ]) ?? 0;
     return {
-        input_text_tokens: input,
-        output_text_tokens: output,
-        total_tokens: total,
+        input_tokens: tokens.inputTokens,
+        output_tokens: tokens.outputTokens,
+        total_tokens: tokens.totalTokens,
+        input_text_tokens: tokens.inputTokens,
+        output_text_tokens: tokens.outputTokens,
         input_tokens_details: {
-            cached_tokens: usage.prompt_tokens_details?.cached_tokens ?? 0,
-            input_images: usage.prompt_tokens_details?.audio_tokens ?? 0,
+            cached_tokens: cachedTokens,
+            input_images: inputImages,
         },
         output_tokens_details: {
             reasoning_tokens: reasoningTokens,

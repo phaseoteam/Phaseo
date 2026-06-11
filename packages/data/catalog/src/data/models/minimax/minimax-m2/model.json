@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 38
+      "rank": 39
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 66
+      "rank": 67
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 102
+      "rank": 108
     },
     {
       "benchmark_id": "if",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 38
+      "rank": 40
     },
     {
       "benchmark_id": "multi-swe-bench",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "swe-bench",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 51
+      "rank": 55
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "tau-bench",
@@ -150,7 +150,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.280; games 291; avg points 0.522",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 20
+      "rank": 19
     },
     {
       "benchmark_id": "nyt-connections",
@@ -158,7 +158,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 65
+      "rank": 64
     }
   ]
 }

@@ -41,7 +41,7 @@
       "is_self_reported": true,
       "other_info": "Public",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 14
+      "rank": 20
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -49,7 +49,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 15
+      "rank": 18
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -57,7 +57,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 15
+      "rank": 20
     },
     {
       "benchmark_id": "toolathlon",
@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -73,7 +73,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 18
+      "rank": 22
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 37
+      "rank": 39
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 62
+      "rank": 67
     },
     {
       "benchmark_id": "os-world",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 25
+      "rank": 27
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -129,7 +129,7 @@
       "is_self_reported": true,
       "other_info": "Average edit distance (lower is better)",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 4
+      "rank": 16
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
@@ -137,7 +137,7 @@
       "is_self_reported": true,
       "other_info": "64K-128K",
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -169,7 +169,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -177,7 +177,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4-mini-and-nano/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "deepswe",
@@ -185,7 +185,7 @@
       "is_self_reported": false,
       "other_info": "mini-swe-agent; effort xhigh; 24% +/-3%; avg cost $2.08; avg time 33m; out tok 135k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "nyt-connections",
@@ -201,7 +201,7 @@
       "is_self_reported": false,
       "other_info": "xHigh reasoning; Top-1 accuracy 80.8%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 16
+      "rank": 15
     }
   ]
 }

@@ -39,14 +39,22 @@ export function resolveCanonicalTokenUsage(usageRaw: any): CanonicalTokenUsage {
 	const input = pickFirstFiniteNumber(usageRaw, [
 		"input_tokens",
 		"prompt_tokens",
+		"promptTokens",
+		"prompt_token_count",
 		"input_text_tokens",
+		"total_input_tokens",
+		"totalInputTokens",
 		"inputTokens",
 		"promptTokenCount",
 	]);
 	const output = pickFirstFiniteNumber(usageRaw, [
 		"output_tokens",
 		"completion_tokens",
+		"completionTokens",
+		"completion_token_count",
 		"output_text_tokens",
+		"total_output_tokens",
+		"totalOutputTokens",
 		"outputTokens",
 		"candidatesTokenCount",
 	]);

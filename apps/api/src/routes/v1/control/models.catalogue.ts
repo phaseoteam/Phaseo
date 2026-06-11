@@ -119,7 +119,11 @@ type CatalogueProvider = {
     effective_from: string | null;
     effective_to: string | null;
     params: string[];
+    params_detail: SupportedParamDetails;
 };
+
+export type SupportedParamDetail = Record<string, unknown>;
+export type SupportedParamDetails = Record<string, SupportedParamDetail>;
 
 type ProviderInfo = {
     api_provider_id: string;
@@ -173,6 +177,7 @@ type ProviderInfo = {
     effective_to: string | null;
     endpoints: Endpoint[];
     params: string[];
+    params_detail: SupportedParamDetails;
 };
 
 export type PricingMeterSummary = {
@@ -206,6 +211,7 @@ export type CatalogueModel = {
     output_types: string[];
     providers: ProviderInfo[];
     supported_params: string[];
+    supported_params_detail: SupportedParamDetails;
     top_provider: string | null;
     pricing: PricingSummary;
     availability: {
@@ -252,6 +258,8 @@ const PRICING_METERS = [
     "implicit_cached_input_text_tokens",
     "cached_read_text_tokens",
     "cached_write_text_tokens",
+    "cached_write_text_tokens_5m",
+    "cached_write_text_tokens_1h",
 ];
 
 const TOP_PROVIDER_METERS = [
@@ -325,6 +333,11 @@ function isFutureEffectiveWindow(
 }
 
 function toParamsList(value: unknown): string[] {
+    const detailed = toParamsDetail(value);
+    const detailedKeys = Object.keys(detailed);
+    if (detailedKeys.length > 0) {
+        return detailedKeys.sort((a, b) => a.localeCompare(b));
+    }
     if (Array.isArray(value)) {
         return value
             .map((item) => (typeof item === "string" ? item.trim() : String(item)))
@@ -334,6 +347,147 @@ function toParamsList(value: unknown): string[] {
         return Object.keys(value as Record<string, unknown>);
     }
     return toStringArray(value);
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function toParamNameList(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter((item) => item.length > 0);
+}
+
+function normalizeParamArrayEntry(entry: unknown): { name: string; detail: unknown } | null {
+    if (typeof entry === "string") {
+        const name = entry.trim();
+        return name ? { name, detail: true } : null;
+    }
+    if (!isPlainObject(entry)) return null;
+    const rawName = entry.param_id ?? entry.name ?? entry.id;
+    if (typeof rawName !== "string") return null;
+    const name = rawName.trim();
+    if (!name) return null;
+    const detail = { ...entry };
+    delete detail.param_id;
+    delete detail.name;
+    delete detail.id;
+    return { name, detail };
+}
+
+function toSerializableParamValue(value: unknown): unknown {
+    if (value == null) return null;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => toSerializableParamValue(item))
+            .filter((item) => item !== null && item !== undefined);
+    }
+    if (!isPlainObject(value)) return String(value);
+    return Object.fromEntries(
+        Object.entries(value)
+            .map(([key, entry]) => [key, toSerializableParamValue(entry)] as const)
+            .filter(([, entry]) => entry !== null && entry !== undefined)
+    );
+}
+
+function normalizeParamDetail(name: string, value: unknown): SupportedParamDetail | null {
+    if (!name.trim()) return null;
+    if (typeof value === "boolean") return { supported: value };
+    if (Array.isArray(value)) {
+        return { supported: true, values: value.map(toSerializableParamValue).filter((entry) => entry != null) };
+    }
+    if (isPlainObject(value)) {
+        const detail = toSerializableParamValue(value);
+        if (!isPlainObject(detail)) return { supported: true };
+        return {
+            supported: true,
+            ...detail,
+        };
+    }
+    if (value == null) return { supported: true };
+    return { supported: true, default: toSerializableParamValue(value) };
+}
+
+function addParamDetail(target: SupportedParamDetails, name: string, value: unknown): void {
+    const normalized = normalizeParamDetail(name, value);
+    if (!normalized) return;
+    const current = target[name];
+    target[name] = current ? mergeParamDetail(current, normalized) : normalized;
+}
+
+function mergeParamDetail(a: SupportedParamDetail, b: SupportedParamDetail): SupportedParamDetail {
+    const merged: SupportedParamDetail = { ...a, ...b };
+    const values = [
+        ...(Array.isArray(a.values) ? a.values : []),
+        ...(Array.isArray(b.values) ? b.values : []),
+    ];
+    if (values.length > 0) {
+        merged.values = Array.from(new Set(values.map((value) => JSON.stringify(value))))
+            .map((value) => JSON.parse(value))
+            .sort((left, right) => String(left).localeCompare(String(right)));
+    }
+    const providers = [
+        ...(Array.isArray(a.providers) ? a.providers : []),
+        ...(Array.isArray(b.providers) ? b.providers : []),
+    ].filter((provider): provider is string => typeof provider === "string" && provider.length > 0);
+    if (providers.length > 0) {
+        merged.providers = Array.from(new Set(providers)).sort((left, right) => left.localeCompare(right));
+    }
+    return merged;
+}
+
+function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
+    const out: SupportedParamDetails = {};
+    for (const item of items) {
+        if (!item) continue;
+        for (const [name, detail] of Object.entries(item)) {
+            out[name] = out[name] ? mergeParamDetail(out[name], detail) : { ...detail };
+        }
+    }
+    return out;
+}
+
+function withProviderOnParamDetails(details: SupportedParamDetails, providerId: string): SupportedParamDetails {
+    return Object.fromEntries(
+        Object.entries(details).map(([name, detail]) => [
+            name,
+            mergeParamDetail(detail, { providers: [providerId] }),
+        ])
+    );
+}
+
+function toParamsDetail(value: unknown): SupportedParamDetails {
+    const out: SupportedParamDetails = {};
+    if (Array.isArray(value)) {
+        for (const entry of value) {
+            const normalized = normalizeParamArrayEntry(entry);
+            if (!normalized) continue;
+            addParamDetail(out, normalized.name, normalized.detail);
+        }
+        return out;
+    }
+    if (typeof value === "string") {
+        for (const name of toStringArray(value)) addParamDetail(out, name, true);
+        return out;
+    }
+    if (!isPlainObject(value)) return out;
+
+    const request = isPlainObject(value.request) ? value.request : null;
+    for (const name of toParamNameList(request?.allowlist ?? request?.params)) {
+        addParamDetail(out, name, true);
+    }
+    for (const name of toParamNameList(value.params)) {
+        addParamDetail(out, name, true);
+    }
+
+    for (const [name, detail] of Object.entries(value)) {
+        if (name === "request" || (name === "params" && Array.isArray(detail))) continue;
+        addParamDetail(out, name, detail);
+    }
+    return out;
 }
 
 function parseDate(value: string | null): number | null {
@@ -363,6 +517,37 @@ function normalizeStringSet(values?: string[]): string[] | undefined {
     return normalized.length ? normalized : undefined;
 }
 
+const ENDPOINT_ALIASES: Record<string, string[]> = {
+    "chat.completions": ["chat.completions", "chat/completions"],
+    "chat/completions": ["chat/completions", "chat.completions"],
+    "audio.speech": ["audio.speech", "audio/speech"],
+    "audio/speech": ["audio/speech", "audio.speech"],
+    "video.generation": ["video.generation", "video.generate", "video.generations"],
+    "video.generate": ["video.generate", "video.generation", "video.generations"],
+    "video.generations": ["video.generations", "video.generation", "video.generate"],
+    "batch": ["batch", "batches", "/v1/batches"],
+    "batches": ["batches", "batch", "/v1/batches"],
+    "/v1/batches": ["/v1/batches", "batch", "batches"],
+};
+
+function expandEndpointAliases(endpoint: string): string[] {
+    const normalized = endpoint.trim().toLowerCase();
+    if (!normalized) return [];
+    const aliases = ENDPOINT_ALIASES[normalized] ?? [];
+    return Array.from(new Set([normalized, ...aliases]));
+}
+
+function expandEndpointFilters(endpoints?: string[]): Set<string> | null {
+    const normalized = normalizeStringSet(endpoints);
+    if (!normalized?.length) return null;
+    return new Set(normalized.flatMap(expandEndpointAliases));
+}
+
+function matchesEndpointFilter(endpoint: string, filter: Set<string> | null): boolean {
+    if (!filter) return true;
+    return expandEndpointAliases(endpoint).some((candidate) => filter.has(candidate));
+}
+
 function toNormalizedStatus(value: string | null | undefined): string | null {
     if (!value) return null;
     const normalized = value.trim().toLowerCase();
@@ -370,8 +555,6 @@ function toNormalizedStatus(value: string | null | undefined): string | null {
 }
 
 const COMING_SOON_CAPABILITIES = new Set([
-    "batch",
-    "video.generate",
     "video.edit",
     "music.generate",
 ]);
@@ -1140,7 +1323,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         providerMeterByModel.set(combo.model_id, providerMeters);
     }
 
-    const endpointsFilter = normalizeStringSet(filter.endpoints)?.map((value) => value as Endpoint);
+    const endpointsFilter = expandEndpointFilters(filter.endpoints);
     const providerIdsFilter = normalizeStringSet(filter.providerIds)?.map((value) => value.toLowerCase());
     const providerStatusesFilter = normalizeStringSet(filter.providerStatuses)?.map((value) => value.toLowerCase());
     const providerRoutingStatusesFilter = normalizeStringSet(filter.providerRoutingStatuses)?.map((value) => value.toLowerCase());
@@ -1224,6 +1407,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     effective_from: effectiveFrom,
                     effective_to: effectiveTo,
                     params: toParamsList(cap.params),
+                    params_detail: toParamsDetail(cap.params),
                 });
             }
         }
@@ -1233,6 +1417,12 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             : providerEntries.filter(isPubliclyRoutableProvider);
 
         const filteredProviderEntries = visibleProviderEntries.filter((entry) => {
+            if (
+                endpointsFilter &&
+                !entry.endpoints.some((endpoint) => matchesEndpointFilter(endpoint, endpointsFilter))
+            ) {
+                return false;
+            }
             if (
                 providerIdsFilter?.length &&
                 !providerIdsFilter.includes(entry.api_provider_id.toLowerCase())
@@ -1302,8 +1492,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             new Set(filteredProviderEntries.flatMap((entry) => entry.endpoints))
         ).sort();
 
-        if (endpointsFilter?.length) {
-            const hasIncluded = endpointsFilter.some((endpoint) => endpoints.includes(endpoint));
+        if (endpointsFilter) {
+            const hasIncluded = endpoints.some((endpoint) => matchesEndpointFilter(endpoint, endpointsFilter));
             if (!hasIncluded) continue;
         }
 
@@ -1345,12 +1535,14 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     effective_to: entry.effective_to,
                     endpoints: [...entry.endpoints],
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
+                    params_detail: { ...entry.params_detail },
                 });
                 continue;
             }
 
             existing.endpoints = Array.from(new Set([...existing.endpoints, ...entry.endpoints])).sort();
             existing.params = Array.from(new Set([...existing.params, ...entry.params])).sort((a, b) => a.localeCompare(b));
+            existing.params_detail = mergeParamDetails(existing.params_detail, entry.params_detail);
             if (compareProviderInfoCandidate(entry, existing) < 0) {
                 existing.is_active_gateway = entry.is_active_gateway;
                 existing.availability_status = entry.availability_status;
@@ -1370,6 +1562,11 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         const supportedParams = Array.from(
             new Set(filteredProviderEntries.flatMap((entry) => entry.params))
         ).sort((a, b) => a.localeCompare(b));
+        const supportedParamsDetail = mergeParamDetails(
+            ...filteredProviderEntries.map((entry) =>
+                withProviderOnParamDetails(entry.params_detail, entry.api_provider_id)
+            )
+        );
 
         const activeProviderCount = providerInfos.filter((provider) => provider.availability_status === "active").length;
         const comingSoonProviderCount = providerInfos.filter((provider) => provider.availability_status === "coming_soon").length;
@@ -1411,6 +1608,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             output_types: [...info.output_types],
             providers: providerInfos,
             supported_params: supportedParams,
+            supported_params_detail: supportedParamsDetail,
             top_provider: topProvider,
             pricing: scopedPricing,
             availability: {

@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 205
+      "rank": 206
     },
     {
       "benchmark_id": "hiddenmath",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 51
+      "rank": 52
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 128
+      "rank": 131
     },
     {
       "benchmark_id": "mmmu",
@@ -105,7 +105,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 109
+      "rank": 110
     },
     {
       "benchmark_id": "mrcr",
@@ -137,7 +137,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/technologies/gemini/flash/",
-      "rank": 28
+      "rank": 29
     },
     {
       "benchmark_id": "wmt23",

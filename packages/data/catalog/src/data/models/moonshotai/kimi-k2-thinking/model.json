@@ -45,7 +45,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 30
+      "rank": 31
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -77,7 +77,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 34
+      "rank": 35
     },
     {
       "benchmark_id": "healthbench",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 2
+      "rank": 3
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 13
+      "rank": 15
     },
     {
       "benchmark_id": "imoanswerbench",
@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://huggingface.co/moonshotai/Kimi-K2-Thinking",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 19
+      "rank": 21
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "seal-0",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 18
+      "rank": 19
     },
     {
       "benchmark_id": "swe-bench",
@@ -181,7 +181,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from kimi-k2-thinking-0905",
       "source_link": "https://moonshotai.github.io/Kimi-K2/thinking.html",
-      "rank": 43
+      "rank": 47
     },
     {
       "benchmark_id": "terminal-bench",
@@ -205,7 +205,7 @@
       "is_self_reported": false,
       "other_info": "64K thinking; sigma 0.311; games 238; avg points 0.504",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 27
+      "rank": 25
     }
   ]
 }
