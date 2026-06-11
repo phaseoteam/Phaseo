@@ -150,11 +150,13 @@ export default function UsageLogsToolbar({
 	preset,
 	customFrom,
 	customTo,
+	showRefresh = true,
 }: {
 	view: UsageLogsViewKey;
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
+	showRefresh?: boolean;
 }) {
 	const router = useRouter();
 	const pathname = usePathname();
@@ -409,21 +411,23 @@ export default function UsageLogsToolbar({
 	return (
 		<div className="flex flex-wrap items-center justify-end gap-1.5">
 			<div className="flex items-center justify-end gap-1.5">
-				<Button
-					type="button"
-					variant="outline"
-					size="icon"
-					onClick={() => void handleRefresh()}
-					disabled={isRefreshing || isRevalidating || isPending}
-					aria-label="Refresh current view"
-				>
-					<RefreshCw
-						className={cn(
-							"h-3 w-3",
-							(isRefreshing || isRevalidating || isPending) && "animate-spin",
-						)}
-					/>
-				</Button>
+				{showRefresh ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						onClick={() => void handleRefresh()}
+						disabled={isRefreshing || isRevalidating || isPending}
+						aria-label="Refresh current view"
+					>
+						<RefreshCw
+							className={cn(
+								"h-3 w-3",
+								(isRefreshing || isRevalidating || isPending) && "animate-spin",
+							)}
+						/>
+					</Button>
+				) : null}
 
 				<Popover
 					open={popoverOpen}
@@ -485,7 +489,7 @@ export default function UsageLogsToolbar({
 								aria-label="Usage log time range"
 								placeholder="YYYY-MM-DD HH:mm -> YYYY-MM-DD HH:mm"
 								className={cn(
-									"h-9 rounded-full border-zinc-200 bg-white pl-9 pr-10 text-[13px] font-medium shadow-none",
+									"h-9 rounded-xl border-zinc-200 bg-white pl-9 pr-10 text-[13px] font-medium shadow-none",
 									effectivePreset === "live" &&
 										"border-emerald-300 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50/60",
 								)}
@@ -496,7 +500,7 @@ export default function UsageLogsToolbar({
 										type="button"
 										variant="ghost"
 										size="icon"
-										className="h-7 w-7 rounded-full text-muted-foreground"
+										className="h-7 w-7 rounded-lg text-muted-foreground"
 										aria-label="Open range presets"
 										onMouseDown={(event) => event.preventDefault()}
 									>

@@ -19,12 +19,15 @@ export default async function Page(props: {
 	const params = new URLSearchParams();
 	if (sp) {
 		for (const [k, v] of Object.entries(sp)) {
+			if (k === "tab") continue;
 			if (Array.isArray(v)) v.forEach((val) => params.append(k, val));
 			else if (typeof v === "string") params.append(k, v);
 		}
 	}
 
 	const qs = params.toString();
-	permanentRedirect(qs ? `/settings/usage?${qs}` : "/settings/usage");
+	permanentRedirect(
+		qs ? `/settings/usage/overview?${qs}` : "/settings/usage/overview",
+	);
 }
 

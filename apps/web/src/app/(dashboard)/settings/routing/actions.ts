@@ -34,7 +34,7 @@ export async function updateRoutingSettings({
 	}
 	await requireWorkspaceMembership(supabase, user.id, workspaceId, ["owner", "admin"]);
 
-	const payload = {
+	const basePayload = {
 		workspace_id: workspaceId,
 		routing_mode: mode,
 		...(typeof betaChannelEnabled === "boolean"
@@ -46,6 +46,19 @@ export async function updateRoutingSettings({
 						betaChannelEnabled === false ? false : alphaChannelEnabled,
 			  }
 			: {}),
+		updated_at: new Date().toISOString(),
+	};
+
+	const { error } = await supabase
+		.from("workspace_settings")
+		.upsert(basePayload, { onConflict: "workspace_id" });
+
+	if (error) {
+		throw error;
+	}
+
+	const responseHealingPayload = {
+		workspace_id: workspaceId,
 		...(typeof responseHealingEnabled === "boolean"
 			? { response_healing_enabled: responseHealingEnabled }
 			: {}),
@@ -57,13 +70,18 @@ export async function updateRoutingSettings({
 			: {}),
 		updated_at: new Date().toISOString(),
 	};
+	if (Object.keys(responseHealingPayload).length > 2) {
+		const { error: responseHealingError } = await supabase
+			.from("workspace_settings")
+			.upsert(responseHealingPayload, { onConflict: "workspace_id" });
 
-	const { error } = await supabase
-		.from("workspace_settings")
-		.upsert(payload, { onConflict: "workspace_id" });
-
-	if (error) {
-		throw error;
+		if (responseHealingError) {
+			console.warn("[settings.routing.update] response healing defaults", {
+				code: responseHealingError.code,
+				message: responseHealingError.message,
+				workspaceId,
+			});
+		}
 	}
 
 	revalidatePath("/settings/routing");

@@ -106,7 +106,10 @@ function getTabSet(
 	// Usage (separate from Billing)
 	if (pathname.startsWith("/settings/usage")) {
 		return [
-			{ href: "/settings/usage", label: "Usage" },
+			{ href: "/settings/usage/overview", label: "Overview" },
+			{ href: "/settings/usage/trends", label: "Trends" },
+			{ href: "/settings/usage/explore", label: "Explore" },
+			{ href: "/settings/usage/guardrails", label: "Guardrails" },
 			{ href: "/settings/usage/logs", label: "Logs" },
 			{
 				href: "/settings/usage/alerts",
