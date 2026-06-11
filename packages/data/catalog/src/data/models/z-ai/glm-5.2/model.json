@@ -1,0 +1,28 @@
+{
+  "model_id": "z-ai/glm-5.2",
+  "organisation_id": "z-ai",
+  "name": "GLM 5.2",
+  "status": "Rumoured",
+  "previous_model_id": "z-ai/glm-5.1",
+  "description": "GLM 5.2 is a rumoured Z.AI flagship model tracked as the likely successor to GLM 5.1. The current record is based on leaked private-testing references and early public sightings rather than a formal Z.AI release.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "z-ai/glm-5.2",
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "GLM 5.2 is a rumoured model and is not publicly released. This page exists because leaked private-testing references and public sightings suggest Z.AI is evaluating a `glm-5.2` line. Specs, pricing, provider availability, and release timing are unconfirmed and may change or disappear without notice."
+  },
+  "links": [],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Tracked from private-testing leaks and public sightings only. No public Z.AI announcement, provider launch, or final model card is available yet."
+    }
+  ],
+  "benchmarks": []
+}
