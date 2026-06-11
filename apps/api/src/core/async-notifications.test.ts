@@ -156,6 +156,7 @@ describe("parseAsyncWebhookConfig", () => {
 			"https://[fe80::1]/hooks/video",
 			"https://[fc00::1]/hooks/video",
 			"https://[fd00::1]/hooks/video",
+			"https://[::ffff:10.0.0.1]/hooks/video",
 		]) {
 			expect(parseAsyncWebhookConfig("video", { url })).toBeNull();
 		}
@@ -172,6 +173,13 @@ describe("parseAsyncWebhookConfig", () => {
 			}),
 		).toMatchObject({
 			url: "https://[2607:f8b0:4004:800::2004]/hooks/video",
+		});
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://[::ffff:8.8.8.8]/hooks/video",
+			}),
+		).toMatchObject({
+			url: "https://[::ffff:808:808]/hooks/video",
 		});
 	});
 });

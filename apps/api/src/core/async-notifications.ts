@@ -241,12 +241,17 @@ function isLocalOrPrivateWebhookHost(hostname: string): boolean {
 	if (hostname === "0.0.0.0" || hostname === "[::]" || hostname === "::") return true;
 	const ipv6Host = hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
 	if (ipv6Host.includes(":")) return isLocalOrPrivateIpv6Host(ipv6Host);
+	return isLocalOrPrivateIpv4Host(hostname);
+}
+
+function isLocalOrPrivateIpv4Host(hostname: string): boolean {
 	const parts = hostname.split(".").map((part) => Number(part));
 	if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
 		return false;
 	}
 	const [first, second] = parts;
 	return (
+		first === 0 ||
 		first === 10 ||
 		first === 127 ||
 		(first === 169 && second === 254) ||
@@ -258,11 +263,26 @@ function isLocalOrPrivateWebhookHost(hostname: string): boolean {
 function isLocalOrPrivateIpv6Host(hostname: string): boolean {
 	const normalized = hostname.split("%", 1)[0]?.toLowerCase() ?? "";
 	if (!normalized || normalized === "::" || normalized === "::1") return true;
-	if (normalized.startsWith("::ffff:")) return true;
+	if (normalized.startsWith("::ffff:")) {
+		const mappedIpv4 = normalizeIpv4MappedIpv6Suffix(normalized.slice(7));
+		return mappedIpv4 ? isLocalOrPrivateIpv4Host(mappedIpv4) : true;
+	}
 	const firstSegmentText = normalized.split(":", 1)[0] ?? "";
 	const firstSegment = Number.parseInt(firstSegmentText, 16);
 	if (!Number.isInteger(firstSegment)) return false;
 	return (firstSegment & 0xfe00) === 0xfc00 || (firstSegment & 0xffc0) === 0xfe80;
+}
+
+function normalizeIpv4MappedIpv6Suffix(suffix: string): string | null {
+	if (suffix.includes(".")) return suffix;
+	const parts = suffix.split(":");
+	if (parts.length !== 2) return null;
+	const high = Number.parseInt(parts[0] ?? "", 16);
+	const low = Number.parseInt(parts[1] ?? "", 16);
+	if (!Number.isInteger(high) || !Number.isInteger(low) || high < 0 || high > 0xffff || low < 0 || low > 0xffff) {
+		return null;
+	}
+	return `${(high >> 8) & 255}.${high & 255}.${(low >> 8) & 255}.${low & 255}`;
 }
 
 function normalizeWebhookEvent(kind: SupportedAsyncNotificationKind, value: unknown): AsyncNotificationEventType | null {
