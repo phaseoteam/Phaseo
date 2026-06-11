@@ -133,7 +133,7 @@ async function fetchOpenAiFileInput(fileIdRaw: string): Promise<ParsedBatchInput
 	let totalRows = 0;
 	let done = false;
 	try {
-		while (!done && lines.length <= MAX_BATCH_ROWS_TO_PRICE) {
+		while (!done) {
 			const chunk = await reader.read();
 			done = chunk.done;
 			buffered += decoder.decode(chunk.value ?? new Uint8Array(), { stream: !done });
@@ -143,25 +143,21 @@ async function fetchOpenAiFileInput(fileIdRaw: string): Promise<ParsedBatchInput
 				const line = part.trim();
 				if (!line) continue;
 				totalRows += 1;
-				if (lines.length <= MAX_BATCH_ROWS_TO_PRICE) lines.push(line);
-				if (lines.length > MAX_BATCH_ROWS_TO_PRICE) break;
+				if (lines.length < MAX_BATCH_ROWS_TO_PRICE) lines.push(line);
 			}
 		}
-		if (!done) await reader.cancel().catch(() => undefined);
 	} finally {
 		reader.releaseLock();
 	}
-	if (lines.length <= MAX_BATCH_ROWS_TO_PRICE) {
-		const line = buffered.trim();
-		if (line) {
-			totalRows += 1;
-			lines.push(line);
-		}
+	const line = buffered.trim();
+	if (line) {
+		totalRows += 1;
+		if (lines.length < MAX_BATCH_ROWS_TO_PRICE) lines.push(line);
 	}
 	return {
-		entries: lines.slice(0, MAX_BATCH_ROWS_TO_PRICE).map((line) => JSON.parse(line)),
+		entries: lines.map((line) => JSON.parse(line)),
 		totalRows,
-		truncated: lines.length > MAX_BATCH_ROWS_TO_PRICE,
+		truncated: totalRows > MAX_BATCH_ROWS_TO_PRICE,
 	};
 }
 

@@ -1148,7 +1148,7 @@ async function handleRetrieve(req: Request, id: string) {
 				batchId,
 			});
 		});
-		const nextStatus = normalizeBatchStatus(upstreamJson?.status ?? meta.status) ?? "";
+		const nextStatus = normalizeBatchStatus(refreshedMeta.status) ?? "";
 		if (nextStatus === "completed" || nextStatus === "failed" || nextStatus === "expired" || nextStatus === "cancelled") {
 			finalization = await finalizeBatchJob({
 				workspaceId: auth.workspaceId,

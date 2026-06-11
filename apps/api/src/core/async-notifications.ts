@@ -240,7 +240,7 @@ function isLocalOrPrivateWebhookHost(hostname: string): boolean {
 	if (isLocalDevelopmentWebhookHost(hostname)) return true;
 	if (hostname === "0.0.0.0" || hostname === "[::]" || hostname === "::") return true;
 	const ipv6Host = hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
-	if (ipv6Host.includes(":")) return true;
+	if (ipv6Host.includes(":")) return isLocalOrPrivateIpv6Host(ipv6Host);
 	const parts = hostname.split(".").map((part) => Number(part));
 	if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
 		return false;
@@ -253,6 +253,16 @@ function isLocalOrPrivateWebhookHost(hostname: string): boolean {
 		(first === 172 && second >= 16 && second <= 31) ||
 		(first === 192 && second === 168)
 	);
+}
+
+function isLocalOrPrivateIpv6Host(hostname: string): boolean {
+	const normalized = hostname.split("%", 1)[0]?.toLowerCase() ?? "";
+	if (!normalized || normalized === "::" || normalized === "::1") return true;
+	if (normalized.startsWith("::ffff:")) return true;
+	const firstSegmentText = normalized.split(":", 1)[0] ?? "";
+	const firstSegment = Number.parseInt(firstSegmentText, 16);
+	if (!Number.isInteger(firstSegment)) return false;
+	return (firstSegment & 0xfe00) === 0xfc00 || (firstSegment & 0xffc0) === 0xfe80;
 }
 
 function normalizeWebhookEvent(kind: SupportedAsyncNotificationKind, value: unknown): AsyncNotificationEventType | null {

@@ -1742,7 +1742,7 @@ describe("batchRoutes", () => {
 			{
 				workspaceId: "ws_batch_test",
 				batchId: "batch_stale_terminal_123",
-				status: "completed",
+				status: "failed",
 			},
 		]);
 	});
