@@ -230,7 +230,7 @@ describe("public video response helper", () => {
 				settled_provider_cost: null,
 				settled_user_cost: null,
 				state: "estimated",
-				billable: false,
+				billable: true,
 				total_nanos: null,
 				estimated_nanos: 225_000_000,
 				reserved_nanos: 225_000_000,

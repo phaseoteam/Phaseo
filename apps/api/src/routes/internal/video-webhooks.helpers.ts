@@ -82,6 +82,10 @@ export async function verifyOpenAiWebhookSignature(req: Request, rawBody: string
 	const timestamp = req.headers.get("webhook-timestamp")?.trim() ?? "";
 	const signatures = parseOpenAiSignatureCandidates(req.headers.get("webhook-signature"));
 	if (!id || !timestamp || signatures.length === 0) return false;
+	const timestampSeconds = Number(timestamp);
+	if (!Number.isFinite(timestampSeconds)) return false;
+	const skewSeconds = Math.abs(Date.now() / 1000 - timestampSeconds);
+	if (skewSeconds > 300) return false;
 
 	const payload = `${id}.${timestamp}.${rawBody}`;
 	const expected = await signHmacSha256(secret, payload);

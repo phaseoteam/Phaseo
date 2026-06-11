@@ -344,13 +344,14 @@ export async function listTeamBatchJobs(args: {
 	const records = await listTeamAsyncOperations({
 		workspaceId: args.workspaceId,
 		kind: "batch",
-		limit: args.limit,
+		limit: args.limit ? Math.max(args.limit * 3, args.limit + 50) : undefined,
 		statuses: args.statuses,
 	});
 	return records
 		.map((record) => toBatchJobRecord(record))
 		.filter((record): record is BatchJobRecord => Boolean(record))
-		.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX));
+		.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX))
+		.slice(0, args.limit);
 }
 
 export async function setBatchJobStatus(

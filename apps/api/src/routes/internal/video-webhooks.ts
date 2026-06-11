@@ -97,12 +97,9 @@ internalVideoWebhookRoutes.post("/openai", withRuntime(async (req) => {
 		headers: pickHeaders(req),
 	});
 	if (!dedupe.inserted) {
-		if (!dedupe.record?.processedAt) {
-			processOpenAiVideoWebhookInBackground({ eventId, eventType, payload });
-			return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
-				"Cache-Control": "no-store",
-			});
-		}
+		if (!dedupe.record?.processedAt) return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
+			"Cache-Control": "no-store",
+		});
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
 			"Cache-Control": "no-store",
 		});
@@ -164,12 +161,9 @@ internalVideoWebhookRoutes.post("/alibaba", withRuntime(async (req) => {
 		headers: pickHeaders(req),
 	});
 	if (!dedupe.inserted) {
-		if (!dedupe.record?.processedAt) {
-			processAlibabaVideoWebhookInBackground({ eventId, eventType, payload, taskId });
-			return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
-				"Cache-Control": "no-store",
-			});
-		}
+		if (!dedupe.record?.processedAt) return json({ ok: true, deduped: true, accepted: true, processed: false }, 202, {
+			"Cache-Control": "no-store",
+		});
 		return json({ ok: true, deduped: true, processed: Boolean(dedupe.record?.processedAt) }, 200, {
 			"Cache-Control": "no-store",
 		});

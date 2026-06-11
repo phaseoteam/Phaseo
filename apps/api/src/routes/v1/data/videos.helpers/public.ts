@@ -258,7 +258,13 @@ export function buildVideoBilling(
 		settled_provider_cost: settled != null ? settled.toFixed(2) : null,
 		settled_user_cost: settled != null ? settled.toFixed(2) : null,
 		state,
-		billable: charged === true || (settledNanos != null && settledNanos > 0),
+		billable:
+			charged === true ||
+			(settledNanos != null && settledNanos > 0) ||
+			(state === "estimated" && (
+				(estimatedNanos != null && estimatedNanos > 0) ||
+				(typeof meta?.reservedNanos === "number" && meta.reservedNanos > 0)
+			)),
 		total_nanos: settledNanos ?? null,
 		estimated_nanos: estimatedNanos ?? null,
 		reserved_nanos: typeof meta?.reservedNanos === "number" ? meta.reservedNanos : null,

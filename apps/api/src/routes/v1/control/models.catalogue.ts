@@ -673,7 +673,7 @@ function comparePerUnit(candidate: PricingRuleRow, current?: PricingMeterSummary
     const price = parseNumeric(candidate.price_per_unit);
     if (price === null || unitSize <= 0) return current ?? null;
     const perUnit = price / unitSize;
-    const currentPerUnit = current ? parseNumeric(current.price_per_unit) ?? 0 / (current.unit_size || 1) : null;
+    const currentPerUnit = current ? ((parseNumeric(current.price_per_unit) ?? 0) / (current.unit_size || 1)) : null;
     if (current && currentPerUnit !== null && currentPerUnit <= perUnit) {
         return current;
     }

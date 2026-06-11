@@ -43,7 +43,24 @@ function extractPricedTotalNanos(pricedUsage: Record<string, unknown>): number {
 		pricedUsage.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
 			? (pricedUsage.pricing as Record<string, unknown>)
 			: null;
-	return Math.max(0, Math.round(toFiniteNumber(pricing?.total_nanos ?? pricedUsage.total_nanos) ?? 0));
+	const pricingBreakdown =
+		pricedUsage.pricing_breakdown && typeof pricedUsage.pricing_breakdown === "object" && !Array.isArray(pricedUsage.pricing_breakdown)
+			? (pricedUsage.pricing_breakdown as Record<string, unknown>)
+			: null;
+	const nestedBreakdown =
+		pricing?.pricing_breakdown && typeof pricing.pricing_breakdown === "object" && !Array.isArray(pricing.pricing_breakdown)
+			? (pricing.pricing_breakdown as Record<string, unknown>)
+			: null;
+	return Math.max(
+		0,
+		Math.round(
+			toFiniteNumber(nestedBreakdown?.total_nanos) ??
+				toFiniteNumber(pricingBreakdown?.total_nanos) ??
+				toFiniteNumber(pricing?.total_nanos) ??
+				toFiniteNumber(pricedUsage.total_nanos) ??
+				0,
+		),
+	);
 }
 
 function hasPricingLines(pricedUsage: Record<string, unknown>): boolean {
@@ -51,13 +68,33 @@ function hasPricingLines(pricedUsage: Record<string, unknown>): boolean {
 		pricedUsage.pricing && typeof pricedUsage.pricing === "object" && !Array.isArray(pricedUsage.pricing)
 			? (pricedUsage.pricing as Record<string, unknown>)
 			: null;
-	return Array.isArray(pricing?.lines) && pricing.lines.length > 0;
+	const pricingBreakdown =
+		pricedUsage.pricing_breakdown && typeof pricedUsage.pricing_breakdown === "object" && !Array.isArray(pricedUsage.pricing_breakdown)
+			? (pricedUsage.pricing_breakdown as Record<string, unknown>)
+			: null;
+	const nestedBreakdown =
+		pricing?.pricing_breakdown && typeof pricing.pricing_breakdown === "object" && !Array.isArray(pricing.pricing_breakdown)
+			? (pricing.pricing_breakdown as Record<string, unknown>)
+			: null;
+	return (
+		(Array.isArray(pricing?.lines) && pricing.lines.length > 0) ||
+		(Array.isArray(pricingBreakdown?.lines) && pricingBreakdown.lines.length > 0) ||
+		(Array.isArray(nestedBreakdown?.lines) && nestedBreakdown.lines.length > 0)
+	);
 }
 
 function hasPositiveVideoPricingRule(card: PriceCard): boolean {
+	const videoMeters = new Set([
+		"output_video_seconds",
+		"output_video",
+		"input_video_seconds",
+		"input_video_count",
+		"frame_rate",
+		"total_tokens",
+	]);
 	return card.rules.some((rule) => {
 		const meter = String((rule as any)?.meter ?? "").trim().toLowerCase();
-		if (meter !== "output_video_seconds" && meter !== "output_video" && meter !== "total_tokens") return false;
+		if (!videoMeters.has(meter)) return false;
 		return (toFiniteNumber((rule as any)?.price_per_unit) ?? 0) > 0;
 	});
 }

@@ -239,6 +239,8 @@ function isLocalDevelopmentWebhookHost(hostname: string): boolean {
 function isLocalOrPrivateWebhookHost(hostname: string): boolean {
 	if (isLocalDevelopmentWebhookHost(hostname)) return true;
 	if (hostname === "0.0.0.0" || hostname === "[::]" || hostname === "::") return true;
+	const ipv6Host = hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+	if (ipv6Host.includes(":")) return true;
 	const parts = hostname.split(".").map((part) => Number(part));
 	if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
 		return false;

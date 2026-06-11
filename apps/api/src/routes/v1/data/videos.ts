@@ -516,6 +516,7 @@ videosRoutes.post("/:videoId/cancel", withRuntime(async (req) => {
 	}
 
 	if (!upstream.ok) {
+		if (normalizedProvider === OPENAI_PROVIDER_ID) return upstream;
 		return normalizeVideoUpstreamErrorResponse({
 			response: upstream,
 			requestId: authValue.requestId,
@@ -533,13 +534,15 @@ videosRoutes.post("/:videoId/cancel", withRuntime(async (req) => {
 		status: "cancelled",
 	}));
 	const normalizedStatus = normalizeVideoStatus((payload as any)?.status);
-	const cancelStatus = normalizedStatus === "failed" ? "failed" : "cancelled";
+	type VideoTerminalCancelStatus = "completed" | "failed" | "cancelled" | "expired";
+	const terminalCancelStatuses = new Set<string>(["completed", "failed", "cancelled", "expired"]);
+	const cancelStatus = normalizedStatus && terminalCancelStatuses.has(normalizedStatus) ? normalizedStatus : "cancelled";
 	await finalizeVideoStatusIfTerminal({
 		auth: authValue,
 		videoId: id,
 		videoMeta: ownedVideo.meta,
 		providerId: normalizedProvider,
-		status: cancelStatus,
+		status: cancelStatus as VideoTerminalCancelStatus,
 		model: normalizeText((payload as any)?.model) ?? ownedVideo.record.model ?? ownedVideo.meta?.model ?? null,
 		seconds: toFiniteNumber((payload as any)?.seconds) ?? ownedVideo.meta?.seconds ?? null,
 		resolution: normalizeText((payload as any)?.size) ?? ownedVideo.meta?.resolution ?? null,

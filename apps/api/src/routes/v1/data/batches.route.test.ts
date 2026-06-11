@@ -2367,7 +2367,6 @@ describe("batchRoutes", () => {
 		expect(globalThis.fetch).not.toHaveBeenCalled();
 		expect(state.webhookEvents).toEqual([]);
 		expect(state.finalizeCalls).toEqual([]);
-		});
 	});
 
 	it("lists batch-capable models with supported parameter details", async () => {
@@ -2517,9 +2516,10 @@ describe("batchRoutes", () => {
 		});
 
 		expect(response.status).toBe(200);
-		expect(fetchCatalogue).toHaveBeenCalledWith({
-			endpoints: ["batch"],
-			params: ["request_endpoint", "window", "endpoint"],
-			statuses: ["active"],
-		});
+	expect(fetchCatalogue).toHaveBeenCalledWith({
+		endpoints: ["batch"],
+		params: ["request_endpoint", "window", "endpoint"],
+		statuses: ["active"],
 	});
+});
+});
