@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
+import { permanentRedirect, redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import RequestsSection from "@/components/(gateway)/usage/RequestsSection";
 import ObservabilityHub from "@/components/(gateway)/usage/observability/ObservabilityHub";
 import type {
 	ObservabilityData,
@@ -15,6 +14,8 @@ import type {
 	ObservabilityRange,
 	ObservabilityRankedItem,
 	ObservabilitySeriesPoint,
+	ObservabilityTab,
+	ObservabilityTimeSeriesChart,
 } from "@/components/(gateway)/usage/observability/types";
 import { extractUsageMeters } from "@/components/(gateway)/usage/usageMeters";
 import {
@@ -36,13 +37,6 @@ import {
 import {
 	fetchAppNames,
 	fetchModelMetadata,
-	fetchPaginatedRequests,
-	fetchProviderMetadata,
-	fetchProviderNames,
-	type PaginatedRequestsParams,
-	type PaginatedRequestsResult,
-	type ProviderMetadataEntry,
-	type RequestRow,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 export const metadata: Metadata = {
@@ -71,28 +65,18 @@ type RawRequestRow = {
 	pricing_lines: unknown;
 };
 
+type RawRequestResult = {
+	rows: RawRequestRow[];
+	isSampled: boolean;
+	limit: number;
+};
+
+const RAW_REQUEST_SAMPLE_LIMIT = 5000;
+
 function firstParam(value: string | string[] | undefined): string | undefined {
 	if (typeof value === "string") return value;
 	if (Array.isArray(value)) return value[0];
 	return undefined;
-}
-
-function parseTab(tab?: string | null) {
-	const normalized = (tab ?? "").toLowerCase();
-	return normalized === "trends" ||
-		normalized === "explore" ||
-		normalized === "guardrails"
-		? normalized
-		: "overview";
-}
-
-function parsePositivePage(value: string | undefined): number {
-	const parsed = Number.parseInt(value ?? "", 10);
-	return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-}
-
-function parseSortDirection(value: string | undefined): "asc" | "desc" {
-	return value === "asc" ? "asc" : "desc";
 }
 
 function toNumber(value: unknown): number {
@@ -358,6 +342,105 @@ function buildBreakdown(args: {
 		.slice(0, args.limit ?? 8);
 }
 
+function buildTimeSeriesBreakdown(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+	getId: (row: RawRequestRow) => string | null;
+	getLabel: (id: string) => string;
+	getValue: (row: RawRequestRow) => number;
+	limit?: number;
+	includeOther?: boolean;
+}): ObservabilityTimeSeriesChart {
+	const totals = new Map<string, number>();
+	for (const row of args.rows) {
+		const id = args.getId(row);
+		if (!id) continue;
+		totals.set(id, (totals.get(id) ?? 0) + args.getValue(row));
+	}
+	const series = Array.from(totals.entries())
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, args.limit ?? 6)
+		.map(([sourceId], index) => ({
+			id: `series${index + 1}`,
+			label: args.getLabel(sourceId),
+			sourceId,
+		}));
+	const topSourceIds = new Set(series.map((item) => item.sourceId));
+	const hasOther =
+		Boolean(args.includeOther) &&
+		Array.from(totals.keys()).some((sourceId) => !topSourceIds.has(sourceId));
+	const chartSeries = hasOther
+		? [
+				...series,
+				{
+					id: "other",
+					label: "Other",
+					sourceId: "__other",
+				},
+			]
+		: series;
+	const seriesIdBySourceId = new Map(
+		series.map((item) => [item.sourceId, item.id]),
+	);
+	const points = buildEmptySeries(args).map((point) => {
+		const row: Record<string, string | number> = {
+			bucket: point.bucket,
+			label: point.label,
+		};
+		for (const item of chartSeries) row[item.id] = 0;
+		return row;
+	});
+	const pointMap = new Map(points.map((point) => [String(point.bucket), point]));
+	for (const row of args.rows) {
+		const sourceId = args.getId(row);
+		const id = sourceId
+			? seriesIdBySourceId.get(sourceId) ?? (hasOther ? "other" : null)
+			: null;
+		if (!id) continue;
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const point = pointMap.get(floorToBucket(created, args.range).toISOString());
+		if (!point) continue;
+		point[id] = Number(point[id] ?? 0) + args.getValue(row);
+	}
+	return {
+		series: chartSeries.map(({ id, label }) => ({ id, label })),
+		data: points,
+	};
+}
+
+function buildFixedTimeSeries(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+	series: Array<{ id: string; label: string; color?: string }>;
+	getValues: (row: RawRequestRow) => Record<string, number>;
+}): ObservabilityTimeSeriesChart {
+	const points = buildEmptySeries(args).map((point) => {
+		const row: Record<string, string | number> = {
+			bucket: point.bucket,
+			label: point.label,
+		};
+		for (const item of args.series) row[item.id] = 0;
+		return row;
+	});
+	const pointMap = new Map(points.map((point) => [String(point.bucket), point]));
+	for (const row of args.rows) {
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const point = pointMap.get(floorToBucket(created, args.range).toISOString());
+		if (!point) continue;
+		const values = args.getValues(row);
+		for (const item of args.series) {
+			point[item.id] = Number(point[item.id] ?? 0) + (values[item.id] ?? 0);
+		}
+	}
+	return { series: args.series, data: points };
+}
+
 function buildExploreRows(args: {
 	rows: RawRequestRow[];
 	range: ObservabilityRange;
@@ -423,7 +506,7 @@ function rangeForTimeWindow(from: string, to: string): ObservabilityRange {
 	if (hours <= 2) return "1h";
 	if (hours <= 48) return "1d";
 	if (hours <= 24 * 14) return "1w";
-	if (hours <= 24 * 60) return "1m";
+	if (hours <= 24 * 400) return "1m";
 	return "1y";
 }
 
@@ -441,8 +524,9 @@ async function fetchRawRequests(args: {
 	from: string;
 	to: string;
 	limit?: number;
-}): Promise<RawRequestRow[]> {
+}): Promise<RawRequestResult> {
 	try {
+		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
 		const { data, error } = await args.supabase
 			.from("gateway_requests")
 			.select(
@@ -453,16 +537,22 @@ async function fetchRawRequests(args: {
 			.lte("created_at", args.to)
 			.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS))
 			.order("created_at", { ascending: true })
-			.limit(args.limit ?? 5000);
+			.limit(limit + 1);
 
 		if (error) {
 			console.error("Error fetching observability request rows:", error);
-			return [];
+			return { rows: [], isSampled: false, limit };
 		}
-		return (data ?? []) as RawRequestRow[];
+		const rows = (data ?? []) as RawRequestRow[];
+		return {
+			rows: rows.slice(0, limit),
+			isSampled: rows.length > limit,
+			limit,
+		};
 	} catch (error) {
 		console.error("Failed to fetch observability request rows:", error);
-		return [];
+		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
+		return { rows: [], isSampled: false, limit };
 	}
 }
 
@@ -506,37 +596,60 @@ async function safeMapLoad<T>(
 	}
 }
 
-async function safePaginatedRequests(
-	params: PaginatedRequestsParams,
-): Promise<PaginatedRequestsResult> {
-	try {
-		return await fetchPaginatedRequests(params);
-	} catch (error) {
-		console.error("Failed to fetch observability request table:", error);
-		return {
-			data: [] as RequestRow[],
-			total: 0,
-			page: params.page,
-			pageSize: 25,
-			totalPages: 0,
-		};
+function routeForLegacyTab(tab?: string | null) {
+	const normalized = (tab ?? "").toLowerCase();
+	if (
+		normalized === "trends" ||
+		normalized === "explore" ||
+		normalized === "guardrails"
+	) {
+		return `/settings/usage/${normalized}`;
 	}
+	return "/settings/usage/overview";
 }
 
-export default function Page(props: {
+export default async function Page(props: {
 	searchParams: Promise<SearchParams>;
+}) {
+	const sp = await props.searchParams;
+	const target = routeForLegacyTab(firstParam(sp.tab));
+	const params = new URLSearchParams();
+	for (const [key, rawValue] of Object.entries(sp)) {
+		if (key === "tab") continue;
+		if (typeof rawValue === "string") {
+			params.set(key, rawValue);
+			continue;
+		}
+		if (Array.isArray(rawValue)) {
+			for (const item of rawValue) {
+				if (typeof item === "string") params.append(key, item);
+			}
+		}
+	}
+	const query = params.toString();
+	permanentRedirect(query ? `${target}?${query}` : target);
+}
+
+export function ObservabilityPageContent(props: {
+	searchParams: Promise<SearchParams>;
+	initialTab: ObservabilityTab;
 }) {
 	return (
 		<Suspense fallback={<SettingsSectionFallback />}>
-			<ObservabilityContent searchParams={props.searchParams} />
+			<ObservabilityContent
+				searchParams={props.searchParams}
+				initialTab={props.initialTab}
+			/>
 		</Suspense>
 	);
 }
 
 async function ObservabilityContent({
 	searchParams,
+	initialTab,
 }: {
 	searchParams: Promise<SearchParams>;
+	initialTab: ObservabilityTab;
 }) {
 	const supabase = await createClient();
 	let user: { id: string } | null = null;
@@ -562,7 +675,6 @@ async function ObservabilityContent({
 	}
 
 	const sp = await searchParams;
-	const initialTab = parseTab(firstParam(sp.tab));
 	const rangeKeys = getUsageRangeParamKeys();
 	const presetParam = firstParam(sp[rangeKeys.preset]);
 	const preset = presetParam
@@ -582,11 +694,7 @@ async function ObservabilityContent({
 	const previousFrom = new Date(fromDate.getTime() - windowMs).toISOString();
 	const previousTo = from;
 
-	const logsPage = parsePositivePage(firstParam(sp.page));
-	const logsSortField = firstParam(sp.sort)?.trim() || "created_at";
-	const logsSortDir = parseSortDirection(firstParam(sp.dir));
-
-	const [keys, rawRows, previousRows] = await Promise.all([
+	const [keys, currentRequestResult, previousRequestResult] = await Promise.all([
 		fetchApiKeyOptions({ supabase, workspaceId }),
 		fetchRawRequests({ supabase, workspaceId, from, to }),
 		fetchRawRequests({
@@ -596,19 +704,14 @@ async function ObservabilityContent({
 			to: previousTo,
 		}),
 	]);
+	const rawRows = currentRequestResult.rows;
+	const previousRows = previousRequestResult.rows;
 
 	const keyMap = new Map(keys.map((key) => [key.id, key]));
 	const modelIds = Array.from(
 		new Set(
 			[...rawRows, ...previousRows]
 				.map((row) => row.model_id)
-				.filter((id): id is string => Boolean(id)),
-		),
-	);
-	const providerIds = Array.from(
-		new Set(
-			rawRows
-				.map((row) => row.provider)
 				.filter((id): id is string => Boolean(id)),
 		),
 	);
@@ -620,26 +723,9 @@ async function ObservabilityContent({
 		),
 	);
 
-	const [
-		modelMetadata,
-		appNames,
-		providerNames,
-		providerMetadata,
-		initialRequestsPage,
-	] = await Promise.all([
+	const [modelMetadata, appNames] = await Promise.all([
 		safeMapLoad("model metadata", () => fetchModelMetadata(modelIds)),
 		safeMapLoad("app names", () => fetchAppNames(appIds)),
-		safeMapLoad("provider names", () => fetchProviderNames(providerIds)),
-		safeMapLoad<ProviderMetadataEntry>("provider metadata", () =>
-			fetchProviderMetadata(providerIds),
-		),
-		safePaginatedRequests({
-			timeRange: { from, to },
-			page: logsPage,
-			sortField: logsSortField,
-			sortDirection: logsSortDir,
-			statusFilter: "all",
-		}),
 	]);
 
 	const modelLabel = (id: string | null) => {
@@ -660,6 +746,20 @@ async function ObservabilityContent({
 		if (!id) return "No app";
 		return appNames.get(id) || id;
 	};
+	const modelFilterOptions = Array.from(new Set(rawRows.flatMap((row) => {
+		const id = row.model_id?.trim();
+		return id ? [id] : [];
+	}))
+	)
+		.map((id) => {
+			const meta = modelMetadata.get(id);
+			return {
+				value: id,
+				label: modelLabel(id),
+				logoId: meta?.organisationId ?? null,
+			};
+		})
+		.sort((a, b) => a.label.localeCompare(b.label));
 
 	const currentSpend = rawRows.reduce(
 		(sum, row) => sum + toNumber(row.cost_nanos) / 1e9,
@@ -776,43 +876,152 @@ async function ObservabilityContent({
 		getLabel: modelLabel,
 	});
 
-	const usageByModelCost = buildBreakdown({
+	const usageByModelCost = buildTimeSeriesBreakdown({
 		rows: rawRows,
+		range,
+		from,
+		to,
 		getId: (row) => row.model_id,
 		getLabel: modelLabel,
 		getValue: (row) => toNumber(row.cost_nanos) / 1e9,
 	});
-	const requestVolumeByModel = buildBreakdown({
+	const requestVolumeByModel = buildTimeSeriesBreakdown({
 		rows: rawRows,
+		range,
+		from,
+		to,
 		getId: (row) => row.model_id,
 		getLabel: modelLabel,
 		getValue: () => 1,
 	});
-	const aiStatsCost = rawRows
-		.filter((row) => !isByokRequest(row))
-		.reduce((sum, row) => sum + toNumber(row.cost_nanos) / 1e9, 0);
-	const byokCost = rawRows
-		.filter((row) => isByokRequest(row))
-		.reduce((sum, row) => sum + toNumber(row.cost_nanos) / 1e9, 0);
-	const inputTokens = rawRows.reduce(
-		(sum, row) => sum + metricValue(row.usage, "input_tokens"),
-		0,
-	);
-	const outputTokens = rawRows.reduce(
-		(sum, row) => sum + metricValue(row.usage, "output_tokens"),
-		0,
-	);
-	const reasoningTokens = rawRows.reduce(
-		(sum, row) =>
-			sum +
-			metricValue(row.usage, "reasoning_tokens") +
-			metricValue(row.usage, "output_reasoning_tokens"),
-		0,
-	);
+	const trendChartArgs = {
+		rows: rawRows,
+		range,
+		from,
+		to,
+		limit: 10,
+		includeOther: true,
+	};
+	const modelTrendCharts = {
+		spend: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.model_id,
+			getLabel: modelLabel,
+			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+		}),
+		requests: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.model_id,
+			getLabel: modelLabel,
+			getValue: () => 1,
+		}),
+		tokens: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.model_id,
+			getLabel: modelLabel,
+			getValue: (row) => usageTokens(row.usage),
+		}),
+	};
+	const keyTrendCharts = {
+		spend: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.key_id,
+			getLabel: keyLabel,
+			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+		}),
+		requests: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.key_id,
+			getLabel: keyLabel,
+			getValue: () => 1,
+		}),
+		tokens: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.key_id,
+			getLabel: keyLabel,
+			getValue: (row) => usageTokens(row.usage),
+		}),
+	};
+	const appTrendCharts = {
+		spend: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.app_id,
+			getLabel: appLabel,
+			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+		}),
+		requests: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.app_id,
+			getLabel: appLabel,
+			getValue: () => 1,
+		}),
+		tokens: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.app_id,
+			getLabel: appLabel,
+			getValue: (row) => usageTokens(row.usage),
+		}),
+	};
+	const usageTypeCost = buildFixedTimeSeries({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		series: [
+			{ id: "aiStats", label: "AI Stats Credits", color: "#2563eb" },
+			{ id: "byok", label: "BYOK", color: "#059669" },
+		],
+		getValues: (row) => {
+			const cost = toNumber(row.cost_nanos) / 1e9;
+			return isByokRequest(row)
+				? { aiStats: 0, byok: cost }
+				: { aiStats: cost, byok: 0 };
+		},
+	});
+	const tokenSplit = buildFixedTimeSeries({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		series: [
+			{ id: "input", label: "Input", color: "#2563eb" },
+			{ id: "output", label: "Output", color: "#059669" },
+			{ id: "reasoning", label: "Reasoning", color: "#d97706" },
+		],
+		getValues: (row) => ({
+			input: metricValue(row.usage, "input_tokens"),
+			output: metricValue(row.usage, "output_tokens"),
+			reasoning:
+				metricValue(row.usage, "reasoning_tokens") +
+				metricValue(row.usage, "output_reasoning_tokens"),
+		}),
+	});
+	const cacheSplit = buildFixedTimeSeries({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		series: [
+			{ id: "cached", label: "Cached", color: "#059669" },
+			{ id: "uncached", label: "Uncached", color: "#94a3b8" },
+		],
+		getValues: (row) => {
+			const tokens = usageTokens(row.usage);
+			const cached =
+				metricValue(row.usage, "cache_read_tokens") +
+				metricValue(row.usage, "cache_write_tokens");
+			return {
+				cached,
+				uncached: Math.max(0, tokens - cached),
+			};
+		},
+	});
 
 	const data: ObservabilityData = {
 		range,
 		periodLabel: getUsageRangeLabel({ preset, customFrom, customTo }),
+		isSampled: currentRequestResult.isSampled,
+		sampleLimit: currentRequestResult.limit,
 		kpis,
 		topApiKeys,
 		topApps,
@@ -821,24 +1030,10 @@ async function ObservabilityContent({
 		trendingApps: topApps,
 		charts: {
 			usageByModelCost,
-			usageTypeCost: [
-				{ id: "ai-stats", label: "AI Stats Credits", value: aiStatsCost },
-				{ id: "byok", label: "BYOK", value: byokCost },
-			],
+			usageTypeCost,
 			requestVolumeByModel,
-			tokenSplit: [
-				{ id: "input", label: "Input", value: inputTokens },
-				{ id: "output", label: "Output", value: outputTokens },
-				{ id: "reasoning", label: "Reasoning", value: reasoningTokens },
-			],
-			cacheSplit: [
-				{ id: "cached", label: "Cached", value: currentCachedTokens },
-				{
-					id: "uncached",
-					label: "Uncached",
-					value: Math.max(0, currentTokens - currentCachedTokens),
-				},
-			],
+			tokenSplit,
+			cacheSplit,
 			spendOverTime: sumByBucket({
 				rows: rawRows,
 				range,
@@ -846,6 +1041,14 @@ async function ObservabilityContent({
 				to,
 				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
 			}),
+			trends: {
+				models: modelTrendCharts,
+				keys: keyTrendCharts,
+				apps: appTrendCharts,
+			},
+		},
+		filterOptions: {
+			models: modelFilterOptions,
 		},
 		exploreRows: buildExploreRows({
 			rows: rawRows,
@@ -875,19 +1078,6 @@ async function ObservabilityContent({
 			preset={preset}
 			customFrom={customFrom}
 			customTo={customTo}
-			requestsTable={
-				<RequestsSection
-					timeRange={{ from, to }}
-					appNames={appNames}
-					providerNames={providerNames}
-					providerMetadata={providerMetadata}
-					modelMetadata={modelMetadata}
-					initialPage={logsPage}
-					initialRows={initialRequestsPage.data}
-					initialTotal={initialRequestsPage.total}
-					initialTotalPages={initialRequestsPage.totalPages}
-				/>
-			}
 		/>
 	);
 }

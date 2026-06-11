@@ -40,6 +40,35 @@ export type ObservabilityBreakdownItem = {
 	value: number;
 };
 
+export type ObservabilityChartSeries = {
+	id: string;
+	label: string;
+	color?: string;
+};
+
+export type ObservabilityTimeSeriesChart = {
+	series: ObservabilityChartSeries[];
+	data: Array<Record<string, string | number>>;
+};
+
+export type ObservabilityTrendMetricCharts = {
+	spend: ObservabilityTimeSeriesChart;
+	requests: ObservabilityTimeSeriesChart;
+	tokens: ObservabilityTimeSeriesChart;
+};
+
+export type ObservabilityTrendCharts = {
+	models: ObservabilityTrendMetricCharts;
+	keys: ObservabilityTrendMetricCharts;
+	apps: ObservabilityTrendMetricCharts;
+};
+
+export type ObservabilityFilterOptionData = {
+	value: string;
+	label: string;
+	logoId?: string | null;
+};
+
 export type ObservabilityExploreRow = {
 	bucket: string;
 	model: string;
@@ -60,6 +89,8 @@ export type ObservabilityExploreRow = {
 export type ObservabilityData = {
 	range: ObservabilityRange;
 	periodLabel: string;
+	isSampled?: boolean;
+	sampleLimit?: number;
 	kpis: ObservabilityKpi[];
 	topApiKeys: ObservabilityRankedItem[];
 	topApps: ObservabilityRankedItem[];
@@ -67,12 +98,16 @@ export type ObservabilityData = {
 	trendingKeys: ObservabilityRankedItem[];
 	trendingApps: ObservabilityRankedItem[];
 	charts: {
-		usageByModelCost: ObservabilityBreakdownItem[];
-		usageTypeCost: ObservabilityBreakdownItem[];
-		requestVolumeByModel: ObservabilityBreakdownItem[];
-		tokenSplit: ObservabilityBreakdownItem[];
-		cacheSplit: ObservabilityBreakdownItem[];
+		usageByModelCost: ObservabilityTimeSeriesChart;
+		usageTypeCost: ObservabilityTimeSeriesChart;
+		requestVolumeByModel: ObservabilityTimeSeriesChart;
+		tokenSplit: ObservabilityTimeSeriesChart;
+		cacheSplit: ObservabilityTimeSeriesChart;
 		spendOverTime: ObservabilitySeriesPoint[];
+		trends: ObservabilityTrendCharts;
+	};
+	filterOptions?: {
+		models?: ObservabilityFilterOptionData[];
 	};
 	exploreRows: ObservabilityExploreRow[];
 };

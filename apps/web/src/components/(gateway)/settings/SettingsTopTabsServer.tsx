@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronRight, PanelLeftIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,6 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSidebar } from "@/components/ui/sidebar";
 import { getActiveSettingsNav } from "./Sidebar.config";
 import SettingsSidebarTrigger from "./SettingsSidebarTrigger";
 
@@ -23,7 +22,6 @@ type Tab = {
 	label: string;
 	match?: string[];
 	badge?: string;
-	observabilityTab?: string;
 };
 
 function getBillingTabs(): Tab[] {
@@ -35,14 +33,10 @@ function getBillingTabs(): Tab[] {
 }
 
 const USAGE_TABS: Tab[] = [
-	{ href: "/settings/usage?tab=overview", label: "Overview", observabilityTab: "overview" },
-	{ href: "/settings/usage?tab=trends", label: "Trends", observabilityTab: "trends" },
-	{ href: "/settings/usage?tab=explore", label: "Explore", observabilityTab: "explore" },
-	{
-		href: "/settings/usage?tab=guardrails",
-		label: "Guardrails",
-		observabilityTab: "guardrails",
-	},
+	{ href: "/settings/usage/overview", label: "Overview" },
+	{ href: "/settings/usage/trends", label: "Trends" },
+	{ href: "/settings/usage/explore", label: "Explore" },
+	{ href: "/settings/usage/guardrails", label: "Guardrails" },
 	{ href: "/settings/usage/logs", label: "Logs" },
 	{ href: "/settings/usage/alerts", label: "Alerts" },
 ];
@@ -130,8 +124,6 @@ export default function SettingsTopTabsServer({
 } = {}) {
 	void isEnterpriseInvoiceMode;
 	const pathname = usePathname() ?? "";
-	const searchParams = useSearchParams();
-	const { toggleSidebar } = useSidebar();
 	const tabs = resolveTabs(pathname);
 	const activeNav = React.useMemo(
 		() => getActiveSettingsNav(pathname, { showBroadcast }),
@@ -143,13 +135,6 @@ export default function SettingsTopTabsServer({
 	const [indicator, setIndicator] = React.useState({ left: 0, width: 0, opacity: 0 });
 
 	const matchScore = React.useCallback((t: Tab) => {
-		if (pathname === "/settings/usage" && t.observabilityTab) {
-			const current = searchParams?.get("tab") ?? "overview";
-			return current === t.observabilityTab
-				? { exact: true, len: t.href.length + t.observabilityTab.length }
-				: null;
-		}
-
 		// Treat the account index route as details, since `/settings/account` redirects.
 		if (pathname === "/settings/account" && t.href === "/settings/account/details") {
 			return { exact: true, len: t.href.length };
@@ -167,7 +152,7 @@ export default function SettingsTopTabsServer({
 		}
 		if (best > 0) return { exact: false, len: best };
 		return null;
-	}, [pathname, searchParams]);
+	}, [pathname]);
 
 	const activeTab =
 		tabs && tabs.length > 0
@@ -208,7 +193,11 @@ export default function SettingsTopTabsServer({
 	if (!tabs?.length) {
 		return (
 			<>
-				<SettingsSidebarTrigger showBroadcast={showBroadcast} />
+				<SettingsSidebarTrigger
+					showBroadcast={showBroadcast}
+					triggerLabel="Sections"
+					className="h-9 w-auto shrink-0 px-3"
+				/>
 				<div className="hidden lg:flex items-center border-b border-border text-sm">
 					<span className="px-2 pb-2 font-medium text-muted-foreground">
 						{activeNav?.group.heading ?? "Settings"}
@@ -235,17 +224,13 @@ export default function SettingsTopTabsServer({
 
 	return (
 		<>
-			<nav className="md:hidden" aria-label="Settings section navigation">
+			<nav className="lg:hidden" aria-label="Settings section navigation">
 				<div className="flex items-center gap-2">
-					<Button
-						variant="outline"
+					<SettingsSidebarTrigger
+						showBroadcast={showBroadcast}
+						triggerLabel="Sections"
 						className="h-9 shrink-0 px-3"
-						onClick={toggleSidebar}
-						aria-haspopup="dialog"
-					>
-						<PanelLeftIcon className="mr-1.5 h-4 w-4" />
-						Sections
-					</Button>
+					/>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button
@@ -294,7 +279,7 @@ export default function SettingsTopTabsServer({
 
 			<nav
 				ref={containerRef}
-				className="relative hidden md:flex gap-4 border-b border-border"
+				className="relative hidden lg:flex gap-4 border-b border-border"
 				onMouseLeave={() => setIndicatorToHref(activeTab?.href ?? null)}
 				aria-label="Settings section navigation"
 			>
