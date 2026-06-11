@@ -50,7 +50,7 @@ def cancelVideo(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/videos/{path.get("video_id", "")}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -63,7 +63,7 @@ def cancelVideoAlias(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Any:
+) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = f"/video/generations/{path.get("video_id", "")}/cancel"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
@@ -615,6 +615,71 @@ def listApiKeys(
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
+def listBatches(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batches"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchesAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batch"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batches/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listBatchModelsAlias(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/batch/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listDataModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/data/models"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
 def listEndpoints(
 	client: Client,
 	*,
@@ -650,7 +715,7 @@ def listModels(
 	body: Optional[Any] = None,
 ) -> Dict[str, Any]:
 	path = path or {}
-	resolved_path = "/models"
+	resolved_path = "/gateway/models"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -690,6 +755,19 @@ def listProviders(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/providers"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def listTeamModels(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Dict[str, Any]:
+	path = path or {}
+	resolved_path = "/gateway/models/me"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -755,6 +833,19 @@ def listWorkspaces(
 ) -> Dict[str, Any]:
 	path = path or {}
 	resolved_path = "/workspaces"
+	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
+
+
+def openAsyncJobWebSocket(
+	client: Client,
+	*,
+	path: Optional[Dict[str, Any]] = None,
+	query: Optional[Dict[str, Any]] = None,
+	headers: Optional[Dict[str, str]] = None,
+	body: Optional[Any] = None,
+) -> Any:
+	path = path or {}
+	resolved_path = f"/async/{path.get("kind", "")}/{path.get("id", "")}/ws"
 	return client.request("GET", resolved_path, query=query, headers=headers, body=body)
 
 
@@ -862,4 +953,4 @@ def uploadFile(
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)
 
 
-operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWorkspace", "deleteApiKey", "deleteVideo", "deleteVideoAlias", "deleteWorkspace", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getGeneration", "getHealth", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWorkspace", "listApiKeys", "listEndpoints", "listFiles", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWorkspaces", "openResponsesWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateApiKey", "updateWorkspace", "uploadFile"]
+operations___all__ = ["calculatePricing", "cancelBatch", "cancelBatchAlias", "cancelVideo", "cancelVideoAlias", "createAnthropicMessage", "createApiKey", "createBatch", "createBatchAlias", "createChatCompletion", "createEmbedding", "createImage", "createImageEdit", "createModeration", "createOcr", "createRerank", "createResponse", "createSpeech", "createTranscription", "createTranslation", "createVideo", "createVideoAlias", "createVideoDownloadUrl", "createVideoDownloadUrlAlias", "createWorkspace", "deleteApiKey", "deleteVideo", "deleteVideoAlias", "deleteWorkspace", "generateMusic", "generateMusicAlias", "getActivity", "getActivityAlias", "getApiKey", "getCredits", "getCurrentApiKey", "getGeneration", "getHealth", "getMusicGeneration", "getMusicGenerationAlias", "getProviderDerankStatus", "getVideo", "getVideoAlias", "getVideoContent", "getVideoContentAlias", "getWorkspace", "listApiKeys", "listBatches", "listBatchesAlias", "listBatchModels", "listBatchModelsAlias", "listDataModels", "listEndpoints", "listFiles", "listModels", "listOrganisations", "listPricingModels", "listProviders", "listTeamModels", "listVideoModels", "listVideoModelsAlias", "listVideos", "listVideosAlias", "listWorkspaces", "openAsyncJobWebSocket", "openResponsesWebSocket", "retrieveBatch", "retrieveBatchAlias", "retrieveFile", "retrieveFileContent", "updateApiKey", "updateWorkspace", "uploadFile"]

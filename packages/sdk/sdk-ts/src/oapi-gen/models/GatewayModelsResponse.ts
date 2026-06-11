@@ -152,6 +152,6 @@ export interface GatewayModelsResponse {
   }[];
   offset: number;
   ok: boolean;
-  privacy_scope: "shared";
+  privacy_scope: "shared" | "team";
   total: number;
 }
