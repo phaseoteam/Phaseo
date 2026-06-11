@@ -49,6 +49,10 @@ export type IRContentPart =
 		type: "video";
 		source: "url";
 		url: string;
+	}
+	| {
+		type: "provider_block";
+		block: Record<string, any>;
 	};
 
 // ============================================================================
@@ -730,7 +734,12 @@ export type IRUsage = {
 		serverToolUse?: {
 			datetime_requests?: number;
 			web_search_requests?: number;
+			web_search_results?: number;
+			web_search_extra_results?: number;
 			web_fetch_requests?: number;
+			advisor_requests?: number;
+			image_generation_requests?: number;
+			apply_patch_requests?: number;
 		};
 	};
 };

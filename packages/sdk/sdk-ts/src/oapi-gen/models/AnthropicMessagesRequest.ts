@@ -148,14 +148,66 @@ export interface AnthropicMessagesRequest {
           include_text?: boolean;
           max_results?: number;
         };
-        type: "gateway:web_search";
+        type: "ai-stats:web_search";
       }
     | {
         max_chars?: number;
         parameters?: {
           max_chars?: number;
         };
-        type: "gateway:web_fetch";
+        type: "ai-stats:web_fetch";
+      }
+    | {
+        forward_transcript?: boolean;
+        instructions?: string;
+        max_completion_tokens?: number;
+        max_tokens?: number;
+        max_uses?: number;
+        model?: string;
+        name?: string;
+        parameters?: {
+          forward_transcript?: boolean;
+          instructions?: string;
+          max_completion_tokens?: number;
+          max_tokens?: number;
+          max_uses?: number;
+          model?: string;
+          name?: string;
+          reasoning?: {
+            [key: string]: unknown;
+          };
+          temperature?: number;
+        };
+        reasoning?: {
+          [key: string]: unknown;
+        };
+        temperature?: number;
+        type: "ai-stats:advisor";
+      }
+    | {
+        aspect_ratio?: string;
+        background?: string;
+        description?: string;
+        model?: string;
+        moderation?: string;
+        output_compression?: number;
+        output_format?: string;
+        parameters?: {
+          aspect_ratio?: string;
+          background?: string;
+          description?: string;
+          model?: string;
+          moderation?: string;
+          output_compression?: number;
+          output_format?: string;
+          prompt?: string;
+          quality?: string;
+          size?: string;
+        };
+        prompt?: string;
+        quality?: string;
+        size?: string;
+        type: "ai-stats:image_generation";
       }[];
   top_k?: number;
   top_p?: number;

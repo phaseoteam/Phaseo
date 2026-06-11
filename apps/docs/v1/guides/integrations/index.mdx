@@ -1,39 +1,86 @@
 ---
-title: "Integrations Overview"
-description: "Connect the AI Stats Gateway to popular tools and runtimes."
+title: "Integrations"
+description: "Connect AI Stats to popular SDKs, frameworks, agents, and observability tools."
 ---
 
-Most tools can connect to the Gateway by pointing their base URL to the AI Stats API and using an AI Stats API key. The guides below cover common integration patterns and caveats.
+Most integrations work by pointing an OpenAI-compatible or Anthropic-compatible client at AI Stats and using an AI Stats API key. Start with the guide for the tool you already use.
 
-## General setup checklist
+## Base URLs
 
-- Use your AI Stats API key as a Bearer token.
-- Set the base URL to `https://api.phaseo.app/v1`.
-- Pass model ids exactly as listed in the [Models endpoint](../../api-reference/endpoint/models).
-- Use `/messages` for Anthropic-compatible clients and `/chat/completions` or `/responses` for OpenAI-compatible clients.
+| Client style | Base URL |
+| --- | --- |
+| OpenAI-compatible clients | `https://api.phaseo.app/v1` |
+| Anthropic-compatible clients | `https://api.phaseo.app` |
 
-## Integration guides
+Use model ids from the [Models endpoint](../../api-reference/endpoint/models.mdx). For new OpenAI-style apps, prefer [Responses](../../api-reference/endpoint/responses.mdx). For older libraries, [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) is usually the safest path.
+
+## SDKs and direct clients
 
 <Columns cols={2}>
-	<Card title="AI Stats CLI" icon="terminal-square" href="./aistats-cli">
-		Install the first-party CLI for browser OAuth, device code, keys, guardrails, and workspaces.
+	<Card title="OpenAI SDK" icon="code" href="./openai-sdk">
+		Use official OpenAI clients with the AI Stats base URL.
 	</Card>
-	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
-		Add AI Stats documentation to coding agents and assistants.
+	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk">
+		Use Anthropic-compatible clients through `/v1/messages`.
 	</Card>
 	<Card title="AI SDK" icon="bolt" href="./ai-sdk">
-		Use the AI SDK provider wrapper for AI Stats.
+		Use the first-party AI Stats provider for the Vercel AI SDK.
+	</Card>
+	<Card title="LiteLLM" icon="route" href="./litellm">
+		Route LiteLLM traffic through AI Stats or expose AI Stats behind a LiteLLM proxy.
+	</Card>
+</Columns>
+
+## App and agent frameworks
+
+<Columns cols={2}>
+	<Card title="LangChain" icon="link" href="./langchain">
+		Use LangChain Python with `ChatOpenAI` and the AI Stats base URL.
+	</Card>
+	<Card title="LlamaIndex" icon="database" href="./llamaindex">
+		Use AI Stats for RAG and indexing workflows.
+	</Card>
+	<Card title="PydanticAI" icon="braces" href="./pydanticai">
+		Build typed Python agents against AI Stats.
+	</Card>
+	<Card title="Mastra" icon="workflow" href="./mastra">
+		Use AI Stats inside Mastra agents and workflows.
+	</Card>
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai">
+		Connect TanStack AI's OpenAI-compatible adapter.
+	</Card>
+	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai">
+		Use AI Stats from Effect TypeScript applications.
+	</Card>
+</Columns>
+
+## Coding assistants and observability
+
+<Columns cols={2}>
+	<Card title="Coding Assistants" icon="terminal" href="./coding-assistants">
+		Add AI Stats as a model provider in Cursor, VS Code, Continue, Aider, Cline, Roo Code, Kilo Code, and related tools.
 	</Card>
 	<Card title="Claude Code" icon="terminal" href="./claude-code">
-		Route Claude-compatible workflows through the Gateway.
+		Route Claude-compatible coding workflows through AI Stats.
 	</Card>
 	<Card title="Codex" icon="code" href="./codex">
-		Connect coding agents to the Gateway.
+		Use AI Stats as a Codex provider.
 	</Card>
 	<Card title="OpenCode" icon="git-branch" href="./opencode">
 		Use OpenCode with AI Stats routing and analytics.
 	</Card>
-	<Card title="Examples" icon="play" href="../examples">
-		Ready-to-run request examples and payloads.
+	<Card title="Observability" icon="activity" href="./observability">
+		Send AI Stats traffic through Langfuse, LangSmith, OpenTelemetry, or similar tooling.
+	</Card>
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
+		Add live AI Stats documentation to coding agents and assistants.
 	</Card>
 </Columns>
+
+## Useful defaults
+
+- Set `AI_STATS_API_KEY` once and map it to the environment variable expected by the client.
+- Keep the model id unchanged, for example `openai/gpt-5-nano`.
+- Use `https://api.phaseo.app/v1` for OpenAI-compatible libraries unless the tool explicitly asks for the root host.
+- Use `https://api.phaseo.app` for Anthropic-compatible SDKs and tools that append `/v1/messages`.
+- Test streaming and tool calling in staging before moving agent traffic over.

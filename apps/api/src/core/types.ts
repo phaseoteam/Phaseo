@@ -238,8 +238,19 @@ export type GatewayUsage = {
     server_tool_use?: {
         datetime_requests?: number;
         web_search_requests?: number;
+        web_search_results?: number;
+        web_search_extra_results?: number;
         web_fetch_requests?: number;
+        advisor_requests?: number;
+        image_generation_requests?: number;
+        apply_patch_requests?: number;
     };
+    server_tool_web_search_requests?: number;
+    server_tool_web_search_extra_results?: number;
+    server_tool_web_fetch_requests?: number;
+    server_tool_advisor_requests?: number;
+    server_tool_image_generation_requests?: number;
+    server_tool_apply_patch_requests?: number;
 
 }
 

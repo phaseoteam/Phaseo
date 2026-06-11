@@ -771,15 +771,29 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 		typeof serverToolUseRaw?.web_search_requests === "number"
 			? serverToolUseRaw.web_search_requests
 			: undefined;
+	const webSearchResults =
+		typeof serverToolUseRaw?.web_search_results === "number"
+			? serverToolUseRaw.web_search_results
+			: undefined;
+	const webSearchExtraResults =
+		typeof serverToolUseRaw?.web_search_extra_results === "number"
+			? serverToolUseRaw.web_search_extra_results
+			: undefined;
 	const webFetchRequests =
 		typeof serverToolUseRaw?.web_fetch_requests === "number"
 			? serverToolUseRaw.web_fetch_requests
 			: undefined;
 	const serverToolUse =
-		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null
+		datetimeRequests != null ||
+		webSearchRequests != null ||
+		webSearchResults != null ||
+		webSearchExtraResults != null ||
+		webFetchRequests != null
 			? {
 				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+				...(webSearchResults != null ? { web_search_results: webSearchResults } : {}),
+				...(webSearchExtraResults != null ? { web_search_extra_results: webSearchExtraResults } : {}),
 				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
 			}
 			: undefined;

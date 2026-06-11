@@ -6,7 +6,7 @@ description: "Use the official TypeScript SDK with presets, managed web search, 
 Use this recipe when a TypeScript or JavaScript service should combine:
 
 - preset-driven routing defaults
-- managed `gateway:web_search`
+- managed `ai-stats:web_search`
 - strict response parsing
 - request-level metadata for debugging
 
@@ -46,7 +46,7 @@ const response = await gateway.generateResponse({
   input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
   tools: [
     {
-      type: "gateway:web_search",
+      type: "ai-stats:web_search",
       parameters: {
         query: "site:phaseo.app webhook delivery retries",
         max_results: 5,
@@ -54,7 +54,7 @@ const response = await gateway.generateResponse({
       },
     },
   ],
-  tool_choice: "gateway:web_search",
+  tool_choice: "ai-stats:web_search",
   response_format: {
     type: "json_schema",
     name: "research_brief",

@@ -506,9 +506,42 @@ struct FunctionToolDefinition {
 	std::any type;
 };
 
+struct GatewayAdvisorToolDefinition {
+	std::optional<bool> forward_transcript;
+	std::string instructions;
+	std::optional<int> max_completion_tokens;
+	std::optional<int> max_tokens;
+	std::optional<int> max_uses;
+	std::string model;
+	std::string name;
+	std::map<std::string, std::any> parameters;
+	std::map<std::string, std::any> reasoning;
+	std::optional<double> temperature;
+	std::any type;
+};
+
+struct GatewayApplyPatchToolDefinition {
+	std::any type;
+};
+
 struct GatewayDatetimeToolDefinition {
 	std::map<std::string, std::any> parameters;
 	std::string timezone;
+	std::any type;
+};
+
+struct GatewayImageGenerationToolDefinition {
+	std::string aspect_ratio;
+	std::string background;
+	std::string description;
+	std::string model;
+	std::string moderation;
+	std::optional<int> output_compression;
+	std::string output_format;
+	std::map<std::string, std::any> parameters;
+	std::string prompt;
+	std::string quality;
+	std::string size;
 	std::any type;
 };
 
@@ -1057,7 +1090,10 @@ struct ResponsesWebSocketUpgradeRequiredResponse {
 };
 
 struct ServerToolUsage {
+	std::optional<int> advisor_requests;
+	std::optional<int> apply_patch_requests;
 	std::optional<int> datetime_requests;
+	std::optional<int> image_generation_requests;
 	std::optional<int> web_fetch_requests;
 	std::optional<int> web_search_requests;
 };

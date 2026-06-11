@@ -506,9 +506,42 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class GatewayAdvisorToolDefinition {
+		public Boolean forward_transcript;
+		public String instructions;
+		public Integer max_completion_tokens;
+		public Integer max_tokens;
+		public Integer max_uses;
+		public String model;
+		public String name;
+		public Object parameters;
+		public Object reasoning;
+		public Double temperature;
+		public Object type;
+	}
+
+	public static class GatewayApplyPatchToolDefinition {
+		public Object type;
+	}
+
 	public static class GatewayDatetimeToolDefinition {
 		public Object parameters;
 		public String timezone;
+		public Object type;
+	}
+
+	public static class GatewayImageGenerationToolDefinition {
+		public String aspect_ratio;
+		public String background;
+		public String description;
+		public String model;
+		public String moderation;
+		public Integer output_compression;
+		public String output_format;
+		public Object parameters;
+		public String prompt;
+		public String quality;
+		public String size;
 		public Object type;
 	}
 
@@ -1064,7 +1097,10 @@ public final class Models {
 	}
 
 	public static class ServerToolUsage {
+		public Integer advisor_requests;
+		public Integer apply_patch_requests;
 		public Integer datetime_requests;
+		public Integer image_generation_requests;
 		public Integer web_fetch_requests;
 		public Integer web_search_requests;
 	}

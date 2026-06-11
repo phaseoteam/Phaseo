@@ -183,7 +183,10 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	if (
 		typeof serverToolUse?.datetime_requests === "number" ||
 		typeof serverToolUse?.web_search_requests === "number" ||
-		typeof serverToolUse?.web_fetch_requests === "number"
+		typeof serverToolUse?.web_search_results === "number" ||
+		typeof serverToolUse?.web_search_extra_results === "number" ||
+		typeof serverToolUse?.web_fetch_requests === "number" ||
+		typeof serverToolUse?.advisor_requests === "number"
 	) {
 		(result as any).server_tool_use = {
 			...(typeof serverToolUse?.datetime_requests === "number"
@@ -192,8 +195,17 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 			...(typeof serverToolUse?.web_search_requests === "number"
 				? { web_search_requests: serverToolUse.web_search_requests }
 				: {}),
+			...(typeof serverToolUse?.web_search_results === "number"
+				? { web_search_results: serverToolUse.web_search_results }
+				: {}),
+			...(typeof serverToolUse?.web_search_extra_results === "number"
+				? { web_search_extra_results: serverToolUse.web_search_extra_results }
+				: {}),
 			...(typeof serverToolUse?.web_fetch_requests === "number"
 				? { web_fetch_requests: serverToolUse.web_fetch_requests }
+				: {}),
+			...(typeof serverToolUse?.advisor_requests === "number"
+				? { advisor_requests: serverToolUse.advisor_requests }
 				: {}),
 		};
 	}

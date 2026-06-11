@@ -39,7 +39,12 @@ const LABEL_OVERRIDES: Record<string, { long: string; short: string }> = {
 	bfl_credits: { long: "BFL credits", short: "bfl credits" },
 	datetime_requests: { long: "Datetime tool requests", short: "datetime" },
 	web_search_requests: { long: "Web search requests", short: "web search" },
+	web_search_results: { long: "Web search results", short: "search results" },
+	web_search_extra_results: { long: "Web search extra results", short: "extra results" },
 	web_fetch_requests: { long: "Web fetch requests", short: "web fetch" },
+	advisor_requests: { long: "Advisor requests", short: "advisor" },
+	image_generation_requests: { long: "Image generation requests", short: "image generation" },
+	apply_patch_requests: { long: "Apply patch requests", short: "apply patch" },
 	requested_native_web_search_tools: {
 		long: "Requested native web search tools",
 		short: "search tools",
@@ -153,7 +158,12 @@ export function extractUsageMeters(usage: any): UsageMeter[] {
 		["output_videos", outputDetails?.output_videos],
 		["datetime_requests", serverToolUse?.datetime_requests],
 		["web_search_requests", serverToolUse?.web_search_requests],
+		["web_search_results", serverToolUse?.web_search_results],
+		["web_search_extra_results", serverToolUse?.web_search_extra_results],
 		["web_fetch_requests", serverToolUse?.web_fetch_requests],
+		["advisor_requests", serverToolUse?.advisor_requests],
+		["image_generation_requests", serverToolUse?.image_generation_requests],
+		["apply_patch_requests", serverToolUse?.apply_patch_requests],
 	];
 	for (const [key, rawValue] of detailMeters) {
 		const value = toNumber(rawValue);

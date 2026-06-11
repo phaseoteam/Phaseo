@@ -26,6 +26,7 @@ import {
 	buildSyntheticServerToolStream,
 	buildServerToolContinuation,
 	consumeTextProtocolStreamToIR,
+	ADVISOR_DEFAULT_INSTRUCTIONS,
 	mergeIRUsageTotals,
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
@@ -50,6 +51,9 @@ import {
 	buildManagedWebFetchObservabilityFromToolResults,
 	mergeWebFetchObservability,
 } from "../after/fetch-observability";
+import { fetchGatewayContext } from "../before/context";
+import { buildProviderCandidatesWithDiagnostics } from "../before/utils";
+import type { PipelineContext } from "../before/types";
 
 function createJsonErrorResponse(
 	status: number,
@@ -78,6 +82,353 @@ function createJsonErrorResponse(
 function cloneJsonValue<T>(value: T): T {
 	if (value === null || value === undefined) return value;
 	return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function extractAssistantText(response: IRChatResponse): string {
+	const first = Array.isArray(response.choices) ? response.choices[0] : null;
+	const parts = Array.isArray(first?.message?.content) ? first.message.content : [];
+	return parts
+		.filter((part) => part.type === "text")
+		.map((part) => part.text)
+		.join("")
+		.trim();
+}
+
+function extractAssistantImage(response: IRChatResponse): { imageUrl?: string; b64Json?: string; mimeType?: string } | null {
+	const first = Array.isArray(response.choices) ? response.choices[0] : null;
+	const parts = Array.isArray(first?.message?.content) ? first.message.content : [];
+	const image = parts.find((part) => part.type === "image");
+	if (!image || image.type !== "image") return null;
+	if (image.source === "url") {
+		return {
+			imageUrl: image.data,
+			mimeType: image.mimeType,
+		};
+	}
+	return {
+		b64Json: image.data,
+		mimeType: image.mimeType,
+	};
+}
+
+function formatAdvisorConversation(messages: IRChatRequest["messages"]): string {
+	return messages
+		.map((message) => {
+			if (message.role === "tool") {
+				return `tool: ${message.toolResults.map((result) => result.content).join("\n")}`;
+			}
+			const text = Array.isArray(message.content)
+				? message.content
+					.filter((part) => part.type === "text")
+					.map((part) => part.text)
+					.join("")
+				: "";
+			return `${message.role}: ${text}`;
+		})
+		.filter((entry) => entry.trim().length > 0)
+		.join("\n\n");
+}
+
+async function executeAdvisorModel(args: {
+	pre: PipelineRunnerArgs["pre"];
+	timing: any;
+	model: string;
+	prompt: string;
+	maxTokens: number;
+	instructions?: string;
+	forwardTranscript: boolean;
+	reasoning?: Record<string, unknown>;
+	temperature?: number;
+	messages: IRChatRequest["messages"];
+}): Promise<{ ok: true; content: string; usage?: IRChatResponse["usage"] } | { ok: false; message: string }> {
+	const apiKeyId = args.pre.ctx.keyId;
+	if (!apiKeyId) {
+		return { ok: false, message: "Advisor cannot resolve the current API key context." };
+	}
+	let advisorContext;
+	try {
+		advisorContext = await fetchGatewayContext({
+			workspaceId: args.pre.ctx.workspaceId,
+			model: args.model,
+			endpoint: "text.generate",
+			apiKeyId,
+			includeTestingMode: args.pre.ctx.testingMode,
+			disableCache: Boolean(args.pre.ctx.meta.debug?.enabled),
+		});
+	} catch (error) {
+		return {
+			ok: false,
+			message: error instanceof Error ? error.message : String(error),
+		};
+	}
+
+	const { candidates } = buildProviderCandidatesWithDiagnostics(advisorContext);
+	if (candidates.length === 0) {
+		return {
+			ok: false,
+			message: `No text.generate providers are available for advisor model ${args.model}.`,
+		};
+	}
+
+	const advisorInstructions = [
+		ADVISOR_DEFAULT_INSTRUCTIONS,
+		args.instructions,
+	].filter((part): part is string => typeof part === "string" && part.trim().length > 0).join("\n\n");
+	const advisorPrompt = args.forwardTranscript
+		? [
+			"Conversation:",
+			formatAdvisorConversation(args.messages) || "(no prior text conversation)",
+			"",
+			"Advisor request:",
+			args.prompt,
+		].join("\n")
+		: args.prompt;
+
+	const advisorIr: IRChatRequest = {
+		model: args.model,
+		stream: false,
+		maxTokens: args.maxTokens,
+		...(typeof args.temperature === "number" ? { temperature: args.temperature } : {}),
+		...(args.reasoning ? { reasoning: args.reasoning as any } : {}),
+		messages: [
+			{
+				role: "system",
+				content: [{ type: "text", text: advisorInstructions }],
+			},
+			{
+				role: "user",
+				content: [{ type: "text", text: advisorPrompt }],
+			},
+		],
+		tools: [],
+		toolChoice: "none",
+	};
+	const advisorCtx: PipelineContext = {
+		...args.pre.ctx,
+		requestId: `${args.pre.ctx.requestId}:advisor`,
+		model: advisorContext.resolvedModel ?? args.model,
+		requestedModel: args.model,
+		endpoint: "text.generate" as any,
+		capability: "text.generate",
+		protocol: "openai.chat",
+		rawBody: {
+			model: args.model,
+			messages: [
+				{ role: "system", content: advisorInstructions },
+				{ role: "user", content: advisorPrompt },
+			],
+			max_tokens: args.maxTokens,
+			...(typeof args.temperature === "number" ? { temperature: args.temperature } : {}),
+			...(args.reasoning ? { reasoning: args.reasoning } : {}),
+		},
+		body: {
+			model: args.model,
+			messages: [
+				{ role: "system", content: advisorInstructions },
+				{ role: "user", content: advisorPrompt },
+			],
+			max_tokens: args.maxTokens,
+			...(typeof args.temperature === "number" ? { temperature: args.temperature } : {}),
+			...(args.reasoning ? { reasoning: args.reasoning } : {}),
+		},
+		stream: false,
+		providers: candidates,
+		pricing: advisorContext.pricing,
+		gating: {
+			key: advisorContext.key,
+			keyLimit: advisorContext.keyLimit,
+			credit: advisorContext.credit,
+		},
+		preset: advisorContext.preset
+			? {
+				id: advisorContext.preset.id,
+				name: advisorContext.preset.name,
+				slug: advisorContext.preset.slug ?? null,
+				config: advisorContext.preset.config,
+			}
+			: null,
+		teamEnrichment: advisorContext.teamEnrichment ?? args.pre.ctx.teamEnrichment,
+		keyEnrichment: advisorContext.keyEnrichment ?? args.pre.ctx.keyEnrichment,
+		teamSettings: advisorContext.teamSettings ?? args.pre.ctx.teamSettings,
+		attemptErrors: [],
+		providerAttempts: [],
+		searchObservability: null,
+		webFetchObservability: null,
+		responseCache: null,
+	};
+
+	const executed = await doRequestWithIR(advisorCtx, advisorIr, args.timing);
+	if (executed instanceof Response) {
+		let message = `Advisor request failed with status ${executed.status}.`;
+		try {
+			const json = await executed.clone().json() as any;
+			message = typeof json?.message === "string"
+				? json.message
+				: typeof json?.error === "string"
+					? json.error
+					: message;
+		} catch {
+			// Keep status message.
+		}
+		return { ok: false, message };
+	}
+	if (executed.result.kind !== "completed" || !executed.result.ir) {
+		return { ok: false, message: "Advisor request returned an unsupported response kind." };
+	}
+	const advisorResponse = executed.result.ir as IRChatResponse;
+	return {
+		ok: true,
+		content: extractAssistantText(advisorResponse),
+		usage: advisorResponse.usage,
+	};
+}
+
+async function executeImageGenerationModel(args: {
+	pre: PipelineRunnerArgs["pre"];
+	timing: any;
+	model: string;
+	prompt: string;
+	quality?: string;
+	size?: string;
+	aspectRatio?: string;
+	background?: string;
+	outputFormat?: string;
+	outputCompression?: number;
+	moderation?: string;
+}): Promise<{ ok: true; imageUrl?: string; b64Json?: string; mimeType?: string; model: string; usage?: IRChatResponse["usage"] } | { ok: false; message: string }> {
+	const apiKeyId = args.pre.ctx.keyId;
+	if (!apiKeyId) {
+		return { ok: false, message: "Image generation cannot resolve the current API key context." };
+	}
+	let imageContext;
+	try {
+		imageContext = await fetchGatewayContext({
+			workspaceId: args.pre.ctx.workspaceId,
+			model: args.model,
+			endpoint: "text.generate",
+			apiKeyId,
+			includeTestingMode: args.pre.ctx.testingMode,
+			disableCache: Boolean(args.pre.ctx.meta.debug?.enabled),
+		});
+	} catch (error) {
+		return {
+			ok: false,
+			message: error instanceof Error ? error.message : String(error),
+		};
+	}
+
+	const { candidates } = buildProviderCandidatesWithDiagnostics(imageContext);
+	if (candidates.length === 0) {
+		return {
+			ok: false,
+			message: `No text.generate providers are available for image generation model ${args.model}.`,
+		};
+	}
+
+	const imageConfig = {
+		...(args.aspectRatio ? { aspectRatio: args.aspectRatio } : {}),
+		...(args.size ? { imageSize: args.size as any } : {}),
+	};
+	const providerOptions = {
+		...(args.quality ? { quality: args.quality } : {}),
+		...(args.background ? { background: args.background } : {}),
+		...(args.outputFormat ? { output_format: args.outputFormat } : {}),
+		...(typeof args.outputCompression === "number" ? { output_compression: args.outputCompression } : {}),
+		...(args.moderation ? { moderation: args.moderation } : {}),
+	};
+	const imageIr: IRChatRequest = {
+		model: args.model,
+		stream: false,
+		modalities: ["text", "image"],
+		...(Object.keys(imageConfig).length > 0 ? { imageConfig } : {}),
+		messages: [
+			{
+				role: "user",
+				content: [{ type: "text", text: args.prompt }],
+			},
+		],
+		tools: [],
+		toolChoice: "none",
+	};
+	const rawBody = {
+		model: args.model,
+		messages: [{ role: "user", content: args.prompt }],
+		modalities: ["text", "image"],
+		...(args.aspectRatio || args.size
+			? {
+				image_config: {
+					...(args.aspectRatio ? { aspect_ratio: args.aspectRatio } : {}),
+					...(args.size ? { image_size: args.size, size: args.size } : {}),
+				},
+			}
+			: {}),
+		...(Object.keys(providerOptions).length > 0 ? providerOptions : {}),
+	};
+	const imageCtx: PipelineContext = {
+		...args.pre.ctx,
+		requestId: `${args.pre.ctx.requestId}:image_generation`,
+		model: imageContext.resolvedModel ?? args.model,
+		requestedModel: args.model,
+		endpoint: "text.generate" as any,
+		capability: "text.generate",
+		protocol: "openai.chat",
+		rawBody,
+		body: rawBody,
+		stream: false,
+		providers: candidates,
+		pricing: imageContext.pricing,
+		gating: {
+			key: imageContext.key,
+			keyLimit: imageContext.keyLimit,
+			credit: imageContext.credit,
+		},
+		preset: imageContext.preset
+			? {
+				id: imageContext.preset.id,
+				name: imageContext.preset.name,
+				slug: imageContext.preset.slug ?? null,
+				config: imageContext.preset.config,
+			}
+			: null,
+		teamEnrichment: imageContext.teamEnrichment ?? args.pre.ctx.teamEnrichment,
+		keyEnrichment: imageContext.keyEnrichment ?? args.pre.ctx.keyEnrichment,
+		teamSettings: imageContext.teamSettings ?? args.pre.ctx.teamSettings,
+		attemptErrors: [],
+		providerAttempts: [],
+		searchObservability: null,
+		webFetchObservability: null,
+		responseCache: null,
+	};
+
+	const executed = await doRequestWithIR(imageCtx, imageIr, args.timing);
+	if (executed instanceof Response) {
+		let message = `Image generation request failed with status ${executed.status}.`;
+		try {
+			const json = await executed.clone().json() as any;
+			message = typeof json?.message === "string"
+				? json.message
+				: typeof json?.error === "string"
+					? json.error
+					: message;
+		} catch {
+			// Keep status message.
+		}
+		return { ok: false, message };
+	}
+	if (executed.result.kind !== "completed" || !executed.result.ir) {
+		return { ok: false, message: "Image generation request returned an unsupported response kind." };
+	}
+	const imageResponse = executed.result.ir as IRChatResponse;
+	const image = extractAssistantImage(imageResponse);
+	if (!image) {
+		return { ok: false, message: "Image generation response did not include an image." };
+	}
+	return {
+		ok: true,
+		...image,
+		model: imageContext.resolvedModel ?? args.model,
+		usage: imageResponse.usage,
+	};
 }
 
 async function handleCachedTextResponse(args: {
@@ -440,7 +791,12 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			const serverToolUsage = {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
 				webFetchRequests: 0,
+				advisorRequests: 0,
+				imageGenerationRequests: 0,
+				applyPatchRequests: 0,
 			};
 			let aggregateUsage = (exec.result.ir as IRChatResponse).usage;
 			let latestIrResponse = exec.result.ir as IRChatResponse;
@@ -452,6 +808,35 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
+					{
+						executeAdvisor: async (advisorArgs) =>
+							executeAdvisorModel({
+								pre,
+								timing,
+								model: advisorArgs.model,
+								prompt: advisorArgs.prompt,
+								maxTokens: advisorArgs.maxTokens,
+								instructions: advisorArgs.instructions,
+								forwardTranscript: advisorArgs.forwardTranscript,
+								reasoning: advisorArgs.reasoning,
+								temperature: advisorArgs.temperature,
+								messages: nextIrRequest.messages,
+							}),
+						executeImageGeneration: async (imageArgs) =>
+							executeImageGenerationModel({
+								pre,
+								timing,
+								model: imageArgs.model,
+								prompt: imageArgs.prompt,
+								quality: imageArgs.quality,
+								size: imageArgs.size,
+								aspectRatio: imageArgs.aspectRatio,
+								background: imageArgs.background,
+								outputFormat: imageArgs.outputFormat,
+								outputCompression: imageArgs.outputCompression,
+								moderation: imageArgs.moderation,
+							}),
+					},
 				);
 				if (!continuation) break;
 				if (serverToolRounds >= maxServerToolRounds) {
@@ -473,9 +858,20 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 					});
 				}
 				serverToolRounds += 1;
-				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests;
-				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests;
-				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests;
+				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests ?? 0;
+				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests ?? 0;
+				serverToolUsage.webSearchResults += continuation.usage.webSearchResults ?? 0;
+				serverToolUsage.webSearchExtraResults += continuation.usage.webSearchExtraResults ?? 0;
+				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests ?? 0;
+				serverToolUsage.advisorRequests += continuation.usage.advisorRequests ?? 0;
+				serverToolUsage.imageGenerationRequests += continuation.usage.imageGenerationRequests ?? 0;
+				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests ?? 0;
+				if (continuation.advisorUsage) {
+					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
+				}
+				if (continuation.imageGenerationUsage) {
+					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.imageGenerationUsage);
+				}
 				searchObservability = mergeSearchObservability(
 					searchObservability,
 					buildManagedSearchObservabilityFromToolResults(continuation.toolResults),
@@ -576,7 +972,12 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 			if (
 				serverToolUsage.datetimeRequests > 0 ||
 				serverToolUsage.webSearchRequests > 0 ||
-				serverToolUsage.webFetchRequests > 0
+				serverToolUsage.webSearchResults > 0 ||
+				serverToolUsage.webSearchExtraResults > 0 ||
+				serverToolUsage.webFetchRequests > 0 ||
+				serverToolUsage.advisorRequests > 0 ||
+				serverToolUsage.imageGenerationRequests > 0 ||
+				serverToolUsage.applyPatchRequests > 0
 			) {
 				const mergedUsage = attachServerToolUsage(aggregateUsage, {
 					...serverToolUsage,

@@ -23,7 +23,10 @@ function buildServerToolUsePayload(
 		| {
 			datetime_requests?: number;
 			web_search_requests?: number;
+			web_search_results?: number;
+			web_search_extra_results?: number;
 			web_fetch_requests?: number;
+			advisor_requests?: number;
 		}
 		| undefined,
 ) {
@@ -35,8 +38,17 @@ function buildServerToolUsePayload(
 		...(typeof serverToolUse.web_search_requests === "number"
 			? { web_search_requests: serverToolUse.web_search_requests }
 			: {}),
+		...(typeof serverToolUse.web_search_results === "number"
+			? { web_search_results: serverToolUse.web_search_results }
+			: {}),
+		...(typeof serverToolUse.web_search_extra_results === "number"
+			? { web_search_extra_results: serverToolUse.web_search_extra_results }
+			: {}),
 		...(typeof serverToolUse.web_fetch_requests === "number"
 			? { web_fetch_requests: serverToolUse.web_fetch_requests }
+			: {}),
+		...(typeof serverToolUse.advisor_requests === "number"
+			? { advisor_requests: serverToolUse.advisor_requests }
 			: {}),
 	};
 	return Object.keys(payload).length > 0 ? payload : undefined;

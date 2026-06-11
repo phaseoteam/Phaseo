@@ -368,14 +368,33 @@ function usageRawToIR(usageRaw: any): IRUsage | undefined {
 	const webSearchRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.web_search_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.web_search_requests);
+	const webSearchResults =
+		parseUsageNumber(usageRaw.server_tool_use?.web_search_results) ??
+		parseUsageNumber(usageRaw.serverToolUse?.web_search_results);
+	const webSearchExtraResults =
+		parseUsageNumber(usageRaw.server_tool_use?.web_search_extra_results) ??
+		parseUsageNumber(usageRaw.serverToolUse?.web_search_extra_results);
 	const webFetchRequests =
 		parseUsageNumber(usageRaw.server_tool_use?.web_fetch_requests) ??
 		parseUsageNumber(usageRaw.serverToolUse?.web_fetch_requests);
-	if (datetimeRequests != null || webSearchRequests != null || webFetchRequests != null) {
+	const advisorRequests =
+		parseUsageNumber(usageRaw.server_tool_use?.advisor_requests) ??
+		parseUsageNumber(usageRaw.serverToolUse?.advisor_requests);
+	if (
+		datetimeRequests != null ||
+		webSearchRequests != null ||
+		webSearchResults != null ||
+		webSearchExtraResults != null ||
+		webFetchRequests != null ||
+		advisorRequests != null
+	) {
 		ext.serverToolUse = {
 			...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 			...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+			...(webSearchResults != null ? { web_search_results: webSearchResults } : {}),
+			...(webSearchExtraResults != null ? { web_search_extra_results: webSearchExtraResults } : {}),
 			...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+			...(advisorRequests != null ? { advisor_requests: advisorRequests } : {}),
 		};
 	}
 

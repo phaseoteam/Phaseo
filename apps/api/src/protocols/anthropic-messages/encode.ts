@@ -52,7 +52,8 @@ export type AnthropicResponseContent =
 		};
 	}
 	| { type: "thinking"; thinking: string; signature: string }
-	| { type: "tool_use"; id: string; name: string; input: Record<string, any> };
+	| { type: "tool_use"; id: string; name: string; input: Record<string, any> }
+	| Record<string, any>;
 
 /**
  * Encode IR response to Anthropic Messages format
@@ -85,7 +86,7 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 	}
 
 	const hasToolCalls = (mainChoice.message.toolCalls?.length ?? 0) > 0;
-	const { text, reasoningParts, imageParts } = splitContentParts(mainChoice.message.content as IRContentPart[]);
+	const { text, reasoningParts, imageParts, providerBlocks } = splitContentParts(mainChoice.message.content as IRContentPart[]);
 	const contentText = mainChoice.message.refusal ?? text;
 
 	if (typeof contentText === "string") {
@@ -125,6 +126,12 @@ export function encodeAnthropicMessagesResponse(ir: IRChatResponse): AnthropicMe
 					url: imagePart.data,
 				},
 			});
+		}
+	}
+
+	if (providerBlocks.length > 0) {
+		for (const block of providerBlocks) {
+			content.push(block);
 		}
 	}
 
@@ -210,7 +217,10 @@ function encodeUsage(
 		server_tool_use:
 			typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number" ||
 			typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number" ||
-			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
+			typeof anyUsage?._ext?.serverToolUse?.web_search_results === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.web_search_extra_results === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number" ||
+			typeof anyUsage?._ext?.serverToolUse?.advisor_requests === "number"
 				? {
 					...(typeof anyUsage?._ext?.serverToolUse?.datetime_requests === "number"
 						? { datetime_requests: anyUsage._ext.serverToolUse.datetime_requests }
@@ -218,11 +228,20 @@ function encodeUsage(
 					...(typeof anyUsage?._ext?.serverToolUse?.web_search_requests === "number"
 						? { web_search_requests: anyUsage._ext.serverToolUse.web_search_requests }
 						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.web_search_results === "number"
+						? { web_search_results: anyUsage._ext.serverToolUse.web_search_results }
+						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.web_search_extra_results === "number"
+						? { web_search_extra_results: anyUsage._ext.serverToolUse.web_search_extra_results }
+						: {}),
 					...(typeof anyUsage?._ext?.serverToolUse?.web_fetch_requests === "number"
 						? { web_fetch_requests: anyUsage._ext.serverToolUse.web_fetch_requests }
 						: {}),
+					...(typeof anyUsage?._ext?.serverToolUse?.advisor_requests === "number"
+						? { advisor_requests: anyUsage._ext.serverToolUse.advisor_requests }
+						: {}),
 				}
-				: null,
+			: null,
 		service_tier: tier,
 	};
 }
@@ -242,8 +261,9 @@ function splitContentParts(
 	text: string;
 	reasoningParts: Array<{ text: string; signature?: string }>;
 	imageParts: Array<Extract<IRContentPart, { type: "image" }>>;
+	providerBlocks: Array<Record<string, any>>;
 } {
-	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [] };
+	if (!Array.isArray(parts)) return { text: "", reasoningParts: [], imageParts: [], providerBlocks: [] };
 	const text = parts
 		.filter((part) => part.type === "text")
 		.map((part) => part.text)
@@ -257,6 +277,9 @@ function splitContentParts(
 	const imageParts = parts.filter((part) => part.type === "image") as Array<
 		Extract<IRContentPart, { type: "image" }>
 	>;
-	return { text, reasoningParts, imageParts };
+	const providerBlocks = parts
+		.filter((part) => part.type === "provider_block")
+		.map((part) => part.block);
+	return { text, reasoningParts, imageParts, providerBlocks };
 }
 

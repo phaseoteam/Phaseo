@@ -471,6 +471,81 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.toolChoice).toEqual({ name: "web_search" });
 	});
 
+	it("should preserve native anthropic advisor tools and blocks", () => {
+		const request = {
+			model: "claude-sonnet-4.6",
+			max_tokens: 1024,
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						{
+							type: "server_tool_use",
+							id: "srvu_123",
+							name: "advisor",
+							input: {},
+						},
+						{
+							type: "advisor_tool_result",
+							tool_use_id: "srvu_123",
+							content: [{ type: "text", text: "Use the smaller migration." }],
+						},
+					],
+				},
+				{ role: "user", content: "Continue" },
+			],
+			tools: [
+				{
+					type: "advisor_20260301",
+					name: "advisor",
+					model: "claude-opus-4-8",
+					max_tokens: 1400,
+				},
+			],
+			tool_choice: { type: "tool", name: "advisor" },
+		};
+
+		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
+
+		expect(ir.tools).toEqual([
+			{
+				name: "advisor",
+				type: "advisor_20260301",
+				description: undefined,
+				parameters: {},
+				raw: {
+					type: "advisor_20260301",
+					name: "advisor",
+					model: "claude-opus-4-8",
+					max_tokens: 1400,
+				},
+			},
+		]);
+		expect(ir.messages[0]).toMatchObject({
+			role: "assistant",
+			content: [
+				{
+					type: "provider_block",
+					block: {
+						type: "server_tool_use",
+						id: "srvu_123",
+						name: "advisor",
+						input: {},
+					},
+				},
+				{
+					type: "provider_block",
+					block: {
+						type: "advisor_tool_result",
+						tool_use_id: "srvu_123",
+						content: [{ type: "text", text: "Use the smaller migration." }],
+					},
+				},
+			],
+		});
+		expect(ir.toolChoice).toEqual({ name: "advisor" });
+	});
+
 	it("should decode image_config and filter invalid font inputs", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",

@@ -15,12 +15,24 @@ import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
+import { isIRNativeToolDefinition } from "@core/nativeTools";
 
 const ANTHROPIC_FAST_MODE_BETA = "fast-mode-2026-02-01";
+const ANTHROPIC_ADVISOR_BETA = "advisor-tool-2026-03-01";
 
 function anthropicBaseUrl(): string {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	return String(bindings.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "");
+}
+
+function usesAnthropicNativeWebFetch(requestBody: any): boolean {
+	return Array.isArray(requestBody?.tools) &&
+		requestBody.tools.some((tool: any) => tool?.type === "web_fetch_20260209");
+}
+
+function usesAnthropicNativeAdvisor(requestBody: any): boolean {
+	return Array.isArray(requestBody?.tools) &&
+		requestBody.tools.some((tool: any) => tool?.type === "advisor_20260301");
 }
 
 /**
@@ -60,7 +72,11 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		};
 		const requestPayloadJson = JSON.stringify(requestBody);
 		const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest) ? requestPayloadJson : undefined;
-		const anthropicBeta = requestBody.speed === "fast" ? ANTHROPIC_FAST_MODE_BETA : undefined;
+	const anthropicBetas = [
+		requestBody.speed === "fast" ? ANTHROPIC_FAST_MODE_BETA : null,
+		usesAnthropicNativeWebFetch(requestBody) ? "web-fetch-2026-02-09" : null,
+		usesAnthropicNativeAdvisor(requestBody) ? ANTHROPIC_ADVISOR_BETA : null,
+	].filter((entry): entry is string => Boolean(entry));
 
 		// Execute upstream call
 		const res = await fetch(`${anthropicBaseUrl()}/v1/messages`, {
@@ -69,7 +85,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 				"x-api-key": keyInfo.key,
 				"Content-Type": "application/json",
 				"anthropic-version": "2023-06-01",
-				...(anthropicBeta ? { "anthropic-beta": anthropicBeta } : {}),
+				...(anthropicBetas.length > 0 ? { "anthropic-beta": anthropicBetas.join(",") } : {}),
 				...upstreamTestHeaders(args.meta),
 			},
 			body: requestPayloadJson,
@@ -390,10 +406,13 @@ export function irToAnthropicMessages(
 		} else if (msg.role === "assistant") {
 			const content: any[] = [];
 
-			// Add text content
 			for (const part of msg.content) {
 				if (part.type === "text") {
 					content.push({ type: "text", text: part.text });
+					continue;
+				}
+				if (part.type === "provider_block") {
+					content.push(part.block);
 				}
 			}
 
@@ -444,11 +463,20 @@ export function irToAnthropicMessages(
 
 	// Add tools
 	if (ir.tools && ir.tools.length > 0) {
-		request.tools = ir.tools.map((t) => ({
-			name: t.name,
-			description: t.description,
-			input_schema: t.parameters,
-		}));
+		request.tools = ir.tools.map((t) => {
+			if (isIRNativeToolDefinition(t)) {
+				return {
+					...(t.raw ?? {}),
+					type: t.type,
+					name: t.name,
+				};
+			}
+			return {
+				name: t.name,
+				description: t.description,
+				input_schema: t.parameters,
+			};
+		});
 	}
 
 	if (ir.toolChoice) {
@@ -691,6 +719,10 @@ function mapIRContentToAnthropic(part: any): any {
 		}
 	}
 
+	if (part.type === "provider_block") {
+		return part.block;
+	}
+
 	// Fallback
 	return { type: "text", text: String(part) };
 }
@@ -719,6 +751,8 @@ export function anthropicMessagesToIR(
 				name: block.name,
 				arguments: JSON.stringify(block.input),
 			});
+		} else if (block.type === "server_tool_use" || block.type === "advisor_tool_result") {
+			textParts.push("");
 		}
 	}
 
@@ -736,7 +770,16 @@ export function anthropicMessagesToIR(
 		index: 0,
 		message: {
 			role: "assistant",
-			content: textParts.map((text) => ({ type: "text", text })),
+			content: [
+				...textParts
+					.filter((text) => text.length > 0)
+					.map((text) => ({ type: "text" as const, text })),
+				...(Array.isArray(json.content)
+					? json.content
+						.filter((block: any) => block?.type === "server_tool_use" || block?.type === "advisor_tool_result")
+						.map((block: any) => ({ type: "provider_block" as const, block }))
+					: []),
+			],
 			toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 		},
 		finishReason,
