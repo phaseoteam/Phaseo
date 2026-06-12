@@ -140,7 +140,12 @@ const PROVIDER_STATUS_META: Record<
 };
 
 type BadgeKind = "added" | "removed";
-type DisplayRowKind = "benchmark" | "description" | "pricing" | "status";
+type DisplayRowKind =
+	| "benchmark"
+	| "description"
+	| "link"
+	| "pricing"
+	| "status";
 type ChangeFilter = "all" | DisplayRowKind;
 
 const CHANGE_FILTER_OPTIONS: Array<{ label: string; value: ChangeFilter }> = [
@@ -148,6 +153,7 @@ const CHANGE_FILTER_OPTIONS: Array<{ label: string; value: ChangeFilter }> = [
 	{ label: "Status", value: "status" },
 	{ label: "Pricing", value: "pricing" },
 	{ label: "Description", value: "description" },
+	{ label: "Links", value: "link" },
 	{ label: "Benchmark results", value: "benchmark" },
 ];
 
@@ -364,6 +370,24 @@ function formatGenericValue(value: unknown): string {
 	return String(value);
 }
 
+function isDateOnlyMonitorField(field: string) {
+	return field === "deprecation_date" || field === "retirement_date";
+}
+
+function formatMonitorDateValue(value: unknown): string {
+	if (value == null) return "None";
+	const text = String(value).trim();
+	if (!text) return "None";
+	const parsed = new Date(text);
+	if (Number.isNaN(parsed.getTime())) return text;
+	return new Intl.DateTimeFormat("en-US", {
+		day: "numeric",
+		month: "short",
+		timeZone: "UTC",
+		year: "numeric",
+	}).format(parsed);
+}
+
 function normalizeProviderStatusValue(value: unknown): string {
 	const normalized = String(value ?? "")
 		.trim()
@@ -460,7 +484,10 @@ function isTrackedChange(change: ChangeHistory) {
 	if (change.entityType === "model" && !change.field) return true;
 	if (change.field === "description") return true;
 	if (change.field === "status") return true;
+	if (change.field === "deprecation_date") return true;
+	if (change.field === "retirement_date") return true;
 	if (change.field.startsWith("benchmarks.")) return true;
+	if (change.field.startsWith("links.")) return true;
 	if (change.field.startsWith("pricing.")) return true;
 	return false;
 }
@@ -753,9 +780,22 @@ function getPricingLabelParts(field: string): { label: string; labelDetail?: str
 
 function getRowKind(change: ChangeHistory): DisplayRowKind {
 	if (change.field === "description") return "description";
-	if (change.field === "status" || !change.field) return "status";
+	if (
+		change.field === "status" ||
+		change.field === "deprecation_date" ||
+		change.field === "retirement_date" ||
+		!change.field
+	)
+		return "status";
 	if (change.field.startsWith("benchmarks.")) return "benchmark";
+	if (change.field.startsWith("links.")) return "link";
 	return "pricing";
+}
+
+function getLinkLabel(field: string) {
+	const match = field.match(/^links\.([^.[]+)(?:\[[^\]]+\])?\.url$/);
+	const platform = match?.[1] ?? "";
+	return { label: `${humanizeSlug(platform || "link")} link` };
 }
 
 function getRowLabel(change: ChangeHistory) {
@@ -773,9 +813,12 @@ function getRowLabel(change: ChangeHistory) {
 	}
 	if (change.field === "description") return { label: "Description" };
 	if (change.field === "status") return { label: "Status" };
+	if (change.field === "deprecation_date") return { label: "Deprecation date" };
+	if (change.field === "retirement_date") return { label: "Retirement date" };
 	if (change.field.startsWith("benchmarks.")) {
 		return { label: getBenchmarkLabel(change.field) };
 	}
+	if (change.field.startsWith("links.")) return getLinkLabel(change.field);
 	if (change.field.startsWith("pricing.")) return getPricingLabelParts(change.field);
 	return { label: humanizeSlug(change.field || "change") };
 }
@@ -833,9 +876,10 @@ function shouldHideRowForCard(card: MonitorCard, row: DisplayRow) {
 function getRowWeight(row: DisplayRow) {
 	if (row.kind === "status") return 0;
 	if (row.kind === "pricing") return 1;
-	if (row.kind === "description") return 2;
-	if (row.kind === "benchmark") return 3;
-	return 4;
+	if (row.kind === "link") return 2;
+	if (row.kind === "description") return 3;
+	if (row.kind === "benchmark") return 4;
+	return 5;
 }
 
 function getStatusRowPriority(row: DisplayRow) {
@@ -1083,7 +1127,9 @@ function renderValueTransition(row: DisplayRow) {
 	const formatValue =
 		row.kind === "pricing"
 			? formatPriceValue
-			: formatGenericValue;
+			: isDateOnlyMonitorField(row.field)
+				? formatMonitorDateValue
+				: formatGenericValue;
 	if (row.oldValue == null && row.newValue != null) {
 		return (
 			<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
