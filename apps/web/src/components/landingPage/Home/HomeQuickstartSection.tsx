@@ -736,7 +736,7 @@ function BetaDatabaseVisual() {
 						</div>
 					}
 				/>
-				<div className="grid grid-cols-[0.9fr_1fr_1.2fr] gap-4">
+				<div className="grid grid-cols-2 gap-4 xl:grid-cols-[0.9fr_1fr_1.2fr]">
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
 							Latency
@@ -759,7 +759,7 @@ function BetaDatabaseVisual() {
 							</span>
 						</p>
 					</div>
-					<div className="text-right">
+					<div className="hidden text-right xl:block">
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
 							Pricing
 						</span>
@@ -850,7 +850,7 @@ export default function HomeQuickstartSection({
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className={`grid grid-cols-1 gap-5 ${variant === "beta" ? "md:grid-cols-3" : "md:grid-cols-2 xl:grid-cols-4"}`}>
+			<div className={`grid grid-cols-1 gap-5 ${variant === "beta" ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2 xl:grid-cols-4"}`}>
 				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}
