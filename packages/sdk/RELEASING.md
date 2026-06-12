@@ -74,7 +74,7 @@ General policy:
 ## Manual Publish Workflows (Other SDKs)
 
 - First npm publish / bootstrap: `.github/workflows/npm-bootstrap-publish.yml`
-  - Supports `@ai-stats/agent-sdk`, `@ai-stats/ai-sdk-provider`, and `@ai-stats/devtools-viewer`
+  - Supports `@ai-stats/agent-sdk`, `@ai-stats/cli`, `@ai-stats/ai-sdk-provider`, and `@ai-stats/devtools-viewer`
   - Uses pnpm trusted publishing so workspace dependencies are rewritten to registry versions in the published tarball
 
 - Go: `.github/workflows/publish-sdk-go.yml`
