@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AgentDefinition, AgentRunResult, AgentStepRecord } from "./types";
+import type { AgentDefinition, AgentRunResult, AgentStepRecord } from "./types.js";
 
 export type AgentDevtoolsConfig = {
 	enabled?: boolean;
@@ -41,7 +41,7 @@ type AgentDevtoolsEntry = {
 	};
 };
 
-const AGENT_SDK_VERSION = "0.1.0";
+const AGENT_SDK_VERSION = "0.1.1";
 const DEFAULT_DEVTOOLS_DIR = ".ai-stats-devtools";
 
 export function createAgentDevtools(

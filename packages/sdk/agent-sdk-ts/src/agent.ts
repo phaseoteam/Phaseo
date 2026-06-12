@@ -1,13 +1,13 @@
 import {
 	continueAgent,
 	runAgent,
-} from "./runtime/loop";
+} from "./runtime/loop.js";
 import type {
 	AgentContinueOptions,
 	AgentDefinition,
 	AgentRunOptions,
 	AgentTool,
-} from "./types";
+} from "./types.js";
 
 export function defineTool<TInput = unknown, TOutput = unknown, TContext = unknown>(
 	tool: AgentTool<TInput, TOutput, TContext>,

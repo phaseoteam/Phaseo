@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { captureAgentRunDevtools } from "../devtools";
-import { AgentGatewayError, toAgentGatewayErrorDetails } from "../errors";
+import { captureAgentRunDevtools } from "../devtools.js";
+import { AgentGatewayError, toAgentGatewayErrorDetails } from "../errors.js";
 import type {
 	AgentContinueOptions,
 	AgentDefinition,
@@ -18,7 +18,7 @@ import type {
 	AgentTool,
 	AgentToolCall,
 	AgentToolExecutionConfig,
-} from "../types";
+} from "../types.js";
 
 type AgentRunLease = {
 	owner: string;
