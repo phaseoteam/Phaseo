@@ -1551,6 +1551,7 @@ const (
 	KnownModelIdMoonshotaiKimiK25 KnownModelId = "moonshotai/kimi-k2.5"
 	KnownModelIdMoonshotaiKimiK25Lightning KnownModelId = "moonshotai/kimi-k2.5-lightning"
 	KnownModelIdMoonshotaiKimiK26 KnownModelId = "moonshotai/kimi-k2.6"
+	KnownModelIdMoonshotaiKimiK27Code KnownModelId = "moonshotai/kimi-k2.7-code"
 	KnownModelIdMoonshotaiMoonshotV1128k KnownModelId = "moonshotai/moonshot-v1-128k"
 	KnownModelIdMoonshotaiMoonshotV1128kVisionPreview KnownModelId = "moonshotai/moonshot-v1-128k-vision-preview"
 	KnownModelIdMoonshotaiMoonshotV132k KnownModelId = "moonshotai/moonshot-v1-32k"
