@@ -7,6 +7,7 @@ import {
 	AlertTriangle,
 	ArrowRight,
 	Ban,
+	CircleHelp,
 	Check,
 	CheckCircle2,
 	ChevronsUpDown,
@@ -378,7 +379,10 @@ function formatMonitorDateValue(value: unknown): string {
 	if (value == null) return "None";
 	const text = String(value).trim();
 	if (!text) return "None";
-	const parsed = new Date(text);
+	const normalizedText = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(text)
+		? `${text}Z`
+		: text;
+	const parsed = new Date(normalizedText);
 	if (Number.isNaN(parsed.getTime())) return text;
 	return new Intl.DateTimeFormat("en-US", {
 		day: "numeric",
@@ -386,6 +390,30 @@ function formatMonitorDateValue(value: unknown): string {
 		timeZone: "UTC",
 		year: "numeric",
 	}).format(parsed);
+}
+
+function renderMonitorLinkValue(
+	value: unknown,
+	variant: "current" | "previous" = "current",
+) {
+	if (value == null) return null;
+	const href = String(value).trim();
+	if (!href) return null;
+	return (
+		<a
+			href={href}
+			target="_blank"
+			rel="noreferrer"
+			className={[
+				"min-w-0 break-all transition-colors hover:text-zinc-700 hover:underline dark:hover:text-zinc-200",
+				variant === "previous"
+					? "text-zinc-500 line-through decoration-zinc-400/80 dark:text-zinc-500 dark:decoration-zinc-600/80"
+					: "font-medium text-zinc-950 dark:text-zinc-50",
+			].join(" ")}
+		>
+			{href}
+		</a>
+	);
 }
 
 function normalizeProviderStatusValue(value: unknown): string {
@@ -653,9 +681,16 @@ function getProviderLogoId(value: string | null | undefined) {
 	return raw;
 }
 
-function getBenchmarkLabel(field: string) {
+function getBenchmarkLabelParts(field: string) {
 	const benchmarkId = field.replace(/^benchmarks\./, "").replace(/\.score$/, "");
-	return humanizeSlug(benchmarkId);
+	const match = benchmarkId.match(/^(.*?)(\[[^\]]+\])$/);
+	const baseId = match?.[1] ?? benchmarkId;
+	const detail = match?.[2]?.slice(1, -1).trim() || undefined;
+
+	return {
+		label: humanizeSlug(baseId),
+		labelDetail: detail,
+	};
 }
 
 function formatPricingConditionLabel(encodedCondition: string) {
@@ -778,6 +813,26 @@ function getPricingLabelParts(field: string): { label: string; labelDetail?: str
 		: { label };
 }
 
+function getPricingPlan(field: string) {
+	return parsePricingField(field)?.plan ?? "default";
+}
+
+function getPricingPlanLabel(plan: string) {
+	return plan === "default" ? "Default" : humanizeSlug(plan);
+}
+
+function getPricingPlansForRows(rows: DisplayRow[]) {
+	const plans = Array.from(
+		new Set(rows.filter((row) => row.kind === "pricing").map((row) => getPricingPlan(row.field))),
+	);
+
+	return plans.sort((a, b) => {
+		const planDiff = (PLAN_ORDER[a] ?? 99) - (PLAN_ORDER[b] ?? 99);
+		if (planDiff !== 0) return planDiff;
+		return getPricingPlanLabel(a).localeCompare(getPricingPlanLabel(b));
+	});
+}
+
 function getRowKind(change: ChangeHistory): DisplayRowKind {
 	if (change.field === "description") return "description";
 	if (
@@ -816,7 +871,7 @@ function getRowLabel(change: ChangeHistory) {
 	if (change.field === "deprecation_date") return { label: "Deprecation date" };
 	if (change.field === "retirement_date") return { label: "Retirement date" };
 	if (change.field.startsWith("benchmarks.")) {
-		return { label: getBenchmarkLabel(change.field) };
+		return getBenchmarkLabelParts(change.field);
 	}
 	if (change.field.startsWith("links.")) return getLinkLabel(change.field);
 	if (change.field.startsWith("pricing.")) return getPricingLabelParts(change.field);
@@ -1124,6 +1179,32 @@ function renderValueTransition(row: DisplayRow) {
 		);
 	}
 
+	if (row.kind === "link") {
+		if (row.oldValue == null && row.newValue != null) {
+			return (
+				<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+					{renderMonitorLinkValue(row.newValue)}
+				</div>
+			);
+		}
+
+		if (row.oldValue != null && row.newValue == null) {
+			return (
+				<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+					{renderMonitorLinkValue(row.oldValue, "previous")}
+				</div>
+			);
+		}
+
+		return (
+			<div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+				{renderMonitorLinkValue(row.oldValue, "previous")}
+				<ArrowRight className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-600" />
+				{renderMonitorLinkValue(row.newValue)}
+			</div>
+		);
+	}
+
 	const formatValue =
 		row.kind === "pricing"
 			? formatPriceValue
@@ -1228,13 +1309,23 @@ function renderRow(row: DisplayRow) {
 	const trendClasses = isPositive
 		? "text-emerald-600 dark:text-emerald-400"
 		: "text-rose-600 dark:text-rose-400";
+	const isDateOnlyRow = isDateOnlyMonitorField(row.field);
+	const isLinkRow = row.kind === "link";
+	const isBenchmarkRow = row.kind === "benchmark";
+	const usesCompactStatusLayout = row.kind === "status" && !isDateOnlyRow;
 	const rowGridClass =
-		row.kind === "status"
+		usesCompactStatusLayout
 			? "sm:grid-cols-[72px_minmax(0,1fr)]"
+			: isDateOnlyRow
+				? "sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+				: isLinkRow
+					? "sm:grid-cols-[auto_minmax(0,1fr)_auto]"
+					: isBenchmarkRow
+						? "sm:grid-cols-[minmax(0,1fr)_auto_auto]"
 			: row.kind === "pricing"
-				? "sm:grid-cols-[minmax(220px,280px)_minmax(0,1fr)_auto]"
+				? "sm:grid-cols-[minmax(0,1fr)_auto_auto]"
 			: "sm:grid-cols-[minmax(160px,220px)_minmax(0,1fr)_auto]";
-	const rowGapClass = row.kind === "status" ? "gap-x-1.5" : "gap-x-2";
+	const rowGapClass = usesCompactStatusLayout ? "gap-x-1.5" : "gap-x-2";
 	const rowPaddingClass = row.kind === "pricing" ? "pt-2" : "pt-2.5";
 	const pricingDetail =
 		row.kind === "pricing" ? parsePricingLabelDetail(row.labelDetail ?? "", row.field) : null;
@@ -1249,37 +1340,73 @@ function renderRow(row: DisplayRow) {
 				rowPaddingClass,
 			].join(" ")}
 		>
-			<div className={row.kind === "pricing" ? "min-w-0" : "space-y-0.5"}>
+			<div
+				className={
+					row.kind === "pricing"
+						? "min-w-0 sm:pr-4"
+						: isDateOnlyRow || isLinkRow || isBenchmarkRow
+							? "space-y-0.5 sm:mr-4"
+							: "space-y-0.5"
+				}
+			>
 				{row.kind === "pricing" && pricingDetail ? (
-					<div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-xs leading-4">
+					<div className="grid min-w-0 gap-1">
+						<div className="flex min-w-0 items-center gap-1.5">
+							<span className="text-sm leading-5 text-zinc-700 dark:text-zinc-200">
+								{pricingDetail.label || row.label}
+							</span>
+							{pricingDetail.schedule ? (
+								<Tooltip delayDuration={150}>
+									<TooltipTrigger asChild>
+										<button
+											type="button"
+											aria-label={pricingDetail.schedule}
+											title={pricingDetail.schedule}
+											className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-zinc-400 transition-colors hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-500 dark:hover:text-zinc-300 dark:focus-visible:ring-zinc-700"
+										>
+											<Clock3 className="h-3 w-3 shrink-0" />
+										</button>
+									</TooltipTrigger>
+									<TooltipContent side="top" sideOffset={6}>
+										{pricingDetail.schedule}
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</div>
 						{pricingDetail.meta ? (
-							<span className="text-zinc-500 dark:text-zinc-400">{pricingDetail.meta}</span>
-						) : null}
-						<span className="text-zinc-700 dark:text-zinc-200">
-							{pricingDetail.label || row.label}
-						</span>
-						{pricingDetail.schedule ? (
-							<Tooltip delayDuration={150}>
-								<TooltipTrigger asChild>
-									<button
-										type="button"
-										aria-label={pricingDetail.schedule}
-										title={pricingDetail.schedule}
-										className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-zinc-400 transition-colors hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-500 dark:hover:text-zinc-300 dark:focus-visible:ring-zinc-700"
-									>
-										<Clock3 className="h-3 w-3 shrink-0" />
-									</button>
-								</TooltipTrigger>
-								<TooltipContent side="top" sideOffset={6}>
-									{pricingDetail.schedule}
-								</TooltipContent>
-							</Tooltip>
+							<p className="text-xs leading-4 text-zinc-500 dark:text-zinc-400">
+								{pricingDetail.meta}
+							</p>
 						) : null}
 					</div>
 				) : (
 					<>
-						<p className="text-sm leading-5 text-zinc-600 dark:text-zinc-300">{row.label}</p>
-						{row.labelDetail ? (
+						<p
+							className={[
+								"text-sm leading-5 text-zinc-600 dark:text-zinc-300",
+								isDateOnlyRow || isLinkRow ? "sm:whitespace-nowrap" : "",
+							].join(" ")}
+						>
+							{row.label}
+							{isBenchmarkRow && row.labelDetail ? (
+								<Tooltip delayDuration={150}>
+									<TooltipTrigger asChild>
+										<button
+											type="button"
+											aria-label={row.labelDetail}
+											title={row.labelDetail}
+											className="ml-1 inline-flex h-4 w-4 translate-y-[1px] items-center justify-center rounded-sm text-zinc-400 transition-colors hover:text-zinc-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:text-zinc-500 dark:hover:text-zinc-300 dark:focus-visible:ring-zinc-700"
+										>
+											<CircleHelp className="h-3.5 w-3.5 shrink-0" />
+										</button>
+									</TooltipTrigger>
+									<TooltipContent side="top" sideOffset={6} className="max-w-xs text-pretty">
+										{row.labelDetail}
+									</TooltipContent>
+								</Tooltip>
+							) : null}
+						</p>
+						{row.labelDetail && !isBenchmarkRow ? (
 							<p className="text-xs leading-4 text-zinc-400 dark:text-zinc-500">
 								{row.labelDetail}
 							</p>
@@ -1400,7 +1527,11 @@ function renderDiffSegments(
 	});
 }
 
-function renderCard(card: MonitorCard) {
+function renderCard(
+	card: MonitorCard,
+	selectedPricingPlan: string | undefined,
+	onSelectPricingPlan: ((plan: string) => void) | null,
+) {
 	const actionLabel =
 		card.actionKind === "added"
 			? "Added"
@@ -1408,6 +1539,19 @@ function renderCard(card: MonitorCard) {
 				? "Removed"
 				: null;
 	const contextLabel = getCardContextLabel(card);
+	const pricingPlans = getPricingPlansForRows(card.rows);
+	const activePricingPlan =
+		pricingPlans.length > 0
+			? pricingPlans.includes(selectedPricingPlan ?? "")
+				? selectedPricingPlan ?? pricingPlans[0]
+				: pricingPlans[0]
+			: null;
+	const visibleRows =
+		activePricingPlan == null
+			? card.rows
+			: card.rows.filter(
+					(row) => row.kind !== "pricing" || getPricingPlan(row.field) === activePricingPlan,
+				);
 
 	return (
 		<article
@@ -1494,7 +1638,34 @@ function renderCard(card: MonitorCard) {
 			<div
 				className="space-y-2.5 bg-white/95 px-4 py-3.5 dark:bg-zinc-950/80 sm:px-5 sm:py-4"
 			>
-				{card.rows.map((row) => renderRow(row))}
+				{pricingPlans.length > 1 && onSelectPricingPlan ? (
+					<div className="flex flex-wrap items-center gap-2">
+						<span className="text-xs font-medium uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+							Tier
+						</span>
+						<div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-1 dark:border-zinc-800 dark:bg-zinc-900">
+							{pricingPlans.map((plan) => {
+								const isActive = plan === activePricingPlan;
+								return (
+									<button
+										key={plan}
+										type="button"
+										onClick={() => onSelectPricingPlan(plan)}
+										className={[
+											"rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+											isActive
+												? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-950 dark:text-zinc-50"
+												: "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200",
+										].join(" ")}
+									>
+										{getPricingPlanLabel(plan)}
+									</button>
+								);
+							})}
+						</div>
+					</div>
+				) : null}
+				{visibleRows.map((row) => renderRow(row))}
 			</div>
 		</article>
 	);
@@ -1718,6 +1889,7 @@ export function MonitorHistoryClient({
 	const [providerQuery, setProviderQuery] = useState("");
 	const [providerLabel, setProviderLabel] = useState<string | undefined>();
 	const [typeFilter, setTypeFilter] = useState<ChangeFilter>("all");
+	const [pricingPlanSelections, setPricingPlanSelections] = useState<Record<string, string>>({});
 	const [visibleCommitCount, setVisibleCommitCount] = useState(DEFAULT_VISIBLE_COMMITS);
 	const [remoteEntries, setRemoteEntries] = useState<Array<ChangeHistory | CompactChangeHistory>>(
 		initialPage?.entries ?? [],
@@ -2110,7 +2282,19 @@ export function MonitorHistoryClient({
 								</div>
 
 								<div className="mx-auto max-w-4xl space-y-3">
-									{group.cards.map((card) => renderCard(card))}
+									{group.cards.map((card) =>
+										renderCard(
+											card,
+											pricingPlanSelections[card.id],
+											getPricingPlansForRows(card.rows).length > 1
+												? (plan) =>
+														setPricingPlanSelections((current) => ({
+															...current,
+															[card.id]: plan,
+														}))
+												: null,
+										),
+									)}
 								</div>
 							</div>
 						);
