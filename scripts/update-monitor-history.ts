@@ -1,4 +1,4 @@
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,8 +32,27 @@ type Meta = {
   orgId: string | null;
 };
 
-function sh(cmd: string): string {
-  return execSync(cmd, { cwd: REPO_ROOT, encoding: "utf8" }).toString();
+function git(args: string[]): string {
+  return execFileSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" }).toString();
+}
+
+export function assertSafeGitRef(ref: string, label = "git ref"): string {
+  const trimmed = String(ref ?? "").trim();
+  if (!trimmed) {
+    throw new Error(`${label} is required`);
+  }
+  if (!/^[A-Za-z0-9._/@-]+$/.test(trimmed)) {
+    throw new Error(`${label} contains invalid characters`);
+  }
+  if (
+    trimmed.startsWith("-") ||
+    trimmed.includes("..") ||
+    trimmed.includes("@{") ||
+    /[\\^:~?\[*\s]/.test(trimmed)
+  ) {
+    throw new Error(`${label} contains an unsafe git revision pattern`);
+  }
+  return trimmed;
 }
 
 const DATA_DIRS = new Set([
@@ -72,7 +91,8 @@ function isDataFile(filePath: string): boolean {
 }
 
 function getChangedFiles(commit: string): ChangeFile[] {
-  const output = sh(`git show --name-status --pretty="" ${commit} -- ${DATA_ROOT}`).trim();
+  const safeCommit = assertSafeGitRef(commit, "commit");
+  const output = git(["show", "--name-status", "--pretty=", safeCommit, "--", DATA_ROOT]).trim();
   if (!output) return [];
 
   const lines = output
@@ -154,7 +174,7 @@ function getBlobContents(refs: string[]): Map<string, string | null> {
 
 function getCommitDate(commit: string): string {
   try {
-    return sh(`git log -1 --format=%ci ${commit}`).trim();
+    return git(["log", "-1", "--format=%ci", assertSafeGitRef(commit, "commit")]).trim();
   } catch {
     return new Date().toISOString();
   }
@@ -162,7 +182,7 @@ function getCommitDate(commit: string): string {
 
 function getParentCommit(commit: string): string | null {
   try {
-    const out = sh(`git log -1 --format=%P ${commit}`).trim();
+    const out = git(["log", "-1", "--format=%P", assertSafeGitRef(commit, "commit")]).trim();
     if (!out) return null;
     return out.split(" ")[0] ?? null;
   } catch {
@@ -980,7 +1000,10 @@ function shouldTrackEntityAction(meta: Meta): boolean {
 function shouldTrackDiff(meta: Meta, diff: DiffItem): boolean {
   if (diff.field === "description") return meta.entityType === "model";
   if (diff.field === "status") return meta.entityType === "model";
+  if (diff.field === "deprecation_date") return meta.entityType === "model";
+  if (diff.field === "retirement_date") return meta.entityType === "model";
   if (diff.field.startsWith("benchmarks.")) return meta.entityType === "model";
+  if (diff.field.startsWith("links.")) return meta.entityType === "model";
   if (diff.field.startsWith("pricing.")) return meta.entityType === "pricing";
   return false;
 }
@@ -1238,8 +1261,6 @@ function processCommit(commit: string): HistoryEntry[] {
         (diff.field === "model_id" || diff.field === "key")
       )
         return false;
-      if (meta.entityType === "model" && diff.field.startsWith("links"))
-        return false;
       if (
         (meta.entityType === "organisation" || meta.entityType === "api-provider") &&
         diff.field.startsWith("models")
@@ -1272,7 +1293,9 @@ function processCommit(commit: string): HistoryEntry[] {
 }
 
 export function listCommitsInRange(base: string, head: string): string[] {
-  const out = sh(`git rev-list --reverse ${base}..${head}`).trim();
+  const safeBase = assertSafeGitRef(base, "base ref");
+  const safeHead = assertSafeGitRef(head, "head ref");
+  const out = git(["rev-list", "--reverse", `${safeBase}..${safeHead}`]).trim();
   if (!out) return [];
   return out.split("\n").map((s) => s.trim()).filter(Boolean);
 }
@@ -1454,8 +1477,10 @@ function isMainModule(): boolean {
 }
 
 export const testingExports = {
+  assertSafeGitRef,
   diffBenchmarks,
   diffModelList,
+  shouldTrackDiff,
   isProviderModelListingDiff,
   toProviderModelListingEntry,
   isProviderModelStatusDiff,

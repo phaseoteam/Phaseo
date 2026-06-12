@@ -2,6 +2,20 @@ import assert from "node:assert/strict";
 import { testingExports } from "./update-monitor-history";
 
 function main() {
+  assert.equal(testingExports.assertSafeGitRef("HEAD"), "HEAD");
+  assert.equal(
+    testingExports.assertSafeGitRef("origin/main", "head ref"),
+    "origin/main"
+  );
+  assert.throws(
+    () => testingExports.assertSafeGitRef("HEAD; curl attacker", "head ref"),
+    /invalid characters|unsafe git revision pattern/
+  );
+  assert.throws(
+    () => testingExports.assertSafeGitRef("../main", "head ref"),
+    /unsafe git revision pattern/
+  );
+
   const before = [
     {
       benchmark_id: "aider-polyglot",
@@ -36,6 +50,63 @@ function main() {
   ]);
 
   assert.deepEqual(testingExports.diffBenchmarks(before, before, "benchmarks"), []);
+
+  assert.equal(
+    testingExports.shouldTrackDiff(
+      {
+        provider: "model",
+        model: "minimax/minimax-m3",
+        endpoint: null,
+        entityType: "model",
+        entityId: "minimax/minimax-m3",
+        orgId: "minimax",
+      },
+      {
+        field: "links.weights.url",
+        before: null,
+        after: "https://huggingface.co/MiniMaxAI/MiniMax-M3",
+      }
+    ),
+    true
+  );
+
+  assert.equal(
+    testingExports.shouldTrackDiff(
+      {
+        provider: "model",
+        model: "xiaomi/mimo-v2-flash",
+        endpoint: null,
+        entityType: "model",
+        entityId: "xiaomi/mimo-v2-flash",
+        orgId: "xiaomi",
+      },
+      {
+        field: "deprecation_date",
+        before: null,
+        after: "2026-06-12T00:00:00",
+      }
+    ),
+    true
+  );
+
+  assert.equal(
+    testingExports.shouldTrackDiff(
+      {
+        provider: "model",
+        model: "xiaomi/mimo-v2-flash",
+        endpoint: null,
+        entityType: "model",
+        entityId: "xiaomi/mimo-v2-flash",
+        orgId: "xiaomi",
+      },
+      {
+        field: "retirement_date",
+        before: null,
+        after: "2026-06-18T00:00:00",
+      }
+    ),
+    true
+  );
 
   const providerModelDiffs = testingExports.diffModelList(
     [{ api_model_id: "cohere/command-a" }],
