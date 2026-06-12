@@ -1,5 +1,5 @@
-import type { AgentGatewayErrorDetails } from "./errors";
-import type { AgentDevtoolsConfig } from "./devtools";
+import type { AgentGatewayErrorDetails } from "./errors.js";
+import type { AgentDevtoolsConfig } from "./devtools.js";
 
 export type AgentToolCall = {
 	id: string;
