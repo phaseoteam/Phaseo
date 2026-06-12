@@ -24,6 +24,10 @@
       "url": "https://platform.minimax.io/docs/guides/text-generation"
     },
     {
+      "platform": "weights",
+      "url": "https://huggingface.co/MiniMaxAI/MiniMax-M3"
+    },
+    {
       "platform": "website",
       "url": "https://www.minimax.io/models/text/m3"
     }
