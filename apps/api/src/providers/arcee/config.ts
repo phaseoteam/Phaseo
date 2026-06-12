@@ -1,6 +1,6 @@
 import type { OpenAICompatConfig } from "../openai-compatible/types";
 
-export const ARCEE_API_KEY_ENVS = ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] as const;
+export const ARCEE_API_KEY_ENVS = ["ARCEE_API_KEY"] as const;
 
 const common = {
 	baseUrl: "https://api.arcee.ai",

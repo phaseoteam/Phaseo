@@ -79,6 +79,66 @@ export function asArray(value: unknown): unknown[] {
     return Array.isArray(value) ? value : [];
 }
 
+function normalizeResponseErrorDetail(value: unknown): string | null {
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed || null;
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return String(value);
+    }
+    const record = asRecord(value);
+    if (!record) return null;
+
+    for (const key of ["message", "msg", "detail", "error"]) {
+        const nested = record[key];
+        if (typeof nested === "string") {
+            const trimmed = nested.trim();
+            if (trimmed) return trimmed;
+        }
+        if (typeof nested === "number" && Number.isFinite(nested)) {
+            return String(nested);
+        }
+    }
+
+    return null;
+}
+
+function toNullableInteger(value: unknown): number | null {
+    if (typeof value === "number") {
+        return Number.isFinite(value) ? Math.trunc(value) : null;
+    }
+    if (typeof value === "string" && value.trim()) {
+        const parsed = Number(value.trim());
+        return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
+    }
+    return null;
+}
+
+function extractResponseErrorMessage(payload: unknown): string | null {
+    const root = asRecord(payload);
+    if (!root) return null;
+
+    const directError = normalizeResponseErrorDetail(root.error);
+    if (directError) return directError;
+
+    const baseResp = asRecord(root.base_resp) ?? asRecord(root.baseResp);
+    const statusCode = toNullableInteger(
+        root.status_code ?? root.statusCode ?? baseResp?.status_code ?? baseResp?.statusCode
+    );
+    if (statusCode === null || statusCode === 0) return null;
+
+    const message =
+        normalizeResponseErrorDetail(root.message) ??
+        normalizeResponseErrorDetail(root.msg) ??
+        normalizeResponseErrorDetail(root.detail) ??
+        normalizeResponseErrorDetail(baseResp?.message) ??
+        normalizeResponseErrorDetail(baseResp?.msg) ??
+        normalizeResponseErrorDetail(baseResp?.detail);
+
+    return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
+}
+
 export async function fetchJson({ url, init, timeoutMs = 30_000 }: FetchJsonOptions): Promise<unknown> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -94,7 +154,13 @@ export async function fetchJson({ url, init, timeoutMs = 30_000 }: FetchJsonOpti
             throw new Error(`HTTP ${response.status} from ${url}${bodyText ? `: ${bodyText.slice(0, 300)}` : ""}`);
         }
 
-        return await response.json();
+        const payload = await response.json();
+        const providerErrorMessage = extractResponseErrorMessage(payload);
+        if (providerErrorMessage) {
+            throw new Error(`Provider response error from ${url}: ${providerErrorMessage}`);
+        }
+
+        return payload;
     } finally {
         clearTimeout(timer);
     }

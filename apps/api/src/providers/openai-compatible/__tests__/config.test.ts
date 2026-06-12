@@ -651,10 +651,10 @@ describe("resolveOpenAICompatKey", () => {
 		expect(voyageAiResolved.source).toBe("gateway");
 	});
 
-	it("accepts ARCEE_AI_API_KEY for arcee-ai", () => {
+	it("uses ARCEE_API_KEY for arcee-ai", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			ARCEE_AI_API_KEY: "test-arcee-ai-key",
+			ARCEE_API_KEY: "test-arcee-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -662,30 +662,14 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-arcee-ai-key");
+		expect(resolved.key).toBe("test-arcee-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("prefers ARCEE_AI_API_KEY over ARCEE_API_KEY for arcee-ai", () => {
+	it("uses GMI_API_KEY for gmicloud", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			ARCEE_AI_API_KEY: "test-arcee-ai-key-primary",
-			ARCEE_API_KEY: "test-arcee-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "arcee-ai",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-arcee-ai-key-primary");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("accepts GMI_CLOUD_API_KEY fallback for gmicloud", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			GMI_CLOUD_API_KEY: "test-gmi-cloud-key",
+			GMI_API_KEY: "test-gmi-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -693,23 +677,7 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-gmi-cloud-key");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("prefers GMI_API_KEY over GMI_CLOUD_API_KEY for gmicloud", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			GMI_API_KEY: "test-gmi-key-primary",
-			GMI_CLOUD_API_KEY: "test-gmi-cloud-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "gmicloud",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-gmi-key-primary");
+		expect(resolved.key).toBe("test-gmi-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
@@ -754,10 +722,10 @@ describe("resolveOpenAICompatKey", () => {
 		);
 	});
 
-	it("accepts CROF_AI_API_KEY fallback for crofai", () => {
+	it("uses CROFAI_API_KEY for crofai", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			CROF_AI_API_KEY: "test-crof-key-fallback",
+			CROFAI_API_KEY: "test-crof-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -765,30 +733,14 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-crof-key-fallback");
+		expect(resolved.key).toBe("test-crof-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
-	it("prefers CROFAI_API_KEY over CROF_AI_API_KEY for crofai", () => {
+	it("uses NEBIUS_API_KEY for Nebius providers", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			CROFAI_API_KEY: "test-crof-key-primary",
-			CROF_AI_API_KEY: "test-crof-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "crofai",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-crof-key-primary");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("accepts NEBIUS_TOKEN_FACTORY_API_KEY fallback for Nebius providers", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			NEBIUS_TOKEN_FACTORY_API_KEY: "test-nebius-token-factory-key",
+			NEBIUS_API_KEY: "test-nebius-key",
 		} as any);
 
 		const resolved = resolveOpenAICompatKey({
@@ -796,23 +748,7 @@ describe("resolveOpenAICompatKey", () => {
 			byokMeta: [],
 		} as any);
 
-		expect(resolved.key).toBe("test-nebius-token-factory-key");
-		expect(resolved.source).toBe("gateway");
-	});
-
-	it("prefers NEBIUS_API_KEY over NEBIUS_TOKEN_FACTORY_API_KEY", () => {
-		teardownTestRuntime();
-		setupRuntimeFromEnv({
-			NEBIUS_API_KEY: "test-nebius-key-primary",
-			NEBIUS_TOKEN_FACTORY_API_KEY: "test-nebius-token-factory-key-fallback",
-		} as any);
-
-		const resolved = resolveOpenAICompatKey({
-			providerId: "nebius-token-factory-us-central-1",
-			byokMeta: [],
-		} as any);
-
-		expect(resolved.key).toBe("test-nebius-key-primary");
+		expect(resolved.key).toBe("test-nebius-key");
 		expect(resolved.source).toBe("gateway");
 	});
 

@@ -9901,7 +9901,7 @@
                              {
                                  "capability_id":  "text.generate",
                                  "status":  "active",
-                                 "params":  [
+                                "params":  [
                                                 {
                                                     "param_id":  "max_tokens",
                                                     "provider_min":  null,
@@ -10014,6 +10014,29 @@
                                                     "provider_default":  null,
                                                     "notes":  null
                                                 }
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "stepfun/step-3.7-flash",
+        "provider_api_model_id":  "novita:stepfun/step-3.7-flash",
+        "provider_model_slug":  "stepfun/step-3.7-flash",
+        "internal_model_id":  "stepfun/step-3.7-flash",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "text",
+        "context_length":  256000,
+        "max_output_tokens":  131072,
+        "effective_from":  "2026-06-12T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
                                             ]
                              }
                          ]

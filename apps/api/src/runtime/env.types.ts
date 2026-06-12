@@ -42,7 +42,6 @@ export type GatewayBindings = {
     AWS_SECRET_ACCESS_KEY?: string;
     AWS_SESSION_TOKEN?: string;
     AWS_REGION?: string;
-    ARCEE_AI_API_KEY?: string;
     ARCEE_API_KEY?: string;
     ARCEE_BASE_URL?: string;
     ATLAS_CLOUD_API_KEY?: string;
@@ -69,7 +68,6 @@ export type GatewayBindings = {
     COHERE_BASE_URL?: string;
     CROFAI_API_KEY?: string;
     CROFAI_BASE_URL?: string;
-    CROF_AI_API_KEY?: string;
     CROF_AI_BASE_URL?: string;
     VOYAGE_API_KEY?: string;
     VOYAGE_BASE_URL?: string;
@@ -91,7 +89,6 @@ export type GatewayBindings = {
     FRIENDLI_TOKEN?: string;
     FRIENDLI_BASE_URL?: string;
     GMI_API_KEY?: string;
-    GMI_CLOUD_API_KEY?: string;
     GMI_BASE_URL?: string;
     GROQ_API_KEY?: string;
     GROQ_BASE_URL?: string;
@@ -121,7 +118,6 @@ export type GatewayBindings = {
     MISTRAL_AI_API_KEY?: string;
     MISTRAL_BASE_URL?: string;
     ELEVENLABS_API_KEY?: string;
-    ELEVEN_LABS_API_KEY?: string;
     ELEVENLABS_BASE_URL?: string;
     SUNO_API_KEY?: string;
     SUNO_BASE_URL?: string;
@@ -132,7 +128,6 @@ export type GatewayBindings = {
     MORPHEUS_API_KEY?: string;
     MORPHEUS_BASE_URL?: string;
     NEBIUS_API_KEY?: string;
-    NEBIUS_TOKEN_FACTORY_API_KEY?: string;
     NEBIUS_BASE_URL?: string;
     NEBIUS_EU_NORTH_1_BASE_URL?: string;
     NEBIUS_US_CENTRAL_1_BASE_URL?: string;
