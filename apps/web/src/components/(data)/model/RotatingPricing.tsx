@@ -13,18 +13,17 @@ interface RotatingPricingProps {
 
 export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
+	const priceCount = prices.length;
 
 	useEffect(() => {
-		if (prices.length > 1) {
-			const interval = setInterval(() => {
-				setCurrentIndex((prev) => (prev + 1) % prices.length);
-			}, 5000); // Rotate every 5 seconds
+		if (priceCount <= 1) return;
 
-			return () => clearInterval(interval);
-		}
-	}, [prices.length]);
+		const interval = setInterval(() => {
+			setCurrentIndex((prev) => (prev + 1) % priceCount);
+		}, 5000); // Rotate every 5 seconds
 
-	const currentPrice = prices[currentIndex];
+		return () => clearInterval(interval);
+	}, [priceCount]);
 
 	const formatPrice = (
 		price: number,
@@ -53,6 +52,8 @@ export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 	if (!prices || prices.length === 0) {
 		return null;
 	}
+
+	const currentPrice = prices[currentIndex] ?? prices[0];
 
 	return (
 		<div className="text-lg font-semibold leading-tight">
