@@ -12,22 +12,6 @@ export type ModelPageNotice = {
 	markdown: string;
 };
 
-const ANTHROPIC_EXPORT_CONTROL_NOTICE_MARKDOWN =
-	"Anthropic said on June 12, 2026 that it had to disable Fable 5 and Mythos 5 for all customers to comply with a U.S. export control directive. Requests to this model are currently expected to fail. [Read Anthropic's statement](https://www.anthropic.com/news/fable-mythos-access).";
-
-const BUILTIN_MODEL_PAGE_NOTICES: Record<string, ModelPageNotice> = {
-	"anthropic/claude-fable-5": {
-		apiModelId: "anthropic/claude-fable-5",
-		tone: "critical",
-		markdown: ANTHROPIC_EXPORT_CONTROL_NOTICE_MARKDOWN,
-	},
-	"anthropic/claude-mythos-5": {
-		apiModelId: "anthropic/claude-mythos-5",
-		tone: "critical",
-		markdown: ANTHROPIC_EXPORT_CONTROL_NOTICE_MARKDOWN,
-	},
-};
-
 const modelPageNoticeSchema = z.object({
 	apiModelId: z.string().min(1),
 	tone: z.enum(["info", "warning", "critical"]),
@@ -71,14 +55,6 @@ export function parseModelPageNoticeRow(row: {
 
 	return parsed.data;
 }
-
-export function getBuiltinModelPageNotice(
-	apiModelId: string | null | undefined,
-): ModelPageNotice | null {
-	if (!apiModelId) return null;
-	return BUILTIN_MODEL_PAGE_NOTICES[apiModelId] ?? null;
-}
-
 export async function resolveApiModelIdForModelPageUncached(
 	modelId: string,
 	includeHidden: boolean,
@@ -151,7 +127,6 @@ async function getModelPageNoticeUncached(
 ): Promise<ModelPageNotice | null> {
 	const apiModelId = await resolveApiModelIdForModelPage(modelId, includeHidden);
 	if (!apiModelId) return null;
-	const builtinNotice = getBuiltinModelPageNotice(apiModelId);
 
 	const supabase = createAdminClient();
 	const { data, error } = await supabase
@@ -161,11 +136,11 @@ async function getModelPageNoticeUncached(
 		.maybeSingle();
 
 	if (error) {
-		if (isMissingRelationError(error)) return builtinNotice;
+		if (isMissingRelationError(error)) return null;
 		throw new Error(error.message || "Failed to fetch model page notice");
 	}
 
-	return parseModelPageNoticeRow(data) ?? builtinNotice;
+	return parseModelPageNoticeRow(data);
 }
 
 export async function getModelPageNotice(

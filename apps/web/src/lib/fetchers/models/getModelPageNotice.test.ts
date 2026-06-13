@@ -25,7 +25,6 @@ jest.mock("./visibility", () => ({
 }));
 
 import {
-	getBuiltinModelPageNotice,
 	parseModelPageNoticeRow,
 	resolveApiModelIdForModelPageUncached,
 } from "./getModelPageNotice";
@@ -128,31 +127,5 @@ describe("resolveApiModelIdForModelPageUncached", () => {
 			resolveApiModelIdForModelPageUncached("anthropic/claude-opus-4.1", false),
 		).resolves.toBe("anthropic/claude-opus-4.1");
 		expect(applyHiddenFilter).toHaveBeenCalledWith(internalModelsQuery, false);
-	});
-});
-
-describe("getBuiltinModelPageNotice", () => {
-	it("returns the export-control notice for Claude Fable 5", () => {
-		expect(getBuiltinModelPageNotice("anthropic/claude-fable-5")).toEqual({
-			apiModelId: "anthropic/claude-fable-5",
-			tone: "critical",
-			markdown: expect.stringContaining(
-				"Requests to this model are currently expected to fail.",
-			),
-		});
-	});
-
-	it("returns the export-control notice for Claude Mythos 5", () => {
-		expect(getBuiltinModelPageNotice("anthropic/claude-mythos-5")).toEqual({
-			apiModelId: "anthropic/claude-mythos-5",
-			tone: "critical",
-			markdown: expect.stringContaining(
-				"U.S. export control directive",
-			),
-		});
-	});
-
-	it("returns null for unaffected models", () => {
-		expect(getBuiltinModelPageNotice("anthropic/claude-opus-4.8")).toBeNull();
 	});
 });
