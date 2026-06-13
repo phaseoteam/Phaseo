@@ -11,11 +11,7 @@ interface RotatingPricingProps {
 	}[];
 }
 
-export default function RotatingPricing({ prices }: RotatingPricingProps) {
-	if (!prices || prices.length === 0) {
-		return null;
-	}
-
+export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 	const [currentIndex, setCurrentIndex] = useState(0);
 
 	useEffect(() => {
@@ -53,6 +49,10 @@ export default function RotatingPricing({ prices }: RotatingPricingProps) {
 
 		return `${formatter.format(price)}${period}`;
 	};
+
+	if (!prices || prices.length === 0) {
+		return null;
+	}
 
 	return (
 		<div className="text-lg font-semibold leading-tight">

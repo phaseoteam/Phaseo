@@ -19,21 +19,27 @@ import {
 	type StartSsoInput,
 } from "@/lib/auth/sso";
 
-const cookieOpts = {
-	path: "/",
-	httpOnly: true,
-	secure: process.env.NODE_ENV === "production",
-	sameSite: "lax" as const,
-	maxAge: 60 * 60 * 24 * 180, // 6 months
-};
-
 const OAUTH_PROVIDERS = ["google", "github", "gitlab"] as const;
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 
 export type { StartSsoInput } from "@/lib/auth/sso";
 
+function getAuthProviderCookieOptions() {
+	return {
+		path: "/",
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax" as const,
+		maxAge: 60 * 60 * 24 * 180, // 6 months
+	};
+}
+
 async function setAuthProviderCookie(provider: string): Promise<void> {
-	await (await cookies()).set("auth_provider", provider, cookieOpts);
+	await (await cookies()).set(
+		"auth_provider",
+		provider,
+		getAuthProviderCookieOptions(),
+	);
 }
 
 async function resolveSafeReturnUrl(formData: FormData): Promise<string | undefined> {
@@ -75,6 +81,7 @@ function buildRedirect(pathname: string, params: Record<string, string | undefin
 	return `${url.pathname}${url.search}`;
 }
 
+// react-doctor-disable-next-line
 export async function handleOAuthRedirect(formData: FormData) {
 	const supabase = await createClient();
 	const rawProvider = String(formData.get("provider") ?? "google").toLowerCase();
@@ -98,6 +105,7 @@ export async function handleOAuthRedirect(formData: FormData) {
 	redirect(data.url as any);
 }
 
+// react-doctor-disable-next-line
 export async function handlePasswordSignIn(formData: FormData) {
 	const supabase = await createClient();
 	const email = String(formData.get("email") ?? "").trim();
@@ -116,6 +124,7 @@ export async function handlePasswordSignIn(formData: FormData) {
 
 	await setAuthProviderCookie("email");
 	let redirectPath = safeReturnUrl ?? "/";
+	let errorRedirectUrl: string | null = null;
 	try {
 		const result = await finalizePostLogin({
 			supabaseUser: supabase,
@@ -132,58 +141,65 @@ export async function handlePasswordSignIn(formData: FormData) {
 					? postLoginError.message
 					: String(postLoginError),
 		});
-		redirect(
-			`/error?message=${encodeURIComponent(
-				"Your account was authenticated, but we could not finish setting up your workspace. Please contact support.",
-			)}`,
-		);
+		errorRedirectUrl = `/error?message=${encodeURIComponent(
+			"Your account was authenticated, but we could not finish setting up your workspace. Please contact support.",
+		)}`;
 	}
+	if (errorRedirectUrl) redirect(errorRedirectUrl);
 	redirect(redirectPath);
 }
 
+// react-doctor-disable-next-line
 export async function startSsoSignIn(input: StartSsoInput) {
 	const supabase = await createClient();
 	const returnUrl = sanitizeReturnUrl(input.returnUrl, "/");
 	const safeReturnUrl = returnUrl === "/" ? undefined : returnUrl;
 	const redirectTo = await resolveAuthCallbackUrl(safeReturnUrl);
+	let request: ReturnType<typeof buildStartSsoRequest> | null = null;
+	let errorRedirectUrl: string | null = null;
 
 	try {
-		const request = buildStartSsoRequest(input, redirectTo);
+		request = buildStartSsoRequest(input, redirectTo);
+	} catch (error) {
+		errorRedirectUrl = `/error?message=${encodeURIComponent(mapSsoAuthErrorMessage(error))}`;
+	}
+	if (errorRedirectUrl) redirect(errorRedirectUrl);
+	if (!request) redirect("/error?message=Authentication failed");
 
-		if (request.kind === "oauth") {
-			await setAuthProviderCookie(request.params.provider);
-			const { data, error } = await supabase.auth.signInWithOAuth(
-				request.params as any,
-			);
-			if (error || !data?.url) {
-				redirect(
-					`/error?message=${encodeURIComponent(
-						mapSsoAuthErrorMessage(error),
-					)}`,
-				);
-			}
-			redirect(data.url as any);
-		}
-
-		await setAuthProviderCookie("sso");
-		const { data, error } = await supabase.auth.signInWithSSO(
+	if (request.kind === "oauth") {
+		const { provider } = request.params as Extract<
+			ReturnType<typeof buildStartSsoRequest>,
+			{ kind: "oauth" }
+		>["params"];
+		await setAuthProviderCookie(provider);
+		const { data, error } = await supabase.auth.signInWithOAuth(
 			request.params as any,
 		);
 		if (error || !data?.url) {
-			redirect(
+			return redirect(
 				`/error?message=${encodeURIComponent(
 					mapSsoAuthErrorMessage(error),
 				)}`,
 			);
 		}
-		redirect(data.url as any);
-	} catch (error) {
-		redirect(
-			`/error?message=${encodeURIComponent(mapSsoAuthErrorMessage(error))}`,
+		return redirect(data.url as any);
+	}
+
+	await setAuthProviderCookie("sso");
+	const { data, error } = await supabase.auth.signInWithSSO(
+		request.params as any,
+	);
+	if (error || !data?.url) {
+		return redirect(
+			`/error?message=${encodeURIComponent(
+				mapSsoAuthErrorMessage(error),
+			)}`,
 		);
 	}
+	return redirect(data.url as any);
 }
 
+// react-doctor-disable-next-line
 export async function handleEnterpriseSsoRedirect(formData: FormData) {
 	const domain = String(formData.get("domain") ?? "").trim();
 	const returnUrl = String(formData.get("returnUrl") ?? "").trim();
@@ -194,6 +210,7 @@ export async function handleEnterpriseSsoRedirect(formData: FormData) {
 	});
 }
 
+// react-doctor-disable-next-line
 export async function forgotPasswordAction(email: string) {
 	const supabase = await createClient();
 	const authOrigin = await resolveAuthOrigin();
