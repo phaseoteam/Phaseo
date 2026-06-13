@@ -2,9 +2,9 @@
   "model_id": "z-ai/glm-5.2",
   "organisation_id": "z-ai",
   "name": "GLM 5.2",
-  "status": "Rumoured",
+  "status": "Available",
   "previous_model_id": "z-ai/glm-5.1",
-  "description": "GLM 5.2 is a rumoured Z.AI flagship model tracked as the likely successor to GLM 5.1. The current record is based on leaked private-testing references and early public sightings rather than a formal Z.AI release.",
+  "description": "GLM 5.2 is Z.AI's latest flagship coding model documented across the GLM Coding Plan materials, with premium-tier positioning for complex coding and agent workflows.",
   "announced_date": null,
   "release_date": null,
   "deprecation_date": null,
@@ -15,13 +15,34 @@
   "api_model_id": "z-ai/glm-5.2",
   "page_notice": {
     "tone": "warning",
-    "markdown": "GLM 5.2 is a rumoured model and is not publicly released. This page exists because leaked private-testing references and public sightings suggest Z.AI is evaluating a `glm-5.2` line. Specs, pricing, provider availability, and release timing are unconfirmed and may change or disappear without notice."
+    "markdown": "Z.AI now documents `glm-5.2` for the dedicated GLM Coding Plan endpoint and tooling, but the current public general-pricing and release-notes pages still stop short of listing broader standard API rollout details."
   },
-  "links": [],
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://docs.z.ai/devpack/overview"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.z.ai/devpack/latest-model"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.z.ai/devpack/tool/others"
+    }
+  ],
   "details": [
     {
       "name": "availability",
-      "value": "Tracked from private-testing leaks and public sightings only. No public Z.AI announcement, provider launch, or final model card is available yet."
+      "value": "Public Z.AI Coding Plan documentation lists GLM-5.2 as a supported model for all plan tiers and supported coding-tool integrations."
+    },
+    {
+      "name": "context_length",
+      "value": "The Coding Plan tool guides document a 1M context configuration for glm-5.2 in supported coding-tool setups."
+    },
+    {
+      "name": "pricing_status",
+      "value": "The current public Z.AI pricing page does not yet publish standard API token pricing for GLM-5.2."
     }
   ],
   "benchmarks": []
