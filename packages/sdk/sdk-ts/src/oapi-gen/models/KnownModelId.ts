@@ -380,6 +380,7 @@ export type KnownModelId =
   | "qwen/text-embedding-v4"
   | "qwen/wan2.7-t2v"
   | "stepfun/step-3.5-flash"
+  | "stepfun/step-3.7-flash"
   | "tencent/hunyuan-a13b-instruct"
   | "tencent/hy3-preview"
   | "venice/venice-uncensored"

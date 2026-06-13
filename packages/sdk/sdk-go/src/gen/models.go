@@ -1752,6 +1752,7 @@ const (
 	KnownModelIdQwenTextEmbeddingV4 KnownModelId = "qwen/text-embedding-v4"
 	KnownModelIdQwenWan27T2v KnownModelId = "qwen/wan2.7-t2v"
 	KnownModelIdStepfunStep35Flash KnownModelId = "stepfun/step-3.5-flash"
+	KnownModelIdStepfunStep37Flash KnownModelId = "stepfun/step-3.7-flash"
 	KnownModelIdTencentHunyuanA13bInstruct KnownModelId = "tencent/hunyuan-a13b-instruct"
 	KnownModelIdTencentHy3Preview KnownModelId = "tencent/hy3-preview"
 	KnownModelIdVeniceVeniceUncensored KnownModelId = "venice/venice-uncensored"
