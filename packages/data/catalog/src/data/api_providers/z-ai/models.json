@@ -940,13 +940,13 @@
     "provider_api_model_id": "z-ai:z-ai/glm-5.2",
     "provider_model_slug": "glm-5.2",
     "internal_model_id": "z-ai/glm-5.2",
-    "is_active_gateway": false,
+    "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 1000000,
     "max_output_tokens": null,
-    "effective_from": null,
+    "effective_from": "2026-06-14T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
