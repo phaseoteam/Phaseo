@@ -543,6 +543,55 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 	return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+function normalizeProviderResponseErrorDetail(value: unknown): string | null {
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		return trimmed || null;
+	}
+	if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
+		return String(value);
+	}
+	const record = asRecord(value);
+	if (!record) return null;
+
+	for (const key of ["message", "msg", "detail", "error"]) {
+		const nested = record[key];
+		if (typeof nested === "string") {
+			const trimmed = nested.trim();
+			if (trimmed) return trimmed;
+		}
+		if (typeof nested === "number" && Number.isFinite(nested) && nested !== 0) {
+			return String(nested);
+		}
+	}
+
+	return null;
+}
+
+function extractProviderResponseErrorMessage(payload: unknown): string | null {
+	const root = asRecord(payload);
+	if (!root) return null;
+
+	const directError = normalizeProviderResponseErrorDetail(root.error);
+	if (directError) return directError;
+
+	const baseResp = asRecord(root.base_resp) ?? asRecord(root.baseResp);
+	const statusCode = toNullableInteger(
+		root.status_code ?? root.statusCode ?? baseResp?.status_code ?? baseResp?.statusCode
+	);
+	if (statusCode === null || statusCode === 0) return null;
+
+	const message =
+		normalizeProviderResponseErrorDetail(root.message) ??
+		normalizeProviderResponseErrorDetail(root.msg) ??
+		normalizeProviderResponseErrorDetail(root.detail) ??
+		normalizeProviderResponseErrorDetail(baseResp?.message) ??
+		normalizeProviderResponseErrorDetail(baseResp?.msg) ??
+		normalizeProviderResponseErrorDetail(baseResp?.detail);
+
+	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
+}
+
 export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
@@ -592,6 +641,10 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 		}
 
 		const payload = await response.json();
+		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+		if (providerResponseErrorMessage) {
+			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+		}
 		return extractDiscoveredModels(provider.providerId, payload);
 	} finally {
 		clearTimeout(timeout);

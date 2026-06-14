@@ -39,6 +39,7 @@ function formatDateLabel(value: string): string {
 }
 
 interface DatePickerInputProps {
+  id?: string
   value: string
   onChange: (value: string) => void
   placeholder?: string
@@ -48,6 +49,7 @@ interface DatePickerInputProps {
 }
 
 export function DatePickerInput({
+  id,
   value,
   onChange,
   placeholder = "Pick a date",
@@ -63,6 +65,7 @@ export function DatePickerInput({
       <Popover>
         <PopoverTrigger asChild>
           <Button
+            id={id}
             type="button"
             variant="outline"
             disabled={disabled}

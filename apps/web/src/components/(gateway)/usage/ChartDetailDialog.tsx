@@ -27,13 +27,6 @@ interface ChartDetailDialogProps {
 	metric: "requests" | "tokens" | "cost";
 }
 
-type BreakdownRow = {
-	model: string;
-	requests: number;
-	tokens: number;
-	cost: number;
-};
-
 export default function ChartDetailDialog({
 	open,
 	onOpenChange,
@@ -41,10 +34,8 @@ export default function ChartDetailDialog({
 	breakdown,
 	metric,
 }: ChartDetailDialogProps) {
-	if (!breakdown || !bucket) return null;
-
 	const rows = React.useMemo(() => {
-		return Object.entries(breakdown)
+		return Object.entries(breakdown ?? {})
 			.map(([modelId, data]) => ({
 				model: modelId,
 				requests: data.requests,
@@ -89,6 +80,8 @@ export default function ChartDetailDialog({
 			exportToPDF(exportRows, filename, title);
 		}
 	};
+
+	if (!breakdown || !bucket) return null;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>

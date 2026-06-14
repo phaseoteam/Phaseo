@@ -964,7 +964,8 @@
       "sourceful/riverflow-v2-standard-preview"
     ],
     "stepfun": [
-      "stepfun/step-3.5-flash"
+      "stepfun/step-3.5-flash",
+      "stepfun/step-3.7-flash"
     ],
     "suno": [
       "suno/suno-v3.5",
