@@ -347,6 +347,35 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
+    it("does not treat unrelated -highspeed models as priority siblings", async () => {
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "minimax",
+                    apiModelId: "minimax/minimax-m2.5-highspeed",
+                    providerModelSlug: "MiniMax-M2.5-highspeed",
+                    pricingCard: makeCard({
+                        provider: "minimax",
+                        model: "minimax/minimax-m2.5-highspeed",
+                        plans: ["standard"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(result.candidates).toHaveLength(0);
+        expect(result.diagnostics.droppedProviders).toMatchObject([
+            {
+                providerId: "minimax",
+                apiModelId: "minimax/minimax-m2.5-highspeed",
+                reason: "service_tier_priority_unsupported",
+            },
+        ]);
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+    });
+
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {

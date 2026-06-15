@@ -48,6 +48,12 @@ const PRIORITY_SIBLING_API_MODEL_IDS = new Map<string, string>([
     ["moonshotai/kimi-k2.7-code", "moonshotai/kimi-k2.7-code-highspeed"],
 ]);
 
+const PRIORITY_SIBLING_VALUE_IDS = new Set(
+    Array.from(PRIORITY_SIBLING_API_MODEL_IDS.values(), (value) =>
+        value.trim().toLowerCase(),
+    ),
+);
+
 function normalizeRequestedServiceTier(body: any): string | null {
     return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
 }
@@ -86,9 +92,8 @@ function isTierSiblingModel(candidate: ProviderCandidate, requestedPlan: Service
     if (requestedPlan === "priority") {
         return (
             apiModelId.endsWith("-fast") ||
-            apiModelId.endsWith("-highspeed") ||
             providerModelSlug.endsWith("-fast") ||
-            providerModelSlug.endsWith("-highspeed")
+            PRIORITY_SIBLING_VALUE_IDS.has(apiModelId)
         );
     }
     if (requestedPlan === "flex") {
