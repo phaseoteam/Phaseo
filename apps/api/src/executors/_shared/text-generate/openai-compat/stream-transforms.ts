@@ -139,6 +139,14 @@ export function transformChatStream(
 							continue;
 						}
 
+						if (
+							(payload?.object === "chat.completion.chunk" || payload?.object === "chat.completion") &&
+							typeof args.ir.model === "string" &&
+							args.ir.model
+						) {
+							payload.model = args.ir.model;
+						}
+
 						applyStreamQuirks(payload, state, args.providerId);
 						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 					}
@@ -207,7 +215,7 @@ export function transformResponsesStreamToChat(
 			object: "chat.completion.chunk",
 			nativeResponseId,
 			created,
-			model: args.providerModelSlug ?? args.ir.model,
+			model: args.ir.model,
 			provider: args.providerId,
 			choices: [{
 				index,
@@ -243,6 +251,9 @@ export function transformResponsesStreamToChat(
 
 						// Some providers stream chat chunks even on /responses
 						if (payload?.object === "chat.completion.chunk" || payload?.object === "chat.completion") {
+							if (typeof args.ir.model === "string" && args.ir.model) {
+								payload.model = args.ir.model;
+							}
 							await emit(payload, controller);
 							continue;
 						}
@@ -420,7 +431,7 @@ export function transformChatStreamToResponses(
 	let createdAt = Math.floor(Date.now() / 1000);
 	let responseId: string | null = args.requestId ?? null;
 	let nativeResponseId: string | null = null;
-	let model = args.providerModelSlug ?? args.ir.model;
+	let model = args.ir.model;
 	let finalResponse: any = null;
 	let nextOutputIndex = 0;
 	const isMiniMaxToolInterop =
@@ -537,6 +548,20 @@ export function transformChatStreamToResponses(
 						}
 
 						if (mode === "responses" && !isChatPayload) {
+							if (payload?.response && typeof args.ir.model === "string" && args.ir.model) {
+								payload = {
+									...payload,
+									response: {
+										...payload.response,
+										model: args.ir.model,
+									},
+								};
+							} else if (typeof args.ir.model === "string" && args.ir.model && payload?.model) {
+								payload = {
+									...payload,
+									model: args.ir.model,
+								};
+							}
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
 							controller.enqueue(
 								encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`)
@@ -552,14 +577,12 @@ export function transformChatStreamToResponses(
 						if (!createdEmitted) {
 							if (payload?.id) responseId = payload.id;
 							if (payload?.created) createdAt = payload.created;
-							if (payload?.model) model = payload.model;
 							await emitCreated(controller);
 							createdEmitted = true;
 						}
 
 						if (payload?.id) nativeResponseId = payload.id;
 						if (payload?.created) createdAt = payload.created;
-						if (payload?.model) model = payload.model;
 
 						finalResponse = accumulateChatCompletion(finalResponse, payload);
 

@@ -397,6 +397,51 @@ describe("resolveStreamForProtocol", () => {
 		expect(finalPayload?.usage?.service_tier).toBe("standard");
 	});
 
+	it("keeps the public model id when converting responses streams back to chat chunks", async () => {
+		const upstream = makeSseResponse([
+			{
+				event: "response.created",
+				data: {
+					response: {
+						id: "resp_public_model_1",
+						created_at: 1710000010,
+						model: "kimi-k2.7-code-highspeed",
+					},
+				},
+			},
+			{
+				event: "response.output_text.delta",
+				data: {
+					output_index: 0,
+					delta: "pong",
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				ir: {
+					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+					model: "moonshotai/kimi-k2.7-code",
+					stream: true,
+				},
+				providerId: "moonshotai",
+				providerModelSlug: "kimi-k2.7-code-highspeed",
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+			}),
+			"responses",
+		);
+
+		const output = await readStreamText(stream);
+		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(chunks.length).toBeGreaterThan(0);
+		expect(chunks.every((payload) => payload?.model === "moonshotai/kimi-k2.7-code")).toBe(true);
+		expect(output).not.toContain("kimi-k2.7-code-highspeed");
+	});
+
 	it("emits output_item function-call events when transforming chat stream to responses", async () => {
 		const upstream = makeSseResponse([
 			{
@@ -460,6 +505,42 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).toContain("event: response.function_call_arguments.delta");
 		expect(output).toContain("event: response.function_call_arguments.done");
 		expect(output).toContain("event: response.output_item.done");
+	});
+
+	it("keeps the public model id in responses stream metadata when upstream chat chunks use a hidden slug", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_public_model_1",
+					object: "chat.completion.chunk",
+					created: 1710000011,
+					model: "kimi-k2.7-code-highspeed",
+					choices: [{ index: 0, delta: { content: "pong" }, finish_reason: "stop" }],
+					usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				ir: {
+					messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+					model: "moonshotai/kimi-k2.7-code",
+					stream: true,
+				},
+				providerId: "moonshotai",
+				providerModelSlug: "kimi-k2.7-code-highspeed",
+				endpoint: "responses",
+				protocol: "openai.responses",
+			}),
+			"chat",
+		);
+
+		const output = await readStreamText(stream);
+		expect(output).toContain("\"model\":\"moonshotai/kimi-k2.7-code\"");
+		expect(output).not.toContain("kimi-k2.7-code-highspeed");
 	});
 
 	it("normalizes MiniMax XML interleaving into reasoning + function_call events", async () => {
