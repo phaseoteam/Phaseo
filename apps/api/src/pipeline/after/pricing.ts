@@ -13,24 +13,29 @@ import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 
-function normalizeRequestedServiceTier(body: any, usage: any): string {
-    const tiers = [
-        usage?.service_tier,
-        usage?.serviceTier,
-        readRequestedServiceTier(body).value,
-    ]
-        .filter((value): value is string => typeof value === "string")
-        .map((value) => normalizeTextServiceTier(value))
-        .filter(Boolean);
+function normalizeObservedServiceTier(usage: any): string {
+    const observedValues = [usage?.service_tier, usage?.serviceTier];
+    for (const value of observedValues) {
+        if (typeof value !== "string") continue;
+        const raw = value.trim().toLowerCase();
+        if (!raw) continue;
+        if (raw === "default") return "standard";
+        const normalized = normalizeTextServiceTier(raw);
+        if (normalized) return normalized;
+    }
+    return "";
+}
 
-    const nonStandardTier = tiers.find((tier) => tier === "priority" || tier === "batch" || tier === "flex");
-    if (nonStandardTier) return nonStandardTier;
+function normalizeRequestedServiceTier(body: any): string {
+    return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
+}
 
-    return tiers.find((tier) => tier === "standard") ?? "";
+function resolvePricingServiceTier(body: any, usage: any): string {
+    return normalizeObservedServiceTier(usage) || normalizeRequestedServiceTier(body);
 }
 
 function derivePricingPlan(body: any, usage: any): string {
-    const tier = normalizeRequestedServiceTier(body, usage);
+    const tier = resolvePricingServiceTier(body, usage);
 
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
@@ -46,7 +51,7 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         pricing_plan: pricingPlan,
     };
 
-    const serviceTier = normalizeRequestedServiceTier(body, usage);
+    const serviceTier = resolvePricingServiceTier(body, usage);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;
