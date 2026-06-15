@@ -598,6 +598,48 @@ describe("routeProviders testing mode", () => {
 		).toBe(false);
 	});
 
+	it("keeps standard-priced providers for explicit standard service tier", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			novita: health("novita", {
+				lat_ewma_60s: 100,
+				lat_ewma_300s: 100,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "novita",
+					apiModelId: "moonshotai/kimi-k2.7-code",
+					providerModelSlug: "moonshotai/kimi-k2.7-code",
+					capabilityParams: {},
+					pricingCard: textTierPricingCard(["standard"]),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "moonshotai/kimi-k2.7-code",
+				workspaceId: "team_123",
+				body: {
+					service_tier: "standard",
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"novita",
+		]);
+		const serviceTierStage = result.diagnostics.filterStages.find(
+			(stage) => stage.stage === "service_tier_support_gate",
+		);
+		expect(serviceTierStage).toMatchObject({
+			beforeCount: 1,
+			afterCount: 1,
+			droppedProviders: [],
+		});
+	});
+
 	it("applies strong derank multipliers (legacy deranked maps to lvl1)", async () => {
 		const result = await routeProviders(
 			[

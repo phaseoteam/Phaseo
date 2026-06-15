@@ -429,6 +429,7 @@ function candidateSupportsRequestedServiceTier(
     const requestedPlan = normalizeRequestedPlan(requestedTier);
     if (!requestedPlan) return true;
     if (!supportsRequestedTier(candidate, requestedPlan)) return false;
+    if (requestedPlan === "standard") return true;
     if (providerSupportsParam(candidate, "service_tier", { assumeSupportedOnMissingConfig: false })) {
         return true;
     }
