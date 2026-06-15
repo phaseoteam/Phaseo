@@ -107,7 +107,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "b3f9d045efa4a5cc4571f615888baaa6",
+      "hash": "3aae64e9103bf16357375935d6079c50",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -159,7 +159,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/byteplus/models.json": {
-      "hash": "a43bf877e655812d3f4e64e27f1cb214",
+      "hash": "313bd5b52ab8d25b331cbd4f94541919",
       "meta": {
         "api_provider_id": "byteplus",
         "kind": "provider_models"
@@ -5784,6 +5784,14 @@
         "previous_model_id": null
       }
     },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-1.6-2025-10-15/model.json": {
+      "hash": "48c7bf7e3db79003da51ab151b36ee52",
+      "meta": {
+        "model_id": "bytedance/seed-1.6-2025-10-15",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
     "../../packages/data/catalog/src/data/models/bytedance/seed-1.6-flash-2025-06-15/model.json": {
       "hash": "125c9b0ab618f37312eb5cff6253c99a",
       "meta": {
@@ -5800,10 +5808,34 @@
         "previous_model_id": null
       }
     },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-1.6-flash-2025-08-28/model.json": {
+      "hash": "2894d7ac3ec9aa1320d4409bc6e7a0c7",
+      "meta": {
+        "model_id": "bytedance/seed-1.6-flash-2025-08-28",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
     "../../packages/data/catalog/src/data/models/bytedance/seed-1.8/model.json": {
       "hash": "a6ce5af9fd8b43c26464a2345780e509",
       "meta": {
         "model_id": "bytedance/seed-1.8",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-1.8-2025-12-28/model.json": {
+      "hash": "2b5171d1a5fa437cafb63659d6a9063e",
+      "meta": {
+        "model_id": "bytedance/seed-1.8-2025-12-28",
+        "organisation_id": "bytedance",
+        "previous_model_id": "bytedance/seed-1.8"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-2.0-code-preview-2026-02-15/model.json": {
+      "hash": "35eee4211c161af07edd351bf25c7b73",
+      "meta": {
+        "model_id": "bytedance/seed-2.0-code-preview-2026-02-15",
         "organisation_id": "bytedance",
         "previous_model_id": null
       }
@@ -5902,6 +5934,14 @@
         "model_id": "bytedance/seedance-2.0-fast",
         "organisation_id": "bytedance",
         "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/bytedance/seedance-2.0-mini-260615/model.json": {
+      "hash": "9cd6b758437e49c8626c416f85f3734f",
+      "meta": {
+        "model_id": "bytedance/seedance-2.0-mini-260615",
+        "organisation_id": "bytedance",
+        "previous_model_id": "bytedance/seedance-2.0"
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedream-4.0/model.json": {

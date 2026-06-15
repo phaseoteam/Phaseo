@@ -1,0 +1,24 @@
+{
+  "model_id": "bytedance/seedance-2.0-mini-260615",
+  "organisation_id": "bytedance",
+  "name": "Seedance 2.0 Mini (2026-06-15)",
+  "status": "Available",
+  "previous_model_id": "bytedance/seedance-2.0",
+  "description": "Seedance 2.0 Mini (2026-06-15) is a lower-tier video generation model in ByteDance's Seedance 2.0 series. It supports multimodal video generation inputs such as text, image, and video.",
+  "announced_date": null,
+  "release_date": "2026-06-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "video",
+  "api_model_id": "bytedance/seedance-2.0-mini-260615",
+  "links": [
+    {
+      "platform": "documentation",
+      "url": "https://docs.byteplus.com/en/docs/ModelArk/2291680"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}
