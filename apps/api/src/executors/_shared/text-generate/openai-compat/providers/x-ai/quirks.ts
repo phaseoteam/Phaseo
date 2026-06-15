@@ -7,12 +7,34 @@
 
 import type { ProviderQuirks } from "../../quirks/types";
 import { applyJsonSchemaFallback } from "../../quirks/structured";
+import { normalizeTextServiceTier } from "@core/serviceTiers";
 
 function isReasoningModel(model: unknown): boolean {
 	if (typeof model !== "string") return false;
 	const normalized = model.toLowerCase();
 	if (normalized.includes("non-reasoning")) return false;
 	return normalized.includes("reasoning") || normalized.includes("grok-4");
+}
+
+function normalizeXAiServiceTier(value: unknown): string | undefined {
+	if (typeof value !== "string") return undefined;
+	const normalized = value.trim().toLowerCase();
+	if (!normalized) return undefined;
+	if (normalized === "default") return "standard";
+	return normalizeTextServiceTier(normalized) ?? undefined;
+}
+
+function attachServiceTierToUsage(responseLike: any): void {
+	if (!responseLike || typeof responseLike !== "object") return;
+	const observedServiceTier = normalizeXAiServiceTier(
+		responseLike.service_tier ??
+		responseLike.usage?.service_tier ??
+		responseLike.usage?.serviceTier,
+	);
+	if (!observedServiceTier) return;
+	responseLike.usage ??= {};
+	if (typeof responseLike.usage !== "object") return;
+	responseLike.usage.service_tier = observedServiceTier;
 }
 
 export const xAiQuirks: ProviderQuirks = {
@@ -29,7 +51,13 @@ export const xAiQuirks: ProviderQuirks = {
 		}
 	},
 
+	transformStreamChunk: ({ chunk }) => {
+		attachServiceTierToUsage(chunk);
+		attachServiceTierToUsage(chunk?.response);
+	},
+
 	normalizeResponse: ({ response }) => {
+		attachServiceTierToUsage(response);
 		const usage = response?.usage;
 		if (!usage || typeof usage !== "object") return;
 

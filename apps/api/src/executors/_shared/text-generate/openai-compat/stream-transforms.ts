@@ -239,6 +239,8 @@ export function transformResponsesStreamToChat(
 							continue;
 						}
 
+						applyStreamQuirks(payload, state, args.providerId);
+
 						// Some providers stream chat chunks even on /responses
 						if (payload?.object === "chat.completion.chunk" || payload?.object === "chat.completion") {
 							await emit(payload, controller);
@@ -373,6 +375,12 @@ export function transformResponsesStreamToChat(
 				if (finalResponse) {
 					const ir = openAIResponsesToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 					const finalChunk = encodeOpenAIChatResponse(ir, args.requestId);
+					const observedServiceTier =
+						finalResponse?.usage?.service_tier ?? finalResponse?.usage?.serviceTier;
+					if (typeof observedServiceTier === "string") {
+						finalChunk.usage ??= {};
+						(finalChunk.usage as Record<string, unknown>).service_tier = observedServiceTier;
+					}
 					await emit(finalChunk, controller);
 				}
 			} catch (err) {
@@ -511,6 +519,8 @@ export function transformChatStreamToResponses(
 						} catch {
 							continue;
 						}
+
+						applyStreamQuirks(payload, state, args.providerId);
 
 						const isChatPayload =
 							payload?.object === "chat.completion.chunk" ||
