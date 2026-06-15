@@ -461,7 +461,7 @@ jobs:
 
             - name: Setup PHP
               if: matrix.sdk == 'php'
-              uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc
+              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
               with:
                   php-version: "8.2"
 
