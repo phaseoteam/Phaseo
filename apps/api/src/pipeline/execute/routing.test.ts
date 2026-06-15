@@ -129,6 +129,40 @@ function textPricingCard(inputTextPerToken: number, cachedReadPerToken: number) 
 	};
 }
 
+function textTierPricingCard(plans: Array<"standard" | "priority" | "flex">) {
+	return {
+		provider: "test",
+		model: "moonshotai/kimi-k2.7-code",
+		endpoint: "responses",
+		effective_from: null,
+		effective_to: null,
+		currency: "USD",
+		version: "1",
+		rules: plans.flatMap((plan) => [
+			{
+				pricing_plan: plan,
+				meter: "input_text_tokens",
+				unit: "token",
+				unit_size: 1,
+				price_per_unit: plan === "priority" ? "0.000002" : "0.000001",
+				currency: "USD",
+				match: [],
+				priority: 1,
+			},
+			{
+				pricing_plan: plan,
+				meter: "output_text_tokens",
+				unit: "token",
+				unit_size: 1,
+				price_per_unit: plan === "priority" ? "0.000008" : "0.000004",
+				currency: "USD",
+				match: [],
+				priority: 1,
+			},
+		]),
+	};
+}
+
 describe("routeProviders testing mode", () => {
 	beforeEach(() => {
 		readHealthManyMock.mockReset();
@@ -455,6 +489,113 @@ describe("routeProviders testing mode", () => {
 		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
 			"moonshotai-turbo",
 		]);
+	});
+
+	it("filters priority service-tier routing to providers that support the requested tier", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			moonshotai: health("moonshotai", {
+				lat_ewma_60s: 900,
+				lat_ewma_300s: 900,
+			}),
+			novita: health("novita", {
+				lat_ewma_60s: 100,
+				lat_ewma_300s: 100,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "moonshotai",
+					apiModelId: "moonshotai/kimi-k2.7-code",
+					providerModelSlug: "kimi-k2.7-code-highspeed",
+					pricingCard: textTierPricingCard(["standard", "priority"]),
+				}),
+				candidate({
+					providerId: "novita",
+					apiModelId: "moonshotai/kimi-k2.7-code",
+					providerModelSlug: "moonshotai/kimi-k2.7-code",
+					pricingCard: textTierPricingCard(["standard"]),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "moonshotai/kimi-k2.7-code",
+				workspaceId: "team_123",
+				body: {
+					service_tier: "priority",
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"moonshotai",
+		]);
+		const serviceTierStage = result.diagnostics.filterStages.find(
+			(stage) => stage.stage === "service_tier_support_gate",
+		);
+		expect(serviceTierStage).toMatchObject({
+			beforeCount: 2,
+			afterCount: 1,
+			droppedProviders: [
+				{
+					providerId: "novita",
+					apiModelId: "moonshotai/kimi-k2.7-code",
+					providerModelSlug: "moonshotai/kimi-k2.7-code",
+					reason: "service_tier_priority_unsupported",
+				},
+			],
+		});
+	});
+
+	it("preserves provider routing when service_tier is omitted", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			moonshotai: health("moonshotai", {
+				lat_ewma_60s: 900,
+				lat_ewma_300s: 900,
+			}),
+			novita: health("novita", {
+				lat_ewma_60s: 100,
+				lat_ewma_300s: 100,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "moonshotai",
+					apiModelId: "moonshotai/kimi-k2.7-code",
+					providerModelSlug: "kimi-k2.7-code-highspeed",
+					pricingCard: textTierPricingCard(["standard", "priority"]),
+				}),
+				candidate({
+					providerId: "novita",
+					apiModelId: "moonshotai/kimi-k2.7-code",
+					providerModelSlug: "moonshotai/kimi-k2.7-code",
+					pricingCard: textTierPricingCard(["standard"]),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "moonshotai/kimi-k2.7-code",
+				workspaceId: "team_123",
+				body: {
+					provider: { sort: "latency" },
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
+			"novita",
+			"moonshotai",
+		]);
+		expect(
+			result.diagnostics.filterStages.some(
+				(stage) => stage.stage === "service_tier_support_gate",
+			),
+		).toBe(false);
 	});
 
 	it("applies strong derank multipliers (legacy deranked maps to lvl1)", async () => {
