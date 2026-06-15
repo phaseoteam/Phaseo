@@ -285,6 +285,68 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
+    it("remaps Moonshot K2.7 Code priority requests to the hidden HighSpeed slug while keeping the public model stable", async () => {
+        queryState.providerRows = [
+            {
+                provider_id: "moonshotai",
+                api_model_id: "moonshotai/kimi-k2.7-code-highspeed",
+                provider_api_model_id: "moonshot-highspeed-pam",
+                provider_model_slug: "kimi-k2.7-code-highspeed",
+                is_active_gateway: false,
+                effective_from: "2026-06-12T00:00:00Z",
+                effective_to: null,
+            },
+        ];
+        queryState.capabilityRows = [
+            {
+                provider_api_model_id: "moonshot-highspeed-pam",
+                params: { thinking: true },
+                max_input_tokens: 262_144,
+                max_output_tokens: 65_536,
+                status: "active",
+                updated_at: "2026-06-12T00:00:00Z",
+                created_at: "2026-06-12T00:00:00Z",
+            },
+        ];
+
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "moonshotai",
+                    apiModelId: "moonshotai/kimi-k2.7-code",
+                    providerModelSlug: "kimi-k2.7-code",
+                    pricingCard: makeCard({
+                        provider: "moonshotai",
+                        model: "moonshotai/kimi-k2.7-code",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "moonshotai",
+            apiModelId: "moonshotai/kimi-k2.7-code",
+            pricingKey: "moonshotai:moonshotai/kimi-k2.7-code",
+            providerModelSlug: "kimi-k2.7-code-highspeed",
+            maxInputTokens: 262_144,
+            maxOutputTokens: 65_536,
+            capabilityParams: { thinking: true },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([
+            {
+                providerId: "moonshotai",
+                fromApiModelId: "moonshotai/kimi-k2.7-code",
+                toApiModelId: "moonshotai/kimi-k2.7-code-highspeed",
+                reason: "priority_fast_sibling",
+            },
+        ]);
+    });
+
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {

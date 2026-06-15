@@ -14,7 +14,9 @@ const MOONSHOT_PROVIDER_IDS = new Set([
 
 const K2_7_CODE_MODELS = new Set([
 	"kimi-k2.7-code",
+	"kimi-k2.7-code-highspeed",
 	"moonshotai/kimi-k2.7-code",
+	"moonshotai/kimi-k2.7-code-highspeed",
 ]);
 
 const isMoonshot = (providerId?: string) =>
@@ -24,7 +26,7 @@ function isK27CodeModel(model: unknown): boolean {
 	return K2_7_CODE_MODELS.has(String(model ?? "").trim().toLowerCase());
 }
 
-export function normalizeK27CodeRequest(request: Record<string, any>) {
+function normalizeK27CodeRequest(request: Record<string, any>) {
 	if (!isK27CodeModel(request?.model)) return;
 
 	// K2.7 Code rejects disabled thinking. Omit or enable it instead.
