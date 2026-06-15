@@ -778,6 +778,7 @@ export async function routeProviders(
     const beforeServiceTierSupportGate = poolCandidates;
     if (requestedServiceTier) {
         poolCandidates = poolCandidates.filter((candidate) =>
+            testingMode ||
             candidateSupportsRequestedServiceTier(candidate, requestedServiceTier)
         );
         pushStage("service_tier_support_gate", beforeServiceTierSupportGate, poolCandidates, (candidate) =>
