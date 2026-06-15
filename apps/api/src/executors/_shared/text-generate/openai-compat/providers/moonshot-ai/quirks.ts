@@ -24,7 +24,7 @@ function isK27CodeModel(model: unknown): boolean {
 	return K2_7_CODE_MODELS.has(String(model ?? "").trim().toLowerCase());
 }
 
-function normalizeK27CodeRequest(request: Record<string, any>) {
+export function normalizeK27CodeRequest(request: Record<string, any>) {
 	if (!isK27CodeModel(request?.model)) return;
 
 	// K2.7 Code rejects disabled thinking. Omit or enable it instead.

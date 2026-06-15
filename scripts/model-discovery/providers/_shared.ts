@@ -84,7 +84,7 @@ function normalizeResponseErrorDetail(value: unknown): string | null {
         const trimmed = value.trim();
         return trimmed || null;
     }
-    if (typeof value === "number" && Number.isFinite(value)) {
+    if (typeof value === "number" && Number.isFinite(value) && value !== 0) {
         return String(value);
     }
     const record = asRecord(value);
@@ -96,7 +96,7 @@ function normalizeResponseErrorDetail(value: unknown): string | null {
             const trimmed = nested.trim();
             if (trimmed) return trimmed;
         }
-        if (typeof nested === "number" && Number.isFinite(nested)) {
+        if (typeof nested === "number" && Number.isFinite(nested) && nested !== 0) {
             return String(nested);
         }
     }

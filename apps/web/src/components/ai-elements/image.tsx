@@ -23,11 +23,11 @@ export const Image = ({
     height={height ?? 1024}
     unoptimized
     alt={alt}
+    {...props}
     className={cn(
       "h-auto max-w-full overflow-hidden rounded-md",
       props.className
     )}
-    {...props}
     src={`data:${mediaType};base64,${base64}`}
   />
 );

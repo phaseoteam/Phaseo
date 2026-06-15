@@ -172,9 +172,23 @@ export async function startSsoSignIn(input: StartSsoInput) {
 			{ kind: "oauth" }
 		>["params"];
 		await setAuthProviderCookie(provider);
-		const { data, error } = await supabase.auth.signInWithOAuth(
-			request.params as any,
-		);
+		let data:
+			| Awaited<ReturnType<typeof supabase.auth.signInWithOAuth>>["data"]
+			| undefined;
+		let error:
+			| Awaited<ReturnType<typeof supabase.auth.signInWithOAuth>>["error"]
+			| undefined;
+		try {
+			({ data, error } = await supabase.auth.signInWithOAuth(
+				request.params as any,
+			));
+		} catch (error) {
+			return redirect(
+				`/error?message=${encodeURIComponent(
+					mapSsoAuthErrorMessage(error),
+				)}`,
+			);
+		}
 		if (error || !data?.url) {
 			return redirect(
 				`/error?message=${encodeURIComponent(
@@ -186,9 +200,23 @@ export async function startSsoSignIn(input: StartSsoInput) {
 	}
 
 	await setAuthProviderCookie("sso");
-	const { data, error } = await supabase.auth.signInWithSSO(
-		request.params as any,
-	);
+	let data:
+		| Awaited<ReturnType<typeof supabase.auth.signInWithSSO>>["data"]
+		| undefined;
+	let error:
+		| Awaited<ReturnType<typeof supabase.auth.signInWithSSO>>["error"]
+		| undefined;
+	try {
+		({ data, error } = await supabase.auth.signInWithSSO(
+			request.params as any,
+		));
+	} catch (error) {
+		return redirect(
+			`/error?message=${encodeURIComponent(
+				mapSsoAuthErrorMessage(error),
+				)}`,
+			);
+	}
 	if (error || !data?.url) {
 		return redirect(
 			`/error?message=${encodeURIComponent(

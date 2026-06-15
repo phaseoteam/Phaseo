@@ -20,6 +20,10 @@
       "url": "https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart"
     },
     {
+      "platform": "weights",
+      "url": "https://huggingface.co/moonshotai/Kimi-K2.7-Code"
+    },
+    {
       "platform": "pricing",
       "url": "https://platform.kimi.ai/docs/pricing/chat-k27-code"
     }

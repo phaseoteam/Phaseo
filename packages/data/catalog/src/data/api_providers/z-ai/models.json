@@ -936,6 +936,27 @@
     ]
   },
   {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "z-ai:z-ai/glm-5.2",
+    "provider_model_slug": "glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "z-ai/glm-5v-turbo",
     "provider_api_model_id": "z-ai:z-ai/glm-5v-turbo",
     "provider_model_slug": "glm-5v-turbo",
