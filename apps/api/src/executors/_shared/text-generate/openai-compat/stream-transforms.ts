@@ -256,6 +256,8 @@ export function transformResponsesStreamToChat(
 							continue;
 						}
 
+						applyStreamQuirks(payload, state, args.providerId);
+
 						switch (normalizeResponsesEvent(event)) {
 							case "response.created":
 								nativeResponseId = payload?.response?.id ?? payload?.id ?? nativeResponseId;
@@ -384,6 +386,13 @@ export function transformResponsesStreamToChat(
 				if (finalResponse) {
 					const ir = openAIResponsesToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 					const finalChunk = encodeOpenAIChatResponse(ir, args.requestId);
+					const observedServiceTier =
+						finalResponse?.usage?.service_tier ?? finalResponse?.usage?.serviceTier;
+					if (typeof observedServiceTier === "string") {
+						finalChunk.usage ??= {};
+						(finalChunk.usage as Record<string, unknown>).service_tier = observedServiceTier;
+						(finalChunk.usage as Record<string, unknown>).serviceTier = observedServiceTier;
+					}
 					await emit(finalChunk, controller);
 				}
 			} catch (err) {
@@ -538,6 +547,7 @@ export function transformChatStreamToResponses(
 						}
 
 						if (mode === "responses" && !isChatPayload) {
+							applyStreamQuirks(payload, state, args.providerId);
 							if (payload?.response && typeof args.ir.model === "string" && args.ir.model) {
 								payload = {
 									...payload,

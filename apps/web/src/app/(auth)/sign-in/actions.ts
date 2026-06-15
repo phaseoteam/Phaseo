@@ -214,8 +214,8 @@ export async function startSsoSignIn(input: StartSsoInput) {
 		return redirect(
 			`/error?message=${encodeURIComponent(
 				mapSsoAuthErrorMessage(error),
-			)}`,
-		);
+				)}`,
+			);
 	}
 	if (error || !data?.url) {
 		return redirect(

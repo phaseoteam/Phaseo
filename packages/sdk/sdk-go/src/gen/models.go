@@ -1785,8 +1785,6 @@ const (
 	KnownModelIdVoyageVoyageMultilingual2 KnownModelId = "voyage/voyage-multilingual-2"
 	KnownModelIdVoyageVoyageMultimodal3 KnownModelId = "voyage/voyage-multimodal-3"
 	KnownModelIdVoyageVoyageMultimodal35 KnownModelId = "voyage/voyage-multimodal-3.5"
-	KnownModelIdXAiGrok2Vision KnownModelId = "x-ai/grok-2-vision"
-	KnownModelIdXAiGrok3Mini KnownModelId = "x-ai/grok-3-mini"
 	KnownModelIdXAiGrok420Beta0309 KnownModelId = "x-ai/grok-4.20-beta-0309"
 	KnownModelIdXAiGrok420MultiAgentBeta0309 KnownModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
 	KnownModelIdXAiGrok43 KnownModelId = "x-ai/grok-4.3"
