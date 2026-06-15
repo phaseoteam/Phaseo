@@ -413,8 +413,6 @@ export type KnownModelId =
   | "voyage/voyage-multilingual-2"
   | "voyage/voyage-multimodal-3"
   | "voyage/voyage-multimodal-3.5"
-  | "x-ai/grok-2-vision"
-  | "x-ai/grok-3-mini"
   | "x-ai/grok-4.20-beta-0309"
   | "x-ai/grok-4.20-multi-agent-beta-0309"
   | "x-ai/grok-4.3"
