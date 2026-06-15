@@ -171,7 +171,10 @@ async function executeXAi(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 		return {
 			kind: "stream",
 			stream,
-			usageFinalizer: async () => null,
+			usageFinalizer: async () => {
+				// Stream pricing reads the observed xAI tier from transformed stream-frame usage.
+				return null;
+			},
 			bill,
 			upstream: res,
 			keySource: keyInfo.source,

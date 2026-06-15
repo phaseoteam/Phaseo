@@ -442,6 +442,50 @@ describe("resolveStreamForProtocol", () => {
 		expect(output).not.toContain("kimi-k2.7-code-highspeed");
 	});
 
+	it("does not duplicate reasoning_content when chat payloads pass through responses-to-chat", async () => {
+		const upstream = makeSseResponse([
+			{
+				data: {
+					id: "chatcmpl_reasoning_once",
+					object: "chat.completion.chunk",
+					created: 1710000012,
+					model: "deepseek-r1",
+					choices: [{
+						index: 0,
+						delta: {
+							reasoning_content: "think once",
+						},
+						finish_reason: "stop",
+					}],
+					usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+				},
+			},
+			"[DONE]",
+		]);
+
+		const output = await readStreamText(resolveStreamForProtocol(
+			upstream,
+			baseArgs({
+				providerId: "deepseek",
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+			}),
+			"responses",
+		));
+		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
+		const finalChunk = chunks.at(-1);
+
+		expect(finalChunk?.choices?.[0]?.message?.reasoning_content).toBe("think once");
+		expect(finalChunk?.choices?.[0]?.message?.reasoning_details).toEqual([
+			{
+				id: "req_stream_test-reasoning-0-1",
+				index: 0,
+				type: "text",
+				text: "think once",
+			},
+		]);
+	});
+
 	it("emits output_item function-call events when transforming chat stream to responses", async () => {
 		const upstream = makeSseResponse([
 			{

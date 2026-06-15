@@ -118,6 +118,7 @@ describe("xAI quirks", () => {
 			});
 
 			expect(chunk.response.usage.service_tier).toBe("standard");
+			expect(chunk.response.usage.serviceTier).toBe("standard");
 		});
 	});
 });

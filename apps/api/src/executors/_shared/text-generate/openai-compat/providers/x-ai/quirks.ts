@@ -35,6 +35,7 @@ function attachServiceTierToUsage(responseLike: any): void {
 	responseLike.usage ??= {};
 	if (typeof responseLike.usage !== "object") return;
 	responseLike.usage.service_tier = observedServiceTier;
+	responseLike.usage.serviceTier = observedServiceTier;
 }
 
 export const xAiQuirks: ProviderQuirks = {

@@ -247,8 +247,6 @@ export function transformResponsesStreamToChat(
 							continue;
 						}
 
-						applyStreamQuirks(payload, state, args.providerId);
-
 						// Some providers stream chat chunks even on /responses
 						if (payload?.object === "chat.completion.chunk" || payload?.object === "chat.completion") {
 							if (typeof args.ir.model === "string" && args.ir.model) {
@@ -257,6 +255,8 @@ export function transformResponsesStreamToChat(
 							await emit(payload, controller);
 							continue;
 						}
+
+						applyStreamQuirks(payload, state, args.providerId);
 
 						switch (normalizeResponsesEvent(event)) {
 							case "response.created":
@@ -391,6 +391,7 @@ export function transformResponsesStreamToChat(
 					if (typeof observedServiceTier === "string") {
 						finalChunk.usage ??= {};
 						(finalChunk.usage as Record<string, unknown>).service_tier = observedServiceTier;
+						(finalChunk.usage as Record<string, unknown>).serviceTier = observedServiceTier;
 					}
 					await emit(finalChunk, controller);
 				}
@@ -531,8 +532,6 @@ export function transformChatStreamToResponses(
 							continue;
 						}
 
-						applyStreamQuirks(payload, state, args.providerId);
-
 						const isChatPayload =
 							payload?.object === "chat.completion.chunk" ||
 							payload?.object === "chat.completion" ||
@@ -548,6 +547,7 @@ export function transformChatStreamToResponses(
 						}
 
 						if (mode === "responses" && !isChatPayload) {
+							applyStreamQuirks(payload, state, args.providerId);
 							if (payload?.response && typeof args.ir.model === "string" && args.ir.model) {
 								payload = {
 									...payload,
