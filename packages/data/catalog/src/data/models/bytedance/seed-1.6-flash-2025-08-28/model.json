@@ -1,0 +1,19 @@
+{
+  "model_id": "bytedance/seed-1.6-flash-2025-08-28",
+  "organisation_id": "bytedance",
+  "name": "Seed 1.6 Flash (2025-08-28)",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Seed 1.6 Flash (2025-08-28) is a dated ByteDance language model release tuned for lower latency and cost-sensitive production use.",
+  "announced_date": null,
+  "release_date": "2025-08-28T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "bytedance/seed-1.6-flash-2025-08-28",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

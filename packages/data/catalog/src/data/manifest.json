@@ -154,9 +154,13 @@
     "bytedance": [
       "bytedance/seed-1.6-2025-06-15",
       "bytedance/seed-1.6-2025-09-15",
+      "bytedance/seed-1.6-2025-10-15",
       "bytedance/seed-1.6-flash-2025-06-15",
       "bytedance/seed-1.6-flash-2025-07-15",
+      "bytedance/seed-1.6-flash-2025-08-28",
       "bytedance/seed-1.8",
+      "bytedance/seed-1.8-2025-12-28",
+      "bytedance/seed-2.0-code-preview-2026-02-15",
       "bytedance/seed-2.0-lite",
       "bytedance/seed-2.0-lite-2026-04-28",
       "bytedance/seed-2.0-mini",
@@ -166,6 +170,7 @@
       "bytedance/seed-coder-8b-reasoning",
       "bytedance/seed-oss-36b-instruct",
       "bytedance/seed-translation",
+      "bytedance/seedance-2.0-mini-260615",
       "bytedance/seedream-4.5"
     ],
     "cohere": [
