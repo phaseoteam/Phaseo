@@ -107,7 +107,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "06d0b21b8cbe7c5944af411ea1536b10",
+      "hash": "b3f9d045efa4a5cc4571f615888baaa6",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -705,7 +705,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/models.json": {
-      "hash": "33d4a2e83030d7e56260dd70ec02adb0",
+      "hash": "0b06e1c9b89628ca59d288f00a039cc4",
       "meta": {
         "api_provider_id": "venice-e2ee",
         "kind": "provider_models"
@@ -14562,6 +14562,15 @@
         "model_key": "atlascloud:moonshotai/kimi-k2.6:text.generate"
       }
     },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k2.7-code/text.generate/pricing.json": {
+      "hash": "ee54855af5e2dad0cd1f396c3d6f91a4",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.7-code",
+        "model_key": "atlascloud:moonshotai/kimi-k2.7-code:text.generate"
+      }
+    },
     "../../packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-oss-120b/text.generate/pricing.json": {
       "hash": "3dc3dadb15bb97fb662302de06db9160",
       "meta": {
@@ -21076,15 +21085,6 @@
         "capability_id": "text.generate",
         "model_id": "z-ai/glm-4.7",
         "model_key": "venice-e2ee:z-ai/glm-4.7:text.generate"
-      }
-    },
-    "../../packages/data/catalog/src/data/pricing/venice-e2ee/z-ai-glm-4.7-flash/text.generate/pricing.json": {
-      "hash": "6346ca30e2ad68ce88d748d70b343bcd",
-      "meta": {
-        "api_provider_id": "venice-e2ee",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.7-flash",
-        "model_key": "venice-e2ee:z-ai/glm-4.7-flash:text.generate"
       }
     },
     "../../packages/data/catalog/src/data/pricing/venice-e2ee/z-ai-glm-5/text.generate/pricing.json": {
