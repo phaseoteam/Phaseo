@@ -126,14 +126,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
-		id: "deepinfra",
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
-			},
-		},
-	},
-	{
 		id: "cerebras",
 		text: {
 			paramPolicy: {
