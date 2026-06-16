@@ -48,6 +48,10 @@ const PRIORITY_SIBLING_API_MODEL_IDS = new Map<string, string>([
     ["moonshotai/kimi-k2.7-code", "moonshotai/kimi-k2.7-code-highspeed"],
 ]);
 
+const PRIORITY_HIDDEN_SAME_MODEL_KEYS = new Set([
+    "deepinfra:minimax/minimax-m2.7",
+]);
+
 const PRIORITY_SIBLING_VALUE_IDS = new Set(
     Array.from(PRIORITY_SIBLING_API_MODEL_IDS.values(), (value) =>
         value.trim().toLowerCase(),
@@ -111,6 +115,24 @@ function getTierSiblingApiModelId(
     }
     if (requestedPlan === "flex") return `${apiModelId}-flex`;
     return null;
+}
+
+function getHiddenTierSiblingLookupApiModelId(
+    providerId: string,
+    apiModelId: string,
+    requestedPlan: ServiceTierPlan,
+): string | null {
+    if (requestedPlan !== "priority") {
+        return getTierSiblingApiModelId(apiModelId, requestedPlan);
+    }
+
+    const normalizedProviderId = providerId.trim().toLowerCase();
+    const normalizedApiModelId = apiModelId.trim().toLowerCase();
+    if (PRIORITY_HIDDEN_SAME_MODEL_KEYS.has(`${normalizedProviderId}:${normalizedApiModelId}`)) {
+        return apiModelId;
+    }
+
+    return getTierSiblingApiModelId(apiModelId, requestedPlan);
 }
 
 export function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
@@ -239,15 +261,19 @@ async function remapToHiddenTierSibling(
     requestedPlan: ServiceTierPlan,
 ): Promise<ProviderCandidate | null> {
     const apiModelId = String(candidate.apiModelId ?? "").trim();
-    const siblingApiModelId = getTierSiblingApiModelId(apiModelId, requestedPlan);
-    if (!apiModelId || !siblingApiModelId) return null;
+    const siblingLookupApiModelId = getHiddenTierSiblingLookupApiModelId(
+        candidate.providerId,
+        apiModelId,
+        requestedPlan,
+    );
+    if (!apiModelId || !siblingLookupApiModelId) return null;
 
     const supabase = getSupabaseAdmin();
     const { data: providerRows, error: providerError } = await supabase
         .from("data_api_provider_models")
         .select("provider_api_model_id,provider_model_slug,is_active_gateway,effective_from,effective_to")
         .eq("provider_id", candidate.providerId)
-        .eq("api_model_id", siblingApiModelId)
+        .eq("api_model_id", siblingLookupApiModelId)
         .eq("is_active_gateway", false);
     if (providerError || !providerRows?.length) return null;
 
@@ -367,7 +393,11 @@ export async function applyServiceTierRouting(args: {
             );
             if (hiddenSiblingCandidate) {
                 const remappedApiModelId = candidate.apiModelId
-                    ? getTierSiblingApiModelId(candidate.apiModelId, requestedPlan)
+                    ? getHiddenTierSiblingLookupApiModelId(
+                        candidate.providerId,
+                        candidate.apiModelId,
+                        requestedPlan,
+                    )
                     : null;
                 nextCandidates.push(hiddenSiblingCandidate);
                 remappedProviders.push({

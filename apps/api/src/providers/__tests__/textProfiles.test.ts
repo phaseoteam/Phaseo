@@ -59,6 +59,7 @@ describe("text provider profiles", () => {
 			"moonshotai",
 			"moonshot-ai",
 			"moonshotai-turbo",
+			"deepinfra",
 			"x-ai",
 			"xai",
 		]) {

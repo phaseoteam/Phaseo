@@ -376,6 +376,68 @@ describe("applyServiceTierRouting", () => {
         expect(loadPriceCardMock).not.toHaveBeenCalled();
     });
 
+    it("remaps DeepInfra MiniMax M2.7 priority requests to the hidden Turbo slug while keeping the public model stable", async () => {
+        queryState.providerRows = [
+            {
+                provider_id: "deepinfra",
+                api_model_id: "minimax/minimax-m2.7",
+                provider_api_model_id: "deepinfra-minimax-m2.7-turbo-pam",
+                provider_model_slug: "MiniMaxAI/MiniMax-M2.7-Turbo",
+                is_active_gateway: false,
+                effective_from: "2026-06-15T00:00:00Z",
+                effective_to: null,
+            },
+        ];
+        queryState.capabilityRows = [
+            {
+                provider_api_model_id: "deepinfra-minimax-m2.7-turbo-pam",
+                params: { reasoning: true },
+                max_input_tokens: 196_608,
+                max_output_tokens: 131_072,
+                status: "active",
+                updated_at: "2026-06-15T00:00:00Z",
+                created_at: "2026-06-15T00:00:00Z",
+            },
+        ];
+
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "deepinfra",
+                    apiModelId: "minimax/minimax-m2.7",
+                    providerModelSlug: "MiniMaxAI/MiniMax-M2.7",
+                    pricingCard: makeCard({
+                        provider: "deepinfra",
+                        model: "minimax/minimax-m2.7",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "deepinfra",
+            apiModelId: "minimax/minimax-m2.7",
+            pricingKey: "deepinfra:minimax/minimax-m2.7",
+            providerModelSlug: "MiniMaxAI/MiniMax-M2.7-Turbo",
+            maxInputTokens: 196_608,
+            maxOutputTokens: 131_072,
+            capabilityParams: { reasoning: true },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([
+            {
+                providerId: "deepinfra",
+                fromApiModelId: "minimax/minimax-m2.7",
+                toApiModelId: "minimax/minimax-m2.7",
+                reason: "priority_fast_sibling",
+            },
+        ]);
+    });
+
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {
