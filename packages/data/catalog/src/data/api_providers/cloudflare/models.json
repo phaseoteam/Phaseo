@@ -817,6 +817,49 @@
     ]
   },
   {
+    "api_model_id": "zai-org/glm-5.2",
+    "provider_api_model_id": "cloudflare:@cf/zai-org/glm-5.2",
+    "provider_model_slug": "@cf/zai-org/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
     "api_model_id": "nvidia/nemotron-3-120b-a12b",
     "provider_api_model_id": "cloudflare:@cf/nvidia/nemotron-3-120b-a12b",
     "provider_model_slug": "@cf/nvidia/nemotron-3-120b-a12b",
@@ -914,6 +957,49 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "cloudflare:@cf/moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "@cf/moonshotai/kimi-k2.7-code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
