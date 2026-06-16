@@ -27,8 +27,6 @@ export const ModelIds = {
   ANTHROPIC_CLAUDE_3_7_SONNET: "anthropic/claude-3.7-sonnet",
   /** Model ID: `anthropic/claude-haiku-4.5`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5 */
   ANTHROPIC_CLAUDE_HAIKU_4_5: "anthropic/claude-haiku-4.5",
-  /** Model ID: `anthropic/claude-opus-4`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4 */
-  ANTHROPIC_CLAUDE_OPUS_4: "anthropic/claude-opus-4",
   /** Model ID: `anthropic/claude-opus-4.1`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1 */
   ANTHROPIC_CLAUDE_OPUS_4_1: "anthropic/claude-opus-4.1",
   /** Model ID: `anthropic/claude-opus-4.5`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.5 */
@@ -41,8 +39,6 @@ export const ModelIds = {
   ANTHROPIC_CLAUDE_OPUS_4_7_FAST: "anthropic/claude-opus-4.7-fast",
   /** Model ID: `anthropic/claude-opus-4.8`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
   ANTHROPIC_CLAUDE_OPUS_4_8: "anthropic/claude-opus-4.8",
-  /** Model ID: `anthropic/claude-sonnet-4`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
-  ANTHROPIC_CLAUDE_SONNET_4: "anthropic/claude-sonnet-4",
   /** Model ID: `anthropic/claude-sonnet-4.5`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5 */
   ANTHROPIC_CLAUDE_SONNET_4_5: "anthropic/claude-sonnet-4.5",
   /** Model ID: `anthropic/claude-sonnet-4.6`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6 */

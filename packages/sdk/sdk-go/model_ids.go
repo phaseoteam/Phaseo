@@ -43,9 +43,6 @@ const (
 	// Model ID: anthropic/claude-haiku-4.5
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
 	ModelIDAnthropicClaudeHaiku45 gen.ModelId = "anthropic/claude-haiku-4.5"
-	// Model ID: anthropic/claude-opus-4
-	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4
-	ModelIDAnthropicClaudeOpus4 gen.ModelId = "anthropic/claude-opus-4"
 	// Model ID: anthropic/claude-opus-4.1
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1
 	ModelIDAnthropicClaudeOpus41 gen.ModelId = "anthropic/claude-opus-4.1"
@@ -64,9 +61,6 @@ const (
 	// Model ID: anthropic/claude-opus-4.8
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
 	ModelIDAnthropicClaudeOpus48 gen.ModelId = "anthropic/claude-opus-4.8"
-	// Model ID: anthropic/claude-sonnet-4
-	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
-	ModelIDAnthropicClaudeSonnet4 gen.ModelId = "anthropic/claude-sonnet-4"
 	// Model ID: anthropic/claude-sonnet-4.5
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5
 	ModelIDAnthropicClaudeSonnet45 gen.ModelId = "anthropic/claude-sonnet-4.5"
