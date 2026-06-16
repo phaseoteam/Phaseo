@@ -75,12 +75,6 @@
       "other_info": "Listed under GitHub Copilot Free model access"
     },
     {
-      "model_id": "anthropic/claude-sonnet-4",
-      "model_info": null,
-      "rate_limit": "50 premium requests / month",
-      "other_info": "Listed under GitHub Copilot Free model access"
-    },
-    {
       "model_id": "anthropic/claude-sonnet-4.5",
       "model_info": null,
       "rate_limit": "50 premium requests / month",

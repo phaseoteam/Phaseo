@@ -393,7 +393,7 @@
     "context_length": 200000,
     "max_output_tokens": 32000,
     "effective_from": "2025-05-21T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-15T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -761,7 +761,7 @@
     "context_length": 200000,
     "max_output_tokens": 64000,
     "effective_from": "2025-05-21T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-15T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
