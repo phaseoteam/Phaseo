@@ -52,7 +52,7 @@ export const zaiQuirks: ProviderQuirks = {
 			};
 		}
 
-		if (request.reasoning_effort == null) {
+		if (request.reasoning_effort == null && reasoningEnabled !== false) {
 			const effort = mapReasoningEffortToZai(ir.reasoning?.effort);
 			if (effort) {
 				request.reasoning_effort = effort;

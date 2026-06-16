@@ -43,7 +43,7 @@ describe("Z.AI Quirks", () => {
 			const request: Record<string, any> = {};
 			zaiQuirks.transformRequest!({
 				request,
-				ir: { reasoning: { enabled: false } } as any,
+				ir: { reasoning: { enabled: false, effort: "medium" } } as any,
 			});
 			expect(request.thinking).toEqual({
 				type: "disabled",
