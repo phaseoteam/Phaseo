@@ -23,6 +23,33 @@ describe("text provider profiles", () => {
 		).toBe(false);
 	});
 
+	it("returns param policy overrides for provider-verified supported params", () => {
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "baseten",
+				paramPathCandidates: ["max_tokens"],
+			}),
+		).toBe(true);
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "deepinfra",
+				paramPathCandidates: ["max_tokens"],
+			}),
+		).toBe(true);
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "deepinfra",
+				paramPathCandidates: ["temperature"],
+			}),
+		).toBe(true);
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "deepinfra",
+				paramPathCandidates: ["service_tier"],
+			}),
+		).toBe(true);
+	});
+
 	it("provides normalize hints used by execute path", () => {
 		expect(getTextProviderTemperatureMax("anthropic")).toBe(1);
 		expect(getTextProviderDefaultMaxTokens("anthropic")).toBe(4096);
