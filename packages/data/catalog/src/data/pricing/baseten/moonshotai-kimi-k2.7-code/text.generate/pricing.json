@@ -1,0 +1,45 @@
+{
+  "key": "baseten:moonshotai/kimi-k2.7-code:text.generate",
+  "api_provider_id": "baseten",
+  "provider_slug": "baseten",
+  "api_model_id": "moonshotai/kimi-k2.7-code",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.95,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Baseten model page embedded payload reports perfCost 0.95 for Kimi K2.7 Code; observed 2026-06-16.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-12T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.16,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Baseten model page embedded payload reports perfCostCacheInput 0.16 for Kimi K2.7 Code; observed 2026-06-16.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-12T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Baseten model page embedded payload reports perfCostOutput 4 for Kimi K2.7 Code; observed 2026-06-16.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-12T00:00:00Z"
+    }
+  ]
+}
