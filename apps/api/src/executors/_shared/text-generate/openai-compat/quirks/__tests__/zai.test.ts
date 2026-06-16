@@ -36,6 +36,7 @@ describe("Z.AI Quirks", () => {
 				type: "enabled",
 				clear_thinking: false,
 			});
+			expect(request.reasoning_effort).toBe("high");
 		});
 
 		it("disables thinking when reasoning.enabled=false", () => {
@@ -48,6 +49,43 @@ describe("Z.AI Quirks", () => {
 				type: "disabled",
 				clear_thinking: false,
 			});
+			expect(request.reasoning_effort).toBeUndefined();
+		});
+
+		it("maps GLM-5.2 reasoning efforts to Z.AI supported levels", () => {
+			const highRequest: Record<string, any> = {};
+			zaiQuirks.transformRequest!({
+				request: highRequest,
+				ir: { reasoning: { effort: "high" } } as any,
+			});
+			expect(highRequest.thinking).toEqual({
+				type: "enabled",
+				clear_thinking: false,
+			});
+			expect(highRequest.reasoning_effort).toBe("high");
+
+			const maxRequest: Record<string, any> = {};
+			zaiQuirks.transformRequest!({
+				request: maxRequest,
+				ir: { reasoning: { effort: "max" } } as any,
+			});
+			expect(maxRequest.reasoning_effort).toBe("max");
+
+			const xhighRequest: Record<string, any> = {};
+			zaiQuirks.transformRequest!({
+				request: xhighRequest,
+				ir: { reasoning: { effort: "xhigh" } } as any,
+			});
+			expect(xhighRequest.reasoning_effort).toBe("max");
+		});
+
+		it("maps lower generic reasoning efforts to Z.AI high effort", () => {
+			const request: Record<string, any> = {};
+			zaiQuirks.transformRequest!({
+				request,
+				ir: { reasoning: { effort: "medium" } } as any,
+			});
+			expect(request.reasoning_effort).toBe("high");
 		});
 	});
 

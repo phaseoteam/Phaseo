@@ -4,49 +4,53 @@
   "name": "GLM 5.2",
   "status": "Available",
   "previous_model_id": "z-ai/glm-5.1",
-  "description": "GLM 5.2 is Z.AI's latest flagship coding model, now documented for both the GLM Coding Plan and Z.AI's general OpenAI-compatible API configuration flows.",
-  "announced_date": null,
-  "release_date": null,
+  "description": "GLM 5.2 is Z.AI's frontier open-weights model for coding and long-horizon agentic tasks, with a 1M context window and high/max reasoning effort controls.",
+  "announced_date": "2026-06-16",
+  "release_date": "2026-06-16",
   "deprecation_date": null,
   "retirement_date": null,
-  "license": null,
-  "input_types": null,
-  "output_types": null,
+  "license": "MIT",
+  "input_types": "text",
+  "output_types": "text",
   "api_model_id": "z-ai/glm-5.2",
-  "page_notice": {
-    "tone": "info",
-    "markdown": "Z.AI now documents `glm-5.2` on the general OpenAI-compatible API path in addition to the GLM Coding Plan materials, but the public pricing table still does not publish a dedicated `GLM-5.2` token-pricing row and the release-notes page still stops at `GLM-5.1`."
-  },
   "links": [
     {
       "platform": "docs",
-      "url": "https://docs.z.ai/devpack/overview"
+      "url": "https://docs.z.ai/guides/llm/glm-5.2"
     },
     {
       "platform": "docs",
-      "url": "https://docs.z.ai/devpack/quick-start"
+      "url": "https://docs.z.ai/guides/overview/pricing"
     },
     {
       "platform": "docs",
-      "url": "https://docs.z.ai/devpack/latest-model"
+      "url": "https://docs.z.ai/guides/capabilities/thinking-mode"
     },
     {
-      "platform": "docs",
-      "url": "https://docs.z.ai/devpack/tool/droid"
+      "platform": "announcement",
+      "url": "https://x.com/Zai_org/status/2066938937344495629"
     }
   ],
   "details": [
     {
       "name": "availability",
-      "value": "Public Z.AI docs now show GLM-5.2 in both Coding Plan materials and general OpenAI-compatible setup guidance, including the general API endpoint for standard-plan users."
+      "value": "Z.AI publicly announced GLM-5.2 on 2026-06-16 and documents it for the standard OpenAI-compatible API as model glm-5.2."
     },
     {
       "name": "context_length",
-      "value": "Z.AI's setup guides document a 1M context configuration for glm-5.2 in supported coding-tool integrations."
+      "value": "1,000,000 tokens"
     },
     {
-      "name": "pricing_status",
-      "value": "The current public Z.AI pricing page still does not publish a dedicated standard API token-pricing row for GLM-5.2."
+      "name": "max_output_tokens",
+      "value": "128,000 tokens"
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "Supports high and max reasoning efforts via Z.AI's reasoning_effort request parameter; thinking is enabled with the thinking.type field."
+    },
+    {
+      "name": "pricing",
+      "value": "Same standard API pricing as GLM-5.1: $1.40 per 1M input tokens, $0.26 per 1M cached input tokens, and $4.40 per 1M output tokens."
     }
   ],
   "benchmarks": []
