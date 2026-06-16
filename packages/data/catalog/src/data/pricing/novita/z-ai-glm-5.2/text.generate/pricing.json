@@ -1,0 +1,31 @@
+{
+  "key": "novita:z-ai/glm-5.2:text.generate",
+  "api_provider_id": "novita",
+  "provider_slug": "novita",
+  "api_model_id": "z-ai/glm-5.2",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.0001,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita Models API published input_token_price_per_m=1 on 2026-06-16; existing Novita catalog rows map these API price fields to USD/Mt by dividing by 10000.",
+      "match": [],
+      "priority": 100
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.0001,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Novita Models API published output_token_price_per_m=1 on 2026-06-16; no cache-read price was present.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}
