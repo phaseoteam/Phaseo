@@ -30,8 +30,6 @@ namespace AiStatsSdk
         public const string AnthropicClaude37Sonnet = "anthropic/claude-3.7-sonnet";
         /// <summary>Model ID: <c>anthropic/claude-haiku-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5</summary>
         public const string AnthropicClaudeHaiku45 = "anthropic/claude-haiku-4.5";
-        /// <summary>Model ID: <c>anthropic/claude-opus-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4</summary>
-        public const string AnthropicClaudeOpus4 = "anthropic/claude-opus-4";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.1</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1</summary>
         public const string AnthropicClaudeOpus41 = "anthropic/claude-opus-4.1";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.5</summary>
@@ -44,8 +42,6 @@ namespace AiStatsSdk
         public const string AnthropicClaudeOpus47Fast = "anthropic/claude-opus-4.7-fast";
         /// <summary>Model ID: <c>anthropic/claude-opus-4.8</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8</summary>
         public const string AnthropicClaudeOpus48 = "anthropic/claude-opus-4.8";
-        /// <summary>Model ID: <c>anthropic/claude-sonnet-4</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4</summary>
-        public const string AnthropicClaudeSonnet4 = "anthropic/claude-sonnet-4";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5</summary>
         public const string AnthropicClaudeSonnet45 = "anthropic/claude-sonnet-4.5";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.6</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6</summary>

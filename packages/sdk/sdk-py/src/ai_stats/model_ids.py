@@ -58,10 +58,6 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
     ANTHROPIC_CLAUDE_HAIKU_4_5: Final[str] = "anthropic/claude-haiku-4.5"
 
-    # Model ID: anthropic/claude-opus-4
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4
-    ANTHROPIC_CLAUDE_OPUS_4: Final[str] = "anthropic/claude-opus-4"
-
     # Model ID: anthropic/claude-opus-4.1
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1
     ANTHROPIC_CLAUDE_OPUS_4_1: Final[str] = "anthropic/claude-opus-4.1"
@@ -85,10 +81,6 @@ class ModelIds:
     # Model ID: anthropic/claude-opus-4.8
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
     ANTHROPIC_CLAUDE_OPUS_4_8: Final[str] = "anthropic/claude-opus-4.8"
-
-    # Model ID: anthropic/claude-sonnet-4
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
-    ANTHROPIC_CLAUDE_SONNET_4: Final[str] = "anthropic/claude-sonnet-4"
 
     # Model ID: anthropic/claude-sonnet-4.5
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5
@@ -1836,14 +1828,12 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.ANTHROPIC_CLAUDE_3_5_HAIKU,
         ModelIds.ANTHROPIC_CLAUDE_3_7_SONNET,
         ModelIds.ANTHROPIC_CLAUDE_HAIKU_4_5,
-        ModelIds.ANTHROPIC_CLAUDE_OPUS_4,
         ModelIds.ANTHROPIC_CLAUDE_OPUS_4_1,
         ModelIds.ANTHROPIC_CLAUDE_OPUS_4_5,
         ModelIds.ANTHROPIC_CLAUDE_OPUS_4_6,
         ModelIds.ANTHROPIC_CLAUDE_OPUS_4_7,
         ModelIds.ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
         ModelIds.ANTHROPIC_CLAUDE_OPUS_4_8,
-        ModelIds.ANTHROPIC_CLAUDE_SONNET_4,
         ModelIds.ANTHROPIC_CLAUDE_SONNET_4_5,
         ModelIds.ANTHROPIC_CLAUDE_SONNET_4_6,
         ModelIds.ARCEE_AI_TRINITY_LARGE,

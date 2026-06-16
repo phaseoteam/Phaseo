@@ -44,9 +44,6 @@ final class ModelIds
     /** Model ID: anthropic/claude-haiku-4.5. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5 */
     public const ANTHROPIC_CLAUDE_HAIKU_4_5 = 'anthropic/claude-haiku-4.5';
 
-    /** Model ID: anthropic/claude-opus-4. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4 */
-    public const ANTHROPIC_CLAUDE_OPUS_4 = 'anthropic/claude-opus-4';
-
     /** Model ID: anthropic/claude-opus-4.1. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1 */
     public const ANTHROPIC_CLAUDE_OPUS_4_1 = 'anthropic/claude-opus-4.1';
 
@@ -64,9 +61,6 @@ final class ModelIds
 
     /** Model ID: anthropic/claude-opus-4.8. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
     public const ANTHROPIC_CLAUDE_OPUS_4_8 = 'anthropic/claude-opus-4.8';
-
-    /** Model ID: anthropic/claude-sonnet-4. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
-    public const ANTHROPIC_CLAUDE_SONNET_4 = 'anthropic/claude-sonnet-4';
 
     /** Model ID: anthropic/claude-sonnet-4.5. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5 */
     public const ANTHROPIC_CLAUDE_SONNET_4_5 = 'anthropic/claude-sonnet-4.5';
