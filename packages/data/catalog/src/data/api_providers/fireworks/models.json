@@ -703,6 +703,27 @@
     ]
   },
   {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "fireworks:z-ai/glm-5.2",
+    "provider_model_slug": "accounts/fireworks/models/glm-5p2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwen-3.6-plus",
     "provider_api_model_id": "fireworks:qwen/qwen-3.6-plus",
     "provider_model_slug": "accounts/fireworks/models/qwen3p6-plus",

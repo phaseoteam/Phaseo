@@ -126,14 +126,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
-		id: "deepinfra",
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
-			},
-		},
-	},
-	{
 		id: "cerebras",
 		text: {
 			paramPolicy: {
@@ -148,6 +140,33 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 				serviceTierAliases: {
 					standard: "default",
 				},
+			},
+		},
+	},
+	{
+		id: "baseten",
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"max_tokens",
+					"temperature",
+					"top_p",
+					"stop",
+				],
+			},
+		},
+	},
+	{
+		id: "deepinfra",
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"service_tier",
+					"max_tokens",
+					"temperature",
+					"top_p",
+					"stop",
+				],
 			},
 		},
 	},
