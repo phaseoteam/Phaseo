@@ -1383,8 +1383,6 @@ const (
 	KnownModelIdAionLabsAionRpLlama318b KnownModelId = "aion-labs/aion-rp-llama-3.1-8b"
 	KnownModelIdAllenaiMolmo28b KnownModelId = "allenai/molmo-2-8b"
 	KnownModelIdAllenaiOlmo3132b KnownModelId = "allenai/olmo-3.1-32b"
-	KnownModelIdAnthropicClaude35Haiku KnownModelId = "anthropic/claude-3.5-haiku"
-	KnownModelIdAnthropicClaude37Sonnet KnownModelId = "anthropic/claude-3.7-sonnet"
 	KnownModelIdAnthropicClaudeFable5 KnownModelId = "anthropic/claude-fable-5"
 	KnownModelIdAnthropicClaudeHaiku45 KnownModelId = "anthropic/claude-haiku-4.5"
 	KnownModelIdAnthropicClaudeOpus41 KnownModelId = "anthropic/claude-opus-4.1"

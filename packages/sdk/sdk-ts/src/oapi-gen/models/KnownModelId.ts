@@ -11,8 +11,6 @@ export type KnownModelId =
   | "aion-labs/aion-rp-llama-3.1-8b"
   | "allenai/molmo-2-8b"
   | "allenai/olmo-3.1-32b"
-  | "anthropic/claude-3.5-haiku"
-  | "anthropic/claude-3.7-sonnet"
   | "anthropic/claude-fable-5"
   | "anthropic/claude-haiku-4.5"
   | "anthropic/claude-opus-4.1"
