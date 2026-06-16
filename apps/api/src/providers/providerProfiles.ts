@@ -115,6 +115,33 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
+		id: "baseten",
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"max_tokens",
+					"temperature",
+					"top_p",
+					"stop",
+				],
+			},
+		},
+	},
+	{
+		id: "deepinfra",
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"service_tier",
+					"max_tokens",
+					"temperature",
+					"top_p",
+					"stop",
+				],
+			},
+		},
+	},
+	{
 		id: "arcee-ai",
 		aliases: ["arcee"],
 		textOnly: true,
