@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-opus-4",
   "organisation_id": "anthropic",
   "name": "Claude Opus 4",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "anthropic/claude-3-opus-2024-03-04",
   "description": "Claude Opus 4 is benchmarked as the world's best coding model, at time of release, bringing sustained performance on complex, long-running tasks and agent workflows.",
   "announced_date": "2025-05-21T00:00:00",
