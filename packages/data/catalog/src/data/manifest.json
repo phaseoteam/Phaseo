@@ -2660,6 +2660,7 @@
     "z-ai:text.generate:z-ai-glm-5",
     "z-ai:text.generate:z-ai-glm-5-code",
     "z-ai:text.generate:z-ai-glm-5-turbo",
+    "z-ai:text.generate:z-ai-glm-5.2",
     "z-ai:text.generate:z-ai-glm-5v-turbo"
   ]
 }
