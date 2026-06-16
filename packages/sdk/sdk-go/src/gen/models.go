@@ -1819,6 +1819,7 @@ const (
 	KnownModelIdZAiGlm5Code KnownModelId = "z-ai/glm-5-code"
 	KnownModelIdZAiGlm5Turbo KnownModelId = "z-ai/glm-5-turbo"
 	KnownModelIdZAiGlm51 KnownModelId = "z-ai/glm-5.1"
+	KnownModelIdZAiGlm52 KnownModelId = "z-ai/glm-5.2"
 	KnownModelIdZAiGlm5vTurbo KnownModelId = "z-ai/glm-5v-turbo"
 	KnownModelIdZaiOrgGlm45Air KnownModelId = "zai-org/glm-4.5-air"
 	KnownModelIdZaiGlm5 KnownModelId = "zai/glm-5"
