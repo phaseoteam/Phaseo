@@ -12,6 +12,13 @@ import type {
     RoutingStatus,
 } from "../before/types";
 import type { PriceCard } from "../pricing/types";
+import { providerSupportsParam } from "../before/paramCapabilities";
+import {
+    isTierDedicatedOffer,
+    isTierSiblingModel,
+    normalizeRequestedPlan,
+    supportsRequestedTier,
+} from "../before/serviceTierRouting";
 import {
     normalizeCapabilityStatus as normalizeSharedCapabilityStatus,
     normalizeProviderStatus as normalizeSharedProviderStatus,
@@ -311,7 +318,7 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "residency_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "service_tier_support_gate" | "offer_scope_gate" | "residency_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -413,6 +420,23 @@ function hasGlobalOfferSibling(
 
 function normalizeRequestedServiceTier(body: any): string | null {
 	return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
+}
+
+function candidateSupportsRequestedServiceTier(
+    candidate: ProviderCandidate,
+    requestedTier: string | null,
+): boolean {
+    const requestedPlan = normalizeRequestedPlan(requestedTier);
+    if (!requestedPlan) return true;
+    if (!supportsRequestedTier(candidate, requestedPlan)) return false;
+    if (requestedPlan === "standard") return true;
+    if (providerSupportsParam(candidate, "service_tier", { assumeSupportedOnMissingConfig: false })) {
+        return true;
+    }
+    return (
+        isTierDedicatedOffer(candidate, requestedPlan) ||
+        isTierSiblingModel(candidate, requestedPlan)
+    );
 }
 
 function hasSpecializedTierSibling(args: {
@@ -750,6 +774,17 @@ export async function routeProviders(
         if (capabilityStatus === "internal_testing") return "capability_status_internal_testing_requires_testing_mode";
         return "capability_status_" + capabilityStatus;
     });
+
+    const beforeServiceTierSupportGate = poolCandidates;
+    if (requestedServiceTier) {
+        poolCandidates = poolCandidates.filter((candidate) =>
+            testingMode ||
+            candidateSupportsRequestedServiceTier(candidate, requestedServiceTier)
+        );
+        pushStage("service_tier_support_gate", beforeServiceTierSupportGate, poolCandidates, (candidate) =>
+            `service_tier_${requestedServiceTier}_unsupported`
+        );
+    }
 
     const beforeOfferScopeGate = poolCandidates;
     poolCandidates = poolCandidates.filter((candidate) => {

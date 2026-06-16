@@ -45,4 +45,31 @@ describe("text provider profiles", () => {
 			"standard",
 		);
 	});
+
+	it("marks tier-aware text providers as supporting service_tier", () => {
+		for (const providerId of [
+			"openai",
+			"azure",
+			"anthropic",
+			"anthropic-us",
+			"google-ai-studio",
+			"google",
+			"google-vertex",
+			"google-vertex-eu",
+			"moonshotai",
+			"moonshot-ai",
+			"moonshotai-turbo",
+			"deepinfra",
+			"x-ai",
+			"xai",
+		]) {
+			expect(
+				resolveTextProviderParamPolicyOverride({
+					providerId,
+					paramPathCandidates: ["service_tier"],
+				}),
+				providerId,
+			).toBe(true);
+		}
+	});
 });

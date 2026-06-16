@@ -54,7 +54,6 @@ export default function RotatingPricing({ prices = [] }: RotatingPricingProps) {
 	}
 
 	const currentPrice = prices[currentIndex] ?? prices[0];
-
 	return (
 		<div className="text-lg font-semibold leading-tight">
 			<AnimatePresence mode="wait">

@@ -1,8 +1,8 @@
 {
-  "key": "akashml:moonshotai/kimi-k2.6:text.generate",
+  "key": "akashml:moonshotai/kimi-k2.7-code:text.generate",
   "api_provider_id": "akashml",
   "provider_slug": "akashml",
-  "api_model_id": "moonshotai/kimi-k2.6",
+  "api_model_id": "moonshotai/kimi-k2.7-code",
   "capability_id": "text.generate",
   "rules": [
     {

@@ -43,9 +43,6 @@ public final class ModelIds {
     /** Model ID: <code>anthropic/claude-haiku-4.5</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5 */
     public static final String ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5";
 
-    /** Model ID: <code>anthropic/claude-opus-4</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4 */
-    public static final String ANTHROPIC_CLAUDE_OPUS_4 = "anthropic/claude-opus-4";
-
     /** Model ID: <code>anthropic/claude-opus-4.1</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1 */
     public static final String ANTHROPIC_CLAUDE_OPUS_4_1 = "anthropic/claude-opus-4.1";
 
@@ -63,9 +60,6 @@ public final class ModelIds {
 
     /** Model ID: <code>anthropic/claude-opus-4.8</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8 */
     public static final String ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8";
-
-    /** Model ID: <code>anthropic/claude-sonnet-4</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4 */
-    public static final String ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4";
 
     /** Model ID: <code>anthropic/claude-sonnet-4.5</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5 */
     public static final String ANTHROPIC_CLAUDE_SONNET_4_5 = "anthropic/claude-sonnet-4.5";

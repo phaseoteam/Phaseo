@@ -72,6 +72,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			paramPolicy: {
 				supportedParams: [
 					"provider_options.openai.context_management",
+					"service_tier",
 				],
 			},
 			normalize: {
@@ -85,6 +86,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "anthropic",
+		aliases: ["anthropic-us"],
 		text: {
 			paramPolicy: {
 				supportedParams: ["service_tier"],
@@ -93,6 +95,41 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 				maxTemperature: 1,
 				defaultMaxTokensWhenMissing: 4096,
 				reasoningEffortFallback: ["low", "medium", "high", "xhigh"],
+			},
+		},
+	},
+	{
+		id: "google-ai-studio",
+		aliases: ["google", "google-vertex", "google-vertex-eu"],
+		text: {
+			paramPolicy: {
+				supportedParams: ["service_tier"],
+			},
+		},
+	},
+	{
+		id: "moonshotai",
+		aliases: ["moonshot-ai", "moonshotai-turbo", "moonshot-ai-turbo"],
+		text: {
+			paramPolicy: {
+				supportedParams: ["service_tier"],
+			},
+		},
+	},
+	{
+		id: "x-ai",
+		aliases: ["xai"],
+		text: {
+			paramPolicy: {
+				supportedParams: ["service_tier"],
+			},
+		},
+	},
+	{
+		id: "deepinfra",
+		text: {
+			paramPolicy: {
+				supportedParams: ["service_tier"],
 			},
 		},
 	},
