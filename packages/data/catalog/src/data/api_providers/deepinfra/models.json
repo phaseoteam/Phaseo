@@ -494,6 +494,27 @@
     "context_length": 204800,
     "max_output_tokens": 131072,
     "effective_from": "2026-06-08T00:00:00",
+    "effective_to": "2026-06-15T00:00:00",
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.7",
+    "provider_api_model_id": "deepinfra:minimax/minimax-m2.7",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.7-Turbo",
+    "internal_model_id": "minimax/minimax-m2.7",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 196608,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-06-15T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

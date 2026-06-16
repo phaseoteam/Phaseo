@@ -667,6 +667,27 @@
     ]
   },
   {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "venice:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "kimi-k2-7-code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "moonshotai/kimi-k2-thinking",
     "provider_api_model_id": "venice:moonshotai/kimi-k2-thinking",
     "provider_model_slug": "kimi-k2-thinking",
