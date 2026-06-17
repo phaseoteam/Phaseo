@@ -2,13 +2,13 @@
   "model_id": "crofai/greg-1",
   "organisation_id": "crofai",
   "name": "Greg 1",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Greg 1 is CrofAI's general-purpose language model for chat, writing, analysis, and everyday automation.",
   "announced_date": "2026-01-27T18:50:50",
   "release_date": "2026-01-27T18:50:50",
   "deprecation_date": null,
-  "retirement_date": null,
+  "retirement_date": "2026-06-17T00:00:00",
   "license": null,
   "input_types": "text",
   "output_types": "text",
@@ -27,6 +27,10 @@
     {
       "name": "output_context_length",
       "value": 229376
+    },
+    {
+      "name": "availability",
+      "value": "Removed from CrofAI's /v1/models feed by 2026-06-17. Two-week notice sent to active users."
     }
   ],
   "benchmarks": []
