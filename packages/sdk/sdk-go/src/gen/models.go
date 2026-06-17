@@ -1417,6 +1417,8 @@ const (
 	KnownModelIdBytedanceSeedance20 KnownModelId = "bytedance/seedance-2.0"
 	KnownModelIdBytedanceSeedance20Fast KnownModelId = "bytedance/seedance-2.0-fast"
 	KnownModelIdCrofaiGreg1Mini KnownModelId = "crofai/greg-1-mini"
+	KnownModelIdCrofaiGreg2Super KnownModelId = "crofai/greg-2-super"
+	KnownModelIdCrofaiGreg2Ultra KnownModelId = "crofai/greg-2-ultra"
 	KnownModelIdCrofaiGregRp KnownModelId = "crofai/greg-rp"
 	KnownModelIdDeepseekDeepseekOcr KnownModelId = "deepseek/deepseek-ocr"
 	KnownModelIdDeepseekDeepseekOcr2 KnownModelId = "deepseek/deepseek-ocr-2"

@@ -92,6 +92,10 @@ namespace AiStatsSdk
         public const string BytedanceSeedance20Fast = "bytedance/seedance-2.0-fast";
         /// <summary>Model ID: <c>crofai/greg-1-mini</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini</summary>
         public const string CrofaiGreg1Mini = "crofai/greg-1-mini";
+        /// <summary>Model ID: <c>crofai/greg-2-super</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super</summary>
+        public const string CrofaiGreg2Super = "crofai/greg-2-super";
+        /// <summary>Model ID: <c>crofai/greg-2-ultra</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-ultra</summary>
+        public const string CrofaiGreg2Ultra = "crofai/greg-2-ultra";
         /// <summary>Model ID: <c>crofai/greg-rp</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp</summary>
         public const string CrofaiGregRp = "crofai/greg-rp";
         /// <summary>Model ID: <c>deepseek/deepseek-ocr</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-ocr</summary>

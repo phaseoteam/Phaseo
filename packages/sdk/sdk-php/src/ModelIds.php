@@ -137,6 +137,12 @@ final class ModelIds
     /** Model ID: crofai/greg-1-mini. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini */
     public const CROFAI_GREG_1_MINI = 'crofai/greg-1-mini';
 
+    /** Model ID: crofai/greg-2-super. Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super */
+    public const CROFAI_GREG_2_SUPER = 'crofai/greg-2-super';
+
+    /** Model ID: crofai/greg-2-ultra. Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-ultra */
+    public const CROFAI_GREG_2_ULTRA = 'crofai/greg-2-ultra';
+
     /** Model ID: crofai/greg-rp. Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp */
     public const CROFAI_GREG_RP = 'crofai/greg-rp';
 

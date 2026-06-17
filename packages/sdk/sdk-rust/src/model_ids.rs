@@ -132,6 +132,12 @@ pub mod model_ids {
     /// Model ID: `crofai/greg-1-mini`.
     /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
     pub const CROFAI_GREG_1_MINI: &str = "crofai/greg-1-mini";
+    /// Model ID: `crofai/greg-2-super`.
+    /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super
+    pub const CROFAI_GREG_2_SUPER: &str = "crofai/greg-2-super";
+    /// Model ID: `crofai/greg-2-ultra`.
+    /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-ultra
+    pub const CROFAI_GREG_2_ULTRA: &str = "crofai/greg-2-ultra";
     /// Model ID: `crofai/greg-rp`.
     /// Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp
     pub const CROFAI_GREG_RP: &str = "crofai/greg-rp";
@@ -1374,6 +1380,8 @@ pub mod model_ids {
         BYTEDANCE_SEEDANCE_2_0,
         BYTEDANCE_SEEDANCE_2_0_FAST,
         CROFAI_GREG_1_MINI,
+        CROFAI_GREG_2_SUPER,
+        CROFAI_GREG_2_ULTRA,
         CROFAI_GREG_RP,
         DEEPSEEK_DEEPSEEK_OCR,
         DEEPSEEK_DEEPSEEK_OCR_2,
