@@ -136,6 +136,12 @@ const (
 	// Model ID: crofai/greg-1-mini
 	// Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
 	ModelIDCrofaiGreg1Mini gen.ModelId = "crofai/greg-1-mini"
+	// Model ID: crofai/greg-2-super
+	// Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super
+	ModelIDCrofaiGreg2Super gen.ModelId = "crofai/greg-2-super"
+	// Model ID: crofai/greg-2-ultra
+	// Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-ultra
+	ModelIDCrofaiGreg2Ultra gen.ModelId = "crofai/greg-2-ultra"
 	// Model ID: crofai/greg-rp
 	// Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp
 	ModelIDCrofaiGregRp gen.ModelId = "crofai/greg-rp"
@@ -1378,6 +1384,8 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDBytedanceSeedance20,
 	ModelIDBytedanceSeedance20Fast,
 	ModelIDCrofaiGreg1Mini,
+	ModelIDCrofaiGreg2Super,
+	ModelIDCrofaiGreg2Ultra,
 	ModelIDCrofaiGregRp,
 	ModelIDDeepseekDeepseekOcr,
 	ModelIDDeepseekDeepseekOcr2,

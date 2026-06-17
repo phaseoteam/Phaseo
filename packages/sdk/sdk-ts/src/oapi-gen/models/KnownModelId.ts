@@ -45,6 +45,8 @@ export type KnownModelId =
   | "bytedance/seedance-2.0"
   | "bytedance/seedance-2.0-fast"
   | "crofai/greg-1-mini"
+  | "crofai/greg-2-super"
+  | "crofai/greg-2-ultra"
   | "crofai/greg-rp"
   | "deepseek/deepseek-ocr"
   | "deepseek/deepseek-ocr-2"

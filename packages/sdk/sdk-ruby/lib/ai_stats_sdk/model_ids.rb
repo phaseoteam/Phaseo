@@ -132,6 +132,12 @@ module AIStatsSdk
     # Model ID: crofai/greg-1-mini
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
     CROFAI_GREG_1_MINI = "crofai/greg-1-mini"
+    # Model ID: crofai/greg-2-super
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super
+    CROFAI_GREG_2_SUPER = "crofai/greg-2-super"
+    # Model ID: crofai/greg-2-ultra
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-ultra
+    CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra"
     # Model ID: crofai/greg-rp
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp
     CROFAI_GREG_RP = "crofai/greg-rp"
@@ -1374,6 +1380,8 @@ module AIStatsSdk
     ModelIds::BYTEDANCE_SEEDANCE_2_0,
     ModelIds::BYTEDANCE_SEEDANCE_2_0_FAST,
     ModelIds::CROFAI_GREG_1_MINI,
+    ModelIds::CROFAI_GREG_2_SUPER,
+    ModelIds::CROFAI_GREG_2_ULTRA,
     ModelIds::CROFAI_GREG_RP,
     ModelIds::DEEPSEEK_DEEPSEEK_OCR,
     ModelIds::DEEPSEEK_DEEPSEEK_OCR_2,
