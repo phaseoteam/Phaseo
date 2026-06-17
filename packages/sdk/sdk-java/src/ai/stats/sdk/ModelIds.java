@@ -34,11 +34,8 @@ public final class ModelIds {
     /** Model ID: <code>allenai/olmo-3.1-32b</code>. Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b */
     public static final String ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b";
 
-    /** Model ID: <code>anthropic/claude-3.5-haiku</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku */
-    public static final String ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku";
-
-    /** Model ID: <code>anthropic/claude-3.7-sonnet</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet */
-    public static final String ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic/claude-3.7-sonnet";
+    /** Model ID: <code>anthropic/claude-fable-5</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-fable-5 */
+    public static final String ANTHROPIC_CLAUDE_FABLE_5 = "anthropic/claude-fable-5";
 
     /** Model ID: <code>anthropic/claude-haiku-4.5</code>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5 */
     public static final String ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5";
@@ -136,14 +133,8 @@ public final class ModelIds {
     /** Model ID: <code>bytedance/seedance-2.0-fast</code>. Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast */
     public static final String BYTEDANCE_SEEDANCE_2_0_FAST = "bytedance/seedance-2.0-fast";
 
-    /** Model ID: <code>crofai/greg-1</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1 */
-    public static final String CROFAI_GREG_1 = "crofai/greg-1";
-
     /** Model ID: <code>crofai/greg-1-mini</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini */
     public static final String CROFAI_GREG_1_MINI = "crofai/greg-1-mini";
-
-    /** Model ID: <code>crofai/greg-1-super</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super */
-    public static final String CROFAI_GREG_1_SUPER = "crofai/greg-1-super";
 
     /** Model ID: <code>crofai/greg-rp</code>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp */
     public static final String CROFAI_GREG_RP = "crofai/greg-rp";
@@ -268,29 +259,11 @@ public final class ModelIds {
     /** Model ID: <code>google/gemini-robotics-er-1.6-preview</code>. Model page: https://ai-stats.phaseo.app/models/google/gemini-robotics-er-1.6-preview */
     public static final String GOOGLE_GEMINI_ROBOTICS_ER_1_6_PREVIEW = "google/gemini-robotics-er-1.6-preview";
 
-    /** Model ID: <code>google/gemma-3-12b:free</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-12b%3Afree */
-    public static final String GOOGLE_GEMMA_3_12B_FREE = "google/gemma-3-12b:free";
-
-    /** Model ID: <code>google/gemma-3-1b:free</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-1b%3Afree */
-    public static final String GOOGLE_GEMMA_3_1B_FREE = "google/gemma-3-1b:free";
-
     /** Model ID: <code>google/gemma-3-27b</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b */
     public static final String GOOGLE_GEMMA_3_27B = "google/gemma-3-27b";
 
-    /** Model ID: <code>google/gemma-3-27b:free</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b%3Afree */
-    public static final String GOOGLE_GEMMA_3_27B_FREE = "google/gemma-3-27b:free";
-
-    /** Model ID: <code>google/gemma-3-4b:free</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3-4b%3Afree */
-    public static final String GOOGLE_GEMMA_3_4B_FREE = "google/gemma-3-4b:free";
-
-    /** Model ID: <code>google/gemma-3n-e2b:free</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e2b%3Afree */
-    public static final String GOOGLE_GEMMA_3N_E2B_FREE = "google/gemma-3n-e2b:free";
-
     /** Model ID: <code>google/gemma-3n-e4b</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b */
     public static final String GOOGLE_GEMMA_3N_E4B = "google/gemma-3n-e4b";
-
-    /** Model ID: <code>google/gemma-3n-e4b:free</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b%3Afree */
-    public static final String GOOGLE_GEMMA_3N_E4B_FREE = "google/gemma-3n-e4b:free";
 
     /** Model ID: <code>google/gemma-4-26b-a4b</code>. Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b */
     public static final String GOOGLE_GEMMA_4_26B_A4B = "google/gemma-4-26b-a4b";
@@ -547,6 +520,9 @@ public final class ModelIds {
     /** Model ID: <code>moonshotai/kimi-k2.6</code>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6 */
     public static final String MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6";
 
+    /** Model ID: <code>moonshotai/kimi-k2.7-code</code>. Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.7-code */
+    public static final String MOONSHOTAI_KIMI_K2_7_CODE = "moonshotai/kimi-k2.7-code";
+
     /** Model ID: <code>moonshotai/moonshot-v1-128k</code>. Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-128k */
     public static final String MOONSHOTAI_MOONSHOT_V1_128K = "moonshotai/moonshot-v1-128k";
 
@@ -573,6 +549,9 @@ public final class ModelIds {
 
     /** Model ID: <code>nex-agi/deepseek-v3.1-nex-n1</code>. Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1 */
     public static final String NEX_AGI_DEEPSEEK_V3_1_NEX_N1 = "nex-agi/deepseek-v3.1-nex-n1";
+
+    /** Model ID: <code>nex-agi/nex-n2-pro</code>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro */
+    public static final String NEX_AGI_NEX_N2_PRO = "nex-agi/nex-n2-pro";
 
     /** Model ID: <code>nex-agi/nex-n2-pro:free</code>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree */
     public static final String NEX_AGI_NEX_N2_PRO_FREE = "nex-agi/nex-n2-pro:free";
@@ -613,14 +592,14 @@ public final class ModelIds {
     /** Model ID: <code>nvidia/nemotron-3-super-120b-a12b</code>. Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b */
     public static final String NVIDIA_NEMOTRON_3_SUPER_120B_A12B = "nvidia/nemotron-3-super-120b-a12b";
 
+    /** Model ID: <code>nvidia/nemotron-3-ultra-550b-a55b</code>. Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b */
+    public static final String NVIDIA_NEMOTRON_3_ULTRA_550B_A55B = "nvidia/nemotron-3-ultra-550b-a55b";
+
     /** Model ID: <code>nvidia/nvidia-nemotron-3-nano-30b-a3b</code>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b */
     public static final String NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nvidia-nemotron-3-nano-30b-a3b";
 
     /** Model ID: <code>nvidia/nvidia-nemotron-nano-12b-v2-vl</code>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl */
     public static final String NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL = "nvidia/nvidia-nemotron-nano-12b-v2-vl";
-
-    /** Model ID: <code>nvidia/nvidia-nemotron-nano-9b-v2</code>. Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2 */
-    public static final String NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2 = "nvidia/nvidia-nemotron-nano-9b-v2";
 
     /** Model ID: <code>openai/babbage-002</code>. Model page: https://ai-stats.phaseo.app/models/openai/babbage-002 */
     public static final String OPENAI_BABBAGE_002 = "openai/babbage-002";
@@ -1072,17 +1051,11 @@ public final class ModelIds {
     /** Model ID: <code>qwen/qwen3-vl-plus-2025-12-19</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-plus-2025-12-19 */
     public static final String QWEN_QWEN3_VL_PLUS_2025_12_19 = "qwen/qwen3-vl-plus-2025-12-19";
 
-    /** Model ID: <code>qwen/qwen3.5-0.8b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-0.8b */
-    public static final String QWEN_QWEN3_5_0_8B = "qwen/qwen3.5-0.8b";
-
     /** Model ID: <code>qwen/qwen3.5-122b-a10b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-122b-a10b */
     public static final String QWEN_QWEN3_5_122B_A10B = "qwen/qwen3.5-122b-a10b";
 
     /** Model ID: <code>qwen/qwen3.5-27b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-27b */
     public static final String QWEN_QWEN3_5_27B = "qwen/qwen3.5-27b";
-
-    /** Model ID: <code>qwen/qwen3.5-2b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-2b */
-    public static final String QWEN_QWEN3_5_2B = "qwen/qwen3.5-2b";
 
     /** Model ID: <code>qwen/qwen3.5-35b-a3b</code>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-35b-a3b */
     public static final String QWEN_QWEN3_5_35B_A3B = "qwen/qwen3.5-35b-a3b";
@@ -1149,6 +1122,9 @@ public final class ModelIds {
 
     /** Model ID: <code>stepfun/step-3.5-flash</code>. Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash */
     public static final String STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash";
+
+    /** Model ID: <code>stepfun/step-3.7-flash</code>. Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.7-flash */
+    public static final String STEPFUN_STEP_3_7_FLASH = "stepfun/step-3.7-flash";
 
     /** Model ID: <code>tencent/hunyuan-a13b-instruct</code>. Model page: https://ai-stats.phaseo.app/models/tencent/hunyuan-a13b-instruct */
     public static final String TENCENT_HUNYUAN_A13B_INSTRUCT = "tencent/hunyuan-a13b-instruct";
@@ -1246,12 +1222,6 @@ public final class ModelIds {
     /** Model ID: <code>voyage/voyage-multimodal-3.5</code>. Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5 */
     public static final String VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5";
 
-    /** Model ID: <code>x-ai/grok-2-vision</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-vision */
-    public static final String X_AI_GROK_2_VISION = "x-ai/grok-2-vision";
-
-    /** Model ID: <code>x-ai/grok-3-mini</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-mini */
-    public static final String X_AI_GROK_3_MINI = "x-ai/grok-3-mini";
-
     /** Model ID: <code>x-ai/grok-4.20-beta-0309</code>. Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309 */
     public static final String X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309";
 
@@ -1347,6 +1317,9 @@ public final class ModelIds {
 
     /** Model ID: <code>z-ai/glm-5.1</code>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5.1 */
     public static final String Z_AI_GLM_5_1 = "z-ai/glm-5.1";
+
+    /** Model ID: <code>z-ai/glm-5.2</code>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5.2 */
+    public static final String Z_AI_GLM_5_2 = "z-ai/glm-5.2";
 
     /** Model ID: <code>z-ai/glm-5v-turbo</code>. Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5v-turbo */
     public static final String Z_AI_GLM_5V_TURBO = "z-ai/glm-5v-turbo";
