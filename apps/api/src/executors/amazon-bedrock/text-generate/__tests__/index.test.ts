@@ -195,6 +195,45 @@ describe("amazon-bedrock text executor", () => {
 		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
 	});
 
+	it("routes xAI Bedrock Mantle models to the OpenAI-compatible endpoint", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.bedrock.example/openai/v1/chat/completions",
+			onRequest: (call) => {
+				expect(call.bodyJson?.model).toBe("xai.grok-4.3");
+				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
+			},
+			response: jsonResponse({
+				id: "chatcmpl_bedrock_xai",
+				object: "chat.completion",
+				created: 1710000002,
+				model: "xai.grok-4.3",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "grok ok" },
+					finish_reason: "stop",
+				}],
+				usage: {
+					prompt_tokens: 4,
+					completion_tokens: 2,
+					total_tokens: 6,
+				},
+			}),
+		}]);
+
+		const result = await execute(buildArgs({
+			model: "xai.grok-4.3",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
+		}, {
+			providerModelSlug: "xai.grok-4.3",
+		}));
+
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
+	});
+
 	it("falls back from /responses to /chat/completions when responses is unavailable", async () => {
 		const mock = installFetchMock([
 			{
