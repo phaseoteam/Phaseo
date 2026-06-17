@@ -949,7 +949,7 @@
     "api_model_id": "moonshotai/kimi-k2.6",
     "provider_api_model_id": "cloudflare:@cf/moonshotai/kimi-k2.6",
     "provider_model_slug": "@cf/moonshotai/kimi-k2.6",
-    "internal_model_id": "",
+    "internal_model_id": "moonshotai/kimi-k2.6",
     "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
