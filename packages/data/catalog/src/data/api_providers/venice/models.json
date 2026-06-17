@@ -1417,6 +1417,27 @@
     ]
   },
   {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "venice:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org-glm-5-2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": "fp8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 24000,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "arcee-ai/trinity-large-thinking",
     "provider_api_model_id": "venice:arcee-ai/trinity-large-thinking",
     "provider_model_slug": "arcee-trinity-large-thinking",
