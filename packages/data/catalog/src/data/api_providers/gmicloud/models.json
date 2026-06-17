@@ -319,7 +319,7 @@
     "provider_api_model_id": "gmicloud:moonshotai/kimi-k2.7-code",
     "provider_model_slug": "moonshotai/Kimi-K2.7-Code",
     "internal_model_id": "moonshotai/kimi-k2.7-code",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image,video",
     "output_modalities": "text",
