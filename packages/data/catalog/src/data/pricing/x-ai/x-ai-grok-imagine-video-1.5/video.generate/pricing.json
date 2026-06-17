@@ -1,9 +1,9 @@
 {
-  "key": "x-ai:x-ai/grok-imagine-video-1.5-preview:video.edit",
+  "key": "x-ai:x-ai/grok-imagine-video-1.5:video.generate",
   "api_provider_id": "x-ai",
   "provider_slug": "x-ai",
-  "api_model_id": "x-ai/grok-imagine-video-1.5-preview",
-  "capability_id": "video.edit",
+  "api_model_id": "x-ai/grok-imagine-video-1.5",
+  "capability_id": "video.generate",
   "rules": [
     {
       "meter": "input_image",
@@ -15,8 +15,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_from": "2026-06-17T00:00:00Z"
     },
     {
       "meter": "input_video_seconds",
@@ -28,8 +27,7 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_from": "2026-06-17T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -49,8 +47,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_from": "2026-06-17T00:00:00Z"
     },
     {
       "meter": "output_video_seconds",
@@ -70,8 +67,7 @@
         }
       ],
       "priority": 100,
-      "effective_from": "2026-05-30T00:00:00Z",
-      "effective_to": "2026-06-17T00:00:00Z"
+      "effective_from": "2026-06-17T00:00:00Z"
     }
   ]
 }
