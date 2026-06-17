@@ -1446,7 +1446,7 @@
     "internal_model_id": "x-ai/grok-imagine-video-1.5",
     "is_active_gateway": false,
     "quantization_scheme": null,
-    "input_modalities": "image,video",
+    "input_modalities": "text,image,video",
     "output_modalities": "video",
     "context_length": null,
     "max_output_tokens": null,

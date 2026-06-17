@@ -4,19 +4,19 @@
   "name": "Grok Imagine Video 1.5",
   "status": "Available",
   "previous_model_id": "x-ai/grok-imagine-video-1.5-preview",
-  "description": "Grok Imagine Video 1.5 is a video generation and editing model from xAI's Grok Imagine family. It supports image and video inputs and generates short video outputs through the Grok Imagine API.",
+  "description": "Grok Imagine Video 1.5 is a video generation and editing model from xAI's Grok Imagine family. It supports text, image, and video inputs and generates short video outputs through the Grok Imagine API.",
   "announced_date": "2026-06-17T00:00:00",
   "release_date": "2026-06-17T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
-  "input_types": "image,video",
+  "input_types": "text,image,video",
   "output_types": "video",
   "api_model_id": "x-ai/grok-imagine-video-1.5",
   "links": [
     {
       "platform": "api_reference",
-      "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5-preview"
+      "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5"
     }
   ],
   "details": [
