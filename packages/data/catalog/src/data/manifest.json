@@ -1995,6 +1995,7 @@
     "amazon-bedrock:text.generate:openai-gpt-oss-20b",
     "amazon-bedrock:text.generate:openai-gpt-oss-safeguard-120b",
     "amazon-bedrock:text.generate:openai-gpt-oss-safeguard-20b",
+    "amazon-bedrock:text.generate:x-ai-grok-4.3",
     "amazon-bedrock:text.generate:z-ai-glm-4.7",
     "amazon-bedrock:text.generate:z-ai-glm-4.7-flash",
     "amazon-bedrock:text.generate:z-ai-glm-5",
