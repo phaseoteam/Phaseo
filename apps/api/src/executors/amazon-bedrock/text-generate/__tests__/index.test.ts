@@ -201,6 +201,7 @@ describe("amazon-bedrock text executor", () => {
 			onRequest: (call) => {
 				expect(call.bodyJson?.model).toBe("xai.grok-4.3");
 				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
+				expect(call.bodyJson?.reasoning).toEqual({ effort: "high" });
 			},
 			response: jsonResponse({
 				id: "chatcmpl_bedrock_xai",
@@ -223,6 +224,7 @@ describe("amazon-bedrock text executor", () => {
 		const result = await execute(buildArgs({
 			model: "xai.grok-4.3",
 			stream: false,
+			reasoning: { effort: "high" },
 			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }],
 		}, {
 			providerModelSlug: "xai.grok-4.3",
