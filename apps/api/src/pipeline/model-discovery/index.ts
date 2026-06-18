@@ -318,7 +318,7 @@ const PROVIDERS: ProviderConfig[] = [
 	},
 	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
 	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
-	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.xyz/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
+	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.ai/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
 	{ providerId: "venice", providerName: "Venice", modelsEndpoint: "https://api.venice.ai/api/v1/models", apiKeyEnv: ["VENICE_API_KEY"] },
 		{
 			providerId: "weights-and-biases",
