@@ -496,9 +496,21 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 	return false;
 }
 
+function isTruthyFlag(value: unknown): boolean {
+	if (value === true) return true;
+	if (typeof value === "number") return value === 1;
+	if (typeof value === "string") {
+		return value.trim().toLowerCase() === "true";
+	}
+	return false;
+}
+
 export function shouldIncludeDiscoveredModel(providerId: string, row: Record<string, unknown>): boolean {
 	if (providerId === "atlascloud") {
 		return hasAtlascloudLlmCategory(row);
+	}
+	if (providerId === "fireworks") {
+		return isTruthyFlag(row.supportsServerless ?? row.supports_serverless);
 	}
 	if (providerId === "clarifai") {
 		return typeof row.model_type_id === "string" && row.model_type_id.trim().toLowerCase() === "text-to-text";
@@ -632,18 +644,44 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 				break;
 		}
 
-		const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
-		if (!response.ok) {
-			const body = await response.text().catch(() => "");
-			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+		const output = new Map<string, DiscoveredModel>();
+		let nextUrl: string | null = url;
+
+		while (nextUrl) {
+			const response = await fetch(nextUrl, { method: "GET", headers, signal: controller.signal });
+			if (!response.ok) {
+				const body = await response.text().catch(() => "");
+				throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+			}
+
+			const payload = await response.json();
+			const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+			if (providerResponseErrorMessage) {
+				throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+			}
+
+			for (const model of extractDiscoveredModels(provider.providerId, payload)) {
+				output.set(model.id, model);
+			}
+
+			const root = asRecord(payload);
+			const nextPageToken =
+				typeof root?.nextPageToken === "string"
+					? root.nextPageToken.trim()
+					: typeof root?.next_page_token === "string"
+						? root.next_page_token.trim()
+						: "";
+			if (!nextPageToken) {
+				nextUrl = null;
+				continue;
+			}
+
+			const parsed = new URL(nextUrl);
+			parsed.searchParams.set("pageToken", nextPageToken);
+			nextUrl = parsed.toString();
 		}
 
-		const payload = await response.json();
-		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
-		if (providerResponseErrorMessage) {
-			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
-		}
-		return extractDiscoveredModels(provider.providerId, payload);
+		return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 	} finally {
 		clearTimeout(timeout);
 	}

@@ -279,7 +279,12 @@ const PROVIDERS: ProviderConfig[] = [
 		apiKeyEnv: ["ELEVENLABS_API_KEY"],
 		authStyle: "elevenlabs",
 	},
-	{ providerId: "fireworks", providerName: "Fireworks", modelsEndpoint: "https://api.fireworks.ai/inference/v1/models", apiKeyEnv: ["FIREWORKS_API_KEY"] },
+	{
+		providerId: "fireworks",
+		providerName: "Fireworks",
+		modelsEndpoint: "https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
+		apiKeyEnv: ["FIREWORKS_API_KEY"],
+	},
 	{
 		providerId: "gmicloud",
 		providerName: "GMICloud",

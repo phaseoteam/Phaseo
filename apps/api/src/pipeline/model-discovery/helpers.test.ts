@@ -19,6 +19,14 @@ const TOGETHER_DISCOVERY_PROVIDER = {
 	apiKeyEnv: ["TOGETHER_API_KEY"],
 } as const;
 
+const FIREWORKS_DISCOVERY_PROVIDER = {
+	providerId: "fireworks",
+	providerName: "Fireworks",
+	modelsEndpoint:
+		"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
+	apiKeyEnv: ["FIREWORKS_API_KEY"],
+} as const;
+
 afterEach(() => {
 	teardownTestRuntime();
 });
@@ -131,6 +139,97 @@ describe("fetchProviderModels", () => {
 			});
 			expect(fetchMock.calls).toHaveLength(1);
 			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-together-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("paginates Fireworks serverless model listings via nextPageToken", async () => {
+		setupRuntimeFromEnv({
+			FIREWORKS_API_KEY: "test-fireworks-key",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) =>
+					url ===
+					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
+				response: jsonResponse({
+					models: [
+						{
+							name: "accounts/fireworks/models/deepseek-v4-pro",
+							contextLength: 1048576,
+							supportsServerless: true,
+						},
+					],
+					nextPageToken: "page-2",
+				}),
+			},
+			{
+				match: (url) =>
+					url ===
+					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200&pageToken=page-2",
+				response: jsonResponse({
+					models: [
+						{
+							name: "accounts/fireworks/models/glm-5p2",
+							contextLength: 1048576,
+							supportsServerless: true,
+						},
+					],
+				}),
+			},
+		]);
+
+		try {
+			const models = await fetchProviderModels(FIREWORKS_DISCOVERY_PROVIDER, "test-fireworks-key");
+
+			expect(models.map((model) => model.id)).toEqual([
+				"accounts/fireworks/models/deepseek-v4-pro",
+				"accounts/fireworks/models/glm-5p2",
+			]);
+			expect(models[0]?.modelDetails.supportsServerless).toBe(true);
+			expect(fetchMock.calls).toHaveLength(2);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-fireworks-key");
+			expect(fetchMock.calls[1]?.headers.Authorization).toBe("Bearer test-fireworks-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("drops Fireworks models that are not marked serverless even if the upstream route returns them", async () => {
+		setupRuntimeFromEnv({
+			FIREWORKS_API_KEY: "test-fireworks-key",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) =>
+					url ===
+					"https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
+				response: jsonResponse({
+					models: [
+						{
+							name: "accounts/fireworks/models/glm-5p2",
+							contextLength: 1048576,
+							supportsServerless: true,
+						},
+						{
+							name: "accounts/fireworks/models/non-serverless-leak",
+							contextLength: 32768,
+							supportsServerless: false,
+						},
+					],
+				}),
+			},
+		]);
+
+		try {
+			const models = await fetchProviderModels(FIREWORKS_DISCOVERY_PROVIDER, "test-fireworks-key");
+
+			expect(models.map((model) => model.id)).toEqual([
+				"accounts/fireworks/models/glm-5p2",
+			]);
 		} finally {
 			fetchMock.restore();
 		}
