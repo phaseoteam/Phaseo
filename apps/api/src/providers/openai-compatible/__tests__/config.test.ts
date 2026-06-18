@@ -455,7 +455,7 @@ describe("openAICompatUrl", () => {
 		} as any);
 
 		expect(openAICompatUrl("together", "/chat/completions")).toBe(
-			"https://api.together.xyz/v1/chat/completions",
+			"https://api.together.ai/v1/chat/completions",
 		);
 	});
 

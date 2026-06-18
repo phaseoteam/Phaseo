@@ -12,6 +12,13 @@ const POOLSIDE_DISCOVERY_PROVIDER = {
 	apiKeyEnv: ["POOLSIDE_API_KEY"],
 } as const;
 
+const TOGETHER_DISCOVERY_PROVIDER = {
+	providerId: "together",
+	providerName: "Together",
+	modelsEndpoint: "https://api.together.ai/v1/models",
+	apiKeyEnv: ["TOGETHER_API_KEY"],
+} as const;
+
 afterEach(() => {
 	teardownTestRuntime();
 });
@@ -70,6 +77,60 @@ describe("fetchProviderModels", () => {
 			]);
 			expect(fetchMock.calls).toHaveLength(1);
 			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-poolside-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("extracts Together models from the documented top-level array response", async () => {
+		setupRuntimeFromEnv({
+			TOGETHER_API_KEY: "test-together-key",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) => url === "https://api.together.ai/v1/models",
+				response: jsonResponse([
+					{
+						id: "zai-org/GLM-5.2",
+						object: "model",
+						created: 1718582400,
+						type: "chat",
+						context_length: 262144,
+						pricing: {
+							input: 1.4,
+							output: 4.4,
+							cached_input: 0.26,
+						},
+					},
+					{
+						id: "moonshotai/Kimi-K2.7-Code",
+						object: "model",
+						created: 1718236800,
+						type: "code",
+						context_length: 262144,
+					},
+				]),
+			},
+		]);
+
+		try {
+			const models = await fetchProviderModels(TOGETHER_DISCOVERY_PROVIDER, "test-together-key");
+
+			expect(models.map((model) => model.id)).toEqual([
+				"moonshotai/Kimi-K2.7-Code",
+				"zai-org/GLM-5.2",
+			]);
+			expect(models[1]?.modelDetails.context_length).toBe(262144);
+			expect(models[1]?.pricingDetails).toEqual({
+				pricing: {
+					cached_input: 0.26,
+					input: 1.4,
+					output: 4.4,
+				},
+			});
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-together-key");
 		} finally {
 			fetchMock.restore();
 		}

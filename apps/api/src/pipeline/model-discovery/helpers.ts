@@ -508,13 +508,11 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 
 export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const root = asRecord(payload);
-	if (!root) return [];
-
-	const candidateCollections: unknown[] = [
-		root.data,
-		root.models,
-		asRecord(root.result)?.models,
-	];
+	const candidateCollections: unknown[] = Array.isArray(payload)
+		? [payload]
+		: root
+			? [root.data, root.models, asRecord(root.result)?.models]
+			: [];
 
 	const output = new Map<string, DiscoveredModel>();
 
