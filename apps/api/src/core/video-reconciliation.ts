@@ -203,11 +203,12 @@ function normalizeProgressPercent(value: unknown): number | undefined {
 async function resolveProviderPollingKey(args: {
 	job: VideoJobRecord;
 	providerId: string;
-	defaultEnvKey: string;
+	defaultEnvKey: string | string[];
 }): Promise<string | null> {
 	const { job, providerId, defaultEnvKey } = args;
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
-	let key = bindings[defaultEnvKey] ?? null;
+	const envKeys = Array.isArray(defaultEnvKey) ? defaultEnvKey : [defaultEnvKey];
+	let key = envKeys.map((envKey) => bindings[envKey]).find((value) => typeof value === "string" && value.length > 0) ?? null;
 	if (job.meta?.keySource === "byok" && job.meta.byokKeyId) {
 		const byok = await loadByokKey({
 			workspaceId: job.workspaceId,
