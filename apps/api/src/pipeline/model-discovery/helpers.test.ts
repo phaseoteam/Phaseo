@@ -19,6 +19,15 @@ const TOGETHER_DISCOVERY_PROVIDER = {
 	apiKeyEnv: ["TOGETHER_API_KEY"],
 } as const;
 
+const LONGCAT_DISCOVERY_PROVIDER = {
+	providerId: "longcat",
+	providerName: "LongCat",
+	modelsEndpoint: "https://api.longcat.chat/openai/v1/models",
+	pathPrefix: "/openai/v1",
+	baseUrlEnv: ["MEITUAN_BASE_URL", "LONGCAT_BASE_URL"],
+	apiKeyEnv: ["MEITUAN_API_KEY", "LONGCAT_API_KEY"],
+} as const;
+
 const FIREWORKS_DISCOVERY_PROVIDER = {
 	providerId: "fireworks",
 	providerName: "Fireworks",
@@ -156,6 +165,39 @@ describe("fetchProviderModels", () => {
 			});
 			expect(fetchMock.calls).toHaveLength(1);
 			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-together-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("extracts LongCat models from the documented OpenAI list response", async () => {
+		setupRuntimeFromEnv({
+			MEITUAN_API_KEY: "test-meituan-key",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) => url === "https://api.longcat.chat/openai/v1/models",
+				response: jsonResponse({
+					object: "list",
+					data: [
+						{
+							id: "LongCat-2.0-Preview",
+							object: "model",
+							owned_by: "LongCat",
+						},
+					],
+				}),
+			},
+		]);
+
+		try {
+			const models = await fetchProviderModels(LONGCAT_DISCOVERY_PROVIDER, "test-meituan-key");
+
+			expect(models.map((model) => model.id)).toEqual(["LongCat-2.0-Preview"]);
+			expect(models[0]?.modelDetails.owned_by).toBe("LongCat");
+			expect(fetchMock.calls).toHaveLength(1);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-meituan-key");
 		} finally {
 			fetchMock.restore();
 		}

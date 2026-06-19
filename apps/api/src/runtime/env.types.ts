@@ -48,6 +48,8 @@ export type GatewayBindings = {
     ATLAS_CLOUD_BASE_URL?: string;
     BASETEN_API_KEY?: string;
     BASETEN_BASE_URL?: string;
+    MEITUAN_API_KEY?: string;
+    MEITUAN_BASE_URL?: string;
     LONGCAT_API_KEY?: string;
     LONGCAT_BASE_URL?: string;
     BYTEDANCE_SEED_API_KEY?: string;

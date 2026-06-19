@@ -1487,6 +1487,7 @@ const (
 	KnownModelIdKwaipilotKatCoderProV1 KnownModelId = "kwaipilot/kat-coder-pro-v1"
 	KnownModelIdKwaipilotKatCoderProV2 KnownModelId = "kwaipilot/kat-coder-pro-v2"
 	KnownModelIdLiquidAiLfm224bA2b KnownModelId = "liquid-ai/lfm-2-24b-a2b"
+	KnownModelIdMeituanLongcat20Preview KnownModelId = "meituan/longcat-2.0-preview"
 	KnownModelIdMetaLlama370b KnownModelId = "meta/llama-3-70b"
 	KnownModelIdMetaLlama38b KnownModelId = "meta/llama-3-8b"
 	KnownModelIdMetaLlama38bLite KnownModelId = "meta/llama-3-8b-lite"
