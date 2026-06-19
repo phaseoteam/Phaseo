@@ -8388,6 +8388,7 @@ components:
         - kwaipilot/kat-coder-pro-v1
         - kwaipilot/kat-coder-pro-v2
         - liquid-ai/lfm-2-24b-a2b
+        - meituan/longcat-2.0-preview
         - meituan/longcat-flash-cat
         - meta/llama-3-70b
         - meta/llama-3-8b
@@ -8460,7 +8461,6 @@ components:
         - morph/morph-v3-large
         - nex-agi/deepseek-v3.1-nex-n1
         - nex-agi/nex-n2-pro
-        - nex-agi/nex-n2-pro:free
         - nous/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-70b
