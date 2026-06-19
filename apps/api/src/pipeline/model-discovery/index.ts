@@ -311,6 +311,14 @@ const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
 	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
 	{ providerId: "ionrouter", providerName: "IonRouter", modelsEndpoint: "https://api.ionrouter.io/v1/models", apiKeyEnv: ["IONROUTER_API_KEY"] },
+	{
+		providerId: "longcat",
+		providerName: "LongCat",
+		modelsEndpoint: "https://api.longcat.chat/openai/v1/models",
+		pathPrefix: "/openai/v1",
+		baseUrlEnv: ["MEITUAN_BASE_URL", "LONGCAT_BASE_URL"],
+		apiKeyEnv: ["MEITUAN_API_KEY", "LONGCAT_API_KEY"],
+	},
 	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY"] },
 	{ providerId: "moonshot-ai", providerName: "Moonshot AI", modelsEndpoint: "https://api.moonshot.ai/v1/models", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	{

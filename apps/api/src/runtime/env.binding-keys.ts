@@ -53,6 +53,8 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "ATLAS_CLOUD_BASE_URL",
     "BASETEN_API_KEY",
     "BASETEN_BASE_URL",
+    "MEITUAN_API_KEY",
+    "MEITUAN_BASE_URL",
     "LONGCAT_API_KEY",
     "LONGCAT_BASE_URL",
     "BYTEDANCE_SEED_API_KEY",

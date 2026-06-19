@@ -184,6 +184,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "longcat",
+		textOnly: true,
+	},
+	{
 		id: "poolside",
 		textOnly: true,
 	},

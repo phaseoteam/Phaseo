@@ -6,8 +6,8 @@ export type OpenAICompatConfig = {
 	providerId: string;
 	baseUrl?: string;
 	pathPrefix?: string;
-	apiKeyEnv?: string;
-	baseUrlEnv?: string;
+	apiKeyEnv?: string | string[];
+	baseUrlEnv?: string | string[];
 	apiKeyHeader?: string;
 	apiKeyPrefix?: string;
 	supportsResponses?: boolean;

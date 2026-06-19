@@ -1,0 +1,33 @@
+{
+  "key": "longcat:meituan/longcat-2.0-preview:text.generate",
+  "api_provider_id": "longcat",
+  "provider_slug": "longcat",
+  "api_model_id": "meituan/longcat-2.0-preview",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "LongCat model detail endpoint currently reports prompt pricing as 0 during public beta.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-19T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "LongCat model detail endpoint currently reports completion pricing as 0 during public beta.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-19T00:00:00Z"
+    }
+  ]
+}

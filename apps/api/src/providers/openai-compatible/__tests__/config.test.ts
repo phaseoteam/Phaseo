@@ -206,7 +206,7 @@ describe("openAICompatUrl", () => {
 	it("builds longcat chat-completions endpoint with /openai/v1 prefix", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({
-			LONGCAT_API_KEY: "test-longcat-key",
+			MEITUAN_API_KEY: "test-meituan-key",
 		} as any);
 
 		expect(openAICompatUrl("longcat", "/chat/completions")).toBe(
@@ -708,6 +708,52 @@ describe("resolveOpenAICompatKey", () => {
 		} as any);
 
 		expect(resolved.key).toBe("test-ionrouter-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("uses MEITUAN_API_KEY for longcat", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			MEITUAN_API_KEY: "test-meituan-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "longcat",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-meituan-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("falls back to LONGCAT_API_KEY for longcat", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			LONGCAT_API_KEY: "test-longcat-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "longcat",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-longcat-key");
+		expect(resolved.source).toBe("gateway");
+	});
+
+	it("prefers MEITUAN_API_KEY over LONGCAT_API_KEY for longcat", () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			MEITUAN_API_KEY: "test-meituan-key",
+			LONGCAT_API_KEY: "test-longcat-key",
+		} as any);
+
+		const resolved = resolveOpenAICompatKey({
+			providerId: "longcat",
+			byokMeta: [],
+		} as any);
+
+		expect(resolved.key).toBe("test-meituan-key");
 		expect(resolved.source).toBe("gateway");
 	});
 
