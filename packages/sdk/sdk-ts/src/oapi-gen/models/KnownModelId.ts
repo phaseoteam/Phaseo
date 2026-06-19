@@ -116,7 +116,6 @@ export type KnownModelId =
   | "kwaipilot/kat-coder-pro-v2"
   | "liquid-ai/lfm-2-24b-a2b"
   | "meituan/longcat-2.0-preview"
-  | "meituan/longcat-flash-cat"
   | "meta/llama-3-70b"
   | "meta/llama-3-8b"
   | "meta/llama-3-8b-lite"
