@@ -1,0 +1,19 @@
+{
+  "model_id": "meituan/longcat-flash-thinking",
+  "organisation_id": "meituan",
+  "name": "LongCat Flash Thinking",
+  "status": "Retired",
+  "previous_model_id": null,
+  "description": "LongCat Flash Thinking was a legacy Meituan LongCat reasoning model. Meituan retired this legacy model on May 29, 2026 as part of its migration toward LongCat 2.0 Preview.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": "2026-05-29T00:00:00",
+  "retirement_date": "2026-05-29T00:00:00",
+  "license": null,
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "meituan/longcat-flash-thinking",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
