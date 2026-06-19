@@ -361,18 +361,18 @@
     "provider_api_model_id": "atlascloud:meituan/longcat-flash-cat",
     "provider_model_slug": "meituan-longcat/LongCat-Flash-Chat",
     "internal_model_id": "meituan/longcat-flash-cat",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 32768,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-29T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": []
       }
     ]

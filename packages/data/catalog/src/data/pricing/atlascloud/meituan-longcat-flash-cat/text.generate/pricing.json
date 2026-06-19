@@ -4,6 +4,7 @@
   "provider_slug": "atlascloud",
   "api_model_id": "meituan/longcat-flash-cat",
   "capability_id": "text.generate",
+  "effective_to": "2026-05-29T00:00:00Z",
   "rules": [
     {
       "meter": "input_text_tokens",
