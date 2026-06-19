@@ -22,6 +22,11 @@ type ProviderConfig = {
 	baseUrlEnv?: string[];
 	apiKeyEnv?: string[];
 	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
+	pagination?: {
+		nextPageTokenFields: string[];
+		pageTokenQueryParam: string;
+		maxPages?: number;
+	};
 };
 
 type ProviderChange = {
@@ -117,6 +122,7 @@ type ConfiguredProviderModelRow = {
 };
 
 const DISCOVERY_TIMEOUT_MS = 30_000;
+const DEFAULT_DISCOVERY_MAX_PAGES = 50;
 const MAX_DISCORD_LINES = 30;
 const MAX_LIST_ITEMS = 8;
 const MAX_SUMMARY_MODEL_SAMPLES = 5;
@@ -496,9 +502,21 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 	return false;
 }
 
+function isTruthyFlag(value: unknown): boolean {
+	if (value === true) return true;
+	if (typeof value === "number") return value === 1;
+	if (typeof value === "string") {
+		return value.trim().toLowerCase() === "true";
+	}
+	return false;
+}
+
 export function shouldIncludeDiscoveredModel(providerId: string, row: Record<string, unknown>): boolean {
 	if (providerId === "atlascloud") {
 		return hasAtlascloudLlmCategory(row);
+	}
+	if (providerId === "fireworks") {
+		return isTruthyFlag(row.supportsServerless ?? row.supports_serverless);
 	}
 	if (providerId === "clarifai") {
 		return typeof row.model_type_id === "string" && row.model_type_id.trim().toLowerCase() === "text-to-text";
@@ -590,6 +608,20 @@ function extractProviderResponseErrorMessage(payload: unknown): string | null {
 	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
 }
 
+function readNextPageToken(
+	root: Record<string, unknown> | null,
+	pagination: NonNullable<ProviderConfig["pagination"]>
+): string {
+	if (!root) return "";
+	for (const field of pagination.nextPageTokenFields) {
+		const value = root[field];
+		if (typeof value !== "string") continue;
+		const trimmed = value.trim();
+		if (trimmed) return trimmed;
+	}
+	return "";
+}
+
 export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
@@ -632,18 +664,60 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 				break;
 		}
 
-		const response = await fetch(url, { method: "GET", headers, signal: controller.signal });
-		if (!response.ok) {
-			const body = await response.text().catch(() => "");
-			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+		const output = new Map<string, DiscoveredModel>();
+		const pagination = provider.pagination;
+		const maxPages = pagination?.maxPages ?? DEFAULT_DISCOVERY_MAX_PAGES;
+		const seenPageTokens = new Set<string>();
+		let nextUrl: string | null = url;
+		let pageCount = 0;
+
+		while (nextUrl) {
+			pageCount += 1;
+			if (pagination && pageCount > maxPages) {
+				throw new Error(
+					`${provider.providerName} (${provider.providerId}) model discovery exceeded ${maxPages} pages`
+				);
+			}
+
+			const response = await fetch(nextUrl, { method: "GET", headers, signal: controller.signal });
+			if (!response.ok) {
+				const body = await response.text().catch(() => "");
+				throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+			}
+
+			const payload = await response.json();
+			const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+			if (providerResponseErrorMessage) {
+				throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+			}
+
+			for (const model of extractDiscoveredModels(provider.providerId, payload)) {
+				output.set(model.id, model);
+			}
+
+			if (!pagination) {
+				nextUrl = null;
+				continue;
+			}
+
+			const nextPageToken = readNextPageToken(asRecord(payload), pagination);
+			if (!nextPageToken) {
+				nextUrl = null;
+				continue;
+			}
+			if (seenPageTokens.has(nextPageToken)) {
+				throw new Error(
+					`${provider.providerName} (${provider.providerId}) model discovery returned repeated page token: ${nextPageToken}`
+				);
+			}
+			seenPageTokens.add(nextPageToken);
+
+			const parsed = new URL(nextUrl);
+			parsed.searchParams.set(pagination.pageTokenQueryParam, nextPageToken);
+			nextUrl = parsed.toString();
 		}
 
-		const payload = await response.json();
-		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
-		if (providerResponseErrorMessage) {
-			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
-		}
-		return extractDiscoveredModels(provider.providerId, payload);
+		return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 	} finally {
 		clearTimeout(timeout);
 	}
