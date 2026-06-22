@@ -1,5 +1,26 @@
 [
   {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "akashml:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org/GLM-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-22T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "deepseek/deepseek-v4-flash",
     "provider_api_model_id": "akashml:deepseek/deepseek-v4-flash",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash",
