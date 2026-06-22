@@ -516,18 +516,18 @@
     "provider_api_model_id": "venice:minimax/minimax-m3",
     "provider_model_slug": "minimax-m3",
     "internal_model_id": "minimax/minimax-m3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 500000,
     "max_output_tokens": 32768,
     "effective_from": "2026-06-01T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-22T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "deranked_lvl1",
         "params": [
           {
             "param_id": "tools",
@@ -1757,18 +1757,18 @@
     "provider_api_model_id": "venice:minimax/minimax-m3",
     "provider_model_slug": "minimax-m3",
     "internal_model_id": "minimax/minimax-m3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 500000,
     "max_output_tokens": 32768,
     "effective_from": "2026-06-01T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-22T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "deranked_lvl1",
         "params": [
           {
             "param_id": "tools",
