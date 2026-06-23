@@ -6,7 +6,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
-import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
+import type {
+	ChatServerToolAdvisor,
+	ChatSettings,
+	ChatThread,
+} from "@/lib/indexeddb/chats";
 import { Square } from "lucide-react";
 import {
 	REASONING_OPTIONS,
@@ -16,25 +20,152 @@ import {
 	getSupportedRecordingMimeType,
 	sanitizeAttachmentMediaUrl,
 } from "./chatConversationHelpers";
+import { shouldShowEvaluationPrompts } from "./chatConversationPrompts";
 
 export type ChatSendPayload = {
 	content: string;
 	attachments: File[];
 	webSearchEnabled: boolean;
+	serverToolWebSearchEngine: string;
+	serverToolWebSearchContextSize: "low" | "medium" | "high";
+	serverToolWebSearchMaxResults: number | null;
+	serverToolWebSearchMaxTotalResults: number | null;
+	serverToolWebSearchMaxCharacters: number | null;
+	serverToolWebSearchAllowedDomains: string;
+	serverToolWebSearchBlockedDomains: string;
 	apiServerToolsEnabled: boolean;
+	serverToolTimezone: string;
+	serverToolWebFetchEnabled: boolean;
+	serverToolWebFetchEngine: string;
+	serverToolWebFetchMaxContentTokens: number | null;
+	serverToolWebFetchAllowedDomains: string;
+	serverToolWebFetchBlockedDomains: string;
+	serverToolAdvisorEnabled: boolean;
+	serverToolAdvisors: ChatServerToolAdvisor[];
+	serverToolImageGenerationEnabled: boolean;
+	serverToolImageGenerationModel: string;
+	serverToolImageGenerationQuality: string;
+	serverToolImageGenerationAspectRatio: string;
+	serverToolImageGenerationSize: string;
+	serverToolImageGenerationBackground: string;
+	serverToolImageGenerationOutputFormat: string;
+	serverToolImageGenerationOutputCompression: number | null;
+	serverToolImageGenerationModeration: string;
+	serverToolSubagentEnabled: boolean;
+	serverToolSubagentModel: string;
+	serverToolSubagentInstructions: string;
+	serverToolSubagentMaxUses: number | null;
+	serverToolFusionEnabled: boolean;
+	serverToolFusionAnalysisModels: string[];
+	serverToolFusionJudgeModel: string;
+	serverToolFusionMaxUses: number | null;
+};
+
+export type ServerToolModelChoice = {
+	id: string;
+	label: string;
+	orgId: string;
+	orgName: string;
+	releaseDate?: string | null;
 };
 
 type ChatConversationProps = {
 	activeThread: ChatThread | null;
+	temporaryMode?: boolean;
 	isSending: boolean;
 	isAuthenticated: boolean;
 	mode?: "classic" | "unified";
 	webSearchEnabled?: boolean;
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
+	serverToolWebSearchEngine?: string;
+	onServerToolWebSearchEngineChange?: (engine: string) => void;
+	serverToolWebSearchContextSize?: "low" | "medium" | "high";
+	onServerToolWebSearchContextSizeChange?: (
+		contextSize: "low" | "medium" | "high",
+	) => void;
+	serverToolWebSearchMaxResults?: number | null;
+	onServerToolWebSearchMaxResultsChange?: (maxResults: number | null) => void;
+	serverToolWebSearchMaxTotalResults?: number | null;
+	onServerToolWebSearchMaxTotalResultsChange?: (
+		maxTotalResults: number | null,
+	) => void;
+	serverToolWebSearchMaxCharacters?: number | null;
+	onServerToolWebSearchMaxCharactersChange?: (
+		maxCharacters: number | null,
+	) => void;
+	serverToolWebSearchAllowedDomains?: string;
+	onServerToolWebSearchAllowedDomainsChange?: (domains: string) => void;
+	serverToolWebSearchBlockedDomains?: string;
+	onServerToolWebSearchBlockedDomainsChange?: (domains: string) => void;
 	apiServerToolsEnabled?: boolean;
 	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
+	serverToolTimezone?: string;
+	onServerToolTimezoneChange?: (timezone: string) => void;
+	serverToolWebFetchEnabled?: boolean;
+	onServerToolWebFetchEnabledChange?: (enabled: boolean) => void;
+	serverToolWebFetchEngine?: string;
+	onServerToolWebFetchEngineChange?: (engine: string) => void;
+	serverToolWebFetchMaxContentTokens?: number | null;
+	onServerToolWebFetchMaxContentTokensChange?: (
+		maxContentTokens: number | null,
+	) => void;
+	serverToolWebFetchAllowedDomains?: string;
+	onServerToolWebFetchAllowedDomainsChange?: (domains: string) => void;
+	serverToolWebFetchBlockedDomains?: string;
+	onServerToolWebFetchBlockedDomainsChange?: (domains: string) => void;
+	serverToolAdvisorEnabled?: boolean;
+	onServerToolAdvisorEnabledChange?: (enabled: boolean) => void;
+	serverToolAdvisors?: ChatServerToolAdvisor[];
+	onServerToolAdvisorsChange?: (advisors: ChatServerToolAdvisor[]) => void;
+	serverToolImageGenerationEnabled?: boolean;
+	onServerToolImageGenerationEnabledChange?: (enabled: boolean) => void;
+	serverToolImageGenerationModel?: string;
+	onServerToolImageGenerationModelChange?: (model: string) => void;
+	serverToolImageGenerationQuality?: string;
+	onServerToolImageGenerationQualityChange?: (quality: string) => void;
+	serverToolImageGenerationAspectRatio?: string;
+	onServerToolImageGenerationAspectRatioChange?: (aspectRatio: string) => void;
+	serverToolImageGenerationSize?: string;
+	onServerToolImageGenerationSizeChange?: (size: string) => void;
+	serverToolImageGenerationBackground?: string;
+	onServerToolImageGenerationBackgroundChange?: (background: string) => void;
+	serverToolImageGenerationOutputFormat?: string;
+	onServerToolImageGenerationOutputFormatChange?: (format: string) => void;
+	serverToolImageGenerationOutputCompression?: number | null;
+	onServerToolImageGenerationOutputCompressionChange?: (
+		compression: number | null,
+	) => void;
+	serverToolImageGenerationModeration?: string;
+	onServerToolImageGenerationModerationChange?: (moderation: string) => void;
+	serverToolSubagentEnabled?: boolean;
+	onServerToolSubagentEnabledChange?: (enabled: boolean) => void;
+	serverToolSubagentModel?: string;
+	onServerToolSubagentModelChange?: (model: string) => void;
+	serverToolSubagentInstructions?: string;
+	onServerToolSubagentInstructionsChange?: (instructions: string) => void;
+	serverToolSubagentMaxUses?: number | null;
+	onServerToolSubagentMaxUsesChange?: (maxUses: number | null) => void;
+	serverToolFusionEnabled?: boolean;
+	onServerToolFusionEnabledChange?: (enabled: boolean) => void;
+	serverToolFusionAnalysisModels?: string[];
+	onServerToolFusionAnalysisModelsChange?: (models: string[]) => void;
+	serverToolFusionJudgeModel?: string;
+	onServerToolFusionJudgeModelChange?: (model: string) => void;
+	serverToolFusionMaxUses?: number | null;
+	onServerToolFusionMaxUsesChange?: (maxUses: number | null) => void;
+	serverToolModelChoices?: ServerToolModelChoice[];
+	serverToolLatestModelChoices?: ServerToolModelChoice[];
+	serverToolImageGenerationModelChoices?: ServerToolModelChoice[];
+	serverToolImageGenerationLatestModelChoices?: ServerToolModelChoice[];
+	contextMessageLimit?: ChatSettings["contextMessageLimit"];
+	onContextMessageLimitChange?: (
+		limit: NonNullable<ChatSettings["contextMessageLimit"]>,
+	) => void;
 	reasoningEnabled?: boolean;
 	reasoningEffort?: ChatSettings["reasoningEffort"];
+	supportedReasoningEfforts?: Array<
+		NonNullable<ChatSettings["reasoningEffort"]>
+	>;
 	onReasoningEnabledChange?: (enabled: boolean) => void;
 	onReasoningEffortChange?: (effort: NonNullable<ChatSettings["reasoningEffort"]>) => void;
 	presetPrompt?: string;
@@ -47,31 +178,97 @@ type ChatConversationProps = {
 	modelDisplayNameById: Record<string, string>;
 	modelOrgIdById: Record<string, string>;
 	modelLinkById: Record<string, string>;
+	modelDefaultProviderById?: Record<string, { id: string; name: string }>;
 	accentColor: string;
-	selectedOrgId: string;
-	selectedModelId: string;
-	selectedModelLabel: string;
-	selectedModelCount?: number;
-	selectedModelsHint?: string;
-	onOpenModelPicker: () => void;
 	onAudioAttachmentRequirementChange?: (requiresAudioInput: boolean) => void;
 	requestError?: ChatRequestErrorDetails | null;
-	onDismissRequestError?: () => void;
 };
 
 type SendGateType = "auth";
 
 export function ChatConversation({
 	activeThread,
+	temporaryMode = false,
 	isSending,
 	isAuthenticated,
 	mode = "classic",
 	webSearchEnabled = false,
 	onWebSearchEnabledChange,
+	serverToolWebSearchEngine = "auto",
+	onServerToolWebSearchEngineChange,
+	serverToolWebSearchContextSize = "medium",
+	onServerToolWebSearchContextSizeChange,
+	serverToolWebSearchMaxResults = null,
+	onServerToolWebSearchMaxResultsChange,
+	serverToolWebSearchMaxTotalResults = null,
+	onServerToolWebSearchMaxTotalResultsChange,
+	serverToolWebSearchMaxCharacters = null,
+	onServerToolWebSearchMaxCharactersChange,
+	serverToolWebSearchAllowedDomains = "",
+	onServerToolWebSearchAllowedDomainsChange,
+	serverToolWebSearchBlockedDomains = "",
+	onServerToolWebSearchBlockedDomainsChange,
 	apiServerToolsEnabled = false,
 	onApiServerToolsEnabledChange,
+	serverToolTimezone = "",
+	onServerToolTimezoneChange,
+	serverToolWebFetchEnabled = false,
+	onServerToolWebFetchEnabledChange,
+	serverToolWebFetchEngine = "auto",
+	onServerToolWebFetchEngineChange,
+	serverToolWebFetchMaxContentTokens = null,
+	onServerToolWebFetchMaxContentTokensChange,
+	serverToolWebFetchAllowedDomains = "",
+	onServerToolWebFetchAllowedDomainsChange,
+	serverToolWebFetchBlockedDomains = "",
+	onServerToolWebFetchBlockedDomainsChange,
+	serverToolAdvisorEnabled = false,
+	onServerToolAdvisorEnabledChange,
+	serverToolAdvisors = [],
+	onServerToolAdvisorsChange,
+	serverToolImageGenerationEnabled = false,
+	onServerToolImageGenerationEnabledChange,
+	serverToolImageGenerationModel = "",
+	onServerToolImageGenerationModelChange,
+	serverToolImageGenerationQuality = "auto",
+	onServerToolImageGenerationQualityChange,
+	serverToolImageGenerationAspectRatio = "auto",
+	onServerToolImageGenerationAspectRatioChange,
+	serverToolImageGenerationSize = "auto",
+	onServerToolImageGenerationSizeChange,
+	serverToolImageGenerationBackground = "auto",
+	onServerToolImageGenerationBackgroundChange,
+	serverToolImageGenerationOutputFormat = "auto",
+	onServerToolImageGenerationOutputFormatChange,
+	serverToolImageGenerationOutputCompression = null,
+	onServerToolImageGenerationOutputCompressionChange,
+	serverToolImageGenerationModeration = "auto",
+	onServerToolImageGenerationModerationChange,
+	serverToolSubagentEnabled = false,
+	onServerToolSubagentEnabledChange,
+	serverToolSubagentModel = "",
+	onServerToolSubagentModelChange,
+	serverToolSubagentInstructions = "",
+	onServerToolSubagentInstructionsChange,
+	serverToolSubagentMaxUses = null,
+	onServerToolSubagentMaxUsesChange,
+	serverToolFusionEnabled = false,
+	onServerToolFusionEnabledChange,
+	serverToolFusionAnalysisModels = [],
+	onServerToolFusionAnalysisModelsChange,
+	serverToolFusionJudgeModel = "",
+	onServerToolFusionJudgeModelChange,
+	serverToolFusionMaxUses = null,
+	onServerToolFusionMaxUsesChange,
+	serverToolModelChoices = [],
+	serverToolLatestModelChoices = [],
+	serverToolImageGenerationModelChoices = [],
+	serverToolImageGenerationLatestModelChoices = [],
+	contextMessageLimit = 10,
+	onContextMessageLimitChange,
 	reasoningEnabled = false,
 	reasoningEffort = "medium",
+	supportedReasoningEfforts = REASONING_OPTIONS.map((option) => option.value),
 	onReasoningEnabledChange,
 	onReasoningEffortChange,
 	presetPrompt,
@@ -84,16 +281,10 @@ export function ChatConversation({
 	modelDisplayNameById,
 	modelOrgIdById,
 	modelLinkById,
+	modelDefaultProviderById = {},
 	accentColor,
-	selectedOrgId,
-	selectedModelId,
-	selectedModelLabel,
-	selectedModelCount = selectedModelId ? 1 : 0,
-	selectedModelsHint,
-	onOpenModelPicker,
 	onAudioAttachmentRequirementChange,
 	requestError = null,
-	onDismissRequestError,
 }: ChatConversationProps) {
 	const isUnified = mode === "unified";
 	const [composer, setComposer] = useState("");
@@ -110,13 +301,14 @@ export function ChatConversation({
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
 	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
 	const [sendGateType, setSendGateType] = useState<SendGateType | null>(null);
+	const [hasSubmittedMessage, setHasSubmittedMessage] = useState(false);
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const mediaStreamRef = useRef<MediaStream | null>(null);
 	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
 
 	const placeholder = useMemo(() => {
-		return getRandomPlaceholder();
+		return getRandomPlaceholder(activeThread?.id ?? "new-chat");
 	}, [activeThread?.id]);
 	const reasoningSelection: NonNullable<ChatSettings["reasoningEffort"]> =
 		reasoningEffort ?? "medium";
@@ -159,6 +351,7 @@ export function ChatConversation({
 		const raf = requestAnimationFrame(() => {
 			setComposer("");
 			setAttachments([]);
+			setHasSubmittedMessage(false);
 		});
 		return () => cancelAnimationFrame(raf);
 	}, [activeThread?.id]);
@@ -174,6 +367,7 @@ export function ChatConversation({
 
 	useEffect(() => {
 		if (isAuthenticated && sendGateType === "auth") {
+			// react-doctor-disable-next-line
 			setSendGateType(null);
 		}
 	}, [isAuthenticated, sendGateType]);
@@ -395,7 +589,7 @@ export function ChatConversation({
 
 	const applyReasoningSelection = useCallback(
 		(value: NonNullable<ChatSettings["reasoningEffort"]>) => {
-			onReasoningEnabledChange?.(true);
+			onReasoningEnabledChange?.(value !== "none");
 			onReasoningEffortChange?.(value);
 			setReasoningPickerOpen(false);
 		},
@@ -418,11 +612,92 @@ export function ChatConversation({
 			return;
 		}
 		setSendGateType(null);
+		setHasSubmittedMessage(true);
 		onSend({
 			content: text,
 			attachments,
 			webSearchEnabled: isUnified ? webSearchEnabled : false,
+			serverToolWebSearchEngine: isUnified
+				? serverToolWebSearchEngine
+				: "auto",
+			serverToolWebSearchContextSize: isUnified
+				? serverToolWebSearchContextSize
+				: "medium",
+			serverToolWebSearchMaxResults: isUnified
+				? serverToolWebSearchMaxResults
+				: null,
+			serverToolWebSearchMaxTotalResults: isUnified
+				? serverToolWebSearchMaxTotalResults
+				: null,
+			serverToolWebSearchMaxCharacters: isUnified
+				? serverToolWebSearchMaxCharacters
+				: null,
+			serverToolWebSearchAllowedDomains: isUnified
+				? serverToolWebSearchAllowedDomains
+				: "",
+			serverToolWebSearchBlockedDomains: isUnified
+				? serverToolWebSearchBlockedDomains
+				: "",
 			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
+			serverToolTimezone: isUnified ? serverToolTimezone : "",
+			serverToolWebFetchEnabled: isUnified
+				? serverToolWebFetchEnabled
+				: false,
+			serverToolWebFetchEngine: isUnified ? serverToolWebFetchEngine : "auto",
+			serverToolWebFetchMaxContentTokens: isUnified
+				? serverToolWebFetchMaxContentTokens
+				: null,
+			serverToolWebFetchAllowedDomains: isUnified
+				? serverToolWebFetchAllowedDomains
+				: "",
+			serverToolWebFetchBlockedDomains: isUnified
+				? serverToolWebFetchBlockedDomains
+				: "",
+			serverToolAdvisorEnabled: isUnified ? serverToolAdvisorEnabled : false,
+			serverToolAdvisors: isUnified ? serverToolAdvisors : [],
+			serverToolImageGenerationEnabled: isUnified
+				? serverToolImageGenerationEnabled
+				: false,
+			serverToolImageGenerationModel: isUnified
+				? serverToolImageGenerationModel
+				: "",
+			serverToolImageGenerationQuality: isUnified
+				? serverToolImageGenerationQuality
+				: "auto",
+			serverToolImageGenerationAspectRatio: isUnified
+				? serverToolImageGenerationAspectRatio
+				: "auto",
+			serverToolImageGenerationSize: isUnified
+				? serverToolImageGenerationSize
+				: "auto",
+			serverToolImageGenerationBackground: isUnified
+				? serverToolImageGenerationBackground
+				: "auto",
+			serverToolImageGenerationOutputFormat: isUnified
+				? serverToolImageGenerationOutputFormat
+				: "auto",
+			serverToolImageGenerationOutputCompression: isUnified
+				? serverToolImageGenerationOutputCompression
+				: null,
+			serverToolImageGenerationModeration: isUnified
+				? serverToolImageGenerationModeration
+				: "auto",
+			serverToolSubagentEnabled: isUnified
+				? serverToolSubagentEnabled
+				: false,
+			serverToolSubagentModel: isUnified ? serverToolSubagentModel : "",
+			serverToolSubagentInstructions: isUnified
+				? serverToolSubagentInstructions
+				: "",
+			serverToolSubagentMaxUses: isUnified
+				? serverToolSubagentMaxUses
+				: null,
+			serverToolFusionEnabled: isUnified ? serverToolFusionEnabled : false,
+			serverToolFusionAnalysisModels: isUnified
+				? serverToolFusionAnalysisModels
+				: [],
+			serverToolFusionJudgeModel: isUnified ? serverToolFusionJudgeModel : "",
+			serverToolFusionMaxUses: isUnified ? serverToolFusionMaxUses : null,
 		});
 		setComposer("");
 		setAttachments([]);
@@ -478,6 +753,7 @@ export function ChatConversation({
 					) : null}
 					<ChatConversationMessages
 						activeThread={activeThread}
+						temporaryMode={temporaryMode}
 						isSending={isSending}
 						lastMessageId={lastMessageId}
 						editingId={editingId}
@@ -490,6 +766,7 @@ export function ChatConversation({
 						modelDisplayNameById={modelDisplayNameById}
 						modelOrgIdById={modelOrgIdById}
 						modelLinkById={modelLinkById}
+						modelDefaultProviderById={modelDefaultProviderById}
 						accentColor={accentColor}
 						onEditMessage={onEditMessage}
 						onRetryAssistant={onRetryAssistant}
@@ -497,7 +774,6 @@ export function ChatConversation({
 						onSelectVariant={onSelectVariant}
 						onCopy={handleCopy}
 						requestError={requestError}
-						onDismissRequestError={onDismissRequestError}
 					/>
 				</div>
 			</ScrollArea>
@@ -512,27 +788,186 @@ export function ChatConversation({
 				fileInputRef={fileInputRef}
 				audioInputRef={audioInputRef}
 				isUnified={isUnified}
+				temporaryMode={temporaryMode}
 				webSearchEnabled={webSearchEnabled}
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
+				serverToolWebSearchEngine={serverToolWebSearchEngine}
+				onServerToolWebSearchEngineChange={
+					onServerToolWebSearchEngineChange
+				}
+				serverToolWebSearchContextSize={serverToolWebSearchContextSize}
+				onServerToolWebSearchContextSizeChange={
+					onServerToolWebSearchContextSizeChange
+				}
+				serverToolWebSearchMaxResults={serverToolWebSearchMaxResults}
+				onServerToolWebSearchMaxResultsChange={
+					onServerToolWebSearchMaxResultsChange
+				}
+				serverToolWebSearchMaxTotalResults={
+					serverToolWebSearchMaxTotalResults
+				}
+				onServerToolWebSearchMaxTotalResultsChange={
+					onServerToolWebSearchMaxTotalResultsChange
+				}
+				serverToolWebSearchMaxCharacters={serverToolWebSearchMaxCharacters}
+				onServerToolWebSearchMaxCharactersChange={
+					onServerToolWebSearchMaxCharactersChange
+				}
+				serverToolWebSearchAllowedDomains={
+					serverToolWebSearchAllowedDomains
+				}
+				onServerToolWebSearchAllowedDomainsChange={
+					onServerToolWebSearchAllowedDomainsChange
+				}
+				serverToolWebSearchBlockedDomains={
+					serverToolWebSearchBlockedDomains
+				}
+				onServerToolWebSearchBlockedDomainsChange={
+					onServerToolWebSearchBlockedDomainsChange
+				}
 				apiServerToolsEnabled={apiServerToolsEnabled}
 				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
-				showEvaluationPrompts={(activeThread?.messages.length ?? 0) === 0}
+				serverToolTimezone={serverToolTimezone}
+				onServerToolTimezoneChange={onServerToolTimezoneChange}
+				serverToolWebFetchEnabled={serverToolWebFetchEnabled}
+				onServerToolWebFetchEnabledChange={
+					onServerToolWebFetchEnabledChange
+				}
+				serverToolWebFetchEngine={serverToolWebFetchEngine}
+				onServerToolWebFetchEngineChange={
+					onServerToolWebFetchEngineChange
+				}
+				serverToolWebFetchMaxContentTokens={
+					serverToolWebFetchMaxContentTokens
+				}
+				onServerToolWebFetchMaxContentTokensChange={
+					onServerToolWebFetchMaxContentTokensChange
+				}
+				serverToolWebFetchAllowedDomains={
+					serverToolWebFetchAllowedDomains
+				}
+				onServerToolWebFetchAllowedDomainsChange={
+					onServerToolWebFetchAllowedDomainsChange
+				}
+				serverToolWebFetchBlockedDomains={
+					serverToolWebFetchBlockedDomains
+				}
+				onServerToolWebFetchBlockedDomainsChange={
+					onServerToolWebFetchBlockedDomainsChange
+				}
+				serverToolAdvisorEnabled={serverToolAdvisorEnabled}
+				onServerToolAdvisorEnabledChange={
+					onServerToolAdvisorEnabledChange
+				}
+				serverToolAdvisors={serverToolAdvisors}
+				onServerToolAdvisorsChange={onServerToolAdvisorsChange}
+				serverToolImageGenerationEnabled={
+					serverToolImageGenerationEnabled
+				}
+				onServerToolImageGenerationEnabledChange={
+					onServerToolImageGenerationEnabledChange
+				}
+				serverToolImageGenerationModel={serverToolImageGenerationModel}
+				onServerToolImageGenerationModelChange={
+					onServerToolImageGenerationModelChange
+				}
+				serverToolImageGenerationQuality={serverToolImageGenerationQuality}
+				onServerToolImageGenerationQualityChange={
+					onServerToolImageGenerationQualityChange
+				}
+				serverToolImageGenerationAspectRatio={
+					serverToolImageGenerationAspectRatio
+				}
+				onServerToolImageGenerationAspectRatioChange={
+					onServerToolImageGenerationAspectRatioChange
+				}
+				serverToolImageGenerationSize={serverToolImageGenerationSize}
+				onServerToolImageGenerationSizeChange={
+					onServerToolImageGenerationSizeChange
+				}
+				serverToolImageGenerationBackground={
+					serverToolImageGenerationBackground
+				}
+				onServerToolImageGenerationBackgroundChange={
+					onServerToolImageGenerationBackgroundChange
+				}
+				serverToolImageGenerationOutputFormat={
+					serverToolImageGenerationOutputFormat
+				}
+				onServerToolImageGenerationOutputFormatChange={
+					onServerToolImageGenerationOutputFormatChange
+				}
+				serverToolImageGenerationOutputCompression={
+					serverToolImageGenerationOutputCompression
+				}
+				onServerToolImageGenerationOutputCompressionChange={
+					onServerToolImageGenerationOutputCompressionChange
+				}
+				serverToolImageGenerationModeration={
+					serverToolImageGenerationModeration
+				}
+				onServerToolImageGenerationModerationChange={
+					onServerToolImageGenerationModerationChange
+				}
+				serverToolSubagentEnabled={serverToolSubagentEnabled}
+				onServerToolSubagentEnabledChange={
+					onServerToolSubagentEnabledChange
+				}
+				serverToolSubagentModel={serverToolSubagentModel}
+				onServerToolSubagentModelChange={
+					onServerToolSubagentModelChange
+				}
+				serverToolSubagentInstructions={serverToolSubagentInstructions}
+				onServerToolSubagentInstructionsChange={
+					onServerToolSubagentInstructionsChange
+				}
+				serverToolSubagentMaxUses={serverToolSubagentMaxUses}
+				onServerToolSubagentMaxUsesChange={
+					onServerToolSubagentMaxUsesChange
+				}
+				serverToolFusionEnabled={serverToolFusionEnabled}
+				onServerToolFusionEnabledChange={
+					onServerToolFusionEnabledChange
+				}
+				serverToolFusionAnalysisModels={
+					serverToolFusionAnalysisModels
+				}
+				onServerToolFusionAnalysisModelsChange={
+					onServerToolFusionAnalysisModelsChange
+				}
+				serverToolFusionJudgeModel={serverToolFusionJudgeModel}
+				onServerToolFusionJudgeModelChange={
+					onServerToolFusionJudgeModelChange
+				}
+				serverToolFusionMaxUses={serverToolFusionMaxUses}
+				onServerToolFusionMaxUsesChange={
+					onServerToolFusionMaxUsesChange
+				}
+				serverToolModelChoices={serverToolModelChoices}
+				serverToolLatestModelChoices={serverToolLatestModelChoices}
+				serverToolImageGenerationModelChoices={
+					serverToolImageGenerationModelChoices
+				}
+				serverToolImageGenerationLatestModelChoices={
+					serverToolImageGenerationLatestModelChoices
+				}
+				contextMessageLimit={contextMessageLimit}
+				onContextMessageLimitChange={onContextMessageLimitChange}
+				showEvaluationPrompts={shouldShowEvaluationPrompts(
+					activeThread?.messages.length ?? 0,
+					hasSubmittedMessage,
+				)}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}
 				reasoningSelection={reasoningSelection}
 				reasoningOptions={REASONING_OPTIONS}
+				supportedReasoningEfforts={supportedReasoningEfforts}
 				onReasoningSelection={applyReasoningSelection}
-				selectedModelCount={selectedModelCount}
-				selectedModelsHint={selectedModelsHint}
-				selectedModelId={selectedModelId}
-				selectedModelLabel={selectedModelLabel}
-				selectedOrgId={selectedOrgId}
 				isRecording={isRecording}
 				isStartingRecording={isStartingRecording}
 				recordingSupported={recordingSupported}
 				onToggleRecording={toggleRecording}
-				onOpenModelPicker={onOpenModelPicker}
 				onSubmit={handleSubmit}
 				onSelectEvaluationPrompt={handleSelectEvaluationPrompt}
 				onComposerChange={setComposer}

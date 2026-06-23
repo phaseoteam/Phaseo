@@ -9,6 +9,7 @@ import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
 import { inferAudioMimeType } from "@/components/(chat)/chatConversationHelpers";
+import { cn } from "@/lib/utils";
 import { extractGenerationUrls } from "@/lib/chat/roomRequestBuilders";
 import {
 	deleteRoomHistory,
@@ -46,6 +47,7 @@ import {
 } from "@/components/ui/media-player";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
+import { ChatSidebarModelsIcon } from "@/components/(chat)/ChatSidebarModelsIcon";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
 import {
@@ -75,14 +77,14 @@ import {
 } from "@/lib/chat/roomModelSettings";
 import { AudioModelSettingsDialog } from "@/components/(chat)/rooms/settings/AudioModelSettingsDialog";
 import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
+import { RoomTemporaryNotice } from "@/components/(chat)/rooms/RoomTemporaryNotice";
+import { RoomChatSettingsButton } from "@/components/(chat)/rooms/RoomChatSettingsButton";
 import {
 	AudioLines,
 	ArrowUpRight,
 	Check,
 	ChevronRight,
 	Copy,
-	Cpu,
-	Database,
 	Download,
 	Info,
 	Languages,
@@ -98,7 +100,6 @@ import {
 	RotateCcw,
 	Save,
 	Search,
-	Settings as SettingsIcon,
 	SquarePen,
 	Trash2,
 	X,
@@ -1001,35 +1002,6 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		modelSettingsCompat.selectedProfile ?? modelSettingsCompat.activeModelSettings ?? null;
 	const selectedModelEnabled = selectedProfile?.enabled !== false;
 	const selectedProviderId = selectedProfile?.providerId;
-	const composerSelectedModel = useMemo(
-		() =>
-			filteredModels.find(
-				(model) =>
-					model.modelId === modelId &&
-					(!selectedProviderId || model.providerId === selectedProviderId),
-			) ??
-			filteredModels.find((model) => model.modelId === modelId) ??
-			null,
-		[filteredModels, modelId, selectedProviderId],
-	);
-	const composerModelLogoId =
-		composerSelectedModel?.organisationId?.trim() ||
-		composerSelectedModel?.providerId ||
-		(modelId.split("/")[0] || "ai-stats");
-	const composerModelLabel =
-		(modelId &&
-			(modelSettings.modelDisplayNameById[modelId] ||
-				composerSelectedModel?.modelName ||
-				modelId)) ||
-		"Select model";
-	const openComposerModelPicker = () => {
-		const targetModelId = modelId || filteredModels[0]?.modelId;
-		if (!targetModelId) return;
-		if (targetModelId !== modelId) {
-			setModelId(targetModelId);
-		}
-		modelSettings.openModelSettingsForModel(targetModelId);
-	};
 
 	const selectedModeSupport = useMemo(
 		() => getModelModeSupport(allAudioModels, modelId, selectedProviderId),
@@ -1130,7 +1102,6 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			modelSettingsCompat.resetModelSettings();
 		}
 	};
-
 	useEffect(() => {
 		setModelId((current) => {
 			if (current && filteredModels.some((model) => model.modelId === current)) {
@@ -1544,6 +1515,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}) => {
 		const targetModelId = overrides?.forcedModelId ?? modelId;
 		if (!targetModelId || isLoading || !selectedModelEnabled) return;
+		const effectiveTemporaryMode = temporaryMode;
 		const requestedMode = overrides?.forcedMode ?? mode;
 		const conversationId =
 			overrides?.forcedConversationId ?? activeConversationId ?? createConversationId();
@@ -1592,7 +1564,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			: `${modeLabel(targetMode)} ${new Date().toLocaleDateString()}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
-			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
+			(effectiveTemporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
 		let pendingEntryId: string | null = null;
 
 		setError(null);
@@ -1617,7 +1589,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				conversationMode: lockedConversationMode ?? targetMode,
 				inputText: promptText,
 				musicLyrics,
-				isTemporary: true,
+				isTemporary: effectiveTemporaryMode,
 				isPending: true,
 			});
 			setTextInput("");
@@ -1697,7 +1669,6 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			let payload: any = null;
 			let audioSrc: string | undefined;
 			let text: string | undefined;
-			let metrics: AudioEntryMetrics | undefined;
 			const normalizedContentType = contentType.toLowerCase();
 			const isJsonLike =
 				normalizedContentType.includes("application/json") ||
@@ -1777,7 +1748,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				audioSrc = await blobToDataUrl(blob);
 			}
 			const elapsedMs = Math.max(0, Math.round(performance.now() - requestStartedAt));
-			metrics = extractMetricsFromRaw(payload, elapsedMs);
+			const metrics = extractMetricsFromRaw(payload, elapsedMs);
 			if (pendingEntryId) {
 				removeEntry(pendingEntryId);
 			}
@@ -1804,7 +1775,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 						: undefined,
 				text,
 				audioSrc,
-				isTemporary: temporaryMode,
+				isTemporary: effectiveTemporaryMode,
 				metrics,
 				raw: payload,
 			});
@@ -1904,7 +1875,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const sidebarHistory = sidebarSlotEl
 		? createPortal(
 				<>
-					<div className="px-2 py-1.5">
+					<div className="px-2 pb-1 pt-1.5">
 						{collapsed ? (
 							<Tooltip>
 								<TooltipTrigger asChild>
@@ -1946,18 +1917,18 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										asChild
-										aria-label="Database"
+										aria-label="Models"
 									>
 										<Link
-											href="/"
+											href="/models"
 											className="group/db flex w-full min-w-0 items-center justify-center"
 										>
-											<Database className="h-4 w-4 shrink-0" />
+											<ChatSidebarModelsIcon />
 										</Link>
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Database
+									Models
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1965,11 +1936,11 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
-								aria-label="Database"
+								aria-label="Models"
 							>
-								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
-									<Database className="h-4 w-4 shrink-0" />
-									<span className="flex-1 min-w-0 truncate text-left">Database</span>
+								<Link href="/models" className="group/db flex w-full min-w-0 items-center gap-2">
+									<ChatSidebarModelsIcon />
+									<span className="flex-1 min-w-0 truncate text-left">Models</span>
 									<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
 								</Link>
 							</Button>
@@ -2075,42 +2046,44 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 									variant={temporaryMode ? "secondary" : "ghost"}
 									size="icon"
 									onClick={toggleTemporaryMode}
+									aria-label={
+										temporaryMode ? "Disable temporary chat" : "Enable temporary chat"
+									}
 								>
 									<MessageCircleDashed className="h-4 w-4" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>Temporary chat</TooltipContent>
 						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() => {
-										if (!modelId) return;
-										modelSettings.openModelSettingsForModel(modelId);
-									}}
-									disabled={!modelId}
-								>
-									<SettingsIcon className="h-5 w-5" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Settings</TooltipContent>
-						</Tooltip>
+						<RoomChatSettingsButton
+							roomId="audio"
+							roomLabel="Audio"
+							onHistoryDeleted={() => setEntries([])}
+						/>
 					</div>
 				</div>
 			</header>
 
 			<main className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-5 md:px-6">
 				<div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+					{temporaryMode && activeEntries.length > 0 ? (
+						<RoomTemporaryNotice />
+					) : null}
 					{activeEntries.length === 0 ? (
 						<div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center">
+							<div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+								<AudioLines className="h-6 w-6 text-foreground" />
+							</div>
 							<div>
-								<p className="text-base font-semibold">Start a new conversation</p>
+								<p className="text-base font-semibold">
+									{temporaryMode ? "Temporary chat" : "Start a new conversation"}
+								</p>
 								<p className="text-sm text-muted-foreground">
-									{mode === "music"
-										? "Describe the track you want to generate."
-										: "Type your prompt and convert it to speech."}
+									{temporaryMode
+										? "Audio requests in this chat are not saved locally."
+										: mode === "music"
+											? "Describe the track you want to generate."
+											: "Type your prompt and convert it to speech."}
 								</p>
 							</div>
 						</div>
@@ -2501,45 +2474,31 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 							</div>
 						)}
 						{error ? <RoomErrorNotice error={error} className="mb-2" /> : null}
-						<div className="flex items-center justify-between pt-2">
-							<div className="flex items-center gap-1.5">
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											type="button"
-											variant="ghost"
-											className="h-8 gap-1.5 px-2"
-											onClick={openComposerModelPicker}
-											disabled={!modelId && filteredModels.length === 0}
-										>
-											{modelId ? (
-												<Logo
-													id={composerModelLogoId}
-													alt={composerModelLabel}
-													width={16}
-													height={16}
-													className="shrink-0 rounded-none"
-												/>
-											) : (
-												<Cpu className="h-4 w-4 text-muted-foreground" />
-											)}
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent side="top">{composerModelLabel}</TooltipContent>
-								</Tooltip>
-							</div>
+						<div className="flex items-center justify-end pt-2">
 							<Button
-								className="ml-auto"
+								variant={temporaryMode ? "outline" : "default"}
+								className={cn(
+									"ml-auto",
+									temporaryMode &&
+										"gap-2 border-border bg-muted/60 text-foreground hover:bg-muted dark:bg-muted/40 dark:hover:bg-muted/60",
+								)}
 								onClick={() => {
 									void submit();
 								}}
 								disabled={isLoading || !modelId || !selectedModelEnabled}
 							>
-								{isLoading
-									? <Loader2 className="h-4 w-4 animate-spin" />
-									: mode === "music"
-										? "Generate"
-										: "Convert"}
+								{isLoading ? (
+									<Loader2 className="h-4 w-4 animate-spin" />
+								) : temporaryMode ? (
+									<>
+										<MessageCircleDashed className="h-4 w-4" />
+										{mode === "music" ? "Generate" : "Convert"}
+									</>
+								) : mode === "music" ? (
+									"Generate"
+								) : (
+									"Convert"
+								)}
 							</Button>
 						</div>
 					</div>

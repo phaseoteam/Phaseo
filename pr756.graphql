@@ -1,0 +1,15 @@
+query {
+  repository(owner: "AI-Stats", name: "AI-Stats") {
+    pullRequest(number: 756) {
+      mergeStateStatus
+      reviewThreads(first: 50) {
+        nodes {
+          id
+          isResolved
+          isOutdated
+          path
+        }
+      }
+    }
+  }
+}

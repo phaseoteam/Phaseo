@@ -556,72 +556,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponsesResponse'
-  /responses/ws:
-    get:
-      x-beta: true
-      tags:
-        - Gateway
-      operationId: openResponsesWebSocket
-      summary: Open Responses websocket session
-      description: >
-        Opens a persistent websocket session for OpenAI Responses WebSocket
-        mode.
-
-        This route is currently experimental on AI Stats Gateway and is not
-
-        recommended for production workloads.
-
-
-        WebSocket handshake uses HTTP GET upgrade semantics and returns `101
-        Switching Protocols`
-
-        on success (not `200`).
-
-
-        This endpoint is OpenAI-only, requires `openai/<model>` format, and
-        accepts
-
-        `response.create` websocket messages.
-
-        The gateway enforces `store=false`, allows one in-flight response per
-        connection,
-
-        and forwards OpenAI Responses streaming events back to the client.
-
-
-        After upgrade, runtime failures are emitted as websocket `error` events
-
-        (for example `invalid_response_create`, `openai_routing_failed`,
-
-        `response_already_in_flight`, `model_mismatch`, `upstream_websocket_*`)
-
-        rather than additional HTTP response codes.
-      responses:
-        '101':
-          description: WebSocket upgrade accepted.
-          x-websocket:
-            clientEvent:
-              $ref: '#/components/schemas/ResponsesWebSocketCreateEvent'
-            serverEvent:
-              $ref: '#/components/schemas/ResponsesWebSocketServerEvent'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '426':
-          description: WebSocket upgrade required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResponsesWebSocketUpgradeRequiredResponse'
-        '501':
-          description: WebSocket mode is temporarily disabled
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RealtimeNotImplementedResponse'
   /async/{kind}/{id}/ws:
     get:
       x-beta: true
@@ -4602,78 +4536,6 @@ components:
             - b64_json
         - required:
             - audio_url
-    ResponsesWebSocketCreateEvent:
-      type: object
-      description: >
-        Client message for websocket turn creation. Gateway performs lightweight
-        validation (`type` and `model` format) before forwarding to OpenAI;
-        deeper request-shape validation is enforced by upstream.
-      required:
-        - type
-        - model
-      properties:
-        type:
-          type: string
-          enum:
-            - response.create
-        model:
-          type: string
-          description: |
-            OpenAI model id in provider/model format: `openai/<model>`.
-        previous_response_id:
-          type: string
-          nullable: true
-        input:
-          description: New input items for this turn.
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: object
-            - type: object
-        tools:
-          type: array
-          items:
-            type: object
-        tool_choice:
-          oneOf:
-            - type: string
-            - type: object
-        store:
-          type: boolean
-          description: Ignored by gateway. Always forced to false on this endpoint.
-      additionalProperties: true
-    ResponsesWebSocketServerEvent:
-      type: object
-      description: >
-        Streamed websocket event. Mirrors OpenAI Responses event payloads (for
-        example `response.created`, `response.output_text.delta`,
-        `response.completed`, or `error`).
-      properties:
-        type:
-          type: string
-        response:
-          type: object
-        error:
-          type: object
-        status:
-          type: integer
-      additionalProperties: true
-    ResponsesWebSocketUpgradeRequiredResponse:
-      type: object
-      properties:
-        error:
-          type: object
-          properties:
-            type:
-              type: string
-              example: invalid_request_error
-            code:
-              type: string
-              example: websocket_upgrade_required
-            message:
-              type: string
-              example: Use WebSocket upgrade for /v1/responses/ws.
     AsyncJobWebSocketClientEvent:
       type: object
       description: Client message for async job websocket sessions.
@@ -7889,29 +7751,6 @@ components:
             - access_token_required
           example: access_token_required
       additionalProperties: false
-    RealtimeNotImplementedResponse:
-      type: object
-      required:
-        - error
-      properties:
-        error:
-          type: object
-          required:
-            - type
-            - code
-            - message
-          properties:
-            type:
-              type: string
-              example: invalid_request_error
-            code:
-              type: string
-              example: responses_websocket_disabled
-            message:
-              type: string
-              example: WebSocket mode is temporarily disabled on /v1/responses/ws.
-          additionalProperties: false
-      additionalProperties: false
     NotImplementedResponse:
       type: object
       description: >-
@@ -8653,6 +8492,7 @@ components:
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
         - stepfun/step-3.5-flash
+        - stepfun/step-3.7-flash
         - tencent/hunyuan-a13b-instruct
         - tencent/hy3-preview
         - venice/venice-uncensored

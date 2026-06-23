@@ -84,6 +84,7 @@ export type RequestMeta = {
     beforeContextCacheWriteMs?: number;
     beforeContextFallbackRemap?: boolean;
     returnMeta?: boolean;         // Should meta block be returned to caller
+    returnRoutingDiagnostics?: boolean;
     providerCapabilitiesBeta?: boolean;
 };
 
@@ -244,6 +245,7 @@ export type GatewayUsage = {
         web_search_extra_results?: number;
         web_fetch_requests?: number;
         advisor_requests?: number;
+        subagent_requests?: number;
         image_generation_requests?: number;
         apply_patch_requests?: number;
     };
@@ -251,6 +253,7 @@ export type GatewayUsage = {
     server_tool_web_search_extra_results?: number;
     server_tool_web_fetch_requests?: number;
     server_tool_advisor_requests?: number;
+    server_tool_subagent_requests?: number;
     server_tool_image_generation_requests?: number;
     server_tool_apply_patch_requests?: number;
 

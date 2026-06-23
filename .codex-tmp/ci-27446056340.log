@@ -1,0 +1,525 @@
+﻿Validate data	Set up job	﻿2026-06-12T22:12:50.3228925Z Current runner version: '2.335.1'
+Validate data	Set up job	2026-06-12T22:12:50.3254617Z ##[group]Runner Image Provisioner
+Validate data	Set up job	2026-06-12T22:12:50.3255490Z Hosted Compute Agent
+Validate data	Set up job	2026-06-12T22:12:50.3256092Z Version: 20260527.539
+Validate data	Set up job	2026-06-12T22:12:50.3256880Z Commit: a891dd388383b896fa6ac04a82c0b75cec981078
+Validate data	Set up job	2026-06-12T22:12:50.3257629Z Build Date: 2026-05-27T21:39:57Z
+Validate data	Set up job	2026-06-12T22:12:50.3258364Z Worker ID: {11bee432-818d-41bf-8731-2bc00c1d52a8}
+Validate data	Set up job	2026-06-12T22:12:50.3259171Z Azure Region: northcentralus
+Validate data	Set up job	2026-06-12T22:12:50.3259788Z ##[endgroup]
+Validate data	Set up job	2026-06-12T22:12:50.3261197Z ##[group]Operating System
+Validate data	Set up job	2026-06-12T22:12:50.3261838Z Ubuntu
+Validate data	Set up job	2026-06-12T22:12:50.3262434Z 24.04.4
+Validate data	Set up job	2026-06-12T22:12:50.3263324Z LTS
+Validate data	Set up job	2026-06-12T22:12:50.3263873Z ##[endgroup]
+Validate data	Set up job	2026-06-12T22:12:50.3264561Z ##[group]Runner Image
+Validate data	Set up job	2026-06-12T22:12:50.3265194Z Image: ubuntu-24.04
+Validate data	Set up job	2026-06-12T22:12:50.3265767Z Version: 20260607.184.1
+Validate data	Set up job	2026-06-12T22:12:50.3266921Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260607.184/images/ubuntu/Ubuntu2404-Readme.md
+Validate data	Set up job	2026-06-12T22:12:50.3268726Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260607.184
+Validate data	Set up job	2026-06-12T22:12:50.3269700Z ##[endgroup]
+Validate data	Set up job	2026-06-12T22:12:50.3270887Z ##[group]GITHUB_TOKEN Permissions
+Validate data	Set up job	2026-06-12T22:12:50.3273108Z Contents: read
+Validate data	Set up job	2026-06-12T22:12:50.3273798Z Metadata: read
+Validate data	Set up job	2026-06-12T22:12:50.3274514Z ##[endgroup]
+Validate data	Set up job	2026-06-12T22:12:50.3276570Z Secret source: Actions
+Validate data	Set up job	2026-06-12T22:12:50.3277381Z Prepare workflow directory
+Validate data	Set up job	2026-06-12T22:12:50.3669182Z Prepare all required actions
+Validate data	Set up job	2026-06-12T22:12:50.3708582Z Getting action download info
+Validate data	Set up job	2026-06-12T22:12:50.6840185Z Download action repository 'actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd' (SHA:de0fac2e4500dabe0009e67214ff5f5447ce83dd)
+Validate data	Set up job	2026-06-12T22:12:50.7545457Z Download action repository 'pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288' (SHA:a8198c4bff370c8506180b035930dea56dbd5288)
+Validate data	Set up job	2026-06-12T22:12:51.1777018Z Download action repository 'actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e' (SHA:48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e)
+Validate data	Set up job	2026-06-12T22:12:51.3604222Z Complete job name: Validate data
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	﻿2026-06-12T22:12:51.4353346Z ##[group]Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4354535Z with:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4355028Z   repository: AI-Stats/AI-Stats
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4359672Z   token: ***
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4360158Z   ssh-strict: true
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4360643Z   ssh-user: git
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4361125Z   persist-credentials: true
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4361666Z   clean: true
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4362154Z   sparse-checkout-cone-mode: true
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4362872Z   fetch-depth: 1
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4363343Z   fetch-tags: false
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4363820Z   show-progress: true
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4364293Z   lfs: false
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4364747Z   submodules: false
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4365227Z   set-safe-directory: true
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4365923Z env:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4366361Z   NODE_VERSION: 22
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.4366833Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5356222Z Syncing repository: AI-Stats/AI-Stats
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5358544Z ##[group]Getting Git version info
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5359884Z Working directory is '/home/runner/work/AI-Stats/AI-Stats'
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5361412Z [command]/usr/bin/git version
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5408310Z git version 2.54.0
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5430153Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5444634Z Temporarily overriding HOME='/home/runner/work/_temp/90b97f68-1799-46cf-bdd1-c5f0bab77908' before making global git config changes
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5447279Z Adding repository directory to the temporary git global config as a safe directory
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5449396Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AI-Stats/AI-Stats
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5495566Z Deleting the contents of '/home/runner/work/AI-Stats/AI-Stats'
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5499661Z ##[group]Initializing the repository
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5504383Z [command]/usr/bin/git init /home/runner/work/AI-Stats/AI-Stats
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5593829Z hint: Using 'master' as the name for the initial branch. This default branch name
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5595782Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5597404Z hint: to use in all of your new repositories, which will suppress this warning,
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5598775Z hint: call:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5599838Z hint:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5600984Z hint: 	git config --global init.defaultBranch <name>
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5602418Z hint:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5604071Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5606062Z hint: 'development'. The just-created branch can be renamed via this command:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5607750Z hint:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5608705Z hint: 	git branch -m <name>
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5609783Z hint:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5611321Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5613836Z Initialized empty Git repository in /home/runner/work/AI-Stats/AI-Stats/.git/
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5617188Z [command]/usr/bin/git remote add origin https://github.com/AI-Stats/AI-Stats
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5688315Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5690137Z ##[group]Disabling automatic garbage collection
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5691882Z [command]/usr/bin/git config --local gc.auto 0
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5724706Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5726299Z ##[group]Setting up auth
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5727205Z Removing SSH command configuration
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5731558Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.5765654Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6097105Z Removing HTTP extra header
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6103199Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6136606Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6364426Z Removing includeIf entries pointing to credentials config files
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6370445Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6401997Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6631790Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6668301Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6697214Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6729289Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6760905Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6788023Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6789143Z ##[group]Fetching the repository
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:51.6796094Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +111728a3718703914e9e0c719a7a6bb0dbce53cc:refs/remotes/pull/713/merge
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.3984637Z From https://github.com/AI-Stats/AI-Stats
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.3986336Z  * [new ref]           111728a3718703914e9e0c719a7a6bb0dbce53cc -> pull/713/merge
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4013407Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4014857Z ##[group]Determining the checkout info
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4015856Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4020340Z [command]/usr/bin/git sparse-checkout disable
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4066633Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4095121Z ##[group]Checking out the ref
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:56.4098615Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/713/merge
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:57.9238743Z Updating files:  91% (9980/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1141251Z Updating files:  92% (10063/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1389452Z Updating files:  93% (10172/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1633664Z Updating files:  94% (10281/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1691736Z Updating files:  95% (10391/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1764624Z Updating files:  96% (10500/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1818424Z Updating files:  97% (10609/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1868797Z Updating files:  98% (10719/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1923640Z Updating files:  99% (10828/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1924438Z Updating files: 100% (10937/10937)
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.1925020Z Updating files: 100% (10937/10937), done.
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2104631Z Note: switching to 'refs/remotes/pull/713/merge'.
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2105407Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2105831Z You are in 'detached HEAD' state. You can look around, make experimental
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2106736Z changes and commit them, and you can discard any commits you make in this
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2107736Z state without impacting any branches by switching back to a branch.
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2108245Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2108682Z If you want to create a new branch to retain commits you create, you may
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2109663Z do so (now or later) by using -c with the switch command. Example:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2110176Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2110441Z   git switch -c <new-branch-name>
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2110865Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2111046Z Or undo this operation with:
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2111497Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2111900Z   git switch -
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2112428Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2113079Z Turn off this advice by setting config variable advice.detachedHead to false
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2113657Z 
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2114412Z HEAD is now at 111728a3 Merge e8b4690a0a7a7eb3b55b5302fa273731f0b9c0e9 into 28cb3c13474cc73d9ec945a1f6d81f5e1ffffa62
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2279699Z ##[endgroup]
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2284473Z [command]/usr/bin/git log -1 --format=%H
+Validate data	Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:12:58.2285341Z 111728a3718703914e9e0c719a7a6bb0dbce53cc
+Validate data	Setup pnpm	﻿2026-06-12T22:12:58.2493444Z ##[group]Run pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+Validate data	Setup pnpm	2026-06-12T22:12:58.2493896Z with:
+Validate data	Setup pnpm	2026-06-12T22:12:58.2494112Z   version: 10.33.0
+Validate data	Setup pnpm	2026-06-12T22:12:58.2494337Z   run_install: false
+Validate data	Setup pnpm	2026-06-12T22:12:58.2494573Z   standalone: true
+Validate data	Setup pnpm	2026-06-12T22:12:58.2494789Z   dest: ~/setup-pnpm
+Validate data	Setup pnpm	2026-06-12T22:12:58.2495001Z   cache: false
+Validate data	Setup pnpm	2026-06-12T22:12:58.2495260Z   cache_dependency_path: pnpm-lock.yaml
+Validate data	Setup pnpm	2026-06-12T22:12:58.2495560Z   package_json_file: package.json
+Validate data	Setup pnpm	2026-06-12T22:12:58.2495823Z env:
+Validate data	Setup pnpm	2026-06-12T22:12:58.2496029Z   NODE_VERSION: 22
+Validate data	Setup pnpm	2026-06-12T22:12:58.2496251Z ##[endgroup]
+Validate data	Setup pnpm	2026-06-12T22:12:58.3913956Z ##[group]Running self-installer...
+Validate data	Setup pnpm	2026-06-12T22:12:58.7637476Z (node:2302) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Validate data	Setup pnpm	2026-06-12T22:12:58.7639148Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Validate data	Setup pnpm	2026-06-12T22:12:58.8989157Z Progress: resolved 1, reused 0, downloaded 0, added 0
+Validate data	Setup pnpm	2026-06-12T22:12:59.0472502Z Packages: +2
+Validate data	Setup pnpm	2026-06-12T22:12:59.0473106Z ++
+Validate data	Setup pnpm	2026-06-12T22:12:59.6433949Z Progress: resolved 7, reused 0, downloaded 2, added 2, done
+Validate data	Setup pnpm	2026-06-12T22:13:01.0842547Z .../node_modules/@pnpm/exe preinstall$ node setup.js
+Validate data	Setup pnpm	2026-06-12T22:13:01.2423658Z .../node_modules/@pnpm/exe preinstall: Done
+Validate data	Setup pnpm	2026-06-12T22:13:02.7699646Z 
+Validate data	Setup pnpm	2026-06-12T22:13:02.7700269Z dependencies:
+Validate data	Setup pnpm	2026-06-12T22:13:02.7700694Z + @pnpm/exe 10.33.0 (11.6.0 is available)
+Validate data	Setup pnpm	2026-06-12T22:13:02.7701032Z 
+Validate data	Setup pnpm	2026-06-12T22:13:02.7738286Z Done in 4.2s
+Validate data	Setup pnpm	2026-06-12T22:13:02.8091073Z ##[endgroup]
+Validate data	Setup pnpm	2026-06-12T22:13:02.8091590Z Installation Completed!
+Validate data	Setup Node.js	﻿2026-06-12T22:13:02.8301616Z ##[group]Run actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+Validate data	Setup Node.js	2026-06-12T22:13:02.8302108Z with:
+Validate data	Setup Node.js	2026-06-12T22:13:02.8302356Z   node-version: 22
+Validate data	Setup Node.js	2026-06-12T22:13:02.8302927Z   registry-url: https://registry.npmjs.org
+Validate data	Setup Node.js	2026-06-12T22:13:02.8303255Z   check-latest: false
+Validate data	Setup Node.js	2026-06-12T22:13:02.8306274Z   token: ***
+Validate data	Setup Node.js	2026-06-12T22:13:02.8306505Z   package-manager-cache: true
+Validate data	Setup Node.js	2026-06-12T22:13:02.8306848Z env:
+Validate data	Setup Node.js	2026-06-12T22:13:02.8307046Z   NODE_VERSION: 22
+Validate data	Setup Node.js	2026-06-12T22:13:02.8307332Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+Validate data	Setup Node.js	2026-06-12T22:13:02.8307661Z ##[endgroup]
+Validate data	Setup Node.js	2026-06-12T22:13:03.0857373Z Found in cache @ /opt/hostedtoolcache/node/22.22.3/x64
+Validate data	Setup Node.js	2026-06-12T22:13:03.0861421Z ##[group]Environment details
+Validate data	Setup Node.js	2026-06-12T22:13:03.4399678Z node: v22.22.3
+Validate data	Setup Node.js	2026-06-12T22:13:03.4400122Z npm: 10.9.8
+Validate data	Setup Node.js	2026-06-12T22:13:03.4400414Z yarn: 1.22.22
+Validate data	Setup Node.js	2026-06-12T22:13:03.4401762Z ##[endgroup]
+Validate data	Restore lockfile (guard setup-node cache mutation)	﻿2026-06-12T22:13:03.4534636Z ##[group]Run git checkout -- pnpm-lock.yaml
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4535068Z [36;1mgit checkout -- pnpm-lock.yaml[0m
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4699811Z shell: /usr/bin/bash -e {0}
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4700107Z env:
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4700317Z   NODE_VERSION: 22
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4700605Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4700985Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4701334Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+Validate data	Restore lockfile (guard setup-node cache mutation)	2026-06-12T22:13:03.4701613Z ##[endgroup]
+Validate data	Install dependencies	﻿2026-06-12T22:13:03.7851246Z ##[group]Run corepack pnpm install --frozen-lockfile
+Validate data	Install dependencies	2026-06-12T22:13:03.7851695Z [36;1mcorepack pnpm install --frozen-lockfile[0m
+Validate data	Install dependencies	2026-06-12T22:13:03.7887636Z shell: /usr/bin/bash -e {0}
+Validate data	Install dependencies	2026-06-12T22:13:03.7887923Z env:
+Validate data	Install dependencies	2026-06-12T22:13:03.7888128Z   NODE_VERSION: 22
+Validate data	Install dependencies	2026-06-12T22:13:03.7888400Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+Validate data	Install dependencies	2026-06-12T22:13:03.7888774Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+Validate data	Install dependencies	2026-06-12T22:13:03.7889113Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+Validate data	Install dependencies	2026-06-12T22:13:03.7889398Z ##[endgroup]
+Validate data	Install dependencies	2026-06-12T22:13:05.3258867Z Scope: all 32 workspace projects
+Validate data	Install dependencies	2026-06-12T22:13:05.4583306Z Lockfile is up to date, resolution step is skipped
+Validate data	Install dependencies	2026-06-12T22:13:05.5701423Z Progress: resolved 1, reused 0, downloaded 0, added 0
+Validate data	Install dependencies	2026-06-12T22:13:05.7299882Z Packages: +2170
+Validate data	Install dependencies	2026-06-12T22:13:05.7300695Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Validate data	Install dependencies	2026-06-12T22:13:06.5730122Z Progress: resolved 2170, reused 0, downloaded 109, added 64
+Validate data	Install dependencies	2026-06-12T22:13:07.5750629Z Progress: resolved 2170, reused 0, downloaded 355, added 269
+Validate data	Install dependencies	2026-06-12T22:13:08.5854602Z Progress: resolved 2170, reused 0, downloaded 448, added 322
+Validate data	Install dependencies	2026-06-12T22:13:09.5810697Z Progress: resolved 2170, reused 0, downloaded 622, added 453
+Validate data	Install dependencies	2026-06-12T22:13:10.5812375Z Progress: resolved 2170, reused 0, downloaded 688, added 488
+Validate data	Install dependencies	2026-06-12T22:13:11.5809051Z Progress: resolved 2170, reused 0, downloaded 858, added 681
+Validate data	Install dependencies	2026-06-12T22:13:12.5814420Z Progress: resolved 2170, reused 0, downloaded 1179, added 1076
+Validate data	Install dependencies	2026-06-12T22:13:13.5809331Z Progress: resolved 2170, reused 0, downloaded 1357, added 1339
+Validate data	Install dependencies	2026-06-12T22:13:14.5810439Z Progress: resolved 2170, reused 0, downloaded 1485, added 1469
+Validate data	Install dependencies	2026-06-12T22:13:15.5809294Z Progress: resolved 2170, reused 0, downloaded 1603, added 1523
+Validate data	Install dependencies	2026-06-12T22:13:16.5807572Z Progress: resolved 2170, reused 0, downloaded 1701, added 1569
+Validate data	Install dependencies	2026-06-12T22:13:17.5814578Z Progress: resolved 2170, reused 0, downloaded 1859, added 1693
+Validate data	Install dependencies	2026-06-12T22:13:18.5810303Z Progress: resolved 2170, reused 0, downloaded 1990, added 1763
+Validate data	Install dependencies	2026-06-12T22:13:19.5816460Z Progress: resolved 2170, reused 0, downloaded 2108, added 2169
+Validate data	Install dependencies	2026-06-12T22:13:20.5858058Z Progress: resolved 2170, reused 0, downloaded 2109, added 2169
+Validate data	Install dependencies	2026-06-12T22:13:20.7457639Z Progress: resolved 2170, reused 0, downloaded 2109, added 2170, done
+Validate data	Install dependencies	2026-06-12T22:13:21.4978332Z  WARN  Failed to create bin at /home/runner/work/AI-Stats/AI-Stats/node_modules/.pnpm/supabase@2.89.1/node_modules/supabase/node_modules/.bin/supabase. ENOENT: no such file or directory, open '/home/runner/work/AI-Stats/AI-Stats/node_modules/.pnpm/supabase@2.89.1/node_modules/supabase/bin/supabase'
+Validate data	Install dependencies	2026-06-12T22:13:21.5624652Z  WARN  Failed to create bin at /home/runner/work/AI-Stats/AI-Stats/node_modules/.bin/supabase. ENOENT: no such file or directory, open '/home/runner/work/AI-Stats/AI-Stats/node_modules/.pnpm/supabase@2.89.1/node_modules/supabase/bin/supabase'
+Validate data	Install dependencies	2026-06-12T22:13:21.7398269Z 
+Validate data	Install dependencies	2026-06-12T22:13:21.7398799Z devDependencies:
+Validate data	Install dependencies	2026-06-12T22:13:21.7399221Z + @changesets/changelog-github 0.7.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7399546Z + @changesets/cli 2.31.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7400083Z + @stoplight/spectral-cli 6.16.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7400463Z + ajv 8.20.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7400756Z + dotenv-cli 11.0.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7401067Z + js-yaml 4.2.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7401350Z + knip 6.6.1
+Validate data	Install dependencies	2026-06-12T22:13:21.7401713Z + rimraf 6.1.3
+Validate data	Install dependencies	2026-06-12T22:13:21.7402014Z + supabase 2.89.1
+Validate data	Install dependencies	2026-06-12T22:13:21.7402319Z + tsx 4.21.0
+Validate data	Install dependencies	2026-06-12T22:13:21.7402586Z + turbo 2.9.14
+Validate data	Install dependencies	2026-06-12T22:13:21.7403290Z 
+Validate data	Install dependencies	2026-06-12T22:13:21.7756361Z  WARN  Failed to create bin at /home/runner/work/AI-Stats/AI-Stats/node_modules/.bin/supabase. ENOENT: no such file or directory, open '/home/runner/work/AI-Stats/AI-Stats/node_modules/supabase/bin/supabase'
+Validate data	Install dependencies	2026-06-12T22:13:21.8202662Z packages/sdk/sdk-cpp postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/cpp-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.8207189Z packages/sdk/sdk-csharp postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/csharp-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.8209261Z packages/sdk/sdk-go postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/go-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.8214552Z packages/integrations/ai-sdk-ai-stats postinstall$ node ../../sdk/scripts/postinstall-viewer-prompt.cjs @ai-stats/ai-sdk-provider
+Validate data	Install dependencies	2026-06-12T22:13:21.8874129Z packages/sdk/sdk-cpp postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.8889612Z packages/sdk/sdk-java postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/java-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.8894030Z packages/sdk/sdk-csharp postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.8895360Z packages/sdk/sdk-php postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/php-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.9080151Z packages/sdk/sdk-ruby postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/ruby-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.9087590Z packages/sdk/sdk-go postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.9444451Z packages/integrations/ai-sdk-ai-stats postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.9464202Z packages/sdk/sdk-py postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/py-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.9473571Z packages/sdk/sdk-java postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.9494235Z packages/sdk/sdk-rust postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/rust-sdk
+Validate data	Install dependencies	2026-06-12T22:13:21.9813952Z packages/sdk/sdk-php postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.9814655Z packages/sdk/sdk-ruby postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:21.9904022Z packages/sdk/sdk-ts postinstall$ node scripts/postinstall.cjs
+Validate data	Install dependencies	2026-06-12T22:13:22.0049902Z packages/sdk/sdk-py postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:22.0120033Z packages/sdk/sdk-rust postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:22.0327185Z packages/sdk/sdk-ts postinstall: Done
+Validate data	Install dependencies	2026-06-12T22:13:22.0596260Z ╭ Warning ─────────────────────────────────────────────────────────────────────╮
+Validate data	Install dependencies	2026-06-12T22:13:22.0597074Z │                                                                              │
+Validate data	Install dependencies	2026-06-12T22:13:22.0597714Z │   Ignored build scripts: core-js@3.49.0, es5-ext@0.10.64, esbuild@0.25.12,   │
+Validate data	Install dependencies	2026-06-12T22:13:22.0598398Z │   keytar@7.9.0, protobufjs@7.6.1, puppeteer@22.14.0, sharp@0.33.5,           │
+Validate data	Install dependencies	2026-06-12T22:13:22.0599285Z │   sharp@0.34.5, supabase@2.89.1, unrs-resolver@1.11.1,                       │
+Validate data	Install dependencies	2026-06-12T22:13:22.0599883Z │   unrs-resolver@1.12.2, workerd@1.20260521.1.                                │
+Validate data	Install dependencies	2026-06-12T22:13:22.0600523Z │   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+Validate data	Install dependencies	2026-06-12T22:13:22.0601129Z │   to run scripts.                                                            │
+Validate data	Install dependencies	2026-06-12T22:13:22.0601872Z │                                                                              │
+Validate data	Install dependencies	2026-06-12T22:13:22.0602415Z ╰──────────────────────────────────────────────────────────────────────────────╯
+Validate data	Install dependencies	2026-06-12T22:13:22.0960307Z Done in 17.1s using pnpm v10.33.0
+Validate data	Test model-discovery GitHub issue sync helpers	﻿2026-06-12T22:13:22.1544576Z ##[group]Run pnpm exec tsx scripts/model-discovery/github-issues.test.ts
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1545148Z [36;1mpnpm exec tsx scripts/model-discovery/github-issues.test.ts[0m
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1579492Z shell: /usr/bin/bash -e {0}
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1579762Z env:
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1579969Z   NODE_VERSION: 22
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1580278Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1580682Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1581034Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.1581318Z ##[endgroup]
+Validate data	Test model-discovery GitHub issue sync helpers	2026-06-12T22:13:22.7545752Z github-issues helper tests passed
+Validate data	Validate data files	﻿2026-06-12T22:13:22.7837544Z ##[group]Run pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway
+Validate data	Validate data files	2026-06-12T22:13:22.7838194Z [36;1mpnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway[0m
+Validate data	Validate data files	2026-06-12T22:13:22.7872458Z shell: /usr/bin/bash -e {0}
+Validate data	Validate data files	2026-06-12T22:13:22.7872909Z env:
+Validate data	Validate data files	2026-06-12T22:13:22.7873118Z   NODE_VERSION: 22
+Validate data	Validate data files	2026-06-12T22:13:22.7873407Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+Validate data	Validate data files	2026-06-12T22:13:22.7873782Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+Validate data	Validate data files	2026-06-12T22:13:22.7874117Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+Validate data	Validate data files	2026-06-12T22:13:22.7874413Z ##[endgroup]
+Validate data	Validate data files	2026-06-12T22:13:22.9518528Z 
+Validate data	Validate data files	2026-06-12T22:13:22.9519702Z > ai-stats-monorepo@ validate:data /home/runner/work/AI-Stats/AI-Stats
+Validate data	Validate data files	2026-06-12T22:13:22.9520623Z > cd apps/web && pnpm run validate
+Validate data	Validate data files	2026-06-12T22:13:22.9521037Z 
+Validate data	Validate data files	2026-06-12T22:13:23.1438514Z 
+Validate data	Validate data files	2026-06-12T22:13:23.1439358Z > @ai-stats/web@1.0.0 validate /home/runner/work/AI-Stats/AI-Stats/apps/web
+Validate data	Validate data files	2026-06-12T22:13:23.1440145Z > tsx ../../packages/data/catalog/src/data/validate.ts --preset structure
+Validate data	Validate data files	2026-06-12T22:13:23.1440461Z 
+Validate data	Validate data files	2026-06-12T22:13:23.7151950Z ⚠️ Data validation reported 173 non-blocking warnings.
+Validate data	Validate data files	2026-06-12T22:13:23.7153243Z ❌ Data validation reported 3 errors across 9 enforced sections.
+Validate data	Validate data files	2026-06-12T22:13:23.7154072Z ✅ Organisations (55 entries)
+Validate data	Validate data files	2026-06-12T22:13:23.7166439Z ❌ Data validation failed. Fix the highlighted sections before proceeding.
+Validate data	Validate data files	2026-06-12T22:13:23.7168149Z ✅ Families (68 entries)
+Validate data	Validate data files	2026-06-12T22:13:23.7168738Z ✅ Benchmarks (626 entries)
+Validate data	Validate data files	2026-06-12T22:13:23.7169316Z ✅ API providers (77 entries)
+Validate data	Validate data files	2026-06-12T22:13:23.7170090Z ✅ Model files (1134 files)
+Validate data	Validate data files	2026-06-12T22:13:23.7170933Z ❌ API provider models (1361 entries)
+Validate data	Validate data files	2026-06-12T22:13:23.7173322Z    • API provider model deepinfra (deepinfra:stepfun/step-3.7-flash) unresolved: expected base model for api_model_id='stepfun/step-3.7-flash' or internal_model_id='stepfun/step-3.7-flash'
+Validate data	Validate data files	2026-06-12T22:13:23.7175938Z    • API provider model novita (novita:stepfun/step-3.7-flash) unresolved: expected base model for api_model_id='stepfun/step-3.7-flash' or internal_model_id='stepfun/step-3.7-flash'
+Validate data	Validate data files	2026-06-12T22:13:23.7178507Z    • API provider model stepfun (stepfun:stepfun/step-3.7-flash) unresolved: expected base model for api_model_id='stepfun/step-3.7-flash' or internal_model_id='stepfun/step-3.7-flash'
+Validate data	Validate data files	2026-06-12T22:13:23.7180053Z ✅ Model references (1134 models)
+Validate data	Validate data files	2026-06-12T22:13:23.7181503Z    ⚠ Model ai21/jamba-large-1.6 references unknown previous_model_id ai21/jamba-large-1-5-2024-08-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7183880Z    ⚠ Model ai21/jamba-large-1.7 references unknown previous_model_id ai21/jamba-large-1-6-2025-03-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7186317Z    ⚠ Model ai21/jamba-mini-1.6 references unknown previous_model_id ai21/jamba-mini-1-5-2024-08-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7188288Z    ⚠ Model ai21/jamba-mini-1.7 references unknown previous_model_id ai21/jamba-mini-1-6-2025-03-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7190222Z    ⚠ Model aion-labs/aion-2.0 references unknown previous_model_id aion-labs/aion-1-0-2025-01-29 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7192131Z    ⚠ Model aion-labs/aion-2.5 references unknown previous_model_id aion-labs/aion-2-0-2025-12-21 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7201633Z    ⚠ Model amazon/nova-2-lite references unknown previous_model_id amazon/nova-lite-1-0-2024-12-04 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7204342Z    ⚠ Model amazon/nova-2-pro references unknown previous_model_id amazon/nova-pro-1-0-2024-12-04 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7206451Z    ⚠ Model amazon/nova-2-sonic references unknown previous_model_id amazon/nova-sonic-2025-04-08 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7208484Z    ⚠ Model anthropic/claude-1.1 references unknown previous_model_id anthropic/claude-1-0-2023-03-14 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7210983Z    ⚠ Model anthropic/claude-1.2 references unknown previous_model_id anthropic/claude-1-1 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7213254Z    ⚠ Model anthropic/claude-1.3 references unknown previous_model_id anthropic/claude-1-2 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7215343Z    ⚠ Model anthropic/claude-2.0 references unknown previous_model_id anthropic/claude-1-3 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7217545Z    ⚠ Model anthropic/claude-2.1 references unknown previous_model_id anthropic/claude-2-0-2023-07-12 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7219990Z    ⚠ Model anthropic/claude-3-haiku references unknown previous_model_id anthropic/claude-2-1-2023-11-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7222373Z    ⚠ Model anthropic/claude-3-opus references unknown previous_model_id anthropic/claude-2-1-2023-11-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7225005Z    ⚠ Model anthropic/claude-3-sonnet references unknown previous_model_id anthropic/claude-2-1-2023-11-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7227391Z    ⚠ Model anthropic/claude-3.5-haiku references unknown previous_model_id anthropic/claude-3-haiku-2024-03-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7229956Z    ⚠ Model anthropic/claude-3.5-sonnet-2024-06-20 references unknown previous_model_id anthropic/claude-3-sonnet-2024-03-04 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7232485Z    ⚠ Model anthropic/claude-3.5-sonnet-2024-10-22 references unknown previous_model_id anthropic/claude-3-5-sonnet-2024-06-21 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7234859Z    ⚠ Model anthropic/claude-3.7-sonnet references unknown previous_model_id anthropic/claude-3-5-sonnet-2024-10-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7237126Z    ⚠ Model anthropic/claude-haiku-4.5 references unknown previous_model_id anthropic/claude-3-5-haiku-2024-11-04 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7239377Z    ⚠ Model anthropic/claude-instant-1.1 references unknown previous_model_id anthropic/claude-instant-1-0-2023-03-14 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7241573Z    ⚠ Model anthropic/claude-instant-1.2 references unknown previous_model_id anthropic/claude-instant-1-1 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7244267Z    ⚠ Model anthropic/claude-opus-4 references unknown previous_model_id anthropic/claude-3-opus-2024-03-04 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7246424Z    ⚠ Model anthropic/claude-opus-4.1 references unknown previous_model_id anthropic/claude-opus-4-2025-05-21 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7248599Z    ⚠ Model anthropic/claude-opus-4.5 references unknown previous_model_id anthropic/claude-opus-4-1-2025-08-05 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7250772Z    ⚠ Model anthropic/claude-opus-4.6 references unknown previous_model_id anthropic/claude-opus-4-5-2025-11-24 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7253543Z    ⚠ Model anthropic/claude-sonnet-4 references unknown previous_model_id anthropic/claude-3-7-sonnet-2025-02-24 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7255776Z    ⚠ Model anthropic/claude-sonnet-4.5 references unknown previous_model_id anthropic/claude-sonnet-4-2025-05-21 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7258004Z    ⚠ Model anthropic/claude-sonnet-4.6 references unknown previous_model_id anthropic/claude-sonnet-4-5-2025-09-29 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7260065Z    ⚠ Model cursor/composer-1.5 references unknown previous_model_id cursor/composer-1-2025-10-29 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7262375Z    ⚠ Model deepseek/deepseek-v3.2 references unknown previous_model_id deepseek/deepseek-v3-2-exp-2025-09-29 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7265056Z    ⚠ Model deepseek/deepseek-v3.2-exp references unknown previous_model_id deepseek/deepseek-v3-1-terminus-2025-09-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7267232Z    ⚠ Model deepseek/deepseek-v4 references unknown previous_model_id deepseek/deepseek-v3-2-2025-12-01 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7269352Z    ⚠ Model google/gemini-1.5-flash-002 references unknown previous_model_id google/gemini-1-0-nano-2023-12-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7271483Z    ⚠ Model google/gemini-1.5-flash-8b references unknown previous_model_id google/gemini-1-0-nano-2023-12-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7273729Z    ⚠ Model google/gemini-1.5-pro-002 references unknown previous_model_id google/gemini-1-0-pro-2023-12-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7276082Z    ⚠ Model google/gemini-2.0-flash references unknown previous_model_id google/gemini-1-5-flash-002-2024-09-24 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7278248Z    ⚠ Model google/gemini-2.0-flash-lite references unknown previous_model_id google/gemini-1-5-flash-8b-2024-03-15 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7280655Z    ⚠ Model google/gemini-2.5-flash-image references unknown previous_model_id google/gemini-2-5-flash-image-preview-2025-08-25 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7283433Z    ⚠ Model google/gemini-2.5-flash-lite-preview-2025-06-17 references unknown previous_model_id google/gemini-2-0-flash-lite-2025-02-05 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7285909Z    ⚠ Model google/gemini-2.5-flash-preview-2025-04-17 references unknown previous_model_id google/gemini-2-0-flash-2025-02-05 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7288437Z    ⚠ Model google/gemini-2.5-flash-preview-2025-05-20 references unknown previous_model_id google/gemini-2-5-flash-preview-2025-04-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7290919Z    ⚠ Model google/gemini-2.5-pro-preview-2025-05-06 references unknown previous_model_id google/gemini-2-5-pro-experimental (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7293623Z    ⚠ Model google/gemini-2.5-pro-preview-2025-06-05 references unknown previous_model_id google/gemini-2-5-pro-preview-2025-05-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7296351Z    ⚠ Model google/gemini-3-flash-preview references unknown previous_model_id google/gemini-2-5-flash-preview-2025-09-25 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7298880Z    ⚠ Model google/gemini-3-pro-image-preview references unknown previous_model_id google/gemini-2-5-flash-image-preview-2025-08-25 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7301388Z    ⚠ Model google/gemini-3-pro-preview references unknown previous_model_id google/gemini-2-5-pro-preview-2025-06-05 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7304397Z    ⚠ Model google/gemini-3.1-flash-lite-preview references unknown previous_model_id google/gemini-2-5-flash-lite-preview-2025-09-25 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7306845Z    ⚠ Model google/gemini-3.1-pro-preview references unknown previous_model_id google/gemini-3-pro-preview-2025-11-18 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7309114Z    ⚠ Model google/gemini-embedding-2-preview references unknown previous_model_id google/gemini-embedding-001-2025-05-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7311151Z    ⚠ Model google/gemma-2-2b references unknown previous_model_id google/gemma-1-2b-2024-02-21 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7313488Z    ⚠ Model google/gemma-3-27b references unknown previous_model_id google/gemma-2-27b-2024-06-27 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7315599Z    ⚠ Model google/image-generation-005 references unknown previous_model_id google/image-generation-002-2023-08-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7317858Z    ⚠ Model google/image-generation-006 references unknown previous_model_id google/image-generation-005-2023-11-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7320193Z    ⚠ Model google/imagen-3.0-generate-002 references unknown previous_model_id google/imagen-3-0-generate-002-2025-01-29 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7322469Z    ⚠ Model google/imagen-4.0-preview references unknown previous_model_id google/imagen-3-0-generate-002-2025-02-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7325011Z    ⚠ Model google/imagen-4.0-ultra-preview references unknown previous_model_id google/imagen-3-0-generate-002-2025-02-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7327308Z    ⚠ Model google/text-embedding-005 references unknown previous_model_id google/text-embedding-005-2024-11-18 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7329658Z    ⚠ Model google/text-embedding-gecko-002 references unknown previous_model_id google/text-embedding-gecko-001-2023-06-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7332069Z    ⚠ Model google/text-embedding-gecko-003 references unknown previous_model_id google/text-embedding-gecko-002-2023-11-02 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7334471Z    ⚠ Model google/veo-3 references unknown previous_model_id google/veo-3-0-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7336632Z    ⚠ Model google/veo-3-fast references unknown previous_model_id google/veo-3-0-fast-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7338901Z    ⚠ Model google/veo-3.1-fast-preview references unknown previous_model_id google/veo-3-0-fast-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7341224Z    ⚠ Model google/veo-3.1-preview references unknown previous_model_id google/veo-3-0-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7343512Z    ⚠ Model google/veo-4 references unknown previous_model_id google/veo-3-1-preview-2025-10-15 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7345935Z    ⚠ Model ibm/granite-4.0-tiny references unknown previous_model_id ibm/granite-4-0-tiny-preview-2025-05-02 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7347963Z    ⚠ Model lg/exaone-3.5-7.8b references unknown previous_model_id lg/exaone-3-0-2024-08-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7349950Z    ⚠ Model lg/exaone-4.0-32b references unknown previous_model_id lg/exaone-deep-32b-2025-03-18 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7351923Z    ⚠ Model lg/exaone-deep-2.4b references unknown previous_model_id lg/exaone-3-5-2-4b-2024-12-09 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7354095Z    ⚠ Model lg/exaone-deep-32b references unknown previous_model_id lg/exaone-3-5-32b-2024-12-09 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7356063Z    ⚠ Model lg/exaone-deep-7.8b references unknown previous_model_id lg/exaone-3-5-7-8b-2024-12-09 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7358068Z    ⚠ Model minimax/minimax-m2 references unknown previous_model_id minimax/minimax-m1-2025-06-16 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7360078Z    ⚠ Model minimax/minimax-m2.1 references unknown previous_model_id minimax/minimax-m2-2025-10-27 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7362334Z    ⚠ Model minimax/minimax-m2.5 references unknown previous_model_id minimax/minimax-m2-1-2025-12-23 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7364598Z    ⚠ Model minimax/minimax-m2.7 references unknown previous_model_id minimax/minimax-m2-5-2026-02-12 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7366598Z    ⚠ Model minimax/music-2.5 references unknown previous_model_id minimax/music-2-0-2025-10-29 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7368739Z    ⚠ Model mistral/mistral-moderation-2 references unknown previous_model_id mistral/mistral-moderation-2024-11-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7370952Z    ⚠ Model mistral/mistral-small-4 references unknown previous_model_id mistral/mistral-small-3-2-2025-06-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7373465Z    ⚠ Model mistral/voxtral-mini-transcribe-2 references unknown previous_model_id mistral/voxtral-mini-transcribe-2025-07-15 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7375548Z    ⚠ Model moonshotai/kimi-k2-2025-07-11 references unknown previous_model_id moonshotai/kimi-k1-5-2025-01-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7377021Z    ⚠ Model moonshotai/kimi-k2.5 references unknown previous_model_id moonshotai/kimi-k2-thinking-2025-11-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7378123Z    ⚠ Model openai/gpt-2 references unknown previous_model_id openai/gpt-1-2018-06-11 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7379119Z    ⚠ Model openai/gpt-3 references unknown previous_model_id openai/gpt-2-2019-11-05 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7380204Z    ⚠ Model openai/gpt-3.5-turbo-0613 references unknown previous_model_id openai/gpt-3-5-turbo-2023-03-21 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7381355Z    ⚠ Model openai/gpt-3.5-turbo-2024-01-25 references unknown previous_model_id openai/gpt-3-2020-06-11 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7382480Z    ⚠ Model openai/gpt-3.5-turbo-instruct references unknown previous_model_id openai/gpt-3-5-turbo-0613 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7383867Z    ⚠ Model openai/gpt-4-2023-03-14 references unknown previous_model_id openai/gpt-3-5-turbo-2023-11-06 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7384969Z    ⚠ Model openai/gpt-4o-2024-05-13 references unknown previous_model_id openai/gpt-4-2023-06-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7386986Z    ⚠ Model openai/gpt-4o-2024-08-06 references unknown previous_model_id openai/gpt-4o-2024-11-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7388703Z    ⚠ Model openai/gpt-4o-mini references unknown previous_model_id openai/gpt-4-2023-06-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7390385Z    ⚠ Model openai/gpt-5 references unknown previous_model_id openai/gpt-4-5-2025-02-27 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7392142Z    ⚠ Model openai/gpt-5-chat references unknown previous_model_id openai/chatgpt-4o-2024-05-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7394085Z    ⚠ Model openai/gpt-5-codex references unknown previous_model_id openai/codex-mini-2025-05-16 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7395914Z    ⚠ Model openai/gpt-5-codex-mini references unknown previous_model_id openai/codex-mini-2025-05-16 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7397762Z    ⚠ Model openai/gpt-5-mini references unknown previous_model_id openai/gpt-4-1-mini-2025-04-14 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7399646Z    ⚠ Model openai/gpt-5-nano references unknown previous_model_id openai/gpt-4-1-nano-2025-04-14 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7401757Z    ⚠ Model openai/gpt-5-pro references unknown previous_model_id openai/o1-pro-2025-03-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7403583Z    ⚠ Model openai/gpt-5.1 references unknown previous_model_id openai/gpt-5-2025-08-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7405328Z    ⚠ Model openai/gpt-5.1-chat references unknown previous_model_id openai/gpt-5-chat-2025-08-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7407112Z    ⚠ Model openai/gpt-5.1-codex references unknown previous_model_id openai/gpt-5-codex-2025-09-15 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7408971Z    ⚠ Model openai/gpt-5.1-codex-max references unknown previous_model_id openai/gpt-5-1-codex-2025-11-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7410857Z    ⚠ Model openai/gpt-5.1-codex-mini references unknown previous_model_id openai/gpt-5-codex-mini-2025-11-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7412629Z    ⚠ Model openai/gpt-5.2 references unknown previous_model_id openai/gpt-5-1-2025-11-12 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7414527Z    ⚠ Model openai/gpt-5.2-chat references unknown previous_model_id openai/gpt-5-1-chat-2025-11-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7416352Z    ⚠ Model openai/gpt-5.2-codex references unknown previous_model_id openai/gpt-5-1-codex-max-2025-11-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7418159Z    ⚠ Model openai/gpt-5.2-mini references unknown previous_model_id openai/gpt-5-mini-2025-08-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7419827Z    ⚠ Model openai/gpt-5.2-pro references unknown previous_model_id openai/gpt-5-1-pro (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7421700Z    ⚠ Model openai/gpt-5.3-chat references unknown previous_model_id openai/gpt-5-2-chat-2025-12-11 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7423799Z    ⚠ Model openai/gpt-5.3-codex references unknown previous_model_id openai/gpt-5-2-codex-2025-12-18 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7425830Z    ⚠ Model openai/gpt-5.3-codex-spark references unknown previous_model_id openai/gpt-5-3-codex-2026-02-05 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7427844Z    ⚠ Model openai/gpt-5.4 references unknown previous_model_id openai/gpt-5-2-2025-12-11 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7429985Z    ⚠ Model openai/gpt-5.4-mini references unknown previous_model_id openai/gpt-5-mini-2025-08-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7431904Z    ⚠ Model openai/gpt-5.4-nano references unknown previous_model_id openai/gpt-5-nano-2025-08-07 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7433998Z    ⚠ Model openai/gpt-5.4-pro references unknown previous_model_id openai/gpt-5-2-pro-2025-12-11 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7435920Z    ⚠ Model openai/gpt-audio-1.5 references unknown previous_model_id openai/gpt-audio-2025-08-28 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7437870Z    ⚠ Model openai/gpt-image-1-mini references unknown previous_model_id openai/dall-e-3-2023-10-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7439870Z    ⚠ Model openai/gpt-realtime-1.5 references unknown previous_model_id openai/gpt-realtime-2025-08-28 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7441800Z    ⚠ Model openai/o1 references unknown previous_model_id openai/o1-preview-2024-09-12 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7443699Z    ⚠ Model openai/o3 references unknown previous_model_id openai/o1-2024-12-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7445438Z    ⚠ Model openai/o3-mini references unknown previous_model_id openai/o1-mini-2024-09-12 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7447471Z    ⚠ Model openai/o3-preview references unknown previous_model_id openai/o1-preview-2024-09-12 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7449191Z    ⚠ Model openai/o3-pro references unknown previous_model_id openai/o1-pro-2025-03-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7450844Z    ⚠ Model openai/o4-mini references unknown previous_model_id openai/o3-mini-2025-01-30 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7452927Z    ⚠ Model openai/o4-mini-deep-research references unknown previous_model_id openai/o3-deep-research-2025-06-26 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7455045Z    ⚠ Model openai/sora-2-2025-09-30 references unknown previous_model_id openai/sora-1-2024-12-09 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7456983Z    ⚠ Model openai/sora-2-pro references unknown previous_model_id openai/sora-1-2024-12-09 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7458811Z    ⚠ Model suno/suno-v4 references unknown previous_model_id suno/suno-v3-5-2024-05-25 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7460580Z    ⚠ Model suno/suno-v4.5 references unknown previous_model_id suno/suno-v4-2024-11-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7462348Z    ⚠ Model suno/suno-v4.5+ references unknown previous_model_id suno/suno-v4-5-2025-05-01 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7464338Z    ⚠ Model suno/suno-v4.5-all references unknown previous_model_id suno/suno-v4-5+-2025-07-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7466109Z    ⚠ Model suno/suno-v5 references unknown previous_model_id suno/suno-v4-5-all-2025-10-27 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7467906Z    ⚠ Model upstage/solar-pro-2-2025-07-10 references unknown previous_model_id upstage/solar-pro-2-preview-2025-05-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7469125Z    ⚠ Model upstage/solar-pro-3 references unknown previous_model_id upstage/solar-pro-2-2025-12-15 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7470169Z    ⚠ Model x-ai/grok-2 references unknown previous_model_id x-ai/grok-1-5-2024-03-28 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7471152Z    ⚠ Model x-ai/grok-3 references unknown previous_model_id x-ai/grok-3-beta-2025-02-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7472354Z    ⚠ Model x-ai/grok-3-beta references unknown previous_model_id x-ai/grok-2-2024-08-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7473717Z    ⚠ Model x-ai/grok-3-mini references unknown previous_model_id x-ai/grok-3-mini-beta-2025-02-19 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7474807Z    ⚠ Model x-ai/grok-3-mini-beta references unknown previous_model_id x-ai/grok-2-mini-2024-08-13 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7475822Z    ⚠ Model x-ai/grok-4 references unknown previous_model_id x-ai/grok-3-2025-04-18 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7477381Z    ⚠ Model x-ai/grok-4.1-non-thinking references unknown previous_model_id x-ai/grok-4-fast-non-reasoning-2025-09-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7479067Z    ⚠ Model x-ai/grok-4.1-thinking references unknown previous_model_id x-ai/grok-4-fast-reasoning-2025-09-20 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7480397Z    ⚠ Model x-ai/grok-4.20 references unknown previous_model_id x-ai/grok-4-1-non-thinking-2025-11-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7481668Z    ⚠ Model x-ai/grok-4.20-multi-agent-beta references unknown previous_model_id x-ai/grok-4-1-non-thinking-2025-11-17 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7483713Z    ⚠ Model z-ai/glm-4.6 references unknown previous_model_id z-ai/glm-4-5-2025-07-28 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7485286Z    ⚠ Model z-ai/glm-5 references unknown previous_model_id z-ai/glm-4-7-2025-12-22 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7486861Z    ⚠ Model z-ai/glm-5.1 references unknown previous_model_id z-ai/glm-5-2026-02-11 (non-blocking: likely internal model reference)
+Validate data	Validate data files	2026-06-12T22:13:23.7487904Z ✅ Subscription plans (82 plans)
+Validate data	Validate data files	2026-06-12T22:13:23.7488324Z ✅ Aliases (26 entries)
+Validate data	Validate data files	2026-06-12T22:13:23.7488954Z    ⚠ Alias anthropic/claude-haiku-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7489772Z    ⚠ Alias anthropic/claude-opus-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7490569Z    ⚠ Alias anthropic/claude-sonnet-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7491374Z    ⚠ Alias deepseek/deepseek-flash-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7492201Z    ⚠ Alias deepseek/deepseek-pro-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7493144Z    ⚠ Alias google/gemini-embedding-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7493654Z    ⚠ Alias google/gemini-flash-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7494165Z    ⚠ Alias google/gemini-flash-lite-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7494670Z    ⚠ Alias google/gemini-pro-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7495133Z    ⚠ Alias google/veo-fast-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7495567Z    ⚠ Alias google/veo-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7496021Z    ⚠ Alias google/veo-lite-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7496458Z    ⚠ Alias minimax/minimax-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7496891Z    ⚠ Alias moonshotai/kimi-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7497337Z    ⚠ Alias openai/gpt-audio-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7497784Z    ⚠ Alias openai/gpt-chat-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7498239Z    ⚠ Alias openai/gpt-image-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7498673Z    ⚠ Alias openai/gpt-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7499093Z    ⚠ Alias openai/gpt-mini-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7499526Z    ⚠ Alias openai/gpt-nano-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7499962Z    ⚠ Alias openai/gpt-pro-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7500389Z    ⚠ Alias x-ai/grok-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7500813Z    ⚠ Alias z-ai/glm-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7501630Z    ⚠ Alias z-ai/glm-turbo-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7502072Z    ⚠ Alias z-ai/glm-vision-latest missing resolved_model_id
+Validate data	Validate data files	2026-06-12T22:13:23.7535267Z  ELIFECYCLE  Command failed with exit code 1.
+Validate data	Validate data files	2026-06-12T22:13:23.7715073Z  ELIFECYCLE  Command failed with exit code 1.
+Validate data	Validate data files	2026-06-12T22:13:23.7887489Z ##[error]Process completed with exit code 1.
+Validate data	Post Setup pnpm	﻿2026-06-12T22:13:23.7973393Z Post job cleanup.
+Validate data	Post Setup pnpm	2026-06-12T22:13:23.9384478Z Pruning is unnecessary.
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	﻿2026-06-12T22:13:23.9516308Z Post job cleanup.
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0371372Z [command]/usr/bin/git version
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0407679Z git version 2.54.0
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0446029Z Temporarily overriding HOME='/home/runner/work/_temp/6927922e-df72-4925-bd12-8f58af0c88f7' before making global git config changes
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0447935Z Adding repository directory to the temporary git global config as a safe directory
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0451919Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AI-Stats/AI-Stats
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0482906Z Removing SSH command configuration
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0489637Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0529170Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0820952Z Removing HTTP extra header
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0828184Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.0868966Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1144587Z Removing includeIf entries pointing to credentials config files
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1154305Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1181795Z includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1183458Z includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1184637Z includeif.gitdir:/github/workspace/.git.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1185639Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1191980Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1217080Z /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1229644Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1297945Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1321650Z /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1331161Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1364292Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1387380Z /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1395018Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1427893Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1450849Z /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1468736Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1498163Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Validate data	Post Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd	2026-06-12T22:13:24.1769928Z Removing credentials config '/home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config'
+Validate data	Complete job	﻿2026-06-12T22:13:24.1933899Z Cleaning up orphan processes

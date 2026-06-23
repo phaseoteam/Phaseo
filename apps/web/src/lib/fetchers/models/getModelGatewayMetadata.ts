@@ -41,6 +41,10 @@ export interface GatewayProviderDetails {
 	prompt_training_policy?: string | null;
 	prompt_training_notes?: string | null;
 	prompt_training_source_url?: string | null;
+	data_policy_tier?: string | null;
+	data_policy_confidence?: string | null;
+	data_policy_contract_mode?: string | null;
+	data_policy_contract_notes?: string | null;
 	user_identifier_policy?: string | null;
 	user_identifier_notes?: string | null;
 	privacy_policy_url?: string | null;
@@ -181,6 +185,10 @@ function normalizeStatusValue(value: unknown): string | null {
 	return normalized || null;
 }
 
+function isInternalTestingStatus(value: unknown): boolean {
+	return normalizeStatusValue(value) === "internal_testing";
+}
+
 function isPublicRoutingStatus(status: string | null): boolean {
 	return (
 		status === null ||
@@ -289,7 +297,8 @@ function resolveAvailabilityReason(args: {
 
 export default async function getModelGatewayMetadata(
     modelId: string,
-    includeHidden: boolean
+    includeHidden: boolean,
+	includeInternal = false
 ): Promise<ModelGatewayMetadata> {
     const supabase = createAdminClient();
 
@@ -347,11 +356,34 @@ export default async function getModelGatewayMetadata(
         .map((row) => row.provider_api_model_id)
         .filter((id): id is string => Boolean(id));
 
+	const { data: caps, error: capsError } = await supabase
+		.from("data_api_provider_model_capabilities")
+		.select(
+			"provider_api_model_id, capability_id, params, status, max_input_tokens, max_output_tokens"
+		)
+		.in("provider_api_model_id", providerModelIds);
+
+    if (capsError) {
+        throw new Error(capsError.message ?? "Failed to load gateway capabilities");
+    }
+
+	const visibleCaps = includeInternal
+		? (caps ?? [])
+		: (caps ?? []).filter((cap) => !isInternalTestingStatus(cap.status));
+	const visibleProviderModelIds = new Set(
+		visibleCaps
+			.map((cap) => String(cap.provider_api_model_id ?? "").trim())
+			.filter(Boolean),
+	);
+	const visibleProviderModels = (providerModels ?? []).filter((row) =>
+		visibleProviderModelIds.has(String(row.provider_api_model_id ?? "").trim()),
+	);
+
     const apiModelStats = new Map<
         string,
         { activeCount: number; totalCount: number }
     >();
-    for (const row of providerModels ?? []) {
+    for (const row of visibleProviderModels) {
         const apiModelId = row.api_model_id?.trim();
         if (!apiModelId) continue;
         const current = apiModelStats.get(apiModelId) ?? {
@@ -380,22 +412,11 @@ export default async function getModelGatewayMetadata(
         })
         .map(([apiModelId]) => apiModelId);
 
-	const { data: caps, error: capsError } = await supabase
-		.from("data_api_provider_model_capabilities")
-		.select(
-			"provider_api_model_id, capability_id, params, status, max_input_tokens, max_output_tokens"
-		)
-		.in("provider_api_model_id", providerModelIds);
-
-    if (capsError) {
-        throw new Error(capsError.message ?? "Failed to load gateway capabilities");
-    }
-
     const providerIds = Array.from(
-        new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean))
+        new Set(visibleProviderModels.map((row) => row.provider_id).filter(Boolean))
     );
 	const providerSelect =
-		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url";
+		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, data_policy_tier, data_policy_confidence, data_policy_contract_mode, data_policy_contract_notes, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url";
 	const providerSelectLegacy =
 		"api_provider_id, api_provider_name, link, country_code, status, routing_status";
 	let providersData: any[] | null = null;
@@ -462,6 +483,13 @@ export default async function getModelGatewayMetadata(
 			prompt_training_notes: provider.prompt_training_notes ?? null,
 			prompt_training_source_url:
 				provider.prompt_training_source_url ?? null,
+			data_policy_tier: provider.data_policy_tier ?? null,
+			data_policy_confidence:
+				provider.data_policy_confidence ?? null,
+			data_policy_contract_mode:
+				provider.data_policy_contract_mode ?? null,
+			data_policy_contract_notes:
+				provider.data_policy_contract_notes ?? null,
 			user_identifier_policy: provider.user_identifier_policy ?? null,
 			user_identifier_notes: provider.user_identifier_notes ?? null,
 			privacy_policy_url: provider.privacy_policy_url ?? null,
@@ -472,7 +500,7 @@ export default async function getModelGatewayMetadata(
     }
 
 	const providerModelMap = new Map<string, ProviderModelRow>();
-	for (const row of providerModels ?? []) {
+	for (const row of visibleProviderModels) {
 		if (!row.provider_api_model_id) continue;
 		providerModelMap.set(row.provider_api_model_id, row);
 	}
@@ -492,7 +520,7 @@ export default async function getModelGatewayMetadata(
 		}
 	>();
 	const now = new Date();
-	for (const cap of caps ?? []) {
+	for (const cap of visibleCaps) {
 		const pm = providerModelMap.get(cap.provider_api_model_id);
 		if (!pm || !cap.capability_id) continue;
 		const providerDetails = providerMap.get(pm.provider_id) ?? null;
@@ -768,7 +796,8 @@ export default async function getModelGatewayMetadata(
  */
 export async function getModelGatewayMetadataCached(
     modelId: string,
-    includeHidden: boolean
+    includeHidden: boolean,
+	includeInternal = false
 ): Promise<ModelGatewayMetadata> {
     "use cache";
 
@@ -782,5 +811,5 @@ export async function getModelGatewayMetadataCached(
     cacheTag("frontend:model-gateway-metadata");
 
     console.log("[fetch] HIT DB for model gateway metadata", modelId);
-    return getModelGatewayMetadata(modelId, includeHidden);
+    return getModelGatewayMetadata(modelId, includeHidden, includeInternal);
 }

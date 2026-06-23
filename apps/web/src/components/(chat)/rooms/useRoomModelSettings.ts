@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
 	formatModelLabel,
 	formatOrgLabel,
@@ -103,42 +103,26 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 	const [modelSettingsTargetModelId, setModelSettingsTargetModelId] = useState<
 		string | null
 	>(null);
+	const storageKey = getRoomScopedStorageKey(roomId, "model-profiles-v2");
+	const selectedModelStorageKey = getRoomScopedStorageKey(roomId, "last-model-id");
 	const [storedProfilesById, setStoredProfilesById] = useState<
 		Record<string, StoredRoomModelProfile<TParams>>
-	>({});
-	const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
-	const [hasAppliedStoredModelSelection, setHasAppliedStoredModelSelection] =
-		useState(false);
-
-	const storageKey = useMemo(
-		() => getRoomScopedStorageKey(roomId, "model-profiles-v2"),
-		[roomId],
-	);
-	const selectedModelStorageKey = useMemo(
-		() => getRoomScopedStorageKey(roomId, "last-model-id"),
-		[roomId],
-	);
+	>(() => {
+		if (typeof window === "undefined") return {};
+		const raw = window.localStorage.getItem(storageKey);
+		if (!raw) return {};
+		try {
+			return normalizeStoredProfiles<TParams>(JSON.parse(raw));
+		} catch {
+			return {};
+		}
+	});
+	const hasAppliedStoredModelSelectionRef = useRef(false);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const raw = window.localStorage.getItem(storageKey);
-		if (!raw) {
-			setStoredProfilesById({});
-			setHasLoadedFromStorage(true);
-			return;
-		}
-		try {
-			setStoredProfilesById(normalizeStoredProfiles<TParams>(JSON.parse(raw)));
-		} catch {
-			setStoredProfilesById({});
-		}
-		setHasLoadedFromStorage(true);
-	}, [storageKey]);
-
-	useEffect(() => {
-		if (typeof window === "undefined" || !hasLoadedFromStorage) return;
 		window.localStorage.setItem(storageKey, JSON.stringify(storedProfilesById));
-	}, [hasLoadedFromStorage, storageKey, storedProfilesById]);
+	}, [storageKey, storedProfilesById]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -150,8 +134,8 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 		);
 	}, [selectedModelId, selectedModelStorageKey]);
 
-	useEffect(() => {
-		if (hasAppliedStoredModelSelection) return;
+	useLayoutEffect(() => {
+		if (hasAppliedStoredModelSelectionRef.current) return;
 		if (typeof window === "undefined") return;
 		if (models.length === 0) return;
 
@@ -159,7 +143,7 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 			window.localStorage.getItem(selectedModelStorageKey) ?? ""
 		).trim();
 		if (!storedModelId) {
-			setHasAppliedStoredModelSelection(true);
+			hasAppliedStoredModelSelectionRef.current = true;
 			return;
 		}
 
@@ -169,9 +153,8 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 		if (hasStoredModel && storedModelId !== selectedModelId) {
 			onModelChange(storedModelId);
 		}
-		setHasAppliedStoredModelSelection(true);
+		hasAppliedStoredModelSelectionRef.current = true;
 	}, [
-		hasAppliedStoredModelSelection,
 		models,
 		onModelChange,
 		selectedModelId,

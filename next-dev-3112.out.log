@@ -1,0 +1,543 @@
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3112
+- Network:       http://192.168.4.23:3112
+- Environments: .env.local
+✓ Ready in 607ms
+- Cache Components enabled
+
+○ Compiling /compare ...
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+ HEAD /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 15.3s (next.js: 1585ms, application-code: 13.7s)
+ GET /api/internal/auth/header 200 in 3.3s (next.js: 3.1s, application-code: 169ms)
+ GET /api/internal/auth/status 200 in 3.3s (next.js: 3.1s, application-code: 171ms)
+ GET /api/internal/auth/status 200 in 3.3s (next.js: 3.1s, application-code: 173ms)
+ GET /api/internal/auth/header 200 in 3.3s (next.js: 3.1s, application-code: 175ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 31.4s (next.js: 13.6s, application-code: 17.8s)
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+ GET /api/internal/auth/header 200 in 26.8s (next.js: 3ms, application-code: 26.8s)
+ GET /api/internal/auth/header 200 in 26.7s (next.js: 5ms, application-code: 26.7s)
+ GET /api/internal/auth/status 200 in 27.9s (next.js: 5ms, application-code: 27.9s)
+ GET /api/internal/auth/header 200 in 25.7s (next.js: 4ms, application-code: 25.7s)
+ GET /api/internal/auth/header 200 in 25.7s (next.js: 2ms, application-code: 25.7s)
+ GET /api/internal/auth/status 200 in 25.7s (next.js: 1960µs, application-code: 25.7s)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 55s (next.js: 105ms, application-code: 55s)
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+ GET /api/internal/auth/header 200 in 71ms (next.js: 1924µs, application-code: 69ms)
+ GET /api/internal/auth/status 200 in 38ms (next.js: 1668µs, application-code: 37ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 12.8s (next.js: 6ms, application-code: 12.8s)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 13.3s (next.js: 6ms, application-code: 13.3s)
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 7.4s (next.js: 182ms, application-code: 7.2s)
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[getModel] Fetching model anthropic/claude-sonnet-4.5
+[fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[getModel] Fetching model openai/gpt-5.2
+[fetch] HIT DB for model subscription plans openai/gpt-5.2
+[getModelCached] Cache-aware fetch for model x-ai/grok-4
+[getModel] Fetching model x-ai/grok-4
+[fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Fallback compare models count 1143
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Fallback compare models count 1143
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Fallback compare models count 1143
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Fallback compare models count 1143
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[getModel] Fetching model anthropic/claude-sonnet-4.5
+[fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[getModel] Fetching model openai/gpt-5.2
+[fetch] HIT DB for model subscription plans openai/gpt-5.2
+[getModelCached] Cache-aware fetch for model x-ai/grok-4
+[getModel] Fetching model x-ai/grok-4
+[fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+ GET /api/internal/auth/header 200 in 26.3s (next.js: 11ms, application-code: 26.3s)
+ GET /api/internal/auth/status 200 in 26.3s (next.js: 4ms, application-code: 26.3s)
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+ GET /api/internal/auth/header 200 in 27.1s (next.js: 1970µs, application-code: 27.1s)
+ GET /api/internal/auth/status 200 in 27.1s (next.js: 1742µs, application-code: 27.1s)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 40s (next.js: 4ms, application-code: 40s)
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Fallback compare models count 1143
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Fallback compare models count 1143
+ GET /api/internal/auth/header 200 in 242ms (next.js: 14ms, application-code: 228ms)
+ GET /api/internal/auth/status 200 in 171ms (next.js: 5ms, application-code: 166ms)
+ GET /api/internal/auth/header 200 in 107ms (next.js: 3ms, application-code: 104ms)
+ GET /api/internal/auth/status 200 in 59ms (next.js: 3ms, application-code: 56ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 38.4s (next.js: 5ms, application-code: 38.4s)
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[compare] Received detailed models {}
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 30.3s (next.js: 99ms, application-code: 30.2s)
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[getModel] Fetching model anthropic/claude-sonnet-4.5
+[fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[getModel] Fetching model openai/gpt-5.2
+[fetch] HIT DB for model subscription plans openai/gpt-5.2
+[getModelCached] Cache-aware fetch for model x-ai/grok-4
+[getModel] Fetching model x-ai/grok-4
+[fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[compare] Received detailed models {}
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+ GET /api/internal/auth/header 200 in 26.8s (next.js: 28ms, application-code: 26.8s)
+ GET /api/internal/auth/status 200 in 26.8s (next.js: 2ms, application-code: 26.8s)
+ GET /api/internal/auth/header 200 in 26.7s (next.js: 3ms, application-code: 26.7s)
+ GET /api/internal/auth/status 200 in 26.7s (next.js: 3ms, application-code: 26.7s)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 42s (next.js: 26ms, application-code: 42s)
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+ GET /api/internal/auth/header 200 in 96ms (next.js: 3ms, application-code: 93ms)
+ GET /api/internal/auth/status 200 in 55ms (next.js: 4ms, application-code: 51ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 41s (next.js: 5ms, application-code: 41s)
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+ GET /api/internal/auth/header 200 in 200ms (next.js: 26ms, application-code: 174ms)
+ GET /api/internal/auth/header 200 in 136ms (next.js: 1957µs, application-code: 134ms)
+ GET /api/internal/auth/status 200 in 163ms (next.js: 4ms, application-code: 160ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 41s (next.js: 130ms, application-code: 41s)
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Fetching models for cache key anthropic/claude-sonnet-4.5,openai/gpt-5.2,x-ai/grok-4
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModel] Fetching model anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-sonnet-4.5
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model openai/gpt-5.2
+[0m[7m Cache [0m [getModel] Fetching model openai/gpt-5.2
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans openai/gpt-5.2
+[0m[7m Cache [0m [getModelCached] Cache-aware fetch for model x-ai/grok-4
+[0m[7m Cache [0m [getModel] Fetching model x-ai/grok-4
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans x-ai/grok-4
+[0m[7m Cache [0m [compare] Received detailed models {}
+ GET /api/internal/auth/status 200 in 77ms (next.js: 1965µs, application-code: 75ms)
+ GET /api/internal/auth/header 200 in 48ms (next.js: 1649µs, application-code: 47ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 14.5s (next.js: 3ms, application-code: 14.5s)
+ GET /api/internal/auth/header 200 in 27.0s (next.js: 2ms, application-code: 27.0s)
+ GET /api/internal/auth/header 200 in 27.0s (next.js: 1915µs, application-code: 27.0s)
+ GET /api/internal/auth/status 200 in 27.0s (next.js: 1644µs, application-code: 27.0s)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 67s (next.js: 3ms, application-code: 67s)
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+ GET /api/internal/auth/header 200 in 59ms (next.js: 4ms, application-code: 55ms)
+ GET /api/internal/auth/status 200 in 63ms (next.js: 2ms, application-code: 60ms)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 41s (next.js: 110ms, application-code: 41s)
+ GET /api/internal/auth/header 200 in 26.3s (next.js: 3ms, application-code: 26.3s)
+ GET /api/internal/auth/status 200 in 26.3s (next.js: 3ms, application-code: 26.3s)
+ GET /compare?models=openai_gpt-5.2&models=anthropic_claude-sonnet-4.5&models=x-ai_grok-4 200 in 67s (next.js: 4ms, application-code: 67s)
+[compare] HIT DB for compare models
+[loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[0m[7m Cache [0m [compare] HIT DB for compare models
+[0m[7m Cache [0m [loadCompareModels] Querying data_models
+[compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[0m[7m Cache [0m [compare] Resolving comparison models [ 'openai/gpt-5.2', 'anthropic/claude-sonnet-4.5', 'x-ai/grok-4' ]
+[perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"
+[0m[7m Cache [0m [perf] querying model_id="openai/gpt-5.2"
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-sonnet-4.5"
+[0m[7m Cache [0m [perf] querying model_id="x-ai/grok-4"

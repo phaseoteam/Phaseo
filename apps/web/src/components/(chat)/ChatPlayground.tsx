@@ -15,16 +15,27 @@ import type {
 	ChatMessage,
 	ChatModelSettings,
 	ChatSettings,
+	ChatTag,
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
-import { deleteChat, getAllChats, upsertChat } from "@/lib/indexeddb/chats";
+import {
+	clearChatTags,
+	deleteChat,
+	getAllChatTags,
+	getAllChats,
+	getChatsPage,
+	upsertChat,
+	upsertChatTags,
+} from "@/lib/indexeddb/chats";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { compareByReleaseDateDesc } from "@/components/(chat)/playgroundConfig";
 import {
 	ChatConversation,
+	type ServerToolModelChoice,
 	type ChatSendPayload,
 } from "@/components/(chat)/ChatConversation";
+import { buildChatServerTools } from "@/components/(chat)/chatServerTools";
 import { ChatHeader } from "@/components/(chat)/ChatHeader";
 import { ModelSettingsDialog } from "@/components/(chat)/ModelSettingsDialog";
 import {
@@ -34,6 +45,7 @@ import { ChatSearchDialog } from "@/components/(chat)/ChatSearchDialog";
 import { ChatRenameDialog } from "@/components/(chat)/ChatRenameDialog";
 import { ChatDeleteDialog } from "@/components/(chat)/ChatDeleteDialog";
 import { ChatNewChatDialog } from "@/components/(chat)/ChatNewChatDialog";
+import { ChatTagsDialog } from "@/components/(chat)/ChatTagsDialog";
 import {
 	coerceResponseText,
 	appendImagesToText,
@@ -86,6 +98,7 @@ import {
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
+	modelAliases?: GatewaySupportedModel[];
 	modelParam?: string | null;
 	promptParam?: string | null;
 };
@@ -96,6 +109,37 @@ type ChatUser = {
 	name: string;
 	avatarUrl: string | null;
 };
+
+const CHAT_PAGE_SIZE = 50;
+
+function limitContextMessages(
+	messages: ChatMessage[],
+	limit: ChatSettings["contextMessageLimit"],
+) {
+	if (limit === "all") return messages;
+	const numericLimit =
+		typeof limit === "number" && Number.isFinite(limit)
+			? Math.max(1, Math.floor(limit))
+			: DEFAULT_SETTINGS.contextMessageLimit ?? 10;
+	if (numericLimit === "all") return messages;
+	return messages.slice(-numericLimit);
+}
+
+function resolveFusionAnalysisModels(
+	models: string[] | undefined,
+	fallbackModels: string[],
+) {
+	return models?.some((modelId) => modelId.trim().length > 0)
+		? models
+		: fallbackModels;
+}
+
+function resolveFusionJudgeModel(
+	modelId: string | undefined,
+	fallbackModelId: string,
+) {
+	return modelId?.trim() ? modelId : fallbackModelId;
+}
 
 type ChatErrorPayload = Error & {
 	code?: string;
@@ -114,6 +158,58 @@ type ChatErrorPayload = Error & {
 const resolveGatewayModelOrgId = (model: GatewaySupportedModel) =>
 	model.organisationId?.trim() || getOrgId(model.modelId);
 
+function isImageOutputModality(value: string) {
+	const normalized = value.trim().toLowerCase().replace(/[\s.-]+/g, "_");
+	return normalized.includes("image");
+}
+
+function gatewayModelHasImageOutput(model: GatewaySupportedModel) {
+	if ((model.outputModalities ?? []).some(isImageOutputModality)) {
+		return true;
+	}
+	return capabilityIdsToUnifiedEndpoints(model.capabilities).includes(
+		"images.generations",
+	);
+}
+
+function compareServerToolModelChoices(
+	a: ServerToolModelChoice,
+	b: ServerToolModelChoice,
+) {
+	const releaseDiff =
+		Date.parse(b.releaseDate ?? "") - Date.parse(a.releaseDate ?? "");
+	if (Number.isFinite(releaseDiff) && releaseDiff !== 0) return releaseDiff;
+	const labelDiff = a.label.localeCompare(b.label);
+	if (labelDiff !== 0) return labelDiff;
+	return a.id.localeCompare(b.id);
+}
+
+function buildServerToolModelChoices(
+	models: GatewaySupportedModel[],
+	filter: (model: GatewaySupportedModel) => boolean,
+) {
+	const seen = new Set<string>();
+	const choices: ServerToolModelChoice[] = [];
+	for (const model of models) {
+		if (!filter(model)) continue;
+		const id = model.selectorModelId;
+		if (seen.has(id)) continue;
+		seen.add(id);
+		const orgId = resolveGatewayModelOrgId(model);
+		choices.push({
+			id,
+			label: model.modelName ?? formatModelLabel(id),
+			orgId,
+			orgName:
+				model.organisationName ??
+				model.providerName ??
+				formatOrgLabel(orgId),
+			releaseDate: model.releaseDate ?? model.announcementDate,
+		});
+	}
+	return choices.sort(compareServerToolModelChoices);
+}
+
 function pickPreferredApiModelId(
 	current: string | null,
 	candidate: string,
@@ -130,6 +226,7 @@ function pickPreferredApiModelId(
 
 function ChatPlaygroundContent({
 	models,
+	modelAliases = [],
 	modelParam,
 	promptParam,
 }: ChatPlaygroundProps) {
@@ -154,6 +251,10 @@ function ChatPlaygroundContent({
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [renameValue, setRenameValue] = useState("");
 	const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
+	const [tagsOpen, setTagsOpen] = useState(false);
+	const [tagsTarget, setTagsTarget] = useState<ChatThread | null>(null);
+	const [activeTagId, setActiveTagId] = useState<string | null>(null);
+	const [storedTags, setStoredTags] = useState<ChatTag[]>([]);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<ChatThread | null>(null);
 	const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
@@ -172,6 +273,8 @@ function ChatPlaygroundContent({
 		null,
 	);
 	const [groupingNowMs, setGroupingNowMs] = useState<number | null>(null);
+	const [hasMoreThreads, setHasMoreThreads] = useState(false);
+	const [isLoadingMoreThreads, setIsLoadingMoreThreads] = useState(false);
 
 	const selectableModels = useMemo(
 		() =>
@@ -179,6 +282,13 @@ function ChatPlaygroundContent({
 				(model) => !isModelExpired(model),
 			),
 		[models],
+	);
+	const selectableModelAliases = useMemo(
+		() =>
+			filterModelsForRoom(modelAliases, "text").filter(
+				(model) => !isModelExpired(model),
+			),
+		[modelAliases],
 	);
 	const selectorModelIdByRawModelId = useMemo(() => {
 		const map = new Map<string, string>();
@@ -276,6 +386,8 @@ function ChatPlaygroundContent({
 			const label = model.modelName ?? formatModelLabel(selectorModelId);
 			const releaseDate =
 				model.releaseDate ?? model.announcementDate ?? null;
+			const providerLabel =
+				model.providerName ?? formatOrgLabel(model.providerId);
 			const rowCapabilityEndpoints = capabilityIdsToUnifiedEndpoints(
 				model.capabilities,
 			);
@@ -290,10 +402,15 @@ function ChatPlaygroundContent({
 						rowCapabilityEndpoints.length > 0
 							? rowCapabilityEndpoints
 							: [inferModelCapabilityEndpoint(selectorModelId)],
-					providerIds: [model.providerId],
-					providerNames: [
-						model.providerName ?? formatOrgLabel(model.providerId),
+					inputModalities: [...(model.inputModalities ?? [])],
+					outputModalities: [...(model.outputModalities ?? [])],
+					supportedReasoningEfforts: [
+						...model.supportedReasoningEfforts,
 					],
+					modelPageNotice: model.modelPageNotice ?? null,
+					providerIds: [model.providerId],
+					providerNames: [providerLabel],
+					providerNameById: { [model.providerId]: providerLabel },
 					providerAvailability: {
 						[model.providerId]: model.isAvailable,
 					},
@@ -306,11 +423,10 @@ function ChatPlaygroundContent({
 				if (!existing.providerIds.includes(model.providerId)) {
 					existing.providerIds.push(model.providerId);
 				}
-				const providerLabel =
-					model.providerName ?? formatOrgLabel(model.providerId);
 				if (!existing.providerNames.includes(providerLabel)) {
 					existing.providerNames.push(providerLabel);
 				}
+				existing.providerNameById[model.providerId] = providerLabel;
 				existing.providerAvailability[model.providerId] =
 					existing.providerAvailability[model.providerId] ||
 					model.isAvailable;
@@ -333,6 +449,24 @@ function ChatPlaygroundContent({
 					if (!existing.capabilityEndpoints.includes(endpoint)) {
 						existing.capabilityEndpoints.push(endpoint);
 					}
+				}
+				for (const modality of model.inputModalities ?? []) {
+					if (!existing.inputModalities.includes(modality)) {
+						existing.inputModalities.push(modality);
+					}
+				}
+				for (const modality of model.outputModalities ?? []) {
+					if (!existing.outputModalities.includes(modality)) {
+						existing.outputModalities.push(modality);
+					}
+				}
+				for (const effort of model.supportedReasoningEfforts) {
+					if (!existing.supportedReasoningEfforts.includes(effort)) {
+						existing.supportedReasoningEfforts.push(effort);
+					}
+				}
+				if (!existing.modelPageNotice && model.modelPageNotice) {
+					existing.modelPageNotice = model.modelPageNotice;
 				}
 			}
 		}
@@ -366,6 +500,114 @@ function ChatPlaygroundContent({
 			comingSoon,
 		};
 	}, [selectableModels]);
+	const serverToolLatestModelChoices = useMemo<ServerToolModelChoice[]>(
+		() => {
+			const seen = new Set<string>();
+			return selectableModelAliases
+				.filter((model) => model.isAvailable)
+				.map((model) => {
+					const orgId = resolveGatewayModelOrgId(model);
+					return {
+						id: model.selectorModelId,
+						label: model.modelName ?? formatModelLabel(model.selectorModelId),
+						orgId,
+						orgName:
+							model.organisationName ??
+							model.providerName ??
+							formatOrgLabel(orgId),
+						releaseDate: model.releaseDate ?? model.announcementDate,
+					};
+				})
+				.filter((choice) => {
+					if (seen.has(choice.id)) return false;
+					seen.add(choice.id);
+					return true;
+				});
+		},
+		[selectableModelAliases],
+	);
+	const serverToolModelChoices = useMemo<ServerToolModelChoice[]>(
+		() => {
+			const seen = new Set<string>();
+			return modelOptions.active
+				.map((option) => ({
+					id: option.modelId,
+					label: option.label,
+					orgId: option.orgId,
+					orgName: option.orgName,
+					releaseDate: option.releaseDate,
+				}))
+				.filter((choice) => {
+					if (seen.has(choice.id)) return false;
+					seen.add(choice.id);
+					return true;
+				});
+		},
+		[modelOptions.active],
+	);
+	const serverToolImageGenerationLatestModelChoices = useMemo<
+		ServerToolModelChoice[]
+	>(
+		() =>
+			buildServerToolModelChoices(
+				modelAliases,
+				(model) =>
+					model.isAvailable &&
+					!isModelExpired(model) &&
+					gatewayModelHasImageOutput(model),
+			),
+		[modelAliases],
+	);
+	const serverToolImageGenerationModelChoices = useMemo<
+		ServerToolModelChoice[]
+	>(
+		() =>
+			buildServerToolModelChoices(
+				models,
+				(model) =>
+					model.isAvailable &&
+					!isModelExpired(model) &&
+					gatewayModelHasImageOutput(model),
+			),
+		[models],
+	);
+	const defaultFusionAnalysisModels = (() => {
+		const used = new Set<string>();
+		const defaultChoices =
+			serverToolLatestModelChoices.length > 0
+				? serverToolLatestModelChoices
+				: serverToolModelChoices;
+		const pick = (matcher: (choice: ServerToolModelChoice) => boolean) => {
+			const match = defaultChoices.find(
+				(choice) => !used.has(choice.id) && matcher(choice),
+			);
+			if (!match) return "";
+			used.add(match.id);
+			return match.id;
+		};
+		const defaults = [
+			pick((choice) =>
+				`${choice.orgId} ${choice.label}`.toLowerCase().includes("anthropic"),
+			),
+			pick((choice) =>
+				`${choice.orgId} ${choice.label}`.toLowerCase().includes("openai"),
+			),
+			pick((choice) =>
+				`${choice.orgId} ${choice.label}`.toLowerCase().includes("google"),
+			),
+		];
+		for (let index = 0; index < defaults.length; index += 1) {
+			if (defaults[index]) continue;
+			defaults[index] =
+				defaultChoices.find((choice) => !used.has(choice.id))?.id ?? "";
+			if (defaults[index]) {
+				used.add(defaults[index]);
+			}
+		}
+		return defaults;
+	})();
+	const defaultFusionJudgeModel =
+		defaultFusionAnalysisModels.find(Boolean) ?? "";
 	const modelCapabilitiesById = useMemo(() => {
 		const capabilityById: Record<string, UnifiedChatEndpoint[]> = {};
 		const setForModel = (
@@ -394,6 +636,16 @@ function ChatPlaygroundContent({
 		}
 		return capabilityById;
 	}, [modelOptions.active, modelOptions.comingSoon]);
+	const modelSupportedReasoningEffortsById = useMemo(() => {
+		const supportedById: Record<
+			string,
+			Array<NonNullable<ChatSettings["reasoningEffort"]>>
+		> = {};
+		for (const option of [...modelOptions.active, ...modelOptions.comingSoon]) {
+			supportedById[option.modelId] = option.supportedReasoningEfforts;
+		}
+		return supportedById;
+	}, [modelOptions.active, modelOptions.comingSoon]);
 
 	const providerOptions = useMemo(() => {
 		const map = new Map<string, string>();
@@ -414,12 +666,46 @@ function ChatPlaygroundContent({
 			new Map(providerOptions.map((provider) => [provider.id, provider.name])),
 		[providerOptions],
 	);
+	const modelDefaultProviderById = useMemo(() => {
+		const map: Record<string, { id: string; name: string }> = {};
+		for (const [modelId, providerIds] of availableProviderIdsByModelId.entries()) {
+			if (providerIds.length !== 1) continue;
+			const providerId = providerIds[0];
+			if (!providerId) continue;
+			const provider = {
+				id: providerId,
+				name: providerNameById.get(providerId) ?? formatOrgLabel(providerId),
+			};
+			map[modelId] = provider;
+			for (const model of selectableModels) {
+				if (model.selectorModelId !== modelId) continue;
+				if (model.modelId?.trim()) {
+					map[model.modelId.trim()] = provider;
+				}
+				if (model.internalModelId?.trim()) {
+					map[model.internalModelId.trim()] = provider;
+				}
+			}
+		}
+		return map;
+	}, [availableProviderIdsByModelId, providerNameById, selectableModels]);
 	const getSupportedProviderIdsForModel = useCallback(
 		(modelId: string) =>
 			availableProviderIdsByModelId.get(
 				selectorModelIdByRawModelId.get(modelId) ?? modelId,
 			) ?? [],
 		[availableProviderIdsByModelId, selectorModelIdByRawModelId],
+	);
+	const resolveDisplayProviderIdForModel = useCallback(
+		(modelId: string, providerId: string | null | undefined) => {
+			const normalizedProviderId = providerId?.trim();
+			if (normalizedProviderId && normalizedProviderId !== "auto") {
+				return normalizedProviderId;
+			}
+			const supportedProviderIds = getSupportedProviderIdsForModel(modelId);
+			return supportedProviderIds.length === 1 ? supportedProviderIds[0] : null;
+		},
+		[getSupportedProviderIdsForModel],
 	);
 	const availableModelIdSet = useMemo(
 		() =>
@@ -524,10 +810,11 @@ function ChatPlaygroundContent({
 		}
 	}, []);
 
-	const handleExportChats = useCallback(async () => {
-		const chats = await getAllChats("text");
+	const downloadChats = useCallback((chats: ChatThread[], prefix: string) => {
 		const payload = {
+			version: 1,
 			exportedAt: new Date().toISOString(),
+			room: "text",
 			chats,
 		};
 		const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -536,12 +823,195 @@ function ChatPlaygroundContent({
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;
-		link.download = `ai-stats-chats-${Date.now()}.json`;
+		link.download = `${prefix}-${Date.now()}.json`;
 		document.body.appendChild(link);
 		link.click();
 		link.remove();
 		URL.revokeObjectURL(url);
 	}, []);
+
+	const handleExportChats = useCallback(async () => {
+		const chats = await getAllChats("text");
+		downloadChats(chats, "ai-stats-chats");
+	}, [downloadChats]);
+
+	const handleExportCurrentChat = useCallback(() => {
+		const thread =
+			temporaryMode && temporaryThread
+				? temporaryThread
+				: threads.find((candidate) => candidate.id === activeId) ?? null;
+		if (!thread) return;
+		downloadChats([thread], "ai-stats-chat");
+	}, [activeId, downloadChats, temporaryMode, temporaryThread, threads]);
+
+	const handleExportThreads = useCallback(
+		(chats: ChatThread[]) => {
+			if (chats.length === 0) return;
+			downloadChats(chats, "ai-stats-selected-chats");
+		},
+		[downloadChats],
+	);
+
+	const normalizeImportedChat = useCallback((value: unknown): ChatThread | null => {
+		if (!value || typeof value !== "object") return null;
+		const chat = value as Partial<ChatThread>;
+		if (
+			typeof chat.id !== "string" ||
+			typeof chat.title !== "string" ||
+			typeof chat.modelId !== "string" ||
+			typeof chat.createdAt !== "string" ||
+			typeof chat.updatedAt !== "string" ||
+			!Array.isArray(chat.messages) ||
+			!chat.settings ||
+			typeof chat.settings !== "object"
+		) {
+			return null;
+		}
+		const tags = Array.isArray(chat.tags)
+			? chat.tags
+					.filter(
+						(tag): tag is ChatTag =>
+							Boolean(tag) &&
+							typeof tag === "object" &&
+							typeof tag.id === "string" &&
+							typeof tag.name === "string" &&
+							typeof tag.color === "string",
+					)
+					.map((tag) => ({
+						id: tag.id,
+						name: tag.name,
+						color: tag.color,
+					}))
+			: undefined;
+
+		return {
+			id: chat.id,
+			title: chat.title,
+			titleLocked: Boolean(chat.titleLocked),
+			pinned: Boolean(chat.pinned),
+			tags,
+			modelId: chat.modelId,
+			createdAt: chat.createdAt,
+			updatedAt: chat.updatedAt,
+			messages: chat.messages,
+			settings: chat.settings,
+		};
+	}, []);
+
+	const handleImportChats = useCallback(
+		async (file: File): Promise<{ message: string; type: "success" | "error" | "info" }> => {
+			try {
+				const text = await file.text();
+				const data = JSON.parse(text) as Record<string, unknown>;
+				const rawChats = Array.isArray(data.chats)
+					? data.chats
+					: data.chat
+						? [data.chat]
+						: [];
+				if (rawChats.length === 0) {
+					return {
+						message: "No chats found in that JSON file.",
+						type: "info",
+					};
+				}
+
+				const importedChats = rawChats
+					.map(normalizeImportedChat)
+					.filter((chat): chat is ChatThread => Boolean(chat));
+				if (importedChats.length === 0) {
+					return {
+						message: "No valid chats could be imported from that file.",
+						type: "error",
+					};
+				}
+
+				await Promise.all(importedChats.map((chat) => upsertChat(chat, "text")));
+				const importedTags = importedChats.flatMap((chat) => chat.tags ?? []);
+				if (importedTags.length > 0) {
+					await upsertChatTags(importedTags);
+					setStoredTags((prev) => {
+						const byId = new Map(prev.map((tag) => [tag.id, tag]));
+						for (const tag of importedTags) {
+							byId.set(tag.id, tag);
+						}
+						return [...byId.values()].sort((a, b) =>
+							a.name.localeCompare(b.name),
+						);
+					});
+				}
+				setThreads((prev) => {
+					const byId = new Map(prev.map((thread) => [thread.id, thread]));
+					for (const chat of importedChats) {
+						byId.set(chat.id, chat);
+					}
+					return [...byId.values()].sort((a, b) =>
+						b.updatedAt.localeCompare(a.updatedAt),
+					);
+				});
+				if (!activeId && importedChats[0]) {
+					setActiveId(importedChats[0].id);
+				}
+				return {
+					message: `Imported ${importedChats.length} chat${importedChats.length === 1 ? "" : "s"}.`,
+					type: "success",
+				};
+			} catch (error) {
+				return {
+					message: `Import failed: ${error instanceof Error ? error.message : "Invalid JSON file"}`,
+					type: "error",
+				};
+			}
+		},
+		[activeId, normalizeImportedChat],
+	);
+
+	const handleDeleteAllChats = useCallback(async () => {
+		const chats = await getAllChats("text");
+		await Promise.all([
+			...chats.map((chat) => deleteChat(chat.id, "text")),
+			clearChatTags(),
+		]);
+		setThreads([]);
+		setStoredTags([]);
+		setActiveId(null);
+		setActiveTagId(null);
+		setHasMoreThreads(false);
+		if (typeof window !== "undefined") {
+			window.localStorage.removeItem(STORAGE_KEYS.activeChatId);
+		}
+	}, []);
+
+	const handleDeleteThreads = useCallback(
+		async (targetThreads: ChatThread[]) => {
+			if (targetThreads.length === 0) return;
+			const label =
+				targetThreads.length === 1
+					? "this chat"
+					: `${targetThreads.length} chats`;
+			if (
+				typeof window !== "undefined" &&
+				!window.confirm(`Delete ${label}? This cannot be undone.`)
+			) {
+				return;
+			}
+			const targetIds = new Set(
+				targetThreads.map((thread) => thread.id),
+			);
+			await Promise.all(
+				targetThreads.map((thread) => deleteChat(thread.id, "text")),
+			);
+			setThreads((prev) =>
+				prev.filter((thread) => !targetIds.has(thread.id)),
+			);
+			if (activeId && targetIds.has(activeId)) {
+				const remaining = threads.filter(
+					(thread) => !targetIds.has(thread.id),
+				);
+				setActiveId(remaining[0]?.id ?? null);
+			}
+		},
+		[activeId, threads],
+	);
 
 	const handleSignOut = useCallback(async () => {
 		const supabase = createClient();
@@ -660,6 +1130,33 @@ function ChatPlaygroundContent({
 		);
 	}, [threads]);
 
+	const allTags = useMemo(() => {
+		const byId = new Map<string, ChatTag>();
+		for (const tag of storedTags) {
+			byId.set(tag.id, tag);
+		}
+		for (const thread of threads) {
+			for (const tag of thread.tags ?? []) {
+				if (!byId.has(tag.id)) {
+					byId.set(tag.id, tag);
+				}
+			}
+		}
+		return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+	}, [storedTags, threads]);
+
+	const activeVisibleTagId =
+		activeTagId && allTags.some((tag) => tag.id === activeTagId)
+			? activeTagId
+			: null;
+
+	const visibleThreads = useMemo(() => {
+		if (!activeVisibleTagId) return sortedThreads;
+		return sortedThreads.filter((thread) =>
+			thread.tags?.some((tag) => tag.id === activeVisibleTagId),
+		);
+	}, [activeVisibleTagId, sortedThreads]);
+
 	const groupedThreads = useMemo(() => {
 		const groups: GroupedThreads = {
 			pinned: [],
@@ -670,7 +1167,7 @@ function ChatPlaygroundContent({
 			older: [],
 		};
 
-		const fallbackAnchorMs = Date.parse(sortedThreads[0]?.updatedAt ?? "");
+		const fallbackAnchorMs = Date.parse(visibleThreads[0]?.updatedAt ?? "");
 		const anchorMs =
 			groupingNowMs ?? (Number.isFinite(fallbackAnchorMs) ? fallbackAnchorMs : null);
 		if (anchorMs == null) {
@@ -691,7 +1188,7 @@ function ChatPlaygroundContent({
 		const startOfWeekMs = startOfWeek.getTime();
 		const startOfMonthMs = startOfMonth.getTime();
 
-		for (const thread of sortedThreads) {
+		for (const thread of visibleThreads) {
 			if (thread.pinned) {
 				groups.pinned.push(thread);
 				continue;
@@ -715,7 +1212,7 @@ function ChatPlaygroundContent({
 		}
 
 		return groups;
-	}, [groupingNowMs, sortedThreads]);
+	}, [groupingNowMs, visibleThreads]);
 
 	const persistThread = useCallback(async (thread: ChatThread) => {
 		await upsertChat(thread, "text");
@@ -761,6 +1258,7 @@ function ChatPlaygroundContent({
 		[],
 	);
 
+	// react-doctor-disable-next-line
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
@@ -806,10 +1304,24 @@ function ChatPlaygroundContent({
 				accentColor: storedAccent,
 			});
 
-			const chats = await getAllChats("text");
-			const normalized = await ensureInitialThread(chats);
+			const [page, savedTags] = await Promise.all([
+				getChatsPage("text", { limit: CHAT_PAGE_SIZE }),
+				getAllChatTags(),
+			]);
+			const normalized = await ensureInitialThread(page.chats);
 			if (!mounted) return;
 			setThreads(normalized);
+			setHasMoreThreads(page.hasMore);
+			const embeddedTags = normalized.flatMap((chat) => chat.tags ?? []);
+			const mergedTagsById = new Map<string, ChatTag>();
+			for (const tag of [...savedTags, ...embeddedTags]) {
+				mergedTagsById.set(tag.id, tag);
+			}
+			const mergedTags = [...mergedTagsById.values()].sort((a, b) =>
+				a.name.localeCompare(b.name),
+			);
+			setStoredTags(mergedTags);
+			void upsertChatTags(mergedTags);
 
 			const initialId =
 				storedActive && normalized.some((t) => t.id === storedActive)
@@ -829,8 +1341,10 @@ function ChatPlaygroundContent({
 		selectorModelIdByRawModelId,
 	]);
 
+	// react-doctor-disable-next-line
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
+		// react-doctor-disable-next-line
 		setLastModelId(activeThread.modelId);
 		if (typeof window !== "undefined") {
 			window.localStorage.setItem(
@@ -840,6 +1354,7 @@ function ChatPlaygroundContent({
 		}
 	}, [activeThread?.modelId]);
 	useEffect(() => {
+		// react-doctor-disable-next-line
 		setGroupingNowMs(Date.now());
 	}, []);
 
@@ -867,6 +1382,7 @@ function ChatPlaygroundContent({
 		if (typeof window === "undefined") return;
 		const storedDebug = window.localStorage.getItem(STORAGE_KEYS.debugMode);
 		if (storedDebug === "true") {
+			// react-doctor-disable-next-line
 			setDebugEnabled(true);
 		}
 	}, []);
@@ -1084,16 +1600,22 @@ function ChatPlaygroundContent({
 				(message) => {
 					const variants = [...ensureVariants(message), variant];
 					variantIndex = variants.length - 1;
-					const orgId = getOrgId(message.modelId ?? thread.modelId);
+					const resolvedProviderId =
+						message.providerId ?? thread.settings.providerId;
+					const concreteProviderId =
+						resolvedProviderId && resolvedProviderId !== "auto"
+							? resolvedProviderId
+							: null;
 					return {
 						...message,
 						modelId: message.modelId ?? thread.modelId,
-						providerId:
-							message.providerId ?? thread.settings.providerId,
+						providerId: resolvedProviderId,
 						providerName:
-							message.providerName ??
-							orgNameById[orgId] ??
-							formatOrgLabel(orgId),
+							concreteProviderId
+								? (message.providerName ??
+									providerNameById.get(concreteProviderId) ??
+									formatOrgLabel(concreteProviderId))
+								: null,
 						content: variant.content,
 						variants,
 						activeVariantIndex: variantIndex,
@@ -1104,7 +1626,7 @@ function ChatPlaygroundContent({
 			);
 			return { nextThread, variantIndex };
 		},
-		[applyMessageUpdate, orgNameById],
+		[applyMessageUpdate, providerNameById],
 	);
 
 	const updateAssistantVariant = useCallback(
@@ -1131,22 +1653,24 @@ function ChatPlaygroundContent({
 				);
 				const activeIndex = variantIndex;
 				const activeVariant = variants[activeIndex];
-				const orgId = getOrgId(message.modelId ?? thread.modelId);
 				const resolvedProviderId =
 					providerId && providerId !== "auto"
 						? providerId
 						: message.providerId ?? thread.settings.providerId;
+				const concreteProviderId =
+					resolvedProviderId && resolvedProviderId !== "auto"
+						? resolvedProviderId
+						: null;
 				return {
 					...message,
 					modelId: message.modelId ?? thread.modelId,
 					providerId: resolvedProviderId,
 					providerName:
-						(resolvedProviderId
-							? providerNameById.get(resolvedProviderId)
-							: null) ??
-						message.providerName ??
-						orgNameById[orgId] ??
-						formatOrgLabel(orgId),
+						concreteProviderId
+							? (providerNameById.get(concreteProviderId) ??
+								message.providerName ??
+								formatOrgLabel(concreteProviderId))
+							: null,
 					content: activeVariant?.content ?? message.content,
 					variants,
 					activeVariantIndex: activeIndex,
@@ -1155,7 +1679,7 @@ function ChatPlaygroundContent({
 				};
 			});
 		},
-		[applyMessageUpdate, orgNameById, providerNameById],
+		[applyMessageUpdate, providerNameById],
 	);
 
 	const handleSaveSettings = useCallback(() => {
@@ -1190,6 +1714,10 @@ function ChatPlaygroundContent({
 			const mergedSystemPrompt = [systemPrompt, personalizationPrompt]
 				.filter(Boolean)
 				.join("\n\n");
+			const limitedContextMessages = limitContextMessages(
+				contextMessages,
+				thread.settings.contextMessageLimit,
+			);
 			if (mergedSystemPrompt) {
 				payloadMessages.push({
 					role: "system",
@@ -1197,7 +1725,7 @@ function ChatPlaygroundContent({
 				});
 			}
 			payloadMessages.push(
-				...contextMessages.map((msg) => ({
+				...limitedContextMessages.map((msg) => ({
 					role: msg.role,
 					content: msg.content,
 				})),
@@ -1208,13 +1736,6 @@ function ChatPlaygroundContent({
 				sendPayload?.attachments?.length
 					? await prepareAttachments(sendPayload.attachments)
 					: [];
-			const latestUserPrompt =
-				[...contextMessages]
-					.reverse()
-					.find((msg) => msg.role === "user")
-					?.content.trim() ||
-				sendPayload?.content.trim() ||
-				"";
 			const endpoint: UnifiedChatEndpoint = "responses";
 			const effectiveModelSettings = getEffectiveModelSettings(
 				thread,
@@ -1226,6 +1747,10 @@ function ChatPlaygroundContent({
 			)
 				? effectiveModelSettings.providerId
 				: "auto";
+			const initialDisplayProviderId = resolveDisplayProviderIdForModel(
+				selectedModelId,
+				effectiveProviderId,
+			);
 			const requestExecutionModelId = resolveRequestModelIdForProvider(
 				selectedModelId,
 				effectiveProviderId,
@@ -1312,14 +1837,116 @@ function ChatPlaygroundContent({
 				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
 				}
-				const tools: Array<Record<string, unknown>> = [];
-				if (
-					isUnified &&
-					(sendPayload?.apiServerToolsEnabled ??
-						effectiveModelSettings.apiServerToolsEnabled)
-				) {
-					tools.push({ type: "gateway:datetime" });
-				}
+				const tools = isUnified
+					? buildChatServerTools({
+							webSearchEnabled:
+								sendPayload?.webSearchEnabled ??
+								effectiveModelSettings.webSearchEnabled,
+							serverToolWebSearchEngine:
+								sendPayload?.serverToolWebSearchEngine ??
+								effectiveModelSettings.serverToolWebSearchEngine,
+							serverToolWebSearchContextSize:
+								sendPayload?.serverToolWebSearchContextSize ??
+								effectiveModelSettings.serverToolWebSearchContextSize,
+							serverToolWebSearchMaxResults:
+								sendPayload?.serverToolWebSearchMaxResults ??
+								effectiveModelSettings.serverToolWebSearchMaxResults,
+							serverToolWebSearchMaxTotalResults:
+								sendPayload?.serverToolWebSearchMaxTotalResults ??
+								effectiveModelSettings.serverToolWebSearchMaxTotalResults,
+							serverToolWebSearchMaxCharacters:
+								sendPayload?.serverToolWebSearchMaxCharacters ??
+								effectiveModelSettings.serverToolWebSearchMaxCharacters,
+							serverToolWebSearchAllowedDomains:
+								sendPayload?.serverToolWebSearchAllowedDomains ??
+								effectiveModelSettings.serverToolWebSearchAllowedDomains,
+							serverToolWebSearchBlockedDomains:
+								sendPayload?.serverToolWebSearchBlockedDomains ??
+								effectiveModelSettings.serverToolWebSearchBlockedDomains,
+							apiServerToolsEnabled:
+								sendPayload?.apiServerToolsEnabled ??
+								effectiveModelSettings.apiServerToolsEnabled,
+							serverToolTimezone:
+								sendPayload?.serverToolTimezone ??
+								effectiveModelSettings.serverToolTimezone,
+							serverToolWebFetchEnabled:
+								sendPayload?.serverToolWebFetchEnabled ??
+								effectiveModelSettings.serverToolWebFetchEnabled,
+							serverToolWebFetchEngine:
+								sendPayload?.serverToolWebFetchEngine ??
+								effectiveModelSettings.serverToolWebFetchEngine,
+							serverToolWebFetchMaxContentTokens:
+								sendPayload?.serverToolWebFetchMaxContentTokens ??
+								effectiveModelSettings.serverToolWebFetchMaxContentTokens,
+							serverToolWebFetchAllowedDomains:
+								sendPayload?.serverToolWebFetchAllowedDomains ??
+								effectiveModelSettings.serverToolWebFetchAllowedDomains,
+							serverToolWebFetchBlockedDomains:
+								sendPayload?.serverToolWebFetchBlockedDomains ??
+								effectiveModelSettings.serverToolWebFetchBlockedDomains,
+							serverToolAdvisorEnabled:
+								sendPayload?.serverToolAdvisorEnabled ??
+								effectiveModelSettings.serverToolAdvisorEnabled,
+							serverToolAdvisors:
+								sendPayload?.serverToolAdvisors ??
+								effectiveModelSettings.serverToolAdvisors,
+							serverToolImageGenerationEnabled:
+								sendPayload?.serverToolImageGenerationEnabled ??
+								effectiveModelSettings.serverToolImageGenerationEnabled,
+							serverToolImageGenerationModel:
+								sendPayload?.serverToolImageGenerationModel ??
+								effectiveModelSettings.serverToolImageGenerationModel,
+							serverToolImageGenerationQuality:
+								sendPayload?.serverToolImageGenerationQuality ??
+								effectiveModelSettings.serverToolImageGenerationQuality,
+							serverToolImageGenerationAspectRatio:
+								sendPayload?.serverToolImageGenerationAspectRatio ??
+								effectiveModelSettings.serverToolImageGenerationAspectRatio,
+							serverToolImageGenerationSize:
+								sendPayload?.serverToolImageGenerationSize ??
+								effectiveModelSettings.serverToolImageGenerationSize,
+							serverToolImageGenerationBackground:
+								sendPayload?.serverToolImageGenerationBackground ??
+								effectiveModelSettings.serverToolImageGenerationBackground,
+							serverToolImageGenerationOutputFormat:
+								sendPayload?.serverToolImageGenerationOutputFormat ??
+								effectiveModelSettings.serverToolImageGenerationOutputFormat,
+							serverToolImageGenerationOutputCompression:
+								sendPayload?.serverToolImageGenerationOutputCompression ??
+								effectiveModelSettings.serverToolImageGenerationOutputCompression,
+							serverToolImageGenerationModeration:
+								sendPayload?.serverToolImageGenerationModeration ??
+								effectiveModelSettings.serverToolImageGenerationModeration,
+							serverToolSubagentEnabled:
+								sendPayload?.serverToolSubagentEnabled ??
+								effectiveModelSettings.serverToolSubagentEnabled,
+							serverToolSubagentModel:
+								sendPayload?.serverToolSubagentModel ??
+								effectiveModelSettings.serverToolSubagentModel,
+							serverToolSubagentInstructions:
+								sendPayload?.serverToolSubagentInstructions ??
+								effectiveModelSettings.serverToolSubagentInstructions,
+							serverToolSubagentMaxUses:
+								sendPayload?.serverToolSubagentMaxUses ??
+								effectiveModelSettings.serverToolSubagentMaxUses,
+							serverToolFusionEnabled:
+								sendPayload?.serverToolFusionEnabled ??
+								effectiveModelSettings.serverToolFusionEnabled,
+							serverToolFusionAnalysisModels: resolveFusionAnalysisModels(
+								sendPayload?.serverToolFusionAnalysisModels ??
+									effectiveModelSettings.serverToolFusionAnalysisModels,
+								defaultFusionAnalysisModels,
+							),
+							serverToolFusionJudgeModel: resolveFusionJudgeModel(
+								sendPayload?.serverToolFusionJudgeModel ??
+									effectiveModelSettings.serverToolFusionJudgeModel,
+								defaultFusionJudgeModel,
+							),
+							serverToolFusionMaxUses:
+								sendPayload?.serverToolFusionMaxUses ??
+								effectiveModelSettings.serverToolFusionMaxUses,
+						})
+					: [];
 				if (tools.length > 0) {
 					requestBody.tools = tools;
 				}
@@ -1347,10 +1974,7 @@ function ChatPlaygroundContent({
 			let firstTokenAt: number | null = null;
 			let finalUsage: Record<string, unknown> | null = null;
 			let finalMeta: Record<string, unknown> | null = null;
-			let finalProviderId: string | null =
-				effectiveProviderId && effectiveProviderId !== "auto"
-					? effectiveProviderId
-					: null;
+			let finalProviderId: string | null = initialDisplayProviderId;
 			let latestThread = thread;
 			const assistantId = targetAssistantId ?? generateId();
 			let streamingMessageId = assistantId;
@@ -1385,15 +2009,40 @@ function ChatPlaygroundContent({
 			};
 
 			const resolvePayloadProviderId = (payload: any): string | null => {
+				const toProviderId = (value: unknown): string | null =>
+					typeof value === "string" && value.trim().length > 0
+						? value.trim()
+						: null;
+				const readRoutingProviderId = (value: unknown): string | null => {
+					if (!value || typeof value !== "object" || Array.isArray(value)) {
+						return null;
+					}
+					const routing = value as Record<string, unknown>;
+					return (
+						toProviderId(routing.selected_provider) ??
+						toProviderId(routing.selectedProvider) ??
+						toProviderId(routing.provider) ??
+						toProviderId(routing.provider_id)
+					);
+				};
 				for (const candidate of [
 					payload?.provider,
+					payload?.provider_id,
+					payload?.providerId,
+					payload?.selected_provider,
+					payload?.selectedProvider,
 					payload?.response?.provider,
+					payload?.response?.provider_id,
+					payload?.response?.providerId,
+					payload?.response?.selected_provider,
+					payload?.response?.selectedProvider,
 				]) {
-					if (typeof candidate === "string" && candidate.trim().length > 0) {
-						return candidate.trim();
-					}
+					const providerId = toProviderId(candidate);
+					if (providerId) return providerId;
 				}
 				return (
+					readRoutingProviderId(payload?.routing) ??
+					readRoutingProviderId(payload?.response?.routing) ??
 					resolveMetaProviderId(payload?.meta ?? null) ??
 					resolveMetaProviderId(payload?.response?.meta ?? null)
 				);
@@ -1419,7 +2068,6 @@ function ChatPlaygroundContent({
 					placeholderReady = true;
 					await updateThreadState(latestThread, false);
 				} else {
-					const orgId = getOrgId(selectedModelId);
 					const createdAt = nowIso();
 					const assistantMessage: ChatMessage = {
 						id: assistantId,
@@ -1427,9 +2075,14 @@ function ChatPlaygroundContent({
 						content: "Generating...",
 						createdAt,
 						modelId: selectedModelId,
-						providerId: effectiveProviderId,
+						providerId: initialDisplayProviderId ?? effectiveProviderId,
 						providerName:
-							orgNameById[orgId] ?? formatOrgLabel(orgId),
+							(initialDisplayProviderId
+								? providerNameById.get(initialDisplayProviderId)
+								: null) ??
+							(initialDisplayProviderId
+								? formatOrgLabel(initialDisplayProviderId)
+								: null),
 						variants: [
 							{
 								id: assistantId,
@@ -1516,10 +2169,10 @@ function ChatPlaygroundContent({
 					let errorDescription: string | undefined;
 					let errorDetails:
 						| Array<{
-								message: string;
-								path?: string[];
-								keyword?: string;
-						  }>
+							message: string;
+							path?: string[];
+							keyword?: string;
+						}>
 						| undefined;
 					let routingDiagnostics:
 						| Record<string, unknown>
@@ -1638,14 +2291,18 @@ function ChatPlaygroundContent({
 						const text = await response.text();
 						if (text) errorMessage = text;
 					}
-					const requestError = new Error(errorMessage) as ChatErrorPayload;
-					if (errorCode) requestError.code = errorCode;
-					requestError.status = response.status;
-					requestError.requestId = errorRequestId;
-					requestError.description = errorDescription;
-					requestError.details = errorDetails;
-					requestError.routingDiagnostics = routingDiagnostics ?? null;
-					requestError.rawPayload = rawPayload;
+					const requestError: ChatErrorPayload = Object.assign(
+						new Error(errorMessage),
+						{
+							code: errorCode,
+							status: response.status,
+							requestId: errorRequestId,
+							description: errorDescription,
+							details: errorDetails,
+							routingDiagnostics: routingDiagnostics ?? null,
+							rawPayload,
+						},
+					);
 					throw requestError;
 				}
 
@@ -1756,16 +2413,20 @@ function ChatPlaygroundContent({
 					streamingMessageId = targetAssistantId;
 					await updateThreadState(latestThread, false);
 				} else {
-					const orgId = getOrgId(selectedModelId);
 					const assistantMessage: ChatMessage = {
 						id: assistantId,
 						role: "assistant",
 						content: "",
 						createdAt: nowIso(),
 						modelId: selectedModelId,
-						providerId: effectiveProviderId,
+						providerId: initialDisplayProviderId ?? effectiveProviderId,
 						providerName:
-							orgNameById[orgId] ?? formatOrgLabel(orgId),
+							(initialDisplayProviderId
+								? providerNameById.get(initialDisplayProviderId)
+								: null) ??
+							(initialDisplayProviderId
+								? formatOrgLabel(initialDisplayProviderId)
+								: null),
 						variants: [
 							{
 								id: assistantId,
@@ -1885,8 +2546,7 @@ function ChatPlaygroundContent({
 								const summaryIndex =
 									typeof parsed?.summary_index === "number"
 										? parsed.summary_index
-										: typeof parsed?.summaryIndex ===
-											  "number"
+										: typeof parsed?.summaryIndex === "number"
 											? parsed.summaryIndex
 											: null;
 								const appendSummaryDelta = (
@@ -2168,7 +2828,7 @@ function ChatPlaygroundContent({
 						structuredError?.routingDiagnostics ?? null,
 					rawPayload: structuredError?.rawPayload ?? null,
 					modelId: selectedModelId,
-					providerId: effectiveProviderId ?? null,
+					providerId: finalProviderId ?? initialDisplayProviderId,
 					endpoint,
 					timestamp: nowIso(),
 				};
@@ -2189,18 +2849,30 @@ function ChatPlaygroundContent({
 							message,
 							undefined,
 							errorMeta,
+							finalProviderId ?? initialDisplayProviderId,
 						);
 					} else {
-						const orgId = getOrgId(selectedModelId);
 						const errorMessage: ChatMessage = {
 							id: generateId(),
 							role: "assistant",
 							content: message,
 							createdAt: nowIso(),
 							modelId: selectedModelId,
-							providerId: latestThread.settings.providerId,
+							providerId:
+								finalProviderId ??
+								initialDisplayProviderId ??
+								latestThread.settings.providerId,
 							providerName:
-								orgNameById[orgId] ?? formatOrgLabel(orgId),
+								(finalProviderId ?? initialDisplayProviderId
+									? providerNameById.get(
+											finalProviderId ?? initialDisplayProviderId ?? "",
+										)
+									: null) ??
+								(finalProviderId ?? initialDisplayProviderId
+									? formatOrgLabel(
+											finalProviderId ?? initialDisplayProviderId ?? "",
+										)
+									: null),
 							variants: [
 								{
 									id: generateId(),
@@ -2228,13 +2900,17 @@ function ChatPlaygroundContent({
 		},
 		[
 			baseUrl,
+			defaultFusionAnalysisModels,
+			defaultFusionJudgeModel,
 			isUnified,
 			personalization,
 			shouldDebug,
 			appendAssistantVariant,
 			getPrimaryCapabilityForModel,
+			isProviderSupportedForModel,
+			providerNameById,
+			resolveDisplayProviderIdForModel,
 			resolveRequestModelIdForProvider,
-			orgNameById,
 			temporaryMode,
 			updateAssistantVariant,
 			updateThreadState,
@@ -3085,6 +3761,7 @@ function ChatPlaygroundContent({
 		if (activeThread.modelId !== pendingQueryModelId) {
 			updateActiveModel(pendingQueryModelId);
 		}
+		// react-doctor-disable-next-line
 		setPendingQueryModelId(null);
 	}, [
 		activeThread,
@@ -3178,9 +3855,11 @@ function ChatPlaygroundContent({
 		if (supportsModelAudioInput(activeThread.modelId)) {
 			return;
 		}
+		// react-doctor-disable-next-line
 		setError(
 			"Audio is attached. Select a model that supports audio input to continue.",
 		);
+		// react-doctor-disable-next-line
 		setModelPickerOpen(true);
 	}, [
 		activeThread?.modelId,
@@ -3237,6 +3916,43 @@ function ChatPlaygroundContent({
 		setRenameOpen(false);
 	};
 
+	const handleEditTags = (thread: ChatThread) => {
+		setTagsTarget(thread);
+		setTagsOpen(true);
+	};
+
+	const handleTagsOpenChange = (open: boolean) => {
+		setTagsOpen(open);
+		if (!open) {
+			setTagsTarget(null);
+		}
+	};
+
+	const handleTagsSave = async (tags: ChatTag[]) => {
+		if (!tagsTarget) return;
+		const thread = threads.find((candidate) => candidate.id === tagsTarget.id);
+		if (!thread) return;
+		if (tags.length > 0) {
+			await upsertChatTags(tags);
+			setStoredTags((prev) => {
+				const byId = new Map(prev.map((tag) => [tag.id, tag]));
+				for (const tag of tags) {
+					byId.set(tag.id, tag);
+				}
+				return [...byId.values()].sort((a, b) =>
+					a.name.localeCompare(b.name),
+				);
+			});
+		}
+		await updateStoredThread({
+			...thread,
+			tags,
+			updatedAt: nowIso(),
+		});
+		setTagsOpen(false);
+		setTagsTarget(null);
+	};
+
 	const handlePinToggle = async (thread: ChatThread) => {
 		await updateStoredThread({
 			...thread,
@@ -3268,9 +3984,6 @@ function ChatPlaygroundContent({
 		}
 	};
 
-	const selectedOrgId = activeThread?.modelId
-		? getOrgId(activeThread.modelId)
-		: "ai-stats";
 	const selectedModelIds = useMemo(() => {
 		const ids: string[] = [];
 		if (activeThread?.modelId) {
@@ -3305,6 +4018,65 @@ function ChatPlaygroundContent({
 		}
 		return enabledById;
 	}, [activeThread?.settings.modelOverridesById, selectedModelIds]);
+	const selectedSupportedReasoningEfforts = useMemo(() => {
+		const selectedEnabledIds = selectedModelIds.filter(
+			(modelId) => selectedModelEnabledById[modelId] !== false,
+		);
+		if (selectedEnabledIds.length === 0) {
+			return ["none"] satisfies Array<
+				NonNullable<ChatSettings["reasoningEffort"]>
+			>;
+		}
+		const supportedSets = selectedEnabledIds.map((modelId) => {
+			const supported =
+				modelSupportedReasoningEffortsById[modelId] ??
+				modelSupportedReasoningEffortsById[
+					selectorModelIdByRawModelId.get(modelId) ?? modelId
+				] ??
+				[];
+			return new Set<NonNullable<ChatSettings["reasoningEffort"]>>([
+				"none",
+				...supported,
+			]);
+		});
+		const [firstSet, ...remainingSets] = supportedSets;
+		if (!firstSet) {
+			return ["none"] satisfies Array<
+				NonNullable<ChatSettings["reasoningEffort"]>
+			>;
+		}
+		return Array.from(firstSet).filter((effort) =>
+			remainingSets.every((set) => set.has(effort)),
+		);
+	}, [
+		modelSupportedReasoningEffortsById,
+		selectedModelEnabledById,
+		selectedModelIds,
+		selectorModelIdByRawModelId,
+	]);
+
+	const loadMoreThreads = useCallback(async () => {
+		if (isLoadingMoreThreads || !hasMoreThreads) return;
+		setIsLoadingMoreThreads(true);
+		try {
+			const page = await getChatsPage("text", {
+				limit: CHAT_PAGE_SIZE,
+				offset: threads.length,
+			});
+			setThreads((prev) => {
+				const byId = new Map(prev.map((thread) => [thread.id, thread]));
+				for (const thread of page.chats) {
+					byId.set(thread.id, thread);
+				}
+				return [...byId.values()].sort((a, b) =>
+					b.updatedAt.localeCompare(a.updatedAt),
+				);
+			});
+			setHasMoreThreads(page.hasMore);
+		} finally {
+			setIsLoadingMoreThreads(false);
+		}
+	}, [hasMoreThreads, isLoadingMoreThreads, threads.length]);
 	const modelSettingsChoices = useMemo(
 		() => {
 			const requiredCapability = activeModelCapability;
@@ -3364,40 +4136,6 @@ function ChatPlaygroundContent({
 			supportsModelAudioInput,
 		],
 	);
-	const selectedModelLabel = useMemo(() => {
-		if (!activeThread?.modelId) return "Select model";
-		return (
-			selectedModelDisplayNameById[activeThread.modelId] ??
-			formatModelLabel(activeThread.modelId)
-		);
-	}, [activeThread?.modelId, selectedModelDisplayNameById]);
-	const selectedModelsHint = useMemo(() => {
-		if (selectedModelIds.length <= 1) {
-			const activeModelId = activeThread?.modelId;
-			if (!activeModelId) return "Select model";
-			const activeLabel =
-				selectedModelDisplayNameById[activeModelId] ?? activeModelId;
-			return selectedModelEnabledById[activeModelId] === false
-				? `${activeLabel} (Off)`
-				: activeLabel;
-		}
-		const preview = selectedModelIds
-			.slice(0, 5)
-			.map((modelId) => {
-				const label = selectedModelDisplayNameById[modelId] ?? modelId;
-				return selectedModelEnabledById[modelId] === false
-					? `${label} (Off)`
-					: label;
-			});
-		const overflow = Math.max(0, selectedModelIds.length - preview.length);
-		const label = preview.join(", ");
-		return overflow > 0 ? `${label} +${overflow}` : label;
-	}, [
-		activeThread?.modelId,
-		selectedModelDisplayNameById,
-		selectedModelEnabledById,
-		selectedModelIds,
-	]);
 	const modelSettingsModelId =
 		modelSettingsTargetModelId ?? activeThread?.modelId ?? null;
 	const activeModelSettings = useMemo(() => {
@@ -3431,7 +4169,59 @@ function ChatPlaygroundContent({
 			reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 			endpoint: DEFAULT_SETTINGS.endpoint,
 			webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
+			serverToolWebSearchEngine: DEFAULT_SETTINGS.serverToolWebSearchEngine,
+			serverToolWebSearchContextSize:
+				DEFAULT_SETTINGS.serverToolWebSearchContextSize,
+			serverToolWebSearchMaxResults:
+				DEFAULT_SETTINGS.serverToolWebSearchMaxResults,
+			serverToolWebSearchMaxTotalResults:
+				DEFAULT_SETTINGS.serverToolWebSearchMaxTotalResults,
+			serverToolWebSearchMaxCharacters:
+				DEFAULT_SETTINGS.serverToolWebSearchMaxCharacters,
+			serverToolWebSearchAllowedDomains:
+				DEFAULT_SETTINGS.serverToolWebSearchAllowedDomains,
+			serverToolWebSearchBlockedDomains:
+				DEFAULT_SETTINGS.serverToolWebSearchBlockedDomains,
 			apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+			serverToolTimezone: DEFAULT_SETTINGS.serverToolTimezone,
+			serverToolWebFetchEnabled: DEFAULT_SETTINGS.serverToolWebFetchEnabled,
+			serverToolWebFetchEngine: DEFAULT_SETTINGS.serverToolWebFetchEngine,
+			serverToolWebFetchMaxContentTokens:
+				DEFAULT_SETTINGS.serverToolWebFetchMaxContentTokens,
+			serverToolWebFetchAllowedDomains:
+				DEFAULT_SETTINGS.serverToolWebFetchAllowedDomains,
+			serverToolWebFetchBlockedDomains:
+				DEFAULT_SETTINGS.serverToolWebFetchBlockedDomains,
+			serverToolAdvisorEnabled: DEFAULT_SETTINGS.serverToolAdvisorEnabled,
+			serverToolAdvisors: DEFAULT_SETTINGS.serverToolAdvisors,
+			serverToolImageGenerationEnabled:
+				DEFAULT_SETTINGS.serverToolImageGenerationEnabled,
+			serverToolImageGenerationModel:
+				DEFAULT_SETTINGS.serverToolImageGenerationModel,
+			serverToolImageGenerationQuality:
+				DEFAULT_SETTINGS.serverToolImageGenerationQuality,
+			serverToolImageGenerationAspectRatio:
+				DEFAULT_SETTINGS.serverToolImageGenerationAspectRatio,
+			serverToolImageGenerationSize:
+				DEFAULT_SETTINGS.serverToolImageGenerationSize,
+			serverToolImageGenerationBackground:
+				DEFAULT_SETTINGS.serverToolImageGenerationBackground,
+			serverToolImageGenerationOutputFormat:
+				DEFAULT_SETTINGS.serverToolImageGenerationOutputFormat,
+			serverToolImageGenerationOutputCompression:
+				DEFAULT_SETTINGS.serverToolImageGenerationOutputCompression,
+			serverToolImageGenerationModeration:
+				DEFAULT_SETTINGS.serverToolImageGenerationModeration,
+			serverToolSubagentEnabled: DEFAULT_SETTINGS.serverToolSubagentEnabled,
+			serverToolSubagentModel: DEFAULT_SETTINGS.serverToolSubagentModel,
+			serverToolSubagentInstructions:
+				DEFAULT_SETTINGS.serverToolSubagentInstructions,
+			serverToolSubagentMaxUses: DEFAULT_SETTINGS.serverToolSubagentMaxUses,
+			serverToolFusionEnabled: DEFAULT_SETTINGS.serverToolFusionEnabled,
+			serverToolFusionAnalysisModels:
+				DEFAULT_SETTINGS.serverToolFusionAnalysisModels,
+			serverToolFusionJudgeModel: DEFAULT_SETTINGS.serverToolFusionJudgeModel,
+			serverToolFusionMaxUses: DEFAULT_SETTINGS.serverToolFusionMaxUses,
 			imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 			enabled: true,
 			displayName: "",
@@ -3582,17 +4372,12 @@ function ChatPlaygroundContent({
 		temporaryMode,
 		updateThreadState,
 	]);
-	const handleDismissRequestError = useCallback(() => {
-		setRequestError(null);
-		setError(null);
-	}, []);
-
 	return (
 		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
 				<ChatSidebar
 					groupedThreads={groupedThreads}
-					threads={threads}
+					threads={visibleThreads}
 					activeId={activeId}
 					temporaryMode={temporaryMode}
 					onCreateThread={createThread}
@@ -3600,7 +4385,16 @@ function ChatPlaygroundContent({
 					onSelectThread={setActiveThread}
 					onRenameThread={handleRename}
 					onPinToggle={handlePinToggle}
+					onEditTags={handleEditTags}
 					onRequestDelete={requestDeleteThread}
+					onExportThreads={handleExportThreads}
+					onDeleteThreads={handleDeleteThreads}
+					tags={allTags}
+					activeTagId={activeVisibleTagId}
+					onTagFilterChange={setActiveTagId}
+					hasMoreThreads={hasMoreThreads}
+					isLoadingMoreThreads={isLoadingMoreThreads}
+					onLoadMoreThreads={loadMoreThreads}
 					authUser={authUser}
 					authLoading={authLoading}
 					onSignOut={handleSignOut}
@@ -3627,6 +4421,9 @@ function ChatPlaygroundContent({
 					personalization={personalization}
 					onPersonalizationChange={setPersonalization}
 					onExportChats={handleExportChats}
+					onExportCurrentChat={handleExportCurrentChat}
+					onImportChats={handleImportChats}
+					onDeleteAllChats={handleDeleteAllChats}
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
 					onDebugChange={handleDebugChange}
@@ -3647,6 +4444,7 @@ function ChatPlaygroundContent({
 				/>
 				<ChatConversation
 					activeThread={activeThread}
+					temporaryMode={temporaryMode}
 					isSending={isSending}
 					mode="unified"
 					webSearchEnabled={
@@ -3655,11 +4453,286 @@ function ChatPlaygroundContent({
 					onWebSearchEnabledChange={(enabled) =>
 						updateActiveSettings({ webSearchEnabled: enabled })
 					}
+					serverToolWebSearchEngine={
+						activeThread?.settings.serverToolWebSearchEngine ??
+						DEFAULT_SETTINGS.serverToolWebSearchEngine
+					}
+					onServerToolWebSearchEngineChange={(engine) =>
+						updateActiveSettings({ serverToolWebSearchEngine: engine })
+					}
+					serverToolWebSearchContextSize={
+						activeThread?.settings.serverToolWebSearchContextSize ??
+						DEFAULT_SETTINGS.serverToolWebSearchContextSize
+					}
+					onServerToolWebSearchContextSizeChange={(contextSize) =>
+						updateActiveSettings({
+							serverToolWebSearchContextSize: contextSize,
+						})
+					}
+					serverToolWebSearchMaxResults={
+						activeThread?.settings.serverToolWebSearchMaxResults ??
+						DEFAULT_SETTINGS.serverToolWebSearchMaxResults
+					}
+					onServerToolWebSearchMaxResultsChange={(maxResults) =>
+						updateActiveSettings({
+							serverToolWebSearchMaxResults: maxResults,
+						})
+					}
+					serverToolWebSearchMaxTotalResults={
+						activeThread?.settings.serverToolWebSearchMaxTotalResults ??
+						DEFAULT_SETTINGS.serverToolWebSearchMaxTotalResults
+					}
+					onServerToolWebSearchMaxTotalResultsChange={(maxTotalResults) =>
+						updateActiveSettings({
+							serverToolWebSearchMaxTotalResults: maxTotalResults,
+						})
+					}
+					serverToolWebSearchMaxCharacters={
+						activeThread?.settings.serverToolWebSearchMaxCharacters ??
+						DEFAULT_SETTINGS.serverToolWebSearchMaxCharacters
+					}
+					onServerToolWebSearchMaxCharactersChange={(maxCharacters) =>
+						updateActiveSettings({
+							serverToolWebSearchMaxCharacters: maxCharacters,
+						})
+					}
+					serverToolWebSearchAllowedDomains={
+						activeThread?.settings.serverToolWebSearchAllowedDomains ??
+						DEFAULT_SETTINGS.serverToolWebSearchAllowedDomains
+					}
+					onServerToolWebSearchAllowedDomainsChange={(allowedDomains) =>
+						updateActiveSettings({
+							serverToolWebSearchAllowedDomains: allowedDomains,
+						})
+					}
+					serverToolWebSearchBlockedDomains={
+						activeThread?.settings.serverToolWebSearchBlockedDomains ??
+						DEFAULT_SETTINGS.serverToolWebSearchBlockedDomains
+					}
+					onServerToolWebSearchBlockedDomainsChange={(blockedDomains) =>
+						updateActiveSettings({
+							serverToolWebSearchBlockedDomains: blockedDomains,
+						})
+					}
 					apiServerToolsEnabled={
 						activeThread?.settings.apiServerToolsEnabled ?? false
 					}
 					onApiServerToolsEnabledChange={(enabled) =>
 						updateActiveSettings({ apiServerToolsEnabled: enabled })
+					}
+					serverToolTimezone={
+						activeThread?.settings.serverToolTimezone ?? ""
+					}
+					onServerToolTimezoneChange={(timezone) =>
+						updateActiveSettings({ serverToolTimezone: timezone })
+					}
+					serverToolWebFetchEnabled={
+						activeThread?.settings.serverToolWebFetchEnabled ?? false
+					}
+					onServerToolWebFetchEnabledChange={(enabled) =>
+						updateActiveSettings({ serverToolWebFetchEnabled: enabled })
+					}
+					serverToolWebFetchEngine={
+						activeThread?.settings.serverToolWebFetchEngine ??
+						DEFAULT_SETTINGS.serverToolWebFetchEngine
+					}
+					onServerToolWebFetchEngineChange={(engine) =>
+						updateActiveSettings({ serverToolWebFetchEngine: engine })
+					}
+					serverToolWebFetchMaxContentTokens={
+						activeThread?.settings.serverToolWebFetchMaxContentTokens ??
+						DEFAULT_SETTINGS.serverToolWebFetchMaxContentTokens
+					}
+					onServerToolWebFetchMaxContentTokensChange={(maxContentTokens) =>
+						updateActiveSettings({
+							serverToolWebFetchMaxContentTokens: maxContentTokens,
+						})
+					}
+					serverToolWebFetchAllowedDomains={
+						activeThread?.settings.serverToolWebFetchAllowedDomains ??
+						DEFAULT_SETTINGS.serverToolWebFetchAllowedDomains
+					}
+					onServerToolWebFetchAllowedDomainsChange={(allowedDomains) =>
+						updateActiveSettings({
+							serverToolWebFetchAllowedDomains: allowedDomains,
+						})
+					}
+					serverToolWebFetchBlockedDomains={
+						activeThread?.settings.serverToolWebFetchBlockedDomains ??
+						DEFAULT_SETTINGS.serverToolWebFetchBlockedDomains
+					}
+					onServerToolWebFetchBlockedDomainsChange={(blockedDomains) =>
+						updateActiveSettings({
+							serverToolWebFetchBlockedDomains: blockedDomains,
+						})
+					}
+					serverToolAdvisorEnabled={
+						activeThread?.settings.serverToolAdvisorEnabled ?? false
+					}
+					onServerToolAdvisorEnabledChange={(enabled) =>
+						updateActiveSettings({ serverToolAdvisorEnabled: enabled })
+					}
+					serverToolAdvisors={
+						activeThread?.settings.serverToolAdvisors ??
+						DEFAULT_SETTINGS.serverToolAdvisors ??
+						[]
+					}
+					onServerToolAdvisorsChange={(advisors) =>
+						updateActiveSettings({ serverToolAdvisors: advisors })
+					}
+					serverToolImageGenerationEnabled={
+						activeThread?.settings.serverToolImageGenerationEnabled ??
+						false
+					}
+					onServerToolImageGenerationEnabledChange={(enabled) =>
+						updateActiveSettings({
+							serverToolImageGenerationEnabled: enabled,
+						})
+					}
+					serverToolImageGenerationModel={
+						activeThread?.settings.serverToolImageGenerationModel ??
+						DEFAULT_SETTINGS.serverToolImageGenerationModel
+					}
+					onServerToolImageGenerationModelChange={(model) =>
+						updateActiveSettings({
+							serverToolImageGenerationModel: model,
+						})
+					}
+					serverToolImageGenerationQuality={
+						activeThread?.settings.serverToolImageGenerationQuality ??
+						DEFAULT_SETTINGS.serverToolImageGenerationQuality
+					}
+					onServerToolImageGenerationQualityChange={(quality) =>
+						updateActiveSettings({
+							serverToolImageGenerationQuality: quality,
+						})
+					}
+					serverToolImageGenerationAspectRatio={
+						activeThread?.settings.serverToolImageGenerationAspectRatio ??
+						DEFAULT_SETTINGS.serverToolImageGenerationAspectRatio
+					}
+					onServerToolImageGenerationAspectRatioChange={(aspectRatio) =>
+						updateActiveSettings({
+							serverToolImageGenerationAspectRatio: aspectRatio,
+						})
+					}
+					serverToolImageGenerationSize={
+						activeThread?.settings.serverToolImageGenerationSize ??
+						DEFAULT_SETTINGS.serverToolImageGenerationSize
+					}
+					onServerToolImageGenerationSizeChange={(size) =>
+						updateActiveSettings({
+							serverToolImageGenerationSize: size,
+						})
+					}
+					serverToolImageGenerationBackground={
+						activeThread?.settings.serverToolImageGenerationBackground ??
+						DEFAULT_SETTINGS.serverToolImageGenerationBackground
+					}
+					onServerToolImageGenerationBackgroundChange={(background) =>
+						updateActiveSettings({
+							serverToolImageGenerationBackground: background,
+						})
+					}
+					serverToolImageGenerationOutputFormat={
+						activeThread?.settings.serverToolImageGenerationOutputFormat ??
+						DEFAULT_SETTINGS.serverToolImageGenerationOutputFormat
+					}
+					onServerToolImageGenerationOutputFormatChange={(outputFormat) =>
+						updateActiveSettings({
+							serverToolImageGenerationOutputFormat: outputFormat,
+						})
+					}
+					serverToolImageGenerationOutputCompression={
+						activeThread?.settings.serverToolImageGenerationOutputCompression ??
+						DEFAULT_SETTINGS.serverToolImageGenerationOutputCompression
+					}
+					onServerToolImageGenerationOutputCompressionChange={(
+						outputCompression,
+					) =>
+						updateActiveSettings({
+							serverToolImageGenerationOutputCompression:
+								outputCompression,
+						})
+					}
+					serverToolImageGenerationModeration={
+						activeThread?.settings.serverToolImageGenerationModeration ??
+						DEFAULT_SETTINGS.serverToolImageGenerationModeration
+					}
+					onServerToolImageGenerationModerationChange={(moderation) =>
+						updateActiveSettings({
+							serverToolImageGenerationModeration: moderation,
+						})
+					}
+					serverToolSubagentEnabled={
+						activeThread?.settings.serverToolSubagentEnabled ?? false
+					}
+					onServerToolSubagentEnabledChange={(enabled) =>
+						updateActiveSettings({ serverToolSubagentEnabled: enabled })
+					}
+					serverToolSubagentModel={
+						activeThread?.settings.serverToolSubagentModel ?? ""
+					}
+					onServerToolSubagentModelChange={(model) =>
+						updateActiveSettings({ serverToolSubagentModel: model })
+					}
+					serverToolSubagentInstructions={
+						activeThread?.settings.serverToolSubagentInstructions ?? ""
+					}
+					onServerToolSubagentInstructionsChange={(instructions) =>
+						updateActiveSettings({
+							serverToolSubagentInstructions: instructions,
+						})
+					}
+					serverToolSubagentMaxUses={
+						activeThread?.settings.serverToolSubagentMaxUses ?? null
+					}
+					onServerToolSubagentMaxUsesChange={(maxUses) =>
+						updateActiveSettings({ serverToolSubagentMaxUses: maxUses })
+					}
+					serverToolFusionEnabled={
+						activeThread?.settings.serverToolFusionEnabled ?? false
+					}
+					onServerToolFusionEnabledChange={(enabled) =>
+						updateActiveSettings({ serverToolFusionEnabled: enabled })
+					}
+					serverToolFusionAnalysisModels={resolveFusionAnalysisModels(
+						activeThread?.settings.serverToolFusionAnalysisModels,
+						defaultFusionAnalysisModels
+					)}
+					onServerToolFusionAnalysisModelsChange={(models) =>
+						updateActiveSettings({
+							serverToolFusionAnalysisModels: models,
+						})
+					}
+					serverToolFusionJudgeModel={resolveFusionJudgeModel(
+						activeThread?.settings.serverToolFusionJudgeModel,
+						defaultFusionJudgeModel
+					)}
+					onServerToolFusionJudgeModelChange={(model) =>
+						updateActiveSettings({ serverToolFusionJudgeModel: model })
+					}
+					serverToolFusionMaxUses={
+						activeThread?.settings.serverToolFusionMaxUses ?? null
+					}
+					onServerToolFusionMaxUsesChange={(maxUses) =>
+						updateActiveSettings({ serverToolFusionMaxUses: maxUses })
+					}
+					serverToolModelChoices={serverToolModelChoices}
+					serverToolLatestModelChoices={serverToolLatestModelChoices}
+					serverToolImageGenerationModelChoices={
+						serverToolImageGenerationModelChoices
+					}
+					serverToolImageGenerationLatestModelChoices={
+						serverToolImageGenerationLatestModelChoices
+					}
+					contextMessageLimit={
+						activeThread?.settings.contextMessageLimit ??
+						DEFAULT_SETTINGS.contextMessageLimit ??
+						10
+					}
+					onContextMessageLimitChange={(contextMessageLimit) =>
+						updateActiveSettings({ contextMessageLimit })
 					}
 					reasoningEnabled={
 						activeThread?.settings.reasoningEnabled ?? false
@@ -3667,6 +4740,7 @@ function ChatPlaygroundContent({
 					reasoningEffort={
 						activeThread?.settings.reasoningEffort ?? "medium"
 					}
+					supportedReasoningEfforts={selectedSupportedReasoningEfforts}
 					onReasoningEnabledChange={(enabled) =>
 						updateActiveSettings({ reasoningEnabled: enabled })
 					}
@@ -3683,19 +4757,13 @@ function ChatPlaygroundContent({
 					modelDisplayNameById={modelDisplayNameById}
 					modelOrgIdById={modelOrgIdById}
 					modelLinkById={modelLinkById}
+					modelDefaultProviderById={modelDefaultProviderById}
 					isAuthenticated={isAuthenticated}
 					accentColor={personalization.accentColor}
-					selectedOrgId={selectedOrgId}
-					selectedModelId={activeThread?.modelId ?? ""}
-					selectedModelLabel={selectedModelLabel}
-					selectedModelCount={selectedModelIds.length}
-					selectedModelsHint={selectedModelsHint}
-					onOpenModelPicker={() => setModelPickerOpen(true)}
 					onAudioAttachmentRequirementChange={(requiresAudioInput) =>
 						setComposerRequiresAudioInput(requiresAudioInput)
 					}
 					requestError={requestError}
-					onDismissRequestError={handleDismissRequestError}
 				/>
 			</SidebarInset>
 			<ModelSettingsDialog
@@ -3712,9 +4780,9 @@ function ChatPlaygroundContent({
 				onModelChange={handleModelSettingsModelChange}
 				modelLabel={
 					modelSettingsModelId
-						? models.find((m) => m.modelId === modelSettingsModelId)
+						? (models.find((m) => m.modelId === modelSettingsModelId)
 								?.modelName ??
-						  formatModelLabel(modelSettingsModelId)
+							formatModelLabel(modelSettingsModelId))
 						: undefined
 				}
 				providerOptions={providerOptions}
@@ -3754,6 +4822,16 @@ function ChatPlaygroundContent({
 				onChange={setRenameValue}
 				onSave={handleRenameSave}
 			/>
+			{tagsOpen ? (
+				<ChatTagsDialog
+					key={tagsTarget?.id ?? "chat-tags"}
+					open={tagsOpen}
+					thread={tagsTarget}
+					availableTags={allTags}
+					onOpenChange={handleTagsOpenChange}
+					onSave={handleTagsSave}
+				/>
+			) : null}
 			<ChatDeleteDialog
 				open={deleteOpen}
 				onOpenChange={handleDeleteOpenChange}
@@ -3777,7 +4855,11 @@ function ChatPlaygroundContent({
 
 export default function ChatPlayground(props: ChatPlaygroundProps) {
 	return (
-		<SidebarProvider defaultOpen contained className="h-full overflow-hidden">
+		<SidebarProvider
+			defaultOpen
+			contained
+			className="h-full overflow-hidden"
+		>
 			<ChatPlaygroundContent {...props} />
 		</SidebarProvider>
 	);

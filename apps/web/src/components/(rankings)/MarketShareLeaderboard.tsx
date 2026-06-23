@@ -4,8 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
-import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
-import { cn } from "@/lib/utils";
+import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboardPreview";
 import { ChevronDown } from "lucide-react";
 
 export type MarketShareLeaderboardEntry = {
@@ -25,9 +24,9 @@ type MarketShareLeaderboardProps = {
 
 function formatTokens(value: number) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
+	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
 	return value.toLocaleString();
 }
 
@@ -47,36 +46,46 @@ export function MarketShareLeaderboard({
 
 	if (!data.length) {
 		return (
-			<RankingsEmptyState
+			<EmptyLeaderboardPreview
 				title="No market share data yet"
 				description="Market share entries appear once usage is recorded."
 			/>
 		);
 	}
 
-	const visibleEntries = data.slice(0, maxCollapsed);
-	const extraEntries = data.slice(maxCollapsed, maxExpanded);
+	const visibleEntries = data.slice(0, showAll ? maxExpanded : maxCollapsed);
+	const listColumnSplit = Math.ceil(visibleEntries.length / 2);
+	const listColumns = [
+		visibleEntries.slice(0, listColumnSplit),
+		visibleEntries.slice(listColumnSplit),
+	].filter((column) => column.length > 0);
 
 	return (
 		<div className="space-y-4">
-			<div className="space-y-2">
-				<div className="grid gap-2 md:grid-cols-2">
-					{visibleEntries.map((entry, index) => (
-						<div
-							key={entry.key}
-							className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
-						>
-							<div className="w-6 text-xs text-muted-foreground">
-								#{index + 1}
-							</div>
+			<div className="grid gap-x-16 gap-y-1 md:grid-cols-2">
+				{listColumns.map((column, columnIndex) => (
+					<div key={`market-share-column-${columnIndex}`} className="space-y-1">
+						{column.map((entry, columnRowIndex) => {
+							const index =
+								columnIndex === 0
+									? columnRowIndex
+									: listColumnSplit + columnRowIndex;
+							return (
+								<div
+									key={entry.key}
+									className="grid min-h-16 grid-cols-[2.25rem_2rem_minmax(0,1fr)_auto] items-center gap-3 py-2"
+								>
+									<div className="text-base tabular-nums text-muted-foreground">
+										{index + 1}.
+									</div>
 							{entry.logo_id ? (
 								entry.href ? (
 									<Link
 										href={entry.href}
-										className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+										className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800"
 										aria-label={entry.name}
 									>
-										<div className="relative h-5 w-5">
+										<div className="relative h-4 w-4">
 											<Logo
 												id={entry.logo_id}
 												alt={entry.name}
@@ -86,8 +95,8 @@ export function MarketShareLeaderboard({
 										</div>
 									</Link>
 								) : (
-									<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
-										<div className="relative h-5 w-5">
+									<div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800">
+										<div className="relative h-4 w-4">
 											<Logo
 												id={entry.logo_id}
 												alt={entry.name}
@@ -97,119 +106,50 @@ export function MarketShareLeaderboard({
 										</div>
 									</div>
 								)
-							) : null}
-							<div className="min-w-0 flex-1">
+							) : (
+								<div className="h-7 w-7" />
+							)}
+							<div className="min-w-0">
 								{entry.href ? (
 									<Link
 										href={entry.href}
-										className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+										className="block truncate text-base font-semibold underline decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 									>
 										{entry.name}
 									</Link>
 								) : (
-									<div className="font-medium truncate">{entry.name}</div>
+									<div className="truncate text-base font-semibold">
+										{entry.name}
+									</div>
 								)}
 							</div>
 							<div className="text-right">
-								<div className="tabular-nums text-sm">
+								<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
 									{formatPercent(entry.share_pct)}
 								</div>
 								<div className="text-xs text-muted-foreground">
 									{formatTokens(entry.tokens)}
 								</div>
 							</div>
-						</div>
-					))}
-				</div>
-				{extraEntries.length > 0 ? (
-					<div
-						className={cn(
-							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
-							showAll
-								? "grid-rows-[1fr] opacity-100"
-								: "grid-rows-[0fr] opacity-0"
-						)}
-					>
-						<div className="overflow-hidden">
-							<div className="pt-2">
-								<div className="grid gap-2 md:grid-cols-2">
-									{extraEntries.map((entry, index) => (
-										<div
-											key={`${entry.key}-extra`}
-											className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
-										>
-											<div className="w-6 text-xs text-muted-foreground">
-												#{index + maxCollapsed + 1}
-											</div>
-											{entry.logo_id ? (
-												entry.href ? (
-													<Link
-														href={entry.href}
-														className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
-														aria-label={entry.name}
-													>
-														<div className="relative h-5 w-5">
-															<Logo
-																id={entry.logo_id}
-																alt={entry.name}
-																className="object-contain"
-																fill
-															/>
-														</div>
-													</Link>
-												) : (
-													<div className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center">
-														<div className="relative h-5 w-5">
-															<Logo
-																id={entry.logo_id}
-																alt={entry.name}
-																className="object-contain"
-																fill
-															/>
-														</div>
-													</div>
-												)
-											) : null}
-											<div className="min-w-0 flex-1">
-												{entry.href ? (
-													<Link
-														href={entry.href}
-														className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
-													>
-														{entry.name}
-													</Link>
-												) : (
-													<div className="font-medium truncate">{entry.name}</div>
-												)}
-											</div>
-											<div className="text-right">
-												<div className="tabular-nums text-sm">
-													{formatPercent(entry.share_pct)}
-												</div>
-												<div className="text-xs text-muted-foreground">
-													{formatTokens(entry.tokens)}
-												</div>
-											</div>
-										</div>
-									))}
 								</div>
-							</div>
-						</div>
+							);
+						})}
 					</div>
-				) : null}
+				))}
 			</div>
 
 			{data.length > maxCollapsed ? (
 				<div className="flex justify-center">
 					<Button
 						type="button"
-						variant="outline"
+						variant="ghost"
 						size="sm"
 						onClick={() => setShowAll((prev) => !prev)}
 						aria-expanded={showAll}
+						className="text-muted-foreground"
 					>
 						<span className="flex items-center gap-2">
-							{showAll ? "Show top 10" : "Show top 20"}
+							{showAll ? "Show less" : "Show more"}
 							<ChevronDown
 								className={[
 									"h-4 w-4 transition-transform",

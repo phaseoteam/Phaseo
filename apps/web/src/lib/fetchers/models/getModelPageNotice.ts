@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { z } from "zod";
+import { PUBLIC_MODEL_CATALOGUE_CACHE_LIFE } from "@/lib/cache/publicModelCatalogueTags";
 import { isFreeRouterModelId } from "@/lib/models/freeRouter";
 import { applyHiddenFilter } from "./visibility";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -55,6 +56,7 @@ export function parseModelPageNoticeRow(row: {
 
 	return parsed.data;
 }
+
 export async function resolveApiModelIdForModelPageUncached(
 	modelId: string,
 	includeHidden: boolean,
@@ -104,16 +106,13 @@ async function resolveApiModelIdForModelPage(
 ): Promise<string | null> {
 	"use cache";
 
-	cacheLife({
-		stale: 60 * 60 * 24,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 30,
-	});
+	cacheLife(PUBLIC_MODEL_CATALOGUE_CACHE_LIFE);
 
 	cacheTag("data:models");
 	cacheTag("data:data_api_models");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:model_aliases");
+	cacheTag("data:data_api_model_page_notices");
 	cacheTag("public-model-catalogue");
 	cacheTag("frontend:model-notice");
 	cacheTag(`model:notice:resolve:${modelId}`);
@@ -149,15 +148,12 @@ export async function getModelPageNotice(
 ): Promise<ModelPageNotice | null> {
 	"use cache";
 
-	cacheLife({
-		stale: 60 * 60 * 24,
-		revalidate: 60 * 60 * 24 * 7,
-		expire: 60 * 60 * 24 * 30,
-	});
+	cacheLife(PUBLIC_MODEL_CATALOGUE_CACHE_LIFE);
 	cacheTag("data:models");
 	cacheTag("data:data_api_models");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:model_aliases");
+	cacheTag("data:data_api_model_page_notices");
 	cacheTag("public-model-catalogue");
 	cacheTag("frontend:model-notice");
 	cacheTag(`model:notice:${modelId}`);

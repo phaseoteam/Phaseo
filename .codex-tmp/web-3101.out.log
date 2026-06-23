@@ -1,0 +1,25 @@
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3101
+- Network:       http://192.168.4.22:3101
+- Environments: .env.local
+✓ Ready in 1072ms
+- Cache Components enabled
+
+[getModelOverviewCached] Cache-aware fetch for model overview anthropic/claude-fable-5
+[0m[7m Cache [0m [getModelOverviewCached] Cache-aware fetch for model overview anthropic/claude-fable-5
+[0m[7m Cache [0m [getModelOverviewCached] Cache-aware fetch for model overview anthropic/claude-fable-5
+[perf] querying model_id="anthropic/claude-fable-5"
+[fetch] HIT JSON for organisation models anthropic
+[0m[7m Cache [0m [perf] querying model_id="anthropic/claude-fable-5"
+[0m[7m Cache [0m [fetch] HIT JSON for organisation models anthropic
+[fetch] HIT DB for model subscription plans anthropic/claude-fable-5
+[0m[7m Cache [0m [fetch] HIT DB for model subscription plans anthropic/claude-fable-5
+[perf] rpc dur=1927ms error=false
+[perf] summary reqs=0 success=0 hourly=25 providers=0
+[perf] mapped hourlyReqs=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+[0m[7m Cache [0m [perf] rpc dur=1927ms error=false
+[0m[7m Cache [0m [perf] summary reqs=0 success=0 hourly=25 providers=0
+[0m[7m Cache [0m [perf] mapped hourlyReqs=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+[fetch] HIT DB for model gateway metadata anthropic/claude-fable-5
+[0m[7m Cache [0m [fetch] HIT DB for model gateway metadata anthropic/claude-fable-5
+ GET /models/anthropic/claude-fable-5 200 in 13.7s (next.js: 965ms, generate-params: 638ms, application-code: 12.7s)

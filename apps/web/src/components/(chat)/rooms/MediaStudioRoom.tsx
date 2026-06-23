@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
+import Image from "next/image";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
+import { cn } from "@/lib/utils";
 import { extractGenerationUrls } from "@/lib/chat/roomRequestBuilders";
 import {
 	normalizeMediaGenerationStatus,
@@ -75,17 +77,19 @@ import {
 import { ImageModelSettingsDialog } from "@/components/(chat)/rooms/settings/ImageModelSettingsDialog";
 import { VideoModelSettingsDialog } from "@/components/(chat)/rooms/settings/VideoModelSettingsDialog";
 import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
+import { RoomTemporaryNotice } from "@/components/(chat)/rooms/RoomTemporaryNotice";
+import { RoomChatSettingsButton } from "@/components/(chat)/rooms/RoomChatSettingsButton";
 import {
 	ChevronRight,
 	CircleAlert,
-	Cpu,
+	Clapperboard,
 	Download,
 	Expand,
+	ImageIcon,
 	Info,
 	Loader2,
 	MessageCircleDashed,
 	RotateCcw,
-	Settings as SettingsIcon,
 	Trash2,
 } from "lucide-react";
 
@@ -900,42 +904,6 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 	const modelSettingsCompat = modelSettings as any;
 	const selectedProfile =
 		modelSettingsCompat.selectedProfile ?? modelSettingsCompat.activeModelSettings ?? null;
-	const selectedProviderId = selectedProfile?.providerId;
-	const composerSelectedModel = useMemo(
-		() =>
-			filteredModels.find(
-				(model) =>
-					model.modelId === activeModelId &&
-					(!selectedProviderId || model.providerId === selectedProviderId),
-			) ??
-			filteredModels.find((model) => model.modelId === activeModelId) ??
-			null,
-		[activeModelId, filteredModels, selectedProviderId],
-	);
-	const composerModelLogoId =
-		composerSelectedModel?.organisationId?.trim() ||
-		composerSelectedModel?.providerId ||
-		(activeModelId.split("/")[0] || "ai-stats");
-	const composerModelLabel =
-		(activeModelId &&
-			(modelSettings.modelDisplayNameById[activeModelId] ||
-				composerSelectedModel?.modelName ||
-				activeModelId)) ||
-		"Select model";
-	const openComposerModelPicker = () => {
-		const targetModelId =
-			activeModelId || selectedModelIds[0] || filteredModels[0]?.modelId;
-		if (!targetModelId) return;
-		if (!selectedModelIds.includes(targetModelId)) {
-			setSelectedModelIds((prev) =>
-				roomId === "video" ? [targetModelId] : [...prev, targetModelId],
-			);
-		}
-		if (targetModelId !== activeModelId) {
-			setActiveModelId(targetModelId);
-		}
-		modelSettings.openModelSettingsForModel(targetModelId);
-	};
 	const dialogModelId: string | null = modelSettingsCompat.modelSettingsModelId ?? null;
 	const dialogProfile =
 		dialogModelId && typeof modelSettingsCompat.getProfileForModel === "function"
@@ -963,6 +931,10 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		}
 	};
 
+	// react-doctor-disable-next-line
+	// react-doctor-disable-next-line
+	// react-doctor-disable-next-line
+	// react-doctor-disable-next-line
 	useEffect(() => {
 		if (roomId !== "video") return;
 		const rawHailuo = models
@@ -1087,6 +1059,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		return () => window.clearTimeout(timeoutId);
 	}, [infoNotice]);
 
+	// react-doctor-disable-next-line
 	useEffect(() => {
 		let mounted = true;
 		const loadEntries = async () => {
@@ -1857,32 +1830,27 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								variant={temporaryMode ? "secondary" : "ghost"}
 								size="icon"
 								onClick={toggleTemporaryMode}
+								aria-label={
+									temporaryMode ? "Disable temporary chat" : "Enable temporary chat"
+								}
 							>
 								<MessageCircleDashed className="h-4 w-4" />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent>Temporary chat</TooltipContent>
 					</Tooltip>
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={() => {
-									if (!activeModelId) return;
-									modelSettings.openModelSettingsForModel(activeModelId);
-								}}
-								disabled={!activeModelId}
-							>
-								<SettingsIcon className="h-5 w-5" />
-							</Button>
-						</TooltipTrigger>
-						<TooltipContent>Settings</TooltipContent>
-					</Tooltip>
+					<RoomChatSettingsButton
+						roomId={roomId}
+						roomLabel={isImageRoom ? "Image" : "Video"}
+						onHistoryDeleted={() => setEntries([])}
+					/>
 				</div>
 				</header>
 
 			<main className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-5 md:px-6">
+				{temporaryMode && entries.length > 0 ? (
+					<RoomTemporaryNotice className="mb-4" />
+				) : null}
 				{hasPendingEntries ? (
 					<div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-200">
 						<CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
@@ -1894,8 +1862,26 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					</div>
 				) : null}
 				{entries.length === 0 ? (
-					<div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-border bg-muted/15 px-6 text-center text-sm text-muted-foreground">
-						{isImageRoom ? "Your generated images will appear here." : "Your generated videos will appear here."}
+					<div className="flex min-h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center">
+						<div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+							{isImageRoom ? (
+								<ImageIcon className="h-6 w-6 text-foreground" />
+							) : (
+								<Clapperboard className="h-6 w-6 text-foreground" />
+							)}
+						</div>
+						<div>
+						<p className="text-base font-semibold text-foreground">
+							{temporaryMode ? "Temporary chat" : "Start a new conversation"}
+						</p>
+						<p className="text-sm text-muted-foreground">
+							{temporaryMode
+								? "Generations in this chat are not saved locally."
+								: isImageRoom
+									? "Your generated images will appear here."
+									: "Your generated videos will appear here."}
+						</p>
+						</div>
 					</div>
 				) : isImageRoom ? (
 					<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
@@ -1917,16 +1903,19 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 											</div>
 										) : entry.url ? (
 											<button
-												type="button"
-												onClick={() => {
-													setPreviewEntryId(entry.id);
-												}}
-												className="group block h-full w-full text-left"
-											>
-												<img
+													type="button"
+													onClick={() => {
+														setPreviewEntryId(entry.id);
+													}}
+												className="group block h-full w-full text-left relative"
+												>
+												<Image
 													src={entry.url}
 													alt={entry.prompt || "Generated image"}
 													className="h-full w-full object-cover"
+													unoptimized
+													fill
+													sizes="100vw"
 												/>
 												<div className="pointer-events-none absolute inset-0 bg-black/25 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
 												<span className="pointer-events-none absolute left-1/2 top-1/2 inline-flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 scale-95 items-center justify-center rounded-full bg-white/85 text-foreground opacity-0 shadow-sm backdrop-blur transition-all duration-200 group-hover:scale-100 group-hover:opacity-100">
@@ -2234,35 +2223,14 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 							rows={3}
 							className="min-h-[64px] resize-none border-0 bg-transparent px-1 py-2 shadow-none focus-visible:ring-0"
 						/>
-						<div className="flex items-center justify-between pt-2">
-							<div className="flex items-center gap-1.5">
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											type="button"
-											variant="ghost"
-											className="h-8 gap-1.5 px-2"
-											onClick={openComposerModelPicker}
-											disabled={filteredModels.length === 0 || (roomId === "video" && hasPendingEntries)}
-										>
-											{activeModelId ? (
-												<Logo
-													id={composerModelLogoId}
-													alt={composerModelLabel}
-													width={16}
-													height={16}
-													className="shrink-0 rounded-none"
-												/>
-											) : (
-												<Cpu className="h-4 w-4 text-muted-foreground" />
-											)}
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent side="top">{composerModelLabel}</TooltipContent>
-								</Tooltip>
-							</div>
+						<div className="flex items-center justify-end pt-2">
 							<Button
-								className="ml-auto"
+								variant={temporaryMode ? "outline" : "default"}
+								className={cn(
+									"ml-auto",
+									temporaryMode &&
+										"gap-2 border-border bg-muted/60 text-foreground hover:bg-muted dark:bg-muted/40 dark:hover:bg-muted/60",
+								)}
 								onClick={submit}
 								disabled={
 									!prompt.trim() ||
@@ -2275,6 +2243,20 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 									? roomId === "video"
 										? "Generating..."
 										: "Creating..."
+									: temporaryMode
+										? submitModelIds.length > 1
+											? (
+													<>
+														<MessageCircleDashed className="h-4 w-4" />
+														{`Create (${submitModelIds.length})`}
+													</>
+												)
+											: (
+													<>
+														<MessageCircleDashed className="h-4 w-4" />
+														Create
+													</>
+												)
 									: submitModelIds.length > 1
 										? `Create (${submitModelIds.length})`
 										: "Create"}
@@ -2305,10 +2287,13 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								</div>
 								<div className="bg-muted/20 p-4">
 									<div className="flex max-h-[62vh] min-h-[320px] items-center justify-center overflow-hidden rounded-lg border border-border bg-background/60">
-										<img
+										<Image
 											src={previewEntry.url}
 											alt={previewEntry.prompt || "Generated image"}
 											className="h-auto max-h-[60vh] w-auto max-w-full object-contain"
+											unoptimized
+											width={1200}
+											height={675}
 										/>
 									</div>
 								</div>

@@ -1,9 +1,8 @@
 import { buildMetadata } from "@/lib/seo";
-import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import { ModelBenchmarksSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import type { Metadata } from "next";
 import {
 	getModelPath,
+	getModelSectionPath,
 	getModelMetadataIdentity,
 	resolveModelRouteIds,
 	type ModelRouteParams,
@@ -59,9 +58,5 @@ export default async function Page({
 	}
 	const modelId = canonicalModelId;
 
-	return (
-		<ModelDetailShell modelId={modelId} tab="benchmarks" includeHidden={includeHidden}>
-			<ModelBenchmarksSection modelId={modelId} includeHidden={includeHidden} />
-		</ModelDetailShell>
-	);
+	permanentRedirect(getModelSectionPath(modelId, "benchmarks"));
 }

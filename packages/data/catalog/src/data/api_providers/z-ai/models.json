@@ -36,7 +36,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "response_format",
@@ -114,7 +120,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "temperature",
@@ -206,7 +218,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "temperature",
@@ -298,7 +316,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "temperature",
@@ -369,7 +393,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "temperature",
@@ -926,6 +956,27 @@
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2026-04-07T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "z-ai:z-ai/glm-5.2",
+    "provider_model_slug": "glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": null,
     "effective_to": null,
     "capabilities": [
       {

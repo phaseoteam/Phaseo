@@ -1,0 +1,137 @@
+diff --git a/packages/data/catalog/src/data/api_providers/z-ai/models.json b/packages/data/catalog/src/data/api_providers/z-ai/models.json
+index a2213fa03..00ae87cb4 100644
+--- a/packages/data/catalog/src/data/api_providers/z-ai/models.json
++++ b/packages/data/catalog/src/data/api_providers/z-ai/models.json
+@@ -935,6 +935,27 @@
+       }
+     ]
+   },
++  {
++    "api_model_id": "z-ai/glm-5.2",
++    "provider_api_model_id": "z-ai:z-ai/glm-5.2",
++    "provider_model_slug": "glm-5.2",
++    "internal_model_id": "z-ai/glm-5.2",
++    "is_active_gateway": false,
++    "quantization_scheme": null,
++    "input_modalities": "text",
++    "output_modalities": "text",
++    "context_length": 1000000,
++    "max_output_tokens": null,
++    "effective_from": null,
++    "effective_to": null,
++    "capabilities": [
++      {
++        "capability_id": "text.generate",
++        "status": "active",
++        "params": []
++      }
++    ]
++  },
+   {
+     "api_model_id": "z-ai/glm-5v-turbo",
+     "provider_api_model_id": "z-ai:z-ai/glm-5v-turbo",
+diff --git a/packages/data/catalog/src/data/manifest.json b/packages/data/catalog/src/data/manifest.json
+index 5e8503289..afb82d902 100644
+--- a/packages/data/catalog/src/data/manifest.json
++++ b/packages/data/catalog/src/data/manifest.json
+@@ -1088,6 +1088,7 @@
+       "z-ai/glm-5-code",
+       "z-ai/glm-5-turbo",
+       "z-ai/glm-5.1",
++      "z-ai/glm-5.2",
+       "z-ai/glm-5v-turbo",
+       "z-ai/glm-image"
+     ]
+diff --git a/packages/data/catalog/src/data/models/z-ai/glm-5.2/model.json b/packages/data/catalog/src/data/models/z-ai/glm-5.2/model.json
+index 48e67ffa6..42a01606b 100644
+--- a/packages/data/catalog/src/data/models/z-ai/glm-5.2/model.json
++++ b/packages/data/catalog/src/data/models/z-ai/glm-5.2/model.json
+@@ -2,9 +2,9 @@
+   "model_id": "z-ai/glm-5.2",
+   "organisation_id": "z-ai",
+   "name": "GLM 5.2",
+-  "status": "Rumoured",
++  "status": "Available",
+   "previous_model_id": "z-ai/glm-5.1",
+-  "description": "GLM 5.2 is a rumoured Z.AI flagship model tracked as the likely successor to GLM 5.1. The current record is based on leaked private-testing references and early public sightings rather than a formal Z.AI release.",
++  "description": "GLM 5.2 is Z.AI's latest flagship coding model documented across the GLM Coding Plan materials, with premium-tier positioning for complex coding and agent workflows.",
+   "announced_date": null,
+   "release_date": null,
+   "deprecation_date": null,
+@@ -15,13 +15,34 @@
+   "api_model_id": "z-ai/glm-5.2",
+   "page_notice": {
+     "tone": "warning",
+-    "markdown": "GLM 5.2 is a rumoured model and is not publicly released. This page exists because leaked private-testing references and public sightings suggest Z.AI is evaluating a `glm-5.2` line. Specs, pricing, provider availability, and release timing are unconfirmed and may change or disappear without notice."
++    "markdown": "Z.AI now documents `glm-5.2` for the dedicated GLM Coding Plan endpoint and tooling, but the current public general-pricing and release-notes pages still stop short of listing broader standard API rollout details."
+   },
+-  "links": [],
++  "links": [
++    {
++      "platform": "docs",
++      "url": "https://docs.z.ai/devpack/overview"
++    },
++    {
++      "platform": "docs",
++      "url": "https://docs.z.ai/devpack/latest-model"
++    },
++    {
++      "platform": "docs",
++      "url": "https://docs.z.ai/devpack/tool/others"
++    }
++  ],
+   "details": [
+     {
+       "name": "availability",
+-      "value": "Tracked from private-testing leaks and public sightings only. No public Z.AI announcement, provider launch, or final model card is available yet."
++      "value": "Public Z.AI Coding Plan documentation lists GLM-5.2 as a supported model for all plan tiers and supported coding-tool integrations."
++    },
++    {
++      "name": "context_length",
++      "value": "The Coding Plan tool guides document a 1M context configuration for glm-5.2 in supported coding-tool setups."
++    },
++    {
++      "name": "pricing_status",
++      "value": "The current public Z.AI pricing page does not yet publish standard API token pricing for GLM-5.2."
+     }
+   ],
+   "benchmarks": []
+diff --git a/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-lite/plan.json b/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-lite/plan.json
+index 9ebe68d00..9a7716e38 100644
+--- a/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-lite/plan.json
++++ b/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-lite/plan.json
+@@ -63,7 +63,7 @@
+   ],
+   "models": [
+     {
+-      "model_id": "z-ai/glm-5.1",
++      "model_id": "z-ai/glm-5.2",
+       "model_info": null,
+       "rate_limit": null,
+       "other_info": null
+diff --git a/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-max/plan.json b/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-max/plan.json
+index cb1f82c61..49a1bea97 100644
+--- a/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-max/plan.json
++++ b/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-max/plan.json
+@@ -69,7 +69,7 @@
+   ],
+   "models": [
+     {
+-      "model_id": "z-ai/glm-5.1",
++      "model_id": "z-ai/glm-5.2",
+       "model_info": null,
+       "rate_limit": null,
+       "other_info": null
+diff --git a/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-pro/plan.json b/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-pro/plan.json
+index c8d81a604..37c90acb0 100644
+--- a/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-pro/plan.json
++++ b/packages/data/catalog/src/data/subscription_plans/z-ai-glm-coding-pro/plan.json
+@@ -69,7 +69,7 @@
+   ],
+   "models": [
+     {
+-      "model_id": "z-ai/glm-5.1",
++      "model_id": "z-ai/glm-5.2",
+       "model_info": null,
+       "rate_limit": null,
+       "other_info": null

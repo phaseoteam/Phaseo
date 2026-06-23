@@ -266,11 +266,17 @@ def fetch_together_models() -> list[str]:
     if not api_key:
         return []
     try:
-        response = requests.get('https://api.together.ai/models', headers={'Authorization': f'Bearer {api_key}'})
+        response = requests.get('https://api.together.ai/v1/models', headers={'Authorization': f'Bearer {api_key}'})
         if response.status_code != 200:
             return []
         data = response.json()
-        return [f"together/{m['id']}" for m in data.get('data', [])]
+        if isinstance(data, list):
+            rows = data
+        elif isinstance(data, dict):
+            rows = data.get('data', [])
+        else:
+            rows = []
+        return [f"together/{m['id']}" for m in rows if isinstance(m, dict) and 'id' in m]
     except requests.RequestException:
         return []
 

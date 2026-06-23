@@ -76,6 +76,7 @@ export function DataControlsTab({ onExportChats }: DataControlsTabProps) {
 				ref={fileInputRef}
 				type="file"
 				accept=".json"
+				aria-label="Import chats"
 				onChange={handleImportChats}
 				className="hidden"
 			/>

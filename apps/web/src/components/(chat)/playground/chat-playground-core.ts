@@ -3,7 +3,10 @@ import {
 	getRoomScopedStorageKey,
 	type ChatRoomId,
 } from "@/lib/chat/rooms";
-import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
+import type {
+	GatewaySupportedModel,
+	SupportedReasoningEffort,
+} from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type {
 	ChatMessage,
 	ChatModelSettings,
@@ -30,8 +33,41 @@ export const DEFAULT_SETTINGS: ChatSettings = {
 	reasoningEffort: "medium",
 	endpoint: "responses",
 	webSearchEnabled: false,
+	serverToolWebSearchEngine: "auto",
+	serverToolWebSearchContextSize: "medium",
+	serverToolWebSearchMaxResults: null,
+	serverToolWebSearchMaxTotalResults: null,
+	serverToolWebSearchMaxCharacters: null,
+	serverToolWebSearchAllowedDomains: "",
+	serverToolWebSearchBlockedDomains: "",
 	apiServerToolsEnabled: false,
+	serverToolTimezone: "",
+	serverToolWebFetchEnabled: false,
+	serverToolWebFetchEngine: "auto",
+	serverToolWebFetchMaxContentTokens: null,
+	serverToolWebFetchAllowedDomains: "",
+	serverToolWebFetchBlockedDomains: "",
+	serverToolAdvisorEnabled: false,
+	serverToolAdvisors: [],
+	serverToolImageGenerationEnabled: false,
+	serverToolImageGenerationModel: "",
+	serverToolImageGenerationQuality: "auto",
+	serverToolImageGenerationAspectRatio: "auto",
+	serverToolImageGenerationSize: "auto",
+	serverToolImageGenerationBackground: "auto",
+	serverToolImageGenerationOutputFormat: "auto",
+	serverToolImageGenerationOutputCompression: null,
+	serverToolImageGenerationModeration: "auto",
+	serverToolSubagentEnabled: false,
+	serverToolSubagentModel: "",
+	serverToolSubagentInstructions: "",
+	serverToolSubagentMaxUses: null,
+	serverToolFusionEnabled: false,
+	serverToolFusionAnalysisModels: [],
+	serverToolFusionJudgeModel: "",
+	serverToolFusionMaxUses: null,
 	imageOutputEnabled: false,
+	contextMessageLimit: 10,
 	compareMode: false,
 	compareModelIds: [],
 	modelOverridesById: {},
@@ -55,7 +91,39 @@ const MODEL_SETTING_KEYS: Array<keyof ChatModelSettings> = [
 	"reasoningEffort",
 	"endpoint",
 	"webSearchEnabled",
+	"serverToolWebSearchEngine",
+	"serverToolWebSearchContextSize",
+	"serverToolWebSearchMaxResults",
+	"serverToolWebSearchMaxTotalResults",
+	"serverToolWebSearchMaxCharacters",
+	"serverToolWebSearchAllowedDomains",
+	"serverToolWebSearchBlockedDomains",
 	"apiServerToolsEnabled",
+	"serverToolTimezone",
+	"serverToolWebFetchEnabled",
+	"serverToolWebFetchEngine",
+	"serverToolWebFetchMaxContentTokens",
+	"serverToolWebFetchAllowedDomains",
+	"serverToolWebFetchBlockedDomains",
+	"serverToolAdvisorEnabled",
+	"serverToolAdvisors",
+	"serverToolImageGenerationEnabled",
+	"serverToolImageGenerationModel",
+	"serverToolImageGenerationQuality",
+	"serverToolImageGenerationAspectRatio",
+	"serverToolImageGenerationSize",
+	"serverToolImageGenerationBackground",
+	"serverToolImageGenerationOutputFormat",
+	"serverToolImageGenerationOutputCompression",
+	"serverToolImageGenerationModeration",
+	"serverToolSubagentEnabled",
+	"serverToolSubagentModel",
+	"serverToolSubagentInstructions",
+	"serverToolSubagentMaxUses",
+	"serverToolFusionEnabled",
+	"serverToolFusionAnalysisModels",
+	"serverToolFusionJudgeModel",
+	"serverToolFusionMaxUses",
 	"imageOutputEnabled",
 	"enabled",
 	"displayName",
@@ -335,7 +403,59 @@ export function getEffectiveModelSettings(
 		reasoningEffort: DEFAULT_SETTINGS.reasoningEffort,
 		endpoint: DEFAULT_SETTINGS.endpoint,
 		webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
+		serverToolWebSearchEngine: DEFAULT_SETTINGS.serverToolWebSearchEngine,
+		serverToolWebSearchContextSize:
+			DEFAULT_SETTINGS.serverToolWebSearchContextSize,
+		serverToolWebSearchMaxResults:
+			DEFAULT_SETTINGS.serverToolWebSearchMaxResults,
+		serverToolWebSearchMaxTotalResults:
+			DEFAULT_SETTINGS.serverToolWebSearchMaxTotalResults,
+		serverToolWebSearchMaxCharacters:
+			DEFAULT_SETTINGS.serverToolWebSearchMaxCharacters,
+		serverToolWebSearchAllowedDomains:
+			DEFAULT_SETTINGS.serverToolWebSearchAllowedDomains,
+		serverToolWebSearchBlockedDomains:
+			DEFAULT_SETTINGS.serverToolWebSearchBlockedDomains,
 		apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+		serverToolTimezone: DEFAULT_SETTINGS.serverToolTimezone,
+		serverToolWebFetchEnabled: DEFAULT_SETTINGS.serverToolWebFetchEnabled,
+		serverToolWebFetchEngine: DEFAULT_SETTINGS.serverToolWebFetchEngine,
+		serverToolWebFetchMaxContentTokens:
+			DEFAULT_SETTINGS.serverToolWebFetchMaxContentTokens,
+		serverToolWebFetchAllowedDomains:
+			DEFAULT_SETTINGS.serverToolWebFetchAllowedDomains,
+		serverToolWebFetchBlockedDomains:
+			DEFAULT_SETTINGS.serverToolWebFetchBlockedDomains,
+		serverToolAdvisorEnabled: DEFAULT_SETTINGS.serverToolAdvisorEnabled,
+		serverToolAdvisors: DEFAULT_SETTINGS.serverToolAdvisors,
+		serverToolImageGenerationEnabled:
+			DEFAULT_SETTINGS.serverToolImageGenerationEnabled,
+		serverToolImageGenerationModel:
+			DEFAULT_SETTINGS.serverToolImageGenerationModel,
+		serverToolImageGenerationQuality:
+			DEFAULT_SETTINGS.serverToolImageGenerationQuality,
+		serverToolImageGenerationAspectRatio:
+			DEFAULT_SETTINGS.serverToolImageGenerationAspectRatio,
+		serverToolImageGenerationSize:
+			DEFAULT_SETTINGS.serverToolImageGenerationSize,
+		serverToolImageGenerationBackground:
+			DEFAULT_SETTINGS.serverToolImageGenerationBackground,
+		serverToolImageGenerationOutputFormat:
+			DEFAULT_SETTINGS.serverToolImageGenerationOutputFormat,
+		serverToolImageGenerationOutputCompression:
+			DEFAULT_SETTINGS.serverToolImageGenerationOutputCompression,
+		serverToolImageGenerationModeration:
+			DEFAULT_SETTINGS.serverToolImageGenerationModeration,
+		serverToolSubagentEnabled: DEFAULT_SETTINGS.serverToolSubagentEnabled,
+		serverToolSubagentModel: DEFAULT_SETTINGS.serverToolSubagentModel,
+		serverToolSubagentInstructions:
+			DEFAULT_SETTINGS.serverToolSubagentInstructions,
+		serverToolSubagentMaxUses: DEFAULT_SETTINGS.serverToolSubagentMaxUses,
+		serverToolFusionEnabled: DEFAULT_SETTINGS.serverToolFusionEnabled,
+		serverToolFusionAnalysisModels:
+			DEFAULT_SETTINGS.serverToolFusionAnalysisModels,
+		serverToolFusionJudgeModel: DEFAULT_SETTINGS.serverToolFusionJudgeModel,
+		serverToolFusionMaxUses: DEFAULT_SETTINGS.serverToolFusionMaxUses,
 		imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 		enabled: true,
 		displayName: "",
@@ -396,8 +516,13 @@ export type ModelOption = {
 	orgName: string;
 	label: string;
 	capabilityEndpoints: UnifiedChatEndpoint[];
+	inputModalities: string[];
+	outputModalities: string[];
+	supportedReasoningEfforts: SupportedReasoningEffort[];
+	modelPageNotice: GatewaySupportedModel["modelPageNotice"] | null;
 	providerIds: string[];
 	providerNames: string[];
+	providerNameById: Record<string, string>;
 	providerAvailability: Record<string, boolean>;
 	releaseDate: string | null;
 	gatewayStatus: "active" | "inactive";

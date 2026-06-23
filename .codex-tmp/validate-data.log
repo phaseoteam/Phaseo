@@ -1,0 +1,525 @@
+﻿2026-06-12T22:12:50.3229549Z Current runner version: '2.335.1'
+2026-06-12T22:12:50.3254639Z ##[group]Runner Image Provisioner
+2026-06-12T22:12:50.3255495Z Hosted Compute Agent
+2026-06-12T22:12:50.3256095Z Version: 20260527.539
+2026-06-12T22:12:50.3256886Z Commit: a891dd388383b896fa6ac04a82c0b75cec981078
+2026-06-12T22:12:50.3257632Z Build Date: 2026-05-27T21:39:57Z
+2026-06-12T22:12:50.3258430Z Worker ID: {11bee432-818d-41bf-8731-2bc00c1d52a8}
+2026-06-12T22:12:50.3259176Z Azure Region: northcentralus
+2026-06-12T22:12:50.3259792Z ##[endgroup]
+2026-06-12T22:12:50.3261209Z ##[group]Operating System
+2026-06-12T22:12:50.3261844Z Ubuntu
+2026-06-12T22:12:50.3262437Z 24.04.4
+2026-06-12T22:12:50.3263329Z LTS
+2026-06-12T22:12:50.3263878Z ##[endgroup]
+2026-06-12T22:12:50.3264565Z ##[group]Runner Image
+2026-06-12T22:12:50.3265197Z Image: ubuntu-24.04
+2026-06-12T22:12:50.3265770Z Version: 20260607.184.1
+2026-06-12T22:12:50.3267127Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260607.184/images/ubuntu/Ubuntu2404-Readme.md
+2026-06-12T22:12:50.3268731Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260607.184
+2026-06-12T22:12:50.3269704Z ##[endgroup]
+2026-06-12T22:12:50.3270892Z ##[group]GITHUB_TOKEN Permissions
+2026-06-12T22:12:50.3273130Z Contents: read
+2026-06-12T22:12:50.3273801Z Metadata: read
+2026-06-12T22:12:50.3274520Z ##[endgroup]
+2026-06-12T22:12:50.3276582Z Secret source: Actions
+2026-06-12T22:12:50.3277384Z Prepare workflow directory
+2026-06-12T22:12:50.3669218Z Prepare all required actions
+2026-06-12T22:12:50.3708611Z Getting action download info
+2026-06-12T22:12:50.6840223Z Download action repository 'actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd' (SHA:de0fac2e4500dabe0009e67214ff5f5447ce83dd)
+2026-06-12T22:12:50.7545485Z Download action repository 'pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288' (SHA:a8198c4bff370c8506180b035930dea56dbd5288)
+2026-06-12T22:12:51.1777066Z Download action repository 'actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e' (SHA:48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e)
+2026-06-12T22:12:51.3604256Z Complete job name: Validate data
+2026-06-12T22:12:51.4353377Z ##[group]Run actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+2026-06-12T22:12:51.4354546Z with:
+2026-06-12T22:12:51.4355034Z   repository: AI-Stats/AI-Stats
+2026-06-12T22:12:51.4359677Z   token: ***
+2026-06-12T22:12:51.4360162Z   ssh-strict: true
+2026-06-12T22:12:51.4360646Z   ssh-user: git
+2026-06-12T22:12:51.4361135Z   persist-credentials: true
+2026-06-12T22:12:51.4361670Z   clean: true
+2026-06-12T22:12:51.4362159Z   sparse-checkout-cone-mode: true
+2026-06-12T22:12:51.4362875Z   fetch-depth: 1
+2026-06-12T22:12:51.4363347Z   fetch-tags: false
+2026-06-12T22:12:51.4363823Z   show-progress: true
+2026-06-12T22:12:51.4364302Z   lfs: false
+2026-06-12T22:12:51.4364751Z   submodules: false
+2026-06-12T22:12:51.4365231Z   set-safe-directory: true
+2026-06-12T22:12:51.4365928Z env:
+2026-06-12T22:12:51.4366365Z   NODE_VERSION: 22
+2026-06-12T22:12:51.4366837Z ##[endgroup]
+2026-06-12T22:12:51.5356298Z Syncing repository: AI-Stats/AI-Stats
+2026-06-12T22:12:51.5358959Z ##[group]Getting Git version info
+2026-06-12T22:12:51.5359890Z Working directory is '/home/runner/work/AI-Stats/AI-Stats'
+2026-06-12T22:12:51.5361419Z [command]/usr/bin/git version
+2026-06-12T22:12:51.5408349Z git version 2.54.0
+2026-06-12T22:12:51.5430179Z ##[endgroup]
+2026-06-12T22:12:51.5444663Z Temporarily overriding HOME='/home/runner/work/_temp/90b97f68-1799-46cf-bdd1-c5f0bab77908' before making global git config changes
+2026-06-12T22:12:51.5447286Z Adding repository directory to the temporary git global config as a safe directory
+2026-06-12T22:12:51.5449406Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AI-Stats/AI-Stats
+2026-06-12T22:12:51.5495603Z Deleting the contents of '/home/runner/work/AI-Stats/AI-Stats'
+2026-06-12T22:12:51.5499674Z ##[group]Initializing the repository
+2026-06-12T22:12:51.5504399Z [command]/usr/bin/git init /home/runner/work/AI-Stats/AI-Stats
+2026-06-12T22:12:51.5593869Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-06-12T22:12:51.5595830Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-06-12T22:12:51.5597409Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-06-12T22:12:51.5598792Z hint: call:
+2026-06-12T22:12:51.5599852Z hint:
+2026-06-12T22:12:51.5601002Z hint: 	git config --global init.defaultBranch <name>
+2026-06-12T22:12:51.5602435Z hint:
+2026-06-12T22:12:51.5604096Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-06-12T22:12:51.5606090Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-06-12T22:12:51.5607760Z hint:
+2026-06-12T22:12:51.5608715Z hint: 	git branch -m <name>
+2026-06-12T22:12:51.5609796Z hint:
+2026-06-12T22:12:51.5611352Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-06-12T22:12:51.5613918Z Initialized empty Git repository in /home/runner/work/AI-Stats/AI-Stats/.git/
+2026-06-12T22:12:51.5617209Z [command]/usr/bin/git remote add origin https://github.com/AI-Stats/AI-Stats
+2026-06-12T22:12:51.5688350Z ##[endgroup]
+2026-06-12T22:12:51.5690160Z ##[group]Disabling automatic garbage collection
+2026-06-12T22:12:51.5691909Z [command]/usr/bin/git config --local gc.auto 0
+2026-06-12T22:12:51.5724733Z ##[endgroup]
+2026-06-12T22:12:51.5726308Z ##[group]Setting up auth
+2026-06-12T22:12:51.5727212Z Removing SSH command configuration
+2026-06-12T22:12:51.5731571Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-06-12T22:12:51.5765688Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-06-12T22:12:51.6097148Z Removing HTTP extra header
+2026-06-12T22:12:51.6103238Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-06-12T22:12:51.6137030Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-06-12T22:12:51.6364486Z Removing includeIf entries pointing to credentials config files
+2026-06-12T22:12:51.6370479Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-06-12T22:12:51.6402026Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-06-12T22:12:51.6631838Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-06-12T22:12:51.6668332Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:12:51.6697270Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:12:51.6729321Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:12:51.6760933Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:12:51.6788050Z ##[endgroup]
+2026-06-12T22:12:51.6789151Z ##[group]Fetching the repository
+2026-06-12T22:12:51.6796124Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +111728a3718703914e9e0c719a7a6bb0dbce53cc:refs/remotes/pull/713/merge
+2026-06-12T22:12:56.3984721Z From https://github.com/AI-Stats/AI-Stats
+2026-06-12T22:12:56.3986348Z  * [new ref]           111728a3718703914e9e0c719a7a6bb0dbce53cc -> pull/713/merge
+2026-06-12T22:12:56.4013471Z ##[endgroup]
+2026-06-12T22:12:56.4014874Z ##[group]Determining the checkout info
+2026-06-12T22:12:56.4015864Z ##[endgroup]
+2026-06-12T22:12:56.4020367Z [command]/usr/bin/git sparse-checkout disable
+2026-06-12T22:12:56.4066760Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-06-12T22:12:56.4095151Z ##[group]Checking out the ref
+2026-06-12T22:12:56.4098636Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/713/merge
+2026-06-12T22:12:57.9238815Z Updating files:  91% (9980/10937)
+2026-06-12T22:12:58.1141313Z Updating files:  92% (10063/10937)
+2026-06-12T22:12:58.1389483Z Updating files:  93% (10172/10937)
+2026-06-12T22:12:58.1633700Z Updating files:  94% (10281/10937)
+2026-06-12T22:12:58.1691765Z Updating files:  95% (10391/10937)
+2026-06-12T22:12:58.1764844Z Updating files:  96% (10500/10937)
+2026-06-12T22:12:58.1818439Z Updating files:  97% (10609/10937)
+2026-06-12T22:12:58.1868813Z Updating files:  98% (10719/10937)
+2026-06-12T22:12:58.1923694Z Updating files:  99% (10828/10937)
+2026-06-12T22:12:58.1924442Z Updating files: 100% (10937/10937)
+2026-06-12T22:12:58.1925024Z Updating files: 100% (10937/10937), done.
+2026-06-12T22:12:58.2104649Z Note: switching to 'refs/remotes/pull/713/merge'.
+2026-06-12T22:12:58.2105412Z 
+2026-06-12T22:12:58.2105837Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-06-12T22:12:58.2106744Z changes and commit them, and you can discard any commits you make in this
+2026-06-12T22:12:58.2107741Z state without impacting any branches by switching back to a branch.
+2026-06-12T22:12:58.2108250Z 
+2026-06-12T22:12:58.2108686Z If you want to create a new branch to retain commits you create, you may
+2026-06-12T22:12:58.2109668Z do so (now or later) by using -c with the switch command. Example:
+2026-06-12T22:12:58.2110180Z 
+2026-06-12T22:12:58.2110445Z   git switch -c <new-branch-name>
+2026-06-12T22:12:58.2110869Z 
+2026-06-12T22:12:58.2111050Z Or undo this operation with:
+2026-06-12T22:12:58.2111500Z 
+2026-06-12T22:12:58.2112194Z   git switch -
+2026-06-12T22:12:58.2112432Z 
+2026-06-12T22:12:58.2113084Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-06-12T22:12:58.2113661Z 
+2026-06-12T22:12:58.2114418Z HEAD is now at 111728a3 Merge e8b4690a0a7a7eb3b55b5302fa273731f0b9c0e9 into 28cb3c13474cc73d9ec945a1f6d81f5e1ffffa62
+2026-06-12T22:12:58.2279721Z ##[endgroup]
+2026-06-12T22:12:58.2284488Z [command]/usr/bin/git log -1 --format=%H
+2026-06-12T22:12:58.2285357Z 111728a3718703914e9e0c719a7a6bb0dbce53cc
+2026-06-12T22:12:58.2493458Z ##[group]Run pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+2026-06-12T22:12:58.2493899Z with:
+2026-06-12T22:12:58.2494115Z   version: 10.33.0
+2026-06-12T22:12:58.2494339Z   run_install: false
+2026-06-12T22:12:58.2494575Z   standalone: true
+2026-06-12T22:12:58.2494791Z   dest: ~/setup-pnpm
+2026-06-12T22:12:58.2495004Z   cache: false
+2026-06-12T22:12:58.2495263Z   cache_dependency_path: pnpm-lock.yaml
+2026-06-12T22:12:58.2495562Z   package_json_file: package.json
+2026-06-12T22:12:58.2495825Z env:
+2026-06-12T22:12:58.2496032Z   NODE_VERSION: 22
+2026-06-12T22:12:58.2496253Z ##[endgroup]
+2026-06-12T22:12:58.3913996Z ##[group]Running self-installer...
+2026-06-12T22:12:58.7637576Z (node:2302) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-06-12T22:12:58.7639261Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-06-12T22:12:58.8989198Z Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-06-12T22:12:59.0472547Z Packages: +2
+2026-06-12T22:12:59.0473110Z ++
+2026-06-12T22:12:59.6433995Z Progress: resolved 7, reused 0, downloaded 2, added 2, done
+2026-06-12T22:13:01.0842590Z .../node_modules/@pnpm/exe preinstall$ node setup.js
+2026-06-12T22:13:01.2423707Z .../node_modules/@pnpm/exe preinstall: Done
+2026-06-12T22:13:02.7699703Z 
+2026-06-12T22:13:02.7700278Z dependencies:
+2026-06-12T22:13:02.7700701Z + @pnpm/exe 10.33.0 (11.6.0 is available)
+2026-06-12T22:13:02.7701036Z 
+2026-06-12T22:13:02.7738300Z Done in 4.2s
+2026-06-12T22:13:02.8091100Z ##[endgroup]
+2026-06-12T22:13:02.8091594Z Installation Completed!
+2026-06-12T22:13:02.8301626Z ##[group]Run actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+2026-06-12T22:13:02.8302114Z with:
+2026-06-12T22:13:02.8302359Z   node-version: 22
+2026-06-12T22:13:02.8302931Z   registry-url: https://registry.npmjs.org
+2026-06-12T22:13:02.8303258Z   check-latest: false
+2026-06-12T22:13:02.8306277Z   token: ***
+2026-06-12T22:13:02.8306508Z   package-manager-cache: true
+2026-06-12T22:13:02.8306850Z env:
+2026-06-12T22:13:02.8307048Z   NODE_VERSION: 22
+2026-06-12T22:13:02.8307335Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-06-12T22:13:02.8307663Z ##[endgroup]
+2026-06-12T22:13:03.0857403Z Found in cache @ /opt/hostedtoolcache/node/22.22.3/x64
+2026-06-12T22:13:03.0861431Z ##[group]Environment details
+2026-06-12T22:13:03.4399725Z node: v22.22.3
+2026-06-12T22:13:03.4400126Z npm: 10.9.8
+2026-06-12T22:13:03.4400419Z yarn: 1.22.22
+2026-06-12T22:13:03.4401772Z ##[endgroup]
+2026-06-12T22:13:03.4534650Z ##[group]Run git checkout -- pnpm-lock.yaml
+2026-06-12T22:13:03.4535070Z [36;1mgit checkout -- pnpm-lock.yaml[0m
+2026-06-12T22:13:03.4699823Z shell: /usr/bin/bash -e {0}
+2026-06-12T22:13:03.4700110Z env:
+2026-06-12T22:13:03.4700320Z   NODE_VERSION: 22
+2026-06-12T22:13:03.4700608Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-06-12T22:13:03.4700987Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+2026-06-12T22:13:03.4701337Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+2026-06-12T22:13:03.4701615Z ##[endgroup]
+2026-06-12T22:13:03.7851259Z ##[group]Run corepack pnpm install --frozen-lockfile
+2026-06-12T22:13:03.7851698Z [36;1mcorepack pnpm install --frozen-lockfile[0m
+2026-06-12T22:13:03.7887642Z shell: /usr/bin/bash -e {0}
+2026-06-12T22:13:03.7887927Z env:
+2026-06-12T22:13:03.7888131Z   NODE_VERSION: 22
+2026-06-12T22:13:03.7888403Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-06-12T22:13:03.7888777Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+2026-06-12T22:13:03.7889116Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+2026-06-12T22:13:03.7889401Z ##[endgroup]
+2026-06-12T22:13:05.3258912Z Scope: all 32 workspace projects
+2026-06-12T22:13:05.4583347Z Lockfile is up to date, resolution step is skipped
+2026-06-12T22:13:05.5701466Z Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-06-12T22:13:05.7299926Z Packages: +2170
+2026-06-12T22:13:05.7300701Z ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2026-06-12T22:13:06.5730258Z Progress: resolved 2170, reused 0, downloaded 109, added 64
+2026-06-12T22:13:07.5750668Z Progress: resolved 2170, reused 0, downloaded 355, added 269
+2026-06-12T22:13:08.5854648Z Progress: resolved 2170, reused 0, downloaded 448, added 322
+2026-06-12T22:13:09.5810739Z Progress: resolved 2170, reused 0, downloaded 622, added 453
+2026-06-12T22:13:10.5812416Z Progress: resolved 2170, reused 0, downloaded 688, added 488
+2026-06-12T22:13:11.5809091Z Progress: resolved 2170, reused 0, downloaded 858, added 681
+2026-06-12T22:13:12.5814467Z Progress: resolved 2170, reused 0, downloaded 1179, added 1076
+2026-06-12T22:13:13.5809377Z Progress: resolved 2170, reused 0, downloaded 1357, added 1339
+2026-06-12T22:13:14.5810486Z Progress: resolved 2170, reused 0, downloaded 1485, added 1469
+2026-06-12T22:13:15.5809335Z Progress: resolved 2170, reused 0, downloaded 1603, added 1523
+2026-06-12T22:13:16.5807613Z Progress: resolved 2170, reused 0, downloaded 1701, added 1569
+2026-06-12T22:13:17.5814660Z Progress: resolved 2170, reused 0, downloaded 1859, added 1693
+2026-06-12T22:13:18.5810341Z Progress: resolved 2170, reused 0, downloaded 1990, added 1763
+2026-06-12T22:13:19.5816504Z Progress: resolved 2170, reused 0, downloaded 2108, added 2169
+2026-06-12T22:13:20.5858098Z Progress: resolved 2170, reused 0, downloaded 2109, added 2169
+2026-06-12T22:13:20.7457686Z Progress: resolved 2170, reused 0, downloaded 2109, added 2170, done
+2026-06-12T22:13:21.4978381Z  WARN  Failed to create bin at /home/runner/work/AI-Stats/AI-Stats/node_modules/.pnpm/supabase@2.89.1/node_modules/supabase/node_modules/.bin/supabase. ENOENT: no such file or directory, open '/home/runner/work/AI-Stats/AI-Stats/node_modules/.pnpm/supabase@2.89.1/node_modules/supabase/bin/supabase'
+2026-06-12T22:13:21.5624709Z  WARN  Failed to create bin at /home/runner/work/AI-Stats/AI-Stats/node_modules/.bin/supabase. ENOENT: no such file or directory, open '/home/runner/work/AI-Stats/AI-Stats/node_modules/.pnpm/supabase@2.89.1/node_modules/supabase/bin/supabase'
+2026-06-12T22:13:21.7398312Z 
+2026-06-12T22:13:21.7398839Z devDependencies:
+2026-06-12T22:13:21.7399224Z + @changesets/changelog-github 0.7.0
+2026-06-12T22:13:21.7399548Z + @changesets/cli 2.31.0
+2026-06-12T22:13:21.7400087Z + @stoplight/spectral-cli 6.16.0
+2026-06-12T22:13:21.7400466Z + ajv 8.20.0
+2026-06-12T22:13:21.7400759Z + dotenv-cli 11.0.0
+2026-06-12T22:13:21.7401071Z + js-yaml 4.2.0
+2026-06-12T22:13:21.7401353Z + knip 6.6.1
+2026-06-12T22:13:21.7401716Z + rimraf 6.1.3
+2026-06-12T22:13:21.7402031Z + supabase 2.89.1
+2026-06-12T22:13:21.7402322Z + tsx 4.21.0
+2026-06-12T22:13:21.7402589Z + turbo 2.9.14
+2026-06-12T22:13:21.7403295Z 
+2026-06-12T22:13:21.7756412Z  WARN  Failed to create bin at /home/runner/work/AI-Stats/AI-Stats/node_modules/.bin/supabase. ENOENT: no such file or directory, open '/home/runner/work/AI-Stats/AI-Stats/node_modules/supabase/bin/supabase'
+2026-06-12T22:13:21.8202973Z packages/sdk/sdk-cpp postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/cpp-sdk
+2026-06-12T22:13:21.8207581Z packages/sdk/sdk-csharp postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/csharp-sdk
+2026-06-12T22:13:21.8209273Z packages/sdk/sdk-go postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/go-sdk
+2026-06-12T22:13:21.8214567Z packages/integrations/ai-sdk-ai-stats postinstall$ node ../../sdk/scripts/postinstall-viewer-prompt.cjs @ai-stats/ai-sdk-provider
+2026-06-12T22:13:21.8874186Z packages/sdk/sdk-cpp postinstall: Done
+2026-06-12T22:13:21.8889631Z packages/sdk/sdk-java postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/java-sdk
+2026-06-12T22:13:21.8894041Z packages/sdk/sdk-csharp postinstall: Done
+2026-06-12T22:13:21.8895367Z packages/sdk/sdk-php postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/php-sdk
+2026-06-12T22:13:21.9080186Z packages/sdk/sdk-ruby postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/ruby-sdk
+2026-06-12T22:13:21.9087601Z packages/sdk/sdk-go postinstall: Done
+2026-06-12T22:13:21.9444524Z packages/integrations/ai-sdk-ai-stats postinstall: Done
+2026-06-12T22:13:21.9464217Z packages/sdk/sdk-py postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/py-sdk
+2026-06-12T22:13:21.9473585Z packages/sdk/sdk-java postinstall: Done
+2026-06-12T22:13:21.9494248Z packages/sdk/sdk-rust postinstall$ node ../scripts/postinstall-viewer-prompt.cjs @ai-stats/rust-sdk
+2026-06-12T22:13:21.9813990Z packages/sdk/sdk-php postinstall: Done
+2026-06-12T22:13:21.9814670Z packages/sdk/sdk-ruby postinstall: Done
+2026-06-12T22:13:21.9904051Z packages/sdk/sdk-ts postinstall$ node scripts/postinstall.cjs
+2026-06-12T22:13:22.0049934Z packages/sdk/sdk-py postinstall: Done
+2026-06-12T22:13:22.0120063Z packages/sdk/sdk-rust postinstall: Done
+2026-06-12T22:13:22.0327216Z packages/sdk/sdk-ts postinstall: Done
+2026-06-12T22:13:22.0596289Z ╭ Warning ─────────────────────────────────────────────────────────────────────╮
+2026-06-12T22:13:22.0597078Z │                                                                              │
+2026-06-12T22:13:22.0597758Z │   Ignored build scripts: core-js@3.49.0, es5-ext@0.10.64, esbuild@0.25.12,   │
+2026-06-12T22:13:22.0598401Z │   keytar@7.9.0, protobufjs@7.6.1, puppeteer@22.14.0, sharp@0.33.5,           │
+2026-06-12T22:13:22.0599290Z │   sharp@0.34.5, supabase@2.89.1, unrs-resolver@1.11.1,                       │
+2026-06-12T22:13:22.0599886Z │   unrs-resolver@1.12.2, workerd@1.20260521.1.                                │
+2026-06-12T22:13:22.0600526Z │   Run "pnpm approve-builds" to pick which dependencies should be allowed     │
+2026-06-12T22:13:22.0601131Z │   to run scripts.                                                            │
+2026-06-12T22:13:22.0601875Z │                                                                              │
+2026-06-12T22:13:22.0602417Z ╰──────────────────────────────────────────────────────────────────────────────╯
+2026-06-12T22:13:22.0960347Z Done in 17.1s using pnpm v10.33.0
+2026-06-12T22:13:22.1544589Z ##[group]Run pnpm exec tsx scripts/model-discovery/github-issues.test.ts
+2026-06-12T22:13:22.1545152Z [36;1mpnpm exec tsx scripts/model-discovery/github-issues.test.ts[0m
+2026-06-12T22:13:22.1579497Z shell: /usr/bin/bash -e {0}
+2026-06-12T22:13:22.1579765Z env:
+2026-06-12T22:13:22.1579972Z   NODE_VERSION: 22
+2026-06-12T22:13:22.1580284Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-06-12T22:13:22.1580684Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+2026-06-12T22:13:22.1581036Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+2026-06-12T22:13:22.1581320Z ##[endgroup]
+2026-06-12T22:13:22.7545793Z github-issues helper tests passed
+2026-06-12T22:13:22.7837556Z ##[group]Run pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway
+2026-06-12T22:13:22.7838198Z [36;1mpnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway[0m
+2026-06-12T22:13:22.7872466Z shell: /usr/bin/bash -e {0}
+2026-06-12T22:13:22.7872912Z env:
+2026-06-12T22:13:22.7873121Z   NODE_VERSION: 22
+2026-06-12T22:13:22.7873410Z   PNPM_HOME: /home/runner/setup-pnpm/node_modules/.bin
+2026-06-12T22:13:22.7873784Z   NPM_CONFIG_USERCONFIG: /home/runner/work/_temp/.npmrc
+2026-06-12T22:13:22.7874127Z   NODE_AUTH_TOKEN: XXXXX-XXXXX-XXXXX-XXXXX
+2026-06-12T22:13:22.7874415Z ##[endgroup]
+2026-06-12T22:13:22.9518585Z 
+2026-06-12T22:13:22.9519719Z > ai-stats-monorepo@ validate:data /home/runner/work/AI-Stats/AI-Stats
+2026-06-12T22:13:22.9520627Z > cd apps/web && pnpm run validate
+2026-06-12T22:13:22.9521042Z 
+2026-06-12T22:13:23.1438557Z 
+2026-06-12T22:13:23.1439455Z > @ai-stats/web@1.0.0 validate /home/runner/work/AI-Stats/AI-Stats/apps/web
+2026-06-12T22:13:23.1440149Z > tsx ../../packages/data/catalog/src/data/validate.ts --preset structure
+2026-06-12T22:13:23.1440464Z 
+2026-06-12T22:13:23.7152001Z ⚠️ Data validation reported 173 non-blocking warnings.
+2026-06-12T22:13:23.7153250Z ❌ Data validation reported 3 errors across 9 enforced sections.
+2026-06-12T22:13:23.7154078Z ✅ Organisations (55 entries)
+2026-06-12T22:13:23.7166453Z ❌ Data validation failed. Fix the highlighted sections before proceeding.
+2026-06-12T22:13:23.7168162Z ✅ Families (68 entries)
+2026-06-12T22:13:23.7168743Z ✅ Benchmarks (626 entries)
+2026-06-12T22:13:23.7169321Z ✅ API providers (77 entries)
+2026-06-12T22:13:23.7170097Z ✅ Model files (1134 files)
+2026-06-12T22:13:23.7170938Z ❌ API provider models (1361 entries)
+2026-06-12T22:13:23.7173340Z    • API provider model deepinfra (deepinfra:stepfun/step-3.7-flash) unresolved: expected base model for api_model_id='stepfun/step-3.7-flash' or internal_model_id='stepfun/step-3.7-flash'
+2026-06-12T22:13:23.7175978Z    • API provider model novita (novita:stepfun/step-3.7-flash) unresolved: expected base model for api_model_id='stepfun/step-3.7-flash' or internal_model_id='stepfun/step-3.7-flash'
+2026-06-12T22:13:23.7178513Z    • API provider model stepfun (stepfun:stepfun/step-3.7-flash) unresolved: expected base model for api_model_id='stepfun/step-3.7-flash' or internal_model_id='stepfun/step-3.7-flash'
+2026-06-12T22:13:23.7180059Z ✅ Model references (1134 models)
+2026-06-12T22:13:23.7181509Z    ⚠ Model ai21/jamba-large-1.6 references unknown previous_model_id ai21/jamba-large-1-5-2024-08-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7183886Z    ⚠ Model ai21/jamba-large-1.7 references unknown previous_model_id ai21/jamba-large-1-6-2025-03-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7186325Z    ⚠ Model ai21/jamba-mini-1.6 references unknown previous_model_id ai21/jamba-mini-1-5-2024-08-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7188314Z    ⚠ Model ai21/jamba-mini-1.7 references unknown previous_model_id ai21/jamba-mini-1-6-2025-03-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7190227Z    ⚠ Model aion-labs/aion-2.0 references unknown previous_model_id aion-labs/aion-1-0-2025-01-29 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7192136Z    ⚠ Model aion-labs/aion-2.5 references unknown previous_model_id aion-labs/aion-2-0-2025-12-21 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7201650Z    ⚠ Model amazon/nova-2-lite references unknown previous_model_id amazon/nova-lite-1-0-2024-12-04 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7204351Z    ⚠ Model amazon/nova-2-pro references unknown previous_model_id amazon/nova-pro-1-0-2024-12-04 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7206457Z    ⚠ Model amazon/nova-2-sonic references unknown previous_model_id amazon/nova-sonic-2025-04-08 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7208935Z    ⚠ Model anthropic/claude-1.1 references unknown previous_model_id anthropic/claude-1-0-2023-03-14 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7210991Z    ⚠ Model anthropic/claude-1.2 references unknown previous_model_id anthropic/claude-1-1 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7213260Z    ⚠ Model anthropic/claude-1.3 references unknown previous_model_id anthropic/claude-1-2 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7215348Z    ⚠ Model anthropic/claude-2.0 references unknown previous_model_id anthropic/claude-1-3 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7217551Z    ⚠ Model anthropic/claude-2.1 references unknown previous_model_id anthropic/claude-2-0-2023-07-12 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7219996Z    ⚠ Model anthropic/claude-3-haiku references unknown previous_model_id anthropic/claude-2-1-2023-11-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7222394Z    ⚠ Model anthropic/claude-3-opus references unknown previous_model_id anthropic/claude-2-1-2023-11-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7225013Z    ⚠ Model anthropic/claude-3-sonnet references unknown previous_model_id anthropic/claude-2-1-2023-11-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7227397Z    ⚠ Model anthropic/claude-3.5-haiku references unknown previous_model_id anthropic/claude-3-haiku-2024-03-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7229962Z    ⚠ Model anthropic/claude-3.5-sonnet-2024-06-20 references unknown previous_model_id anthropic/claude-3-sonnet-2024-03-04 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7232492Z    ⚠ Model anthropic/claude-3.5-sonnet-2024-10-22 references unknown previous_model_id anthropic/claude-3-5-sonnet-2024-06-21 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7234883Z    ⚠ Model anthropic/claude-3.7-sonnet references unknown previous_model_id anthropic/claude-3-5-sonnet-2024-10-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7237132Z    ⚠ Model anthropic/claude-haiku-4.5 references unknown previous_model_id anthropic/claude-3-5-haiku-2024-11-04 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7239381Z    ⚠ Model anthropic/claude-instant-1.1 references unknown previous_model_id anthropic/claude-instant-1-0-2023-03-14 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7241578Z    ⚠ Model anthropic/claude-instant-1.2 references unknown previous_model_id anthropic/claude-instant-1-1 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7244274Z    ⚠ Model anthropic/claude-opus-4 references unknown previous_model_id anthropic/claude-3-opus-2024-03-04 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7246444Z    ⚠ Model anthropic/claude-opus-4.1 references unknown previous_model_id anthropic/claude-opus-4-2025-05-21 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7248605Z    ⚠ Model anthropic/claude-opus-4.5 references unknown previous_model_id anthropic/claude-opus-4-1-2025-08-05 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7250776Z    ⚠ Model anthropic/claude-opus-4.6 references unknown previous_model_id anthropic/claude-opus-4-5-2025-11-24 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7253553Z    ⚠ Model anthropic/claude-sonnet-4 references unknown previous_model_id anthropic/claude-3-7-sonnet-2025-02-24 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7255781Z    ⚠ Model anthropic/claude-sonnet-4.5 references unknown previous_model_id anthropic/claude-sonnet-4-2025-05-21 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7258009Z    ⚠ Model anthropic/claude-sonnet-4.6 references unknown previous_model_id anthropic/claude-sonnet-4-5-2025-09-29 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7260291Z    ⚠ Model cursor/composer-1.5 references unknown previous_model_id cursor/composer-1-2025-10-29 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7262381Z    ⚠ Model deepseek/deepseek-v3.2 references unknown previous_model_id deepseek/deepseek-v3-2-exp-2025-09-29 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7265064Z    ⚠ Model deepseek/deepseek-v3.2-exp references unknown previous_model_id deepseek/deepseek-v3-1-terminus-2025-09-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7267238Z    ⚠ Model deepseek/deepseek-v4 references unknown previous_model_id deepseek/deepseek-v3-2-2025-12-01 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7269358Z    ⚠ Model google/gemini-1.5-flash-002 references unknown previous_model_id google/gemini-1-0-nano-2023-12-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7271505Z    ⚠ Model google/gemini-1.5-flash-8b references unknown previous_model_id google/gemini-1-0-nano-2023-12-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7273739Z    ⚠ Model google/gemini-1.5-pro-002 references unknown previous_model_id google/gemini-1-0-pro-2023-12-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7276089Z    ⚠ Model google/gemini-2.0-flash references unknown previous_model_id google/gemini-1-5-flash-002-2024-09-24 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7278253Z    ⚠ Model google/gemini-2.0-flash-lite references unknown previous_model_id google/gemini-1-5-flash-8b-2024-03-15 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7280661Z    ⚠ Model google/gemini-2.5-flash-image references unknown previous_model_id google/gemini-2-5-flash-image-preview-2025-08-25 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7283440Z    ⚠ Model google/gemini-2.5-flash-lite-preview-2025-06-17 references unknown previous_model_id google/gemini-2-0-flash-lite-2025-02-05 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7285932Z    ⚠ Model google/gemini-2.5-flash-preview-2025-04-17 references unknown previous_model_id google/gemini-2-0-flash-2025-02-05 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7288443Z    ⚠ Model google/gemini-2.5-flash-preview-2025-05-20 references unknown previous_model_id google/gemini-2-5-flash-preview-2025-04-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7290923Z    ⚠ Model google/gemini-2.5-pro-preview-2025-05-06 references unknown previous_model_id google/gemini-2-5-pro-experimental (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7293629Z    ⚠ Model google/gemini-2.5-pro-preview-2025-06-05 references unknown previous_model_id google/gemini-2-5-pro-preview-2025-05-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7296359Z    ⚠ Model google/gemini-3-flash-preview references unknown previous_model_id google/gemini-2-5-flash-preview-2025-09-25 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7298906Z    ⚠ Model google/gemini-3-pro-image-preview references unknown previous_model_id google/gemini-2-5-flash-image-preview-2025-08-25 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7301397Z    ⚠ Model google/gemini-3-pro-preview references unknown previous_model_id google/gemini-2-5-pro-preview-2025-06-05 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7304404Z    ⚠ Model google/gemini-3.1-flash-lite-preview references unknown previous_model_id google/gemini-2-5-flash-lite-preview-2025-09-25 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7306850Z    ⚠ Model google/gemini-3.1-pro-preview references unknown previous_model_id google/gemini-3-pro-preview-2025-11-18 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7309119Z    ⚠ Model google/gemini-embedding-2-preview references unknown previous_model_id google/gemini-embedding-001-2025-05-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7311405Z    ⚠ Model google/gemma-2-2b references unknown previous_model_id google/gemma-1-2b-2024-02-21 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7313496Z    ⚠ Model google/gemma-3-27b references unknown previous_model_id google/gemma-2-27b-2024-06-27 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7315605Z    ⚠ Model google/image-generation-005 references unknown previous_model_id google/image-generation-002-2023-08-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7317864Z    ⚠ Model google/image-generation-006 references unknown previous_model_id google/image-generation-005-2023-11-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7320198Z    ⚠ Model google/imagen-3.0-generate-002 references unknown previous_model_id google/imagen-3-0-generate-002-2025-01-29 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7322489Z    ⚠ Model google/imagen-4.0-preview references unknown previous_model_id google/imagen-3-0-generate-002-2025-02-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7325018Z    ⚠ Model google/imagen-4.0-ultra-preview references unknown previous_model_id google/imagen-3-0-generate-002-2025-02-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7327314Z    ⚠ Model google/text-embedding-005 references unknown previous_model_id google/text-embedding-005-2024-11-18 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7329663Z    ⚠ Model google/text-embedding-gecko-002 references unknown previous_model_id google/text-embedding-gecko-001-2023-06-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7332087Z    ⚠ Model google/text-embedding-gecko-003 references unknown previous_model_id google/text-embedding-gecko-002-2023-11-02 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7334490Z    ⚠ Model google/veo-3 references unknown previous_model_id google/veo-3-0-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7336636Z    ⚠ Model google/veo-3-fast references unknown previous_model_id google/veo-3-0-fast-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7338906Z    ⚠ Model google/veo-3.1-fast-preview references unknown previous_model_id google/veo-3-0-fast-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7341230Z    ⚠ Model google/veo-3.1-preview references unknown previous_model_id google/veo-3-0-generate-preview-2025-07-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7343518Z    ⚠ Model google/veo-4 references unknown previous_model_id google/veo-3-1-preview-2025-10-15 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7345942Z    ⚠ Model ibm/granite-4.0-tiny references unknown previous_model_id ibm/granite-4-0-tiny-preview-2025-05-02 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7347981Z    ⚠ Model lg/exaone-3.5-7.8b references unknown previous_model_id lg/exaone-3-0-2024-08-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7349955Z    ⚠ Model lg/exaone-4.0-32b references unknown previous_model_id lg/exaone-deep-32b-2025-03-18 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7351928Z    ⚠ Model lg/exaone-deep-2.4b references unknown previous_model_id lg/exaone-3-5-2-4b-2024-12-09 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7354099Z    ⚠ Model lg/exaone-deep-32b references unknown previous_model_id lg/exaone-3-5-32b-2024-12-09 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7356068Z    ⚠ Model lg/exaone-deep-7.8b references unknown previous_model_id lg/exaone-3-5-7-8b-2024-12-09 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7358074Z    ⚠ Model minimax/minimax-m2 references unknown previous_model_id minimax/minimax-m1-2025-06-16 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7360279Z    ⚠ Model minimax/minimax-m2.1 references unknown previous_model_id minimax/minimax-m2-2025-10-27 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7362341Z    ⚠ Model minimax/minimax-m2.5 references unknown previous_model_id minimax/minimax-m2-1-2025-12-23 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7364603Z    ⚠ Model minimax/minimax-m2.7 references unknown previous_model_id minimax/minimax-m2-5-2026-02-12 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7366604Z    ⚠ Model minimax/music-2.5 references unknown previous_model_id minimax/music-2-0-2025-10-29 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7368745Z    ⚠ Model mistral/mistral-moderation-2 references unknown previous_model_id mistral/mistral-moderation-2024-11-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7370956Z    ⚠ Model mistral/mistral-small-4 references unknown previous_model_id mistral/mistral-small-3-2-2025-06-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7373489Z    ⚠ Model mistral/voxtral-mini-transcribe-2 references unknown previous_model_id mistral/voxtral-mini-transcribe-2025-07-15 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7375558Z    ⚠ Model moonshotai/kimi-k2-2025-07-11 references unknown previous_model_id moonshotai/kimi-k1-5-2025-01-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7377024Z    ⚠ Model moonshotai/kimi-k2.5 references unknown previous_model_id moonshotai/kimi-k2-thinking-2025-11-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7378128Z    ⚠ Model openai/gpt-2 references unknown previous_model_id openai/gpt-1-2018-06-11 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7379123Z    ⚠ Model openai/gpt-3 references unknown previous_model_id openai/gpt-2-2019-11-05 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7380219Z    ⚠ Model openai/gpt-3.5-turbo-0613 references unknown previous_model_id openai/gpt-3-5-turbo-2023-03-21 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7381360Z    ⚠ Model openai/gpt-3.5-turbo-2024-01-25 references unknown previous_model_id openai/gpt-3-2020-06-11 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7382484Z    ⚠ Model openai/gpt-3.5-turbo-instruct references unknown previous_model_id openai/gpt-3-5-turbo-0613 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7383872Z    ⚠ Model openai/gpt-4-2023-03-14 references unknown previous_model_id openai/gpt-3-5-turbo-2023-11-06 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7384974Z    ⚠ Model openai/gpt-4o-2024-05-13 references unknown previous_model_id openai/gpt-4-2023-06-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7386994Z    ⚠ Model openai/gpt-4o-2024-08-06 references unknown previous_model_id openai/gpt-4o-2024-11-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7388723Z    ⚠ Model openai/gpt-4o-mini references unknown previous_model_id openai/gpt-4-2023-06-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7390392Z    ⚠ Model openai/gpt-5 references unknown previous_model_id openai/gpt-4-5-2025-02-27 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7392148Z    ⚠ Model openai/gpt-5-chat references unknown previous_model_id openai/chatgpt-4o-2024-05-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7394093Z    ⚠ Model openai/gpt-5-codex references unknown previous_model_id openai/codex-mini-2025-05-16 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7395920Z    ⚠ Model openai/gpt-5-codex-mini references unknown previous_model_id openai/codex-mini-2025-05-16 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7397767Z    ⚠ Model openai/gpt-5-mini references unknown previous_model_id openai/gpt-4-1-mini-2025-04-14 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7399866Z    ⚠ Model openai/gpt-5-nano references unknown previous_model_id openai/gpt-4-1-nano-2025-04-14 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7401764Z    ⚠ Model openai/gpt-5-pro references unknown previous_model_id openai/o1-pro-2025-03-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7403587Z    ⚠ Model openai/gpt-5.1 references unknown previous_model_id openai/gpt-5-2025-08-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7405333Z    ⚠ Model openai/gpt-5.1-chat references unknown previous_model_id openai/gpt-5-chat-2025-08-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7407117Z    ⚠ Model openai/gpt-5.1-codex references unknown previous_model_id openai/gpt-5-codex-2025-09-15 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7408976Z    ⚠ Model openai/gpt-5.1-codex-max references unknown previous_model_id openai/gpt-5-1-codex-2025-11-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7410879Z    ⚠ Model openai/gpt-5.1-codex-mini references unknown previous_model_id openai/gpt-5-codex-mini-2025-11-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7412635Z    ⚠ Model openai/gpt-5.2 references unknown previous_model_id openai/gpt-5-1-2025-11-12 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7414533Z    ⚠ Model openai/gpt-5.2-chat references unknown previous_model_id openai/gpt-5-1-chat-2025-11-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7416357Z    ⚠ Model openai/gpt-5.2-codex references unknown previous_model_id openai/gpt-5-1-codex-max-2025-11-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7418164Z    ⚠ Model openai/gpt-5.2-mini references unknown previous_model_id openai/gpt-5-mini-2025-08-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7419832Z    ⚠ Model openai/gpt-5.2-pro references unknown previous_model_id openai/gpt-5-1-pro (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7421722Z    ⚠ Model openai/gpt-5.3-chat references unknown previous_model_id openai/gpt-5-2-chat-2025-12-11 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7423807Z    ⚠ Model openai/gpt-5.3-codex references unknown previous_model_id openai/gpt-5-2-codex-2025-12-18 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7425834Z    ⚠ Model openai/gpt-5.3-codex-spark references unknown previous_model_id openai/gpt-5-3-codex-2026-02-05 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7427850Z    ⚠ Model openai/gpt-5.4 references unknown previous_model_id openai/gpt-5-2-2025-12-11 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7429993Z    ⚠ Model openai/gpt-5.4-mini references unknown previous_model_id openai/gpt-5-mini-2025-08-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7431909Z    ⚠ Model openai/gpt-5.4-nano references unknown previous_model_id openai/gpt-5-nano-2025-08-07 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7434016Z    ⚠ Model openai/gpt-5.4-pro references unknown previous_model_id openai/gpt-5-2-pro-2025-12-11 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7435926Z    ⚠ Model openai/gpt-audio-1.5 references unknown previous_model_id openai/gpt-audio-2025-08-28 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7437875Z    ⚠ Model openai/gpt-image-1-mini references unknown previous_model_id openai/dall-e-3-2023-10-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7439875Z    ⚠ Model openai/gpt-realtime-1.5 references unknown previous_model_id openai/gpt-realtime-2025-08-28 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7441806Z    ⚠ Model openai/o1 references unknown previous_model_id openai/o1-preview-2024-09-12 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7443704Z    ⚠ Model openai/o3 references unknown previous_model_id openai/o1-2024-12-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7445638Z    ⚠ Model openai/o3-mini references unknown previous_model_id openai/o1-mini-2024-09-12 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7447476Z    ⚠ Model openai/o3-preview references unknown previous_model_id openai/o1-preview-2024-09-12 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7449196Z    ⚠ Model openai/o3-pro references unknown previous_model_id openai/o1-pro-2025-03-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7450849Z    ⚠ Model openai/o4-mini references unknown previous_model_id openai/o3-mini-2025-01-30 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7452931Z    ⚠ Model openai/o4-mini-deep-research references unknown previous_model_id openai/o3-deep-research-2025-06-26 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7455069Z    ⚠ Model openai/sora-2-2025-09-30 references unknown previous_model_id openai/sora-1-2024-12-09 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7456989Z    ⚠ Model openai/sora-2-pro references unknown previous_model_id openai/sora-1-2024-12-09 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7458816Z    ⚠ Model suno/suno-v4 references unknown previous_model_id suno/suno-v3-5-2024-05-25 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7460586Z    ⚠ Model suno/suno-v4.5 references unknown previous_model_id suno/suno-v4-2024-11-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7462353Z    ⚠ Model suno/suno-v4.5+ references unknown previous_model_id suno/suno-v4-5-2025-05-01 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7464345Z    ⚠ Model suno/suno-v4.5-all references unknown previous_model_id suno/suno-v4-5+-2025-07-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7466124Z    ⚠ Model suno/suno-v5 references unknown previous_model_id suno/suno-v4-5-all-2025-10-27 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7467927Z    ⚠ Model upstage/solar-pro-2-2025-07-10 references unknown previous_model_id upstage/solar-pro-2-preview-2025-05-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7469129Z    ⚠ Model upstage/solar-pro-3 references unknown previous_model_id upstage/solar-pro-2-2025-12-15 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7470173Z    ⚠ Model x-ai/grok-2 references unknown previous_model_id x-ai/grok-1-5-2024-03-28 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7471165Z    ⚠ Model x-ai/grok-3 references unknown previous_model_id x-ai/grok-3-beta-2025-02-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7472359Z    ⚠ Model x-ai/grok-3-beta references unknown previous_model_id x-ai/grok-2-2024-08-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7473724Z    ⚠ Model x-ai/grok-3-mini references unknown previous_model_id x-ai/grok-3-mini-beta-2025-02-19 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7474822Z    ⚠ Model x-ai/grok-3-mini-beta references unknown previous_model_id x-ai/grok-2-mini-2024-08-13 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7475827Z    ⚠ Model x-ai/grok-4 references unknown previous_model_id x-ai/grok-3-2025-04-18 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7477387Z    ⚠ Model x-ai/grok-4.1-non-thinking references unknown previous_model_id x-ai/grok-4-fast-non-reasoning-2025-09-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7479072Z    ⚠ Model x-ai/grok-4.1-thinking references unknown previous_model_id x-ai/grok-4-fast-reasoning-2025-09-20 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7480403Z    ⚠ Model x-ai/grok-4.20 references unknown previous_model_id x-ai/grok-4-1-non-thinking-2025-11-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7481915Z    ⚠ Model x-ai/grok-4.20-multi-agent-beta references unknown previous_model_id x-ai/grok-4-1-non-thinking-2025-11-17 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7483723Z    ⚠ Model z-ai/glm-4.6 references unknown previous_model_id z-ai/glm-4-5-2025-07-28 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7485292Z    ⚠ Model z-ai/glm-5 references unknown previous_model_id z-ai/glm-4-7-2025-12-22 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7486865Z    ⚠ Model z-ai/glm-5.1 references unknown previous_model_id z-ai/glm-5-2026-02-11 (non-blocking: likely internal model reference)
+2026-06-12T22:13:23.7487908Z ✅ Subscription plans (82 plans)
+2026-06-12T22:13:23.7488327Z ✅ Aliases (26 entries)
+2026-06-12T22:13:23.7488960Z    ⚠ Alias anthropic/claude-haiku-latest missing resolved_model_id
+2026-06-12T22:13:23.7489775Z    ⚠ Alias anthropic/claude-opus-latest missing resolved_model_id
+2026-06-12T22:13:23.7490572Z    ⚠ Alias anthropic/claude-sonnet-latest missing resolved_model_id
+2026-06-12T22:13:23.7491393Z    ⚠ Alias deepseek/deepseek-flash-latest missing resolved_model_id
+2026-06-12T22:13:23.7492209Z    ⚠ Alias deepseek/deepseek-pro-latest missing resolved_model_id
+2026-06-12T22:13:23.7493148Z    ⚠ Alias google/gemini-embedding-latest missing resolved_model_id
+2026-06-12T22:13:23.7493657Z    ⚠ Alias google/gemini-flash-latest missing resolved_model_id
+2026-06-12T22:13:23.7494167Z    ⚠ Alias google/gemini-flash-lite-latest missing resolved_model_id
+2026-06-12T22:13:23.7494672Z    ⚠ Alias google/gemini-pro-latest missing resolved_model_id
+2026-06-12T22:13:23.7495135Z    ⚠ Alias google/veo-fast-latest missing resolved_model_id
+2026-06-12T22:13:23.7495569Z    ⚠ Alias google/veo-latest missing resolved_model_id
+2026-06-12T22:13:23.7496023Z    ⚠ Alias google/veo-lite-latest missing resolved_model_id
+2026-06-12T22:13:23.7496460Z    ⚠ Alias minimax/minimax-latest missing resolved_model_id
+2026-06-12T22:13:23.7496893Z    ⚠ Alias moonshotai/kimi-latest missing resolved_model_id
+2026-06-12T22:13:23.7497340Z    ⚠ Alias openai/gpt-audio-latest missing resolved_model_id
+2026-06-12T22:13:23.7497796Z    ⚠ Alias openai/gpt-chat-latest missing resolved_model_id
+2026-06-12T22:13:23.7498241Z    ⚠ Alias openai/gpt-image-latest missing resolved_model_id
+2026-06-12T22:13:23.7498676Z    ⚠ Alias openai/gpt-latest missing resolved_model_id
+2026-06-12T22:13:23.7499095Z    ⚠ Alias openai/gpt-mini-latest missing resolved_model_id
+2026-06-12T22:13:23.7499528Z    ⚠ Alias openai/gpt-nano-latest missing resolved_model_id
+2026-06-12T22:13:23.7499965Z    ⚠ Alias openai/gpt-pro-latest missing resolved_model_id
+2026-06-12T22:13:23.7500391Z    ⚠ Alias x-ai/grok-latest missing resolved_model_id
+2026-06-12T22:13:23.7500816Z    ⚠ Alias z-ai/glm-latest missing resolved_model_id
+2026-06-12T22:13:23.7501632Z    ⚠ Alias z-ai/glm-turbo-latest missing resolved_model_id
+2026-06-12T22:13:23.7502074Z    ⚠ Alias z-ai/glm-vision-latest missing resolved_model_id
+2026-06-12T22:13:23.7535282Z  ELIFECYCLE  Command failed with exit code 1.
+2026-06-12T22:13:23.7715099Z  ELIFECYCLE  Command failed with exit code 1.
+2026-06-12T22:13:23.7887532Z ##[error]Process completed with exit code 1.
+2026-06-12T22:13:23.7973403Z Post job cleanup.
+2026-06-12T22:13:23.9384524Z Pruning is unnecessary.
+2026-06-12T22:13:23.9516317Z Post job cleanup.
+2026-06-12T22:13:24.0371406Z [command]/usr/bin/git version
+2026-06-12T22:13:24.0407692Z git version 2.54.0
+2026-06-12T22:13:24.0446047Z Temporarily overriding HOME='/home/runner/work/_temp/6927922e-df72-4925-bd12-8f58af0c88f7' before making global git config changes
+2026-06-12T22:13:24.0447940Z Adding repository directory to the temporary git global config as a safe directory
+2026-06-12T22:13:24.0451933Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/AI-Stats/AI-Stats
+2026-06-12T22:13:24.0482918Z Removing SSH command configuration
+2026-06-12T22:13:24.0489644Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-06-12T22:13:24.0529184Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-06-12T22:13:24.0820969Z Removing HTTP extra header
+2026-06-12T22:13:24.0828278Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-06-12T22:13:24.0868998Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-06-12T22:13:24.1144612Z Removing includeIf entries pointing to credentials config files
+2026-06-12T22:13:24.1154322Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-06-12T22:13:24.1181810Z includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path
+2026-06-12T22:13:24.1183468Z includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path
+2026-06-12T22:13:24.1184643Z includeif.gitdir:/github/workspace/.git.path
+2026-06-12T22:13:24.1185657Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-06-12T22:13:24.1192016Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path
+2026-06-12T22:13:24.1217094Z /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1229661Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1297967Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path
+2026-06-12T22:13:24.1321676Z /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1331176Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/AI-Stats/AI-Stats/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1364308Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-06-12T22:13:24.1387413Z /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1395029Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1427910Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-06-12T22:13:24.1450862Z /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1468754Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config
+2026-06-12T22:13:24.1498177Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-06-12T22:13:24.1769951Z Removing credentials config '/home/runner/work/_temp/git-credentials-b88fe4e6-dca7-4445-9094-01f5a4b9aae8.config'
+2026-06-12T22:13:24.1933912Z Cleaning up orphan processes

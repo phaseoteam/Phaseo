@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Database, Gauge, LogOut, UserRound } from "lucide-react";
+import { Gauge, LogOut, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
+import { ChatSidebarModelsIcon } from "@/components/(chat)/ChatSidebarModelsIcon";
 import { Button } from "@/components/ui/button";
 import { fetchClientAuthHeaderData } from "@/lib/fetchers/internal/fetchClientAuthHeaderData";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
@@ -17,6 +19,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
 	Sidebar,
 	SidebarContent,
@@ -56,43 +59,50 @@ function RoomSidebarBrand() {
 			: "/wordmark_light.svg";
 
 	return (
-		<img
+		<Image
 			src={brandSrc}
 			alt="AI Stats"
-			className={collapsed ? "h-7 select-none" : "h-8 select-none"}
+			className={cn(
+				"select-none object-contain",
+				collapsed ? "h-7 w-7" : "h-8 w-auto max-w-[132px]",
+			)}
+			width={collapsed ? 28 : 132}
+			height={32}
+			priority
 		/>
 	);
 }
 
-function RoomSidebarDatabaseButton() {
+const ROOM_SIDEBAR_MODELS_BUTTON = (
+	<Button
+		variant="ghost"
+		asChild
+		className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+		aria-label="Models"
+	>
+		<Link
+			href="/models"
+			className="group/db flex w-full min-w-0 items-center gap-2 group-data-[collapsible=icon]:justify-center"
+		>
+			<ChatSidebarModelsIcon className="ml-1 group-data-[collapsible=icon]:ml-0" />
+			<span className="truncate group-data-[collapsible=icon]:hidden">Models</span>
+		</Link>
+	</Button>
+);
+
+function RoomSidebarModelsButton() {
 	const { state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
-	const button = (
-		<Button
-			variant="ghost"
-			asChild
-			className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-			aria-label="Database"
-		>
-			<Link
-				href="/"
-				className="group/db flex w-full min-w-0 items-center gap-2 group-data-[collapsible=icon]:justify-center"
-			>
-				<Database className="h-4 w-4 shrink-0" />
-				<span className="truncate group-data-[collapsible=icon]:hidden">Database</span>
-			</Link>
-		</Button>
-	);
 
 	if (!collapsed) {
-		return button;
+		return ROOM_SIDEBAR_MODELS_BUTTON;
 	}
 
 	return (
 		<Tooltip>
-			<TooltipTrigger asChild>{button}</TooltipTrigger>
+			<TooltipTrigger asChild>{ROOM_SIDEBAR_MODELS_BUTTON}</TooltipTrigger>
 			<TooltipContent side="right" align="center" sideOffset={10}>
-				Database
+				Models
 			</TooltipContent>
 		</Tooltip>
 	);
@@ -165,28 +175,31 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 	return (
 		<SidebarProvider defaultOpen contained className="h-full overflow-hidden">
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
-				<SidebarHeader className="gap-0 px-0 pt-3.5 pb-0">
-					<div className="mb-3.5 ml-2 flex w-full items-center gap-2 px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pb-1">
-						<Link href="/">
+				<SidebarHeader className="h-[61px] gap-0 border-b border-border px-0 py-0">
+					<div className="flex h-full w-full items-center gap-2 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:pb-1">
+						<Link
+							href="/"
+							className="flex min-w-0 items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto w-full"
+							aria-label="AI Stats home"
+						>
 							<RoomSidebarBrand />
 						</Link>
 					</div>
-					<div className="mb-2 h-px w-full bg-border" />
 				</SidebarHeader>
-				<SidebarContent>
+				<SidebarContent className="gap-0">
 					<ChatRoomSwitcher />
 					<SidebarSeparator className="my-0" />
 					{!hasCustomSidebarContent ? (
 						<>
 							<div className="px-2 py-1.5">
-								<RoomSidebarDatabaseButton />
+								<RoomSidebarModelsButton />
 							</div>
 							<SidebarSeparator className="my-0" />
 						</>
 					) : null}
 					<div
 						id={ROOM_SIDEBAR_SLOT_ID}
-						className="flex min-h-0 flex-1 flex-col gap-2"
+						className="flex min-h-0 flex-1 flex-col gap-0"
 					/>
 				</SidebarContent>
 				<SidebarFooter className="border-t border-border px-3 py-3">
@@ -232,7 +245,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 									<DropdownMenuItem asChild>
 										<Link href="/gateway/usage">
 											<Gauge className="mr-2 h-4 w-4" />
-											Usage
+											Observability
 										</Link>
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />

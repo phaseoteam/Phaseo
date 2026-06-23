@@ -1,9 +1,12 @@
 import ChatPlayground from "@/components/(chat)/ChatPlayground";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import {
+	fetchFrontendGatewayModelAliases,
+	fetchFrontendGatewayModels,
+} from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
 type ChatPlaygroundLoaderProps = {
-    modelParam?: string | null;
-    promptParam?: string | null;
+	modelParam?: string | null;
+	promptParam?: string | null;
 };
 
 const decodeQueryValue = (value: string): string => {
@@ -15,10 +18,11 @@ const decodeQueryValue = (value: string): string => {
 };
 
 export default async function ChatPlaygroundLoader({
-    modelParam,
-    promptParam,
+	modelParam,
+	promptParam,
 }: ChatPlaygroundLoaderProps) {
-    const models = await fetchFrontendGatewayModels();
+	const models = await fetchFrontendGatewayModels();
+	const modelAliases = await fetchFrontendGatewayModelAliases(models);
 	const trimmedModelParam = decodeQueryValue((modelParam ?? "").trim());
 	const modelIdSet = new Set(models.map((m) => m.modelId));
 	let resolvedModelParam: string | null = trimmedModelParam || null;
@@ -28,11 +32,12 @@ export default async function ChatPlaygroundLoader({
 		resolvedModelParam = null;
 	}
 
-    return (
-        <ChatPlayground
-            models={models}
-            modelParam={resolvedModelParam}
-            promptParam={promptParam ?? null}
-        />
-    );
+	return (
+		<ChatPlayground
+			models={models}
+			modelAliases={modelAliases}
+			modelParam={resolvedModelParam}
+			promptParam={promptParam ?? null}
+		/>
+	);
 }

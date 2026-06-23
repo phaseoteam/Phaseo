@@ -1,0 +1,13 @@
+
+> @ai-stats/web@1.0.0 dev E:\ai-stats-public\apps\web
+> next dev --turbopack --port 3100
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3100
+- Network:       http://192.168.4.26:3100
+- Environments: .env.local
+✓ Ready in 1950ms
+[?25h
+E:\ai-stats-public\apps\web:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @ai-stats/web@1.0.0 dev: `next dev --turbopack --port 3100`
+Exit status 1

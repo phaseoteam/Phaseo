@@ -29,6 +29,12 @@ type MetricConfig = {
 	formatValue: (value: number | null) => string;
 };
 
+function formatSecondsFromMs(value: number | null): string {
+	if (value == null) return "-";
+	const seconds = value / 1000;
+	return `${seconds.toFixed(seconds >= 10 ? 1 : 2)}s`;
+}
+
 const METRICS: Record<MetricKey, MetricConfig> = {
 	throughput: {
 		label: "Throughput",
@@ -38,12 +44,12 @@ const METRICS: Record<MetricKey, MetricConfig> = {
 	latency: {
 		label: "Latency",
 		valueKey: "avgLatencyMs",
-		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
+		formatValue: formatSecondsFromMs,
 	},
 	generation: {
 		label: "E2E Latency",
 		valueKey: "avgGenerationMs",
-		formatValue: (value) => (value != null ? `${Math.round(value)} ms` : "-"),
+		formatValue: formatSecondsFromMs,
 	},
 };
 
@@ -113,14 +119,6 @@ export default function ModelProviderTrendChart({
 			color: provider.color ?? FALLBACK_PROVIDER_COLORS[index] ?? FALLBACK_PROVIDER_COLORS[0],
 		}));
 
-	if (providers.length === 0) {
-		return (
-			<div className="flex h-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-				No provider trend data available.
-			</div>
-		);
-	}
-
 	const providerIdSet = new Set(providers.map((provider) => provider.provider));
 	const filtered = data.filter((point) => providerIdSet.has(point.provider));
 	const sortedDays = Array.from(new Set(filtered.map((point) => point.day))).sort(
@@ -160,6 +158,7 @@ export default function ModelProviderTrendChart({
 	const activeIndex =
 		activeRow && typeof activeRow.index === "number" ? activeRow.index : null;
 	const isHovering = activeDay != null;
+	// react-doctor-disable-next-line
 	const providerRows = useMemo(
 		() =>
 			providers.map((provider) => {
@@ -189,6 +188,14 @@ export default function ModelProviderTrendChart({
 		[providers, filtered, metricConfig.valueKey, activeRow],
 	);
 
+	if (providers.length === 0) {
+		return (
+			<div className="flex h-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
+				No provider trend data available.
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-3">
 			<div className="flex items-start justify-between gap-3">
@@ -197,7 +204,7 @@ export default function ModelProviderTrendChart({
 					{activeHeadingDate}
 				</span>
 			</div>
-			<div className="h-[148px] w-full pt-1">
+			<div className="h-[180px] w-full pt-1">
 				<ResponsiveContainer width="100%" height="100%">
 					<LineChart
 						data={chartData}

@@ -4,6 +4,9 @@ import { applyWorkspacePolicy, buildWorkspacePolicy } from "./workspacePolicy";
 function candidate(args: {
     providerId: string;
     apiModelId?: string | null;
+    dataPolicyTier?: "unknown" | "private" | "logs" | "trains" | null;
+    dataPolicyConfidence?: "unknown" | "confirmed" | "maybe" | null;
+    pricing?: "free" | "paid" | "unknown";
 }) {
     return {
         providerId: args.providerId,
@@ -17,11 +20,181 @@ function candidate(args: {
         baseWeight: 1,
         byokMeta: [],
         pricingCard: null,
+        ...(args.pricing === "free"
+            ? {
+                  pricingCard: {
+                      provider: args.providerId,
+                      model: args.apiModelId ?? "test/model",
+                      endpoint: "responses",
+                      effective_from: null,
+                      effective_to: null,
+                      currency: "USD",
+                      version: null,
+                      rules: [
+                          {
+                              pricing_plan: "standard",
+                              meter: "input_tokens",
+                              unit: "token",
+                              unit_size: 1,
+                              price_per_unit: "0",
+                              currency: "USD",
+                              match: [],
+                              priority: 100,
+                          },
+                      ],
+                  },
+              }
+            : {}),
+        ...(args.pricing === "paid"
+            ? {
+                  pricingCard: {
+                      provider: args.providerId,
+                      model: args.apiModelId ?? "test/model",
+                      endpoint: "responses",
+                      effective_from: null,
+                      effective_to: null,
+                      currency: "USD",
+                      version: null,
+                      rules: [
+                          {
+                              pricing_plan: "standard",
+                              meter: "input_tokens",
+                              unit: "token",
+                              unit_size: 1,
+                              price_per_unit: "0.000001",
+                              currency: "USD",
+                              match: [],
+                              priority: 100,
+                          },
+                      ],
+                  },
+              }
+            : {}),
         providerModelSlug: null,
+        dataPolicyTier: args.dataPolicyTier ?? null,
+        dataPolicyConfidence: args.dataPolicyConfidence ?? null,
     } as any;
 }
 
 describe("applyWorkspacePolicy", () => {
+	it("treats an explicit empty provider allowlist as deny all", () => {
+		const result = applyWorkspacePolicy({
+			providers: [
+				candidate({ providerId: "openai", apiModelId: "openai/gpt-5" }),
+			],
+			resolvedModel: "openai/gpt-5",
+			body: {},
+			workspacePolicy: {
+				providerAllowlist: [],
+				providerBlocklist: null,
+				allowedApiModels: null,
+				blockedApiModels: null,
+				promptInjectionAction: null,
+				promptInjectionGuardrailIds: [],
+				sensitiveInfoRules: [],
+				sensitiveInfoGuardrailIds: [],
+				enforceAllowed: true,
+				activeGuardrailIds: [],
+			},
+		});
+
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.reason).toBe("no_providers");
+		expect(result.diagnostics.providerAllowlist).toEqual([]);
+		expect(result.diagnostics.afterCount).toBe(0);
+	});
+
+	it("filters providers that log prompts when input/output logging is disabled", () => {
+		const result = applyWorkspacePolicy({
+			providers: [
+				candidate({
+					providerId: "logs-provider",
+					apiModelId: "test/model",
+					dataPolicyTier: "logs",
+					dataPolicyConfidence: "maybe",
+				}),
+				candidate({
+					providerId: "private-provider",
+					apiModelId: "test/model",
+					dataPolicyTier: "private",
+					dataPolicyConfidence: "confirmed",
+				}),
+			],
+			resolvedModel: "test/model",
+			body: {},
+			workspacePolicy: null,
+			teamSettings: {
+				routingMode: null,
+				byokFallbackEnabled: null,
+				betaChannelEnabled: false,
+				privacyEnableInputOutputLogging: false,
+				privacyEnablePaidMayTrain: true,
+				privacyEnableFreeMayTrain: true,
+				privacyZdrOnly: false,
+				billingMode: "wallet",
+			},
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.providers.map((provider) => provider.providerId)).toEqual([
+			"private-provider",
+		]);
+		expect(result.diagnostics.droppedByPrivacy).toEqual([
+			{
+				providerId: "logs-provider",
+				reason: "input_output_logging_disabled",
+				dataPolicyTier: "logs",
+				dataPolicyConfidence: "maybe",
+				routeCostKind: "unknown",
+			},
+		]);
+	});
+
+	it("filters paid training providers when paid may-train is disabled", () => {
+		const result = applyWorkspacePolicy({
+			providers: [
+				candidate({
+					providerId: "trains-paid",
+					apiModelId: "test/model",
+					dataPolicyTier: "trains",
+					pricing: "paid",
+				}),
+				candidate({
+					providerId: "trains-free",
+					apiModelId: "test/model",
+					dataPolicyTier: "trains",
+					pricing: "free",
+				}),
+			],
+			resolvedModel: "test/model",
+			body: {},
+			workspacePolicy: null,
+			teamSettings: {
+				routingMode: null,
+				byokFallbackEnabled: null,
+				betaChannelEnabled: false,
+				privacyEnableInputOutputLogging: true,
+				privacyEnablePaidMayTrain: false,
+				privacyEnableFreeMayTrain: true,
+				privacyZdrOnly: false,
+				billingMode: "wallet",
+			},
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.providers.map((provider) => provider.providerId)).toEqual([
+			"trains-free",
+		]);
+		expect(result.diagnostics.droppedByPrivacy[0]).toMatchObject({
+			providerId: "trains-paid",
+			reason: "paid_training_disabled",
+			routeCostKind: "paid",
+		});
+	});
+
     it("filters ai-stats/free providers by concrete allowed model ids", () => {
         const result = applyWorkspacePolicy({
             providers: [

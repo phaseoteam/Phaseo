@@ -22,6 +22,10 @@ import { readHealthMany, ProviderHealth } from "./health";
 import { stripPrioritySuffix } from "./utils";
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import {
+	extractRoutingPreferenceScalar,
+	getEffectiveRoutingHints,
+} from "../requestRouting";
+import {
     readStickyRouting,
     resolveStickyRoutingContext,
     stickyRoutingCacheBoostMultiplier,
@@ -29,7 +33,7 @@ import {
     type StickyRoutingEntry,
 } from "./sticky-routing";
 
-type Priority = "default" | "fast" | "quick" | "nitro";
+type Priority = "default" | "fast" | "nitro" | "cheap";
 type RoutingMode = "balanced" | "price" | "latency" | "throughput";
 type ProviderStatus = ProviderRolloutStatus;
 type CapabilityStatus = CapabilityRoutingStatus;
@@ -48,9 +52,9 @@ type RoutingPreset = {
 const PRESETS: Record<Priority, RoutingPreset> = {
     default: { wSucc: 0.35, wP50: 0.35, wTail: 0.15, wTPS: 0.10, wLoad: 0.05, wPrice: 0.0, noise: 0.02, L0: 800 },
     fast: { wSucc: 0.30, wP50: 0.50, wTail: 0.15, wTPS: 0.03, wLoad: 0.02, wPrice: 0.0, noise: 0.005, L0: 600 },
-    quick: { wSucc: 0.25, wP50: 0.45, wTail: 0.20, wTPS: 0.08, wLoad: 0.02, wPrice: 0.0, noise: 0.015, L0: 500 },
     // Nitro mode prioritizes peak throughput (TPS) over latency/cost.
     nitro: { wSucc: 0.24, wP50: 0.10, wTail: 0.06, wTPS: 0.55, wLoad: 0.05, wPrice: 0.0, noise: 0.001, L0: 500 },
+    cheap: { wSucc: 0.25, wP50: 0.15, wTail: 0.10, wTPS: 0.05, wLoad: 0.05, wPrice: 0.40, noise: 0.001, L0: 700 },
 };
 
 const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "chat.completions", "messages"]);
@@ -66,25 +70,6 @@ function normalizeRoutingMode(value?: string | null): RoutingMode {
     if (mode === "throughput") return "throughput";
     if (mode === "tps") return "throughput";
     return "balanced";
-}
-
-function resolveRequestedRoutingMode(body: any): string | null {
-    const providerSort = body?.provider?.sort;
-    if (typeof providerSort === "string") {
-        return providerSort;
-    }
-    if (providerSort && typeof providerSort === "object") {
-        const nestedMode =
-            typeof providerSort.mode === "string"
-                ? providerSort.mode
-                : typeof providerSort.metric === "string"
-                    ? providerSort.metric
-                    : typeof providerSort.by === "string"
-                        ? providerSort.by
-                        : null;
-        if (nestedMode) return nestedMode;
-    }
-    return null;
 }
 
 function normalizeProviderStatus(value?: string | null): ProviderStatus {
@@ -149,13 +134,20 @@ function parsePriority(model: string): { base: string; priority: Priority; stric
     if (lower.endsWith(":nitro")) {
         return { base: stripPrioritySuffix(model), priority: "nitro", strict: true };
     }
+    if (lower.endsWith(":cheap")) {
+        return { base: stripPrioritySuffix(model), priority: "cheap", strict: true };
+    }
     if (lower.endsWith(":fast")) {
         return { base: stripPrioritySuffix(model), priority: "fast", strict: true };
     }
-    if (lower.endsWith(":quick")) {
-        return { base: stripPrioritySuffix(model), priority: "quick", strict: true };
-    }
     return { base: stripPrioritySuffix(model), priority: "default", strict: false };
+}
+
+function priorityDefaultRoutingMode(priority: Priority): RoutingMode | null {
+	if (priority === "cheap") return "price";
+	if (priority === "nitro") return "throughput";
+	if (priority === "fast") return "latency";
+	return null;
 }
 
 function normalise(v: number, min: number, max: number) {
@@ -281,6 +273,147 @@ function computePriceScores(
     return scores;
 }
 
+function computePriceCosts(
+    endpoint: Endpoint,
+    candidates: ProviderCandidate[],
+): Map<string, number | null> {
+    const meterMaps = candidates.map((candidate) => extractMeterPrices(candidate.pricingCard ?? null));
+    const selectedMeters = pickPriceMeters(endpoint, meterMaps);
+    const costs = new Map<string, number | null>();
+    if (!selectedMeters.length) {
+        for (const candidate of candidates) {
+            costs.set(getRoutingCandidateKey(candidate), null);
+        }
+        return costs;
+    }
+
+    candidates.forEach((candidate, index) => {
+        const meters = meterMaps[index];
+        let cost = 0;
+        for (const meter of selectedMeters) {
+            const value = meters.get(meter);
+            if (value === undefined || !Number.isFinite(value)) {
+                costs.set(getRoutingCandidateKey(candidate), null);
+                return;
+            }
+            cost += value;
+        }
+        costs.set(getRoutingCandidateKey(candidate), cost);
+    });
+    return costs;
+}
+
+function computeInverseSquarePriceWeights(
+    endpoint: Endpoint,
+    candidates: ProviderCandidate[],
+): Map<string, number> {
+    const costs = computePriceCosts(endpoint, candidates);
+    const finiteCosts = Array.from(costs.values()).filter(
+        (value): value is number => typeof value === "number" && Number.isFinite(value),
+    );
+    if (!finiteCosts.length) {
+        return new Map(candidates.map((candidate) => [getRoutingCandidateKey(candidate), 0.5]));
+    }
+
+    const positiveCosts = finiteCosts.filter((value) => value > 0);
+    const freeCostFloor = positiveCosts.length ? Math.min(...positiveCosts) / 10 : 1;
+    const rawWeights = new Map<string, number>();
+    for (const candidate of candidates) {
+        const key = getRoutingCandidateKey(candidate);
+        const cost = costs.get(key);
+        if (cost === null || cost === undefined) {
+            rawWeights.set(key, 0);
+            continue;
+        }
+        const safeCost = cost > 0 ? cost : freeCostFloor;
+        rawWeights.set(key, 1 / Math.pow(safeCost, 2));
+    }
+
+    const maxWeight = Math.max(...Array.from(rawWeights.values()), 0);
+    if (maxWeight <= 0) {
+        return new Map(candidates.map((candidate) => [getRoutingCandidateKey(candidate), 0.5]));
+    }
+    return new Map(
+        candidates.map((candidate) => {
+            const key = getRoutingCandidateKey(candidate);
+            return [key, (rawWeights.get(key) ?? 0) / maxWeight];
+        }),
+    );
+}
+
+function readPriceCapNumber(value: unknown): number | null {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string") {
+		const parsed = Number(value);
+		return Number.isFinite(parsed) ? parsed : null;
+	}
+	return null;
+}
+
+function priceCapMetersForField(field: string): string[] {
+	if (field === "prompt") {
+		return ["input_text_tokens", "input_tokens", "embedding_tokens"];
+	}
+	if (field === "completion") {
+		return ["output_text_tokens", "output_tokens", "output_reasoning_tokens"];
+	}
+	if (field === "image") {
+		return ["output_image", "output_image_tokens"];
+	}
+	if (field === "audio") {
+		return ["input_audio_minutes", "input_audio_tokens", "output_audio_tokens"];
+	}
+	if (field === "request") {
+		return ["requests"];
+	}
+	return [];
+}
+
+function candidateMatchesPriceCaps(candidate: ProviderCandidate, maxPrice: Record<string, any> | null): boolean {
+	if (!maxPrice || !candidate.pricingCard) return maxPrice == null;
+	const prices = extractMeterPrices(candidate.pricingCard);
+	for (const [field, rawCap] of Object.entries(maxPrice)) {
+		const cap = readPriceCapNumber(rawCap);
+		if (cap === null) continue;
+		const meters = priceCapMetersForField(field);
+		if (meters.length === 0) continue;
+		const matchingPrices = meters
+			.map((meter) => prices.get(meter))
+			.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+		if (matchingPrices.length === 0) {
+			return false;
+		}
+		if (Math.min(...matchingPrices) > cap) {
+			return false;
+		}
+	}
+	return true;
+}
+
+function preferenceMultiplierForLatency(latencyMs: number, maxLatencySeconds: number | null): number {
+	if (!Number.isFinite(latencyMs) || maxLatencySeconds === null || maxLatencySeconds <= 0) {
+		return 1;
+	}
+	const thresholdMs = maxLatencySeconds * 1000;
+	if (latencyMs <= thresholdMs) {
+		const headroom = thresholdMs <= 0 ? 0 : (thresholdMs - latencyMs) / thresholdMs;
+		return 1 + Math.min(0.2, headroom * 0.2);
+	}
+	const overflow = (latencyMs - thresholdMs) / thresholdMs;
+	return Math.max(0.35, 1 - Math.min(0.65, overflow * 0.5));
+}
+
+function preferenceMultiplierForThroughput(tps: number, minThroughput: number | null): number {
+	if (!Number.isFinite(tps) || minThroughput === null || minThroughput <= 0) {
+		return 1;
+	}
+	if (tps >= minThroughput) {
+		return 1 + Math.min(0.2, ((tps - minThroughput) / minThroughput) * 0.1);
+	}
+	const deficit = (minThroughput - tps) / minThroughput;
+	return Math.max(0.35, 1 - Math.min(0.65, deficit * 0.5));
+}
+
 function shouldApplyStickyRoutingBoost(
     candidate: ProviderCandidate,
     stickyHint: StickyRoutingEntry
@@ -311,7 +444,7 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "residency_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "residency_gate" | "pricing_cap_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -327,6 +460,18 @@ export type RoutingDiagnostics = {
     endpoint: Endpoint;
     priority: Priority;
     routingMode: RoutingMode;
+    requestedRouting: {
+        requestedMode: string | null;
+        allowFallbacks: boolean;
+        requireParameters: boolean;
+        returnDiagnostics: boolean;
+        requiredExecutionRegion: string | null;
+        requiredDataRegion: string | null;
+        requireZeroDataRetention: boolean | null;
+        maxPrice: Record<string, any> | null;
+        preferredMinThroughput: number | Record<string, any> | null;
+        preferredMaxLatency: number | Record<string, any> | null;
+    };
     strictPriority: boolean;
     testingMode: boolean;
     includeAlpha: boolean;
@@ -372,6 +517,8 @@ export type RoutingDiagnostics = {
             rolloutMultiplier: number;
             routingMultiplier: number;
             cacheBoostMultiplier: number;
+            latencyPreferenceMultiplier: number;
+            throughputPreferenceMultiplier: number;
         };
     }>;
     finalCandidateCount: number;
@@ -528,14 +675,17 @@ export async function routeProviders(
 ): Promise<{ ranked: RoutedCandidate[]; diagnostics: RoutingDiagnostics }> {
     const debugEnabled = Boolean(ctx.meta?.debug?.enabled);
     const { base, priority, strict } = parsePriority(ctx.model);
-    const requestedRoutingMode = resolveRequestedRoutingMode(ctx.body);
+    const routingHints = getEffectiveRoutingHints(ctx.body);
+    const requestedRoutingMode = routingHints.requestedMode;
     const requestedServiceTier = normalizeRequestedServiceTier(ctx.body);
+    const suffixRoutingMode = priorityDefaultRoutingMode(priority);
     const mode = normalizeRoutingMode(
-        ctx.routingMode ?? requestedRoutingMode,
+        requestedRoutingMode ?? suffixRoutingMode ?? ctx.routingMode,
     );
     const deterministicRequestSort = Boolean(requestedRoutingMode);
     const preset = applyRoutingMode(PRESETS[priority], mode);
-    const hints = (ctx.body?.provider ?? {}) as {
+    const hints = routingHints.merged as {
+        mode?: string | null;
         order?: string[];
         only?: string[];
         ignore?: string[];
@@ -560,12 +710,18 @@ export async function routeProviders(
         providerIds: normalizeProviderList(hints.order ?? []),
         tier: requestedServiceTier,
     });
-    const requiredExecutionRegion =
-        hints.requiredExecutionRegion ?? hints.required_execution_region ?? null;
-    const requiredDataRegion =
-        hints.requiredDataRegion ?? hints.required_data_region ?? null;
-    const requireZeroDataRetention =
-        hints.requireZeroDataRetention ?? hints.require_zero_data_retention ?? null;
+    const requiredExecutionRegion = routingHints.requiredExecutionRegion;
+    const requiredDataRegion = routingHints.requiredDataRegion;
+    const requireZeroDataRetention = routingHints.requireZeroDataRetention;
+    const preferredMinThroughputValue = routingHints.preferredMinThroughput;
+    const preferredMaxLatencyValue = routingHints.preferredMaxLatency;
+    const preferredMinThroughput = extractRoutingPreferenceScalar(
+        preferredMinThroughputValue,
+    );
+    const preferredMaxLatency = extractRoutingPreferenceScalar(
+        preferredMaxLatencyValue,
+    );
+    const maxPrice = routingHints.maxPrice;
     const explicitlySelectedProviders = new Set([
         ...onlyHints,
         ...orderedHints,
@@ -632,6 +788,18 @@ export async function routeProviders(
         endpoint: ctx.endpoint,
         priority,
         routingMode: mode,
+        requestedRouting: {
+            requestedMode: requestedRoutingMode,
+            allowFallbacks: routingHints.allowFallbacks,
+            requireParameters: routingHints.requireParameters,
+            returnDiagnostics: routingHints.returnDiagnostics,
+            requiredExecutionRegion,
+            requiredDataRegion,
+            requireZeroDataRetention,
+            maxPrice,
+            preferredMinThroughput: preferredMinThroughputValue,
+            preferredMaxLatency: preferredMaxLatencyValue,
+        },
         strictPriority: strict,
         testingMode,
         includeAlpha,
@@ -835,6 +1003,17 @@ export async function routeProviders(
         return result.reason ?? "residency_requirement_failed";
     });
 
+    if (maxPrice) {
+        const beforePricingCapGate = poolCandidates;
+        poolCandidates = poolCandidates.filter((candidate) =>
+            candidateMatchesPriceCaps(candidate, maxPrice),
+        );
+        pushStage("pricing_cap_gate", beforePricingCapGate, poolCandidates, (candidate) => {
+            if (!candidate.pricingCard) return "pricing_unavailable_for_max_price_filter";
+            return "exceeds_max_price";
+        });
+    }
+
     if (!poolCandidates.length) {
         const diagnostics = buildDiagnostics(0);
         console.warn("[gateway] provider pool empty", {
@@ -864,20 +1043,22 @@ export async function routeProviders(
     }));
 
     const now = Date.now();
-    const viable = healths.filter(x => !(x.h.breaker === "open" && (x.h.breaker_until_ms ?? 0) > now));
-    const pool = viable.length ? viable : healths;
-    if (viable.length !== healths.length) {
+    const isRecentOutage = (entry: { h: ProviderHealth }) =>
+        entry.h.breaker === "open" && (entry.h.breaker_until_ms ?? 0) > now;
+    const recentOutageCount = healths.filter(isRecentOutage).length;
+    const pool = healths;
+    if (recentOutageCount > 0) {
         filterStages.push({
             stage: "health_breaker",
             beforeCount: healths.length,
-            afterCount: pool.length,
+            afterCount: healths.length,
             droppedProviders: healths
-                .filter((entry) => entry.h.breaker === "open" && (entry.h.breaker_until_ms ?? 0) > now)
+                .filter(isRecentOutage)
                 .map((entry) => ({
                     providerId: entry.candidate.providerId,
                     apiModelId: entry.candidate.apiModelId ?? null,
                     providerModelSlug: entry.candidate.providerModelSlug ?? null,
-                    reason: "breaker_open",
+                    reason: "breaker_open_deranked",
                 })),
         });
     }
@@ -887,12 +1068,8 @@ export async function routeProviders(
             endpoint: ctx.endpoint,
             candidates: candidates.length,
             poolCandidates: poolCandidates.length,
-            viable: viable.length,
-            openBreakers: healths.filter(
-                (entry) =>
-                    entry.h.breaker === "open" &&
-                    (entry.h.breaker_until_ms ?? 0) > now
-            ).length,
+            viable: healths.length - recentOutageCount,
+            openBreakers: recentOutageCount,
             filterStages,
         });
     }
@@ -906,6 +1083,9 @@ export async function routeProviders(
 
     const rng = seededRandom(hashSeed(`${ctx.requestId ?? ""}:${ctx.workspaceId}:${ctx.model}`));
     const priceScores = preset.wPrice > 0 ? computePriceScores(ctx.endpoint, pool.map((p) => p.candidate)) : new Map();
+    const defaultPriceWeights = mode === "balanced"
+        ? computeInverseSquarePriceWeights(ctx.endpoint, pool.map((p) => p.candidate))
+        : new Map<string, number>();
     const scored = pool.map(v => {
         const h = v.h;
         const weight = v.candidate.baseWeight > 0 ? v.candidate.baseWeight : 1;
@@ -944,21 +1124,39 @@ export async function routeProviders(
         const tailNorm = 1 - normalise(Math.max(h.lat_ewma_300s, h.lat_ewma_60s * 1.6), minTail, maxTail);
         const tpsNorm = maxTPS > 0 ? normalise(h.tp_ewma_60s, minTPS, maxTPS) : 0;
         const loadPen = h.current_load;
-        const priceScore = preset.wPrice > 0 ? (priceScores.get(v.candidate.providerId) ?? 0.5) : 0.5;
+        const candidateKey = getRoutingCandidateKey(v.candidate);
+        const priceScore = mode === "balanced"
+            ? (defaultPriceWeights.get(candidateKey) ?? 0.5)
+            : preset.wPrice > 0
+                ? (priceScores.get(v.candidate.providerId) ?? 0.5)
+                : 0.5;
+        const latencyPreferenceMultiplier = preferenceMultiplierForLatency(
+            h.lat_ewma_60s,
+            preferredMaxLatency,
+        );
+        const throughputPreferenceMultiplier = preferenceMultiplierForThroughput(
+            h.tp_ewma_60s,
+            preferredMinThroughput,
+        );
 
         // Token affinity: prefer providers with limits close to requested max_tokens
         const tokenAffinity = calculateTokenAffinityScore(requestedMaxTokens, v.candidate.maxOutputTokens);
         const tokenWeight = 0.10; // 10% weight for token affinity
 
-        const baseScore =
-            preset.wSucc * succ +
-            preset.wP50 * (0.5 * p50Curve + 0.5 * p50Norm) +
-            preset.wTail * tailNorm +
-            preset.wTPS * tpsNorm -
-            preset.wLoad * loadPen +
-            preset.wPrice * priceScore +
-            tokenWeight * tokenAffinity +
-            preset.noise * rng();
+        const baseScore = mode === "balanced"
+            ? priceScore *
+                Math.max(0.05, succ) *
+                Math.max(0.05, 1 - loadPen) *
+                (0.5 + tokenAffinity)
+            : preset.wSucc * succ +
+                preset.wP50 * (0.5 * p50Curve + 0.5 * p50Norm) +
+                preset.wTail * tailNorm +
+                preset.wTPS * tpsNorm -
+                preset.wLoad * loadPen +
+                preset.wPrice * priceScore +
+                tokenWeight * tokenAffinity +
+                preset.noise * rng();
+        const recentOutageMultiplier = isRecentOutage(v) ? 1e-9 : 1;
 
         const score = Math.max(
             0,
@@ -966,7 +1164,10 @@ export async function routeProviders(
                 Math.max(weight, 0.0001) *
                 rolloutMultiplier *
                 routingStatusMultiplierCombined *
-                cacheRoutingMultiplier
+                cacheRoutingMultiplier *
+                latencyPreferenceMultiplier *
+                throughputPreferenceMultiplier *
+                recentOutageMultiplier
         );
         return {
             candidate: v.candidate,
@@ -995,6 +1196,12 @@ export async function routeProviders(
                     rolloutMultiplier: roundDiagnosticNumber(rolloutMultiplier),
                     routingMultiplier: roundDiagnosticNumber(routingStatusMultiplierCombined),
                     cacheBoostMultiplier: roundDiagnosticNumber(cacheRoutingMultiplier),
+                    latencyPreferenceMultiplier: roundDiagnosticNumber(
+                        latencyPreferenceMultiplier,
+                    ),
+                    throughputPreferenceMultiplier: roundDiagnosticNumber(
+                        throughputPreferenceMultiplier,
+                    ),
                 },
             },
         };

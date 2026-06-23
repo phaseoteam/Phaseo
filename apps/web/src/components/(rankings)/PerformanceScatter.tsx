@@ -18,7 +18,7 @@ import {
 } from "recharts";
 import { Logo } from "@/components/Logo";
 import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
-import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 
 export type PerformanceMode = "throughput" | "latency";
@@ -36,9 +36,9 @@ interface PerformanceScatterProps {
 
 function formatCompact(value: number) {
     if (!Number.isFinite(value)) return "--";
-    if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+    if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
     return value.toLocaleString();
 }
 
@@ -48,9 +48,10 @@ export function PerformanceScatter({
 }: PerformanceScatterProps) {
     if (!data.length) {
         return (
-            <RankingsEmptyState
+            <EmptyChartPreview
                 title="No performance data yet"
                 description="Performance metrics appear once enough requests are aggregated for a model."
+                heightClassName="h-[500px]"
             />
         );
     }
@@ -107,9 +108,10 @@ export function PerformanceScatter({
 
     if (!chartData.length) {
         return (
-            <RankingsEmptyState
+            <EmptyChartPreview
                 title="No performance data yet"
                 description="Performance metrics appear once enough requests are aggregated for a model."
+                heightClassName="h-[500px]"
             />
         );
     }
@@ -169,7 +171,7 @@ export function PerformanceScatter({
                                         {providerHref ? (
                                             <Link
                                                 href={providerHref}
-                                                className="h-8 w-8 rounded-lg border border-border/60 flex items-center justify-center"
+                                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800"
                                                 aria-label={point.providerName}
                                             >
                                                 <div className="relative h-4 w-4">
@@ -182,7 +184,7 @@ export function PerformanceScatter({
                                                 </div>
                                             </Link>
                                         ) : (
-                                            <div className="h-8 w-8 rounded-lg border border-border/60 flex items-center justify-center">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800">
                                                 <div className="relative h-4 w-4">
                                                     <Logo
                                                         id={point.providerId}

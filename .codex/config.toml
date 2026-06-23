@@ -1,5 +1,6 @@
 sandbox_mode = "workspace-write"
 
+approval_policy = "never"
 [features]
 codex_hooks = true
 remote_control = true

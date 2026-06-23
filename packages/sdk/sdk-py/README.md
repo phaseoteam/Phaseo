@@ -34,19 +34,27 @@ from ai_stats import AIStats
 
 client = AIStats()
 
-for chunk in client.stream_text(
+response = ""
+for chunk in client.stream_chat(
     {
         "model": "google/gemma-3-27b:free",
         "messages": [{"role": "user", "content": "Stream hi"}],
     }
 ):
-    print(chunk, end="", flush=True)
+    if chunk.get("text"):
+        response += chunk["text"]
+        print(chunk["text"], end="", flush=True)
+
+    if chunk.get("reasoning_tokens"):
+        print("\nReasoning tokens:", chunk["reasoning_tokens"])
 ```
 
 ## Common methods
 
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
+- `client.messages.create(...)`
+- `client.stream_chat(...)`, `client.stream_responses(...)`, and `client.stream_message(...)` for parsed streaming chunks with `text`, `usage`, and `reasoning_tokens`
 - `client.models.list(...)`
 - `client.list_organisations(...)` for paginated `/organisations` discovery
 - `client.list_pricing_models(...)` for `/pricing/models` catalogue pricing discovery

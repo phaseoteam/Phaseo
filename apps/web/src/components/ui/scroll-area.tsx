@@ -9,9 +9,10 @@ const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
     scrollBarOrientation?: "vertical" | "horizontal" | "both"
+    scrollBarForceMount?: boolean
     viewportClassName?: string
   }
->(({ className, children, scrollBarOrientation = "vertical", viewportClassName, ...props }, ref) => (
+>(({ className, children, scrollBarOrientation = "vertical", scrollBarForceMount = false, viewportClassName, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
@@ -23,10 +24,10 @@ const ScrollArea = React.forwardRef<
       {children}
     </ScrollAreaPrimitive.Viewport>
     {scrollBarOrientation === "vertical" || scrollBarOrientation === "both" ? (
-      <ScrollBar orientation="vertical" />
+      <ScrollBar orientation="vertical" forceMount={scrollBarForceMount || undefined} />
     ) : null}
     {scrollBarOrientation === "horizontal" || scrollBarOrientation === "both" ? (
-      <ScrollBar orientation="horizontal" />
+      <ScrollBar orientation="horizontal" forceMount={scrollBarForceMount || undefined} />
     ) : null}
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>

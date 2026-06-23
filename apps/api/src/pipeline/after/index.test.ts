@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attachGatewaySuccessMeta } from "./index";
+import { attachGatewaySuccessMeta, attachRoutingDiagnosticsToPayload } from "./index";
 
 describe("attachGatewaySuccessMeta", () => {
 	it("adds routing, response-cache, guardrail, and plugin metadata when meta is enabled", () => {
@@ -140,5 +140,48 @@ describe("attachGatewaySuccessMeta", () => {
 				existing: true,
 			},
 		});
+	});
+
+	it("adds top-level routing diagnostics only when explicitly requested", () => {
+		const payload: Record<string, any> = {
+			id: "resp_123",
+		};
+		const ctx = {
+			meta: {
+				returnMeta: true,
+				returnRoutingDiagnostics: true,
+			},
+			routingDiagnostics: {
+				rankedProviders: [{ providerId: "openai", score: 0.99 }],
+			},
+		} as any;
+
+		attachRoutingDiagnosticsToPayload({
+			ctx,
+			payload,
+		});
+
+		expect(payload.routing_diagnostics).toEqual(ctx.routingDiagnostics);
+	});
+
+	it("does not add top-level routing diagnostics for plain meta responses", () => {
+		const payload: Record<string, any> = {
+			id: "resp_123",
+		};
+
+		attachRoutingDiagnosticsToPayload({
+			ctx: {
+				meta: {
+					returnMeta: true,
+					returnRoutingDiagnostics: false,
+				},
+				routingDiagnostics: {
+					rankedProviders: [{ providerId: "openai", score: 0.99 }],
+				},
+			} as any,
+			payload,
+		});
+
+		expect(payload.routing_diagnostics).toBeUndefined();
 	});
 });

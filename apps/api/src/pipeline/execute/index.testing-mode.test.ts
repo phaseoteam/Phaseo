@@ -26,6 +26,10 @@ vi.mock("./providers", () => ({
 
 vi.mock("./health", () => ({
 	admitThroughBreaker: (...args: any[]) => admitThroughBreakerMock(...args),
+	classifyProviderHealthImpact: ({ upstreamStatus }: { upstreamStatus?: number | null } = {}) => {
+		const status = Number(upstreamStatus ?? 0);
+		return status >= 200 && status < 500 ? "neutral" : "failure";
+	},
 	onCallStart: (...args: any[]) => onCallStartMock(...args),
 	onCallEnd: (...args: any[]) => onCallEndMock(...args),
 	maybeOpenOnRecentErrors: (...args: any[]) => maybeOpenOnRecentErrorsMock(...args),
@@ -131,6 +135,17 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate");
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
+		expect(onCallEndMock).toHaveBeenCalledWith(
+			"images.generations",
+			expect.objectContaining({
+				provider: "openai",
+				ok: true,
+				latency_ms: expect.any(Number),
+				generation_ms: 0,
+			}),
+		);
+		expect(ctx.meta.latency_ms).toEqual(expect.any(Number));
+		expect(ctx.meta.generation_ms).toBe(0);
 		expect(ctx.providerAttempts).toEqual([
 			expect.objectContaining({
 				attempt_number: 1,
@@ -698,7 +713,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		});
 	});
 
-	it("tries at most the top three providers when multiple candidates are available", async () => {
+	it("tries all ranked providers when fewer than five candidates are available", async () => {
 		const pricingCard = {
 			provider: "openai",
 			model: "openai/gpt-image-1-mini",
@@ -750,7 +765,74 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executors.first).toHaveBeenCalledTimes(1);
 		expect(executors.second).toHaveBeenCalledTimes(1);
 		expect(executors.third).toHaveBeenCalledTimes(1);
-		expect(executors.fourth).not.toHaveBeenCalled();
+		expect(executors.fourth).toHaveBeenCalledTimes(1);
 		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("tries only the first provider when fallbacks are disabled", async () => {
+		const pricingCard = {
+			provider: "openai",
+			model: "openai/gpt-image-1-mini",
+			endpoint: "image.generate",
+			currency: "USD",
+			rules: [],
+		};
+		const providers = ["first", "second", "third"];
+		const candidates = providers.map((providerId) => ({
+			providerId,
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		}));
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: candidates,
+		});
+		rankProvidersMock.mockResolvedValue(
+			candidates.map((candidate) => ({ candidate, health: {} })),
+		);
+
+		const executors = Object.fromEntries(
+			providers.map((providerId) => [
+				providerId,
+				vi.fn().mockResolvedValue({
+					kind: "completed",
+					ir: {},
+					upstream: new Response(JSON.stringify({ error: `${providerId}_fail` }), { status: 503 }),
+					bill: { cost_cents: 0, currency: "USD" },
+					keySource: "gateway",
+					byokKeyId: null,
+				}),
+			]),
+		) as Record<string, ReturnType<typeof vi.fn>>;
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		const result = await doRequestWithIR(
+			createCtx({
+				testingMode: false,
+				body: {
+					provider: {
+						allow_fallbacks: false,
+					},
+				},
+			}),
+			{
+				model: "openai/gpt-image-1-mini",
+				prompt: "tiny blue square",
+				provider: {
+					allow_fallbacks: false,
+				},
+			} as any,
+			createTiming(),
+		);
+
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(502);
+		expect(executors.first).toHaveBeenCalledTimes(1);
+		expect(executors.second).not.toHaveBeenCalled();
+		expect(executors.third).not.toHaveBeenCalled();
 	});
 });

@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
-import { Suspense } from "react";
-import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
-import { Skeleton } from "@/components/ui/skeleton";
 import { buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
+	getModelSectionPath,
 	getModelMetadataIdentity,
 	resolveModelRouteIds,
 	type ModelRouteParams,
@@ -47,32 +44,6 @@ export async function generateMetadata(props: {
 	});
 }
 
-function PricingInsightsFallback() {
-	return (
-		<div className="space-y-8">
-			<section className="space-y-4">
-				<div className="space-y-2">
-					<Skeleton className="h-6 w-44" />
-					<Skeleton className="h-4 w-full max-w-2xl" />
-				</div>
-				<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-					<Skeleton className="h-[120px]" />
-					<Skeleton className="h-[120px]" />
-				</div>
-				<Skeleton className="h-[280px]" />
-			</section>
-			<section className="space-y-4">
-				<div className="space-y-2">
-					<Skeleton className="h-6 w-40" />
-					<Skeleton className="h-4 w-full max-w-xl" />
-				</div>
-				<Skeleton className="h-9 w-full max-w-md" />
-				<Skeleton className="h-[336px]" />
-			</section>
-		</div>
-	);
-}
-
 export default async function Page({
 	params,
 }: {
@@ -89,15 +60,5 @@ export default async function Page({
 	}
 	const modelId = canonicalModelId;
 
-	return (
-		<ModelDetailShell modelId={modelId} tab="pricing" includeHidden={includeHidden}>
-			<Suspense fallback={<PricingInsightsFallback />}>
-				<ModelPricingInsightsSection
-					modelId={modelId}
-					includeHidden={includeHidden}
-					showPageHeader
-				/>
-			</Suspense>
-		</ModelDetailShell>
-	);
+	permanentRedirect(getModelSectionPath(modelId, "pricing"));
 }

@@ -1,9 +1,8 @@
-import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
-import { ModelProvidersSection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import {
 	getModelPath,
+	getModelSectionPath,
 	getModelMetadataIdentity,
 	resolveModelRouteIds,
 	type ModelRouteParams,
@@ -61,9 +60,5 @@ export default async function Page({
 	}
 	const modelId = canonicalModelId;
 
-	return (
-		<ModelDetailShell modelId={modelId} tab="providers" includeHidden={includeHidden}>
-			<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
-		</ModelDetailShell>
-	);
+	permanentRedirect(getModelSectionPath(modelId, "providers"));
 }

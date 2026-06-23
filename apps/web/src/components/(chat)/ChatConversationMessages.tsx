@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Streamdown } from "streamdown";
 import { Logo } from "@/components/Logo";
 import {
@@ -63,6 +65,7 @@ import {
 } from "lucide-react";
 import {
 	buildModelLink,
+	buildProviderLink,
 	ensureVariants,
 	extractGeneratedAudioUrl,
 	extractGeneratedImageUrl,
@@ -88,6 +91,7 @@ function formatMetric(
 
 type ChatConversationMessagesProps = {
 	activeThread: ChatThread | null;
+	temporaryMode?: boolean;
 	isSending: boolean;
 	lastMessageId: string | null;
 	editingId: string | null;
@@ -100,6 +104,7 @@ type ChatConversationMessagesProps = {
 	modelDisplayNameById: Record<string, string>;
 	modelOrgIdById: Record<string, string>;
 	modelLinkById: Record<string, string>;
+	modelDefaultProviderById: Record<string, { id: string; name: string }>;
 	accentColor: string;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
@@ -107,11 +112,11 @@ type ChatConversationMessagesProps = {
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	onCopy: (text: string) => boolean | Promise<boolean>;
 	requestError?: ChatRequestErrorDetails | null;
-	onDismissRequestError?: () => void;
 };
 
 export function ChatConversationMessages({
 	activeThread,
+	temporaryMode = false,
 	isSending,
 	lastMessageId,
 	editingId,
@@ -124,6 +129,7 @@ export function ChatConversationMessages({
 	modelDisplayNameById,
 	modelOrgIdById,
 	modelLinkById,
+	modelDefaultProviderById = {},
 	accentColor,
 	onEditMessage,
 	onRetryAssistant,
@@ -131,13 +137,10 @@ export function ChatConversationMessages({
 	onSelectVariant,
 	onCopy,
 	requestError = null,
-	onDismissRequestError,
 }: ChatConversationMessagesProps) {
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
-	const [dismissedErrorMessageIds, setDismissedErrorMessageIds] = useState<
-		Set<string>
-	>(() => new Set());
 	const copiedResetTimeoutRef = useRef<number | null>(null);
+	const prefersReducedMotion = useReducedMotion();
 
 	useEffect(() => {
 		return () => {
@@ -243,25 +246,52 @@ export function ChatConversationMessages({
 
 	const messagesContent = useMemo(() => {
 		if (!activeThread?.messages.length) {
+			if (requestError) {
+				return (
+					<ChatRequestErrorNotice
+						error={requestError}
+						threadTitle={activeThread?.title}
+						className="mb-0"
+					/>
+				);
+			}
+
 			return (
-				<div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center">
+				<motion.div
+					key={temporaryMode ? "temporary-empty" : "regular-empty"}
+					layout={!prefersReducedMotion}
+					initial={
+						prefersReducedMotion
+							? false
+							: { opacity: 0, scale: 0.985, y: 8 }
+					}
+					animate={{ opacity: 1, scale: 1, y: 0 }}
+					exit={
+						prefersReducedMotion
+							? { opacity: 0 }
+							: { opacity: 0, scale: 0.985, y: -6 }
+					}
+					transition={{ duration: 0.18, ease: "easeOut" }}
+					className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center"
+				>
 					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
 						<MessageSquare className="h-6 w-6 text-foreground" />
 					</div>
 					<div>
 						<p className="text-base font-semibold">
-							Start a new conversation
+							{temporaryMode ? "Temporary chat" : "Start a new conversation"}
 						</p>
 						<p className="text-sm text-muted-foreground">
-							Pick a model, write your prompt, and run a request
-							through the gateway.
+							{temporaryMode
+								? "Messages in this chat are not saved locally."
+								: "Pick a model, write your prompt, and run a request through the gateway."}
 						</p>
 					</div>
-				</div>
+				</motion.div>
 			);
 		}
 
-		return activeThread.messages.map((message) => {
+		const messageNodes = activeThread.messages.map((message) => {
 			const isUser = message.role === "user";
 			const userCopyKey = `user:${message.id}`;
 			const assistantCopyKey = `assistant:${message.id}`;
@@ -288,15 +318,12 @@ export function ChatConversationMessages({
 						activeMeta.chat_request_error as ChatRequestErrorDetails;
 				} else if (
 					requestError &&
-					lastMessageId === message.id &&
-					!dismissedErrorMessageIds.has(message.id)
+					lastMessageId === message.id
 				) {
 					messageRequestError = requestError;
 				}
 			}
-			const showRequestError =
-				Boolean(messageRequestError) &&
-				!dismissedErrorMessageIds.has(message.id);
+			const showRequestError = Boolean(messageRequestError);
 			const videoUrl = isUser
 				? null
 				: sanitizeHttpMediaUrl(extractGeneratedVideoUrl(content));
@@ -354,19 +381,40 @@ export function ChatConversationMessages({
 			const routingSelectedProvider =
 				(activeMeta?.routing as any)?.selected_provider;
 			let responseProviderId = message.providerId?.trim() || null;
+			let responseProviderIdSource:
+				| "message"
+				| "meta"
+				| "routing"
+				| "fallback"
+				| null = responseProviderId ? "message" : null;
 			if (
 				typeof activeMeta?.provider === "string" &&
 				activeMeta.provider.trim().length > 0
 			) {
 				responseProviderId = activeMeta.provider.trim();
+				responseProviderIdSource = "meta";
 			} else if (
 				typeof routingSelectedProvider === "string" &&
 				routingSelectedProvider.trim().length > 0
 			) {
 				responseProviderId = routingSelectedProvider.trim();
+				responseProviderIdSource = "routing";
+			}
+			const defaultProvider = displayModelId
+				? modelDefaultProviderById[displayModelId]
+				: undefined;
+			if (!responseProviderId || responseProviderId === "auto") {
+				responseProviderId = defaultProvider?.id ?? null;
+				responseProviderIdSource = defaultProvider ? "fallback" : null;
 			}
 			const responseProviderLabel =
-				message.providerName?.trim() || responseProviderId || null;
+				responseProviderIdSource === "fallback"
+					? (defaultProvider?.name ?? responseProviderId ?? null)
+					: responseProviderId
+						? message.providerName?.trim() || responseProviderId
+						: null;
+			const responseProviderLink = buildProviderLink(responseProviderId);
+			const hasProviderLink = responseProviderLink !== "#";
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -391,6 +439,63 @@ export function ChatConversationMessages({
 				isUser && hasAccent
 					? { backgroundColor: accentColor }
 					: undefined;
+
+			if (!isUser && showRequestError && messageRequestError) {
+				return (
+					<div key={message.id} className="flex flex-col items-start">
+						{displayModelId ? (
+							<div className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
+								{hasModelLink ? (
+									<Link
+										href={modelLink}
+										className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
+									>
+										<Logo
+											id={orgId}
+											alt={orgName}
+											width={18}
+											height={18}
+											className="shrink-0 rounded-none"
+										/>
+										<span className="truncate">{modelLabel}</span>
+									</Link>
+								) : (
+									<span className="inline-flex items-center gap-2">
+										<Logo
+											id={orgId}
+											alt={orgName}
+											width={18}
+											height={18}
+											className="shrink-0 rounded-none"
+										/>
+										<span className="truncate">{modelLabel}</span>
+									</span>
+								)}
+								{responseProviderLabel ? (
+									<span className="pl-6 text-[11px] text-muted-foreground/80">
+										via{" "}
+										{hasProviderLink ? (
+											<Link
+												href={responseProviderLink}
+												className="transition-colors hover:text-foreground hover:underline"
+											>
+												{responseProviderLabel}
+											</Link>
+										) : (
+											responseProviderLabel
+										)}
+									</span>
+								) : null}
+							</div>
+						) : null}
+						<ChatRequestErrorNotice
+							error={messageRequestError}
+							threadTitle={activeThread.title}
+							className="mx-0 mb-0 max-w-[85%]"
+						/>
+					</div>
+				);
+			}
 
 			return (
 				<div
@@ -430,7 +535,17 @@ export function ChatConversationMessages({
 							)}
 							{responseProviderLabel ? (
 								<span className="pl-6 text-[11px] text-muted-foreground/80">
-									via {responseProviderLabel}
+									via{" "}
+									{hasProviderLink ? (
+										<Link
+											href={responseProviderLink}
+											className="transition-colors hover:text-foreground hover:underline"
+										>
+											{responseProviderLabel}
+										</Link>
+									) : (
+										responseProviderLabel
+									)}
 								</span>
 							) : null}
 						</div>
@@ -495,12 +610,15 @@ export function ChatConversationMessages({
 									{userImageAttachmentPreviews.length ? (
 										<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 											{userImageAttachmentPreviews.map((attachment) => (
-												<img
+												<Image
 													key={`${message.id}-${attachment.dataUrl}`}
 													src={attachment.dataUrl}
 													alt={attachment.name}
 													className="max-h-[360px] w-auto max-w-full rounded-lg border border-border object-contain"
 													loading="lazy"
+													unoptimized
+													width={1200}
+													height={675}
 												/>
 											))}
 										</div>
@@ -602,35 +720,18 @@ export function ChatConversationMessages({
 									</ReasoningContent>
 									</Reasoning>
 								) : null}
-								{showRequestError && messageRequestError ? (
-									<ChatRequestErrorNotice
-										error={messageRequestError}
-										threadTitle={activeThread.title}
-										className="not-prose"
-										onDismiss={() => {
-											setDismissedErrorMessageIds((current) => {
-												const next = new Set(current);
-												next.add(message.id);
-												return next;
-											});
-											onDismissRequestError?.();
-										}}
-									/>
-								) : !contentWithoutMediaLinks &&
-									messageRequestError ? (
-									<p className="not-prose text-sm text-muted-foreground">
-										Request failed. Use Retry to run this message again.
-									</p>
-								) : null}
 								{!showRequestError && contentWithoutMediaLinks ? (
 									<Streamdown>{contentWithoutMediaLinks}</Streamdown>
 								) : null}
 								{imageUrl ? (
 									<div className="not-prose mt-3 grid gap-2">
-										<img
+										<Image
 											src={imageUrl}
-											alt="Generated image"
+											alt="Generated content preview"
 											className="max-h-[420px] w-auto max-w-full rounded-lg border border-border object-contain"
+											unoptimized
+											width={1200}
+											height={675}
 										/>
 										<Link
 											href={imageUrl}
@@ -964,8 +1065,48 @@ export function ChatConversationMessages({
 				</div>
 			);
 		});
+
+		return (
+			<div className="flex flex-col gap-4">
+				<AnimatePresence initial={false}>
+					{temporaryMode ? (
+						<motion.div
+							key="temporary-chat-notice"
+							layout={!prefersReducedMotion}
+							initial={
+								prefersReducedMotion
+									? { opacity: 0 }
+									: { opacity: 0, y: -8 }
+							}
+							animate={{ opacity: 1, y: 0 }}
+							exit={
+								prefersReducedMotion
+									? { opacity: 0 }
+									: { opacity: 0, y: -8 }
+							}
+							transition={{ duration: 0.18, ease: "easeOut" }}
+							className="rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/30 dark:text-amber-100"
+						>
+							<div className="flex items-start gap-2">
+								<MessageSquare className="mt-0.5 h-4 w-4 shrink-0" />
+								<div>
+									<p className="font-medium">Temporary chat</p>
+									<p className="text-xs text-amber-800/80 dark:text-amber-100/75">
+										This conversation will not be saved in your local chat
+										history.
+									</p>
+								</div>
+							</div>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
+				{messageNodes}
+			</div>
+		);
 	}, [
 		activeThread,
+		temporaryMode,
+		prefersReducedMotion,
 		isSending,
 		lastMessageId,
 		editingId,
@@ -975,11 +1116,9 @@ export function ChatConversationMessages({
 		modelDisplayNameById,
 		modelOrgIdById,
 		modelLinkById,
+		modelDefaultProviderById,
 		accentColor,
-		onCopy,
 		requestError,
-		onDismissRequestError,
-		dismissedErrorMessageIds,
 		handleCopyForMessage,
 		copiedMessageKey,
 		onEditingValueChange,
@@ -993,8 +1132,13 @@ export function ChatConversationMessages({
 		throughputDisplay,
 		costLabel,
 		totalTokens,
+		metadataProviderLabel,
 		onMetadataOpenIdChange,
 	]);
 
-	return <>{messagesContent}</>;
+	return (
+		<AnimatePresence mode="wait" initial={false}>
+			{messagesContent}
+		</AnimatePresence>
+	);
 }

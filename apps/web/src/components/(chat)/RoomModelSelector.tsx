@@ -27,6 +27,12 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Logo } from "@/components/Logo";
+import {
+	buildModalityFacetOptions,
+	normalizeModelSelectorModality,
+	RoomModelSelectorFilters,
+	type ModelFilterState,
+} from "@/components/(chat)/RoomModelSelectorFilters";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { cn } from "@/lib/utils";
 import { CircleCheck, Plus, Star, X } from "lucide-react";
@@ -38,7 +44,10 @@ type ModelOption = {
 	label: string;
 	providerIds: string[];
 	providerNames: string[];
+	providerNameById: Record<string, string>;
 	providerAvailability: Record<string, boolean>;
+	inputModalities: string[];
+	outputModalities: string[];
 	releaseDate: string | null;
 	gatewayStatus: "active" | "inactive";
 };
@@ -53,8 +62,6 @@ type RoomModelSelectorProps = {
 	modelEnabledById?: Record<string, boolean>;
 	onOpenModelSettingsForModel?: (modelId: string) => void;
 };
-
-const NEW_MODEL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 function normalizeSearchText(value: string): string {
 	return value.trim().toLowerCase();
@@ -150,16 +157,6 @@ const getModelBadgeProps = (suffix: string) => {
 	}
 };
 
-const isNewModel = (
-	releaseDate: string | null,
-	nowMs: number | null
-): boolean => {
-	if (!releaseDate || nowMs === null) return false;
-	const releaseMs = Date.parse(releaseDate);
-	if (!Number.isFinite(releaseMs)) return false;
-	return releaseMs >= nowMs - NEW_MODEL_WINDOW_MS;
-};
-
 function formatModelLabel(modelId: string) {
 	const parts = modelId.split("/");
 	return parts.length > 1 ? parts.slice(1).join("/") : modelId;
@@ -185,6 +182,13 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 			model.organisationName ?? model.providerName ?? formatOrgLabel(orgId);
 		const label = model.modelName ?? formatModelLabel(selectorModelId);
 		const releaseDate = model.releaseDate ?? model.announcementDate ?? null;
+		const providerLabel = model.providerName ?? formatOrgLabel(model.providerId);
+		const inputModalities = (model.inputModalities ?? [])
+			.map(normalizeModelSelectorModality)
+			.filter(Boolean);
+		const outputModalities = (model.outputModalities ?? [])
+			.map(normalizeModelSelectorModality)
+			.filter(Boolean);
 
 		if (!existing) {
 			map.set(selectorModelId, {
@@ -193,8 +197,11 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 				orgName,
 				label,
 				providerIds: [model.providerId],
-				providerNames: [model.providerName ?? formatOrgLabel(model.providerId)],
+				providerNames: [providerLabel],
+				providerNameById: { [model.providerId]: providerLabel },
 				providerAvailability: { [model.providerId]: model.isAvailable },
+				inputModalities: Array.from(new Set(inputModalities)),
+				outputModalities: Array.from(new Set(outputModalities)),
 				releaseDate,
 				gatewayStatus: model.isAvailable ? "active" : "inactive",
 			});
@@ -202,12 +209,22 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 			if (!existing.providerIds.includes(model.providerId)) {
 				existing.providerIds.push(model.providerId);
 			}
-			const providerLabel = model.providerName ?? formatOrgLabel(model.providerId);
 			if (!existing.providerNames.includes(providerLabel)) {
 				existing.providerNames.push(providerLabel);
 			}
+			existing.providerNameById[model.providerId] = providerLabel;
 			existing.providerAvailability[model.providerId] =
 				existing.providerAvailability[model.providerId] || model.isAvailable;
+			for (const modality of inputModalities) {
+				if (!existing.inputModalities.includes(modality)) {
+					existing.inputModalities.push(modality);
+				}
+			}
+			for (const modality of outputModalities) {
+				if (!existing.outputModalities.includes(modality)) {
+					existing.outputModalities.push(modality);
+				}
+			}
 			if (!existing.releaseDate && releaseDate) {
 				existing.releaseDate = releaseDate;
 			}
@@ -278,18 +295,17 @@ export function RoomModelSelector({
 	const modelOptions = useMemo(() => buildModelOptions(models), [models]);
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
-	const [nowMs, setNowMs] = useState<number | null>(null);
-	const [quickFilters, setQuickFilters] = useState({
+	const [filters, setFilters] = useState<ModelFilterState>({
+		inputModalities: [],
+		outputModalities: [],
+		providers: [],
 		free: false,
-		new: false,
+		hideUnavailable: true,
 	});
 	const [favoriteModelIdSet, setFavoriteModelIdSet] = useState<Set<string>>(
 		() => new Set(getDefaultFavoriteModelIds()),
 	);
 
-	useEffect(() => {
-		setNowMs(Date.now());
-	}, []);
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 		const availableFavoriteIds = new Set(
@@ -329,21 +345,68 @@ export function RoomModelSelector({
 		}
 	}, [modelOptions.active, modelOptions.comingSoon]);
 
-	const toggleQuickFilter = (key: "free" | "new") => {
-		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
-	};
+	const facetOptions = useMemo(() => {
+		const inputModalities = new Set<string>();
+		const outputModalities = new Set<string>();
+		const providers = new Map<string, string>();
+		for (const option of [...modelOptions.active, ...modelOptions.comingSoon]) {
+			for (const modality of option.inputModalities) {
+				inputModalities.add(modality);
+			}
+			for (const modality of option.outputModalities) {
+				outputModalities.add(modality);
+			}
+			for (const providerId of option.providerIds) {
+				providers.set(
+					providerId,
+					option.providerNameById[providerId] ?? formatOrgLabel(providerId),
+				);
+			}
+		}
+		return {
+			inputModalities: buildModalityFacetOptions(inputModalities),
+			outputModalities: buildModalityFacetOptions(outputModalities),
+			providers: Array.from(providers.entries())
+				.map(([id, label]) => ({ id, label }))
+				.sort((a, b) => a.label.localeCompare(b.label)),
+		};
+	}, [modelOptions.active, modelOptions.comingSoon]);
 
-	const optionMatchesQuickFilters = useCallback(
+	const optionMatchesFilters = useCallback(
 		(option: ModelOption) => {
-			if (quickFilters.free && !option.modelId.endsWith(":free")) {
+			if (filters.free && !option.modelId.endsWith(":free")) {
 				return false;
 			}
-			if (quickFilters.new && !isNewModel(option.releaseDate, nowMs)) {
+			if (
+				filters.inputModalities.length > 0 &&
+				!filters.inputModalities.some((modality) =>
+					option.inputModalities.includes(modality),
+				)
+			) {
+				return false;
+			}
+			if (
+				filters.outputModalities.length > 0 &&
+				!filters.outputModalities.some((modality) =>
+					option.outputModalities.includes(modality),
+				)
+			) {
+				return false;
+			}
+			if (filters.providers.length > 0) {
+				const matchesProvider = filters.providers.some((providerId) => {
+					if (!option.providerIds.includes(providerId)) return false;
+					return filters.hideUnavailable
+						? option.providerAvailability[providerId] === true
+						: true;
+				});
+				if (!matchesProvider) return false;
+			} else if (filters.hideUnavailable && option.gatewayStatus === "inactive") {
 				return false;
 			}
 			return true;
 		},
-		[nowMs, quickFilters.free, quickFilters.new],
+		[filters],
 	);
 
 	const selectedModelPreview = selectedModelIds.slice(0, 5);
@@ -501,12 +564,12 @@ export function RoomModelSelector({
 	};
 
 	const filteredActive = useMemo(
-		() => modelOptions.active.filter(optionMatchesQuickFilters),
-		[modelOptions.active, optionMatchesQuickFilters],
+		() => modelOptions.active.filter(optionMatchesFilters),
+		[modelOptions.active, optionMatchesFilters],
 	);
 	const filteredComingSoonEntries = useMemo(
-		() => modelOptions.comingSoon.filter(optionMatchesQuickFilters),
-		[modelOptions.comingSoon, optionMatchesQuickFilters],
+		() => modelOptions.comingSoon.filter(optionMatchesFilters),
+		[modelOptions.comingSoon, optionMatchesFilters],
 	);
 	const favoriteModelIds = useMemo(
 		() => Array.from(favoriteModelIdSet),
@@ -630,34 +693,11 @@ export function RoomModelSelector({
 						value={searchValue}
 						onValueChange={setSearchValue}
 					/>
-					<div className="flex items-center gap-1 border-b border-border px-3 py-2">
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => toggleQuickFilter("free")}
-							className={cn(
-								"h-7 rounded-md px-2.5 text-xs",
-								quickFilters.free &&
-									"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
-							)}
-						>
-							Free
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => toggleQuickFilter("new")}
-							className={cn(
-								"h-7 rounded-md px-2.5 text-xs",
-								quickFilters.new &&
-									"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
-							)}
-						>
-							New
-						</Button>
-					</div>
+					<RoomModelSelectorFilters
+						facetOptions={facetOptions}
+						filters={filters}
+						setFilters={setFilters}
+					/>
 					<ModelSelectorList className="max-h-[70vh] p-3">
 						<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
 						{hasSearchValue ? (

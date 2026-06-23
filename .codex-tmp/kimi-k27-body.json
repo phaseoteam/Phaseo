@@ -1,0 +1,1 @@
+{"temperature":1,"messages":[{"content":"Return exactly: ok","role":"user"}],"top_p":0.95,"model":"moonshotai/kimi-k2.7-code","max_tokens":32}

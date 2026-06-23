@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { cn } from "@/lib/utils";
+import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { ChevronDown } from "lucide-react";
 import {
@@ -40,7 +41,6 @@ type ModelLeaderboardProps = {
 	showRangeControls?: boolean;
 	title?: string;
 	subtitle?: string;
-	icon?: ReactNode;
 	maxCollapsed?: number;
 	maxExpanded?: number;
 };
@@ -54,9 +54,9 @@ const RANGE_OPTIONS: Array<{ key: LeaderboardRange; label: string }> = [
 
 function formatTokens(value: number) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
+	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
 	return value.toLocaleString();
 }
 
@@ -108,7 +108,6 @@ export function ModelLeaderboard({
 	showRangeControls = true,
 	title,
 	subtitle,
-	icon,
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
@@ -150,10 +149,7 @@ export function ModelLeaderboard({
 				>
 					{title ? (
 						<div className="space-y-0.5">
-							<div className="flex items-center gap-2">
-								{icon}
-								<h3 className="text-xl font-semibold leading-8">{title}</h3>
-							</div>
+							<h3 className="text-xl font-semibold leading-8">{title}</h3>
 							{subtitle ? (
 								<p className="text-sm text-muted-foreground">{subtitle}</p>
 							) : null}
@@ -206,6 +202,10 @@ export function ModelLeaderboard({
 					const organisationHref = getOrganisationHref(entry);
 					const providerHref = getProviderHref(entry);
 					const logoHref = organisationHref ?? providerHref ?? modelHref;
+					const modelName = formatModelDisplayName(
+						entry.model_name,
+						entry.model_id,
+					);
 					return (
 						<div
 							key={entry.key}
@@ -217,15 +217,15 @@ export function ModelLeaderboard({
 							{logoHref ? (
 								<Link
 									href={logoHref}
-									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60"
-									aria-label={entry.organisation_name ?? entry.model_name}
+									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+									aria-label={entry.organisation_name ?? modelName}
 								>
 									<div className="relative h-5 w-5">
 										<Logo
 											id={logoId}
 											alt={
 												entry.organisation_name ??
-												entry.model_name
+												modelName
 											}
 											className="object-contain"
 											fill
@@ -233,13 +233,13 @@ export function ModelLeaderboard({
 									</div>
 								</Link>
 							) : (
-								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60">
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800">
 									<div className="relative h-5 w-5">
 										<Logo
 											id={logoId}
 											alt={
 												entry.organisation_name ??
-												entry.model_name
+												modelName
 											}
 											className="object-contain"
 											fill
@@ -253,11 +253,11 @@ export function ModelLeaderboard({
 										href={modelHref}
 										className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 									>
-										{entry.model_name}
+										{modelName}
 									</Link>
 								) : (
 									<div className="block min-w-0 truncate font-medium">
-										{entry.model_name}
+										{modelName}
 									</div>
 								)}
 								{entry.organisation_name ? (
@@ -319,6 +319,10 @@ export function ModelLeaderboard({
 							const organisationHref = getOrganisationHref(entry);
 							const providerHref = getProviderHref(entry);
 							const logoHref = organisationHref ?? providerHref ?? modelHref;
+							const modelName = formatModelDisplayName(
+								entry.model_name,
+								entry.model_id,
+							);
 							return (
 								<div
 									key={`${entry.key}-extra`}
@@ -330,15 +334,15 @@ export function ModelLeaderboard({
 									{logoHref ? (
 										<Link
 											href={logoHref}
-											className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60"
-											aria-label={entry.organisation_name ?? entry.model_name}
+											className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+											aria-label={entry.organisation_name ?? modelName}
 										>
 											<div className="relative h-5 w-5">
 												<Logo
 													id={logoId}
 													alt={
 														entry.organisation_name ??
-														entry.model_name
+														modelName
 													}
 													className="object-contain"
 													fill
@@ -346,13 +350,13 @@ export function ModelLeaderboard({
 											</div>
 										</Link>
 									) : (
-										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60">
+										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800">
 											<div className="relative h-5 w-5">
 												<Logo
 													id={logoId}
 													alt={
 														entry.organisation_name ??
-														entry.model_name
+														modelName
 													}
 													className="object-contain"
 													fill
@@ -366,11 +370,11 @@ export function ModelLeaderboard({
 												href={modelHref}
 												className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 											>
-												{entry.model_name}
+												{modelName}
 											</Link>
 										) : (
 											<div className="block min-w-0 truncate font-medium">
-												{entry.model_name}
+												{modelName}
 											</div>
 										)}
 										{entry.organisation_name ? (

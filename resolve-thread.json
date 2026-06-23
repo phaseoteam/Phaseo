@@ -1,0 +1,1 @@
+{"query":"mutation { resolveReviewThread(input: {threadId: \"PRRT_kwDOO6YpHM6J2QH5\"}) { thread { id isResolved } } }"}

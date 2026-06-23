@@ -18,7 +18,8 @@ export type TextReasoningEffort =
 	| "low"
 	| "medium"
 	| "high"
-	| "xhigh";
+	| "xhigh"
+	| "max";
 
 export type ProviderProfile = {
 	id: string;
@@ -92,7 +93,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			normalize: {
 				maxTemperature: 1,
 				defaultMaxTokensWhenMissing: 4096,
-				reasoningEffortFallback: ["low", "medium", "high", "xhigh"],
+				reasoningEffortFallback: ["low", "medium", "high", "max"],
 			},
 		},
 	},
@@ -115,6 +116,14 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
+		id: "deepinfra",
+		text: {
+			paramPolicy: {
+				supportedParams: ["service_tier"],
+			},
+		},
+	},
+	{
 		id: "arcee-ai",
 		aliases: ["arcee"],
 		textOnly: true,
@@ -128,11 +137,47 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "featherless",
+		textOnly: true,
+	},
+	{
+		id: "mancer",
+		textOnly: true,
+	},
+	{
 		id: "poolside",
 		textOnly: true,
 	},
 	{
+		id: "avian",
+		textOnly: true,
+	},
+	{
+		id: "baidu",
+		textOnly: true,
+	},
+	{
+		id: "inference-net",
+		textOnly: true,
+	},
+	{
+		id: "perceptron",
+		textOnly: true,
+	},
+	{
+		id: "reka",
+		textOnly: true,
+	},
+	{
+		id: "streamlake",
+		textOnly: true,
+	},
+	{
 		id: "thinking-machines",
+		textOnly: true,
+	},
+	{
+		id: "upstage",
 		textOnly: true,
 	},
 ];

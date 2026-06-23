@@ -4,7 +4,10 @@ import type { SearchParams } from "nuqs/server";
 import { buildMetadata } from "@/lib/seo";
 import ChatPlaygroundShell from "@/components/(chat)/ChatPlaygroundShell";
 import ChatPlayground from "@/components/(chat)/ChatPlayground";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import {
+	fetchFrontendGatewayModelAliases,
+	fetchFrontendGatewayModels,
+} from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
 
 export const metadata: Metadata = buildMetadata({
 	title: "AI Chat Playground: Compare Models Side by Side",
@@ -33,6 +36,7 @@ export default function ChatPlaygroundPage({ searchParams }: ChatPageProps) {
 
 async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
 	const models = await fetchFrontendGatewayModels();
+	const modelAliases = await fetchFrontendGatewayModelAliases(models);
 	const resolvedParams = (await searchParams) ?? {};
 	const modelParamRaw = resolvedParams.model;
 	const promptParamRaw = resolvedParams.prompt;
@@ -46,6 +50,7 @@ async function ChatPlaygroundContent({ searchParams }: ChatPageProps) {
 	return (
 		<ChatPlayground
 			models={models}
+			modelAliases={modelAliases}
 			modelParam={modelParam ?? null}
 			promptParam={promptParam ?? null}
 		/>

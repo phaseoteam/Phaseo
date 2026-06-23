@@ -65,6 +65,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"plugins",
 			"trace",
 			"provider",
+			"routing",
 		]),
 		keyToCanonicalParam: {
 			tools: "tools",
@@ -161,6 +162,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"echo_upstream_request",
 			"debug",
 			"provider",
+			"routing",
 			"stop",
 			"logit_bias",
 			"logprobs",
@@ -235,6 +237,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"echo_upstream_request",
 			"debug",
 			"provider",
+			"routing",
 		]),
 		keyToCanonicalParam: {
 			tools: "tools",

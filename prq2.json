@@ -1,0 +1,1 @@
+{"query":"query { repository(owner:\"AI-Stats\", name:\"AI-Stats\") { pullRequest(number:756) { reviewThreads(first:50) { nodes { id isResolved isOutdated path comments(first:5) { nodes { author { login } body } } } } } } }"}
