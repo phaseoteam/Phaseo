@@ -24,7 +24,7 @@ describe("textNormalizePolicy", () => {
 			"low",
 			"medium",
 			"high",
-			"xhigh",
+			"max",
 		]);
 		expect(fallbackReasoningEfforts("openai", "gpt-5-nano")).toEqual([
 			"minimal",
@@ -62,6 +62,7 @@ describe("textNormalizePolicy", () => {
 
 	it("validates reasoning effort enum values", () => {
 		expect(isReasoningEffort("medium")).toBe(true);
-		expect(isReasoningEffort("max")).toBe(false);
+		expect(isReasoningEffort("max")).toBe(true);
+		expect(isReasoningEffort("ultra")).toBe(false);
 	});
 });

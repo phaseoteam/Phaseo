@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { buildMetadata } from "@/lib/seo";
-import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
-import { ModelActivitySection } from "@/components/(data)/model/overview/ModelOverviewSections";
 import {
 	getModelPath,
+	getModelSectionPath,
 	getModelMetadataIdentity,
 	resolveModelRouteIds,
 	type ModelRouteParams,
@@ -59,9 +58,5 @@ export default async function Page({
 	}
 	const modelId = canonicalModelId;
 
-	return (
-		<ModelDetailShell modelId={modelId} tab="activity" includeHidden={includeHidden}>
-			<ModelActivitySection modelId={modelId} includeHidden={includeHidden} />
-		</ModelDetailShell>
-	);
+	permanentRedirect(getModelSectionPath(modelId, "activity"));
 }

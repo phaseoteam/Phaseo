@@ -1,5 +1,7 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
 import { sendDiscordTextMessage } from "./discord";
+import type { ProviderConfig } from "./providers";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -11,17 +13,6 @@ type RunArgs = {
 	shardCount?: number;
 	notify?: boolean;
 	prune?: boolean;
-};
-
-type ProviderConfig = {
-	providerId: string;
-	providerName: string;
-	modelsEndpoint: string;
-	pathPrefix?: string;
-	modelsPath?: string;
-	baseUrlEnv?: string[];
-	apiKeyEnv?: string[];
-	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
 };
 
 type ProviderChange = {
@@ -128,9 +119,17 @@ const PRICING_KEY_PATTERN = /(price|pricing|cost|billing|currency|rate|meter|uni
 const PRICING_EXTRACTION_MAX_DEPTH = 4;
 const MAX_SAMPLE_TEXT_LENGTH = 180;
 const PROVIDER_ID_ALIASES: Record<string, string> = {
+	"arcee": "arcee-ai",
+	"aionlabs": "aion-labs",
 	"alibaba-cloud": "alibaba",
+	"liquid": "liquid-ai",
+	"moonshot-ai": "moonshotai",
+	"moonshot-ai-turbo": "moonshotai-turbo",
+	"novitaai": "novita",
 	"xai": "x-ai",
 	"atlas-cloud": "atlascloud",
+	"voyageai": "voyage",
+	"zai": "z-ai",
 };
 export function toInt(value: string | undefined, fallback: number): number {
 	const parsed = Number(value ?? "");
@@ -154,7 +153,32 @@ function normalizePathSegment(value: string | undefined): string {
 
 export function resolveProviderModelsEndpoint(provider: ProviderConfig): string {
 	const baseUrlOverride = provider.baseUrlEnv ? readBindingEnv(provider.baseUrlEnv) : null;
-	if (!baseUrlOverride) return provider.modelsEndpoint;
+	if (!baseUrlOverride) {
+		if (!provider.baseUrl) {
+			if (provider.modelsEndpoint) return provider.modelsEndpoint;
+			throw new Error(`${provider.providerId} models endpoint missing`);
+		}
+
+		const parsed = new URL(provider.baseUrl);
+		const basePath = parsed.pathname.replace(/\/+$/, "");
+		const pathPrefix = normalizePathSegment(provider.pathPrefix);
+		const modelsPath = normalizePathSegment(provider.modelsPath ?? "/models");
+		const fullModelsPath = `${pathPrefix}${modelsPath}`;
+
+		if (
+			fullModelsPath &&
+			(basePath === fullModelsPath || basePath.endsWith(fullModelsPath))
+		) {
+			return parsed.toString();
+		}
+		if (pathPrefix && (basePath === pathPrefix || basePath.endsWith(pathPrefix))) {
+			parsed.pathname = `${basePath}${modelsPath}`.replace(/\/{2,}/g, "/");
+			return parsed.toString();
+		}
+
+		parsed.pathname = `${basePath}${fullModelsPath || modelsPath}`.replace(/\/{2,}/g, "/");
+		return parsed.toString();
+	}
 
 	const parsed = new URL(baseUrlOverride);
 	const basePath = parsed.pathname.replace(/\/+$/, "");
@@ -513,6 +537,7 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 	const candidateCollections: unknown[] = [
 		root.data,
 		root.models,
+		root.publisherModels,
 		asRecord(root.result)?.models,
 	];
 
@@ -523,6 +548,18 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 			const row = asRecord(item);
 			if (!row) continue;
 			if (!shouldIncludeDiscoveredModel(providerId, row)) continue;
+			if (providerId === "google-vertex" || providerId === "google-vertex-eu") {
+				const normalized = normalizeGoogleVertexModelId(row);
+				if (!normalized) continue;
+				const modelDetails = normalizeJson(row) as Record<string, unknown>;
+				const pricingDetails = extractPricingDetailsFromValue(modelDetails);
+				output.set(normalized, {
+					id: normalized,
+					modelDetails,
+					pricingDetails,
+				});
+				continue;
+			}
 			const candidates = [row.id, row.model_id, row.name, row.model, row.slug];
 			for (const value of candidates) {
 				if (typeof value !== "string") continue;
@@ -543,11 +580,130 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 	return Array.from(output.values()).sort((a, b) => a.id.localeCompare(b.id));
 }
 
+function normalizeGoogleVertexModelId(row: Record<string, unknown>): string | null {
+	const rawName = typeof row.name === "string" ? row.name.trim() : "";
+	const match = /^publishers\/([^/]+)\/models\/([^/]+)$/i.exec(rawName);
+	if (!match) return null;
+
+	const publisher = match[1]!.toLowerCase();
+	const modelName = match[2]!.trim();
+	if (!modelName) return null;
+
+	const versionId = typeof row.versionId === "string" ? row.versionId.trim() : "";
+	const normalizedVersion = versionId && versionId.toLowerCase() !== "default" ? versionId : "";
+
+	if (publisher === "anthropic") {
+		return normalizedVersion ? `${modelName}@${normalizedVersion}` : modelName;
+	}
+	if (publisher === "google") {
+		return modelName;
+	}
+	return normalizedVersion ? `${publisher}/${modelName}@${normalizedVersion}` : `${publisher}/${modelName}`;
+}
+
+function normalizeProviderResponseErrorDetail(value: unknown): string | null {
+	if (typeof value === "string") {
+		const trimmed = value.trim();
+		return trimmed || null;
+	}
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return String(value);
+	}
+	const record = asRecord(value);
+	if (!record) return null;
+
+	for (const key of ["message", "msg", "detail", "error"]) {
+		const nested = record[key];
+		if (typeof nested === "string") {
+			const trimmed = nested.trim();
+			if (trimmed) return trimmed;
+		}
+		if (typeof nested === "number" && Number.isFinite(nested)) {
+			return String(nested);
+		}
+	}
+
+	return null;
+}
+
+function extractProviderResponseErrorMessage(payload: unknown): string | null {
+	const root = asRecord(payload);
+	if (!root) return null;
+
+	const directError = normalizeProviderResponseErrorDetail(root.error);
+	if (directError) return directError;
+
+	const baseResp = asRecord(root.base_resp) ?? asRecord(root.baseResp);
+	const statusCode = toNullableInteger(
+		root.status_code ?? root.statusCode ?? baseResp?.status_code ?? baseResp?.statusCode
+	);
+	if (statusCode === null || statusCode === 0) return null;
+
+	const message =
+		normalizeProviderResponseErrorDetail(root.message) ??
+		normalizeProviderResponseErrorDetail(root.msg) ??
+		normalizeProviderResponseErrorDetail(root.detail) ??
+		normalizeProviderResponseErrorDetail(baseResp?.message) ??
+		normalizeProviderResponseErrorDetail(baseResp?.msg) ??
+		normalizeProviderResponseErrorDetail(baseResp?.detail);
+
+	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
+}
+
 export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
 	try {
+		if (provider.authStyle === "google_vertex") {
+			if (!apiKey) throw new Error(`${provider.providerId} api key missing`);
+			const accessToken = await resolveVertexAccessToken(apiKey);
+			const publisherUrls = [
+				"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=300",
+				"https://aiplatform.googleapis.com/v1beta1/publishers/anthropic/models?listAllVersions=true&pageSize=300",
+			];
+			const publisherModels = await Promise.all(
+				publisherUrls.map(async (initialUrl) => {
+					const rows: unknown[] = [];
+					let nextUrl: string | null = initialUrl;
+
+					while (nextUrl) {
+						const response = await fetch(nextUrl, {
+							method: "GET",
+							headers: {
+								Authorization: `Bearer ${accessToken}`,
+							},
+							signal: controller.signal,
+						});
+						if (!response.ok) {
+							const body = await response.text().catch(() => "");
+							throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
+						}
+
+						const payload = await response.json();
+						const root = asRecord(payload);
+						rows.push(...asArray(root?.publisherModels));
+
+						const nextPageToken =
+							typeof root?.nextPageToken === "string" ? root.nextPageToken.trim() : "";
+						if (!nextPageToken) {
+							nextUrl = null;
+							continue;
+						}
+
+						const parsed = new URL(nextUrl);
+						parsed.searchParams.set("pageToken", nextPageToken);
+						nextUrl = parsed.toString();
+					}
+
+					return rows;
+				}),
+			);
+			return extractDiscoveredModels(provider.providerId, {
+				publisherModels: publisherModels.flat(),
+			});
+		}
+
 		const headers: Record<string, string> = {};
 		let url = resolveProviderModelsEndpoint(provider);
 
@@ -592,6 +748,10 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 		}
 
 		const payload = await response.json();
+		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+		if (providerResponseErrorMessage) {
+			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+		}
 		return extractDiscoveredModels(provider.providerId, payload);
 	} finally {
 		clearTimeout(timeout);

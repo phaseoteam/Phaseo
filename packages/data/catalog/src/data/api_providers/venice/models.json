@@ -414,7 +414,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "frequency_penalty",
@@ -527,7 +533,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "frequency_penalty",
@@ -766,14 +778,26 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "reasoning_effort",
             "provider_min": null,
             "provider_max": null,
             "provider_default": "low",
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "response_format",
@@ -1726,7 +1750,13 @@
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
-            "notes": null
+            "notes": null,
+            "type": "enum",
+            "values": [
+              "low",
+              "medium",
+              "high"
+            ]
           },
           {
             "param_id": "frequency_penalty",

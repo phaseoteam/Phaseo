@@ -49,7 +49,7 @@ const DEFAULT_ROUTES = [
     "/api-providers",
     "/pricing",
     "/compare",
-    "/api/frontend/search",
+    "/apps",
     "/api/pricing/models",
     "/sitemap.xml",
     "/robots.txt",

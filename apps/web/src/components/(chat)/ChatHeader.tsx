@@ -18,6 +18,16 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -51,20 +61,30 @@ import {
 	MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
 	normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
+import { formatOrgLabel } from "@/components/(chat)/playground/chat-playground-core";
+import {
+	buildModalityFacetOptions,
+	normalizeModelSelectorModality,
+	RoomModelSelectorFilters,
+	type ModelFilterState,
+} from "@/components/(chat)/RoomModelSelectorFilters";
 import { cn } from "@/lib/utils";
 import type { ChatThread, UnifiedChatEndpoint } from "@/lib/indexeddb/chats";
 import {
-	ChevronLeft,
-	ChevronRight,
 	CircleCheck,
-	Cpu,
 	Database,
+	Download,
+	FileJson,
 	MessageCircleDashed,
 	Paintbrush,
+	PanelLeftClose,
+	PanelLeftOpen,
 	Plus,
 	Settings,
 	Shield,
 	Star,
+	Trash2,
+	Upload,
 	X,
 } from "lucide-react";
 import {
@@ -79,8 +99,11 @@ type ModelOption = {
 	orgName: string;
 	label: string;
 	capabilityEndpoints: UnifiedChatEndpoint[];
+	inputModalities: string[];
+	outputModalities: string[];
 	providerIds: string[];
 	providerNames: string[];
+	providerNameById?: Record<string, string>;
 	providerAvailability: Record<string, boolean>;
 	releaseDate: string | null;
 	gatewayStatus: "active" | "inactive";
@@ -142,14 +165,6 @@ const getModelBadgeProps = (suffix: string) => {
 	}
 };
 
-const isNewModel = (releaseDate: string | null): boolean => {
-	if (!releaseDate) return false;
-	const release = new Date(releaseDate);
-	const now = new Date();
-	const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-	return release >= twoWeeksAgo;
-};
-
 type ChatHeaderProps = {
 	activeThread: ChatThread | null;
 	modelOptions: ModelOptions;
@@ -167,6 +182,12 @@ type ChatHeaderProps = {
 	personalization: PersonalizationSettings;
 	onPersonalizationChange: (next: PersonalizationSettings) => void;
 	onExportChats: () => void;
+	onExportCurrentChat: () => void;
+	onImportChats: (file: File) => Promise<{
+		message: string;
+		type: "success" | "error" | "info";
+	}>;
+	onDeleteAllChats: () => Promise<void> | void;
 	isAdmin: boolean;
 	debugEnabled: boolean;
 	onDebugChange: (value: boolean) => void;
@@ -183,10 +204,6 @@ type ChatHeaderProps = {
 	requiredCapability?: UnifiedChatEndpoint | null;
 	requireAudioInput?: boolean;
 };
-
-function formatOrgLabel(orgId: string) {
-	return orgId.replace(/-/g, " ");
-}
 
 function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
@@ -208,6 +225,9 @@ export function ChatHeader({
 	personalization,
 	onPersonalizationChange,
 	onExportChats,
+	onExportCurrentChat,
+	onImportChats,
+	onDeleteAllChats,
 	isAdmin,
 	debugEnabled,
 	onDebugChange,
@@ -229,9 +249,12 @@ export function ChatHeader({
 		"personalization" | "data-controls" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
-	const [quickFilters, setQuickFilters] = useState({
+	const [modelFilters, setModelFilters] = useState<ModelFilterState>({
+		inputModalities: [],
+		outputModalities: [],
+		providers: [],
 		free: false,
-		new: false,
+		hideUnavailable: true,
 	});
 	const [favoriteModelIdSet, setFavoriteModelIdSet] = useState<Set<string>>(
 		() => new Set(getDefaultFavoriteModelIds()),
@@ -240,28 +263,83 @@ export function ChatHeader({
 		message: string;
 		type: "success" | "error" | "info";
 	} | null>(null);
-	const toggleQuickFilter = (key: "free" | "new") => {
-		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
-	};
-	const optionMatchesQuickFilters = useCallback(
+	const [deleteAllOpen, setDeleteAllOpen] = useState(false);
+	const modelFacetOptions = useMemo(() => {
+		const inputModalities = new Set<string>();
+		const outputModalities = new Set<string>();
+		const providers = new Map<string, string>();
+		for (const option of [...modelOptions.active, ...modelOptions.comingSoon]) {
+			for (const modality of option.inputModalities ?? []) {
+				inputModalities.add(normalizeModelSelectorModality(modality));
+			}
+			for (const modality of option.outputModalities ?? []) {
+				outputModalities.add(normalizeModelSelectorModality(modality));
+			}
+			for (const providerId of option.providerIds) {
+				providers.set(
+					providerId,
+					option.providerNameById?.[providerId] ?? formatOrgLabel(providerId),
+				);
+			}
+		}
+		return {
+			inputModalities: buildModalityFacetOptions(inputModalities),
+			outputModalities: buildModalityFacetOptions(outputModalities),
+			providers: Array.from(providers.entries())
+				.map(([id, label]) => ({ id, label }))
+				.sort((a, b) => a.label.localeCompare(b.label)),
+		};
+	}, [modelOptions.active, modelOptions.comingSoon]);
+	const optionMatchesModelFilters = useCallback(
 		(option: ModelOption) => {
-			if (quickFilters.free && !option.modelId.endsWith(":free")) {
+			if (modelFilters.free && !option.modelId.endsWith(":free")) {
 				return false;
 			}
-			if (quickFilters.new && !isNewModel(option.releaseDate)) {
+			if (
+				modelFilters.inputModalities.length > 0 &&
+				!modelFilters.inputModalities.some((modality) =>
+					(option.inputModalities ?? [])
+						.map(normalizeModelSelectorModality)
+						.includes(modality),
+				)
+			) {
+				return false;
+			}
+			if (
+				modelFilters.outputModalities.length > 0 &&
+				!modelFilters.outputModalities.some((modality) =>
+					(option.outputModalities ?? [])
+						.map(normalizeModelSelectorModality)
+						.includes(modality),
+				)
+			) {
+				return false;
+			}
+			if (modelFilters.providers.length > 0) {
+				const matchesProvider = modelFilters.providers.some((providerId) => {
+					if (!option.providerIds.includes(providerId)) return false;
+					return modelFilters.hideUnavailable
+						? option.providerAvailability[providerId] === true
+						: true;
+				});
+				if (!matchesProvider) return false;
+			} else if (
+				modelFilters.hideUnavailable &&
+				option.gatewayStatus === "inactive"
+			) {
 				return false;
 			}
 			return true;
 		},
-		[quickFilters.free, quickFilters.new]
+		[modelFilters]
 	);
 	const filteredActive = useMemo(
-		() => modelOptions.active.filter(optionMatchesQuickFilters),
-		[modelOptions.active, optionMatchesQuickFilters]
+		() => modelOptions.active.filter(optionMatchesModelFilters),
+		[modelOptions.active, optionMatchesModelFilters]
 	);
 	const filteredComingSoonEntries = useMemo(
-		() => modelOptions.comingSoon.filter(optionMatchesQuickFilters),
-		[modelOptions.comingSoon, optionMatchesQuickFilters]
+		() => modelOptions.comingSoon.filter(optionMatchesModelFilters),
+		[modelOptions.comingSoon, optionMatchesModelFilters]
 	);
 	const favoriteModelIds = useMemo(
 		() => Array.from(favoriteModelIdSet),
@@ -314,8 +392,11 @@ export function ChatHeader({
 				byId.set(option.modelId, {
 					...option,
 					capabilityEndpoints: [...option.capabilityEndpoints],
+					inputModalities: [...(option.inputModalities ?? [])],
+					outputModalities: [...(option.outputModalities ?? [])],
 					providerIds: [...option.providerIds],
 					providerNames: [...option.providerNames],
+					providerNameById: { ...(option.providerNameById ?? {}) },
 					providerAvailability: { ...option.providerAvailability },
 				});
 				continue;
@@ -334,6 +415,24 @@ export function ChatHeader({
 				if (!existing.providerNames.includes(providerName)) {
 					existing.providerNames.push(providerName);
 				}
+			}
+			for (const modality of option.inputModalities ?? []) {
+				if (!existing.inputModalities.includes(modality)) {
+					existing.inputModalities.push(modality);
+				}
+			}
+			for (const modality of option.outputModalities ?? []) {
+				if (!existing.outputModalities.includes(modality)) {
+					existing.outputModalities.push(modality);
+				}
+			}
+			for (const [providerId, providerName] of Object.entries(
+				option.providerNameById ?? {},
+			)) {
+				existing.providerNameById = {
+					...(existing.providerNameById ?? {}),
+					[providerId]: providerName,
+				};
 			}
 			for (const [providerId, isAvailable] of Object.entries(
 				option.providerAvailability,
@@ -848,14 +947,17 @@ export function ChatHeader({
 							size="icon"
 							className="group -ml-1"
 							onClick={toggleSidebar}
+							aria-label={
+								sidebarState === "expanded"
+									? "Close sidebar"
+									: "Open sidebar"
+							}
 						>
-							<ChevronRight
-								className={`h-5 w-5 transition-transform duration-200 ${
-									sidebarState === "expanded"
-										? "rotate-180 group-hover:-translate-x-1"
-										: "group-hover:translate-x-1"
-								}`}
-							/>
+							{sidebarState === "expanded" ? (
+								<PanelLeftClose className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+							) : (
+								<PanelLeftOpen className="h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5" />
+							)}
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent
@@ -923,34 +1025,11 @@ export function ChatHeader({
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
 						/>
-						<div className="flex items-center gap-1 border-b border-border px-3 py-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => toggleQuickFilter("free")}
-								className={cn(
-									"h-7 rounded-md px-2.5 text-xs",
-									quickFilters.free &&
-										"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
-								)}
-							>
-								Free
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								onClick={() => toggleQuickFilter("new")}
-								className={cn(
-									"h-7 rounded-md px-2.5 text-xs",
-									quickFilters.new &&
-										"border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background",
-								)}
-							>
-								New
-							</Button>
-						</div>
+						<RoomModelSelectorFilters
+							facetOptions={modelFacetOptions}
+							filters={modelFilters}
+							setFilters={setModelFilters}
+						/>
 						<ModelSelectorList className="max-h-[70vh] p-3">
 							<ModelSelectorEmpty>
 								No models found.
@@ -1018,6 +1097,9 @@ export function ChatHeader({
 							variant={temporaryMode ? "secondary" : "ghost"}
 							size="icon"
 							onClick={onToggleTemporaryMode}
+							aria-label={
+								temporaryMode ? "Disable temporary chat" : "Enable temporary chat"
+							}
 						>
 							<MessageCircleDashed className="h-4 w-4" />
 						</Button>
@@ -1285,8 +1367,31 @@ export function ChatHeader({
 													variant="outline"
 													size="sm"
 													onClick={onExportChats}
+													className="gap-1.5"
 												>
+													<Download className="h-4 w-4" />
 													Export
+												</Button>
+											</div>
+											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
+												<div>
+													<p className="text-sm font-medium text-foreground">
+														Download current chat
+													</p>
+													<p className="text-xs text-muted-foreground">
+														Export this chat and its messages as JSON.
+													</p>
+												</div>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													onClick={onExportCurrentChat}
+													disabled={!activeThread}
+													className="gap-1.5"
+												>
+													<FileJson className="h-4 w-4" />
+													Download
 												</Button>
 											</div>
 											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
@@ -1302,123 +1407,58 @@ export function ChatHeader({
 													type="button"
 													variant="outline"
 													size="sm"
+													className="gap-1.5"
 													onClick={() => {
-														const input = document.createElement('input');
-														input.type = 'file';
-														input.accept = '.json';
+														const input = document.createElement("input");
+														input.type = "file";
+														input.accept = ".json,application/json";
 														input.onchange = async (event) => {
-															const file = (event.target as HTMLInputElement).files?.[0];
+															const file = (event.target as HTMLInputElement)
+																.files?.[0];
 															if (!file) return;
-
-															setImportResult(null); // Clear previous result
-
-															try {
-																const text = await file.text();
-																const data = JSON.parse(text);
-
-																if (!data.chats || !Array.isArray(data.chats)) {
-																	throw new Error("Invalid file format. Expected { chats: [...] }");
-																}
-
-																const { upsertChat } = await import("@/lib/indexeddb/chats");
-																const chats: any[] = data.chats;
-																let importedCount = 0;
-																let skippedCount = 0;
-																const skippedReasons: string[] = [];
-
-																// Validate and import each chat individually
-																for (let i = 0; i < chats.length; i++) {
-																	const chat = chats[i];
-																	let isValid = true;
-																	const reasons: string[] = [];
-
-																	if (!chat.id || typeof chat.id !== 'string') {
-																		isValid = false;
-																		reasons.push('missing or invalid id');
-																	}
-																	if (!chat.title || typeof chat.title !== 'string') {
-																		isValid = false;
-																		reasons.push('missing or invalid title');
-																	}
-																	if (!chat.modelId || typeof chat.modelId !== 'string') {
-																		isValid = false;
-																		reasons.push('missing or invalid modelId');
-																	}
-																	if (!chat.createdAt || typeof chat.createdAt !== 'string') {
-																		isValid = false;
-																		reasons.push('missing or invalid createdAt');
-																	}
-																	if (!chat.updatedAt || typeof chat.updatedAt !== 'string') {
-																		isValid = false;
-																		reasons.push('missing or invalid updatedAt');
-																	}
-																	if (!Array.isArray(chat.messages)) {
-																		isValid = false;
-																		reasons.push('missing or invalid messages array');
-																	}
-																	if (!chat.settings || typeof chat.settings !== 'object') {
-																		isValid = false;
-																		reasons.push('missing or invalid settings');
-																	}
-
-																	if (isValid) {
-																		try {
-																			await upsertChat(chat);
-																			importedCount++;
-																		} catch (error) {
-																			skippedCount++;
-																			skippedReasons.push(`Chat ${i + 1}: Failed to save - ${error instanceof Error ? error.message : 'Unknown error'}`);
-																		}
-																	} else {
-																		skippedCount++;
-																		skippedReasons.push(`Chat ${i + 1}: ${reasons.join(', ')}`);
-																	}
-																}
-
-																if (importedCount > 0) {
-																	setImportResult({
-																		message: `Successfully imported ${importedCount} chats${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`,
-																		type: "success"
-																	});
-																	// Refresh the page to show imported chats
-																	setTimeout(() => window.location.reload(), 1500);
-																} else if (skippedCount > 0) {
-																	setImportResult({
-																		message: `All ${skippedCount} chats were invalid and skipped`,
-																		type: "error"
-																	});
-																} else {
-																	setImportResult({
-																		message: "No chats found in file",
-																		type: "info"
-																	});
-																}
-
-																if (skippedCount > 0) {
-																	console.warn("Skipped chats:", skippedReasons);
-																}
-															} catch (error) {
-																console.error("Import error:", error);
-																setImportResult({
-																	message: `Import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
-																	type: "error"
-																});
-															}
+															setImportResult(null);
+															const result = await onImportChats(file);
+															setImportResult(result);
 														};
 														input.click();
 													}}
 												>
+													<Upload className="h-4 w-4" />
 													Import
 												</Button>
 											</div>
+											<div className="flex items-center justify-between rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-3">
+												<div>
+													<p className="text-sm font-medium text-foreground">
+														Delete all chats
+													</p>
+													<p className="text-xs text-muted-foreground">
+														Remove every locally stored chat from this browser.
+													</p>
+												</div>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+													onClick={() => setDeleteAllOpen(true)}
+												>
+													<Trash2 className="h-4 w-4" />
+													Delete
+												</Button>
+											</div>
 											{importResult && (
-												<div className={`rounded-lg border px-3 py-3 ${
-													importResult.type === 'success' 
-														? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200'
-														: importResult.type === 'error'
-														? 'border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200'
-														: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200'
-												}`}>
+												<div
+													className={cn(
+														"rounded-lg border px-3 py-3",
+														importResult.type === "success" &&
+															"border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
+														importResult.type === "error" &&
+															"border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
+														importResult.type === "info" &&
+															"border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+													)}
+												>
 													<p className="text-sm font-medium">
 														{importResult.message}
 													</p>
@@ -1471,6 +1511,29 @@ export function ChatHeader({
 						</div>
 					</DialogContent>
 				</Dialog>
+				<AlertDialog open={deleteAllOpen} onOpenChange={setDeleteAllOpen}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogTitle>Delete all chats?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This permanently removes every locally stored chat in this
+								browser. Export your chats first if you may need them later.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+								onClick={async () => {
+									await onDeleteAllChats();
+									setDeleteAllOpen(false);
+								}}
+							>
+								Delete all chats
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			</div>
 		</header>
 	);

@@ -1,22 +1,25 @@
 import type {
 	CapabilityRoutingStatus,
+	GateCheck,
 	GatewayContextData,
 	ProviderRolloutStatus,
 	RoutingStatus,
+	TeamEnrichment,
 } from "./types";
 
 const STATIC_TTL_MIN = 300; // 5 minutes
 const STATIC_TTL_MAX = 900; // 15 minutes
 const DYNAMIC_TTL_MIN = 120; // 2 minutes
 const DYNAMIC_TTL_MAX = 600; // 10 minutes
+const CREDIT_TTL_MAX = 7200; // 2 hours
 const BALANCE_TTL_CAP_USD = 250;
 const MIN_TTL_SECONDS = 60; // Cloudflare KV minimum
-const MAX_TTL_SECONDS = 900; // 15 minutes
+const MAX_TTL_SECONDS = 7200; // 2 hours
 
 /**
  * Clamp TTL to valid range for Cloudflare Workers KV
  * Minimum: 60s (KV requirement)
- * Maximum: 900s (15 minutes)
+ * Maximum: 7200s (2 hours)
  */
 export function clampTtl(value: number): number {
 	return Math.max(MIN_TTL_SECONDS, Math.min(MAX_TTL_SECONDS, Math.floor(value)));
@@ -90,6 +93,23 @@ export function computeBalanceAwareTtlSeconds(balanceUsd: number): number {
 }
 
 /**
+ * Credit snapshots are safe to cache longer for high-balance workspaces because
+ * the DB/ledger remains authoritative and low-balance users revalidate quickly.
+ */
+export function computeCreditSnapshotTtlSeconds(balanceUsd: number | null): number {
+	if (balanceUsd === null || !Number.isFinite(balanceUsd) || balanceUsd < 10) return 60;
+	if (balanceUsd < 25) return 120;
+	if (balanceUsd < 100) return 300;
+	if (balanceUsd < 250) return 600;
+	if (balanceUsd < 1000) return 1800;
+	return CREDIT_TTL_MAX;
+}
+
+export function computeCreditSnapshotTtlForContext(context: GatewayContextData): number {
+	return computeCreditSnapshotTtlSeconds(resolveBalanceUsd(context));
+}
+
+/**
  * Compute adaptive TTL for dynamic data (key limits, buckets)
  * Respects Cloudflare KV 60s minimum TTL
  */
@@ -157,20 +177,24 @@ type DynamicContextCacheEntry = Pick<
 	| "workspaceId"
 	| "key"
 	| "keyLimit"
-	| "credit"
-	| "teamEnrichment"
 	| "keyEnrichment"
 	| "teamSettings"
->;
+> & {
+	// Legacy entries included credit in the dynamic context. Keep accepting
+	// them so deploys do not invalidate every hot context at once.
+	credit?: GateCheck;
+	teamEnrichment?: TeamEnrichment | null;
+};
 type StaticContextCacheEntry = Pick<
 	GatewayContextData,
 	"workspaceId" | "resolvedModel" | "preset" | "providers" | "pricing" | "testingMode"
 >;
+type CreditContextCacheEntry = Pick<GatewayContextData, "workspaceId" | "credit" | "teamEnrichment">;
 
 export function isDynamicContextLike(value: unknown): value is DynamicContextCacheEntry {
 	if (!value || typeof value !== "object") return false;
 	const ctx = value as DynamicContextCacheEntry;
-	return Boolean(ctx.workspaceId && ctx.key && ctx.keyLimit && ctx.credit);
+	return Boolean(ctx.workspaceId && ctx.key && ctx.keyLimit);
 }
 
 export function isStaticContextLike(value: unknown): value is StaticContextCacheEntry {
@@ -184,11 +208,22 @@ export function isStaticContextLike(value: unknown): value is StaticContextCache
 	);
 }
 
+export function isCreditContextLike(value: unknown): value is CreditContextCacheEntry {
+	if (!value || typeof value !== "object") return false;
+	const ctx = value as CreditContextCacheEntry;
+	return Boolean(ctx.workspaceId && ctx.credit);
+}
+
 export function mergeCachedContext(args: {
 	dynamic: DynamicContextCacheEntry;
 	static: StaticContextCacheEntry;
+	credit?: CreditContextCacheEntry | null;
 	endpoint: string;
 }): GatewayContextData {
+	const credit = args.credit?.credit ?? args.dynamic.credit;
+	if (!credit) {
+		throw new Error("gateway_context_credit_cache_missing");
+	}
 	return {
 		workspaceId: args.dynamic.workspaceId,
 		endpoint: args.endpoint as any,
@@ -196,10 +231,10 @@ export function mergeCachedContext(args: {
 		preset: args.static.preset ?? null,
 		key: args.dynamic.key,
 		keyLimit: args.dynamic.keyLimit,
-		credit: args.dynamic.credit,
+		credit,
 		providers: args.static.providers ?? [],
 		pricing: args.static.pricing ?? {},
-		teamEnrichment: args.dynamic.teamEnrichment ?? null,
+		teamEnrichment: args.credit?.teamEnrichment ?? args.dynamic.teamEnrichment ?? null,
 		keyEnrichment: args.dynamic.keyEnrichment ?? null,
 		teamSettings: args.dynamic.teamSettings ?? null,
 		testingMode: Boolean(args.static.testingMode),
@@ -209,14 +244,13 @@ export function mergeCachedContext(args: {
 export function splitContextForCache(value: GatewayContextData): {
 	dynamic: DynamicContextCacheEntry;
 	static: StaticContextCacheEntry;
+	credit: CreditContextCacheEntry;
 } {
 	return {
 		dynamic: {
 			workspaceId: value.workspaceId,
 			key: value.key,
 			keyLimit: value.keyLimit,
-			credit: value.credit,
-			teamEnrichment: value.teamEnrichment ?? null,
 			keyEnrichment: value.keyEnrichment ?? null,
 			teamSettings: value.teamSettings ?? null,
 		},
@@ -227,6 +261,11 @@ export function splitContextForCache(value: GatewayContextData): {
 			providers: value.providers ?? [],
 			pricing: value.pricing ?? {},
 			testingMode: Boolean(value.testingMode),
+		},
+		credit: {
+			workspaceId: value.workspaceId,
+			credit: value.credit,
+			teamEnrichment: value.teamEnrichment ?? null,
 		},
 	};
 }

@@ -1,9 +1,11 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
+import type { PriceCard } from "../pricing";
 import type {
 	ProviderCandidate,
 	SensitiveInfoAction,
 	SensitiveInfoRule,
+	TeamSettings,
 	WorkspacePolicy,
 } from "./types";
 
@@ -51,9 +53,24 @@ export type WorkspacePolicyDiagnostics = {
 	resolvedModel: string;
 	allowedApiModels: string[];
 	providerAllowlist: string[];
+	providerAllowlistConfigured: boolean;
 	providerBlocklist: string[];
 	requestProviderOnly: string[];
 	requestProviderIgnore: string[];
+	privacyZdrOnly: boolean;
+	privacyEnablePaidMayTrain: boolean | null;
+	privacyEnableFreeMayTrain: boolean | null;
+	privacyEnableInputOutputLogging: boolean | null;
+	droppedByPrivacy: Array<{
+		providerId: string;
+		reason:
+			| "input_output_logging_disabled"
+			| "paid_training_disabled"
+			| "free_training_disabled";
+		dataPolicyTier: string;
+		dataPolicyConfidence: string;
+		routeCostKind: "free" | "paid" | "unknown";
+	}>;
 	activeGuardrailIds: string[];
 	beforeCount: number;
 	afterCount: number;
@@ -271,11 +288,10 @@ function sensitiveInfoRuleKey(rule: SensitiveInfoRule): string {
 	return `${rule.kind}:${rule.id}`;
 }
 
-function intersectSets(
+function intersectAllowlistSets(
 	current: Set<string> | null,
 	values: string[],
 ): Set<string> | null {
-	if (!values.length) return current;
 	const next = new Set(values);
 	if (!current) return next;
 	return new Set([...current].filter((value) => next.has(value)));
@@ -312,7 +328,7 @@ export function buildWorkspacePolicy(args: {
 		args.globalSettings?.provider_restriction_provider_ids ?? [],
 	);
 	if (globalMode === "allowlist") {
-		providerAllowlist = intersectSets(providerAllowlist, globalProviderIds);
+		providerAllowlist = intersectAllowlistSets(providerAllowlist, globalProviderIds);
 	} else if (globalMode === "blocklist") {
 		for (const providerId of globalProviderIds) {
 			providerBlocklist.add(providerId);
@@ -328,7 +344,7 @@ export function buildWorkspacePolicy(args: {
 			guardrail.provider_restriction_provider_ids ?? [],
 		);
 		if (mode === "allowlist") {
-			providerAllowlist = intersectSets(providerAllowlist, providerIds);
+			providerAllowlist = intersectAllowlistSets(providerAllowlist, providerIds);
 		} else if (mode === "blocklist") {
 			for (const providerId of providerIds) {
 				providerBlocklist.add(providerId);
@@ -338,7 +354,7 @@ export function buildWorkspacePolicy(args: {
 		const modelIds = normalizeStringList(guardrail.allowed_api_model_ids ?? []);
 		const modelMode = normalizeMode(guardrail.model_restriction_mode);
 		if (modelMode === "allowlist") {
-			allowedApiModels = intersectSets(allowedApiModels, modelIds);
+			allowedApiModels = intersectAllowlistSets(allowedApiModels, modelIds);
 		} else if (modelMode === "blocklist") {
 			for (const modelId of modelIds) {
 				blockedApiModels.add(modelId);
@@ -377,15 +393,11 @@ export function buildWorkspacePolicy(args: {
 
 	return {
 		providerAllowlist:
-			providerAllowlist && providerAllowlist.size > 0
-				? [...providerAllowlist]
-				: null,
+			providerAllowlist ? [...providerAllowlist] : null,
 		providerBlocklist:
 			providerBlocklist.size > 0 ? [...providerBlocklist] : null,
 		allowedApiModels:
-			allowedApiModels && allowedApiModels.size > 0
-				? [...allowedApiModels]
-				: null,
+			allowedApiModels ? [...allowedApiModels] : null,
 		blockedApiModels: blockedApiModels.size > 0 ? [...blockedApiModels] : null,
 		promptInjectionAction: null,
 		promptInjectionGuardrailIds: [],
@@ -485,6 +497,7 @@ export function applyWorkspacePolicy(args: {
 	resolvedModel: string;
 	body: any;
 	workspacePolicy: WorkspacePolicy | null;
+	teamSettings?: TeamSettings | null;
 }):
 	| {
 			ok: true;
@@ -502,9 +515,18 @@ export function applyWorkspacePolicy(args: {
 		resolvedModel: args.resolvedModel,
 		allowedApiModels: workspacePolicy?.allowedApiModels ?? [],
 		providerAllowlist: workspacePolicy?.providerAllowlist ?? [],
+		providerAllowlistConfigured: Boolean(workspacePolicy?.providerAllowlist),
 		providerBlocklist: workspacePolicy?.providerBlocklist ?? [],
 		requestProviderOnly: hints.only,
 		requestProviderIgnore: hints.ignore,
+		privacyZdrOnly: Boolean(args.teamSettings?.privacyZdrOnly),
+		privacyEnablePaidMayTrain:
+			args.teamSettings?.privacyEnablePaidMayTrain ?? null,
+		privacyEnableFreeMayTrain:
+			args.teamSettings?.privacyEnableFreeMayTrain ?? null,
+		privacyEnableInputOutputLogging:
+			args.teamSettings?.privacyEnableInputOutputLogging ?? null,
+		droppedByPrivacy: [],
 		activeGuardrailIds: workspacePolicy?.activeGuardrailIds ?? [],
 		beforeCount: args.providers.length,
 		afterCount: args.providers.length,
@@ -512,7 +534,7 @@ export function applyWorkspacePolicy(args: {
 
 	let filtered = [...args.providers];
 
-	if (workspacePolicy?.allowedApiModels?.length) {
+	if (workspacePolicy?.allowedApiModels) {
 		const allowSet = new Set(workspacePolicy.allowedApiModels);
 		if (!allowSet.has(args.resolvedModel)) {
 			filtered = filtered.filter((provider) =>
@@ -544,7 +566,7 @@ export function applyWorkspacePolicy(args: {
 		);
 	}
 
-	if (workspacePolicy?.providerAllowlist?.length) {
+	if (workspacePolicy?.providerAllowlist) {
 		const allowSet = new Set(workspacePolicy.providerAllowlist);
 		filtered = filtered.filter((provider) => allowSet.has(provider.providerId));
 	}
@@ -564,6 +586,12 @@ export function applyWorkspacePolicy(args: {
 		filtered = filtered.filter((provider) => !blockSet.has(provider.providerId));
 	}
 
+	filtered = applyProviderDataPolicySettings({
+		providers: filtered,
+		teamSettings: args.teamSettings ?? null,
+		diagnostics,
+	});
+
 	diagnostics.afterCount = filtered.length;
 	if (!filtered.length) {
 		return {
@@ -578,4 +606,111 @@ export function applyWorkspacePolicy(args: {
 		providers: filtered,
 		diagnostics,
 	};
+}
+
+type ProviderDataPolicyTier = "unknown" | "private" | "logs" | "trains";
+type ProviderDataPolicyConfidence = "unknown" | "confirmed" | "maybe";
+type ProviderRouteCostKind = "free" | "paid" | "unknown";
+
+function normalizeDataPolicyTier(value: unknown): ProviderDataPolicyTier {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "private" || normalized === "logs" || normalized === "trains") {
+		return normalized;
+	}
+	return "unknown";
+}
+
+function normalizeDataPolicyConfidence(value: unknown): ProviderDataPolicyConfidence {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (normalized === "confirmed" || normalized === "maybe") return normalized;
+	return "unknown";
+}
+
+function normalizePromptTrainingPolicy(value: unknown): string {
+	const normalized = String(value ?? "").trim().toLowerCase();
+	if (
+		normalized === "no_train" ||
+		normalized === "may_train" ||
+		normalized === "opt_out_available" ||
+		normalized === "enterprise_no_train"
+	) {
+		return normalized;
+	}
+	return "unknown";
+}
+
+function deriveDataPolicyTier(provider: ProviderCandidate): ProviderDataPolicyTier {
+	const explicitTier = normalizeDataPolicyTier(provider.dataPolicyTier);
+	if (explicitTier !== "unknown") return explicitTier;
+
+	const promptTrainingPolicy = normalizePromptTrainingPolicy(provider.promptTrainingPolicy);
+	if (promptTrainingPolicy === "may_train" || promptTrainingPolicy === "opt_out_available") {
+		return "trains";
+	}
+	if (promptTrainingPolicy === "no_train" || promptTrainingPolicy === "enterprise_no_train") {
+		return provider.zeroDataRetention === "default" ? "private" : "logs";
+	}
+	return "unknown";
+}
+
+function priceRuleIsPositive(rule: PriceCard["rules"][number]): boolean {
+	const raw = Number(rule.price_per_unit);
+	return Number.isFinite(raw) && raw > 0;
+}
+
+function routeCostKind(pricingCard: PriceCard | null | undefined): ProviderRouteCostKind {
+	if (!pricingCard || !Array.isArray(pricingCard.rules) || pricingCard.rules.length === 0) {
+		return "unknown";
+	}
+	return pricingCard.rules.some(priceRuleIsPositive) ? "paid" : "free";
+}
+
+function applyProviderDataPolicySettings(args: {
+	providers: ProviderCandidate[];
+	teamSettings: TeamSettings | null;
+	diagnostics: WorkspacePolicyDiagnostics;
+}): ProviderCandidate[] {
+	const settings = args.teamSettings;
+	if (!settings) return args.providers;
+
+	const allowInputOutputLogging = settings.privacyEnableInputOutputLogging !== false;
+	const allowPaidMayTrain = settings.privacyEnablePaidMayTrain !== false;
+	const allowFreeMayTrain = settings.privacyEnableFreeMayTrain !== false;
+
+	if (allowInputOutputLogging && allowPaidMayTrain && allowFreeMayTrain) {
+		return args.providers;
+	}
+
+	const filtered: ProviderCandidate[] = [];
+	for (const provider of args.providers) {
+		const tier = deriveDataPolicyTier(provider);
+		const confidence = normalizeDataPolicyConfidence(provider.dataPolicyConfidence);
+		const costKind = routeCostKind(provider.pricingCard);
+		let reason: WorkspacePolicyDiagnostics["droppedByPrivacy"][number]["reason"] | null = null;
+
+		if (!allowInputOutputLogging && tier === "logs") {
+			reason = "input_output_logging_disabled";
+		} else if (tier === "trains") {
+			if (costKind === "free" && !allowFreeMayTrain) {
+				reason = "free_training_disabled";
+			} else if ((costKind === "paid" || costKind === "unknown") && !allowPaidMayTrain) {
+				reason = "paid_training_disabled";
+			}
+		}
+
+		if (reason) {
+			args.diagnostics.droppedByPrivacy.push({
+				providerId: provider.providerId,
+				reason,
+				dataPolicyTier: tier,
+				dataPolicyConfidence: confidence,
+				routeCostKind: costKind,
+			});
+			continue;
+		}
+
+		filtered.push(provider);
+	}
+
+	return filtered;
 }

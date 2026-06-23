@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypeAlias, 
 from typing_extensions import NotRequired, TypedDict
 
 import httpx
+import json
 import os
 import time
 import warnings
@@ -28,7 +29,7 @@ class _ChatCompletionsResource:
     def create(self, params: models.ChatCompletionsRequest | ChatCompletionsParams):
         payload = dict(params)
         if payload.get("stream"):
-            return self._parent.stream_text(payload)
+            return self._parent.stream_chat(payload)
         return self._parent.generate_text(payload)
 
 
@@ -44,7 +45,7 @@ class _ResponsesResource:
     def create(self, params: models.ResponsesRequest):
         payload = dict(params)
         if payload.get("stream"):
-            return self._parent.stream_response(payload)
+            return self._parent.stream_responses(payload)
         return self._parent.generate_response(payload)
 
 
@@ -52,10 +53,10 @@ class _MessagesResource:
     def __init__(self, parent: "AIStats"):
         self._parent = parent
 
-    def create(self, params: models.AnthropicMessagesRequest) -> dict[str, Any] | Iterator[str]:
+    def create(self, params: models.AnthropicMessagesRequest) -> dict[str, Any] | Iterator["MessageStreamChunk"]:
         payload = dict(params)
         if payload.get("stream"):
-            return self._parent.stream_messages(payload)
+            return self._parent.stream_message(payload)
         return self._parent.generate_message(payload)
 
 
@@ -272,6 +273,27 @@ class ChatCompletionsParams(TypedDict, total=False):
     top_logprobs: NotRequired[int]
     top_p: NotRequired[Union[float, int]]
     usage: NotRequired[bool]
+
+
+class ChatStreamChunk(TypedDict, total=False):
+    text: str
+    usage: Optional[dict[str, Any]]
+    reasoning_tokens: Optional[int]
+    raw: NotRequired[Any]
+
+
+class ResponseStreamChunk(TypedDict, total=False):
+    text: str
+    usage: Optional[dict[str, Any]]
+    reasoning_tokens: Optional[int]
+    raw: NotRequired[Any]
+
+
+class MessageStreamChunk(TypedDict, total=False):
+    text: str
+    usage: Optional[dict[str, Any]]
+    reasoning_tokens: Optional[int]
+    raw: NotRequired[Any]
 
 
 class VideoInputReference(TypedDict, total=False):
@@ -605,6 +627,12 @@ class AIStats:
             )
             raise
 
+    def stream_chat(self, request: models.ChatCompletionsRequest | ChatCompletionsParams) -> Iterator[ChatStreamChunk]:
+        for line in self.stream_text(request):
+            chunk = _parse_chat_stream_line(line)
+            if chunk is not None:
+                yield chunk
+
     def generate_image(self, request: models.ImagesGenerationRequest) -> dict[str, Any]:
         payload = dict(request)
         self._maybe_warn_for_payload(payload)
@@ -839,6 +867,12 @@ class AIStats:
             )
             raise
 
+    def stream_responses(self, request: models.ResponsesRequest) -> Iterator[ResponseStreamChunk]:
+        for line in self.stream_response(request):
+            chunk = _parse_response_stream_line(line)
+            if chunk is not None:
+                yield chunk
+
     def generate_message(self, request: models.AnthropicMessagesRequest) -> dict[str, Any]:
         payload = dict(request)
         self._maybe_warn_for_payload(payload)
@@ -903,6 +937,12 @@ class AIStats:
                 status_code=status_code,
             )
             raise
+
+    def stream_message(self, request: models.AnthropicMessagesRequest) -> Iterator[MessageStreamChunk]:
+        for line in self.stream_messages(request):
+            chunk = _parse_message_stream_line(line)
+            if chunk is not None:
+                yield chunk
 
     def create_batch(self, request: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         payload = request if isinstance(request, dict) else dict(request)
@@ -1264,6 +1304,137 @@ def _extract_model_id_from_payload(payload: dict[str, Any] | None) -> Optional[s
     return None
 
 
+def _parse_chat_stream_line(line: str) -> Optional[ChatStreamChunk]:
+    parsed = _parse_sse_json(line)
+    if parsed is None:
+        return None
+    if not isinstance(parsed, dict):
+        return {"text": "", "usage": None, "reasoning_tokens": None, "raw": parsed}
+
+    usage = _extract_usage(parsed)
+    parsed["text"] = _extract_chat_stream_text(parsed)
+    parsed["usage"] = usage
+    parsed["reasoning_tokens"] = _extract_reasoning_tokens(usage)
+    return parsed  # type: ignore[return-value]
+
+
+def _parse_response_stream_line(line: str) -> Optional[ResponseStreamChunk]:
+    parsed = _parse_sse_json(line)
+    if parsed is None:
+        return None
+    if not isinstance(parsed, dict):
+        return {"text": "", "usage": None, "reasoning_tokens": None, "raw": parsed}
+
+    usage = _extract_usage(parsed)
+    parsed["text"] = _extract_response_stream_text(parsed)
+    parsed["usage"] = usage
+    parsed["reasoning_tokens"] = _extract_reasoning_tokens(usage)
+    return parsed  # type: ignore[return-value]
+
+
+def _parse_message_stream_line(line: str) -> Optional[MessageStreamChunk]:
+    parsed = _parse_sse_json(line)
+    if parsed is None:
+        return None
+    if not isinstance(parsed, dict):
+        return {"text": "", "usage": None, "reasoning_tokens": None, "raw": parsed}
+
+    usage = _extract_usage(parsed)
+    parsed["text"] = _extract_message_stream_text(parsed)
+    parsed["usage"] = usage
+    parsed["reasoning_tokens"] = _extract_reasoning_tokens(usage)
+    return parsed  # type: ignore[return-value]
+
+
+def _parse_sse_json(line: str) -> Optional[Any]:
+    data = line[5:].strip() if line.startswith("data:") else line.strip()
+    if not data or data == "[DONE]":
+        return None
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError:
+        return data
+
+
+def _extract_chat_stream_text(chunk: dict[str, Any]) -> str:
+    choices = chunk.get("choices")
+    if not isinstance(choices, list):
+        return ""
+    parts: list[str] = []
+    for choice in choices:
+        if not isinstance(choice, dict):
+            continue
+        delta = choice.get("delta")
+        if not isinstance(delta, dict):
+            continue
+        content = delta.get("content")
+        if isinstance(content, str):
+            parts.append(content)
+    return "".join(parts)
+
+
+def _extract_response_stream_text(chunk: dict[str, Any]) -> str:
+    if isinstance(chunk.get("delta"), str):
+        return chunk["delta"]
+    if isinstance(chunk.get("text"), str):
+        return chunk["text"]
+    if isinstance(chunk.get("output_text"), str):
+        return chunk["output_text"]
+    response = chunk.get("response")
+    if isinstance(response, dict) and isinstance(response.get("output_text"), str):
+        return response["output_text"]
+    return ""
+
+
+def _extract_message_stream_text(chunk: dict[str, Any]) -> str:
+    delta = chunk.get("delta")
+    if isinstance(delta, dict) and isinstance(delta.get("text"), str):
+        return delta["text"]
+    if isinstance(chunk.get("text"), str):
+        return chunk["text"]
+    content_block = chunk.get("content_block")
+    if isinstance(content_block, dict) and isinstance(content_block.get("text"), str):
+        return content_block["text"]
+    return ""
+
+
+def _extract_usage(chunk: dict[str, Any]) -> Optional[dict[str, Any]]:
+    usage = chunk.get("usage")
+    if isinstance(usage, dict):
+        return usage
+    response = chunk.get("response")
+    if isinstance(response, dict) and isinstance(response.get("usage"), dict):
+        return response["usage"]
+    message = chunk.get("message")
+    if isinstance(message, dict) and isinstance(message.get("usage"), dict):
+        return message["usage"]
+    return None
+
+
+def _extract_reasoning_tokens(usage: Optional[dict[str, Any]]) -> Optional[int]:
+    if not usage:
+        return None
+
+    for value in (
+        usage.get("reasoningTokens"),
+        usage.get("reasoning_tokens"),
+        _nested_value(usage, "completion_tokens_details", "reasoning_tokens"),
+        _nested_value(usage, "output_tokens_details", "reasoning_tokens"),
+    ):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+        if isinstance(value, float) and value.is_integer():
+            return int(value)
+    return None
+
+
+def _nested_value(data: dict[str, Any], key: str, nested_key: str) -> Any:
+    value = data.get(key)
+    if not isinstance(value, dict):
+        return None
+    return value.get(nested_key)
+
+
 def _to_model_lifecycle_info(model: dict[str, Any], fallback_model_id: str) -> ModelLifecycleInfo:
     lifecycle_obj = model.get("lifecycle")
     lifecycle = lifecycle_obj if isinstance(lifecycle_obj, dict) else {}
@@ -1436,11 +1607,14 @@ __all__ = [
     "AIStatsLogLevel",
     "AIStatsLogger",
     "ChatCompletionsParams",
+    "ChatStreamChunk",
+    "MessageStreamChunk",
     "KnownModelId",
     "MODEL_IDS",
     "ModelLifecycleInfo",
     "ModelIds",
     "ModelId",
+    "ResponseStreamChunk",
     "create_ai_stats_devtools",
     "models",
     "ops",

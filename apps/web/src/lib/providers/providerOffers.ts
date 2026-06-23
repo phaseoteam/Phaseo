@@ -10,6 +10,10 @@ const KNOWN_PROVIDER_LOGO_ID_OVERRIDES = new Map<string, string>([
     ["anthropic-aws", "aws"],
     ["anthropic-aws-us", "aws"],
 ]);
+const REGIONAL_SUFFIX_LABELS = new Map<string, string>([
+    ["-eu", "EU"],
+    ["-us", "US"],
+]);
 
 function toTitleCase(value: string): string {
     return value.replace(/\b([a-z])/g, (match) => match.toUpperCase());
@@ -39,7 +43,20 @@ function normalizeRegionalOfferLabel(
         .filter(Boolean)
         .filter((word) => !normalizedProviderWords.has(word.toLowerCase()));
 
-    return remainingWords.join(" ").trim() || offerLabel.trim();
+    return remainingWords.join(" ").trim();
+}
+
+function inferRegionalOfferLabelFromProviderId(providerId?: string | null): string {
+    const normalizedProviderId = String(providerId ?? "").trim().toLowerCase();
+    if (!normalizedProviderId) return "";
+
+    for (const [suffix, label] of REGIONAL_SUFFIX_LABELS) {
+        if (normalizedProviderId.endsWith(suffix)) {
+            return label;
+        }
+    }
+
+    return "";
 }
 
 export function formatProviderOfferDisplayName(args: {
@@ -52,13 +69,25 @@ export function formatProviderOfferDisplayName(args: {
         providerId: args.providerId,
         providerName: args.providerName,
     });
-    const offerLabel = String(args.offerLabel ?? "").trim();
+    const explicitOfferLabel = String(args.offerLabel ?? "").trim();
     const offerScope = args.offerScope ?? null;
+    const hasRegionalProviderId = REGIONAL_SUFFIXES.some((suffix) =>
+        String(args.providerId ?? "").trim().toLowerCase().endsWith(suffix),
+    );
+    const inferredRegionalLabel =
+        offerScope === "regional" || hasRegionalProviderId
+            ? inferRegionalOfferLabelFromProviderId(args.providerId)
+            : "";
+    const offerLabel = explicitOfferLabel || inferredRegionalLabel;
+    const effectiveOfferScope =
+        inferredRegionalLabel && hasRegionalProviderId
+            ? "regional"
+            : offerScope ?? null;
 
     if (!providerName) return "";
     if (!offerLabel) return providerName;
-    if (offerScope === "global") return providerName;
-    if (offerScope === "regional") {
+    if (effectiveOfferScope === "global") return providerName;
+    if (effectiveOfferScope === "regional") {
         const regionalLabel = normalizeRegionalOfferLabel(providerName, offerLabel);
         return regionalLabel ? `${providerName} (${regionalLabel})` : providerName;
     }
@@ -146,7 +175,12 @@ export function resolveProviderLogoId(args: {
     const providerOverride = KNOWN_PROVIDER_LOGO_ID_OVERRIDES.get(providerId);
     if (providerOverride) return providerOverride;
     const providerFamilyId = String(args.providerFamilyId ?? "").trim();
-    if (providerFamilyId) return providerFamilyId;
+    if (providerFamilyId && providerFamilyId !== providerId) return providerFamilyId;
+    for (const suffix of REGIONAL_SUFFIXES) {
+        if (providerId.endsWith(suffix)) {
+            return providerId.slice(0, -suffix.length);
+        }
+    }
     return args.providerId;
 }
 

@@ -31,7 +31,8 @@ export const REASONING_OPTIONS: Array<{
 	{ value: "low", label: "Low" },
 	{ value: "medium", label: "Medium" },
 	{ value: "high", label: "High" },
-	{ value: "xhigh", label: "Extra High" },
+	{ value: "xhigh", label: "xHigh" },
+	{ value: "max", label: "Max" },
 ];
 
 export type InlineAttachmentPreview = {
@@ -127,6 +128,12 @@ export function buildModelLink(modelId: string) {
 
 	const org = getOrgId(normalizedModelId);
 	return getModelDetailsHref(org, normalizedModelId) ?? "#";
+}
+
+export function buildProviderLink(providerId: string | null | undefined) {
+	const normalizedProviderId = providerId?.trim();
+	if (!normalizedProviderId || normalizedProviderId === "auto") return "#";
+	return `/api-providers/${encodeURIComponent(normalizedProviderId)}`;
 }
 
 export function extractGeneratedVideoUrl(content: string): string | null {
@@ -301,6 +308,10 @@ export function getInlineAttachmentPreviewsFromMeta(
 		.filter((entry): entry is InlineAttachmentPreview => Boolean(entry));
 }
 
-export function getRandomPlaceholder() {
-	return SAMPLE_QUESTIONS[Math.floor(Math.random() * SAMPLE_QUESTIONS.length)];
+export function getRandomPlaceholder(seed = "new-chat") {
+	let hash = 0;
+	for (let i = 0; i < seed.length; i++) {
+		hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+	}
+	return SAMPLE_QUESTIONS[hash % SAMPLE_QUESTIONS.length];
 }

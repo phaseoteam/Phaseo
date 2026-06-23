@@ -52,7 +52,7 @@ export function formatZeroDataRetention(
 		case "default":
 			return "Enabled by default";
 		case "optional":
-			return "Available as an option";
+			return "Available with provider config";
 		case "unsupported":
 			return "Not supported";
 		case "mixed":
@@ -96,9 +96,9 @@ export function buildResidencyBadges(args: {
 	}
 
 	if (args.zeroDataRetention === "default") {
-		badges.push({ key: "zdr-default", label: "ZDR Default" });
+		badges.push({ key: "zdr-default", label: "ZDR by default" });
 	} else if (args.zeroDataRetention === "optional") {
-		badges.push({ key: "zdr-optional", label: "ZDR Option" });
+		badges.push({ key: "zdr-optional", label: "ZDR available" });
 	}
 
 	return badges.slice(0, maxBadges);

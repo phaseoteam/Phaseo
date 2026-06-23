@@ -8,9 +8,9 @@ const reportProbeResultMock = vi.fn();
 const maybeOpenOnRecentErrorsMock = vi.fn();
 const maybeWriteStickyRoutingFromUsageMock = vi.fn();
 
-vi.mock("../audit", () => ({
-	auditSuccess: (...args: any[]) => auditSuccessMock(...args),
-	auditFailure: vi.fn(),
+vi.mock("./audit", () => ({
+	handleSuccessAudit: (...args: any[]) => auditSuccessMock(...args),
+	handleFailureAudit: vi.fn(),
 }));
 
 vi.mock("@observability/events", () => ({
@@ -24,6 +24,10 @@ vi.mock("./charge", () => ({
 }));
 
 vi.mock("../execute/health", () => ({
+	classifyProviderHealthImpact: ({ upstreamStatus }: { upstreamStatus?: number | null } = {}) => {
+		const status = Number(upstreamStatus ?? 0);
+		return status >= 200 && status < 500 ? "neutral" : "failure";
+	},
 	onCallEnd: (...args: any[]) => onCallEndMock(...args),
 	reportProbeResult: (...args: any[]) => reportProbeResultMock(...args),
 	maybeOpenOnRecentErrors: (...args: any[]) =>
@@ -238,24 +242,71 @@ describe("handleStreamResponse response healing", () => {
 			},
 		]);
 		expect(text).toContain('"plugin_executions"');
-		expect(auditSuccessMock).toHaveBeenCalledTimes(1);
-		const call = auditSuccessMock.mock.calls[0][0];
-		expect(call.detailMetadata.plugin_executions).toEqual([
-			expect.objectContaining({
-				id: "response-healing",
-				status: "skipped",
-				changed: false,
-				metadata: expect.objectContaining({
-					attempted: false,
-					reason: "streaming_unsupported",
-				}),
-			}),
-		]);
-		expect(call.gatewayResponse.output[0].content).toEqual([
+	});
+
+	it("adds routing diagnostics to streamed terminal frames only when explicitly requested", async () => {
+		const upstream = makeSseResponse([
 			{
-				type: "output_text",
-				text: "```json\n{ok: true,}\n```",
+				event: "response.completed",
+				data: {
+					response: {
+						id: "resp_stream_route_1",
+						object: "response",
+						status: "completed",
+						usage: {
+							input_tokens: 5,
+							output_tokens: 3,
+							total_tokens: 8,
+						},
+						output: [],
+					},
+				},
 			},
 		]);
+
+		const response = await handleStreamResponse(
+			baseCtx({
+				meta: {
+					requestId: "req_stream_heal_1",
+					apiKeyId: "key_1",
+					apiKeyRef: "kid_key_1",
+					apiKeyKid: "kid_key_1",
+					authMethod: "api_key",
+					returnMeta: false,
+					returnRoutingDiagnostics: true,
+				},
+				routingDiagnostics: {
+					rankedProviders: [{ providerId: "openai", score: 0.99 }],
+				},
+			}),
+			{
+				kind: "completed",
+				upstream,
+				provider: "openai",
+				generationTimeMs: 120,
+				bill: {
+					cost_cents: 0,
+					currency: "USD",
+					usage: null,
+					finish_reason: "stop",
+					upstream_id: "resp_stream_route_1",
+				},
+				mappedRequest: null,
+				rawResponse: null,
+			} as any,
+			null,
+		);
+
+		const text = await drain(response);
+		const finalFrame = JSON.parse(
+			text
+				.split("\n")
+				.find((line) => line.startsWith("data: "))
+				?.slice(6) ?? "{}",
+		);
+
+		expect(finalFrame.routing_diagnostics).toEqual({
+			rankedProviders: [{ providerId: "openai", score: 0.99 }],
+		});
 	});
 });

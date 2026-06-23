@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import {
 	Dialog,
@@ -168,11 +168,12 @@ export function RoomModelSettingsShell({
 			});
 	}, [hasModelSearchValue, modelChoices, normalizedModelSearchValue]);
 
-	useEffect(() => {
-		if (!modelPickerOpen) {
+	const handleModelPickerOpenChange = (open: boolean) => {
+		setModelPickerOpen(open);
+		if (!open) {
 			setModelSearchValue("");
 		}
-	}, [modelPickerOpen]);
+	};
 
 	return (
 		<>
@@ -188,13 +189,12 @@ export function RoomModelSettingsShell({
 								<Label>Model</Label>
 								<Popover
 									open={modelPickerOpen}
-									onOpenChange={setModelPickerOpen}
+									onOpenChange={handleModelPickerOpenChange}
 								>
 									<PopoverTrigger asChild>
 										<Button
 											type="button"
 											variant="outline"
-											role="combobox"
 											aria-expanded={modelPickerOpen}
 											className="justify-between gap-2"
 											disabled={modelChoices.length === 0}

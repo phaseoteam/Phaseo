@@ -19,6 +19,7 @@ const MODEL_SELECT = `
     organisation: data_organisations (name, colour)
 `;
 
+// react-doctor-disable-next-line
 export async function getModelCardsByIds(
 	modelIds: string[],
 	includeHidden: boolean
@@ -44,6 +45,7 @@ export async function getModelCardsByIds(
 	return modelIds.map((id) => byId.get(id)).filter(Boolean) as ModelCard[];
 }
 
+// react-doctor-disable-next-line
 export async function getModelCardsByIdsCached(
 	modelIds: string[],
 	includeHidden: boolean

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -8,6 +9,7 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { APP_HEADERS } from "@/components/(chat)/playground/chat-playground-core";
+import { cn } from "@/lib/utils";
 import {
 	buildModerationInput,
 	normalizeModerationResult,
@@ -24,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
+import { ChatSidebarModelsIcon } from "@/components/(chat)/ChatSidebarModelsIcon";
 import { useSidebar } from "@/components/ui/sidebar";
 import { ROOM_SIDEBAR_SLOT_ID } from "@/components/(chat)/RoomScaffold";
 import {
@@ -62,13 +65,13 @@ import {
 } from "@/lib/chat/roomModelSettings";
 import { ModerationModelSettingsDialog } from "@/components/(chat)/rooms/settings/ModerationModelSettingsDialog";
 import { RoomErrorNotice } from "@/components/(chat)/rooms/RoomErrorNotice";
+import { RoomTemporaryNotice } from "@/components/(chat)/rooms/RoomTemporaryNotice";
+import { RoomChatSettingsButton } from "@/components/(chat)/rooms/RoomChatSettingsButton";
 import {
 	ArrowUpRight,
 	Check,
 	ChevronRight,
 	Copy,
-	Cpu,
-	Database,
 	ImagePlus,
 	Info,
 	Link2,
@@ -81,7 +84,6 @@ import {
 	RotateCcw,
 	Save,
 	Search,
-	Settings as SettingsIcon,
 	SquarePen,
 	Trash2,
 	X,
@@ -589,35 +591,6 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 		modelSettingsCompat.selectedProfile ?? modelSettingsCompat.activeModelSettings ?? null;
 	const selectedModelEnabled = selectedProfile?.enabled !== false;
 	const selectedProviderId = selectedProfile?.providerId;
-	const composerSelectedModel = useMemo(
-		() =>
-			filteredModels.find(
-				(model) =>
-					model.modelId === modelId &&
-					(!selectedProviderId || model.providerId === selectedProviderId),
-			) ??
-			filteredModels.find((model) => model.modelId === modelId) ??
-			null,
-		[filteredModels, modelId, selectedProviderId],
-	);
-	const composerModelLogoId =
-		composerSelectedModel?.organisationId?.trim() ||
-		composerSelectedModel?.providerId ||
-		(modelId.split("/")[0] || "ai-stats");
-	const composerModelLabel =
-		(modelId &&
-			(modelSettings.modelDisplayNameById[modelId] ||
-				composerSelectedModel?.modelName ||
-				modelId)) ||
-		"Select model";
-	const openComposerModelPicker = () => {
-		const targetModelId = modelId || filteredModels[0]?.modelId;
-		if (!targetModelId) return;
-		if (targetModelId !== modelId) {
-			setModelId(targetModelId);
-		}
-		modelSettings.openModelSettingsForModel(targetModelId);
-	};
 	const dialogModelId: string | null = modelSettingsCompat.modelSettingsModelId ?? null;
 	const dialogProfile =
 		dialogModelId && typeof modelSettingsCompat.getProfileForModel === "function"
@@ -1229,7 +1202,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 	const sidebarHistory = sidebarSlotEl
 		? createPortal(
 				<>
-					<div className="px-2 py-1.5">
+					<div className="px-2 pb-1 pt-1.5">
 						{collapsed ? (
 							<Tooltip>
 								<TooltipTrigger asChild>
@@ -1264,18 +1237,18 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-center px-0 text-sm font-medium"
 										asChild
-										aria-label="Database"
+										aria-label="Models"
 									>
 										<Link
-											href="/"
+											href="/models"
 											className="group/db flex w-full min-w-0 items-center justify-center"
 										>
-											<Database className="h-4 w-4 shrink-0" />
+											<ChatSidebarModelsIcon />
 										</Link>
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Database
+									Models
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1283,11 +1256,11 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
-								aria-label="Database"
+								aria-label="Models"
 							>
-								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
-									<Database className="h-4 w-4 shrink-0" />
-									<span className="flex-1 min-w-0 truncate text-left">Database</span>
+								<Link href="/models" className="group/db flex w-full min-w-0 items-center gap-2">
+									<ChatSidebarModelsIcon />
+									<span className="flex-1 min-w-0 truncate text-left">Models</span>
 									<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
 								</Link>
 							</Button>
@@ -1387,40 +1360,42 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 									variant={temporaryMode ? "secondary" : "ghost"}
 									size="icon"
 									onClick={toggleTemporaryMode}
+									aria-label={
+										temporaryMode ? "Disable temporary chat" : "Enable temporary chat"
+									}
 								>
 									<MessageCircleDashed className="h-4 w-4" />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>Temporary chat</TooltipContent>
 						</Tooltip>
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={() => {
-										if (!modelId) return;
-										modelSettings.openModelSettingsForModel(modelId);
-									}}
-									disabled={!modelId}
-								>
-									<SettingsIcon className="h-5 w-5" />
-								</Button>
-							</TooltipTrigger>
-							<TooltipContent>Settings</TooltipContent>
-						</Tooltip>
+						<RoomChatSettingsButton
+							roomId="moderation"
+							roomLabel="Moderation"
+							onHistoryDeleted={() => setEntries([])}
+						/>
 					</div>
 				</div>
 			</header>
 
 			<main className="min-h-0 flex-1 overflow-auto overscroll-contain px-4 py-5 md:px-6">
 				<div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+					{temporaryMode && activeEntries.length > 0 ? (
+						<RoomTemporaryNotice />
+					) : null}
 					{activeEntries.length === 0 ? (
 						<div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center">
+							<div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+								<ImagePlus className="h-6 w-6 text-foreground" />
+							</div>
 							<div>
-								<p className="text-base font-semibold">Start a new conversation</p>
+								<p className="text-base font-semibold">
+									{temporaryMode ? "Temporary chat" : "Start a new conversation"}
+								</p>
 								<p className="text-sm text-muted-foreground">
-									Submit text or an image to run moderation.
+									{temporaryMode
+										? "Moderation requests in this chat are not saved locally."
+										: "Submit text or an image to run moderation."}
 								</p>
 							</div>
 						</div>
@@ -1568,16 +1543,19 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 													<p className="whitespace-pre-wrap">{entry.text}</p>
 												) : null}
 												{entry.imageUrls.length ? (
-													<div className="mt-2 grid gap-2 sm:grid-cols-2">
-														{entry.imageUrls.slice(0, 4).map((url, index) => (
-															<img
+												<div className="mt-2 grid gap-2 sm:grid-cols-2">
+													{entry.imageUrls.slice(0, 4).map((url, index) => (
+															<Image
 																key={`${entry.id}-input-${index}`}
 																src={url}
 																alt="Moderation input"
 																className="max-h-44 w-full rounded-md border border-white/20 object-cover"
+																unoptimized
+																width={440}
+																height={248}
 															/>
-														))}
-													</div>
+													))}
+												</div>
 												) : null}
 											</div>
 										)}
@@ -1927,6 +1905,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 							ref={imageFileInputRef}
 							type="file"
 							accept="image/png,image/jpeg,image/webp,image/gif"
+							aria-label="Attach image"
 							className="hidden"
 							onChange={(event) =>
 								setImageFile(event.target.files?.[0] ?? null)
@@ -1993,30 +1972,6 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 										<Button
 											type="button"
 											variant="ghost"
-											className="h-8 gap-1.5 px-2"
-											onClick={openComposerModelPicker}
-											disabled={!modelId && filteredModels.length === 0}
-										>
-											{modelId ? (
-												<Logo
-													id={composerModelLogoId}
-													alt={composerModelLabel}
-													width={16}
-													height={16}
-													className="shrink-0 rounded-none"
-												/>
-											) : (
-												<Cpu className="h-4 w-4 text-muted-foreground" />
-											)}
-										</Button>
-									</TooltipTrigger>
-									<TooltipContent side="top">{composerModelLabel}</TooltipContent>
-								</Tooltip>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<Button
-											type="button"
-											variant="ghost"
 											size="icon"
 											className={`h-8 w-8 ${
 												showImageUrlInput || imageUrl.trim()
@@ -2048,13 +2003,27 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 								</Tooltip>
 							</div>
 							<Button
-								className="ml-auto"
+								variant={temporaryMode ? "outline" : "default"}
+								className={cn(
+									"ml-auto",
+									temporaryMode &&
+										"gap-2 border-border bg-muted/60 text-foreground hover:bg-muted dark:bg-muted/40 dark:hover:bg-muted/60",
+								)}
 								onClick={() => {
 									void submit();
 								}}
 								disabled={isLoading || !modelId || !selectedModelEnabled}
 							>
-								{isLoading ? "Moderating..." : "Moderate"}
+								{isLoading ? (
+									"Moderating..."
+								) : temporaryMode ? (
+									<>
+										<MessageCircleDashed className="h-4 w-4" />
+										Moderate
+									</>
+								) : (
+									"Moderate"
+								)}
 							</Button>
 						</div>
 					</div>

@@ -6,9 +6,14 @@ import {
 	updateAPIProviderAction,
 } from "../../../actions";
 import {
-	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
-	PROVIDER_PROMPT_TRAINING_POLICY_VALUES,
-} from "@/lib/providers/promptTrainingPolicy";
+	PROVIDER_DATA_POLICY_CONFIDENCE_LABELS,
+	PROVIDER_DATA_POLICY_CONFIDENCE_VALUES,
+	PROVIDER_DATA_POLICY_CONTRACT_MODE_LABELS,
+	PROVIDER_DATA_POLICY_CONTRACT_MODE_VALUES,
+	PROVIDER_DATA_POLICY_TIER_LABELS,
+	PROVIDER_DATA_POLICY_TIER_VALUES,
+} from "@/lib/providers/dataPolicy";
+import { PROVIDER_PROMPT_TRAINING_POLICY_LABELS, PROVIDER_PROMPT_TRAINING_POLICY_VALUES } from "@/lib/providers/promptTrainingPolicy";
 
 export default async function EditAPIProviderPage({
 	params,
@@ -20,7 +25,7 @@ export default async function EditAPIProviderPage({
 	const { data: row } = await supabase
 		.from("data_api_providers")
 		.select(
-			"api_provider_id, api_provider_name, description, link, country_code, prompt_training_policy, prompt_training_notes, prompt_training_source_url",
+			"api_provider_id, api_provider_name, description, link, country_code, prompt_training_policy, prompt_training_notes, prompt_training_source_url, data_policy_tier, data_policy_confidence, data_policy_contract_mode, data_policy_contract_notes",
 		)
 		.eq("api_provider_id", providerId)
 		.maybeSingle();
@@ -54,6 +59,34 @@ export default async function EditAPIProviderPage({
 						<input name="country_code" defaultValue={row.country_code ?? ""} className="w-full rounded-md border px-3 py-2 text-sm" />
 					</label>
 					<label className="text-sm">
+						<div className="mb-1 text-muted-foreground">Data policy tier</div>
+						<select
+							name="data_policy_tier"
+							defaultValue={row.data_policy_tier ?? "unknown"}
+							className="w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{PROVIDER_DATA_POLICY_TIER_VALUES.map((value) => (
+								<option key={value} value={value}>
+									{PROVIDER_DATA_POLICY_TIER_LABELS[value]}
+								</option>
+							))}
+						</select>
+					</label>
+					<label className="text-sm">
+						<div className="mb-1 text-muted-foreground">Data policy confidence</div>
+						<select
+							name="data_policy_confidence"
+							defaultValue={row.data_policy_confidence ?? "unknown"}
+							className="w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{PROVIDER_DATA_POLICY_CONFIDENCE_VALUES.map((value) => (
+								<option key={value} value={value}>
+									{PROVIDER_DATA_POLICY_CONFIDENCE_LABELS[value]}
+								</option>
+							))}
+						</select>
+					</label>
+					<label className="text-sm">
 						<div className="mb-1 text-muted-foreground">Prompt training policy</div>
 						<select
 							name="prompt_training_policy"
@@ -76,11 +109,33 @@ export default async function EditAPIProviderPage({
 							className="w-full rounded-md border px-3 py-2 text-sm"
 						/>
 					</label>
+					<label className="text-sm">
+						<div className="mb-1 text-muted-foreground">Contract mode</div>
+						<select
+							name="data_policy_contract_mode"
+							defaultValue={row.data_policy_contract_mode ?? "none"}
+							className="w-full rounded-md border px-3 py-2 text-sm"
+						>
+							{PROVIDER_DATA_POLICY_CONTRACT_MODE_VALUES.map((value) => (
+								<option key={value} value={value}>
+									{PROVIDER_DATA_POLICY_CONTRACT_MODE_LABELS[value]}
+								</option>
+							))}
+						</select>
+					</label>
 					<label className="text-sm lg:col-span-2">
 						<div className="mb-1 text-muted-foreground">Policy notes</div>
 						<textarea
 							name="prompt_training_notes"
 							defaultValue={row.prompt_training_notes ?? ""}
+							className="w-full rounded-md border px-3 py-2 text-sm min-h-20"
+						/>
+					</label>
+					<label className="text-sm lg:col-span-2">
+						<div className="mb-1 text-muted-foreground">Contract notes</div>
+						<textarea
+							name="data_policy_contract_notes"
+							defaultValue={row.data_policy_contract_notes ?? ""}
 							className="w-full rounded-md border px-3 py-2 text-sm min-h-20"
 						/>
 					</label>

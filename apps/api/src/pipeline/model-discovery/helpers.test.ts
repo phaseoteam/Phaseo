@@ -6,10 +6,19 @@ import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers
 const POOLSIDE_DISCOVERY_PROVIDER = {
 	providerId: "poolside",
 	providerName: "Poolside",
-	modelsEndpoint: "https://inference.poolside.ai/openai/v1/models",
-	pathPrefix: "/openai/v1",
+	modelsEndpoint: "https://inference.poolside.ai/v1/models",
+	pathPrefix: "/v1",
 	baseUrlEnv: ["POOLSIDE_BASE_URL"],
 	apiKeyEnv: ["POOLSIDE_API_KEY"],
+} as const;
+
+const GOOGLE_VERTEX_DISCOVERY_PROVIDER = {
+	providerId: "google-vertex",
+	providerName: "Google Vertex",
+	modelsEndpoint:
+		"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=300",
+	apiKeyEnv: ["GOOGLE_VERTEX_ACCESS_TOKEN", "GOOGLE_VERTEX_API_KEY"],
+	authStyle: "google_vertex",
 } as const;
 
 afterEach(() => {
@@ -27,17 +36,17 @@ describe("resolveProviderModelsEndpoint", () => {
 		} as any);
 
 		expect(resolveProviderModelsEndpoint(POOLSIDE_DISCOVERY_PROVIDER)).toBe(
-			"https://poolside.example/openai/v1/models",
+			"https://poolside.example/v1/models",
 		);
 	});
 
-	it("appends only /models when the poolside base url override already includes /openai/v1", () => {
+	it("appends only /models when the poolside base url override already includes /v1", () => {
 		setupRuntimeFromEnv({
-			POOLSIDE_BASE_URL: "https://poolside.example/openai/v1",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
 		} as any);
 
 		expect(resolveProviderModelsEndpoint(POOLSIDE_DISCOVERY_PROVIDER)).toBe(
-			"https://poolside.example/openai/v1/models",
+			"https://poolside.example/v1/models",
 		);
 	});
 });
@@ -46,12 +55,12 @@ describe("fetchProviderModels", () => {
 	it("uses the resolved poolside models endpoint and extracts standard openai model ids", async () => {
 		setupRuntimeFromEnv({
 			POOLSIDE_API_KEY: "test-poolside-key",
-			POOLSIDE_BASE_URL: "https://poolside.example/openai/v1",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
 		} as any);
 
 		const fetchMock = installFetchMock([
 			{
-				match: (url) => url === "https://poolside.example/openai/v1/models",
+				match: (url) => url === "https://poolside.example/v1/models",
 				response: jsonResponse({
 					data: [
 						{ id: "poolside/laguna-m.1", created: 123 },
@@ -70,6 +79,81 @@ describe("fetchProviderModels", () => {
 			]);
 			expect(fetchMock.calls).toHaveLength(1);
 			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-poolside-key");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("throws when the provider returns an error envelope in a successful HTTP response", async () => {
+		setupRuntimeFromEnv({
+			POOLSIDE_API_KEY: "test-poolside-key",
+			POOLSIDE_BASE_URL: "https://poolside.example/v1",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) => url === "https://poolside.example/v1/models",
+				response: jsonResponse({
+					error: {
+						message: "upstream provider reported a failure",
+					},
+				}),
+			},
+		]);
+
+		try {
+			await expect(fetchProviderModels(POOLSIDE_DISCOVERY_PROVIDER, "test-poolside-key")).rejects.toThrow(
+				"upstream provider reported a failure",
+			);
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("merges google and anthropic publisher models for google-vertex discovery", async () => {
+		setupRuntimeFromEnv({
+			GOOGLE_VERTEX_ACCESS_TOKEN: "test-vertex-token",
+		} as any);
+
+		const fetchMock = installFetchMock([
+			{
+				match: (url) =>
+					url ===
+					"https://aiplatform.googleapis.com/v1beta1/publishers/google/models?listAllVersions=true&pageSize=300",
+				response: jsonResponse({
+					publisherModels: [
+						{
+							name: "publishers/google/models/gemini-3.5-flash",
+							versionId: "default",
+						},
+					],
+				}),
+			},
+			{
+				match: (url) =>
+					url ===
+					"https://aiplatform.googleapis.com/v1beta1/publishers/anthropic/models?listAllVersions=true&pageSize=300",
+				response: jsonResponse({
+					publisherModels: [
+						{
+							name: "publishers/anthropic/models/claude-sonnet-4-6",
+							versionId: "20260219",
+						},
+					],
+				}),
+			},
+		]);
+
+		try {
+			const models = await fetchProviderModels(GOOGLE_VERTEX_DISCOVERY_PROVIDER, "test-vertex-token");
+
+			expect(models.map((model) => model.id)).toEqual([
+				"claude-sonnet-4-6@20260219",
+				"gemini-3.5-flash",
+			]);
+			expect(fetchMock.calls).toHaveLength(2);
+			expect(fetchMock.calls[0]?.headers.Authorization).toBe("Bearer test-vertex-token");
+			expect(fetchMock.calls[1]?.headers.Authorization).toBe("Bearer test-vertex-token");
 		} finally {
 			fetchMock.restore();
 		}

@@ -285,6 +285,159 @@ describe("applyServiceTierRouting", () => {
         ]);
     });
 
+    it("remaps Moonshot K2.7 Code priority requests to the hidden HighSpeed slug while keeping the public model stable", async () => {
+        queryState.providerRows = [
+            {
+                provider_id: "moonshotai",
+                api_model_id: "moonshotai/kimi-k2.7-code-highspeed",
+                provider_api_model_id: "moonshot-highspeed-pam",
+                provider_model_slug: "kimi-k2.7-code-highspeed",
+                is_active_gateway: false,
+                effective_from: "2026-06-12T00:00:00Z",
+                effective_to: null,
+            },
+        ];
+        queryState.capabilityRows = [
+            {
+                provider_api_model_id: "moonshot-highspeed-pam",
+                params: { thinking: true },
+                max_input_tokens: 262_144,
+                max_output_tokens: 65_536,
+                status: "active",
+                updated_at: "2026-06-12T00:00:00Z",
+                created_at: "2026-06-12T00:00:00Z",
+            },
+        ];
+
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "moonshotai",
+                    apiModelId: "moonshotai/kimi-k2.7-code",
+                    providerModelSlug: "kimi-k2.7-code",
+                    pricingCard: makeCard({
+                        provider: "moonshotai",
+                        model: "moonshotai/kimi-k2.7-code",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "moonshotai",
+            apiModelId: "moonshotai/kimi-k2.7-code",
+            pricingKey: "moonshotai:moonshotai/kimi-k2.7-code",
+            providerModelSlug: "kimi-k2.7-code-highspeed",
+            maxInputTokens: 262_144,
+            maxOutputTokens: 65_536,
+            capabilityParams: { thinking: true },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([
+            {
+                providerId: "moonshotai",
+                fromApiModelId: "moonshotai/kimi-k2.7-code",
+                toApiModelId: "moonshotai/kimi-k2.7-code-highspeed",
+                reason: "priority_fast_sibling",
+            },
+        ]);
+    });
+
+    it("does not treat unrelated -highspeed models as priority siblings", async () => {
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "minimax",
+                    apiModelId: "minimax/minimax-m2.5-highspeed",
+                    providerModelSlug: "MiniMax-M2.5-highspeed",
+                    pricingCard: makeCard({
+                        provider: "minimax",
+                        model: "minimax/minimax-m2.5-highspeed",
+                        plans: ["standard"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(result.candidates).toHaveLength(0);
+        expect(result.diagnostics.droppedProviders).toMatchObject([
+            {
+                providerId: "minimax",
+                apiModelId: "minimax/minimax-m2.5-highspeed",
+                reason: "service_tier_priority_unsupported",
+            },
+        ]);
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+    });
+
+    it("remaps DeepInfra MiniMax M2.7 priority requests to the hidden Turbo slug while keeping the public model stable", async () => {
+        queryState.providerRows = [
+            {
+                provider_id: "deepinfra",
+                api_model_id: "minimax/minimax-m2.7",
+                provider_api_model_id: "deepinfra-minimax-m2.7-turbo-pam",
+                provider_model_slug: "MiniMaxAI/MiniMax-M2.7-Turbo",
+                is_active_gateway: false,
+                effective_from: "2026-06-15T00:00:00Z",
+                effective_to: null,
+            },
+        ];
+        queryState.capabilityRows = [
+            {
+                provider_api_model_id: "deepinfra-minimax-m2.7-turbo-pam",
+                params: { reasoning: true },
+                max_input_tokens: 196_608,
+                max_output_tokens: 131_072,
+                status: "active",
+                updated_at: "2026-06-15T00:00:00Z",
+                created_at: "2026-06-15T00:00:00Z",
+            },
+        ];
+
+        const result = await applyServiceTierRouting({
+            candidates: [
+                makeCandidate({
+                    providerId: "deepinfra",
+                    apiModelId: "minimax/minimax-m2.7",
+                    providerModelSlug: "MiniMaxAI/MiniMax-M2.7",
+                    pricingCard: makeCard({
+                        provider: "deepinfra",
+                        model: "minimax/minimax-m2.7",
+                        plans: ["standard", "priority"],
+                    }),
+                }),
+            ],
+            body: { service_tier: "priority" },
+            capability: "text.generate",
+        });
+
+        expect(loadPriceCardMock).not.toHaveBeenCalled();
+        expect(result.candidates).toHaveLength(1);
+        expect(result.candidates[0]).toMatchObject({
+            providerId: "deepinfra",
+            apiModelId: "minimax/minimax-m2.7",
+            pricingKey: "deepinfra:minimax/minimax-m2.7",
+            providerModelSlug: "MiniMaxAI/MiniMax-M2.7-Turbo",
+            maxInputTokens: 196_608,
+            maxOutputTokens: 131_072,
+            capabilityParams: { reasoning: true },
+        });
+        expect(result.diagnostics.remappedProviders).toMatchObject([
+            {
+                providerId: "deepinfra",
+                fromApiModelId: "minimax/minimax-m2.7",
+                toApiModelId: "minimax/minimax-m2.7",
+                reason: "priority_fast_sibling",
+            },
+        ]);
+    });
+
     it("remaps flex requests to the flex sibling model when pricing is exposed that way", async () => {
         queryState.providerRows = [
             {

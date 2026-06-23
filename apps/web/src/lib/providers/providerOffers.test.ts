@@ -18,6 +18,18 @@ describe("providerOffers", () => {
                 providerFamilyId: "anthropic",
             }),
         ).toBe("aws");
+        expect(
+            resolveProviderLogoId({
+                providerId: "openai-eu",
+                providerFamilyId: null,
+            }),
+        ).toBe("openai");
+        expect(
+            resolveProviderLogoId({
+                providerId: "openai-eu",
+                providerFamilyId: "openai-eu",
+            }),
+        ).toBe("openai");
     });
 
     test("normalizes Anthropic on AWS provider names", () => {
@@ -54,5 +66,37 @@ describe("providerOffers", () => {
                 offerScope: "regional",
             }),
         ).toBe("OpenAI (EU)");
+        expect(
+            formatProviderOfferDisplayName({
+                providerId: "openai-eu",
+                providerName: "OpenAI",
+                offerLabel: null,
+                offerScope: "regional",
+            }),
+        ).toBe("OpenAI (EU)");
+        expect(
+            formatProviderOfferDisplayName({
+                providerId: "openai-eu",
+                providerName: "OpenAI",
+                offerLabel: null,
+                offerScope: "global",
+            }),
+        ).toBe("OpenAI (EU)");
+        expect(
+            formatProviderOfferDisplayName({
+                providerId: "anthropic-us",
+                providerName: "Anthropic",
+                offerLabel: null,
+                offerScope: null,
+            }),
+        ).toBe("Anthropic (US)");
+        expect(
+            formatProviderOfferDisplayName({
+                providerId: "openai-eu",
+                providerName: "OpenAI EU",
+                offerLabel: "EU",
+                offerScope: "regional",
+            }),
+        ).toBe("OpenAI EU");
     });
 });

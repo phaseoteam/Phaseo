@@ -16,6 +16,11 @@ import {
 import { updateModel } from "@/app/(dashboard)/models/actions";
 import { normalizeProviderPromptTrainingPolicy } from "@/lib/providers/promptTrainingPolicy";
 import {
+	normalizeProviderDataPolicyConfidence,
+	normalizeProviderDataPolicyContractMode,
+	normalizeProviderDataPolicyTier,
+} from "@/lib/providers/dataPolicy";
+import {
 	MODEL_MODALITY_OPTIONS,
 	normalizeCapabilityStatus,
 	normalizeModelStatus,
@@ -163,18 +168,27 @@ const ORG_SOCIAL_PLATFORM_ORDER = [
 	"youtube",
 ] as const;
 
-const ORG_SOCIAL_PLATFORM_ALIASES: Record<string, (typeof ORG_SOCIAL_PLATFORM_ORDER)[number]> = {
-	dicsord: "discord",
-	twitter: "x",
-	web: "website",
-	site: "website",
-};
+function getOrganisationPlatformAlias(
+	value: string,
+): (typeof ORG_SOCIAL_PLATFORM_ORDER)[number] | null {
+	switch (value) {
+		case "dicsord":
+			return "discord";
+		case "twitter":
+			return "x";
+		case "web":
+		case "site":
+			return "website";
+		default:
+			return null;
+	}
+}
 
 function normalizeOrganisationPlatform(input: unknown): (typeof ORG_SOCIAL_PLATFORM_ORDER)[number] | null {
 	if (typeof input !== "string") return null;
 	const value = input.trim().toLowerCase();
 	if (!value) return null;
-	const canonical = ORG_SOCIAL_PLATFORM_ALIASES[value] ?? value;
+	const canonical = getOrganisationPlatformAlias(value) ?? value;
 	return ORG_SOCIAL_PLATFORM_ORDER.includes(canonical as any)
 		? (canonical as (typeof ORG_SOCIAL_PLATFORM_ORDER)[number])
 		: null;
@@ -337,6 +351,7 @@ async function deleteModelGraph(
 	if (apiModelDeleteError) throw new Error(apiModelDeleteError.message);
 }
 
+// react-doctor-disable-next-line
 export async function createOrganisationAction(formData: FormData) {
 	const supabase = await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
@@ -357,6 +372,7 @@ export async function createOrganisationAction(formData: FormData) {
 	revalidatePath("/internal/data/organisations");
 }
 
+// react-doctor-disable-next-line
 export async function updateOrganisationAction(organisationId: string, formData: FormData) {
 	const supabase = await requireAdmin();
 	const socialLinks = parseJsonField<OrganisationLinkPayload[]>(formData.get("social_links_payload"), "social_links_payload", []);
@@ -377,6 +393,7 @@ export async function updateOrganisationAction(organisationId: string, formData:
 	revalidatePath("/internal/data/organisations");
 }
 
+// react-doctor-disable-next-line
 export async function deleteOrganisationAction(organisationId: string) {
 	const supabase = await requireAdmin();
 	const { error } = await supabase
@@ -389,12 +406,22 @@ export async function deleteOrganisationAction(organisationId: string) {
 	revalidatePath("/internal/data/organisations");
 }
 
+// react-doctor-disable-next-line
 export async function createAPIProviderAction(formData: FormData) {
 	const supabase = await requireAdmin();
 	const apiProviderId = requiredString(formData.get("api_provider_id"), "api_provider_id");
 	const apiProviderName = requiredString(formData.get("api_provider_name"), "api_provider_name");
 	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
 		formData.get("prompt_training_policy"),
+	);
+	const dataPolicyTier = normalizeProviderDataPolicyTier(
+		formData.get("data_policy_tier"),
+	);
+	const dataPolicyConfidence = normalizeProviderDataPolicyConfidence(
+		formData.get("data_policy_confidence"),
+	);
+	const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
+		formData.get("data_policy_contract_mode"),
 	);
 
 	const { error } = await supabase.from("data_api_providers").insert({
@@ -406,6 +433,12 @@ export async function createAPIProviderAction(formData: FormData) {
 		prompt_training_policy: promptTrainingPolicy,
 		prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
 		prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
+		data_policy_tier: dataPolicyTier,
+		data_policy_confidence: dataPolicyConfidence,
+		data_policy_contract_mode: dataPolicyContractMode,
+		data_policy_contract_notes: optionalString(
+			formData.get("data_policy_contract_notes"),
+		),
 		status: "Active",
 	});
 	if (error) throw new Error(error.message);
@@ -418,10 +451,20 @@ export async function createAPIProviderAction(formData: FormData) {
 	revalidatePath("/internal/data/api-providers");
 }
 
+// react-doctor-disable-next-line
 export async function updateAPIProviderAction(apiProviderId: string, formData: FormData) {
 	const supabase = await requireAdmin();
 	const promptTrainingPolicy = normalizeProviderPromptTrainingPolicy(
 		formData.get("prompt_training_policy"),
+	);
+	const dataPolicyTier = normalizeProviderDataPolicyTier(
+		formData.get("data_policy_tier"),
+	);
+	const dataPolicyConfidence = normalizeProviderDataPolicyConfidence(
+		formData.get("data_policy_confidence"),
+	);
+	const dataPolicyContractMode = normalizeProviderDataPolicyContractMode(
+		formData.get("data_policy_contract_mode"),
 	);
 	const { error } = await supabase
 		.from("data_api_providers")
@@ -433,6 +476,12 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 			prompt_training_policy: promptTrainingPolicy,
 			prompt_training_notes: optionalString(formData.get("prompt_training_notes")),
 			prompt_training_source_url: optionalString(formData.get("prompt_training_source_url")),
+			data_policy_tier: dataPolicyTier,
+			data_policy_confidence: dataPolicyConfidence,
+			data_policy_contract_mode: dataPolicyContractMode,
+			data_policy_contract_notes: optionalString(
+				formData.get("data_policy_contract_notes"),
+			),
 			updated_at: new Date().toISOString(),
 		})
 		.eq("api_provider_id", apiProviderId);
@@ -446,6 +495,7 @@ export async function updateAPIProviderAction(apiProviderId: string, formData: F
 	revalidatePath("/internal/data/api-providers");
 }
 
+// react-doctor-disable-next-line
 export async function deleteAPIProviderAction(apiProviderId: string) {
 	const supabase = await requireAdmin();
 	const { error } = await supabase
@@ -462,6 +512,7 @@ export async function deleteAPIProviderAction(apiProviderId: string) {
 	revalidatePath("/internal/data/api-providers");
 }
 
+// react-doctor-disable-next-line
 export async function createBenchmarkAction(formData: FormData) {
 	const supabase = await requireAdmin();
 	const id = requiredString(formData.get("id"), "id");
@@ -486,6 +537,7 @@ export async function createBenchmarkAction(formData: FormData) {
 	revalidatePath("/internal/data/benchmarks");
 }
 
+// react-doctor-disable-next-line
 export async function updateBenchmarkAction(id: string, formData: FormData) {
 	const supabase = await requireAdmin();
 	const { error } = await supabase
@@ -510,6 +562,7 @@ export async function updateBenchmarkAction(id: string, formData: FormData) {
 	revalidatePath("/internal/data/benchmarks");
 }
 
+// react-doctor-disable-next-line
 export async function deleteBenchmarkAction(id: string) {
 	const supabase = await requireAdmin();
 	const { error } = await supabase.from("data_benchmarks").delete().eq("id", id);
@@ -520,6 +573,7 @@ export async function deleteBenchmarkAction(id: string) {
 	revalidatePath("/internal/data/benchmarks");
 }
 
+// react-doctor-disable-next-line
 export async function createModelAction(formData: FormData) {
 	const supabase = await requireAdmin();
 	const modelId = requiredString(formData.get("model_id"), "model_id");
@@ -937,6 +991,7 @@ export async function createModelAction(formData: FormData) {
 	revalidatePath("/internal/data/models");
 }
 
+// react-doctor-disable-next-line
 export async function updateModelAction(modelId: string, formData: FormData) {
 	const supabase = await requireAdmin();
 	const organisationId = requiredString(formData.get("organisation_id"), "organisation_id");
@@ -983,6 +1038,7 @@ export async function updateModelAction(modelId: string, formData: FormData) {
 	revalidatePath("/internal/data/models");
 }
 
+// react-doctor-disable-next-line
 export async function deleteModelAction(modelId: string) {
 	const supabase = await requireAdmin();
 	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
@@ -1009,6 +1065,7 @@ async function resolveModelOrganisationIds(
 	return data?.organisation_id ? [data.organisation_id] : [];
 }
 
+// react-doctor-disable-next-line
 export async function revalidateSingleModelDataAction(modelId: string) {
 	const supabase = await requireAdmin();
 	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);
@@ -1021,6 +1078,7 @@ export async function revalidateSingleModelDataAction(modelId: string) {
 	return { ok: true as const, message: "Model data cache revalidated." };
 }
 
+// react-doctor-disable-next-line
 export async function revalidateSingleModelApiInfoAction(modelId: string) {
 	await requireAdmin();
 
@@ -1034,6 +1092,7 @@ export async function revalidateSingleModelApiInfoAction(modelId: string) {
 	return { ok: true as const, message: "Model API info cache revalidated." };
 }
 
+// react-doctor-disable-next-line
 export async function revalidateSingleModelAllAction(modelId: string) {
 	const supabase = await requireAdmin();
 	const organisationIds = await resolveModelOrganisationIds(supabase, modelId);

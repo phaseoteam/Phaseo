@@ -21,6 +21,7 @@ type Row = {
 const TOP_MODELS = 10;
 const UNKNOWN_MODEL_LABEL = "Unknown model";
 const WINDOW_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function formatDayLabel(date: Date) {
 	return date.toLocaleDateString("en-US", {
@@ -35,6 +36,31 @@ function formatNumber(value: number) {
 	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
 	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
 	return value.toLocaleString();
+}
+
+function formatPaceGain(value: number) {
+	const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+	if (safeValue >= 1e9) return `+${(safeValue / 1e9).toFixed(2)}B`;
+	if (safeValue >= 1e6) return `+${(safeValue / 1e6).toFixed(2)}M`;
+	if (safeValue >= 1e3) return `+${(safeValue / 1e3).toFixed(2)}K`;
+	return `+${safeValue.toFixed(0)}`;
+}
+
+function buildLastUtcDayKeys(days: number, now = new Date()) {
+	const keys: string[] = [];
+	const anchor = Date.UTC(
+		now.getUTCFullYear(),
+		now.getUTCMonth(),
+		now.getUTCDate(),
+	);
+	for (let offset = days - 1; offset >= 0; offset -= 1) {
+		keys.push(new Date(anchor - offset * DAY_MS).toISOString().slice(0, 10));
+	}
+	return keys;
+}
+
+function getUtcDayStartMs(dayKey: string) {
+	return Date.parse(`${dayKey}T00:00:00.000Z`);
 }
 
 function getTokens(usage: any) {
@@ -69,12 +95,17 @@ export default function AppUsageChart({
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
 	const { chartData, seriesKeys, seriesStyle } = useMemo(() => {
-		const end = new Date();
-		end.setHours(12, 0, 0, 0);
-		const dayBuckets = Array.from({ length: WINDOW_DAYS }, (_, index) => {
-			const date = new Date(end);
-			date.setDate(end.getDate() - (WINDOW_DAYS - 1 - index));
-			const dayKey = date.toISOString().slice(0, 10);
+		const now = new Date();
+		const todayUtc = now.toISOString().slice(0, 10);
+		const elapsedTodayRatio = Math.min(
+			1,
+			Math.max(
+				1 / DAY_MS,
+				(now.getTime() - getUtcDayStartMs(todayUtc)) / DAY_MS,
+			),
+		);
+		const dayBuckets = buildLastUtcDayKeys(WINDOW_DAYS, now).map((dayKey) => {
+			const date = new Date(`${dayKey}T00:00:00.000Z`);
 			return {
 				dayKey,
 				label: formatDayLabel(date),
@@ -89,7 +120,6 @@ export default function AppUsageChart({
 			if (row.success === false || !row.created_at) continue;
 			const date = new Date(row.created_at);
 			if (Number.isNaN(date.getTime())) continue;
-			date.setHours(12, 0, 0, 0);
 			const dayKey = date.toISOString().slice(0, 10);
 			if (!bucketKeySet.has(dayKey)) continue;
 
@@ -139,7 +169,10 @@ export default function AppUsageChart({
 
 		const chartRows = dayBuckets.map(({ dayKey, label }) => {
 			const row: Record<string, string | number | boolean> = {
+				dayKey,
 				bucket: label,
+				__isCurrentDay: dayKey === todayUtc,
+				projected_pace: 0,
 			};
 			for (const model of topModels) {
 				const key = keyMap.get(model) ?? model;
@@ -161,6 +194,15 @@ export default function AppUsageChart({
 
 			return row;
 		});
+
+		const currentDayRow = chartRows[chartRows.length - 1];
+		if (currentDayRow && Boolean(currentDayRow.__isCurrentDay)) {
+			const currentTotal = keysForProjection(chartRows, currentDayRow);
+			if (currentTotal > 0 && elapsedTodayRatio < 1) {
+				const projectedTotal = Math.max(currentTotal, currentTotal / elapsedTodayRatio);
+				currentDayRow.projected_pace = Math.max(0, projectedTotal - currentTotal);
+			}
+		}
 
 		const keys = [
 			...topModels.map((model) => keyMap.get(model) ?? model),
@@ -201,6 +243,25 @@ export default function AppUsageChart({
 					margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
 					onMouseLeave={() => setHoveredKey(null)}
 				>
+					<defs>
+						<pattern
+							id="appUsageProjectedPacePattern"
+							patternUnits="userSpaceOnUse"
+							width={8}
+							height={8}
+							patternTransform="rotate(45)"
+						>
+							<rect width={8} height={8} fill="hsl(0 0% 88% / 0.35)" />
+							<line
+								x1={0}
+								y1={0}
+								x2={0}
+								y2={8}
+								stroke="hsl(0 0% 62% / 0.8)"
+								strokeWidth={2}
+							/>
+						</pattern>
+					</defs>
 					<CartesianGrid vertical={false} className="stroke-muted" />
 					<XAxis
 						dataKey="bucket"
@@ -217,21 +278,32 @@ export default function AppUsageChart({
 					/>
 					<ChartTooltip
 						content={(props) => {
+							const rowPayload = (props.payload?.[0]?.payload ?? {}) as Record<
+								string,
+								number | string | boolean
+							>;
 							const filteredPayload =
 								props.payload
-									?.filter((item) => Number(item?.value ?? 0) > 0)
+									?.filter(
+										(item) =>
+											String(item?.dataKey ?? "") !== "projected_pace" &&
+											Number(item?.value ?? 0) > 0,
+									)
 									.sort(
 										(a, b) =>
 											Number(b?.value ?? 0) - Number(a?.value ?? 0),
 									)
 									.slice(0, 10) ?? [];
-							if (!filteredPayload.length) return null;
-							const weeklyTotal = filteredPayload.reduce(
+							const dayTotal = filteredPayload.reduce(
 								(sum, item) => sum + Number(item?.value ?? 0),
 								0
 							);
+							const projectedAdditional = Number(rowPayload.projected_pace ?? 0);
+							const projectedTotal = dayTotal + projectedAdditional;
+							const isCurrentDay = Boolean(rowPayload.__isCurrentDay);
+							if (!filteredPayload.length && projectedAdditional <= 0) return null;
 							return (
-								<div className="grid min-w-32 items-start gap-1.5 rounded-lg border border-zinc-200/50 bg-white px-2.5 py-1.5 text-xs shadow-xl dark:border-zinc-800/50 dark:bg-zinc-950">
+								<div className="grid min-w-[12.5rem] items-start gap-1.5 rounded-lg border border-zinc-200/50 bg-white px-2.5 py-1.5 text-xs shadow-xl dark:border-zinc-800/50 dark:bg-zinc-950">
 									<ChartTooltipContent
 										active={props.active}
 										payload={filteredPayload}
@@ -261,7 +333,7 @@ export default function AppUsageChart({
 														/>
 														<span>{cfg?.label ?? String(name ?? "")}</span>
 													</span>
-													<span className="ml-auto pl-3 font-mono">
+													<span className="ml-auto pl-3 tabular-nums">
 														{formatNumber(val)}
 													</span>
 												</div>
@@ -269,10 +341,24 @@ export default function AppUsageChart({
 										}}
 									/>
 									<div className="space-y-0.5 border-t border-border/60 pt-1.5 text-xs">
-										<div className="flex items-center justify-between">
-											<span className="text-muted-foreground">Total</span>
-											<span className="font-mono">{formatNumber(weeklyTotal)}</span>
+										<div className="flex items-center justify-between gap-4">
+											<span className="text-muted-foreground">
+												{isCurrentDay ? "So far" : "Total"}
+											</span>
+											<span className="whitespace-nowrap tabular-nums">
+												{formatNumber(dayTotal)}
+											</span>
 										</div>
+										{isCurrentDay ? (
+											<>
+												<div className="flex items-center justify-between gap-4">
+													<span className="text-muted-foreground">Daily pace</span>
+													<span className="whitespace-nowrap tabular-nums">
+														{formatNumber(projectedTotal)} ({formatPaceGain(projectedAdditional)})
+													</span>
+												</div>
+											</>
+										) : null}
 									</div>
 								</div>
 							);
@@ -296,9 +382,36 @@ export default function AppUsageChart({
 							/>
 						);
 					})}
+					<Bar
+						dataKey="projected_pace"
+						name="Projected pace"
+						stackId="usage"
+						fill="url(#appUsageProjectedPacePattern)"
+						stroke="hsl(0 0% 55% / 0.7)"
+						strokeWidth={0.5}
+						radius={[4, 4, 0, 0]}
+						isAnimationActive={false}
+					/>
 				</BarChart>
 			</ChartContainer>
 		</div>
 	);
+}
+
+function keysForProjection(
+	rows: Array<Record<string, string | number | boolean>>,
+	row: Record<string, string | number | boolean>,
+) {
+	return Object.keys(row).reduce((sum, key) => {
+		if (
+			key === "bucket" ||
+			key === "dayKey" ||
+			key === "__isCurrentDay" ||
+			key === "projected_pace"
+		) {
+			return sum;
+		}
+		return sum + Number(row[key] ?? 0);
+	}, 0);
 }
 
