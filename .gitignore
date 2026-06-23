@@ -29,6 +29,9 @@ guides/private/
 *.tmp
 *.tmp.*
 /tmp
+/.codex-temp-*.png
+/tmp-*.png
+/output/playwright/*.png
 .playwright-cli/
 .tools/
 .codex/tmp/
