@@ -124,6 +124,22 @@ export type ProviderSections = {
     }[];
 };
 
+export type ProviderTablePriceCandidate = {
+    key: string;
+    label: string;
+    price: number;
+    formattedPrice: string;
+    unitLabel: string;
+    unitShortLabel: string;
+};
+
+export type ProviderTablePriceSummary = {
+    primary: ProviderTablePriceCandidate | null;
+    secondary: ProviderTablePriceCandidate | null;
+    extraCount: number;
+    sortValue: number | null;
+};
+
 /* ---------- small utils ---------- */
 export function fmtUSD(n: number, max = 6) {
     if (!isFinite(n)) return "—";
@@ -135,6 +151,51 @@ export function fmtCompact(n: number) {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}m`;
     if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
     return `${n}`;
+}
+
+function abbreviateUnitCount(value: string) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return value;
+    if (numeric >= 1_000_000) return `${(numeric / 1_000_000).toFixed(numeric % 1_000_000 === 0 ? 0 : 1)}M`;
+    if (numeric >= 1_000) return `${(numeric / 1_000).toFixed(numeric % 1_000 === 0 ? 0 : 1)}K`;
+    return `${numeric}`;
+}
+
+export function formatTableUnitShortLabel(label: string) {
+    const normalized = label.trim().toLowerCase();
+    if (!normalized) return "";
+    if (normalized === "per 1m tokens") return "/M";
+    if (normalized === "per token") return "/token";
+    if (normalized === "per pixel") return "/px";
+    if (normalized === "per image") return "/image";
+    if (normalized === "per video") return "/video";
+    if (normalized === "per second") return "/sec";
+    if (normalized === "per minute") return "/min";
+    if (normalized === "per call") return "/call";
+    if (normalized === "per character") return "/char";
+
+    const match = normalized.match(/^per\s+([0-9.]+)\s+(.+)$/i);
+    if (!match) return label.replace(/^Per\s+/i, "/");
+
+    const [, rawCount, rawUnit] = match;
+    const count = abbreviateUnitCount(rawCount);
+    const unit =
+        rawUnit === "tokens"
+            ? "M"
+            : rawUnit === "seconds"
+                ? "sec"
+                : rawUnit === "minutes"
+                    ? "min"
+                    : rawUnit === "images"
+                        ? "images"
+                        : rawUnit === "pixels"
+                            ? "px"
+                            : rawUnit === "calls"
+                                ? "calls"
+                                : rawUnit === "characters"
+                                    ? "chars"
+                                    : rawUnit;
+    return `/${count} ${unit}`;
 }
 export function unitLabel(unit: UnitClass, unitSize?: number | null) {
     const u = Number(unitSize ?? 1);
@@ -1202,6 +1263,147 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
     out.requests?.sort((a, b) => a.price - b.price);
 
     return out;
+}
+
+function getActiveTokenTier(tiers?: TokenTier[] | null): TokenTier | null {
+    return tiers?.find((tier) => tier.isCurrent) ?? tiers?.[0] ?? null;
+}
+
+function createTablePriceCandidate(args: {
+    key: string;
+    label: string;
+    price: number;
+    unitLabel: string;
+}): ProviderTablePriceCandidate {
+    return {
+        key: args.key,
+        label: args.label,
+        price: args.price,
+        formattedPrice: fmtUSD(args.price),
+        unitLabel: args.unitLabel,
+        unitShortLabel: formatTableUnitShortLabel(args.unitLabel),
+    };
+}
+
+type ProviderTablePriceDirection = "input" | "output" | "cached";
+
+function getTablePriceCandidates(
+    sections: ProviderSections,
+    direction: ProviderTablePriceDirection,
+): ProviderTablePriceCandidate[] {
+    const candidates: ProviderTablePriceCandidate[] = [];
+    const pushTokenCandidate = (
+        modality: "text" | "audio" | "image" | "video",
+        tiers?: TokenTier[] | null,
+    ) => {
+        const tier = getActiveTokenTier(tiers);
+        if (!tier) return;
+        candidates.push(
+            createTablePriceCandidate({
+                key: `${direction}-${modality}-tokens`,
+                label: modality,
+                price: tier.per1M,
+                unitLabel: "Per 1M tokens",
+            }),
+        );
+    };
+
+    if (direction === "cached") {
+        pushTokenCandidate("text", sections.textTokens?.cached);
+        pushTokenCandidate("image", sections.imageTokens?.cached);
+        pushTokenCandidate("audio", sections.audioTokens?.cached);
+        pushTokenCandidate("video", sections.videoTokens?.cached);
+    } else if (direction === "input") {
+        pushTokenCandidate("text", sections.textTokens?.in);
+
+        const imageInput = sections.mediaInputs
+            ?.filter((row) => row.mod === "image" && row.isCurrent)
+            .sort((a, b) => a.price - b.price)[0];
+        if (imageInput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "input-image",
+                    label: "image",
+                    price: imageInput.price,
+                    unitLabel: imageInput.unitLabel,
+                }),
+            );
+        }
+
+        const videoInput = sections.mediaInputs
+            ?.filter((row) => row.mod === "video" && row.isCurrent)
+            .sort((a, b) => a.price - b.price)[0];
+        if (videoInput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "input-video",
+                    label: "video",
+                    price: videoInput.price,
+                    unitLabel: videoInput.unitLabel,
+                }),
+            );
+        }
+
+        pushTokenCandidate("image", sections.imageTokens?.in);
+        pushTokenCandidate("audio", sections.audioTokens?.in);
+        pushTokenCandidate("video", sections.videoTokens?.in);
+    } else {
+        pushTokenCandidate("text", sections.textTokens?.out);
+
+        const imageOutput = sections.imageGen
+            ?.flatMap((row) =>
+                row.items.map((item) => ({
+                    price: item.price,
+                    unitLabel: "Per image",
+                })),
+            )
+            .sort((a, b) => a.price - b.price)[0];
+        if (imageOutput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "output-image",
+                    label: "image",
+                    price: imageOutput.price,
+                    unitLabel: imageOutput.unitLabel,
+                }),
+            );
+        }
+
+        const videoOutput = sections.videoGen
+            ?.slice()
+            .sort((a, b) => a.price - b.price)[0];
+        if (videoOutput) {
+            candidates.push(
+                createTablePriceCandidate({
+                    key: "output-video",
+                    label: "video",
+                    price: videoOutput.price,
+                    unitLabel: videoOutput.unitLabel,
+                }),
+            );
+        }
+
+        pushTokenCandidate("image", sections.imageTokens?.out);
+        pushTokenCandidate("audio", sections.audioTokens?.out);
+        pushTokenCandidate("video", sections.videoTokens?.out);
+    }
+
+    return candidates;
+}
+
+export function buildProviderTablePriceSummary(
+    sections: ProviderSections,
+    direction: ProviderTablePriceDirection,
+): ProviderTablePriceSummary {
+    const candidates = getTablePriceCandidates(sections, direction);
+    const primary = candidates[0] ?? null;
+    const secondary = candidates[1] ?? null;
+    return {
+        primary,
+        secondary,
+        extraCount: Math.max(candidates.length - (secondary ? 2 : primary ? 1 : 0), 0),
+        sortValue: primary?.price ?? null,
+    };
 }
 
 /* ---------- pricing calculator helpers ---------- */

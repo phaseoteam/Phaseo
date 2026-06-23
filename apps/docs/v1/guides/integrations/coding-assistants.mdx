@@ -101,10 +101,10 @@ Aider often expects OpenAI-compatible custom models to be prefixed with `openai/
 
 ## Codex
 
-Use the dedicated [Codex guide](./codex.mdx). The short version is:
+Use the dedicated [Codex guide](./codex.mdx) for Codex CLI, Codex App, and the Codex IDE extension. The short version is:
 
 ```toml
-model = "openai/gpt-5-3-codex-2026-02-05"
+model = "openai/gpt-5.5"
 model_provider = "ai_stats"
 
 [model_providers.ai_stats]
@@ -113,6 +113,12 @@ base_url = "https://api.phaseo.app/v1"
 env_key = "AI_STATS_API_KEY"
 wire_api = "responses"
 ```
+
+Codex custom providers use the Responses wire protocol.
+
+## OpenCode
+
+Use the dedicated [OpenCode guide](./opencode.mdx) when you want OpenCode to call AI Stats through an OpenAI-compatible custom provider.
 
 ## Claude Code
 

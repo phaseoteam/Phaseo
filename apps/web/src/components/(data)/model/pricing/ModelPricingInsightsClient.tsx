@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import type { ProviderRuntimeStatsMap } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
+import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
 import PricingInsights from "@/components/(data)/model/pricing/PricingInsights";
 
@@ -17,13 +17,13 @@ function getPreferredPlan(plans: string[]): string {
 
 export default function ModelPricingInsightsClient({
 	providers,
-	runtimeStats,
 	historyRules,
+	usageRows,
 	showPageHeader = false,
 }: {
 	providers: ProviderPricing[];
-	runtimeStats: ProviderRuntimeStatsMap;
 	historyRules: ModelPricingHistoryRule[];
+	usageRows: ModelUsageDailyBreakdownRow[];
 	showPageHeader?: boolean;
 }) {
 	const availablePlans = useMemo(() => {
@@ -36,13 +36,11 @@ export default function ModelPricingInsightsClient({
 		return PLAN_ORDER.filter((plan) => plans.has(plan));
 	}, [providers]);
 
-	const [plan, setPlan] = useState<string>(() => getPreferredPlan(availablePlans));
-
-	useEffect(() => {
-		if (!availablePlans.length) return;
-		if (availablePlans.includes(plan)) return;
-		setPlan(getPreferredPlan(availablePlans));
-	}, [availablePlans, plan]);
+	const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+	const plan =
+		selectedPlan && availablePlans.includes(selectedPlan)
+			? selectedPlan
+			: getPreferredPlan(availablePlans);
 
 	return (
 		<div className={`space-y-4 ${showPageHeader ? "pt-1" : ""}`}>
@@ -51,14 +49,14 @@ export default function ModelPricingInsightsClient({
 					<div className="space-y-1">
 						<h1 className="text-2xl font-semibold tracking-tight">Pricing</h1>
 						<p className="text-sm text-muted-foreground">
-							Effective pricing across providers over the past hour and 30-day
-							pricing history by meter.
+							List price is the headline provider rate per million tokens. Effective
+							price is weighted by observed gateway traffic over the last 30 days.
 						</p>
 					</div>
 					{availablePlans.length > 1 ? (
 						<PricingPlanSelect
 							value={plan}
-							onChange={setPlan}
+							onChange={setSelectedPlan}
 							plans={availablePlans}
 						/>
 					) : null}
@@ -68,10 +66,10 @@ export default function ModelPricingInsightsClient({
 				providers={providers}
 				plan={plan}
 				availablePlans={availablePlans}
-				onPlanChange={setPlan}
-				showPlanInEffectiveHeader={!showPageHeader}
-				runtimeStats={runtimeStats}
+				onPlanChange={setSelectedPlan}
+				showPlanInEffectiveHeader={false}
 				historyRules={historyRules}
+				usageRows={usageRows}
 			/>
 		</div>
 	);

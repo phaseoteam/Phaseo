@@ -13,6 +13,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ProviderLogo } from "../ProviderLogo";
 import type { CompareGatewayUsageByModel } from "../types";
@@ -22,9 +23,12 @@ function formatInteger(value: number | null | undefined): string {
 	return value.toLocaleString("en-US", { maximumFractionDigits: 0 });
 }
 
-function formatPercent(value: number | null | undefined): string {
+function formatCompact(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `${value.toFixed(1)}%`;
+	return Intl.NumberFormat("en-US", {
+		notation: "compact",
+		maximumFractionDigits: 2,
+	}).format(value);
 }
 
 function formatLatency(value: number | null | undefined): string {
@@ -46,6 +50,61 @@ function formatDate(value: string | null | undefined): string {
 		month: "short",
 		year: "numeric",
 	});
+}
+
+function MiniSeries({
+	modelId,
+	points,
+	unit,
+	tone = "sky",
+}: {
+	modelId: string;
+	points: Array<{ date: string; value: number }>;
+	unit: string;
+	tone?: "sky" | "emerald";
+}) {
+	const maxValue = points.length
+		? Math.max(...points.map((point) => point.value), 1)
+		: 1;
+	const barClass = tone === "emerald" ? "bg-emerald-500/80" : "bg-sky-500/80";
+
+	return (
+		<div className="flex h-16 items-end gap-[2px] rounded border border-border/60 bg-muted/20 p-1.5">
+			{points.length ? (
+				<TooltipProvider delayDuration={120}>
+					{points.map((point, index) => (
+						<Tooltip key={`${modelId}-${unit}-${index}`}>
+							<TooltipTrigger asChild>
+								<div className="flex h-full min-w-0 flex-1 cursor-help flex-col">
+									<div
+										className={cn("w-full rounded-[2px]", barClass)}
+										style={{
+											height: `${Math.max(
+												point.value > 0 ? 8 : 2,
+												Math.round((point.value / maxValue) * 100)
+											)}%`,
+											opacity: point.value > 0 ? 0.95 : 0.18,
+											marginTop: "auto",
+										}}
+									/>
+								</div>
+							</TooltipTrigger>
+							<TooltipContent className="text-xs">
+								<div>{formatDate(point.date)}</div>
+								<div>
+									{formatInteger(point.value)} {unit}
+								</div>
+							</TooltipContent>
+						</Tooltip>
+					))}
+				</TooltipProvider>
+			) : (
+				<div className="px-1 text-xs text-muted-foreground">
+					No activity points
+				</div>
+			)}
+		</div>
+	);
 }
 
 export default function GatewayUsageComparison({
@@ -76,12 +135,7 @@ export default function GatewayUsageComparison({
 				{selectedModels.map((model) => {
 					const usage = usageByModel[model.id];
 					const tokenSeries = usage?.points30d ?? [];
-					const primarySeries = tokenSeries;
-					const primaryValueUnit = "tokens";
-					const primaryTotal = usage?.tokens30d ?? null;
-					const maxValue = primarySeries.length
-						? Math.max(...primarySeries.map((point) => point.value), 1)
-						: 1;
+					const requestSeries = usage?.requestPoints24h ?? [];
 
 					return (
 						<Card key={`gateway-${model.id}`} className="border-border/60 bg-card shadow-sm">
@@ -110,20 +164,34 @@ export default function GatewayUsageComparison({
 									{model.provider.name}
 								</CardDescription>
 							</CardHeader>
-							<CardContent className="space-y-3">
+							<CardContent className="space-y-4">
 								{usage ? (
 									<>
-										<div className="grid grid-cols-2 gap-2 text-xs">
-											<div className="rounded-md border border-border/60 bg-background/60 p-2 col-span-2">
-												<div className="text-muted-foreground">Monthly Tokens</div>
-												<div className="font-mono font-semibold">
-													{formatInteger(primaryTotal)}
+										<div className="space-y-1">
+											<div className="flex items-baseline justify-between gap-2">
+												<div className="font-mono text-xl font-semibold tracking-tight">
+													{formatCompact(usage.tokens30d)}
 												</div>
+												<Badge variant="outline" className="text-[10px]">
+													tokens · last 30 days
+												</Badge>
 											</div>
+											<MiniSeries
+												modelId={model.id}
+												points={tokenSeries}
+												unit="tokens"
+												tone="sky"
+											/>
+											<div className="text-[11px] text-muted-foreground">
+												{usage.latestDate ? `Token data up to ${formatDate(usage.latestDate)}` : "Recent token activity"}
+											</div>
+										</div>
+
+										<div className="grid grid-cols-3 gap-2 text-xs">
 											<div className="rounded-md border border-border/60 bg-background/60 p-2">
-												<div className="text-muted-foreground">Throughput</div>
+												<div className="text-muted-foreground">Requests</div>
 												<div className="font-mono font-semibold">
-													{formatThroughput(usage.throughputP50TokPerSec30m)}
+													{formatCompact(usage.totalRequests)}
 												</div>
 											</div>
 											<div className="rounded-md border border-border/60 bg-background/60 p-2">
@@ -132,49 +200,25 @@ export default function GatewayUsageComparison({
 													{formatLatency(usage.latencyP50Ms30m)}
 												</div>
 											</div>
+											<div className="rounded-md border border-border/60 bg-background/60 p-2">
+												<div className="text-muted-foreground">Throughput</div>
+												<div className="font-mono font-semibold">
+													{formatThroughput(usage.throughputP50TokPerSec30m)}
+												</div>
+											</div>
 										</div>
 
 										<div className="space-y-1">
-											<div className="text-[11px] text-muted-foreground">
-												{usage.latestDate ? `Up to ${formatDate(usage.latestDate)}` : "Recent activity"}
+											<div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+												<span>Request activity · 24h</span>
+												<span>{formatCompact(usage.requests30m)} in 30m</span>
 											</div>
-											<div className="flex h-10 items-end gap-[2px] rounded border border-border/60 bg-muted/20 p-1">
-												{primarySeries.length ? (
-													<TooltipProvider delayDuration={120}>
-														{primarySeries.map((point, index) => (
-															<Tooltip key={`${model.id}-usage-${index}`}>
-																<TooltipTrigger asChild>
-																	<div
-																		className="min-w-0 flex-1 h-full cursor-help flex flex-col"
-																	>
-																		<div
-																			className="w-full rounded-[2px] bg-sky-500/80"
-																			style={{
-																				height: `${Math.max(
-																					10,
-																					Math.round((point.value / maxValue) * 100)
-																				)}%`,
-																				opacity: point.value > 0 ? 0.95 : 0.2,
-																				marginTop: "auto",
-																			}}
-																		/>
-																	</div>
-																</TooltipTrigger>
-																<TooltipContent className="text-xs">
-																	<div>{formatDate(point.date)}</div>
-																	<div>
-																		{point.value.toLocaleString("en-US")} {primaryValueUnit}
-																	</div>
-																</TooltipContent>
-															</Tooltip>
-														))}
-													</TooltipProvider>
-												) : (
-													<div className="text-xs text-muted-foreground px-1">
-														No activity points
-													</div>
-												)}
-											</div>
+											<MiniSeries
+												modelId={model.id}
+												points={requestSeries}
+												unit="requests"
+												tone="emerald"
+											/>
 										</div>
 									</>
 								) : (

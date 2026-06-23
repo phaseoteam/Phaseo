@@ -3,43 +3,12 @@
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { ProviderModel } from "@/lib/fetchers/models/getModelPricing";
+import { extractSupportedParameters } from "@/lib/fetchers/models/table-view/helpers";
 import {
 	Sliders,
 } from "lucide-react";
 
-const META_KEYS = new Set([
-	"type",
-	"description",
-	"default",
-	"minimum",
-	"maximum",
-	"exclusiveMinimum",
-	"exclusiveMaximum",
-	"minLength",
-	"maxLength",
-	"pattern",
-	"format",
-	"title",
-	"examples",
-	"enum",
-	"required",
-	"nullable",
-	"items",
-	"properties",
-	"additionalProperties",
-	"oneOf",
-	"anyOf",
-	"allOf",
-	"$defs",
-	"$schema",
-	"const",
-]);
-
-function normalizeParamName(name: string): string {
-	return name.trim().replace(/\s+/g, "_");
-}
-
-function prettifyParamName(name: string): string {
+export function prettifyParamName(name: string): string {
 	return name
 		.replace(/[._-]+/g, " ")
 		.trim()
@@ -48,55 +17,11 @@ function prettifyParamName(name: string): string {
 		.join(" ");
 }
 
-function extractSupportedParameterNames(params: unknown): string[] {
-	const found = new Set<string>();
-
-	const walk = (value: unknown, depth = 0) => {
-		if (depth > 4 || value == null) return;
-
-		if (Array.isArray(value)) {
-			for (const item of value) {
-				if (typeof item === "string") {
-					const normalized = normalizeParamName(item);
-					if (normalized && !META_KEYS.has(normalized.toLowerCase())) {
-						found.add(normalized);
-					}
-					continue;
-				}
-				walk(item, depth + 1);
-			}
-			return;
-		}
-
-		if (typeof value !== "object") return;
-
-		for (const [rawKey, rawValue] of Object.entries(
-			value as Record<string, unknown>
-		)) {
-			const key = normalizeParamName(rawKey);
-			const lower = key.toLowerCase();
-			if (!META_KEYS.has(lower) && !key.startsWith("$")) {
-				found.add(key);
-			}
-			walk(rawValue, depth + 1);
-		}
-	};
-
-	walk(params);
-	return Array.from(found).sort((a, b) => a.localeCompare(b));
-}
-
-type Combo = {
-	id: string;
-	title: string;
-	parameters: string[];
-};
-
-function buildSupportedParameters(models: ProviderModel[]): string[] {
+export function buildSupportedParameters(models: ProviderModel[]): string[] {
 	const params = new Set<string>();
 
 	for (const model of models) {
-		for (const param of extractSupportedParameterNames(model.params)) {
+		for (const param of extractSupportedParameters(model.params)) {
 			params.add(param);
 		}
 	}

@@ -3,11 +3,11 @@ import { Suspense, type ReactNode } from "react";
 import {
 	Activity,
 	AlertTriangle,
+	ALargeSmall,
 	AppWindow,
 	BadgeAlert,
 	Braces,
 	Captions,
-	FileText,
 	Headphones,
 	ImageIcon,
 	Music4,
@@ -15,27 +15,29 @@ import {
 	Video,
 } from "lucide-react";
 import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
+import ModelSubscriptions from "@/components/(data)/model/pricing/ModelSubscriptions";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
+import ModelSuccessChart from "@/components/(data)/models/ModelSuccessChart";
+import ModelActivityChart from "@/components/(data)/model/overview/ModelActivityChart";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";
 import type { QuickstartRequestContext } from "@/components/(data)/model/quickstart/requestContext";
 import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmarks";
 import KeyDates from "@/components/(data)/model/overview/KeyDates";
 import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
-import ModelLinks, {
-	hasModelLinks,
-} from "@/components/(data)/model/overview/ModelLinks";
+import ModelLinks from "@/components/(data)/model/overview/ModelLinks";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import {
-	fetchFrontendModelActivitySnapshot,
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
 	fetchFrontendModelGatewayMetadata,
 	fetchFrontendModelOverview,
 	fetchFrontendModelPendingApiReleaseState,
 	fetchFrontendModelPerformance,
-	fetchFrontendModelPricing,
-	fetchFrontendModelTokenTrajectory,
+	fetchFrontendModelUsageDailyBreakdown,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +66,9 @@ type ModelOverviewSectionsProps = {
 	modelId: string;
 	model?: ModelOverviewPage | null;
 	includeHidden: boolean;
+	showBenchmarks?: boolean;
+	showSubscriptions?: boolean;
+	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 };
 
@@ -72,6 +77,9 @@ export type ModelSectionSharedProps = {
 	includeHidden: boolean;
 };
 type ModelSectionSurface = "overview" | "page";
+type ModelPerformancePromiseProps = {
+	performancePromise?: Promise<ModelPerformanceMetrics | null>;
+};
 
 function Section({
 	id,
@@ -85,16 +93,11 @@ function Section({
 	return (
 		<section
 			id={id}
-			className={`space-y-4 ${showDivider ? "border-t border-border/60 pt-6" : ""}`}
+			className={`scroll-mt-28 space-y-4 ${showDivider ? "border-t border-border/60 pt-6" : ""}`}
 		>
 			{children}
 		</section>
 	);
-}
-
-function formatPercent(value: number | null): string {
-	if (value == null || !Number.isFinite(value)) return "N/A";
-	return `${value.toFixed(1)}%`;
 }
 
 function parseTypes(types: unknown): string[] {
@@ -138,31 +141,8 @@ function parseTypes(types: unknown): string[] {
 	return [];
 }
 
-function isProviderModelActiveNow(
-	providerModel: {
-		is_active_gateway: boolean;
-		capability_status?: string | null;
-		effective_from?: string | null;
-		effective_to?: string | null;
-	},
-	now = new Date(),
-): boolean {
-	if (!providerModel.is_active_gateway) return false;
-	if (providerModel.capability_status === "disabled") return false;
-
-	const from = providerModel.effective_from
-		? new Date(providerModel.effective_from)
-		: null;
-	const to = providerModel.effective_to ? new Date(providerModel.effective_to) : null;
-
-	if (from && Number.isFinite(from.getTime()) && now < from) return false;
-	if (to && Number.isFinite(to.getTime()) && now >= to) return false;
-
-	return true;
-}
-
 const KNOWN_MODALITY_META = [
-	{ key: "text", label: "Text", icon: FileText },
+	{ key: "text", label: "Text", icon: ALargeSmall },
 	{ key: "image", label: "Image", icon: ImageIcon },
 	{ key: "video", label: "Video", icon: Video },
 	{ key: "audio", label: "Audio", icon: Headphones },
@@ -189,12 +169,11 @@ export async function ModelProvidersSection({
 	includeHidden,
 }: ModelSectionSharedProps) {
 	return (
-		<Section id="providers" showDivider={false}>
-			<ModelPricing
-				modelId={modelId}
-				includeHidden={includeHidden}
-			/>
-		</Section>
+		<ModelPricing
+			modelId={modelId}
+			includeHidden={includeHidden}
+			showHeader={false}
+		/>
 	);
 }
 
@@ -203,23 +182,57 @@ export async function ModelPricingInsightsOverviewSection({
 	includeHidden,
 }: ModelSectionSharedProps) {
 	return (
-		<Section id="pricing-insights">
-			<ModelPricingInsightsSection modelId={modelId} includeHidden={includeHidden} />
-		</Section>
+		<ModelPricingInsightsSection
+			modelId={modelId}
+			includeHidden={includeHidden}
+			showPageHeader={false}
+		/>
+	);
+}
+
+function SectionHeader({
+	title,
+	description,
+}: {
+	title: string;
+	description: string;
+}) {
+	return (
+		<div className="space-y-1">
+			<h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+			<p className="text-sm text-muted-foreground">{description}</p>
+		</div>
+	);
+}
+
+export async function ModelSubscriptionsSection({
+	modelId,
+	ownerOrganisationId,
+	ownerOrganisationName,
+}: {
+	modelId: string;
+	ownerOrganisationId?: string | null;
+	ownerOrganisationName?: string | null;
+}) {
+	return (
+		<ModelSubscriptions
+			modelId={modelId}
+			ownerOrganisationId={ownerOrganisationId}
+			ownerOrganisationName={ownerOrganisationName}
+			showHeader={false}
+		/>
 	);
 }
 
 export async function ModelPerformanceSection({
 	modelId,
 	includeHidden,
-	surface = "page",
-}: ModelSectionSharedProps & { surface?: ModelSectionSurface }) {
-	const [performanceMetrics, tokenTrajectory, pendingApiRelease] =
+	performancePromise,
+}: ModelSectionSharedProps & ModelPerformancePromiseProps) {
+	const [performanceMetrics, pendingApiRelease] =
 		await Promise.all([
-		fetchFrontendModelPerformance(modelId, 24).catch(() => null),
-		surface === "page"
-			? fetchFrontendModelTokenTrajectory(modelId).catch(() => null)
-			: Promise.resolve(null),
+		performancePromise ??
+			fetchFrontendModelPerformance(modelId, 24).catch(() => null),
 		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden).catch(
 			() => null,
 		),
@@ -228,21 +241,9 @@ export async function ModelPerformanceSection({
 		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
 
 	return (
-		<Section id="performance">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">Performance</h2>
-				<p className="text-sm text-muted-foreground">
-					{surface === "overview"
-						? "Core latency and throughput trends from recent traffic."
-						: "Latency, throughput, reliability, and cumulative token signals for recent traffic."}
-				</p>
-			</div>
+		<>
 			{performanceMetrics ? (
-				<ModelPerformanceDashboard
-					metrics={performanceMetrics}
-					tokenTrajectory={tokenTrajectory}
-					mode={surface}
-				/>
+				<ModelPerformanceDashboard metrics={performanceMetrics} />
 			) : (
 				<div className="space-y-3">
 					{shouldShowPendingApiBanner ? (
@@ -264,26 +265,40 @@ export async function ModelPerformanceSection({
 					</Empty>
 				</div>
 			)}
-		</Section>
+		</>
+	);
+}
+
+export async function ModelUptimeSection({
+	modelId,
+	performancePromise,
+}: Pick<ModelSectionSharedProps, "modelId"> & ModelPerformancePromiseProps) {
+	const performanceMetrics =
+		(await (performancePromise ??
+			fetchFrontendModelPerformance(modelId, 24).catch(() => null))) ?? null;
+	const showLeastStableProvider =
+		performanceMetrics?.successSeries.some(
+			(point) =>
+				(point.providerCount ?? 0) > 1 &&
+				point.worstProviderSuccessPct != null,
+		) ?? false;
+
+	return (
+		<ModelSuccessChart
+			successSeries={performanceMetrics?.successSeries ?? []}
+			showLeastStableProvider={showLeastStableProvider}
+		/>
 	);
 }
 
 export async function ModelAppsSection({
 	modelId,
-	includeHidden,
+	includeHidden: _includeHidden,
 }: ModelSectionSharedProps) {
 	const modelApps = await fetchFrontendModelApps(modelId).catch(() => []);
 
 	return (
-		<Section id="apps">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">
-					Apps Using This Model
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					Public apps observed in gateway request traffic for this model.
-				</p>
-			</div>
+		<>
 			{modelApps.length > 0 ? (
 				<div className="grid gap-3 md:grid-cols-2">
 					{modelApps.map((app) => (
@@ -320,76 +335,37 @@ export async function ModelAppsSection({
 					</EmptyHeader>
 				</Empty>
 			)}
-		</Section>
+		</>
 	);
 }
 
 export async function ModelActivitySection({
 	modelId,
-	includeHidden,
+	includeHidden: _includeHidden,
 }: ModelSectionSharedProps) {
-	const activitySnapshot = await fetchFrontendModelActivitySnapshot(modelId).catch(() => null);
-
-	const usageSummary = activitySnapshot?.summary ?? null;
-	const providerWithTelemetry =
-		activitySnapshot?.providerPerformance.filter(
-			(provider) => provider.requests > 0,
-		).length ?? 0;
-	const totalProviders = activitySnapshot?.providerPerformance.length ?? 0;
+	const usageRows = await fetchFrontendModelUsageDailyBreakdown({
+		modelId,
+		days: 30,
+	}).catch(() => []);
 
 	return (
-		<Section id="activity">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">
-					Recent Usage and Uptime
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					24-hour request volume and reliability across active providers.
-				</p>
-			</div>
-			{usageSummary ? (
-				<div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-					<div className="rounded-lg border border-border/70 px-4 py-3">
-						<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Requests
-						</p>
-						<p className="text-xl font-semibold">
-							{usageSummary.totalRequests.toLocaleString()}
-						</p>
-					</div>
-					<div className="rounded-lg border border-border/70 px-4 py-3">
-						<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Success Rate
-						</p>
-						<p className="text-xl font-semibold">
-							{formatPercent(usageSummary.uptimePct)}
-						</p>
-					</div>
-					<div className="rounded-lg border border-border/70 px-4 py-3">
-						<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Providers With Traffic
-						</p>
-						<p className="text-xl font-semibold">
-							{providerWithTelemetry} / {totalProviders}
-						</p>
-					</div>
-					<div className="rounded-lg border border-border/70 px-4 py-3">
-						<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Tokens (Cumulative)
-						</p>
-						<p className="text-xl font-semibold">
-							{activitySnapshot?.cumulativeTokens != null
-								? activitySnapshot.cumulativeTokens.toLocaleString()
-								: "N/A"}
-						</p>
-					</div>
-				</div>
+		<>
+			{usageRows.length > 0 ? (
+				<ModelActivityChart rows={usageRows} showHeading={false} />
 			) : (
-				<p className="text-sm text-muted-foreground">
-					Usage stats are not available yet.
-				</p>
+				<Empty className="rounded-lg border p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<Activity className="size-5" />
+						</EmptyMedia>
+						<EmptyTitle>No activity yet</EmptyTitle>
+						<EmptyDescription>
+							Usage breakdowns will appear once this model has enough gateway traffic.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
 			)}
-		</Section>
+		</>
 	);
 }
 
@@ -402,7 +378,11 @@ export async function ModelQuickstartSection({
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
-	const gatewayMetadata = await fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	const includeInternalProviders = await isAdminViewer().catch(() => false);
+	const gatewayMetadata = await (includeInternalProviders
+		? getModelGatewayMetadataCached(modelId, includeHidden, true)
+		: fetchFrontendModelGatewayMetadata(modelId)
+	).catch(() => null);
 
 	const quickstartEndpoint =
 		gatewayMetadata?.activeProviders.find((p) => p.endpoint)?.endpoint ??
@@ -419,15 +399,7 @@ export async function ModelQuickstartSection({
 		: [];
 
 	return (
-		<Section id="quickstart">
-			{surface === "overview" ? (
-				<div className="space-y-1">
-					<h2 className="text-xl font-semibold tracking-tight">Quickstart</h2>
-					<p className="text-sm text-muted-foreground">
-						Start calling this model with endpoint-specific examples.
-					</p>
-				</div>
-			) : null}
+		<>
 			{gatewayMetadata ? (
 				<Quickstart
 					modelId={gatewayMetadata.modelId}
@@ -454,7 +426,7 @@ export async function ModelQuickstartSection({
 					Quickstart metadata is not available right now.
 				</p>
 			)}
-		</Section>
+		</>
 	);
 }
 
@@ -476,13 +448,7 @@ export async function ModelBenchmarksSection({
 	}
 
 	return (
-		<Section id="benchmarks">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">Benchmarks</h2>
-				<p className="text-sm text-muted-foreground">
-					Headline benchmark standings and comparison context.
-				</p>
-			</div>
+		<>
 			{benchmarkHighlights.length > 0 ? (
 				<ModelBenchmarks
 					modelId={modelId}
@@ -507,13 +473,13 @@ export async function ModelBenchmarksSection({
 					</Empty>
 				</div>
 			)}
-		</Section>
+		</>
 	);
 }
 
 export async function ModelLineageSection({
 	modelId,
-	includeHidden,
+	includeHidden: _includeHidden,
 	model,
 }: ModelSectionSharedProps & { model?: ModelOverviewPage | null }) {
 	const overview = model ?? (await fetchFrontendModelOverview(modelId));
@@ -590,92 +556,93 @@ export async function ModelAboutSection({
 		(type) => !KNOWN_MODALITY_META.some((m) => m.key === type),
 	);
 
-	const renderModalityRow = (kind: "Input" | "Output") => {
+	const renderModalityValue = (kind: "Input" | "Output") => {
 		const isInput = kind === "Input";
 		const activeSet = isInput ? inputTypeSet : outputTypeSet;
 		const extraTypes = isInput ? extraInputTypes : extraOutputTypes;
 		const hasAny = activeSet.size > 0;
 
 		return (
-			<div className="rounded-md border border-border/70 bg-muted/10 px-3 py-3">
-				<p className="text-xs text-muted-foreground">{kind}</p>
-				<div className="mt-2 flex flex-wrap gap-2">
-					{KNOWN_MODALITY_META.filter((modality) => activeSet.has(modality.key)).map((modality) => {
-						const Icon = modality.icon;
-						const tone = getModalityTone(modality.key);
-						return (
-							<span
-								key={`${kind}-${modality.key}`}
-								className={cn(
-									"inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium",
-									tone.badgeClassName,
-								)}
-							>
-								<Icon className={cn("h-3.5 w-3.5", tone.iconClassName)} />
-								{modality.label}
-							</span>
-						);
-					})}
-					{extraTypes.map((type) => {
-						const tone = getModalityTone(type);
-						return (
-							<span
-								key={`${kind}-extra-${type}`}
-								className={cn(
-									"inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium",
-									tone.badgeClassName,
-								)}
-							>
-								{formatTypeLabel(type)}
-							</span>
-						);
-					})}
-				</div>
+			<div className="mt-1 flex min-w-0 flex-wrap gap-1.5">
+				{KNOWN_MODALITY_META.filter((modality) => activeSet.has(modality.key)).map((modality) => {
+					const Icon = modality.icon;
+					const tone = getModalityTone(modality.key);
+					return (
+						<span
+							key={`${kind}-${modality.key}`}
+							className={cn(
+								"inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium",
+								tone.badgeClassName,
+							)}
+						>
+							<Icon className={cn("h-3.5 w-3.5", tone.iconClassName)} />
+							{modality.label}
+						</span>
+					)}
+				)}
+				{extraTypes.map((type) => {
+					const tone = getModalityTone(type);
+					return (
+						<span
+							key={`${kind}-extra-${type}`}
+							className={cn(
+								"inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+								tone.badgeClassName,
+							)}
+						>
+							{formatTypeLabel(type)}
+						</span>
+					);
+				})}
 				{hasAny ? null : (
-					<p className="mt-2 text-xs text-muted-foreground">
-						No modalities listed.
-					</p>
+					<span className="text-sm font-medium text-muted-foreground">
+						Not listed
+					</span>
 				)}
 			</div>
 		);
 	};
 
 	return (
-		<Section id="about">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">About</h2>
-				<p className="text-sm text-muted-foreground">
-					Key dates, capabilities, and model metadata.
-				</p>
-			</div>
+		<>
 			<KeyDates
 				announced={model.announcement_date ?? undefined}
 				released={model.release_date ?? undefined}
 				deprecated={model.deprecation_date ?? undefined}
 				retired={model.retirement_date ?? undefined}
 				showHeading={false}
+				showEmpty
 			/>
-			<OtherInfo details={model.model_details ?? undefined} showHeading={false} />
 			<div className="space-y-2">
-				<h3 className="text-base font-semibold">Modalities</h3>
-				<div className="grid gap-2 sm:grid-cols-2">
-					{renderModalityRow("Input")}
-					{renderModalityRow("Output")}
-				</div>
+			<OtherInfo
+				details={model.model_details ?? undefined}
+				showHeading={false}
+				showEmpty
+				extraItems={[
+					{
+						key: "input_modalities",
+						label: "Input",
+							value: renderModalityValue("Input"),
+						},
+						{
+							key: "output_modalities",
+						label: "Output",
+						value: renderModalityValue("Output"),
+					},
+				]}
+			/>
 			</div>
-			{hasModelLinks(model) ? (
-				<div className="space-y-2">
-					<h3 className="text-base font-semibold">Links</h3>
-					<ModelLinks model={model} />
-				</div>
-			) : null}
-		</Section>
+			<div className="space-y-2">
+				<h3 className="text-base font-semibold">Links</h3>
+				<ModelLinks model={model} showEmpty />
+			</div>
+		</>
 	);
 }
 
 export async function ModelCreatorModelsSection({
 	modelId,
-	includeHidden,
+	includeHidden: _includeHidden,
 	model,
 }: ModelSectionSharedProps & { model: ModelOverviewPage }) {
 	const creatorName = model.organisation?.name ?? "this creator";
@@ -776,88 +743,192 @@ export async function ModelCreatorModelsSection({
 
 function ProvidersSectionSkeleton() {
 	return (
-		<Section id="providers-loading" showDivider={false}>
-			<div className="space-y-4">
-				<div className="space-y-2">
-					<Skeleton className="h-6 w-44" />
-					<Skeleton className="h-4 w-72" />
-				</div>
-				<div className="grid gap-3 md:grid-cols-3">
-					<Skeleton className="h-9 w-full" />
-					<Skeleton className="h-9 w-full" />
-					<Skeleton className="h-9 w-full" />
-				</div>
-				<div className="space-y-2">
-					<Skeleton className="h-9 w-full" />
-					<Skeleton className="h-9 w-full" />
-					<Skeleton className="h-9 w-full" />
-				</div>
+		<div className="space-y-4">
+			<div className="flex items-center justify-end">
+				<Skeleton className="h-8 w-32 rounded-md" />
 			</div>
-		</Section>
+			<div className="overflow-hidden rounded-sm border border-border/70 bg-background">
+				<div className="grid min-w-[780px] grid-cols-[27%_12%_12%_11%_11%_13%_1fr] border-b px-3 py-3">
+					{["Provider", "Input $/M", "Output $/M", "Latency", "Throughput", "Uptime"].map((label) => (
+						<div key={label} className="px-2">
+							<Skeleton className="h-3 w-2/3" />
+						</div>
+					))}
+				</div>
+				{Array.from({ length: 4 }).map((_, rowIndex) => (
+					<div
+						key={rowIndex}
+						className="grid min-w-[780px] grid-cols-[27%_12%_12%_11%_11%_13%_1fr] items-center border-b px-3 py-3 last:border-b-0"
+					>
+						<div className="flex items-center gap-3 px-2">
+							<Skeleton className="h-8 w-8 rounded-md" />
+							<Skeleton className="h-4 w-28" />
+						</div>
+						<Skeleton className="mx-2 h-4 w-12 justify-self-end" />
+						<Skeleton className="mx-2 h-4 w-12 justify-self-end" />
+						<Skeleton className="mx-2 h-4 w-12 justify-self-end" />
+						<Skeleton className="mx-2 h-4 w-16 justify-self-end" />
+						<div className="mx-2 flex items-center justify-end gap-2">
+							<Skeleton className="h-4 w-12" />
+							<Skeleton className="h-5 w-12" />
+						</div>
+						<Skeleton className="h-4 w-4 justify-self-end" />
+					</div>
+				))}
+			</div>
+		</div>
 	);
 }
 
 function QuickstartSectionSkeleton() {
 	return (
-		<Section id="quickstart-loading">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">Quickstart</h2>
-				<p className="text-sm text-muted-foreground">
-					Start calling this model with endpoint-specific examples.
-				</p>
-			</div>
+		<div className="overflow-hidden rounded-lg border border-border/70 bg-background">
 			<div className="flex flex-wrap gap-2">
-				<Skeleton className="h-8 w-24" />
-				<Skeleton className="h-8 w-28" />
-				<Skeleton className="h-8 w-20" />
+				<div className="flex w-full flex-wrap items-center gap-2 border-b p-3">
+					<Skeleton className="h-8 w-28 rounded-md" />
+					<Skeleton className="h-8 w-28 rounded-md" />
+					<Skeleton className="h-8 w-36 rounded-md" />
+					<Skeleton className="ml-auto h-8 w-24 rounded-md" />
+				</div>
 			</div>
-			<div className="space-y-2">
-				<Skeleton className="h-4 w-1/2" />
-				<Skeleton className="h-4 w-full" />
-				<Skeleton className="h-4 w-full" />
+			<div className="space-y-3 p-4">
+				<Skeleton className="h-4 w-2/5" />
+				<Skeleton className="h-4 w-4/5" />
+				<Skeleton className="h-4 w-3/4" />
 				<Skeleton className="h-4 w-5/6" />
+				<Skeleton className="h-4 w-1/2" />
 			</div>
-		</Section>
+		</div>
 	);
 }
 
 function BenchmarksSectionSkeleton() {
 	return (
-		<Section id="benchmarks-loading">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">Benchmarks</h2>
-				<p className="text-sm text-muted-foreground">
-					Headline benchmark standings and comparison context.
-				</p>
-			</div>
-			<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-				{Array.from({ length: 3 }).map((_, index) => (
-					<div key={index} className="space-y-3 py-1">
-						<Skeleton className="h-5 w-2/3" />
-						<Skeleton className="h-4 w-full" />
-						<Skeleton className="h-4 w-3/4" />
-					</div>
-				))}
-			</div>
-		</Section>
+		<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+			{Array.from({ length: 3 }).map((_, index) => (
+				<div key={index} className="space-y-3 rounded-md border border-border/70 p-4">
+					<Skeleton className="h-5 w-2/3" />
+					<Skeleton className="h-4 w-full" />
+					<Skeleton className="h-4 w-3/4" />
+				</div>
+			))}
+		</div>
 	);
 }
 
 function AboutSectionSkeleton() {
 	return (
-		<Section id="about-loading">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">About</h2>
-				<p className="text-sm text-muted-foreground">
-					Key dates, capabilities, and model metadata.
-				</p>
+		<div className="space-y-5">
+			<div className="grid gap-2 sm:grid-cols-3">
+				<Skeleton className="h-16 w-full rounded-md" />
+				<Skeleton className="h-16 w-full rounded-md" />
+				<Skeleton className="h-16 w-full rounded-md" />
 			</div>
-			<div className="space-y-3">
-				<Skeleton className="h-4 w-1/3" />
-				<Skeleton className="h-4 w-5/6" />
-				<Skeleton className="h-4 w-2/3" />
+			<div className="grid gap-2 sm:grid-cols-2">
+				<Skeleton className="h-24 w-full rounded-md" />
+				<Skeleton className="h-24 w-full rounded-md" />
 			</div>
-		</Section>
+		</div>
+	);
+}
+
+function PerformanceSectionSkeleton() {
+	return (
+		<div className="space-y-4">
+			<div className="grid gap-3 md:grid-cols-3">
+				{Array.from({ length: 3 }).map((_, index) => (
+					<div key={index} className="rounded-md border border-border/70 p-4">
+						<Skeleton className="mb-3 h-3 w-20" />
+						<Skeleton className="h-7 w-24" />
+					</div>
+				))}
+			</div>
+			<div className="rounded-md border border-border/70 p-4">
+				<div className="mb-4 flex items-center justify-between">
+					<Skeleton className="h-4 w-32" />
+					<Skeleton className="h-7 w-28 rounded-md" />
+				</div>
+				<Skeleton className="h-56 w-full rounded-sm" />
+			</div>
+		</div>
+	);
+}
+
+function PricingSectionSkeleton() {
+	return (
+		<div className="space-y-6">
+			<div className="overflow-hidden rounded-md border border-border/70">
+				{Array.from({ length: 4 }).map((_, index) => (
+					<div key={index} className="grid grid-cols-4 gap-3 border-b p-3 last:border-b-0">
+						<Skeleton className="h-4 w-28" />
+						<Skeleton className="h-4 w-16 justify-self-end" />
+						<Skeleton className="h-4 w-16 justify-self-end" />
+						<Skeleton className="h-4 w-16 justify-self-end" />
+					</div>
+				))}
+			</div>
+			<div className="grid gap-4 lg:grid-cols-2">
+				<Skeleton className="h-56 w-full rounded-md" />
+				<Skeleton className="h-56 w-full rounded-md" />
+			</div>
+		</div>
+	);
+}
+
+function ActivitySectionSkeleton() {
+	return (
+		<div className="space-y-3">
+			<div className="flex justify-end">
+				<Skeleton className="h-9 w-32 rounded-md" />
+			</div>
+			<div className="rounded-md border border-border/70 p-4">
+				<Skeleton className="h-64 w-full rounded-sm" />
+			</div>
+		</div>
+	);
+}
+
+function AppsSectionSkeleton() {
+	return (
+		<div className="grid gap-3 md:grid-cols-2">
+			{Array.from({ length: 4 }).map((_, index) => (
+				<div key={index} className="space-y-3 rounded-md border border-border/70 p-4">
+					<Skeleton className="h-4 w-2/5" />
+					<Skeleton className="h-3 w-3/5" />
+					<div className="flex gap-2">
+						<Skeleton className="h-5 w-20 rounded-full" />
+						<Skeleton className="h-5 w-20 rounded-full" />
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}
+
+function UptimeSectionSkeleton() {
+	return (
+		<div className="rounded-lg border border-border/70 bg-background p-6">
+			<Skeleton className="h-5 w-32" />
+			<Skeleton className="mt-4 h-[260px] w-full rounded-sm" />
+		</div>
+	);
+}
+
+function SubscriptionsSectionSkeleton() {
+	return (
+		<div className="space-y-3">
+			{Array.from({ length: 3 }).map((_, index) => (
+				<div key={index} className="rounded-md border border-border/70 p-4">
+					<div className="flex items-start justify-between gap-4">
+						<div className="space-y-2">
+							<Skeleton className="h-4 w-36" />
+							<Skeleton className="h-3 w-64" />
+						</div>
+						<Skeleton className="h-5 w-20" />
+					</div>
+				</div>
+			))}
+		</div>
 	);
 }
 
@@ -884,39 +955,77 @@ export function ModelCreatorModelsSkeleton() {
 export function ModelOverviewSectionsSkeleton() {
 	return (
 		<div className="space-y-10">
-			<ProvidersSectionSkeleton />
-			<QuickstartSectionSkeleton />
-			<BenchmarksSectionSkeleton />
-			<AboutSectionSkeleton />
+			<Section id="providers" showDivider={false}>
+				<SectionHeader
+					title="Providers"
+					description="API providers, route pricing, availability, and recent reliability signals."
+				/>
+				<ProvidersSectionSkeleton />
+			</Section>
+			<Section id="performance">
+				<SectionHeader
+					title="Performance"
+					description="Latency, throughput, and reliability signals from recent traffic."
+				/>
+				<PerformanceSectionSkeleton />
+			</Section>
+			<Section id="pricing">
+				<SectionHeader
+					title="Pricing"
+					description="Effective prices over the last 30 days, with current provider list prices for context."
+				/>
+				<PricingSectionSkeleton />
+			</Section>
+			<Section id="benchmarks">
+				<SectionHeader
+					title="Benchmarks"
+					description="Headline benchmark standings and comparison context."
+				/>
+				<BenchmarksSectionSkeleton />
+			</Section>
+			<Section id="activity">
+				<SectionHeader
+					title="Activity"
+					description="Daily gateway activity over the last 30 days, with current UTC-day pace projection."
+				/>
+				<ActivitySectionSkeleton />
+			</Section>
+			<Section id="apps">
+				<SectionHeader
+					title="Apps Using This Model"
+					description="Public apps observed in gateway request traffic for this model."
+				/>
+				<AppsSectionSkeleton />
+			</Section>
+			<Section id="uptime">
+				<SectionHeader
+					title="Model Uptime"
+					description="Uptime trend for this model over the last 24 hours."
+				/>
+				<UptimeSectionSkeleton />
+			</Section>
+			<Section id="quickstart">
+				<SectionHeader
+					title="Quickstart"
+					description="Start calling this model with endpoint-specific examples."
+				/>
+				<QuickstartSectionSkeleton />
+			</Section>
+			<Section id="about">
+				<SectionHeader
+					title="About"
+					description="Key dates, capabilities, and model metadata."
+				/>
+				<AboutSectionSkeleton />
+			</Section>
+			<Section id="subscriptions">
+				<SectionHeader
+					title="Subscriptions"
+					description="Commercial plans and bundled access that currently include this model."
+				/>
+				<SubscriptionsSectionSkeleton />
+			</Section>
 		</div>
-	);
-}
-
-async function ModelQuickstartOverviewGate({
-	modelId,
-	includeHidden,
-	quickstartRequestContext,
-}: ModelSectionSharedProps & {
-	quickstartRequestContext?: QuickstartRequestContext;
-}) {
-	const providerPricing = await fetchFrontendModelPricing(modelId).catch(() => null);
-	const hasApiProviders = (providerPricing ?? []).some(
-		(provider) =>
-			provider.pricing_rules.length > 0 &&
-			provider.provider_models.some((providerModel) =>
-				isProviderModelActiveNow(providerModel),
-			),
-	);
-
-	if (!hasApiProviders) return null;
-
-	return (
-		<ModelQuickstartSection
-			modelId={modelId}
-			includeHidden={includeHidden}
-			surface="overview"
-			quickstartRequestContext={quickstartRequestContext}
-		/>
 	);
 }
 
@@ -924,6 +1033,9 @@ export default function ModelOverviewSections({
 	modelId,
 	model,
 	includeHidden,
+	showBenchmarks = true,
+	showSubscriptions = true,
+	performancePromise,
 	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
@@ -949,49 +1061,125 @@ export default function ModelOverviewSections({
 						</Alert>
 					</Section>
 				) : null}
-			<Suspense
-				fallback={
-					<ProvidersSectionSkeleton />
-				}
-			>
-				<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
-			</Suspense>
-			{isLimitedAvailabilityModel ? null : (
-				<Suspense fallback={null}>
+			<Section id="providers" showDivider={false}>
+				<SectionHeader
+					title="Providers"
+					description="API providers, route pricing, availability, and recent reliability signals."
+				/>
+				<Suspense fallback={<ProvidersSectionSkeleton />}>
+					<ModelProvidersSection modelId={modelId} includeHidden={includeHidden} />
+				</Suspense>
+			</Section>
+			<Section id="performance">
+				<SectionHeader
+					title="Performance"
+					description="Latency, throughput, and reliability signals from recent traffic."
+				/>
+				<Suspense fallback={<PerformanceSectionSkeleton />}>
 					<ModelPerformanceSection
 						modelId={modelId}
 						includeHidden={includeHidden}
-						surface="overview"
+						performancePromise={performancePromise}
 					/>
 				</Suspense>
-			)}
-			{isLimitedAvailabilityModel ? null : (
-				<Suspense
-					fallback={
-						<QuickstartSectionSkeleton />
-					}
-				>
-					<ModelQuickstartOverviewGate
+			</Section>
+			<Section id="pricing">
+				<SectionHeader
+					title="Pricing"
+					description="Weighted provider pricing over the last 30 days, with recent route pricing history below."
+				/>
+				<Suspense fallback={<PricingSectionSkeleton />}>
+					<ModelPricingInsightsOverviewSection
 						modelId={modelId}
 						includeHidden={includeHidden}
-						quickstartRequestContext={quickstartRequestContext}
 					/>
 				</Suspense>
-			)}
-			{hasInternalModelData ? (
-				<>
-					<Suspense
-						fallback={
-							<BenchmarksSectionSkeleton />
-						}
-					>
+			</Section>
+			{showBenchmarks ? (
+				<Section id="benchmarks">
+					<SectionHeader
+						title="Benchmarks"
+						description="Headline benchmark standings and comparison context."
+					/>
+					<Suspense fallback={<BenchmarksSectionSkeleton />}>
 						<ModelBenchmarksSection
 							modelId={modelId}
 							includeHidden={includeHidden}
 							hideWhenEmpty
 						/>
 					</Suspense>
-					<ModelAboutSection model={model!} />
+				</Section>
+			) : null}
+			<Section id="activity">
+				<SectionHeader
+					title="Activity"
+					description="Daily gateway activity over the last 30 days, with current UTC-day pace projection."
+				/>
+				<Suspense fallback={<ActivitySectionSkeleton />}>
+					<ModelActivitySection modelId={modelId} includeHidden={includeHidden} />
+				</Suspense>
+			</Section>
+			<Section id="apps">
+				<SectionHeader
+					title="Apps Using This Model"
+					description="Public apps observed in gateway request traffic for this model."
+				/>
+				<Suspense fallback={<AppsSectionSkeleton />}>
+					<ModelAppsSection modelId={modelId} includeHidden={includeHidden} />
+				</Suspense>
+			</Section>
+			<Section id="uptime">
+				<SectionHeader
+					title="Model Uptime"
+					description="Uptime trend for this model over the last 24 hours."
+				/>
+				<Suspense fallback={<UptimeSectionSkeleton />}>
+					<ModelUptimeSection
+						modelId={modelId}
+						performancePromise={performancePromise}
+					/>
+				</Suspense>
+			</Section>
+			<Section id="quickstart">
+				<SectionHeader
+					title="Quickstart"
+					description="Start calling this model with endpoint-specific examples."
+				/>
+				<Suspense fallback={<QuickstartSectionSkeleton />}>
+					<ModelQuickstartSection
+						modelId={modelId}
+						includeHidden={includeHidden}
+						surface="overview"
+						quickstartRequestContext={quickstartRequestContext}
+					/>
+				</Suspense>
+			</Section>
+			{hasInternalModelData ? (
+				<>
+					<Section id="about">
+						<SectionHeader
+							title="About"
+							description="Key dates, capabilities, and model metadata."
+						/>
+						<Suspense fallback={<AboutSectionSkeleton />}>
+							<ModelAboutSection model={model!} />
+						</Suspense>
+					</Section>
+					{showSubscriptions ? (
+						<Section id="subscriptions">
+							<SectionHeader
+								title="Subscriptions"
+								description="Commercial plans and bundled access that currently include this model."
+							/>
+							<Suspense fallback={<SubscriptionsSectionSkeleton />}>
+								<ModelSubscriptionsSection
+									modelId={modelId}
+									ownerOrganisationId={model?.organisation_id}
+									ownerOrganisationName={model?.organisation?.name}
+								/>
+							</Suspense>
+						</Section>
+					) : null}
 				</>
 			) : null}
 		</div>

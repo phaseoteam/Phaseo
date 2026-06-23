@@ -5,7 +5,6 @@ import {
 	fetchFrontendModelOverview,
 	fetchFrontendModelPageNotice,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import TabBar from "@/components/(data)/model/ModelTabs";
 import { Logo } from "@/components/Logo";
 import ModelEditButton from "./edit/ModelEditButton";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import ModelPageNotice from "./ModelPageNotice";
+import ModelStickyHeader from "./ModelStickyHeader";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -115,6 +115,14 @@ export default async function ModelDetailShell({
 
 	return (
 		<main className="flex flex-col">
+			<ModelStickyHeader
+				modelId={modelId}
+				organisationId={header.organisation_id}
+				organisationName={header.organisation.name}
+				modelName={header.name}
+				observeId="model-detail-primary-header"
+			/>
+
 			<div className="container mx-auto px-4 py-8">
 				{modelPageNotice ? (
 					<div className="mb-6">
@@ -122,7 +130,10 @@ export default async function ModelDetailShell({
 					</div>
 				) : null}
 
-				<div className="mb-8 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
+				<div
+					id="model-detail-primary-header"
+					className="mb-5 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between"
+				>
 					<div className="flex w-full items-start gap-4">
 						<div className="flex shrink-0 items-center justify-center">
 							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
@@ -185,8 +196,6 @@ export default async function ModelDetailShell({
 					</div>
 				) : null}
 
-				<TabBar modelId={modelId} visibleTabKeys={scopedVisibleTabKeys} />
-
 				<div className="mt-6 min-h-full">{children}</div>
 			</div>
 		</main>
@@ -201,7 +210,7 @@ export function ModelDetailShellSkeleton({
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
-				<div className="mb-8 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
+				<div className="mb-5 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
 					<div className="flex flex-col items-center gap-4 md:flex-row">
 						<div className="flex items-center justify-center">
 							<div className="relative flex h-10 w-10 items-center justify-center rounded-xl border md:h-16 md:w-16">
