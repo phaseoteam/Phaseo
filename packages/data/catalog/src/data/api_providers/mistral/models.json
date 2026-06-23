@@ -1880,6 +1880,27 @@
     ]
   },
   {
+    "api_model_id": "mistral/ocr-4",
+    "provider_api_model_id": "mistral:mistral/ocr-4",
+    "provider_model_slug": "mistral-ocr-4-0",
+    "internal_model_id": "mistral/ocr-4",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "image,file",
+    "output_modalities": "text,image",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-23T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "ocr",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "mistral/pixtral-large",
     "provider_api_model_id": "mistral:mistral/pixtral-large",
     "provider_model_slug": "pixtral-large-2411",
