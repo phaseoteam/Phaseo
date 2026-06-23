@@ -1,0 +1,25 @@
+{
+  "model_id": "elevenlabs/eleven_multilingual_sts_v2",
+  "organisation_id": "eleven-labs",
+  "name": "Eleven Multilingual STS v2",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "State-of-the-art multilingual voice changer model for speech-to-speech conversion.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "audio",
+  "output_types": "audio",
+  "api_model_id": "elevenlabs/eleven_multilingual_sts_v2",
+  "links": [
+    {
+      "platform": "docs",
+      "label": "Models documentation",
+      "url": "https://elevenlabs.io/docs/overview/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

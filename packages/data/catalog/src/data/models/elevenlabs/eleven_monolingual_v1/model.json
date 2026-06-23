@@ -1,0 +1,25 @@
+{
+  "model_id": "elevenlabs/eleven_monolingual_v1",
+  "organisation_id": "eleven-labs",
+  "name": "Eleven Monolingual v1",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "First-generation English text-to-speech model.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": "2026-06-23T00:00:00",
+  "retirement_date": "2026-07-09T00:00:00",
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "audio_tts",
+  "api_model_id": "elevenlabs/eleven_monolingual_v1",
+  "links": [
+    {
+      "platform": "docs",
+      "label": "Models documentation",
+      "url": "https://elevenlabs.io/docs/overview/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}
