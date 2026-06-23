@@ -84,27 +84,6 @@
     ]
   },
   {
-    "api_model_id": "moonshotai/kimi-k2.7-code",
-    "provider_api_model_id": "akashml:moonshotai/kimi-k2.7-code",
-    "provider_model_slug": "moonshotai/Kimi-K2.7-Code",
-    "internal_model_id": "moonshotai/kimi-k2.7-code",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-15T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "qwen/qwen3.5-35b-a3b",
     "provider_api_model_id": "akashml:qwen/qwen3.5-35b-a3b",
     "provider_model_slug": "Qwen/Qwen3.5-35B-A3B",
@@ -116,6 +95,27 @@
     "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "akashml:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org/GLM-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-22T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
