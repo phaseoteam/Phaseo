@@ -795,6 +795,21 @@ pub struct ManagementKeyUpdateResponse {
 
 pub type MessageContentPart = JsonValue;
 
+pub struct MistralOcrOptions {
+	pub bbox_annotation_format: Option<Option<String>>,
+	pub confidence_scores_granularity: Option<Option<String>>,
+	pub document_annotation_format: Option<Option<String>>,
+	pub document_annotation_prompt: Option<Option<String>>,
+	pub extract_footer: Option<bool>,
+	pub extract_header: Option<bool>,
+	pub image_limit: Option<Option<i64>>,
+	pub image_min_size: Option<Option<i64>>,
+	pub include_blocks: Option<bool>,
+	pub include_image_base64: Option<Option<bool>>,
+	pub pages: Option<Option<String>>,
+	pub table_format: Option<String>,
+}
+
 pub struct Model {
 	pub aliases: Option<Vec<String>>,
 	pub architecture: Option<HashMap<String, String>>,
@@ -946,8 +961,10 @@ pub struct OcrRequest {
 	pub echo_upstream_request: Option<bool>,
 	pub image: String,
 	pub language: Option<String>,
+	pub mistral: Option<HashMap<String, String>>,
 	pub model: String,
 	pub provider: Option<HashMap<String, String>>,
+	pub provider_params: Option<HashMap<String, String>>,
 }
 
 pub struct OcrResponse {

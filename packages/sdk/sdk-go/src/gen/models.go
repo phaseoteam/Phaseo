@@ -1871,6 +1871,21 @@ type ManagementKeyUpdateResponse struct {
 
 type MessageContentPart = interface{}
 
+type MistralOcrOptions struct {
+	BboxAnnotationFormat *interface{} `json:"bbox_annotation_format,omitempty"`
+	ConfidenceScoresGranularity *string `json:"confidence_scores_granularity,omitempty"`
+	DocumentAnnotationFormat *interface{} `json:"document_annotation_format,omitempty"`
+	DocumentAnnotationPrompt *string `json:"document_annotation_prompt,omitempty"`
+	ExtractFooter *bool `json:"extract_footer,omitempty"`
+	ExtractHeader *bool `json:"extract_header,omitempty"`
+	ImageLimit *int `json:"image_limit,omitempty"`
+	ImageMinSize *int `json:"image_min_size,omitempty"`
+	IncludeBlocks *bool `json:"include_blocks,omitempty"`
+	IncludeImageBase64 *bool `json:"include_image_base64,omitempty"`
+	Pages *interface{} `json:"pages,omitempty"`
+	TableFormat *string `json:"table_format,omitempty"`
+}
+
 type Model struct {
 	Aliases *[]string `json:"aliases,omitempty"`
 	Architecture *map[string]interface{} `json:"architecture,omitempty"`
@@ -2022,8 +2037,10 @@ type OcrRequest struct {
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	Image string `json:"image"`
 	Language *string `json:"language,omitempty"`
+	Mistral *map[string]interface{} `json:"mistral,omitempty"`
 	Model string `json:"model"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
+	ProviderParams *map[string]interface{} `json:"provider_params,omitempty"`
 }
 
 type OcrResponse struct {

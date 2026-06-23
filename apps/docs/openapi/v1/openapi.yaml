@@ -5916,6 +5916,68 @@ components:
           type: string
         deleted:
           type: boolean
+    MistralOcrOptions:
+      type: object
+      description: Mistral-specific OCR options.
+      additionalProperties: true
+      properties:
+        document_annotation_format:
+          nullable: true
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+          description: Format for document-level structured extraction.
+        document_annotation_prompt:
+          type: string
+          nullable: true
+          description: Prompt used to guide document-level structured extraction.
+        bbox_annotation_format:
+          nullable: true
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+          description: Format for bounding-box annotations.
+        confidence_scores_granularity:
+          type: string
+          nullable: true
+          enum:
+            - word
+            - page
+          description: Confidence score granularity.
+        extract_footer:
+          type: boolean
+        extract_header:
+          type: boolean
+        image_limit:
+          type: integer
+          nullable: true
+          minimum: 1
+        image_min_size:
+          type: integer
+          nullable: true
+          minimum: 1
+        include_blocks:
+          type: boolean
+          description: Return paragraph-level bounding boxes for content blocks.
+        include_image_base64:
+          type: boolean
+          nullable: true
+        pages:
+          nullable: true
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: integer
+                minimum: 0
+          description: Specific zero-indexed pages to process.
+        table_format:
+          type: string
+          enum:
+            - markdown
+            - html
     OcrRequest:
       type: object
       required:
@@ -5928,6 +5990,14 @@ components:
           type: string
         language:
           type: string
+        provider_params:
+          type: object
+          additionalProperties: true
+          description: >-
+            Provider-specific OCR options. For Mistral, documented OCR options
+            may be supplied here or under `mistral`.
+        mistral:
+          $ref: '#/components/schemas/MistralOcrOptions'
         echo_upstream_request:
           type: boolean
         debug:

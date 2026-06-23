@@ -1409,6 +1409,34 @@ class ManagementKeyUpdateResponse
 
 class MessageContentPart { }
 
+class MistralOcrOptions
+{
+	/** @var string|array<string, mixed>|null */
+	public $bbox_annotation_format;
+	/** @var string|null */
+	public $confidence_scores_granularity;
+	/** @var string|array<string, mixed>|null */
+	public $document_annotation_format;
+	/** @var string|null */
+	public $document_annotation_prompt;
+	/** @var bool|null */
+	public $extract_footer;
+	/** @var bool|null */
+	public $extract_header;
+	/** @var int|null */
+	public $image_limit;
+	/** @var int|null */
+	public $image_min_size;
+	/** @var bool|null */
+	public $include_blocks;
+	/** @var bool|null */
+	public $include_image_base64;
+	/** @var string|array|null */
+	public $pages;
+	/** @var string|null */
+	public $table_format;
+}
+
 class Model
 {
 	/** @var array|null */
@@ -1683,10 +1711,14 @@ class OcrRequest
 	public $image;
 	/** @var string|null */
 	public $language;
+	/** @var array<string, mixed>|null */
+	public $mistral;
 	/** @var string */
 	public $model;
 	/** @var array<string, mixed>|null */
 	public $provider;
+	/** @var array<string, mixed>|null */
+	public $provider_params;
 }
 
 class OcrResponse

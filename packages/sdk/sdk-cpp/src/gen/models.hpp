@@ -799,6 +799,21 @@ struct ManagementKeyUpdateResponse {
 
 using MessageContentPart = std::any;
 
+struct MistralOcrOptions {
+	std::optional<std::any> bbox_annotation_format;
+	std::optional<std::any> confidence_scores_granularity;
+	std::optional<std::any> document_annotation_format;
+	std::optional<std::string> document_annotation_prompt;
+	std::optional<bool> extract_footer;
+	std::optional<bool> extract_header;
+	std::optional<int> image_limit;
+	std::optional<int> image_min_size;
+	std::optional<bool> include_blocks;
+	std::optional<bool> include_image_base64;
+	std::optional<std::any> pages;
+	std::any table_format;
+};
+
 struct Model {
 	std::vector<std::string> aliases;
 	std::map<std::string, std::any> architecture;
@@ -950,8 +965,10 @@ struct OcrRequest {
 	std::optional<bool> echo_upstream_request;
 	std::string image;
 	std::string language;
+	std::map<std::string, std::any> mistral;
 	std::string model;
 	std::map<std::string, std::any> provider;
+	std::map<std::string, std::any> provider_params;
 };
 
 struct OcrResponse {

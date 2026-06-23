@@ -88,6 +88,7 @@ export type { ManagementKeyListResponse } from "./ManagementKeyListResponse.js";
 export type { ManagementKeyUpdateRequest } from "./ManagementKeyUpdateRequest.js";
 export type { ManagementKeyUpdateResponse } from "./ManagementKeyUpdateResponse.js";
 export type { MessageContentPart } from "./MessageContentPart.js";
+export type { MistralOcrOptions } from "./MistralOcrOptions.js";
 export type { Model } from "./Model.js";
 export type { ModelAvailability } from "./ModelAvailability.js";
 export type { ModelId } from "./ModelId.js";

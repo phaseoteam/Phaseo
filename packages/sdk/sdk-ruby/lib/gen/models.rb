@@ -1146,6 +1146,31 @@ module AiStats
     #   @return [String]
     ManagementKeyUpdateResponse = Struct.new(:message, :ok, keyword_init: true)
     MessageContentPart = Object
+    # @!attribute [rw] bbox_annotation_format
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] confidence_scores_granularity
+    #   @return [String, nil]
+    # @!attribute [rw] document_annotation_format
+    #   @return [String, Hash{String => Object}, nil]
+    # @!attribute [rw] document_annotation_prompt
+    #   @return [String, nil]
+    # @!attribute [rw] extract_footer
+    #   @return [Boolean, nil]
+    # @!attribute [rw] extract_header
+    #   @return [Boolean, nil]
+    # @!attribute [rw] image_limit
+    #   @return [Integer, nil]
+    # @!attribute [rw] image_min_size
+    #   @return [Integer, nil]
+    # @!attribute [rw] include_blocks
+    #   @return [Boolean, nil]
+    # @!attribute [rw] include_image_base64
+    #   @return [Boolean, nil]
+    # @!attribute [rw] pages
+    #   @return [String, Array<Integer>, nil]
+    # @!attribute [rw] table_format
+    #   @return [String, nil]
+    MistralOcrOptions = Struct.new(:bbox_annotation_format, :confidence_scores_granularity, :document_annotation_format, :document_annotation_prompt, :extract_footer, :extract_header, :image_limit, :image_min_size, :include_blocks, :include_image_base64, :pages, :table_format, keyword_init: true)
     # @!attribute [rw] aliases
     #   @return [Array<String>, nil]
     # @!attribute [rw] architecture
@@ -1378,11 +1403,15 @@ module AiStats
     #   @return [String]
     # @!attribute [rw] language
     #   @return [String, nil]
+    # @!attribute [rw] mistral
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
-    OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :model, :provider, keyword_init: true)
+    # @!attribute [rw] provider_params
+    #   @return [Hash{String => Object}, nil]
+    OcrRequest = Struct.new(:debug, :echo_upstream_request, :image, :language, :mistral, :model, :provider, :provider_params, keyword_init: true)
     OcrResponse = Struct.new(:_unused, keyword_init: true)
     OrganisationId = Object
     OrganisationIdList = Object

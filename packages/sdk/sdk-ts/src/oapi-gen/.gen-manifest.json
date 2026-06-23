@@ -94,6 +94,7 @@
     "models/ManagementKeyUpdateRequest.ts",
     "models/ManagementKeyUpdateResponse.ts",
     "models/MessageContentPart.ts",
+    "models/MistralOcrOptions.ts",
     "models/Model.ts",
     "models/ModelAvailability.ts",
     "models/ModelId.ts",

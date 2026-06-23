@@ -801,6 +801,21 @@ public final class Models {
 	public static class MessageContentPart {
 	}
 
+	public static class MistralOcrOptions {
+		public Object bbox_annotation_format;
+		public Object confidence_scores_granularity;
+		public Object document_annotation_format;
+		public String document_annotation_prompt;
+		public Boolean extract_footer;
+		public Boolean extract_header;
+		public Integer image_limit;
+		public Integer image_min_size;
+		public Boolean include_blocks;
+		public Boolean include_image_base64;
+		public Object pages;
+		public Object table_format;
+	}
+
 	public static class Model {
 		public java.util.List<String> aliases;
 		public Object architecture;
@@ -953,8 +968,10 @@ public final class Models {
 		public Boolean echo_upstream_request;
 		public String image;
 		public String language;
+		public Object mistral;
 		public String model;
 		public Object provider;
+		public Object provider_params;
 	}
 
 	public static class OcrResponse {

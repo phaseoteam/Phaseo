@@ -1938,6 +1938,46 @@ public sealed class ManagementKeyUpdateResponse
 
 public sealed class MessageContentPart { }
 
+public sealed class MistralOcrOptions
+{
+	[JsonPropertyName("bbox_annotation_format")]
+	public object? BboxAnnotationFormat { get; set; }
+
+	[JsonPropertyName("confidence_scores_granularity")]
+	public string? ConfidenceScoresGranularity { get; set; }
+
+	[JsonPropertyName("document_annotation_format")]
+	public object? DocumentAnnotationFormat { get; set; }
+
+	[JsonPropertyName("document_annotation_prompt")]
+	public string? DocumentAnnotationPrompt { get; set; }
+
+	[JsonPropertyName("extract_footer")]
+	public bool? ExtractFooter { get; set; }
+
+	[JsonPropertyName("extract_header")]
+	public bool? ExtractHeader { get; set; }
+
+	[JsonPropertyName("image_limit")]
+	public int? ImageLimit { get; set; }
+
+	[JsonPropertyName("image_min_size")]
+	public int? ImageMinSize { get; set; }
+
+	[JsonPropertyName("include_blocks")]
+	public bool? IncludeBlocks { get; set; }
+
+	[JsonPropertyName("include_image_base64")]
+	public bool? IncludeImageBase64 { get; set; }
+
+	[JsonPropertyName("pages")]
+	public object? Pages { get; set; }
+
+	[JsonPropertyName("table_format")]
+	public string? TableFormat { get; set; }
+
+}
+
 public sealed class Model
 {
 	[JsonPropertyName("aliases")]
@@ -2321,11 +2361,17 @@ public sealed class OcrRequest
 	[JsonPropertyName("language")]
 	public string? Language { get; set; }
 
+	[JsonPropertyName("mistral")]
+	public Dictionary<string, object>? Mistral { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("provider_params")]
+	public Dictionary<string, object>? ProviderParams { get; set; }
 
 }
 
