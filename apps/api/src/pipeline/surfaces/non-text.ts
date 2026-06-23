@@ -231,6 +231,10 @@ function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRe
 				model: body?.model,
 				image: body?.image,
 				language: body?.language,
+				providerParams: body?.provider_params,
+				vendor: {
+					mistral: body?.mistral,
+				},
 				rawRequest: body,
 			};
 		case "music.generate":

@@ -279,11 +279,13 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 
 		case "ocr": {
 			const request = ir as IROcrRequest;
-			return {
+			return withDefinedValues({
 				model: providerModel,
 				image: request.image,
 				language: request.language,
-			};
+				provider_params: request.providerParams,
+				mistral: (request.vendor as any)?.mistral,
+			});
 		}
 
 		case "music.generate": {

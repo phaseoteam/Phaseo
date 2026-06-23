@@ -36,7 +36,53 @@ function extractOcrText(json: any): string {
     return parts.join("\n\n");
 }
 
-function buildUsageMeters(json: any): Record<string, number> {
+function isPlainObject(value: unknown): value is Record<string, any> {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function pickOption(source: Record<string, any>, snakeKey: string, camelKey?: string): unknown {
+    if (source[snakeKey] !== undefined) return source[snakeKey];
+    if (camelKey && source[camelKey] !== undefined) return source[camelKey];
+    return undefined;
+}
+
+function buildMistralOcrOptions(adapterPayload: Record<string, any>): Record<string, any> {
+    const providerParams = isPlainObject(adapterPayload.provider_params)
+        ? adapterPayload.provider_params
+        : {};
+    const nestedProviderParams = isPlainObject(providerParams.mistral)
+        ? providerParams.mistral
+        : {};
+    const mistralParams = isPlainObject(adapterPayload.mistral)
+        ? adapterPayload.mistral
+        : {};
+    const source = { ...providerParams, ...nestedProviderParams, ...mistralParams };
+
+    const mapped = {
+        bbox_annotation_format: pickOption(source, "bbox_annotation_format", "bboxAnnotationFormat"),
+        confidence_scores_granularity: pickOption(source, "confidence_scores_granularity", "confidenceScoresGranularity"),
+        document_annotation_format: pickOption(source, "document_annotation_format", "documentAnnotationFormat"),
+        document_annotation_prompt: pickOption(source, "document_annotation_prompt", "documentAnnotationPrompt"),
+        extract_footer: pickOption(source, "extract_footer", "extractFooter"),
+        extract_header: pickOption(source, "extract_header", "extractHeader"),
+        image_limit: pickOption(source, "image_limit", "imageLimit"),
+        image_min_size: pickOption(source, "image_min_size", "imageMinSize"),
+        include_blocks: pickOption(source, "include_blocks", "includeBlocks"),
+        include_image_base64: pickOption(source, "include_image_base64", "includeImageBase64"),
+        pages: pickOption(source, "pages"),
+        table_format: pickOption(source, "table_format", "tableFormat"),
+    };
+
+    return Object.fromEntries(
+        Object.entries(mapped).filter(([, value]) => value !== undefined),
+    );
+}
+
+function hasAnnotationRequest(ocrOptions: Record<string, any>): boolean {
+    return ocrOptions.document_annotation_format != null || ocrOptions.bbox_annotation_format != null;
+}
+
+function buildUsageMeters(json: any): Record<string, any> {
     const pagesProcessed = Number(json?.usage_info?.pages_processed ?? json?.usageInfo?.pagesProcessed ?? 0);
     const docSizeBytes = Number(json?.usage_info?.doc_size_bytes ?? json?.usageInfo?.docSizeBytes ?? 0);
 
@@ -53,6 +99,8 @@ function buildUsageMeters(json: any): Record<string, number> {
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const keyInfo = await resolveOpenAICompatKey(args);
     const adapterPayload = buildAdapterPayload(OcrSchema, args.body, []).adapterPayload as OcrRequest;
+    const ocrOptions = buildMistralOcrOptions(adapterPayload as Record<string, any>);
+    const annotated = hasAnnotationRequest(ocrOptions);
 
     const ocrRequest = {
         model: args.providerModelSlug || adapterPayload.model || "mistral-ocr-latest",
@@ -60,6 +108,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             type: "image_url",
             image_url: normalizeImageUrl(adapterPayload.image),
         },
+        ...ocrOptions,
     };
 
     const res = await fetch(openAICompatUrl(args.providerId, "/ocr"), {
@@ -78,9 +127,12 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 
     const json = await res.clone().json().catch(() => null);
     const usageMeters = buildUsageMeters(json);
+    const pricingUsage = annotated
+        ? { ...usageMeters, ocr_params: { annotations: true } }
+        : usageMeters;
 
     if (args.pricingCard) {
-        const pricedUsage = computeBill(usageMeters, args.pricingCard);
+        const pricedUsage = computeBill(pricingUsage, args.pricingCard);
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;
@@ -89,7 +141,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const normalized = {
         text: extractOcrText(json),
         model: json?.model || adapterPayload.model,
-        usage: usageMeters,
+        usage: pricingUsage,
         rawResponse: json,
     };
 

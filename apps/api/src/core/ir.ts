@@ -631,6 +631,10 @@ export type IROcrRequest = {
 	model: string;
 	image: string;
 	language?: string;
+	providerParams?: Record<string, any>;
+	vendor?: {
+		mistral?: Record<string, any>;
+	};
 	rawRequest?: any;
 };
 

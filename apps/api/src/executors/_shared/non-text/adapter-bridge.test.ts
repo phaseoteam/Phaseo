@@ -28,6 +28,30 @@ const PRICING_CARD = {
 	],
 } as any;
 
+const OCR_PRICING_CARD = {
+	provider: "mistral",
+	model: "mistral/ocr-4",
+	endpoint: "ocr",
+	effective_from: null,
+	effective_to: null,
+	currency: "USD",
+	version: null,
+	rules: [
+		{
+			meter: "input_pages",
+			unit: "page",
+			unit_size: 1000,
+			price_per_unit: 4,
+			currency: "USD",
+			pricing_plan: "standard",
+			match: [],
+			priority: 100,
+			effective_from: null,
+			effective_to: null,
+		},
+	],
+} as any;
+
 beforeAll(() => {
 	setupTestRuntime();
 });
@@ -100,6 +124,61 @@ describe("non-text adapter bridge", () => {
 		if (result.kind === "completed") {
 			expect(result.ir?.provider).toBe("google-ai-studio");
 			expect((result.ir as any)?.data?.[0]?.b64Json).toBe("abc123");
+		}
+	});
+
+	it("forwards Mistral OCR provider options through the non-text bridge", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url === "https://api.mistral.example/v1/ocr",
+				response: jsonResponse({
+					pages: [{ index: 0, markdown: "ok" }],
+					model: "mistral-ocr-4-0",
+					usage_info: { pages_processed: 1, doc_size_bytes: null },
+				}),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+			},
+		]);
+
+		const result = await executeNonTextAdapter({
+			ir: {
+				type: "ocr",
+				model: "mistral/ocr-4",
+				image: "https://example.com/document.png",
+				vendor: {
+					mistral: {
+						document_annotation_format: { type: "json_object" },
+						document_annotation_prompt: "Extract document metadata.",
+					},
+				},
+			},
+			requestId: "req_non_text_mistral_ocr_1",
+			workspaceId: "team_test",
+			providerId: "mistral",
+			endpoint: "ocr",
+			providerModelSlug: "mistral-ocr-4-0",
+			byokMeta: [],
+			pricingCard: OCR_PRICING_CARD,
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(capturedBody).toMatchObject({
+			model: "mistral-ocr-4-0",
+			document: {
+				type: "image_url",
+				image_url: "https://example.com/document.png",
+			},
+			document_annotation_format: { type: "json_object" },
+			document_annotation_prompt: "Extract document metadata.",
+		});
+		expect(result.kind).toBe("completed");
+		if (result.kind === "completed") {
+			expect((result.ir as any)?.usage?.input_pages).toBe(1);
 		}
 	});
 });

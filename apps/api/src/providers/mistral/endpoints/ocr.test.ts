@@ -29,6 +29,22 @@ const OCR4_PRICING_CARD = {
 			match: [],
 			priority: 100,
 		},
+		{
+			pricing_plan: "standard",
+			meter: "input_pages",
+			unit: "page",
+			unit_size: 1000,
+			price_per_unit: "5",
+			currency: "USD",
+			match: [
+				{
+					path: "ocr_params.annotations",
+					op: "eq",
+					value: true,
+				},
+			],
+			priority: 110,
+		},
 	],
 } as any;
 
@@ -116,6 +132,64 @@ describe("Mistral OCR billing", () => {
 			billable_units: 0.029,
 			unit_size: 1000,
 			line_nanos: 116_000_000,
+		});
+	});
+
+	it("forwards Mistral annotation options and prices annotated pages", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([
+			{
+				match: (url) => url === "https://api.mistral.example/v1/ocr",
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+				},
+				response: jsonResponse({
+					pages: [{ index: 0, markdown: "Invoice" }],
+					model: "mistral-ocr-4-0",
+					document_annotation: "{\"invoice_number\":\"INV-123\"}",
+					usage_info: {
+						pages_processed: 29,
+						doc_size_bytes: 4096,
+					},
+				}),
+			},
+		]);
+
+		const result = await exec(
+			buildArgs({
+				model: "mistral/ocr-4",
+				image: "https://example.com/invoice.png",
+				mistral: {
+					document_annotation_format: { type: "json_object" },
+					document_annotation_prompt: "Extract the invoice number.",
+					table_format: "html",
+				},
+			}),
+		);
+
+		mock.restore();
+
+		expect(capturedBody).toMatchObject({
+			model: "mistral-ocr-4-0",
+			document_annotation_format: { type: "json_object" },
+			document_annotation_prompt: "Extract the invoice number.",
+			table_format: "html",
+		});
+		expect(result.normalized?.usage).toMatchObject({
+			input_pages: 29,
+			doc_size_bytes: 4096,
+			ocr_params: { annotations: true },
+		});
+		expect(result.bill.usage?.pricing).toMatchObject({
+			total_nanos: 145_000_000,
+			total_usd_str: "0.145",
+			total_cents: 14,
+		});
+		expect(result.bill.usage?.pricing.lines[0]).toMatchObject({
+			dimension: "input_pages",
+			quantity: 29,
+			unit_price_usd: "5.000000000",
+			line_nanos: 145_000_000,
 		});
 	});
 });

@@ -1122,11 +1122,28 @@ export const VideoGenerationSchema = z.object({
 });
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
 
+const MistralOcrOptionsSchema = z.object({
+	document_annotation_format: ResponseFormatSchema.nullable().optional(),
+	document_annotation_prompt: z.string().nullable().optional(),
+	bbox_annotation_format: ResponseFormatSchema.nullable().optional(),
+	confidence_scores_granularity: z.enum(["word", "page"]).nullable().optional(),
+	extract_footer: z.boolean().optional(),
+	extract_header: z.boolean().optional(),
+	image_limit: z.number().int().positive().nullable().optional(),
+	image_min_size: z.number().int().positive().nullable().optional(),
+	include_blocks: z.boolean().optional(),
+	include_image_base64: z.boolean().nullable().optional(),
+	pages: z.union([z.string(), z.array(z.number().int().nonnegative())]).nullable().optional(),
+	table_format: z.enum(["markdown", "html"]).optional(),
+}).passthrough();
+
 // OCR schema
 export const OcrSchema = z.object({
     model: z.string().min(1),
     image: z.string().min(1), // URL or base64
     language: z.string().optional(),
+    provider_params: z.record(z.string(), z.any()).optional(),
+    mistral: MistralOcrOptionsSchema.optional(),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
