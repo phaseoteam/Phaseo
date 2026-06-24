@@ -1,0 +1,139 @@
+{
+  "model_id": "sakana/fugu",
+  "organisation_id": "sakana",
+  "name": "Fugu",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Fugu is Sakana AI's multi-agent orchestration model for everyday coding, code review, research, and interactive work, balancing answer quality with lower latency through a single OpenAI-compatible API.",
+  "announced_date": "2026-06-22T00:00:00",
+  "release_date": "2026-06-22T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "sakana/fugu",
+  "family_id": "sakana/fugu",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://sakana.ai/fugu-release/"
+    },
+    {
+      "platform": "docs",
+      "url": "https://sakana.ai/fugu/"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://console.sakana.ai/models"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://console.sakana.ai/get-started"
+    },
+    {
+      "platform": "pricing",
+      "url": "https://console.sakana.ai/pricing"
+    }
+  ],
+  "details": [
+    {
+      "name": "official_api_model_id",
+      "value": "fugu"
+    },
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "api_endpoints",
+      "value": "Supports OpenAI-compatible Responses, Chat Completions, and Models APIs."
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "Supports high and xhigh reasoning effort values; max is accepted as an alias for xhigh."
+    },
+    {
+      "name": "routing_controls",
+      "value": "Fugu can use a customizable model pool so customers can opt out of specific underlying providers or models."
+    },
+    {
+      "name": "pricing",
+      "value": "Pay-as-you-go Fugu is billed at the standard rate of the top-tier underlying model involved; Sakana does not publish a fixed Fugu token price."
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 59,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 80.2,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "livecodebench",
+      "score": 92.9,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "livecodebench-pro",
+      "score": 87.8,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 47.2,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "charxiv-reasoning",
+      "score": 85.1,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "gpqa-diamond",
+      "score": 95.5,
+      "is_self_reported": true,
+      "other_info": "Sakana reports this benchmark as GPQA-D.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "scicode",
+      "score": 60.1,
+      "is_self_reported": true,
+      "other_info": "Sakana Fugu product page benchmark table.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    },
+    {
+      "benchmark_id": "tau3-bench",
+      "score": 21.7,
+      "is_self_reported": true,
+      "other_info": "Sakana reports this benchmark as Tau3 Banking.",
+      "source_link": "https://sakana.ai/fugu/",
+      "rank": null
+    }
+  ]
+}

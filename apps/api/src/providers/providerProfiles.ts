@@ -192,6 +192,37 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "sakana",
+		textOnly: true,
+		text: {
+			paramPolicy: {
+				supportedParams: [
+					"max_output_tokens",
+					"max_completion_tokens",
+					"max_tokens",
+					"reasoning",
+					"reasoning_effort",
+					"tools",
+					"tool_choice",
+					"response_format",
+					"structured_outputs",
+					"parallel_tool_calls",
+					"temperature",
+					"top_p",
+					"stop",
+					"seed",
+					"frequency_penalty",
+					"presence_penalty",
+					"metadata",
+					"stream",
+				],
+			},
+			normalize: {
+				reasoningEffortFallback: ["high", "xhigh"],
+			},
+		},
+	},
+	{
 		id: "thinking-machines",
 		textOnly: true,
 	},

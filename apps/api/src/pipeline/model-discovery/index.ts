@@ -339,6 +339,14 @@ const PROVIDERS: ProviderConfig[] = [
 		baseUrlEnv: ["POOLSIDE_BASE_URL"],
 		apiKeyEnv: ["POOLSIDE_API_KEY"],
 	},
+	{
+		providerId: "sakana",
+		providerName: "Sakana AI",
+		modelsEndpoint: "https://api.sakana.ai/v1/models",
+		pathPrefix: "/v1",
+		baseUrlEnv: ["SAKANA_BASE_URL", "FUGU_BASE_URL"],
+		apiKeyEnv: ["SAKANA_API_KEY", "FUGU_API_KEY"],
+	},
 	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
 	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
 	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.ai/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
@@ -1078,4 +1086,3 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
-

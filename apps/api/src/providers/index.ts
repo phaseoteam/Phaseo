@@ -92,6 +92,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     poolside: createOpenAICompatibleAdapter("poolside"),
     qwen: createOpenAICompatibleAdapter("qwen"),
     ovhcloud: createOpenAICompatibleAdapter("ovhcloud"),
+    sakana: createOpenAICompatibleAdapter("sakana"),
     sambanova: createOpenAICompatibleAdapter("sambanova"),
     scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
@@ -242,4 +243,3 @@ export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdap
 export function adapterById(providerId: string): ProviderAdapter | null {
     return ADAPTERS[providerId] ?? null;
 }
-

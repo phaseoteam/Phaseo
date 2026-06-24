@@ -1,0 +1,21 @@
+{
+  "organisation_id": "sakana",
+  "name": "Sakana AI",
+  "country_code": "JP",
+  "description": "Sakana AI is a Tokyo-based AI research company building nature-inspired foundation model systems and AI orchestration products.",
+  "colour": "#F97316",
+  "organisation_links": [
+    {
+      "platform": "github",
+      "url": "https://github.com/SakanaAI"
+    },
+    {
+      "platform": "website",
+      "url": "https://sakana.ai/"
+    },
+    {
+      "platform": "x",
+      "url": "https://x.com/SakanaAILabs"
+    }
+  ]
+}
