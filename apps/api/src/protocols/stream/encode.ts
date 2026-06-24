@@ -7,6 +7,7 @@ import type { UnifiedStreamEvent } from "@pipeline/after/stream-events";
 export type StreamProtocol =
 	| "openai.chat.completions"
 	| "openai.responses"
+	| "google.interactions"
 	| "anthropic.messages";
 
 export type EncodedStreamFrame = {
@@ -468,6 +469,224 @@ function encodeAnthropicMessages(
 	return null;
 }
 
+function parseJsonObject(value: string | undefined): Record<string, any> {
+	if (!value) return {};
+	try {
+		const parsed = JSON.parse(value);
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+			? parsed
+			: { value: parsed };
+	} catch {
+		return { value };
+	}
+}
+
+function audioMimeType(format?: string): string {
+	switch (format) {
+		case "mp3":
+			return "audio/mpeg";
+		case "flac":
+			return "audio/flac";
+		case "m4a":
+			return "audio/mp4";
+		case "ogg":
+			return "audio/ogg";
+		case "pcm16":
+			return "audio/L16";
+		case "pcm24":
+			return "audio/L24";
+		case "wav":
+		default:
+			return "audio/wav";
+	}
+}
+
+function encodeGoogleUsage(usage: any): any {
+	if (!usage || typeof usage !== "object") return usage;
+	const inputTokens =
+		usage.total_input_tokens ??
+		usage.input_tokens ??
+		usage.prompt_tokens ??
+		usage.inputTokens ??
+		0;
+	const outputTokens =
+		usage.total_output_tokens ??
+		usage.output_tokens ??
+		usage.completion_tokens ??
+		usage.outputTokens ??
+		0;
+	return {
+		total_input_tokens: inputTokens,
+		total_output_tokens: outputTokens,
+		total_tokens:
+			usage.total_tokens ??
+			usage.totalTokens ??
+			(inputTokens + outputTokens),
+		...(usage.total_cached_tokens != null
+			? { total_cached_tokens: usage.total_cached_tokens }
+			: usage.cached_tokens != null
+				? { total_cached_tokens: usage.cached_tokens }
+				: {}),
+		...(usage.total_thought_tokens != null
+			? { total_thought_tokens: usage.total_thought_tokens }
+			: usage.reasoning_tokens != null
+				? { total_thought_tokens: usage.reasoning_tokens }
+				: {}),
+	};
+}
+
+function mapStopToGoogleStatus(stop: string | null | undefined): "completed" | "failed" | "incomplete" | "requires_action" {
+	const normalized = String(stop ?? "").toLowerCase();
+	if (normalized === "error" || normalized === "failed") return "failed";
+	if (normalized === "length" || normalized === "incomplete" || normalized.includes("max")) return "incomplete";
+	if (normalized === "tool_calls" || normalized === "tool_use" || normalized.includes("tool")) return "requires_action";
+	return "completed";
+}
+
+function encodeGoogleInteractions(
+	event: UnifiedStreamEvent,
+	ctx: EncodeStreamContext,
+): EncodedStreamFrame | null {
+	if (event.type === "snapshot") {
+		return { frame: event.payload as Record<string, any> };
+	}
+	if (event.type === "error") {
+		return {
+			eventName: "error",
+			frame: {
+				event_type: "error",
+				error: { message: event.message ?? "stream_error" },
+			},
+		};
+	}
+	if (event.type === "start") {
+		return {
+			eventName: "interaction.created",
+			frame: {
+				event_type: "interaction.created",
+				interaction: {
+					id: ctx.requestId ?? undefined,
+					object: "interaction",
+					model: ctx.model ?? undefined,
+					status: "in_progress",
+				},
+			},
+		};
+	}
+	if (event.type === "delta_text") {
+		return {
+			eventName: "step.delta",
+			frame: {
+				event_type: "step.delta",
+				index: event.choiceIndex ?? 0,
+				delta: event.channel === "reasoning_text"
+					? {
+						type: "thought_summary",
+						content: {
+							type: "text",
+							text: event.text,
+						},
+					}
+					: {
+						type: "text",
+						text: event.text,
+					},
+			},
+		};
+	}
+	if (event.type === "delta_content_part") {
+		const delta = event.part.type === "image"
+			? event.part.source === "data"
+				? {
+					type: "image",
+					mime_type: event.part.mimeType ?? "image/jpeg",
+					data: event.part.data,
+				}
+				: {
+					type: "image",
+					mime_type: event.part.mimeType ?? "image/jpeg",
+					uri: event.part.data,
+				}
+			: event.part.source === "data"
+				? {
+					type: "audio",
+					mime_type: audioMimeType(event.part.format),
+					data: event.part.data,
+				}
+				: {
+					type: "audio",
+					mime_type: audioMimeType(event.part.format),
+					uri: event.part.data,
+				};
+		return {
+			eventName: "step.delta",
+			frame: {
+				event_type: "step.delta",
+				index: event.choiceIndex ?? 0,
+				delta,
+			},
+		};
+	}
+	if (event.type === "delta_tool") {
+		if (typeof event.argumentsDelta === "string") {
+			return {
+				eventName: "step.delta",
+				frame: {
+					event_type: "step.delta",
+					index: event.choiceIndex ?? 0,
+					delta: {
+						type: "arguments_delta",
+						arguments: event.argumentsDelta,
+					},
+				},
+			};
+		}
+		return {
+			eventName: "step.start",
+			frame: {
+				event_type: "step.start",
+				index: event.choiceIndex ?? 0,
+				step: {
+					type: "function_call",
+					id: event.toolCallId,
+					name: event.toolName,
+					arguments: parseJsonObject(event.arguments),
+				},
+			},
+		};
+	}
+	if (event.type === "usage") {
+		return {
+			eventName: "interaction.completed",
+			frame: {
+				event_type: "interaction.completed",
+				interaction: {
+					id: ctx.requestId ?? undefined,
+					object: "interaction",
+					model: ctx.model ?? undefined,
+					status: "completed",
+					usage: encodeGoogleUsage(event.usage),
+				},
+			},
+		};
+	}
+	if (event.type === "stop") {
+		return {
+			eventName: "interaction.completed",
+			frame: {
+				event_type: "interaction.completed",
+				interaction: {
+					id: ctx.requestId ?? undefined,
+					object: "interaction",
+					model: ctx.model ?? undefined,
+					status: mapStopToGoogleStatus(event.finishReason),
+				},
+			},
+		};
+	}
+	return null;
+}
+
 export function encodeUnifiedStreamEvent(
 	protocol: StreamProtocol,
 	event: UnifiedStreamEvent,
@@ -478,10 +697,11 @@ export function encodeUnifiedStreamEvent(
 			return encodeOpenAIChat(event, ctx);
 		case "openai.responses":
 			return encodeOpenAIResponses(event, ctx);
+		case "google.interactions":
+			return encodeGoogleInteractions(event, ctx);
 		case "anthropic.messages":
 			return encodeAnthropicMessages(event, ctx);
 		default:
 			return null;
 	}
 }
-

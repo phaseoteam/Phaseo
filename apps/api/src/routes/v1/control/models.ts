@@ -51,7 +51,7 @@ const MAX_LIMIT = 250;
 const MAX_OFFSET = 5000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
 const FREE_ROUTER_NAME = "Phaseo Free Router";
-const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as const;
+const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "interactions", "messages"] as const;
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
@@ -183,7 +183,7 @@ function meterToUnitPrice(meter: PricingMeterSummary | null | undefined): string
 }
 
 function inferInstructType(endpoints: string[]): string | null {
-    if (endpoints.some((endpoint) => endpoint === "chat/completions" || endpoint === "messages" || endpoint === "responses")) {
+    if (endpoints.some((endpoint) => endpoint === "chat/completions" || endpoint === "messages" || endpoint === "responses" || endpoint === "interactions")) {
         return "chat";
     }
     if (endpoints.includes("embeddings")) return "embedding";
@@ -697,4 +697,3 @@ export const modelsRoutes = new Hono<Env>();
 
 modelsRoutes.get("/me", withRuntime((req) => handleMyModels(req)));
 modelsRoutes.get("/", withRuntime((req) => handleModels(req)));
-

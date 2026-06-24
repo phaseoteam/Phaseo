@@ -300,6 +300,40 @@ export const ResponsesSchema = z.object({
 });
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
+// Google Interactions-compatible schema
+export const InteractionsSchema = z.object({
+    model: z.string().min(1),
+    input: z.union([
+        z.string(),
+        z.array(z.any()),
+        z.record(z.string(), z.any()),
+    ]).optional(),
+    system_instruction: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]).optional(),
+    generation_config: z.record(z.string(), z.any()).optional(),
+    tools: z.array(z.record(z.string(), z.any())).optional(),
+    tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+    response_format: z.union([z.record(z.string(), z.any()), z.array(z.record(z.string(), z.any()))]).optional(),
+    response_modalities: z.union([z.string(), z.array(z.string())]).optional(),
+    previous_interaction_id: z.string().optional(),
+    store: z.boolean().optional(),
+    stream: z.boolean().optional(),
+    background: z.boolean().optional(),
+    service_tier: ServiceTierSchema.optional(),
+    cached_content: z.string().optional(),
+    environment: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
+    user_metadata: z.record(z.string(), z.any()).optional(),
+    usage: z.boolean().optional(),
+    session_id: z.string().trim().min(1).max(256).optional(),
+    // Gateway-only flags (not forwarded upstream)
+    meta: z.boolean().optional(),
+    echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
+    provider: ProviderRoutingSchema,
+}).passthrough();
+export type InteractionsRequest = z.infer<typeof InteractionsSchema>;
+
 // Embeddings schema
 const EmbeddingsInputTextPartSchema = z.object({
 	type: z.enum(["text", "input_text"]),
@@ -1289,6 +1323,7 @@ export function schemaFor(endpoint: Endpoint): z.ZodTypeAny | null {
     switch (endpoint) {
         case "chat.completions": return ChatCompletionsSchema;
         case "responses": return ResponsesSchema;
+        case "interactions": return InteractionsSchema;
         case "messages": return AnthropicMessagesSchema;
         case "moderations": return ModerationsSchema;
         case "rerank": return RerankSchema;

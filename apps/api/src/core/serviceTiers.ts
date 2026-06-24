@@ -13,6 +13,7 @@ export type TextServiceTierValidation =
 const TEXT_ENDPOINTS = new Set<Endpoint>([
 	"chat.completions",
 	"responses",
+	"interactions",
 	"messages",
 ]);
 

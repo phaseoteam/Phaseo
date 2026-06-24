@@ -4,7 +4,7 @@
 
 // Config file mapping capabilities to supported endpoints
 export const capabilityToEndpoints: Record<string, string[]> = {
-    "text.generate": ["/chat/completions", "/responses", "/messages", "/completions"],
+    "text.generate": ["/chat/completions", "/responses", "/interactions", "/messages", "/completions"],
     "text.embed": ["/embeddings"],
     "text.rerank": ["/rerank"],
     "rerank": ["/rerank"],
@@ -48,6 +48,7 @@ const ENDPOINT_TO_PATH: Record<string, string> = {
     "chat.completions": "/chat/completions",
     completions: "/completions",
     responses: "/responses",
+    interactions: "/interactions",
     messages: "/messages",
     embeddings: "/embeddings",
     moderations: "/moderations",
@@ -75,4 +76,3 @@ export function resolveCapabilityFromEndpoint(endpoint: string): string {
         : ENDPOINT_TO_PATH[normalized] ?? `/${normalized.replace(/\.+/g, "/")}`;
     return endpointToCapability[path] ?? normalized;
 }
-

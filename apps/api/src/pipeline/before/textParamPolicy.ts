@@ -5,7 +5,7 @@
 import type { Endpoint } from "@core/types";
 import { resolveTextProviderParamPolicyOverride } from "@providers/textProfiles";
 
-export type TextEndpoint = "chat.completions" | "responses" | "messages";
+export type TextEndpoint = "chat.completions" | "responses" | "interactions" | "messages";
 
 export type EndpointParamRegistry = {
 	allowedTopLevel: Set<string>;
@@ -214,6 +214,66 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			instructions: "instructions",
 		},
 	},
+	interactions: {
+		allowedTopLevel: new Set([
+			"model",
+			"input",
+			"usage",
+			"system_instruction",
+			"generation_config",
+			"tools",
+			"tool_choice",
+			"response_format",
+			"response_modalities",
+			"previous_interaction_id",
+			"cached_content",
+			"environment",
+			"metadata",
+			"user_metadata",
+			"service_tier",
+			"store",
+			"stream",
+			"background",
+			"session_id",
+			"meta",
+			"echo_upstream_request",
+			"debug",
+			"provider",
+			"plugins",
+			"trace",
+			"models",
+		]),
+		keyToCanonicalParam: {
+			tools: "tools",
+			tool_choice: "tool_choice",
+			"generation_config.tool_choice": "tool_choice",
+			"generation_config.temperature": "temperature",
+			"generation_config.top_p": "top_p",
+			"generation_config.top_k": "top_k",
+			"generation_config.max_output_tokens": "max_tokens",
+			"generation_config.stop_sequences": "stop",
+			"generation_config.frequency_penalty": "frequency_penalty",
+			"generation_config.presence_penalty": "presence_penalty",
+			"generation_config.seed": "seed",
+			"generation_config.thinking_level": "reasoning",
+			"generation_config.thinking_summaries": "reasoning",
+			temperature: "temperature",
+			top_p: "top_p",
+			top_k: "top_k",
+			max_tokens: "max_tokens",
+			max_output_tokens: "max_tokens",
+			stop: "stop",
+			stop_sequences: "stop",
+			response_format: "response_format",
+			response_modalities: "modalities",
+			modalities: "modalities",
+			cached_content: "prompt_cache_key",
+			previous_interaction_id: "previous_response_id",
+			service_tier: "service_tier",
+			background: "background",
+			system_instruction: "instructions",
+		},
+	},
 	messages: {
 		allowedTopLevel: new Set([
 			"model",
@@ -308,6 +368,7 @@ export function textEndpointRegistryFor(
 	if (
 		endpoint === "chat.completions" ||
 		endpoint === "responses" ||
+		endpoint === "interactions" ||
 		endpoint === "messages"
 	) {
 		return TEXT_ENDPOINT_REGISTRY[endpoint];

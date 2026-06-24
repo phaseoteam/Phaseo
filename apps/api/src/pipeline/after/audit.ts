@@ -657,7 +657,7 @@ function enrichUsageWithMultimodal(ctx: PipelineContext, result: RequestResult, 
             if (inputVideo > 0 && inputDetails.input_videos == null) inputDetails.input_videos = inputVideo;
         }
 
-        if (ctx.endpoint === "responses") {
+        if (ctx.endpoint === "responses" || ctx.endpoint === "interactions") {
             const body: any = ctx.body ?? {};
             const items: any[] = Array.isArray(body.input) ? body.input : (Array.isArray(body.input_items) ? body.input_items : []);
             let inputImages = 0;
@@ -711,7 +711,6 @@ function enrichUsageWithMultimodal(ctx: PipelineContext, result: RequestResult, 
         return usagePriced;
     }
 }
-
 
 
 

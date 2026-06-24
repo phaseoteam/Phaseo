@@ -7,13 +7,15 @@
 
 import type { Protocol } from "./detect";
 import type { IRChatRequest, IRChatResponse } from "@core/ir";
-import type { ChatCompletionsRequest } from "@core/schemas";
+import type { ChatCompletionsRequest, InteractionsRequest } from "@core/schemas";
 import type { GatewayCompletionsResponse } from "@core/types";
 
 import { decodeOpenAIChatRequest } from "./openai-chat/decode";
 import { encodeOpenAIChatResponse } from "./openai-chat/encode";
 import { decodeOpenAIResponsesRequest } from "./openai-responses/decode";
 import { encodeOpenAIResponsesResponse } from "./openai-responses/encode";
+import { decodeGoogleInteractionsRequest } from "./google-interactions/decode";
+import { encodeGoogleInteractionsResponse } from "./google-interactions/encode";
 import { decodeAnthropicMessagesRequest } from "./anthropic-messages/decode";
 import { encodeAnthropicMessagesResponse } from "./anthropic-messages/encode";
 
@@ -32,6 +34,9 @@ export function decodeProtocol(protocol: Protocol, body: any): IRChatRequest {
 
 		case "openai.responses":
 			return decodeOpenAIResponsesRequest(body);
+
+		case "google.interactions":
+			return decodeGoogleInteractionsRequest(body as InteractionsRequest);
 
 		case "anthropic.messages":
 			return decodeAnthropicMessagesRequest(body);
@@ -62,6 +67,9 @@ export function encodeProtocol(
 		case "openai.responses":
 			return encodeOpenAIResponsesResponse(ir);
 
+		case "google.interactions":
+			return encodeGoogleInteractionsResponse(ir, requestId);
+
 		case "anthropic.messages":
 			return encodeAnthropicMessagesResponse(ir);
 
@@ -69,4 +77,3 @@ export function encodeProtocol(
 			throw new Error(`Unknown protocol: ${protocol}`);
 	}
 }
-

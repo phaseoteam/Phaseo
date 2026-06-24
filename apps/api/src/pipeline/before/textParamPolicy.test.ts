@@ -15,6 +15,7 @@ describe("textParamPolicy", () => {
 	it("exposes endpoint registries for text routes", () => {
 		expect(textEndpointRegistryFor("chat.completions")).toBeTruthy();
 		expect(textEndpointRegistryFor("responses")).toBeTruthy();
+		expect(textEndpointRegistryFor("interactions")).toBeTruthy();
 		expect(textEndpointRegistryFor("messages")).toBeTruthy();
 		expect(textEndpointRegistryFor("embeddings")).toBeNull();
 	});
@@ -115,5 +116,22 @@ describe("providerSupportsParam", () => {
 		});
 
 		expect(unsupported).toEqual(["temperature"]);
+	});
+
+	it("extracts google interactions generation config params", async () => {
+		const { extractRequestedParams } = await import("./paramCapabilities");
+
+		expect(
+			extractRequestedParams("interactions", {
+				model: "google/gemini-test",
+				input: "hello",
+				generation_config: {
+					temperature: 0.1,
+					max_output_tokens: 100,
+					thinking_level: "high",
+				},
+				response_modalities: ["text", "image"],
+			}),
+		).toEqual(["modalities", "temperature", "max_tokens", "reasoning"]);
 	});
 });

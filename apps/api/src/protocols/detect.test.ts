@@ -14,6 +14,12 @@ describe("detectTextProtocol", () => {
 		);
 	});
 
+	it("detects google interactions protocol for interactions endpoint", () => {
+		expect(detectTextProtocol("interactions", "/v1/interactions")).toBe(
+			"google.interactions",
+		);
+	});
+
 	it("prefers anthropic protocol for messages path", () => {
 		expect(detectTextProtocol("messages", "/v1/messages")).toBe(
 			"anthropic.messages",
@@ -40,4 +46,3 @@ describe("detectProtocol", () => {
 		);
 	});
 });
-

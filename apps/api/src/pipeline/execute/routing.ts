@@ -57,7 +57,7 @@ const PRESETS: Record<Priority, RoutingPreset> = {
     cheap: { wSucc: 0.25, wP50: 0.15, wTail: 0.10, wTPS: 0.05, wLoad: 0.05, wPrice: 0.40, noise: 0.001, L0: 700 },
 };
 
-const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "chat.completions", "messages"]);
+const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "interactions", "chat.completions", "messages"]);
 const TEXT_PRICE_METERS = ["input_text_tokens", "output_text_tokens"];
 const TOKEN_PRICE_CAP_UNIT_SIZE = 1_000_000;
 

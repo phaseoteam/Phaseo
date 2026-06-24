@@ -5,6 +5,7 @@
 export type Endpoint =
     | "chat.completions"
     | "responses"
+    | "interactions"
     | "messages"
     | "images.generations"
     | "images.edits"

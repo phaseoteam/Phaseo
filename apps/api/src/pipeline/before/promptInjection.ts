@@ -500,7 +500,7 @@ function collectGenericPromptTargets(body: any): TextTarget[] {
 function collectPromptInjectionTargets(endpoint: Endpoint, body: any): TextTarget[] {
 	if (endpoint === "chat.completions") return collectChatTargets(body);
 	if (endpoint === "messages") return collectAnthropicTargets(body);
-	if (endpoint === "responses") return collectResponsesTargets(body);
+	if (endpoint === "responses" || endpoint === "interactions") return collectResponsesTargets(body);
 	return collectGenericPromptTargets(body);
 }
 

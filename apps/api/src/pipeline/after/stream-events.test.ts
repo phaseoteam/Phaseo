@@ -290,6 +290,75 @@ describe("extractUnifiedStreamEvents", () => {
 		).toBe(true);
 	});
 
+	it("extracts google interaction deltas, usage, and stop", () => {
+		const deltaEvents = extractUnifiedStreamEvents({
+			protocol: "google.interactions",
+			eventName: "step.delta",
+			frame: {
+				event_type: "step.delta",
+				index: 0,
+				delta: { type: "text", text: "hello" },
+			},
+		});
+		expect(
+			deltaEvents.some(
+				(event) =>
+					event.type === "delta_text" &&
+					event.channel === "output_text" &&
+					event.text === "hello",
+			),
+		).toBe(true);
+
+		const toolEvents = extractUnifiedStreamEvents({
+			protocol: "google.interactions",
+			eventName: "step.start",
+			frame: {
+				event_type: "step.start",
+				index: 1,
+				step: {
+					type: "function_call",
+					id: "call_1",
+					name: "lookup",
+					arguments: { q: "x" },
+				},
+			},
+		});
+		expect(
+			toolEvents.some(
+				(event) =>
+					event.type === "delta_tool" &&
+					event.toolCallId === "call_1" &&
+					event.toolName === "lookup" &&
+					event.arguments === "{\"q\":\"x\"}",
+			),
+		).toBe(true);
+
+		const completedEvents = extractUnifiedStreamEvents({
+			protocol: "google.interactions",
+			eventName: "interaction.completed",
+			frame: {
+				event_type: "interaction.completed",
+				interaction: {
+					object: "interaction",
+					status: "requires_action",
+					usage: {
+						total_input_tokens: 3,
+						total_output_tokens: 2,
+						total_tokens: 5,
+					},
+				},
+			},
+		});
+		expect(completedEvents.some((event) => event.type === "usage")).toBe(true);
+		expect(
+			completedEvents.some(
+				(event) =>
+					event.type === "stop" &&
+					event.finishReason === "tool_calls",
+			),
+		).toBe(true);
+	});
+
 	it("falls back to wire-shape auto-detection when protocol hint mismatches", () => {
 		const events = extractUnifiedStreamEvents({
 			protocol: "openai.responses",

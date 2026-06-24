@@ -12,6 +12,7 @@ describe("resolvePipeline", () => {
 	it("routes text and core IR endpoints to their dedicated surfaces", () => {
 		expect(resolvePipeline("chat.completions")).toBe(runTextGeneratePipeline);
 		expect(resolvePipeline("responses")).toBe(runTextGeneratePipeline);
+		expect(resolvePipeline("interactions")).toBe(runTextGeneratePipeline);
 		expect(resolvePipeline("messages")).toBe(runTextGeneratePipeline);
 		expect(resolvePipeline("embeddings")).toBe(runEmbeddingsPipeline);
 		expect(resolvePipeline("moderations")).toBe(runModerationsPipeline);

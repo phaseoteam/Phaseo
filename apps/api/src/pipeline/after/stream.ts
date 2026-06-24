@@ -12,7 +12,7 @@ import { calculatePricing } from "./pricing";
 import { handleSuccessAudit } from "./audit";
 import { recordUsageAndChargeOnce } from "./charge";
 import { shapeUsageForClient, stripUsagePricing } from "../usage";
-import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
+import { normalizeAnthropicUsage, presentInteractionUsageForClient, presentUsageForClient, extractFinishReason } from "./payload";
 import {
 	classifyProviderHealthImpact,
 	onCallEnd,
@@ -44,7 +44,7 @@ function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
 
 function getStreamTerminalPayload(frame: any): any | null {
     if (!frame || typeof frame !== "object") return null;
-    if (frame.object === "response" || frame.object === "chat.completion") {
+    if (frame.object === "response" || frame.object === "chat.completion" || frame.object === "interaction") {
         return frame;
     }
     if (
@@ -53,6 +53,13 @@ function getStreamTerminalPayload(frame: any): any | null {
         (frame.response.object === "response" || frame.response.object === "chat.completion")
     ) {
         return frame.response;
+    }
+    if (
+        frame.interaction &&
+        typeof frame.interaction === "object" &&
+        frame.interaction.object === "interaction"
+    ) {
+        return frame.interaction;
     }
     return null;
 }
@@ -309,6 +316,40 @@ export async function handleStreamResponse(
                         { endpoint: ctx.endpoint }
                     );
                 }
+            } else if (next.interaction?.usage) {
+                if (ctx.meta.debug) {
+                    console.log("[gateway][pricing] stream interaction usage", {
+                        requestId: ctx.requestId,
+                        endpoint: ctx.endpoint,
+                        provider: result.provider,
+                        usage: next.interaction.usage,
+                    });
+                }
+                if (card) {
+                    const shapedUsage = shapeStreamUsageForClient(next.interaction.usage);
+                    const tier = ctx.teamEnrichment?.tier ?? 'basic';
+                    const { pricedUsage } = calculatePricing(
+                        shapedUsage,
+                        card,
+                        ctx.body,
+                        tier
+                    );
+                    if (ctx.meta.debug) {
+                        console.log("[gateway][pricing] stream interaction priced usage", {
+                            requestId: ctx.requestId,
+                            endpoint: ctx.endpoint,
+                            provider: result.provider,
+                            pricing: (pricedUsage as any)?.pricing ?? null,
+                        });
+                    }
+                    next.interaction.usage = presentInteractionUsageForClient(
+                        withProviderHint(pricedUsage),
+                    );
+                } else {
+                    next.interaction.usage = presentInteractionUsageForClient(
+                        shapeStreamUsageForClient(next.interaction.usage),
+                    );
+                }
             }
 
             const terminalPayload = getStreamTerminalPayload(next);
@@ -326,6 +367,8 @@ export async function handleStreamResponse(
                 appliedStreamResponsePlugins = pluginOutcome.executions.length > 0;
                 if (terminalPayload === next) {
                     Object.assign(next, pluginOutcome.payload);
+                } else if (terminalPayload === next.interaction) {
+                    next.interaction = pluginOutcome.payload;
                 } else {
                     next.response = pluginOutcome.payload;
                 }
@@ -357,7 +400,15 @@ export async function handleStreamResponse(
             }
             if (
                 (includeMeta || ctx.meta?.debug?.enabled) &&
-                (next?.usage || next?.response?.usage || next?.object === "chat.completion" || next?.object === "response")
+                (
+                    next?.usage ||
+                    next?.response?.usage ||
+                    next?.interaction?.usage ||
+                    next?.object === "chat.completion" ||
+                    next?.object === "response" ||
+                    next?.object === "interaction" ||
+                    next?.interaction?.object === "interaction"
+                )
             ) {
                 next.meta = {
                     ...next.meta,
@@ -434,6 +485,7 @@ export async function handleStreamResponse(
             const hasTextRequestFallbackEndpoint =
                 ctx.endpoint === "chat.completions" ||
                 ctx.endpoint === "responses" ||
+                ctx.endpoint === "interactions" ||
                 ctx.endpoint === "messages";
             const usageForShaping =
                 effectiveUsageRaw ??
@@ -707,10 +759,6 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
-
-
-
 
 
 
