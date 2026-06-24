@@ -21,6 +21,7 @@ const AIMOCK_PORT = Number(process.env.AIMOCK_PORT ?? "4010");
 const AIMOCK_HOST = process.env.AIMOCK_HOST ?? "127.0.0.1";
 const AIMOCK_BASE_URL = process.env.AIMOCK_URL ?? `http://${AIMOCK_HOST}:${AIMOCK_PORT}`;
 const WORKSPACE_ID = "ws_aimock_ci";
+const googleInteractionSequences = new Map<string, number>();
 
 type TextProtocol = "openai.chat.completions" | "openai.responses" | "anthropic.messages";
 type AimockCapability =
@@ -233,7 +234,7 @@ function mimeTypeForSpeechCodec(codec: unknown): string {
 }
 
 function createXAiTtsMount(): Mountable {
-    let journal: Journal | null = null;
+	let journal: Journal | null = null;
 
     return {
         setJournal(nextJournal) {
@@ -304,11 +305,221 @@ function createXAiTtsMount(): Mountable {
             res.end(Buffer.from("AIMOCK_TTS_AUDIO"));
             return true;
         },
-    };
+	};
+}
+
+function textFromInteractionValue(value: unknown): string {
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value.map(textFromInteractionValue).filter(Boolean).join("\n");
+	if (!value || typeof value !== "object") return "";
+
+	const record = value as Record<string, unknown>;
+	if (typeof record.text === "string") return record.text;
+	if (record.content !== undefined) return textFromInteractionValue(record.content);
+	if (record.parts !== undefined) return textFromInteractionValue(record.parts);
+	if (record.input !== undefined) return textFromInteractionValue(record.input);
+	if (record.summary !== undefined) return textFromInteractionValue(record.summary);
+	if (record.result !== undefined) return textFromInteractionValue(record.result);
+	return "";
+}
+
+function googleInteractionUsage() {
+	return {
+		total_input_tokens: 11,
+		total_output_tokens: 7,
+		total_tokens: 18,
+	};
+}
+
+function googleInteractionResponsePayload(body: Record<string, unknown>, headers: Record<string, string>) {
+	const prompt = textFromInteractionValue(body.input);
+	const testId = headers["x-test-id"] || "default";
+	const sequenceKey = `${testId}:${prompt}`;
+	const sequenceIndex = googleInteractionSequences.get(sequenceKey) ?? 0;
+	googleInteractionSequences.set(sequenceKey, sequenceIndex + 1);
+
+	const interactionId = `interactions/aimock_${sequenceIndex}`;
+	const model = typeof body.model === "string" ? body.model : "gemini-2.5-flash";
+
+	if (prompt.includes("[aimock-tool]") || (prompt.includes("[aimock-sequence] weather") && sequenceIndex === 0)) {
+		return {
+			status: 200,
+			payload: {
+				id: interactionId,
+				object: "interaction",
+				model,
+				status: "requires_action",
+				steps: [{
+					type: "function_call",
+					id: "call_aimock_weather",
+					name: "get_weather",
+					arguments: {
+						city: "London",
+						unit: "celsius",
+					},
+				}],
+				usage: googleInteractionUsage(),
+			},
+		};
+	}
+
+	const content =
+		prompt.includes("[aimock-chat] stream")
+			? "Streaming hello from AIMock via AI Stats."
+			: prompt.includes("[aimock-responses] hello")
+				? "Hello from AIMock via responses."
+				: prompt.includes("[aimock-structured] person")
+					? "{\"name\":\"Ava\",\"city\":\"London\"}"
+					: prompt.includes("[aimock-sequence] weather")
+						? "The weather workflow completed after the tool step."
+						: prompt.includes("[aimock-chat] hello")
+							? "Hello from AIMock via AI Stats."
+							: "";
+
+	if (!content) {
+		return {
+			status: 404,
+			payload: {
+				error: {
+					message: "No AIMock Google Interactions fixture matched request.",
+					type: "not_found_error",
+					code: "aimock_google_interactions_not_found",
+				},
+			},
+		};
+	}
+
+	return {
+		status: 200,
+		payload: {
+			id: interactionId,
+			object: "interaction",
+			model,
+			status: "completed",
+			steps: [{
+				type: "model_output",
+				content: [{
+					type: "text",
+					text: content,
+				}],
+			}],
+			output_text: content,
+			usage: googleInteractionUsage(),
+		},
+	};
+}
+
+function googleInteractionSse(payload: Record<string, any>): string {
+	const status = typeof payload.status === "string" ? payload.status : "completed";
+	const interaction = {
+		id: payload.id,
+		object: "interaction",
+		model: payload.model,
+		status,
+		created: new Date().toISOString(),
+		usage: payload.usage,
+	};
+	const steps = Array.isArray(payload.steps) ? payload.steps : [];
+	const frames: Array<Record<string, unknown>> = [
+		{ event_type: "interaction.created", interaction },
+	];
+
+	for (const [index, step] of steps.entries()) {
+		const type = typeof step?.type === "string" ? step.type : "model_output";
+		if (type === "function_call") {
+			frames.push({ event_type: "step.start", index, step });
+			frames.push({ event_type: "step.stop", index });
+			continue;
+		}
+
+		frames.push({ event_type: "step.start", index, step: { type } });
+		for (const block of Array.isArray(step?.content) ? step.content : []) {
+			if (block?.type === "text" && typeof block.text === "string") {
+				frames.push({ event_type: "step.delta", index, delta: { type: "text", text: block.text } });
+			}
+		}
+		frames.push({ event_type: "step.stop", index });
+	}
+
+	frames.push({
+		event_type: status === "requires_action" ? "interaction.requires_action" : "interaction.completed",
+		interaction,
+	});
+	return `${frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("")}data: [DONE]\n\n`;
+}
+
+function createGoogleInteractionsMount(): Mountable {
+	let journal: Journal | null = null;
+
+	return {
+		setJournal(nextJournal) {
+			journal = nextJournal;
+		},
+		async handleRequest(req: IncomingMessage, res: ServerResponse, pathname: string) {
+			if (pathname !== "/") return false;
+
+			const raw = await readIncomingBody(req);
+			const headers = flattenHeaders(req.headers as Record<string, string | string[] | undefined>);
+			let body: Record<string, unknown>;
+			try {
+				body = JSON.parse(raw) as Record<string, unknown>;
+			} catch {
+				journal?.add({
+					method: req.method ?? "POST",
+					path: req.url ?? pathname,
+					headers,
+					body: null,
+					service: "gemini",
+					response: {
+						status: 400,
+						fixture: null,
+					},
+				});
+				res.writeHead(400, { "Content-Type": "application/json" });
+				res.end(JSON.stringify({
+					error: {
+						message: "Malformed JSON",
+						type: "invalid_request_error",
+						code: "invalid_json",
+					},
+				}));
+				return true;
+			}
+
+			const { status, payload } = googleInteractionResponsePayload(body, headers);
+			journal?.add({
+				method: req.method ?? "POST",
+				path: req.url ?? pathname,
+				headers,
+				body,
+				service: "gemini",
+				response: {
+					status,
+					fixture: null,
+				},
+			});
+
+			if (status !== 200) {
+				res.writeHead(status, { "Content-Type": "application/json" });
+				res.end(JSON.stringify(payload));
+				return true;
+			}
+
+			if (body.stream === true) {
+				res.writeHead(200, { "Content-Type": "text/event-stream" });
+				res.end(googleInteractionSse(payload));
+				return true;
+			}
+
+			res.writeHead(200, { "Content-Type": "application/json" });
+			res.end(JSON.stringify(payload));
+			return true;
+		},
+	};
 }
 
 function envValue(name: string, fallback: string): string {
-    const value = process.env[name];
+	const value = process.env[name];
     if (!value) return fallback;
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : fallback;
@@ -496,6 +707,8 @@ export async function startAimock(): Promise<LLMock> {
     aimock.mount("/v1/openai", createOpenAIChatMount());
     aimock.mount("/api/v1", createOpenAIChatMount());
     aimock.mount("/v1/projects/aimock-project/locations/us-east5/publishers/anthropic/models", createAnthropicMessagesMount());
+    aimock.mount("/v1beta/interactions", createGoogleInteractionsMount());
+    aimock.mount("/v1/interactions", createGoogleInteractionsMount());
 
     await aimock.start();
     if (!record) {
@@ -514,11 +727,12 @@ export async function stopAimock(): Promise<void> {
 
 export function resetAimockState(): void {
     if (!aimock) return;
-    aimock.clearRequests();
-    aimock.resetMatchCounts();
-    resetHealthStateForTests();
-    teardownTestRuntime();
-    setupRuntimeFromEnv(buildAimockBindings());
+	aimock.clearRequests();
+	aimock.resetMatchCounts();
+	googleInteractionSequences.clear();
+	resetHealthStateForTests();
+	teardownTestRuntime();
+	setupRuntimeFromEnv(buildAimockBindings());
 }
 
 export function getAimock(): LLMock {
