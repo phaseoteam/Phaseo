@@ -1,0 +1,55 @@
+---
+title: "Model endpoints (Beta)"
+badge: "Beta"
+openapi: "GET /models/{author}/{slug}/endpoints"
+description: "List provider-specific endpoint capabilities for one model."
+---
+
+Use this endpoint when you already know a model ID and need the provider-by-provider capability table behind it.
+
+Each row describes one provider and endpoint pairing:
+
+- `endpoint` and `capability_id`
+- `public_path`
+- `collection`
+- `provider_id`, `provider_name`, and `provider_model_slug`
+- `input_modalities` and `output_modalities`
+- `supported_parameters` and `supported_parameters_detail`
+- provider, model, and capability availability/routing states
+- `pricing` and `pricing_detail`
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/sora/endpoints?supported_parameters=duration" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY"
+```
+
+```json
+{
+  "ok": true,
+  "id": "openai/sora",
+  "model_id": "openai/sora",
+  "availability_mode": "active",
+  "endpoints": [
+    {
+      "id": "openai:video.generation",
+      "endpoint": "video.generation",
+      "capability_id": "video.generation",
+      "public_path": "/v1/videos",
+      "collection": "videos",
+      "provider_id": "openai",
+      "provider_model_slug": "sora",
+      "input_modalities": ["text", "image"],
+      "output_modalities": ["video"],
+      "supported_parameters": ["duration", "resolution"],
+      "supported_parameters_detail": {
+        "duration": {
+          "supported": true,
+          "values": [4, 8, 12]
+        }
+      },
+      "availability_status": "active"
+    }
+  ]
+}
+```
+

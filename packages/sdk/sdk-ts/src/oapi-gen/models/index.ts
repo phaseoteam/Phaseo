@@ -90,6 +90,8 @@ export type { ManagementKeyUpdateResponse } from "./ManagementKeyUpdateResponse.
 export type { MessageContentPart } from "./MessageContentPart.js";
 export type { Model } from "./Model.js";
 export type { ModelAvailability } from "./ModelAvailability.js";
+export type { ModelEndpointCapability } from "./ModelEndpointCapability.js";
+export type { ModelEndpointsResponse } from "./ModelEndpointsResponse.js";
 export type { ModelId } from "./ModelId.js";
 export type { ModelLifecycle } from "./ModelLifecycle.js";
 export type { ModelProviderAvailability } from "./ModelProviderAvailability.js";

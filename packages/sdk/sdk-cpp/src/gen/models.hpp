@@ -624,6 +624,7 @@ struct GatewayDatetimeToolDefinition {
 
 struct GatewayModelsResponse {
 	std::any availability_mode;
+	std::optional<std::any> collection;
 	int limit;
 	std::vector<std::map<std::string, std::any>> models;
 	int offset;
@@ -811,6 +812,7 @@ struct Model {
 	std::string id;
 	std::vector<std::string> input_types;
 	std::optional<ModelLifecycle> lifecycle;
+	std::map<std::string, std::any> links;
 	std::string model_id;
 	std::optional<std::string> name;
 	std::optional<std::string> organisation_colour;
@@ -839,6 +841,47 @@ struct ModelAvailability {
 	std::any status;
 };
 
+struct ModelEndpointCapability {
+	std::string availability_reason;
+	std::string availability_status;
+	std::string capability_id;
+	std::string capability_status;
+	std::any collection;
+	std::optional<std::string> effective_from;
+	std::optional<std::string> effective_to;
+	std::string endpoint;
+	std::string id;
+	std::vector<std::string> input_modalities;
+	std::optional<bool> is_active_gateway;
+	std::string model_routing_status;
+	std::vector<std::string> output_modalities;
+	std::vector<std::string> params;
+	std::map<std::string, std::any> params_detail;
+	std::map<std::string, std::any> pricing;
+	std::map<std::string, std::any> pricing_detail;
+	std::string provider_id;
+	std::optional<std::string> provider_model_slug;
+	std::optional<std::string> provider_name;
+	std::string provider_routing_status;
+	std::string provider_status;
+	std::string public_path;
+	std::vector<std::string> supported_parameters;
+	std::map<std::string, std::any> supported_parameters_detail;
+};
+
+struct ModelEndpointsResponse {
+	std::map<std::string, std::any> architecture;
+	std::any availability_mode;
+	std::string canonical_slug;
+	std::optional<int> created;
+	std::string description;
+	std::vector<std::map<std::string, std::any>> endpoints;
+	std::string id;
+	std::string model_id;
+	std::optional<std::string> name;
+	bool ok;
+};
+
 using ModelId = std::any;
 
 struct ModelLifecycle {
@@ -858,10 +901,13 @@ struct ModelProviderAvailability {
 	std::optional<std::string> effective_from;
 	std::optional<std::string> effective_to;
 	std::vector<std::string> endpoints;
+	std::vector<std::string> input_modalities;
 	bool is_active_gateway;
 	std::any model_routing_status;
+	std::vector<std::string> output_modalities;
 	std::vector<std::string> params;
 	std::map<std::string, std::any> params_detail;
+	std::optional<std::string> provider_model_slug;
 	std::any provider_routing_status;
 	std::any provider_status;
 	std::vector<std::string> supported_parameters;

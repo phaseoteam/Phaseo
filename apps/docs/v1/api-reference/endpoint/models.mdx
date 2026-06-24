@@ -9,9 +9,16 @@ By default, this endpoint only returns models that are currently routable. Set `
 
 `GET /models/me` is reserved for future guardrail-aware filtering of models for the current caller. It currently returns `501 not implemented`, so use `GET /models` for the shared gateway catalogue today.
 
+Use `GET /models/{collection}` for modality-specific views such as `GET /models/images`, `GET /models/videos`, `GET /models/rerank`, and `GET /models/ocr`.
+
+Use `GET /models/{author}/{slug}/endpoints` when you need provider-specific endpoint capability rows for a single model.
+
 ## Useful filters
 
 - `endpoints` uses public names like `chat.completions`, `responses`, and `messages`
+- `input_modalities` is an alias for `input_types`
+- `output_modalities` is an alias for `output_types`
+- `supported_parameters` is an alias for `params`
 - `status` filters by model lifecycle, for example `active`, `deprecated`, or `retired`
 - `provider` filters by public provider ID, for example `openai`, `anthropic`, or `google_vertex`
 - `provider_status` filters the provider rollout tier, for example `active`, `beta`, `alpha`, or `not_ready`
@@ -65,6 +72,9 @@ Provider entries can also include:
       "organisation_name": null,
       "organisation_colour": null,
       "aliases": [],
+      "links": {
+        "endpoints": "/v1/models/anthropic/claude-3-haiku/endpoints"
+      },
       "endpoints": ["chat.completions", "messages", "responses"],
       "input_types": ["text"],
       "output_types": ["text"],

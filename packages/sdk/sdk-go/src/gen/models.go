@@ -1248,6 +1248,7 @@ type GatewayDatetimeToolDefinition struct {
 
 type GatewayModelsResponse struct {
 	AvailabilityMode string `json:"availability_mode"`
+	Collection *string `json:"collection,omitempty"`
 	Limit int `json:"limit"`
 	Models []map[string]interface{} `json:"models"`
 	Offset int `json:"offset"`
@@ -1883,6 +1884,7 @@ type Model struct {
 	Id *string `json:"id,omitempty"`
 	InputTypes *[]string `json:"input_types,omitempty"`
 	Lifecycle *ModelLifecycle `json:"lifecycle,omitempty"`
+	Links *map[string]interface{} `json:"links,omitempty"`
 	ModelId *string `json:"model_id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	OrganisationColour *string `json:"organisation_colour,omitempty"`
@@ -1911,6 +1913,47 @@ type ModelAvailability struct {
 	Status string `json:"status"`
 }
 
+type ModelEndpointCapability struct {
+	AvailabilityReason *string `json:"availability_reason,omitempty"`
+	AvailabilityStatus *string `json:"availability_status,omitempty"`
+	CapabilityId string `json:"capability_id"`
+	CapabilityStatus *string `json:"capability_status,omitempty"`
+	Collection string `json:"collection"`
+	EffectiveFrom *string `json:"effective_from,omitempty"`
+	EffectiveTo *string `json:"effective_to,omitempty"`
+	Endpoint string `json:"endpoint"`
+	Id string `json:"id"`
+	InputModalities []string `json:"input_modalities"`
+	IsActiveGateway *bool `json:"is_active_gateway,omitempty"`
+	ModelRoutingStatus *string `json:"model_routing_status,omitempty"`
+	OutputModalities []string `json:"output_modalities"`
+	Params *[]string `json:"params,omitempty"`
+	ParamsDetail *map[string]interface{} `json:"params_detail,omitempty"`
+	Pricing *map[string]interface{} `json:"pricing,omitempty"`
+	PricingDetail *map[string]interface{} `json:"pricing_detail,omitempty"`
+	ProviderId string `json:"provider_id"`
+	ProviderModelSlug *string `json:"provider_model_slug,omitempty"`
+	ProviderName *string `json:"provider_name,omitempty"`
+	ProviderRoutingStatus *string `json:"provider_routing_status,omitempty"`
+	ProviderStatus *string `json:"provider_status,omitempty"`
+	PublicPath string `json:"public_path"`
+	SupportedParameters []string `json:"supported_parameters"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+}
+
+type ModelEndpointsResponse struct {
+	Architecture *map[string]interface{} `json:"architecture,omitempty"`
+	AvailabilityMode string `json:"availability_mode"`
+	CanonicalSlug string `json:"canonical_slug"`
+	Created *int `json:"created,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Endpoints []map[string]interface{} `json:"endpoints"`
+	Id string `json:"id"`
+	ModelId string `json:"model_id"`
+	Name *string `json:"name,omitempty"`
+	Ok bool `json:"ok"`
+}
+
 type ModelId = string
 
 type ModelLifecycle struct {
@@ -1930,10 +1973,13 @@ type ModelProviderAvailability struct {
 	EffectiveFrom *string `json:"effective_from,omitempty"`
 	EffectiveTo *string `json:"effective_to,omitempty"`
 	Endpoints []string `json:"endpoints"`
+	InputModalities *[]string `json:"input_modalities,omitempty"`
 	IsActiveGateway bool `json:"is_active_gateway"`
 	ModelRoutingStatus string `json:"model_routing_status"`
+	OutputModalities *[]string `json:"output_modalities,omitempty"`
 	Params []string `json:"params"`
 	ParamsDetail *map[string]interface{} `json:"params_detail,omitempty"`
+	ProviderModelSlug *string `json:"provider_model_slug,omitempty"`
 	ProviderRoutingStatus string `json:"provider_routing_status"`
 	ProviderStatus string `json:"provider_status"`
 	SupportedParameters *[]string `json:"supported_parameters,omitempty"`

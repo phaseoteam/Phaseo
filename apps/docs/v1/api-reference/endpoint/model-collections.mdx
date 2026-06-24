@@ -1,0 +1,55 @@
+---
+title: "Model collections (Beta)"
+badge: "Beta"
+openapi: "GET /models/{collection}"
+description: "Browse modality-specific model catalogue projections."
+---
+
+Use model collections when you want the same catalogue shape as `GET /models`, scoped to a specific type of model.
+
+Supported collections:
+
+- `text`
+- `images`
+- `videos`
+- `audio`
+- `embeddings`
+- `rerank`
+- `ocr`
+- `music`
+- `batches`
+
+Each collection response includes the standard model fields, provider availability, supported parameters, pricing summaries, and a `links.endpoints` path for provider-specific endpoint capability details.
+
+```bash
+curl "https://api.phaseo.app/v1/models/images?supported_parameters=size" \
+  -H "Authorization: Bearer $AI_STATS_API_KEY"
+```
+
+```json
+{
+  "ok": true,
+  "privacy_scope": "shared",
+  "collection": "images",
+  "availability_mode": "active",
+  "limit": 50,
+  "offset": 0,
+  "total": 1,
+  "models": [
+    {
+      "id": "openai/gpt-image-2",
+      "model_id": "openai/gpt-image-2",
+      "architecture": {
+        "modality": "text+image->image",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["image"]
+      },
+      "supported_parameters": ["n", "quality", "size"],
+      "links": {
+        "endpoints": "/v1/models/openai/gpt-image-2/endpoints"
+      }
+    }
+  ]
+}
+```
+

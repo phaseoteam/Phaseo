@@ -16,7 +16,7 @@ vi.mock("@pipeline/before/context", () => ({
     fetchGatewayContext: (...args: any[]) => fetchGatewayContextMock(...args),
 }));
 
-import { handleModels, handleMyModels } from "./models";
+import { handleModelCollection, handleModelEndpoints, handleModels, handleMyModels } from "./models";
 
 function buildCatalogueModel(overrides: Record<string, unknown> = {}) {
     return {
@@ -615,6 +615,180 @@ describe("handleModels", () => {
         expect(fetchCatalogueMock).toHaveBeenCalledWith(
             expect.objectContaining({ providerIds: ["openai", "anthropic"] }),
         );
+    });
+
+    it("accepts public modality and parameter filter aliases", async () => {
+        const response = await handleModels(
+            new Request(
+                "https://api.example.com/?input_modalities=image&output_modalities=video&supported_parameters=resolution",
+            ),
+            "shared",
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                inputTypes: ["image"],
+                outputTypes: ["video"],
+                params: ["resolution"],
+            }),
+        );
+    });
+
+    it("returns image model collection projections from /v1/models/images", async () => {
+        fetchCatalogueMock.mockResolvedValue([
+            buildCatalogueModel({
+                model_id: "openai/gpt-image-2",
+                name: "GPT Image 2",
+                endpoints: ["images/generations"],
+                input_types: ["text", "image"],
+                output_types: ["image"],
+            }),
+        ]);
+
+        const response = await handleModelCollection(
+            new Request("https://api.example.com/v1/models/images"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpoints: [],
+                outputTypes: ["image"],
+            }),
+        );
+        expect(fetchGatewayContextMock).not.toHaveBeenCalled();
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            collection: "images",
+            models: [
+                {
+                    id: "openai/gpt-image-2",
+                    links: {
+                        endpoints: "/v1/models/openai/gpt-image-2/endpoints",
+                    },
+                    architecture: {
+                        input_modalities: ["text", "image"],
+                        output_modalities: ["image"],
+                    },
+                },
+            ],
+        });
+    });
+
+    it("narrows model collection filters when endpoint aliases are requested", async () => {
+        const response = await handleModelCollection(
+            new Request("https://api.example.com/v1/models/text?endpoints=/v1/responses"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpoints: ["responses"],
+            }),
+        );
+    });
+
+    it("returns an empty collection when requested filters are outside the collection", async () => {
+        const response = await handleModelCollection(
+            new Request("https://api.example.com/v1/models/images?output_modalities=text"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                outputTypes: ["__ai_stats_no_matching_filter__"],
+            }),
+        );
+    });
+
+    it("returns provider endpoint rows for a model", async () => {
+        fetchCatalogueMock.mockImplementation(async (filters: any) => {
+            if (filters.endpoints?.[0] === "video.generation") {
+                return [
+                    buildCatalogueModel({
+                        model_id: "openai/sora",
+                        name: "Sora",
+                        endpoints: ["video.generation"],
+                        input_types: ["text", "image"],
+                        output_types: ["video"],
+                        providers: [
+                            {
+                                api_provider_id: "openai",
+                                api_provider_name: "OpenAI",
+                                provider_model_slug: "sora",
+                                is_active_gateway: true,
+                                availability_status: "active",
+                                availability_reason: "active",
+                                provider_status: "active",
+                                provider_routing_status: "active",
+                                model_routing_status: "active",
+                                capability_status: "active",
+                                effective_from: null,
+                                effective_to: null,
+                                endpoints: ["video.generation"],
+                                input_modalities: ["text", "image"],
+                                output_modalities: ["video"],
+                                params: ["duration", "resolution"],
+                                params_detail: {
+                                    duration: { supported: true, values: [4, 8, 12] },
+                                    resolution: { supported: true, values: ["720p", "1080p"] },
+                                },
+                            },
+                        ],
+                    }),
+                ];
+            }
+            return [
+                buildCatalogueModel({
+                    model_id: "openai/sora",
+                    name: "Sora",
+                    endpoints: ["video.generation"],
+                    input_types: ["text", "image"],
+                    output_types: ["video"],
+                    aliases: ["openai/sora-2"],
+                }),
+            ];
+        });
+
+        const response = await handleModelEndpoints(
+            new Request("https://api.example.com/v1/models/openai/sora/endpoints?supported_parameters=duration"),
+        );
+
+        expect(response.status).toBe(200);
+        expect(fetchCatalogueMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                endpoints: ["video.generation"],
+                params: ["duration"],
+            }),
+        );
+        await expect(response.json()).resolves.toMatchObject({
+            ok: true,
+            id: "openai/sora",
+            architecture: {
+                input_modalities: ["text", "image"],
+                output_modalities: ["video"],
+            },
+            endpoints: [
+                {
+                    id: "openai:video.generation",
+                    endpoint: "video.generation",
+                    public_path: "/v1/videos",
+                    collection: "videos",
+                    provider_id: "openai",
+                    provider_model_slug: "sora",
+                    input_modalities: ["text", "image"],
+                    output_modalities: ["video"],
+                    supported_parameters: ["duration", "resolution"],
+                    supported_parameters_detail: {
+                        duration: {
+                            supported: true,
+                            values: [4, 8, 12],
+                        },
+                    },
+                },
+            ],
+        });
     });
 
     it("forwards provider availability filters to the catalogue layer", async () => {

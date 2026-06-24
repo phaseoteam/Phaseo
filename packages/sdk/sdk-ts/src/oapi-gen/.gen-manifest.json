@@ -96,6 +96,8 @@
     "models/MessageContentPart.ts",
     "models/Model.ts",
     "models/ModelAvailability.ts",
+    "models/ModelEndpointCapability.ts",
+    "models/ModelEndpointsResponse.ts",
     "models/ModelId.ts",
     "models/ModelLifecycle.ts",
     "models/ModelProviderAvailability.ts",

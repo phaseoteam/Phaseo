@@ -5,6 +5,8 @@ import type {
   AudioTranslationRequest,
   AudioTranslationResponse,
   BatchBillingSummary,
+  BatchListResponse,
+  BatchModelsResponse,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -309,9 +311,12 @@ export class AIStats {
   };
 
   readonly batches = {
+    list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     create: async (req: BatchRequest): Promise<BatchResponse> => this.createBatch(req),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
+    listModels: async (params: Record<string, unknown> = {}): Promise<BatchModelsResponse> =>
+      this.listBatchModels(params),
     websocketUrl: (batchId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("batch", batchId, options),
   };
@@ -798,6 +803,22 @@ export class AIStats {
       () => ops.cancelBatch(this.client, { path: { batch_id: batchId } as any }),
       () => ({ batch_id: batchId }),
       extractBatchMetadata
+    );
+  }
+
+  listBatches(params: Record<string, unknown> = {}): Promise<BatchListResponse> {
+    return this.telemetry.wrap(
+      "batches.list",
+      () => ops.listBatches(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  listBatchModels(params: Record<string, unknown> = {}): Promise<BatchModelsResponse> {
+    return this.telemetry.wrap(
+      "batches.models.list",
+      () => ops.listBatchModels(this.client, { query: params as any }),
+      () => params
     );
   }
 

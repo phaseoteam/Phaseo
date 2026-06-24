@@ -79,7 +79,7 @@ function renderModel(model: IRModel): string {
 		}
 		for (const field of fields) {
 			const name = sanitizeIdentifier(field);
-			const value = pyType(model.schema.properties[field]);
+			const value = pyFieldType(model.name, field, model.schema.properties[field]);
 			if (required.has(field)) {
 				lines.push(`\t${name}: ${value}`);
 			} else {
@@ -90,6 +90,22 @@ function renderModel(model: IRModel): string {
 	}
 	return `${model.name} = ${pyType(model.schema)}`;
 }
+
+function pyFieldType(modelName: string, fieldName: string, schema: IRSchema): string {
+	const override = PY_FIELD_TYPE_OVERRIDES[`${modelName}.${fieldName}`];
+	return override ?? pyType(schema);
+}
+
+const PY_FIELD_TYPE_OVERRIDES: Record<string, string> = {
+	"BatchListResponse.data": "List[BatchResponse]",
+	"BatchModelCapability.providers": "List[BatchModelProviderCapability]",
+	"BatchModelsResponse.data": "List[BatchModelCapability]",
+	"BatchResponse.billing": "BatchBillingSummary",
+	"VideoGenerationResponse.billing": "VideoBillingSummary",
+	"VideoListResponse.data": "List[VideoGenerationResponse]",
+	"VideoModelCapability.providers": "List[VideoModelProviderCapability]",
+	"VideoModelsResponse.data": "List[VideoModelCapability]"
+};
 
 function renderClient(): string {
 	return [
@@ -156,7 +172,7 @@ function renderOperations(operations: IROperation[]): string {
 }
 
 function renderOperation(operation: IROperation): string {
-	const returnType = pyType(selectSuccessSchema(operation));
+	const returnType = PY_OPERATION_RETURN_OVERRIDES[operation.operationId] ?? pyType(selectSuccessSchema(operation));
 	const pathParams = operation.params.filter((param) => param.in === "path");
 	const pathTemplate = renderPathTemplate(operation.path, pathParams);
 	return [
@@ -175,6 +191,13 @@ function renderOperation(operation: IROperation): string {
 	].join("\n");
 }
 
+const PY_OPERATION_RETURN_OVERRIDES: Record<string, string> = {
+	listBatches: "BatchListResponse",
+	listBatchModels: "BatchModelsResponse",
+	listVideos: "VideoListResponse",
+	listVideoModels: "VideoModelsResponse"
+};
+
 function renderPathTemplate(path: string, params: IROperation["params"]): string {
 	if (params.length === 0) {
 		return JSON.stringify(path);
@@ -183,7 +206,7 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = sanitizeIdentifier(segment.slice(1, -1));
-			return `{path.get("${name}", "")}`;
+			return `{path.get('${name}', '')}`;
 		}
 		return segment.replace(/"/g, '\\"');
 	});

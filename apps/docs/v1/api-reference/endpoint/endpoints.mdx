@@ -2,8 +2,9 @@
 title: "List Endpoints"
 badge: "Beta"
 openapi: "GET /endpoints"
-description: "List the currently exposed gateway endpoint IDs and a small sample of recent public model IDs."
+description: "List gateway endpoint IDs with catalogue-backed metadata."
 ---
 
 - `endpoints`: the canonical endpoint IDs currently exposed by the API
+- `data`: endpoint metadata, including public path, collection, model count, and provider count
 - `sample_models`: up to 10 recent visible model IDs from the public catalogue

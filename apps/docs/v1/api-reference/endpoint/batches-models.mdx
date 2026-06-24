@@ -26,7 +26,7 @@ The response is a standard `list` envelope. Each item includes:
 - `providers`, each with provider-level supported parameter detail
 - `pricing`
 
-`supported_parameters` is the OpenRouter-compatible alias for `supported_params`. `supported_params_detail` and `supported_parameters_detail` are aliases for the same structured metadata. New clients should prefer `supported_parameters` and `supported_parameters_detail`; existing clients can continue reading `supported_params` and `supported_params_detail`.
+`supported_parameters` is an alias for `supported_params`. `supported_params_detail` and `supported_parameters_detail` are aliases for the same structured metadata. New clients should prefer `supported_parameters` and `supported_parameters_detail`; existing clients can continue reading `supported_params` and `supported_params_detail`.
 
 You can filter models by supported batch parameter with the `params` query parameter. Repeat it or pass a comma-separated list. The filter accepts canonical names and aliases from `supported_parameters_detail`, so `params=request_endpoint` can match models whose canonical parameter is `endpoint`, and `params=window` can match `completion_window`.
 

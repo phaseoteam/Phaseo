@@ -381,10 +381,31 @@ function listFiles(Client $client, ?array $path = null, ?array $query = null, ?a
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+function listLegacyGatewayModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];
 	$resolvedPath = "/gateway/models";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listModelCollection(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/models/{$path["collection"]}";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listModelEndpoints(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/models/{$path["author"]}/{$path["slug"]}/endpoints";
+	return $client->request("GET", $resolvedPath, $query, $headers, $body);
+}
+
+function listModels(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	$resolvedPath = "/models";
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 

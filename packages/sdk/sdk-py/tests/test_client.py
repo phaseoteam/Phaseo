@@ -74,7 +74,7 @@ def test_non_active_status_blocks_request_dispatch(monkeypatch):
 
     def fake_request(method, path, *, query=None, headers=None, body=None):
         assert method == "GET"
-        assert path == "/data/models"
+        assert path == "/models"
         assert query == {"model_id": "openai/rumoured-model", "limit": 1}
         return {
             "models": [
@@ -157,7 +157,7 @@ def test_can_disable_deprecation_warnings(monkeypatch):
     response = client.generate_response({"model": "openai/new-model", "input": "hi"})
     assert called is True
     assert response["id"] == "resp_123"
-    assert lifecycle_lookups == [("GET", "/data/models", {"model_id": "openai/new-model", "limit": 1})]
+    assert lifecycle_lookups == [("GET", "/models", {"model_id": "openai/new-model", "limit": 1})]
 
 
 def test_cancel_batch_uses_generated_operation(monkeypatch):
