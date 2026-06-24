@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "decart",
+  "api_provider_name": "Decart",
+  "description": "Provider added for catalog coverage; direct AI Stats Gateway support is not configured.",
+  "link": "https://docs.platform.decart.ai/",
+  "country_code": null,
+  "status": "NotReady",
+  "colour": "#F97316",
+  "privacy_policy_url": "https://decart.ai/privacy-policy",
+  "prompt_training_policy": null,
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null,
+  "terms_of_service_url": "https://docs.platform.decart.ai/resources/api-terms"
+}

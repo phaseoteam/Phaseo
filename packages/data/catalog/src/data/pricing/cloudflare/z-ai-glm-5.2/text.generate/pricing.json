@@ -1,8 +1,8 @@
 {
-  "key": "cloudflare:zai-org/glm-5.2:text.generate",
+  "key": "cloudflare:z-ai/glm-5.2:text.generate",
   "api_provider_id": "cloudflare",
   "provider_slug": "cloudflare",
-  "api_model_id": "zai-org/glm-5.2",
+  "api_model_id": "z-ai/glm-5.2",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -14,7 +14,8 @@
       "pricing_plan": "standard",
       "note": "From Cloudflare Workers AI pricing on 2026-06-16.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-06-16T00:00:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -25,7 +26,8 @@
       "pricing_plan": "standard",
       "note": "From Cloudflare Workers AI pricing on 2026-06-16.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-06-16T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -36,7 +38,8 @@
       "pricing_plan": "standard",
       "note": "From Cloudflare Workers AI pricing on 2026-06-16.",
       "match": [],
-      "priority": 100
+      "priority": 100,
+      "effective_from": "2026-06-16T00:00:00Z"
     }
   ]
 }

@@ -121,7 +121,43 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": 32768,
+            "notes": "Kimi K2.7 Code defaults max_tokens to 32768."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": 1,
+            "notes": "Kimi K2.7 Code fixes temperature at 1.0."
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": 0.95,
+            "notes": "Kimi K2.7 Code fixes top_p at 0.95."
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "auto",
+            "notes": "Kimi K2.7 Code only supports tool_choice auto or none."
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },
@@ -142,7 +178,43 @@
       {
         "capability_id": "text.generate",
         "status": "active",
-        "params": []
+        "params": [
+          {
+            "param_id": "max_tokens",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": 32768,
+            "notes": "Kimi K2.7 Code defaults max_tokens to 32768."
+          },
+          {
+            "param_id": "temperature",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": 1,
+            "notes": "Kimi K2.7 Code fixes temperature at 1.0."
+          },
+          {
+            "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": 0.95,
+            "notes": "Kimi K2.7 Code fixes top_p at 0.95."
+          },
+          {
+            "param_id": "tool_choice",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": "auto",
+            "notes": "Kimi K2.7 Code only supports tool_choice auto or none."
+          },
+          {
+            "param_id": "tools",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          }
+        ]
       }
     ]
   },

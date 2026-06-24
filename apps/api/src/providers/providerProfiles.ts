@@ -180,7 +180,23 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "ambient",
+		textOnly: true,
+	},
+	{
+		id: "decart",
+		textOnly: true,
+	},
+	{
 		id: "friendli",
+		textOnly: true,
+	},
+	{
+		id: "inceptron",
+		textOnly: true,
+	},
+	{
+		id: "io-net",
 		textOnly: true,
 	},
 	{
@@ -192,7 +208,15 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "streamlake",
+		textOnly: true,
+	},
+	{
 		id: "thinking-machines",
+		textOnly: true,
+	},
+	{
+		id: "wafer",
 		textOnly: true,
 	},
 ];

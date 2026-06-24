@@ -817,7 +817,7 @@
     ]
   },
   {
-    "api_model_id": "zai-org/glm-5.2",
+    "api_model_id": "z-ai/glm-5.2",
     "provider_api_model_id": "cloudflare:@cf/zai-org/glm-5.2",
     "provider_model_slug": "@cf/zai-org/glm-5.2",
     "internal_model_id": "z-ai/glm-5.2",
@@ -850,6 +850,20 @@
           },
           {
             "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,
@@ -1036,6 +1050,20 @@
           },
           {
             "param_id": "top_p",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "reasoning",
+            "provider_min": null,
+            "provider_max": null,
+            "provider_default": null,
+            "notes": null
+          },
+          {
+            "param_id": "response_format",
             "provider_min": null,
             "provider_max": null,
             "provider_default": null,

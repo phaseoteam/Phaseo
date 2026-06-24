@@ -310,6 +310,7 @@ const PROVIDERS: ProviderConfig[] = [
 	},
 	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
 	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
+	{ providerId: "inceptron", providerName: "Inceptron", modelsEndpoint: "https://api.inceptron.io/v1/models", apiKeyEnv: ["INCEPTRON_API_KEY"] },
 	{ providerId: "ionrouter", providerName: "IonRouter", modelsEndpoint: "https://api.ionrouter.io/v1/models", apiKeyEnv: ["IONROUTER_API_KEY"] },
 	{
 		providerId: "longcat",
@@ -341,8 +342,17 @@ const PROVIDERS: ProviderConfig[] = [
 	},
 	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
 	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
+	{
+		providerId: "streamlake",
+		providerName: "StreamLake",
+		modelsEndpoint: "https://vanchin.streamlake.ai/api/gateway/coding/v1/models",
+		pathPrefix: "/v1",
+		baseUrlEnv: ["STREAMLAKE_BASE_URL"],
+		apiKeyEnv: ["STREAMLAKE_API_KEY"],
+	},
 	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.ai/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
 	{ providerId: "venice", providerName: "Venice", modelsEndpoint: "https://api.venice.ai/api/v1/models", apiKeyEnv: ["VENICE_API_KEY"] },
+	{ providerId: "wafer", providerName: "Wafer", modelsEndpoint: "https://pass.wafer.ai/v1/models", apiKeyEnv: ["WAFER_API_KEY"] },
 		{
 			providerId: "weights-and-biases",
 			providerName: "Weights & Biases",
@@ -1078,4 +1088,3 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
-

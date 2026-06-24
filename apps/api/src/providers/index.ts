@@ -30,6 +30,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "google-ai-studio": GoogleAIStudioAdapter,
     anthropic: AnthropicAdapter,
     "anthropic-us": AnthropicAdapter,
+    ambient: createOpenAICompatibleAdapter("ambient"),
     "x-ai": createOpenAICompatibleAdapter("x-ai"), // xAI is OpenAI-compatible, uses openai_compat executor
     xai: createOpenAICompatibleAdapter("xai"),
     xiaomi: XiaomiAdapter,
@@ -58,6 +59,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     voyage: createOpenAICompatibleAdapter("voyage"),
     voyageai: createOpenAICompatibleAdapter("voyageai"),
     crusoe: createOpenAICompatibleAdapter("crusoe"),
+    decart: createOpenAICompatibleAdapter("decart"),
     deepinfra: createOpenAICompatibleAdapter("deepinfra"),
     deepseek: createOpenAICompatibleAdapter("deepseek"),
     featherless: createOpenAICompatibleAdapter("featherless"),
@@ -66,8 +68,10 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     groq: createOpenAICompatibleAdapter("groq"),
     hyperbolic: createOpenAICompatibleAdapter("hyperbolic"),
     inception: createOpenAICompatibleAdapter("inception"),
+    inceptron: createOpenAICompatibleAdapter("inceptron"),
     infermatic: createOpenAICompatibleAdapter("infermatic"),
     inflection: createOpenAICompatibleAdapter("inflection"),
+    "io-net": createOpenAICompatibleAdapter("io-net"),
     ionrouter: createOpenAICompatibleAdapter("ionrouter"),
     longcat: createOpenAICompatibleAdapter("longcat"),
     mancer: createOpenAICompatibleAdapter("mancer"),
@@ -95,8 +99,10 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     sambanova: createOpenAICompatibleAdapter("sambanova"),
     scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
+    streamlake: createOpenAICompatibleAdapter("streamlake"),
     together: createOpenAICompatibleAdapter("together"),
     venice: createOpenAICompatibleAdapter("venice"),
+    wafer: createOpenAICompatibleAdapter("wafer"),
     "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),
     "weights-and-biases": createOpenAICompatibleAdapter("weights-and-biases"),
     // New providers - added during IR optimization and provider onboarding
@@ -242,4 +248,3 @@ export function adapterFor(providerId: string, endpoint: Endpoint): ProviderAdap
 export function adapterById(providerId: string): ProviderAdapter | null {
     return ADAPTERS[providerId] ?? null;
 }
-

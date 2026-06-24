@@ -5,6 +5,7 @@ import { ATLAS_CLOUD_OPENAI_COMPAT_CONFIGS } from "../atlas-cloud/config";
 import { ARCEE_OPENAI_COMPAT_CONFIGS } from "../arcee/config";
 import { AI21_OPENAI_COMPAT_CONFIGS } from "../ai21/config";
 import { AKASHML_OPENAI_COMPAT_CONFIGS } from "../akashml/config";
+import { AMBIENT_OPENAI_COMPAT_CONFIGS } from "../ambient/config";
 import { AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS } from "../amazon-bedrock/config";
 import { BASETEN_OPENAI_COMPAT_CONFIGS } from "../baseten/config";
 import { BYTEPLUS_OPENAI_COMPAT_CONFIGS } from "../byteplus/config";
@@ -13,6 +14,7 @@ import { CLARIFAI_OPENAI_COMPAT_CONFIGS } from "../clarifai/config";
 import { CHUTES_OPENAI_COMPAT_CONFIGS } from "../chutes/config";
 import { COHERE_OPENAI_COMPAT_CONFIGS } from "../cohere/config";
 import { CROFAI_OPENAI_COMPAT_CONFIGS } from "../crofai/config";
+import { DECART_OPENAI_COMPAT_CONFIGS } from "../decart/config";
 import { VOYAGE_OPENAI_COMPAT_CONFIGS } from "../voyage/config";
 import { DEEPINFRA_OPENAI_COMPAT_CONFIGS } from "../deepinfra/config";
 import { DEEPSEEK_OPENAI_COMPAT_CONFIGS } from "../deepseek/config";
@@ -23,9 +25,11 @@ import { GOOGLE_VERTEX_OPENAI_COMPAT_CONFIGS } from "../google-vertex/config";
 import { GROQ_OPENAI_COMPAT_CONFIGS } from "../groq/config";
 import { HYPERBOLIC_OPENAI_COMPAT_CONFIGS } from "../hyperbolic/config";
 import { INCEPTION_OPENAI_COMPAT_CONFIGS } from "../inception/config";
+import { INCEPTRON_OPENAI_COMPAT_CONFIGS } from "../inceptron/config";
 import { INFERMATIC_OPENAI_COMPAT_CONFIGS } from "../infermatic/config";
 import { INFLECTION_OPENAI_COMPAT_CONFIGS } from "../inflection/config";
 import { IONROUTER_OPENAI_COMPAT_CONFIGS } from "../ionrouter/config";
+import { IO_NET_OPENAI_COMPAT_CONFIGS } from "../io-net/config";
 import { MANCER_OPENAI_COMPAT_CONFIGS } from "../mancer/config";
 import { MINIMAX_OPENAI_COMPAT_CONFIGS } from "../minimax/config";
 import { MISTRAL_OPENAI_COMPAT_CONFIGS } from "../mistral/config";
@@ -42,6 +46,7 @@ import { PHALA_OPENAI_COMPAT_CONFIGS } from "../phala/config";
 import { SAMBANOVA_OPENAI_COMPAT_CONFIGS } from "../sambanova/config";
 import { SCALEWAY_OPENAI_COMPAT_CONFIGS } from "../scaleway/config";
 import { SILICONFLOW_OPENAI_COMPAT_CONFIGS } from "../siliconflow/config";
+import { STREAMLAKE_OPENAI_COMPAT_CONFIGS } from "../streamlake/config";
 import { WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS } from "../weights-and-biases/config";
 import { TOGETHER_OPENAI_COMPAT_CONFIGS } from "../together/config";
 import { XIAOMI_OPENAI_COMPAT_CONFIGS } from "../xiaomi/config";
@@ -61,6 +66,7 @@ import { LIQUID_AI_OPENAI_COMPAT_CONFIGS } from "../liquid-ai/config";
 import { TENSORIX_OPENAI_COMPAT_CONFIGS } from "../tensorix/config";
 import { OVHCLOUD_OPENAI_COMPAT_CONFIGS } from "../ovhcloud/config";
 import { THINKING_MACHINES_OPENAI_COMPAT_CONFIGS } from "../thinking-machines/config";
+import { WAFER_OPENAI_COMPAT_CONFIGS } from "../wafer/config";
 
 export const OPENAI_COMPAT_CONFIG = {
 	...OPENAI_OPENAI_COMPAT_CONFIGS,
@@ -69,6 +75,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...ARCEE_OPENAI_COMPAT_CONFIGS,
 	...AI21_OPENAI_COMPAT_CONFIGS,
 	...AKASHML_OPENAI_COMPAT_CONFIGS,
+	...AMBIENT_OPENAI_COMPAT_CONFIGS,
 	...AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS,
 	...BASETEN_OPENAI_COMPAT_CONFIGS,
 	...BYTEPLUS_OPENAI_COMPAT_CONFIGS,
@@ -77,6 +84,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...CHUTES_OPENAI_COMPAT_CONFIGS,
 	...COHERE_OPENAI_COMPAT_CONFIGS,
 	...CROFAI_OPENAI_COMPAT_CONFIGS,
+	...DECART_OPENAI_COMPAT_CONFIGS,
 	...VOYAGE_OPENAI_COMPAT_CONFIGS,
 	...DEEPINFRA_OPENAI_COMPAT_CONFIGS,
 	...DEEPSEEK_OPENAI_COMPAT_CONFIGS,
@@ -87,9 +95,11 @@ export const OPENAI_COMPAT_CONFIG = {
 	...GROQ_OPENAI_COMPAT_CONFIGS,
 	...HYPERBOLIC_OPENAI_COMPAT_CONFIGS,
 	...INCEPTION_OPENAI_COMPAT_CONFIGS,
+	...INCEPTRON_OPENAI_COMPAT_CONFIGS,
 	...INFERMATIC_OPENAI_COMPAT_CONFIGS,
 	...INFLECTION_OPENAI_COMPAT_CONFIGS,
 	...IONROUTER_OPENAI_COMPAT_CONFIGS,
+	...IO_NET_OPENAI_COMPAT_CONFIGS,
 	...MANCER_OPENAI_COMPAT_CONFIGS,
 	...MINIMAX_OPENAI_COMPAT_CONFIGS,
 	...MISTRAL_OPENAI_COMPAT_CONFIGS,
@@ -106,6 +116,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...SAMBANOVA_OPENAI_COMPAT_CONFIGS,
 	...SCALEWAY_OPENAI_COMPAT_CONFIGS,
 	...SILICONFLOW_OPENAI_COMPAT_CONFIGS,
+	...STREAMLAKE_OPENAI_COMPAT_CONFIGS,
 	...WEIGHTS_AND_BIASES_OPENAI_COMPAT_CONFIGS,
 	...TOGETHER_OPENAI_COMPAT_CONFIGS,
 	...XIAOMI_OPENAI_COMPAT_CONFIGS,
@@ -125,4 +136,5 @@ export const OPENAI_COMPAT_CONFIG = {
 	...TENSORIX_OPENAI_COMPAT_CONFIGS,
 	...OVHCLOUD_OPENAI_COMPAT_CONFIGS,
 	...THINKING_MACHINES_OPENAI_COMPAT_CONFIGS,
+	...WAFER_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

@@ -4,7 +4,7 @@
   "name": "OCR 4",
   "status": "Available",
   "previous_model_id": "mistral/ocr-3",
-  "description": "OCR 4 is a document understanding model from Mistral for OCR, document extraction, and multimodal document processing.",
+  "description": "OCR 4 is Mistral's document understanding model for OCR, document extraction, bounding boxes, block classification, confidence scores, and structured document processing.",
   "announced_date": "2026-06-23T00:00:00",
   "release_date": "2026-06-23T00:00:00",
   "deprecation_date": null,
@@ -15,11 +15,51 @@
   "api_model_id": "mistral/ocr-4",
   "links": [
     {
+      "platform": "model_card",
+      "url": "https://docs.mistral.ai/models/model-cards/ocr-4-0"
+    },
+    {
       "platform": "api_reference",
-      "label": "Model card",
-      "url": "https://docs.mistral.ai/models/model-cards/ocr/"
+      "url": "https://docs.mistral.ai/api/endpoint/ocr"
+    },
+    {
+      "platform": "docs",
+      "url": "https://docs.mistral.ai/models/overview"
+    },
+    {
+      "platform": "announcement",
+      "url": "https://mistral.ai/news/ocr-4/"
     }
   ],
-  "details": [],
+  "details": [
+    {
+      "name": "provider_model_id",
+      "value": "mistral-ocr-4-0"
+    },
+    {
+      "name": "standard_ocr_price",
+      "value": "$4 per 1,000 pages"
+    },
+    {
+      "name": "batch_ocr_price",
+      "value": "$2 per 1,000 pages"
+    },
+    {
+      "name": "document_ai_price",
+      "value": "$5 per 1,000 annotated pages"
+    },
+    {
+      "name": "document_structure",
+      "value": "Returns markdown, paragraph-level bounding boxes, structural block labels, and confidence scores."
+    },
+    {
+      "name": "language_support",
+      "value": "Supports 170 languages across 10 language groups."
+    },
+    {
+      "name": "availability",
+      "value": "Available through the Mistral OCR API as mistral-ocr-4-0 and the latest OCR family."
+    }
+  ],
   "benchmarks": []
 }

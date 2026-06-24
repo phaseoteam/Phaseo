@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "streamlake",
+  "api_provider_name": "StreamLake",
+  "description": "Provider added for catalog coverage; direct AI Stats Gateway support is not configured.",
+  "link": "https://www.streamlake.ai/",
+  "country_code": null,
+  "status": "NotReady",
+  "colour": "#0EA5E9",
+  "privacy_policy_url": "https://www.streamlake.ai/document/DOC/mgkci47q13qr66h9i54",
+  "prompt_training_policy": null,
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null,
+  "terms_of_service_url": "https://www.streamlake.ai/document/DOC/mgkchnd89grpt1961fw"
+}
