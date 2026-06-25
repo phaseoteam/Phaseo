@@ -33,7 +33,7 @@ export default async function ModelPricing({
 	const includeInternalProviders = await isAdminViewer().catch(() => false);
 	const [providers, header] = await Promise.all([
 		includeInternalProviders
-			? getModelPricingCached(modelId, includeHidden, true)
+			? getModelPricingCached(modelId, includeHidden)
 			: fetchFrontendModelPricing(modelId),
 		fetchFrontendModelHeader(modelId, includeHidden),
 	]);

@@ -18,6 +18,12 @@ export type ProviderRuntimeStats = {
 		requests: number;
 		successful: number;
 	}>;
+	uptimeHourly3h?: Array<{
+		hourOffset: 0 | 1 | 2;
+		uptimePct: number | null;
+		requests?: number;
+		successful?: number;
+	}>;
 	requests30m: number;
 	requests3d: number;
 	successful3d: number;

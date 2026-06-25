@@ -37,6 +37,7 @@ import {
 	fetchFrontendModelOverview,
 	fetchFrontendModelPendingApiReleaseState,
 	fetchFrontendModelPerformance,
+	fetchFrontendModelTokenTrajectory,
 	fetchFrontendModelUsageDailyBreakdown,
 	fetchFrontendOrganisationModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -228,14 +229,19 @@ export async function ModelPerformanceSection({
 	modelId,
 	includeHidden,
 	performancePromise,
-}: ModelSectionSharedProps & ModelPerformancePromiseProps) {
-	const [performanceMetrics, pendingApiRelease] =
+	surface = "overview",
+}: ModelSectionSharedProps &
+	ModelPerformancePromiseProps & {
+		surface?: ModelSectionSurface;
+	}) {
+	const [performanceMetrics, pendingApiRelease, tokenTrajectory] =
 		await Promise.all([
 		performancePromise ??
 			fetchFrontendModelPerformance(modelId, 24).catch(() => null),
 		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden).catch(
 			() => null,
 		),
+		fetchFrontendModelTokenTrajectory(modelId).catch(() => null),
 	]);
 	const shouldShowPendingApiBanner =
 		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
@@ -243,7 +249,11 @@ export async function ModelPerformanceSection({
 	return (
 		<>
 			{performanceMetrics ? (
-				<ModelPerformanceDashboard metrics={performanceMetrics} />
+				<ModelPerformanceDashboard
+					metrics={performanceMetrics}
+					tokenTrajectory={tokenTrajectory}
+					mode={surface}
+				/>
 			) : (
 				<div className="space-y-3">
 					{shouldShowPendingApiBanner ? (
@@ -276,17 +286,10 @@ export async function ModelUptimeSection({
 	const performanceMetrics =
 		(await (performancePromise ??
 			fetchFrontendModelPerformance(modelId, 24).catch(() => null))) ?? null;
-	const showLeastStableProvider =
-		performanceMetrics?.successSeries.some(
-			(point) =>
-				(point.providerCount ?? 0) > 1 &&
-				point.worstProviderSuccessPct != null,
-		) ?? false;
 
 	return (
 		<ModelSuccessChart
 			successSeries={performanceMetrics?.successSeries ?? []}
-			showLeastStableProvider={showLeastStableProvider}
 		/>
 	);
 }
@@ -380,7 +383,7 @@ export async function ModelQuickstartSection({
 }) {
 	const includeInternalProviders = await isAdminViewer().catch(() => false);
 	const gatewayMetadata = await (includeInternalProviders
-		? getModelGatewayMetadataCached(modelId, includeHidden, true)
+		? getModelGatewayMetadataCached(modelId, includeHidden)
 		: fetchFrontendModelGatewayMetadata(modelId)
 	).catch(() => null);
 
@@ -1185,4 +1188,3 @@ export default function ModelOverviewSections({
 		</div>
 	);
 }
-

@@ -72,6 +72,7 @@ export interface ProviderModel {
     endpoint: string;
     capability_status?: string | null;
     is_active_gateway: boolean;
+    routing_status?: string | null;
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
     quantization_scheme?: string | null;
@@ -97,7 +98,9 @@ export interface ProviderInfo {
     colour?: string | null;
     link?: string | null;
     country_code?: string | null;
-    residency_mode?:
+    status?: string | null;
+    routing_status?: string | null;
+	residency_mode?:
         | "unknown"
         | "provider_managed"
         | "customer_selectable"
@@ -130,6 +133,10 @@ export interface ProviderInfo {
     user_identifier_notes?: string | null;
     privacy_policy_url?: string | null;
     terms_of_service_url?: string | null;
+    data_policy_tier?: string | null;
+    data_policy_confidence?: string | null;
+    data_policy_contract_mode?: string | null;
+    data_policy_contract_notes?: string | null;
 }
 
 export interface ProviderPricing {
@@ -226,6 +233,7 @@ export default async function getModelPricing(
         model_id,
         provider_model_slug,
         is_active_gateway,
+        routing_status,
         input_modalities,
         output_modalities,
         quantization_scheme,
@@ -253,6 +261,8 @@ export default async function getModelPricing(
             colour,
             link,
             country_code,
+            status,
+            routing_status,
             residency_mode,
             default_execution_regions,
             default_data_regions,
@@ -269,7 +279,11 @@ export default async function getModelPricing(
             user_identifier_policy,
             user_identifier_notes,
             privacy_policy_url,
-            terms_of_service_url
+            terms_of_service_url,
+            data_policy_tier,
+            data_policy_confidence,
+            data_policy_contract_mode,
+            data_policy_contract_notes
         )
     `;
 
@@ -439,6 +453,9 @@ export default async function getModelPricing(
                     colour: row.data_api_providers?.colour ?? null,
                     link: row.data_api_providers?.link || null,
                     country_code: row.data_api_providers?.country_code || null,
+                    status: row.data_api_providers?.status ?? null,
+                    routing_status:
+                        row.data_api_providers?.routing_status ?? null,
                     residency_mode:
                         row.data_api_providers?.residency_mode ?? null,
                     default_execution_regions: Array.isArray(
@@ -479,6 +496,14 @@ export default async function getModelPricing(
                         row.data_api_providers?.privacy_policy_url ?? null,
                     terms_of_service_url:
                         row.data_api_providers?.terms_of_service_url ?? null,
+                    data_policy_tier:
+                        row.data_api_providers?.data_policy_tier ?? null,
+                    data_policy_confidence:
+                        row.data_api_providers?.data_policy_confidence ?? null,
+                    data_policy_contract_mode:
+                        row.data_api_providers?.data_policy_contract_mode ?? null,
+                    data_policy_contract_notes:
+                        row.data_api_providers?.data_policy_contract_notes ?? null,
                 },
                 provider_models: [],
                 pricing_rules: [],
@@ -499,6 +524,7 @@ export default async function getModelPricing(
                 endpoint: "unmapped",
                 capability_status: null,
                 is_active_gateway: row.is_active_gateway,
+                routing_status: row.routing_status ?? null,
                 input_modalities: Array.isArray(row.input_modalities)
                     ? row.input_modalities.join(",")
                     : row.input_modalities ?? "",
@@ -539,6 +565,7 @@ export default async function getModelPricing(
                 endpoint: capability.capability_id,
                 capability_status: capability.status ?? null,
                 is_active_gateway: row.is_active_gateway,
+                routing_status: row.routing_status ?? null,
                 input_modalities: Array.isArray(row.input_modalities)
                     ? row.input_modalities.join(",")
                     : row.input_modalities ?? "",

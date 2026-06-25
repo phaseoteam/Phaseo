@@ -12,6 +12,8 @@ export interface GatewayProviderDetails {
     offer_scope?: "global" | "regional" | "specialized" | null;
     link?: string | null;
     country_code?: string | null;
+	status?: string | null;
+	routing_status?: string | null;
 	residency_mode?:
 		| "unknown"
 		| "provider_managed"
@@ -45,6 +47,10 @@ export interface GatewayProviderDetails {
 	user_identifier_notes?: string | null;
 	privacy_policy_url?: string | null;
 	terms_of_service_url?: string | null;
+	data_policy_tier?: string | null;
+	data_policy_confidence?: string | null;
+	data_policy_contract_mode?: string | null;
+	data_policy_contract_notes?: string | null;
 }
 
 export interface GatewayProviderModel {
@@ -395,7 +401,7 @@ export default async function getModelGatewayMetadata(
         new Set((providerModels ?? []).map((row) => row.provider_id).filter(Boolean))
     );
 	const providerSelect =
-		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url";
+		"api_provider_id, api_provider_name, provider_family_id, offer_label, offer_scope, link, country_code, status, routing_status, residency_mode, default_execution_regions, default_data_regions, zero_data_retention, residency_source_url, residency_notes, regional_pricing_mode, regional_pricing_uplift_percent, pricing_source_url, regional_pricing_notes, prompt_training_policy, prompt_training_notes, prompt_training_source_url, user_identifier_policy, user_identifier_notes, privacy_policy_url, terms_of_service_url, data_policy_tier, data_policy_confidence, data_policy_contract_mode, data_policy_contract_notes";
 	const providerSelectLegacy =
 		"api_provider_id, api_provider_name, link, country_code, status, routing_status";
 	let providersData: any[] | null = null;
@@ -466,6 +472,10 @@ export default async function getModelGatewayMetadata(
 			user_identifier_notes: provider.user_identifier_notes ?? null,
 			privacy_policy_url: provider.privacy_policy_url ?? null,
 			terms_of_service_url: provider.terms_of_service_url ?? null,
+			data_policy_tier: provider.data_policy_tier ?? null,
+			data_policy_confidence: provider.data_policy_confidence ?? null,
+			data_policy_contract_mode: provider.data_policy_contract_mode ?? null,
+			data_policy_contract_notes: provider.data_policy_contract_notes ?? null,
 			status: provider.status ?? null,
 			routing_status: provider.routing_status ?? null,
         });
