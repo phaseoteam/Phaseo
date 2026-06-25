@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-sonnet-4",
   "organisation_id": "anthropic",
   "name": "Claude Sonnet 4",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "anthropic/claude-3-7-sonnet-2025-02-24",
   "description": "Claude Sonnet 4 significantly enhances the capabilities of its predecessor, Sonnet 3.7, excelling in both coding and reasoning tasks with improved precision and controllability.",
   "announced_date": "2025-05-21T00:00:00",

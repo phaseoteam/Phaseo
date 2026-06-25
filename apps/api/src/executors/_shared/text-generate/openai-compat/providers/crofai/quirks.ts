@@ -3,8 +3,13 @@
 // How: Preserves reasoning_content and synthesizes reasoning_details during buffered and streaming normalization.
 
 import type { ProviderQuirks } from "../../quirks/types";
+import { normalizeK27CodeRequest } from "../moonshot-ai/quirks";
 
 export const crofAIQuirks: ProviderQuirks = {
+	transformRequest: ({ request }) => {
+		normalizeK27CodeRequest(request);
+	},
+
 	extractReasoning: ({ choice, rawContent }) => {
 		const reasoningContent = choice.message?.reasoning_content;
 

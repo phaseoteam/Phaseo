@@ -43,5 +43,20 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "stepfun/step-3.7-flash",
+    "provider_api_model_id": "stepfun:stepfun/step-3.7-flash",
+    "provider_model_slug": "step-3.7-flash",
+    "internal_model_id": "stepfun/step-3.7-flash",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

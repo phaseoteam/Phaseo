@@ -23,6 +23,33 @@ describe("text provider profiles", () => {
 		).toBe(false);
 	});
 
+	it("returns param policy overrides for provider-verified supported params", () => {
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "baseten",
+				paramPathCandidates: ["max_tokens"],
+			}),
+		).toBe(true);
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "deepinfra",
+				paramPathCandidates: ["max_tokens"],
+			}),
+		).toBe(true);
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "deepinfra",
+				paramPathCandidates: ["temperature"],
+			}),
+		).toBe(true);
+		expect(
+			resolveTextProviderParamPolicyOverride({
+				providerId: "deepinfra",
+				paramPathCandidates: ["service_tier"],
+			}),
+		).toBe(true);
+	});
+
 	it("provides normalize hints used by execute path", () => {
 		expect(getTextProviderTemperatureMax("anthropic")).toBe(1);
 		expect(getTextProviderDefaultMaxTokens("anthropic")).toBe(4096);
@@ -44,5 +71,32 @@ describe("text provider profiles", () => {
 		expect(normalizeTextProviderServiceTier("anthropic", "standard")).toBe(
 			"standard",
 		);
+	});
+
+	it("marks tier-aware text providers as supporting service_tier", () => {
+		for (const providerId of [
+			"openai",
+			"azure",
+			"anthropic",
+			"anthropic-us",
+			"google-ai-studio",
+			"google",
+			"google-vertex",
+			"google-vertex-eu",
+			"moonshotai",
+			"moonshot-ai",
+			"moonshotai-turbo",
+			"deepinfra",
+			"x-ai",
+			"xai",
+		]) {
+			expect(
+				resolveTextProviderParamPolicyOverride({
+					providerId,
+					paramPathCandidates: ["service_tier"],
+				}),
+				providerId,
+			).toBe(true);
+		}
 	});
 });

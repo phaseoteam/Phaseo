@@ -87,12 +87,6 @@
       "other_info": null
     },
     {
-      "model_id": "anthropic/claude-sonnet-4",
-      "model_info": null,
-      "rate_limit": "Subject to monthly allowance",
-      "other_info": null
-    },
-    {
       "model_id": "anthropic/claude-sonnet-4.5",
       "model_info": null,
       "rate_limit": "Subject to monthly allowance",

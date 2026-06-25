@@ -1,0 +1,14 @@
+{
+  "api_provider_id": "longcat",
+  "api_provider_name": "LongCat",
+  "description": "OpenAI-compatible API access for Meituan's LongCat model family.",
+  "link": "https://longcat.chat/platform/docs/APIDocs.html",
+  "country_code": "CN",
+  "status": "Active",
+  "colour": "#29E154",
+  "privacy_policy_url": "https://longcat.chat/platform/private/POLICY.html",
+  "terms_of_service_url": "https://longcat.chat/platform/private/",
+  "prompt_training_policy": null,
+  "prompt_training_notes": null,
+  "prompt_training_source_url": null
+}

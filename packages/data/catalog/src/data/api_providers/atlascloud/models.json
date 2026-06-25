@@ -210,6 +210,111 @@
     ]
   },
   {
+    "api_model_id": "bytedance/seed-1.6-2025-10-15",
+    "provider_api_model_id": "atlascloud:bytedance/seed-1.6-2025-10-15",
+    "provider_model_slug": "bytedance/doubao-seed-1.6-251015",
+    "internal_model_id": "bytedance/seed-1.6-2025-10-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2025-10-15T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/seed-1.6-flash-2025-08-28",
+    "provider_api_model_id": "atlascloud:bytedance/seed-1.6-flash-2025-08-28",
+    "provider_model_slug": "bytedance/doubao-seed-1.6-flash-250828",
+    "internal_model_id": "bytedance/seed-1.6-flash-2025-08-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2025-08-28T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/seed-1.8-2025-12-28",
+    "provider_api_model_id": "atlascloud:bytedance/seed-1.8-2025-12-28",
+    "provider_model_slug": "bytedance/doubao-seed-1.8-251228",
+    "internal_model_id": "bytedance/seed-1.8-2025-12-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2025-12-28T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/seed-2.0-code-preview-2026-02-15",
+    "provider_api_model_id": "atlascloud:bytedance/seed-2.0-code-preview-2026-02-15",
+    "provider_model_slug": "bytedance/doubao-seed-2.0-code-preview-260215",
+    "internal_model_id": "bytedance/seed-2.0-code-preview-2026-02-15",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-02-15T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/seed-2.0-lite-2026-04-28",
+    "provider_api_model_id": "atlascloud:bytedance/seed-2.0-lite-2026-04-28",
+    "provider_model_slug": "bytedance/doubao-seed-2.0-lite-260428",
+    "internal_model_id": "bytedance/seed-2.0-lite-2026-04-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/seed-2.0-mini-2026-04-28",
+    "provider_api_model_id": "atlascloud:bytedance/seed-2.0-mini-2026-04-28",
+    "provider_model_slug": "bytedance/doubao-seed-2.0-mini-260428",
+    "internal_model_id": "bytedance/seed-2.0-mini-2026-04-28",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
+    "api_model_id": "bytedance/seed-2.0-pro",
+    "provider_api_model_id": "atlascloud:bytedance/seed-2.0-pro",
+    "provider_model_slug": "bytedance/doubao-seed-2.0-pro-260215",
+    "internal_model_id": "bytedance/seed-2.0-pro",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-02-15T00:00:00",
+    "effective_to": null,
+    "capabilities": []
+  },
+  {
     "api_model_id": "kwaipilot/kat-coder-exp-72b-1010",
     "provider_api_model_id": "atlascloud:kwaipilot/kat-coder-exp-72b-1010",
     "provider_model_slug": "kwaipilot/kat-coder-exp-72b-1010",
@@ -256,18 +361,18 @@
     "provider_api_model_id": "atlascloud:meituan/longcat-flash-cat",
     "provider_model_slug": "meituan-longcat/LongCat-Flash-Chat",
     "internal_model_id": "meituan/longcat-flash-cat",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 131072,
     "max_output_tokens": 32768,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-05-29T00:00:00Z",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": []
       }
     ]
@@ -410,6 +515,27 @@
     "context_length": 262144,
     "max_output_tokens": 65536,
     "effective_from": "2026-04-20T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "atlascloud:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "moonshotai/kimi-k2.7-code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-06-12T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1040,6 +1166,27 @@
     "context_length": 202752,
     "max_output_tokens": 131072,
     "effective_from": "2026-03-25T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "atlascloud:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org/glm-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 202752,
+    "max_output_tokens": 202752,
+    "effective_from": "2026-06-16T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
