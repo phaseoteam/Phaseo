@@ -216,6 +216,11 @@ function envValue(name: string, fallback: string): string {
     return trimmed.length > 0 ? trimmed : fallback;
 }
 
+function envNames(value: string | string[] | undefined): string[] {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+}
+
 function buildRecordConfig(): RecordConfig | undefined {
     if ((process.env.AISTATS_AIMOCK_RECORD ?? "0").trim() !== "1") return undefined;
     return {
@@ -247,11 +252,11 @@ function buildAimockBindings(): Partial<GatewayBindings> {
 
     for (const config of Object.values(OPENAI_COMPAT_CONFIG)) {
         if (config.pathPrefix !== "/v1") continue;
-        if (config.apiKeyEnv) {
-            bindings[config.apiKeyEnv] = envValue(config.apiKeyEnv, `test-${config.apiKeyEnv.toLowerCase()}`);
+        for (const apiKeyEnv of envNames(config.apiKeyEnv)) {
+            bindings[apiKeyEnv] = envValue(apiKeyEnv, `test-${apiKeyEnv.toLowerCase()}`);
         }
-        if (config.baseUrlEnv) {
-            bindings[config.baseUrlEnv] = AIMOCK_BASE_URL;
+        for (const baseUrlEnv of envNames(config.baseUrlEnv)) {
+            bindings[baseUrlEnv] = AIMOCK_BASE_URL;
         }
     }
 

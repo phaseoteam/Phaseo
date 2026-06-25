@@ -12,6 +12,11 @@ function supportsCapability(providerId: string, capability: string): boolean {
     return isProviderCapabilityEnabled(providerId, capability);
 }
 
+function envKey(value: string | string[] | undefined): string {
+    if (!value) return "";
+    return (Array.isArray(value) ? value : [value]).join(",");
+}
+
 function canonicalOpenAIV1Providers(): string[] {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -21,8 +26,8 @@ function canonicalOpenAIV1Providers(): string[] {
         if (!hasExecutor(providerId, "text.generate")) continue;
 
         const dedupeKey = [
-            config.baseUrlEnv ?? "",
-            config.apiKeyEnv ?? "",
+            envKey(config.baseUrlEnv),
+            envKey(config.apiKeyEnv),
             config.pathPrefix ?? "",
             config.supportsResponses === true ? "responses" : "chat",
         ].join("|");
