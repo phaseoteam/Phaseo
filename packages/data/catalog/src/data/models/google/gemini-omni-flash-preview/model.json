@@ -1,0 +1,28 @@
+{
+  "model_id": "google/gemini-omni-flash-preview",
+  "organisation_id": "google",
+  "name": "Gemini Omni Flash Preview",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Gemini Omni Flash Preview is a provisional Google multimodal preview model. Pricing, release date, limits, output modalities, and the full API surface have not been officially published.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio,video",
+  "output_types": null,
+  "api_model_id": "google/gemini-omni-flash-preview",
+  "page_notice": {
+    "tone": "warning",
+    "markdown": "This is a provisional preview entry. Google has not published confirmed pricing, release timing, output modalities, limits, or API capabilities for `gemini-omni-flash-preview`; do not use this entry for routing or billing estimates until those details are confirmed."
+  },
+  "links": [],
+  "details": [
+    {
+      "name": "catalog_note",
+      "value": "Provisional entry added ahead of official pricing and release documentation. The final modality and capability surface may include more than video generation."
+    }
+  ],
+  "benchmarks": []
+}
