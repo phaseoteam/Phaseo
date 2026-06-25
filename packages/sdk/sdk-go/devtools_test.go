@@ -16,7 +16,7 @@ import (
 func TestDevtoolsCapturesResponsesRequests(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/gateway/models":
+		case "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{
@@ -269,7 +269,7 @@ func TestDevtoolsCapturesHealthEntries(t *testing.T) {
 func TestDevtoolsCapturesControlPlaneEntries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/gateway/models":
+		case r.Method == http.MethodGet && r.URL.Path == "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{"model_id": "openai/gpt-5-mini"},
@@ -458,7 +458,7 @@ func TestDevtoolsCapturesControlPlaneEntries(t *testing.T) {
 func TestDevtoolsCapturesRoutingMetadataFromHTTPErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/gateway/models":
+		case "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{
@@ -597,7 +597,7 @@ func TestDevtoolsCapturesGenerationLookupEntries(t *testing.T) {
 func TestDevtoolsCapturesVideoLifecycleEntries(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/gateway/models":
+		case r.Method == http.MethodGet && r.URL.Path == "/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{

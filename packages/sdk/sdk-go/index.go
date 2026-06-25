@@ -377,7 +377,7 @@ func (c *AIStats) fetchModelLifecycle(
 	return nil, nil
 }
 
-// GetModels calls /gateway/models.
+// GetModels calls /models.
 func (c *AIStats) GetModels(_ context.Context, query map[string]string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "models.list", query, false, func() (map[string]interface{}, error) {
 		return gen.ListModels(c.raw, nil, query, nil, nil)
