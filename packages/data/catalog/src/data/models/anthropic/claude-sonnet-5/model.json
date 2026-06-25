@@ -1,0 +1,19 @@
+{
+  "model_id": "anthropic/claude-sonnet-5",
+  "organisation_id": "anthropic",
+  "name": "Claude Sonnet 5",
+  "status": "Rumoured",
+  "previous_model_id": "anthropic/claude-sonnet-4.6",
+  "description": "Claude Sonnet 5 is a rumoured Anthropic Sonnet-tier model. Official pricing, release timing, API identifier, modalities, context limits, and benchmark data have not been published.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": null,
+  "output_types": null,
+  "api_model_id": "anthropic/claude-sonnet-5",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}
