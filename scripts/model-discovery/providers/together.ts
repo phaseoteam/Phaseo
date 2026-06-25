@@ -4,7 +4,7 @@ export default defineOpenAICompatibleProvider({
     providerId: "together",
     name: "Together",
     apiKeyEnv: "TOGETHER_API_KEY",
-    baseUrl: "https://api.together.xyz",
+    baseUrl: "https://api.together.ai",
     baseUrlEnv: "TOGETHER_BASE_URL",
     pathPrefix: "/v1",
 });

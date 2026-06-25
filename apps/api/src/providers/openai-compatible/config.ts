@@ -87,6 +87,11 @@ function readFirstBinding(names: readonly string[]): string | undefined {
 	return undefined;
 }
 
+function toEnvList(value: string | string[] | undefined): string[] {
+	if (!value) return [];
+	return Array.isArray(value) ? value : [value];
+}
+
 function resolveNebiusBaseUrl(providerId: string): string | undefined {
 	if (providerId === "nebius-token-factory-eu-north-1") {
 		return readFirstBinding(NEBIUS_EU_NORTH_1_BASE_URL_ENVS);
@@ -124,7 +129,7 @@ export function resolveOpenAICompatConfig(providerId: string): OpenAICompatConfi
 				? readFirstBinding(CROFAI_BASE_URL_ENVS)
 				: undefined) ||
 		resolveNebiusBaseUrl(providerId) ||
-		(config.baseUrlEnv && bindings[config.baseUrlEnv]) ||
+		readFirstBinding(toEnvList(config.baseUrlEnv)) ||
 		config.baseUrl;
 
 	if (!baseUrl) {
@@ -233,11 +238,8 @@ export function resolveOpenAICompatKey(args: ProviderExecuteArgs): ResolvedKey {
 	}
 
 	const config = resolveOpenAICompatConfig(args.providerId);
-	const envKey = config.apiKeyEnv;
 	return resolveProviderKey(args, () => {
-		if (!envKey) return undefined;
-		const bindings = getBindings() as unknown as Record<string, string | undefined>;
-		return bindings[envKey];
+		return readFirstBinding(toEnvList(config.apiKeyEnv));
 	});
 }
 

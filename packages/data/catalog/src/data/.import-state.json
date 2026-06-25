@@ -107,7 +107,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/atlascloud/models.json": {
-      "hash": "06d0b21b8cbe7c5944af411ea1536b10",
+      "hash": "3aae64e9103bf16357375935d6079c50",
       "meta": {
         "api_provider_id": "atlascloud",
         "kind": "provider_models"
@@ -159,7 +159,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/byteplus/models.json": {
-      "hash": "a43bf877e655812d3f4e64e27f1cb214",
+      "hash": "313bd5b52ab8d25b331cbd4f94541919",
       "meta": {
         "api_provider_id": "byteplus",
         "kind": "provider_models"
@@ -229,10 +229,44 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/crofai/models.json": {
-      "hash": "1c3b5cb160cf6293a3e6899185325113",
+      "hash": "21814679435c5c6ca1c0b12abaaf322a",
       "meta": {
         "api_provider_id": "crofai",
-        "kind": "provider_models"
+        "kind": "provider_models",
+        "linked_model_ids": [
+          "deepseek/deepseek-v4-pro",
+          "deepseek/deepseek-v4-pro-precision",
+          "deepseek/deepseek-v4-pro-lightning",
+          "deepseek/deepseek-v4-flash",
+          "deepseek/deepseek-v3.2",
+          "xiaomi/mimo-v2.5-pro",
+          "xiaomi/mimo-v2.5-pro-precision",
+          "z-ai/glm-5.1",
+          "z-ai/glm-5.1-precision",
+          "z-ai/glm-5.2",
+          "crofai/greg",
+          "crofai/greg-1-mini",
+          "crofai/greg-1",
+          "crofai/greg-1-super",
+          "crofai/greg-rp",
+          "crofai/greg-2-super",
+          "crofai/greg-2-ultra",
+          "moonshotai/kimi-k2.6",
+          "moonshotai/kimi-k2.6-precision",
+          "moonshotai/kimi-k2.7-code",
+          "moonshotai/kimi-k2.5",
+          "moonshotai/kimi-k2.5-lightning",
+          "z-ai/glm-5",
+          "z-ai/glm-4.7",
+          "z-ai/glm-4.7-flash",
+          "google/gemma-4-31b",
+          "google/gemma-4-31b-it",
+          "minimax/minimax-m2.5",
+          "qwen/qwen3.6-27b",
+          "qwen/qwen3.5-397b-a17b",
+          "qwen/qwen3.5-9b",
+          "qwen/qwen3.5-9b-chat"
+        ]
       }
     },
     "../../packages/data/catalog/src/data/api_providers/crusoe/api_provider.json": {
@@ -705,7 +739,7 @@
       }
     },
     "../../packages/data/catalog/src/data/api_providers/venice-e2ee/models.json": {
-      "hash": "33d4a2e83030d7e56260dd70ec02adb0",
+      "hash": "0b06e1c9b89628ca59d288f00a039cc4",
       "meta": {
         "api_provider_id": "venice-e2ee",
         "kind": "provider_models"
@@ -5784,6 +5818,14 @@
         "previous_model_id": null
       }
     },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-1.6-2025-10-15/model.json": {
+      "hash": "48c7bf7e3db79003da51ab151b36ee52",
+      "meta": {
+        "model_id": "bytedance/seed-1.6-2025-10-15",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
     "../../packages/data/catalog/src/data/models/bytedance/seed-1.6-flash-2025-06-15/model.json": {
       "hash": "125c9b0ab618f37312eb5cff6253c99a",
       "meta": {
@@ -5800,10 +5842,34 @@
         "previous_model_id": null
       }
     },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-1.6-flash-2025-08-28/model.json": {
+      "hash": "2894d7ac3ec9aa1320d4409bc6e7a0c7",
+      "meta": {
+        "model_id": "bytedance/seed-1.6-flash-2025-08-28",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
     "../../packages/data/catalog/src/data/models/bytedance/seed-1.8/model.json": {
       "hash": "a6ce5af9fd8b43c26464a2345780e509",
       "meta": {
         "model_id": "bytedance/seed-1.8",
+        "organisation_id": "bytedance",
+        "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-1.8-2025-12-28/model.json": {
+      "hash": "2b5171d1a5fa437cafb63659d6a9063e",
+      "meta": {
+        "model_id": "bytedance/seed-1.8-2025-12-28",
+        "organisation_id": "bytedance",
+        "previous_model_id": "bytedance/seed-1.8"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/bytedance/seed-2.0-code-preview-2026-02-15/model.json": {
+      "hash": "35eee4211c161af07edd351bf25c7b73",
+      "meta": {
+        "model_id": "bytedance/seed-2.0-code-preview-2026-02-15",
         "organisation_id": "bytedance",
         "previous_model_id": null
       }
@@ -5902,6 +5968,14 @@
         "model_id": "bytedance/seedance-2.0-fast",
         "organisation_id": "bytedance",
         "previous_model_id": null
+      }
+    },
+    "../../packages/data/catalog/src/data/models/bytedance/seedance-2.0-mini-260615/model.json": {
+      "hash": "9cd6b758437e49c8626c416f85f3734f",
+      "meta": {
+        "model_id": "bytedance/seedance-2.0-mini-260615",
+        "organisation_id": "bytedance",
+        "previous_model_id": "bytedance/seedance-2.0"
       }
     },
     "../../packages/data/catalog/src/data/models/bytedance/seedream-4.0/model.json": {
@@ -14562,6 +14636,15 @@
         "model_key": "atlascloud:moonshotai/kimi-k2.6:text.generate"
       }
     },
+    "../../packages/data/catalog/src/data/pricing/atlascloud/moonshotai-kimi-k2.7-code/text.generate/pricing.json": {
+      "hash": "ee54855af5e2dad0cd1f396c3d6f91a4",
+      "meta": {
+        "api_provider_id": "atlascloud",
+        "capability_id": "text.generate",
+        "model_id": "moonshotai/kimi-k2.7-code",
+        "model_key": "atlascloud:moonshotai/kimi-k2.7-code:text.generate"
+      }
+    },
     "../../packages/data/catalog/src/data/pricing/atlascloud/openai-gpt-oss-120b/text.generate/pricing.json": {
       "hash": "3dc3dadb15bb97fb662302de06db9160",
       "meta": {
@@ -21078,15 +21161,6 @@
         "model_key": "venice-e2ee:z-ai/glm-4.7:text.generate"
       }
     },
-    "../../packages/data/catalog/src/data/pricing/venice-e2ee/z-ai-glm-4.7-flash/text.generate/pricing.json": {
-      "hash": "6346ca30e2ad68ce88d748d70b343bcd",
-      "meta": {
-        "api_provider_id": "venice-e2ee",
-        "capability_id": "text.generate",
-        "model_id": "z-ai/glm-4.7-flash",
-        "model_key": "venice-e2ee:z-ai/glm-4.7-flash:text.generate"
-      }
-    },
     "../../packages/data/catalog/src/data/pricing/venice-e2ee/z-ai-glm-5/text.generate/pricing.json": {
       "hash": "54b88356bc453387c769e0fa23dc7f14",
       "meta": {
@@ -25317,6 +25391,53 @@
       "meta": {
         "api_provider_id": "thinking-machines",
         "kind": "provider_models"
+      }
+    },
+    "../../packages/data/catalog/src/data/models/crofai/greg-2-super/model.json": {
+      "hash": "b046993dbf81cefc379375ff4e86751e",
+      "meta": {
+        "model_id": "crofai/greg-2-super",
+        "organisation_id": "crofai",
+        "previous_model_id": null,
+        "api_model_id": "crofai/greg-2-super",
+        "has_page_notice": false
+      }
+    },
+    "../../packages/data/catalog/src/data/models/crofai/greg-2-ultra/model.json": {
+      "hash": "876712d761714b34c23e45ccd51c406d",
+      "meta": {
+        "model_id": "crofai/greg-2-ultra",
+        "organisation_id": "crofai",
+        "previous_model_id": null,
+        "api_model_id": "crofai/greg-2-ultra",
+        "has_page_notice": false
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/crofai/z-ai-glm-5.2/text.generate/pricing.json": {
+      "hash": "cd74a885c5fedf83416b55671bb5423e",
+      "meta": {
+        "api_provider_id": "crofai",
+        "capability_id": "text.generate",
+        "model_id": "z-ai/glm-5.2",
+        "model_key": "crofai:z-ai/glm-5.2:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/crofai/crofai-greg-2-super/text.generate/pricing.json": {
+      "hash": "86f722244431d3fb14f1474a1ac16c69",
+      "meta": {
+        "api_provider_id": "crofai",
+        "capability_id": "text.generate",
+        "model_id": "crofai/greg-2-super",
+        "model_key": "crofai:crofai/greg-2-super:text.generate"
+      }
+    },
+    "../../packages/data/catalog/src/data/pricing/crofai/crofai-greg-2-ultra/text.generate/pricing.json": {
+      "hash": "e51dda0818d18c7d7acd5ea266253fd8",
+      "meta": {
+        "api_provider_id": "crofai",
+        "capability_id": "text.generate",
+        "model_id": "crofai/greg-2-ultra",
+        "model_key": "crofai:crofai/greg-2-ultra:text.generate"
       }
     }
   }

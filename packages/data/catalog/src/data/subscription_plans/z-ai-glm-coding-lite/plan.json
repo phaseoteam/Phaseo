@@ -63,7 +63,7 @@
   ],
   "models": [
     {
-      "model_id": "z-ai/glm-5.1",
+      "model_id": "z-ai/glm-5.2",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import {
   Collapsible,
   CollapsibleContent,
@@ -145,20 +146,37 @@ export const QueueItemAttachment = ({
   <div className={cn("mt-1 flex flex-wrap gap-2", className)} {...props} />
 );
 
-export type QueueItemImageProps = ComponentProps<"img">;
+export type QueueItemImageProps = Omit<ComponentProps<"img">, "src"> & {
+  src?: string;
+};
 
 export const QueueItemImage = ({
   className,
+  width,
+  height,
+  alt,
+  src,
   ...props
-}: QueueItemImageProps) => (
-  <img
-    alt=""
-    className={cn("h-8 w-8 rounded border border-neutral-200 object-cover dark:border-neutral-800", className)}
-    height={32}
-    width={32}
-    {...props}
-  />
-);
+}: QueueItemImageProps) => {
+	const finalWidth = typeof width === "number" ? width : 32;
+	const finalHeight = typeof height === "number" ? height : 32;
+	if (!src) return null;
+
+	return (
+		<Image
+			alt={alt ?? ""}
+			className={cn(
+				"h-8 w-8 rounded border border-neutral-200 object-cover dark:border-neutral-800",
+				className
+			)}
+			src={src}
+			unoptimized
+			width={finalWidth}
+			height={finalHeight}
+			{...props}
+			/>
+	);
+};
 
 export type QueueItemFileProps = ComponentProps<"span">;
 

@@ -847,13 +847,13 @@ function getRowKind(change: ChangeHistory): DisplayRowKind {
 	return "pricing";
 }
 
-function getLinkLabel(field: string) {
+function getLinkLabel(field: string): { label: string; labelDetail?: string } {
 	const match = field.match(/^links\.([^.[]+)(?:\[[^\]]+\])?\.url$/);
 	const platform = match?.[1] ?? "";
 	return { label: `${humanizeSlug(platform || "link")} link` };
 }
 
-function getRowLabel(change: ChangeHistory) {
+function getRowLabel(change: ChangeHistory): { label: string; labelDetail?: string } {
 	if (change.entityType === "api-provider" && !change.field) {
 		return { label: "Provider listing" };
 	}

@@ -3,10 +3,10 @@ import { asArray, asRecord, defineProvider, fetchJson, normalizeModelEntries } f
 export default defineProvider({
     id: "google-ai-studio",
     name: "Google AI Studio",
-    requiredEnv: ["GOOGLE_API_KEY"],
+    requiredEnv: ["GOOGLE_AI_STUDIO_API_KEY"],
     async fetchModels() {
         const payload = await fetchJson({
-            url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(process.env.GOOGLE_API_KEY ?? "")}`,
+            url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(process.env.GOOGLE_AI_STUDIO_API_KEY ?? "")}`,
         });
         const models = asArray(asRecord(payload)?.models);
         return normalizeModelEntries(models, (item) => {

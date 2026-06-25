@@ -8284,18 +8284,14 @@ components:
         - aion-labs/aion-rp-llama-3.1-8b
         - allenai/molmo-2-8b
         - allenai/olmo-3.1-32b
-        - anthropic/claude-3.5-haiku
-        - anthropic/claude-3.7-sonnet
         - anthropic/claude-fable-5
         - anthropic/claude-haiku-4.5
-        - anthropic/claude-opus-4
         - anthropic/claude-opus-4.1
         - anthropic/claude-opus-4.5
         - anthropic/claude-opus-4.6
         - anthropic/claude-opus-4.7
         - anthropic/claude-opus-4.7-fast
         - anthropic/claude-opus-4.8
-        - anthropic/claude-sonnet-4
         - anthropic/claude-sonnet-4.5
         - anthropic/claude-sonnet-4.6
         - arcee-ai/trinity-large
@@ -8307,6 +8303,7 @@ components:
         - baidu/ernie-4.5-vl-28b-a3b
         - baidu/ernie-4.5-vl-28b-a3b-thinking
         - baidu/ernie-4.5-vl-424b-a47b
+        - black-forest-labs/flux-1-schnell
         - bytedance/seed-1.6
         - bytedance/seed-1.6-250915
         - bytedance/seed-1.6-flash
@@ -8321,9 +8318,9 @@ components:
         - bytedance/seed-translation
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
-        - crofai/greg-1
         - crofai/greg-1-mini
-        - crofai/greg-1-super
+        - crofai/greg-2-super
+        - crofai/greg-2-ultra
         - crofai/greg-rp
         - deepseek/deepseek-ocr
         - deepseek/deepseek-ocr-2
@@ -8391,7 +8388,7 @@ components:
         - kwaipilot/kat-coder-pro-v1
         - kwaipilot/kat-coder-pro-v2
         - liquid-ai/lfm-2-24b-a2b
-        - meituan/longcat-flash-cat
+        - meituan/longcat-2.0-preview
         - meta/llama-3-70b
         - meta/llama-3-8b
         - meta/llama-3-8b-lite
@@ -8463,7 +8460,6 @@ components:
         - morph/morph-v3-large
         - nex-agi/deepseek-v3.1-nex-n1
         - nex-agi/nex-n2-pro
-        - nex-agi/nex-n2-pro:free
         - nous/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-405b
         - nousresearch/hermes-3-llama-3.1-70b
@@ -8604,6 +8600,7 @@ components:
         - qwen/qwen3-coder-next
         - qwen/qwen3-coder-plus-2025-07-22
         - qwen/qwen3-coder-plus-2025-09-23
+        - qwen/qwen3-embedding-8b
         - qwen/qwen3-max
         - qwen/qwen3-max-2025-09-23
         - qwen/qwen3-max-2026-01-23
@@ -8653,6 +8650,7 @@ components:
         - qwen/text-embedding-v4
         - qwen/wan2.7-t2v
         - stepfun/step-3.5-flash
+        - stepfun/step-3.7-flash
         - tencent/hunyuan-a13b-instruct
         - tencent/hy3-preview
         - venice/venice-uncensored
@@ -8685,8 +8683,6 @@ components:
         - voyage/voyage-multilingual-2
         - voyage/voyage-multimodal-3
         - voyage/voyage-multimodal-3.5
-        - x-ai/grok-2-vision
-        - x-ai/grok-3-mini
         - x-ai/grok-4.20-beta-0309
         - x-ai/grok-4.20-multi-agent-beta-0309
         - x-ai/grok-4.3
@@ -8719,6 +8715,7 @@ components:
         - z-ai/glm-5-code
         - z-ai/glm-5-turbo
         - z-ai/glm-5.1
+        - z-ai/glm-5.2
         - z-ai/glm-5v-turbo
         - zai-org/glm-4.5-air
         - zai/glm-5

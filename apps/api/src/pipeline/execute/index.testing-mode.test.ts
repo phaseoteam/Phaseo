@@ -26,6 +26,12 @@ vi.mock("./providers", () => ({
 
 vi.mock("./health", () => ({
 	admitThroughBreaker: (...args: any[]) => admitThroughBreakerMock(...args),
+	classifyProviderHealthImpact: (args: any) => {
+		const status = Number(args?.upstreamStatus ?? 0);
+		if (Number.isFinite(status) && status >= 200 && status < 400) return "success";
+		if (status === 429) return "neutral";
+		return "failure";
+	},
 	onCallStart: (...args: any[]) => onCallStartMock(...args),
 	onCallEnd: (...args: any[]) => onCallEndMock(...args),
 	maybeOpenOnRecentErrors: (...args: any[]) => maybeOpenOnRecentErrorsMock(...args),
@@ -266,6 +272,224 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		]);
 	});
 
+	it("fails over to the next provider when a provider returns a 400 compatibility error", async () => {
+		const pricingCard = {
+			provider: "openai",
+			model: "openai/gpt-image-1-mini",
+			endpoint: "image.generate",
+			currency: "USD",
+			rules: [],
+		};
+		const firstCandidate = {
+			providerId: "first",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		const secondCandidate = {
+			providerId: "second",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [firstCandidate, secondCandidate] });
+		rankProvidersMock.mockResolvedValue([
+			{ candidate: firstCandidate, health: {} },
+			{ candidate: secondCandidate, health: {} },
+		]);
+
+		const firstExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {},
+			upstream: new Response(
+				JSON.stringify({
+					error: {
+						code: "service_tier_not_supported",
+						message: "service_tier is not supported by this provider",
+						param: "service_tier",
+					},
+				}),
+				{ status: 400 },
+			),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		const secondExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: { ok: true },
+			upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => {
+			if (providerId === "first") return firstExecutor;
+			if (providerId === "second") return secondExecutor;
+			return null;
+		});
+		const ctx = createCtx({ testingMode: false });
+
+		const result = await doRequestWithIR(
+			ctx,
+			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
+			createTiming(),
+		);
+
+		expect((result as any).ok).toBe(true);
+		expect((result as any).result.provider).toBe("second");
+		expect(firstExecutor).toHaveBeenCalledTimes(1);
+		expect(secondExecutor).toHaveBeenCalledTimes(1);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "first",
+				outcome: "upstream_non_2xx",
+				type: "upstream_non_2xx",
+				status: 400,
+				upstream_error_code: "service_tier_not_supported",
+				upstream_error_param: "service_tier",
+			}),
+			expect.objectContaining({
+				attempt_number: 2,
+				provider: "second",
+				outcome: "success",
+				type: "success",
+				status: 200,
+			}),
+		]);
+	});
+
+	it("falls back from Novita to Moonshot for a non-stream K2.7 priority compatibility failure", async () => {
+		const pricingCard = {
+			provider: "moonshotai",
+			model: "moonshotai/kimi-k2.7-code",
+			endpoint: "text.generate",
+			currency: "USD",
+			rules: [],
+		};
+		const novitaCandidate = {
+			providerId: "novita",
+			apiModelId: "moonshotai/kimi-k2.7-code",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "moonshotai/kimi-k2.7-code",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		const moonshotCandidate = {
+			providerId: "moonshotai",
+			apiModelId: "moonshotai/kimi-k2.7-code",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "kimi-k2.7-code-highspeed",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: [novitaCandidate, moonshotCandidate],
+		});
+		rankProvidersMock.mockResolvedValue([
+			{ candidate: novitaCandidate, health: {} },
+			{ candidate: moonshotCandidate, health: {} },
+		]);
+
+		const novitaExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {},
+			upstream: new Response(
+				JSON.stringify({
+					error: {
+						code: "service_tier_not_supported",
+						message: "service_tier is not supported by this provider",
+						param: "service_tier",
+					},
+				}),
+				{ status: 400 },
+			),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		const moonshotExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: {
+				id: "resp_moonshot_priority",
+				output: [{ type: "message", content: [{ type: "output_text", text: "OK" }] }],
+			},
+			upstream: new Response(JSON.stringify({ id: "resp_moonshot_priority" }), { status: 200 }),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => {
+			if (providerId === "novita") return novitaExecutor;
+			if (providerId === "moonshotai") return moonshotExecutor;
+			return null;
+		});
+		const ctx = createCtx({
+			endpoint: "responses",
+			capability: "text.generate",
+			model: "moonshotai/kimi-k2.7-code",
+			body: {
+				model: "moonshotai/kimi-k2.7-code",
+				service_tier: "priority",
+				input: "Reply with OK",
+				stream: false,
+			},
+			meta: {
+				stream: false,
+				debug: undefined,
+				returnMeta: false,
+			},
+		});
+
+		const result = await doRequestWithIR(
+			ctx,
+			{
+				model: "moonshotai/kimi-k2.7-code",
+				serviceTier: "priority",
+				messages: [{ role: "user", content: [{ type: "text", text: "Reply with OK" }] }],
+				stream: false,
+			} as any,
+			createTiming(),
+		);
+
+		expect((result as any).ok).toBe(true);
+		expect((result as any).result.provider).toBe("moonshotai");
+		expect((result as any).result.providerModelSlug).toBe("kimi-k2.7-code-highspeed");
+		expect(novitaExecutor).toHaveBeenCalledTimes(1);
+		expect(moonshotExecutor).toHaveBeenCalledTimes(1);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "novita",
+				outcome: "upstream_non_2xx",
+				type: "upstream_non_2xx",
+				status: 400,
+				upstream_error_code: "service_tier_not_supported",
+				upstream_error_param: "service_tier",
+			}),
+			expect.objectContaining({
+				attempt_number: 2,
+				provider: "moonshotai",
+				provider_model_slug: "kimi-k2.7-code-highspeed",
+				outcome: "success",
+				type: "success",
+				status: 200,
+			}),
+		]);
+	});
+
 	it("fails over to next provider when a retryable transport error occurs", async () => {
 		const pricingCard = {
 			provider: "openai",
@@ -343,6 +567,87 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				provider: "first",
 				outcome: "retryable_error",
 				type: "retryable_error",
+			}),
+			expect.objectContaining({
+				attempt_number: 2,
+				provider: "second",
+				outcome: "success",
+				type: "success",
+				status: 200,
+			}),
+		]);
+	});
+
+	it("fails over to next provider when an executor throws a non-retryable error", async () => {
+		const pricingCard = {
+			provider: "openai",
+			model: "openai/gpt-image-1-mini",
+			endpoint: "image.generate",
+			currency: "USD",
+			rules: [],
+		};
+		const firstCandidate = {
+			providerId: "first",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		const secondCandidate = {
+			providerId: "second",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({
+			ok: true,
+			value: [firstCandidate, secondCandidate],
+		});
+		rankProvidersMock.mockResolvedValue([
+			{ candidate: firstCandidate, health: {} },
+			{ candidate: secondCandidate, health: {} },
+		]);
+
+		const firstExecutor = vi
+			.fn()
+			.mockRejectedValue(new Error("provider request failed before response"));
+		const secondExecutor = vi.fn().mockResolvedValue({
+			kind: "completed",
+			ir: { ok: true },
+			upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+			bill: { cost_cents: 0, currency: "USD" },
+			keySource: "gateway",
+			byokKeyId: null,
+		});
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => {
+			if (providerId === "first") return firstExecutor;
+			if (providerId === "second") return secondExecutor;
+			return null;
+		});
+		const ctx = createCtx({ testingMode: false });
+
+		const result = await doRequestWithIR(
+			ctx,
+			{ model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any,
+			createTiming(),
+		);
+
+		expect((result as any).ok).toBe(true);
+		expect((result as any).result.provider).toBe("second");
+		expect(firstExecutor).toHaveBeenCalledTimes(1);
+		expect(secondExecutor).toHaveBeenCalledTimes(1);
+		expect(ctx.providerAttempts).toEqual([
+			expect.objectContaining({
+				attempt_number: 1,
+				provider: "first",
+				outcome: "error",
+				type: "error",
+				upstream_error_message: "provider request failed before response",
 			}),
 			expect.objectContaining({
 				attempt_number: 2,
@@ -698,7 +1003,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		});
 	});
 
-	it("tries at most the top three providers when multiple candidates are available", async () => {
+	it("tries at most the top five providers when multiple candidates are available", async () => {
 		const pricingCard = {
 			provider: "openai",
 			model: "openai/gpt-image-1-mini",
@@ -706,7 +1011,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			currency: "USD",
 			rules: [],
 		};
-		const providers = ["first", "second", "third", "fourth"];
+		const providers = ["first", "second", "third", "fourth", "fifth", "sixth"];
 		const candidates = providers.map((providerId) => ({
 			providerId,
 			pricingCard,
@@ -750,7 +1055,9 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executors.first).toHaveBeenCalledTimes(1);
 		expect(executors.second).toHaveBeenCalledTimes(1);
 		expect(executors.third).toHaveBeenCalledTimes(1);
-		expect(executors.fourth).not.toHaveBeenCalled();
+		expect(executors.fourth).toHaveBeenCalledTimes(1);
+		expect(executors.fifth).toHaveBeenCalledTimes(1);
+		expect(executors.sixth).not.toHaveBeenCalled();
 		expect(guardAllFailedMock).toHaveBeenCalledTimes(1);
 	});
 });

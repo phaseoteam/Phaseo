@@ -491,9 +491,30 @@
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
-    "context_length": 204800,
+    "context_length": 196608,
     "max_output_tokens": 131072,
     "effective_from": "2026-06-08T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "minimax/minimax-m2.7",
+    "provider_api_model_id": "deepinfra:minimax/minimax-m2.7-turbo",
+    "provider_model_slug": "MiniMaxAI/MiniMax-M2.7-Turbo",
+    "internal_model_id": "minimax/minimax-m2.7",
+    "is_active_gateway": false,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 196608,
+    "max_output_tokens": 131072,
+    "effective_from": "2026-06-15T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -1281,6 +1302,27 @@
     ]
   },
   {
+    "api_model_id": "stepfun/step-3.7-flash",
+    "provider_api_model_id": "deepinfra:stepfun/step-3.7-flash",
+    "provider_model_slug": "stepfun-ai/Step-3.7-Flash",
+    "internal_model_id": "stepfun/step-3.7-flash",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text,image,video",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 262144,
+    "effective_from": "2026-06-12T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "z-ai/glm-4.6",
     "provider_api_model_id": "deepinfra:z-ai/glm-4.6",
     "provider_model_slug": "zai-org/GLM-4.6",
@@ -1376,6 +1418,27 @@
     "context_length": 202752,
     "max_output_tokens": 202752,
     "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "z-ai/glm-5.2",
+    "provider_api_model_id": "deepinfra:z-ai/glm-5.2",
+    "provider_model_slug": "zai-org/GLM-5.2",
+    "internal_model_id": "z-ai/glm-5.2",
+    "is_active_gateway": true,
+    "quantization_scheme": "FP8",
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1048576,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

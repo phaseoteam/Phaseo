@@ -411,7 +411,7 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformId: "together",
         platformName: "Together",
         providerIds: ["together"],
-        modelsEndpoint: "https://api.together.xyz/v1/models",
+        modelsEndpoint: "https://api.together.ai/v1/models",
         active: true,
     },
     {
