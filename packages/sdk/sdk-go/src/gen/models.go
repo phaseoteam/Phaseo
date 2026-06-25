@@ -1448,7 +1448,6 @@ const (
 	KnownModelIdGoogleGemini25Pro KnownModelId = "google/gemini-2.5-pro"
 	KnownModelIdGoogleGemini3FlashPreview KnownModelId = "google/gemini-3-flash-preview"
 	KnownModelIdGoogleGemini3ProImage KnownModelId = "google/gemini-3-pro-image"
-	KnownModelIdGoogleGemini3ProImagePreview KnownModelId = "google/gemini-3-pro-image-preview"
 	KnownModelIdGoogleGemini31FlashImage KnownModelId = "google/gemini-3.1-flash-image"
 	KnownModelIdGoogleGemini31FlashImagePreview KnownModelId = "google/gemini-3.1-flash-image-preview"
 	KnownModelIdGoogleGemini31FlashLite KnownModelId = "google/gemini-3.1-flash-lite"
