@@ -186,6 +186,100 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.totalNanos).toBe(12_000_000_000);
 	});
 
+	it("uses Moonshot K2.7 Code HighSpeed pricing for priority service tier", () => {
+		const moonshotCard: PriceCard = {
+			...TTS_CARD,
+			provider: "moonshotai",
+			model: "moonshotai/kimi-k2.7-code",
+			endpoint: "text.generate",
+			rules: [
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0.95",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0.19",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "4",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "1.9",
+					currency: "USD",
+					pricing_plan: "priority",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0.38",
+					currency: "USD",
+					pricing_plan: "priority",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "8",
+					currency: "USD",
+					pricing_plan: "priority",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{
+				input_text_tokens: 1_000_000,
+				cached_read_text_tokens: 1_000_000,
+				output_text_tokens: 1_000_000,
+			},
+			moonshotCard,
+			{ service_tier: "priority" },
+		);
+
+		expect(result.totalNanos).toBe(10_280_000_000);
+		expect(result.pricedUsage?.pricing?.lines?.map((line: any) => line.unit_price_usd)).toEqual([
+			"1.900000000",
+			"0.380000000",
+			"8.000000000",
+		]);
+	});
+
 	it("uses standard pricing for explicit standard service tier", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,
@@ -267,6 +361,48 @@ describe("after/pricing calculatePricing", () => {
 		);
 
 		expect(result.totalNanos).toBe(12_000_000_000);
+	});
+
+	it("prefers an observed standard tier over a conflicting priority request tier", () => {
+		const priorityCard: PriceCard = {
+			...TTS_CARD,
+			provider: "x-ai",
+			model: "x-ai/grok-4.3",
+			endpoint: "text.generate",
+			rules: [
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "6",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "12",
+					currency: "USD",
+					pricing_plan: "priority",
+					note: null,
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ input_text_tokens: 1_000_000, service_tier: "default" },
+			priorityCard,
+			{ service_tier: "priority" },
+		);
+
+		expect(result.totalNanos).toBe(6_000_000_000);
+		expect(result.pricedUsage?.pricing?.lines?.[0]?.unit_price_usd).toBe("6.000000000");
 	});
 
 	it("prefers the remapped provider-model pricing card when present in context", async () => {

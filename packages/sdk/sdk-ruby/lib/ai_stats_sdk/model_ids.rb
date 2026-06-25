@@ -30,18 +30,12 @@ module AIStatsSdk
     # Model ID: allenai/olmo-3.1-32b
     # Model page: https://ai-stats.phaseo.app/models/allenai/olmo-3.1-32b
     ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b"
-    # Model ID: anthropic/claude-3.5-haiku
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.5-haiku
-    ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic/claude-3.5-haiku"
-    # Model ID: anthropic/claude-3.7-sonnet
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-3.7-sonnet
-    ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic/claude-3.7-sonnet"
+    # Model ID: anthropic/claude-fable-5
+    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-fable-5
+    ANTHROPIC_CLAUDE_FABLE_5 = "anthropic/claude-fable-5"
     # Model ID: anthropic/claude-haiku-4.5
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-haiku-4.5
     ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5"
-    # Model ID: anthropic/claude-opus-4
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4
-    ANTHROPIC_CLAUDE_OPUS_4 = "anthropic/claude-opus-4"
     # Model ID: anthropic/claude-opus-4.1
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.1
     ANTHROPIC_CLAUDE_OPUS_4_1 = "anthropic/claude-opus-4.1"
@@ -60,9 +54,6 @@ module AIStatsSdk
     # Model ID: anthropic/claude-opus-4.8
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-opus-4.8
     ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8"
-    # Model ID: anthropic/claude-sonnet-4
-    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4
-    ANTHROPIC_CLAUDE_SONNET_4 = "anthropic/claude-sonnet-4"
     # Model ID: anthropic/claude-sonnet-4.5
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.5
     ANTHROPIC_CLAUDE_SONNET_4_5 = "anthropic/claude-sonnet-4.5"
@@ -138,15 +129,15 @@ module AIStatsSdk
     # Model ID: bytedance/seedance-2.0-fast
     # Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast
     BYTEDANCE_SEEDANCE_2_0_FAST = "bytedance/seedance-2.0-fast"
-    # Model ID: crofai/greg-1
-    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1
-    CROFAI_GREG_1 = "crofai/greg-1"
     # Model ID: crofai/greg-1-mini
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
     CROFAI_GREG_1_MINI = "crofai/greg-1-mini"
-    # Model ID: crofai/greg-1-super
-    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-super
-    CROFAI_GREG_1_SUPER = "crofai/greg-1-super"
+    # Model ID: crofai/greg-2-super
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super
+    CROFAI_GREG_2_SUPER = "crofai/greg-2-super"
+    # Model ID: crofai/greg-2-ultra
+    # Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-ultra
+    CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra"
     # Model ID: crofai/greg-rp
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg-rp
     CROFAI_GREG_RP = "crofai/greg-rp"
@@ -270,30 +261,12 @@ module AIStatsSdk
     # Model ID: google/gemini-robotics-er-1.6-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-robotics-er-1.6-preview
     GOOGLE_GEMINI_ROBOTICS_ER_1_6_PREVIEW = "google/gemini-robotics-er-1.6-preview"
-    # Model ID: google/gemma-3-12b:free
-    # Model page: https://ai-stats.phaseo.app/models/google/gemma-3-12b%3Afree
-    GOOGLE_GEMMA_3_12B_FREE = "google/gemma-3-12b:free"
-    # Model ID: google/gemma-3-1b:free
-    # Model page: https://ai-stats.phaseo.app/models/google/gemma-3-1b%3Afree
-    GOOGLE_GEMMA_3_1B_FREE = "google/gemma-3-1b:free"
     # Model ID: google/gemma-3-27b
     # Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b
     GOOGLE_GEMMA_3_27B = "google/gemma-3-27b"
-    # Model ID: google/gemma-3-27b:free
-    # Model page: https://ai-stats.phaseo.app/models/google/gemma-3-27b%3Afree
-    GOOGLE_GEMMA_3_27B_FREE = "google/gemma-3-27b:free"
-    # Model ID: google/gemma-3-4b:free
-    # Model page: https://ai-stats.phaseo.app/models/google/gemma-3-4b%3Afree
-    GOOGLE_GEMMA_3_4B_FREE = "google/gemma-3-4b:free"
-    # Model ID: google/gemma-3n-e2b:free
-    # Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e2b%3Afree
-    GOOGLE_GEMMA_3N_E2B_FREE = "google/gemma-3n-e2b:free"
     # Model ID: google/gemma-3n-e4b
     # Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b
     GOOGLE_GEMMA_3N_E4B = "google/gemma-3n-e4b"
-    # Model ID: google/gemma-3n-e4b:free
-    # Model page: https://ai-stats.phaseo.app/models/google/gemma-3n-e4b%3Afree
-    GOOGLE_GEMMA_3N_E4B_FREE = "google/gemma-3n-e4b:free"
     # Model ID: google/gemma-4-26b-a4b
     # Model page: https://ai-stats.phaseo.app/models/google/gemma-4-26b-a4b
     GOOGLE_GEMMA_4_26B_A4B = "google/gemma-4-26b-a4b"
@@ -549,6 +522,9 @@ module AIStatsSdk
     # Model ID: moonshotai/kimi-k2.6
     # Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.6
     MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6"
+    # Model ID: moonshotai/kimi-k2.7-code
+    # Model page: https://ai-stats.phaseo.app/models/moonshotai/kimi-k2.7-code
+    MOONSHOTAI_KIMI_K2_7_CODE = "moonshotai/kimi-k2.7-code"
     # Model ID: moonshotai/moonshot-v1-128k
     # Model page: https://ai-stats.phaseo.app/models/moonshotai/moonshot-v1-128k
     MOONSHOTAI_MOONSHOT_V1_128K = "moonshotai/moonshot-v1-128k"
@@ -576,6 +552,9 @@ module AIStatsSdk
     # Model ID: nex-agi/deepseek-v3.1-nex-n1
     # Model page: https://ai-stats.phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
     NEX_AGI_DEEPSEEK_V3_1_NEX_N1 = "nex-agi/deepseek-v3.1-nex-n1"
+    # Model ID: nex-agi/nex-n2-pro
+    # Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro
+    NEX_AGI_NEX_N2_PRO = "nex-agi/nex-n2-pro"
     # Model ID: nex-agi/nex-n2-pro:free
     # Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
     NEX_AGI_NEX_N2_PRO_FREE = "nex-agi/nex-n2-pro:free"
@@ -615,15 +594,15 @@ module AIStatsSdk
     # Model ID: nvidia/nemotron-3-super-120b-a12b
     # Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
     NVIDIA_NEMOTRON_3_SUPER_120B_A12B = "nvidia/nemotron-3-super-120b-a12b"
+    # Model ID: nvidia/nemotron-3-ultra-550b-a55b
+    # Model page: https://ai-stats.phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b
+    NVIDIA_NEMOTRON_3_ULTRA_550B_A55B = "nvidia/nemotron-3-ultra-550b-a55b"
     # Model ID: nvidia/nvidia-nemotron-3-nano-30b-a3b
     # Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
     NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
     # Model ID: nvidia/nvidia-nemotron-nano-12b-v2-vl
     # Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl
     NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL = "nvidia/nvidia-nemotron-nano-12b-v2-vl"
-    # Model ID: nvidia/nvidia-nemotron-nano-9b-v2
-    # Model page: https://ai-stats.phaseo.app/models/nvidia/nvidia-nemotron-nano-9b-v2
-    NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2 = "nvidia/nvidia-nemotron-nano-9b-v2"
     # Model ID: openai/babbage-002
     # Model page: https://ai-stats.phaseo.app/models/openai/babbage-002
     OPENAI_BABBAGE_002 = "openai/babbage-002"
@@ -1074,18 +1053,12 @@ module AIStatsSdk
     # Model ID: qwen/qwen3-vl-plus-2025-12-19
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-vl-plus-2025-12-19
     QWEN_QWEN3_VL_PLUS_2025_12_19 = "qwen/qwen3-vl-plus-2025-12-19"
-    # Model ID: qwen/qwen3.5-0.8b
-    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-0.8b
-    QWEN_QWEN3_5_0_8B = "qwen/qwen3.5-0.8b"
     # Model ID: qwen/qwen3.5-122b-a10b
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-122b-a10b
     QWEN_QWEN3_5_122B_A10B = "qwen/qwen3.5-122b-a10b"
     # Model ID: qwen/qwen3.5-27b
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-27b
     QWEN_QWEN3_5_27B = "qwen/qwen3.5-27b"
-    # Model ID: qwen/qwen3.5-2b
-    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-2b
-    QWEN_QWEN3_5_2B = "qwen/qwen3.5-2b"
     # Model ID: qwen/qwen3.5-35b-a3b
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3.5-35b-a3b
     QWEN_QWEN3_5_35B_A3B = "qwen/qwen3.5-35b-a3b"
@@ -1152,6 +1125,9 @@ module AIStatsSdk
     # Model ID: stepfun/step-3.5-flash
     # Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.5-flash
     STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash"
+    # Model ID: stepfun/step-3.7-flash
+    # Model page: https://ai-stats.phaseo.app/models/stepfun/step-3.7-flash
+    STEPFUN_STEP_3_7_FLASH = "stepfun/step-3.7-flash"
     # Model ID: tencent/hunyuan-a13b-instruct
     # Model page: https://ai-stats.phaseo.app/models/tencent/hunyuan-a13b-instruct
     TENCENT_HUNYUAN_A13B_INSTRUCT = "tencent/hunyuan-a13b-instruct"
@@ -1248,12 +1224,6 @@ module AIStatsSdk
     # Model ID: voyage/voyage-multimodal-3.5
     # Model page: https://ai-stats.phaseo.app/models/voyage/voyage-multimodal-3.5
     VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5"
-    # Model ID: x-ai/grok-2-vision
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-2-vision
-    X_AI_GROK_2_VISION = "x-ai/grok-2-vision"
-    # Model ID: x-ai/grok-3-mini
-    # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-3-mini
-    X_AI_GROK_3_MINI = "x-ai/grok-3-mini"
     # Model ID: x-ai/grok-4.20-beta-0309
     # Model page: https://ai-stats.phaseo.app/models/x-ai/grok-4.20-beta-0309
     X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309"
@@ -1350,6 +1320,9 @@ module AIStatsSdk
     # Model ID: z-ai/glm-5.1
     # Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5.1
     Z_AI_GLM_5_1 = "z-ai/glm-5.1"
+    # Model ID: z-ai/glm-5.2
+    # Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5.2
+    Z_AI_GLM_5_2 = "z-ai/glm-5.2"
     # Model ID: z-ai/glm-5v-turbo
     # Model page: https://ai-stats.phaseo.app/models/z-ai/glm-5v-turbo
     Z_AI_GLM_5V_TURBO = "z-ai/glm-5v-turbo"
@@ -1373,17 +1346,14 @@ module AIStatsSdk
     ModelIds::AION_LABS_AION_RP_LLAMA_3_1_8B,
     ModelIds::ALLENAI_MOLMO_2_8B,
     ModelIds::ALLENAI_OLMO_3_1_32B,
-    ModelIds::ANTHROPIC_CLAUDE_3_5_HAIKU,
-    ModelIds::ANTHROPIC_CLAUDE_3_7_SONNET,
+    ModelIds::ANTHROPIC_CLAUDE_FABLE_5,
     ModelIds::ANTHROPIC_CLAUDE_HAIKU_4_5,
-    ModelIds::ANTHROPIC_CLAUDE_OPUS_4,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_1,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_5,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_6,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_7,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_7_FAST,
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_8,
-    ModelIds::ANTHROPIC_CLAUDE_SONNET_4,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_5,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_6,
     ModelIds::ARCEE_AI_TRINITY_LARGE,
@@ -1409,9 +1379,9 @@ module AIStatsSdk
     ModelIds::BYTEDANCE_SEED_TRANSLATION,
     ModelIds::BYTEDANCE_SEEDANCE_2_0,
     ModelIds::BYTEDANCE_SEEDANCE_2_0_FAST,
-    ModelIds::CROFAI_GREG_1,
     ModelIds::CROFAI_GREG_1_MINI,
-    ModelIds::CROFAI_GREG_1_SUPER,
+    ModelIds::CROFAI_GREG_2_SUPER,
+    ModelIds::CROFAI_GREG_2_ULTRA,
     ModelIds::CROFAI_GREG_RP,
     ModelIds::DEEPSEEK_DEEPSEEK_OCR,
     ModelIds::DEEPSEEK_DEEPSEEK_OCR_2,
@@ -1453,14 +1423,8 @@ module AIStatsSdk
     ModelIds::GOOGLE_GEMINI_EMBEDDING_2,
     ModelIds::GOOGLE_GEMINI_EMBEDDING_2_PREVIEW,
     ModelIds::GOOGLE_GEMINI_ROBOTICS_ER_1_6_PREVIEW,
-    ModelIds::GOOGLE_GEMMA_3_12B_FREE,
-    ModelIds::GOOGLE_GEMMA_3_1B_FREE,
     ModelIds::GOOGLE_GEMMA_3_27B,
-    ModelIds::GOOGLE_GEMMA_3_27B_FREE,
-    ModelIds::GOOGLE_GEMMA_3_4B_FREE,
-    ModelIds::GOOGLE_GEMMA_3N_E2B_FREE,
     ModelIds::GOOGLE_GEMMA_3N_E4B,
-    ModelIds::GOOGLE_GEMMA_3N_E4B_FREE,
     ModelIds::GOOGLE_GEMMA_4_26B_A4B,
     ModelIds::GOOGLE_GEMMA_4_26B_A4B_FREE,
     ModelIds::GOOGLE_GEMMA_4_31B,
@@ -1546,6 +1510,7 @@ module AIStatsSdk
     ModelIds::MOONSHOTAI_KIMI_K2_5,
     ModelIds::MOONSHOTAI_KIMI_K2_5_LIGHTNING,
     ModelIds::MOONSHOTAI_KIMI_K2_6,
+    ModelIds::MOONSHOTAI_KIMI_K2_7_CODE,
     ModelIds::MOONSHOTAI_MOONSHOT_V1_128K,
     ModelIds::MOONSHOTAI_MOONSHOT_V1_128K_VISION_PREVIEW,
     ModelIds::MOONSHOTAI_MOONSHOT_V1_32K,
@@ -1555,6 +1520,7 @@ module AIStatsSdk
     ModelIds::MORPH_MORPH_V3_FAST,
     ModelIds::MORPH_MORPH_V3_LARGE,
     ModelIds::NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
+    ModelIds::NEX_AGI_NEX_N2_PRO,
     ModelIds::NEX_AGI_NEX_N2_PRO_FREE,
     ModelIds::NOUS_HERMES_3_LLAMA_3_1_405B,
     ModelIds::NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
@@ -1568,9 +1534,9 @@ module AIStatsSdk
     ModelIds::NVIDIA_NEMOTRON_3_NANO_30B_A3B,
     ModelIds::NVIDIA_NEMOTRON_3_NANO_OMNI_30B_A3B_REASONING,
     ModelIds::NVIDIA_NEMOTRON_3_SUPER_120B_A12B,
+    ModelIds::NVIDIA_NEMOTRON_3_ULTRA_550B_A55B,
     ModelIds::NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B,
     ModelIds::NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL,
-    ModelIds::NVIDIA_NVIDIA_NEMOTRON_NANO_9B_V2,
     ModelIds::OPENAI_BABBAGE_002,
     ModelIds::OPENAI_CHAT_LATEST,
     ModelIds::OPENAI_CHATGPT_4O,
@@ -1721,10 +1687,8 @@ module AIStatsSdk
     ModelIds::QWEN_QWEN3_VL_FLASH_2026_01_22,
     ModelIds::QWEN_QWEN3_VL_PLUS_2025_09_23,
     ModelIds::QWEN_QWEN3_VL_PLUS_2025_12_19,
-    ModelIds::QWEN_QWEN3_5_0_8B,
     ModelIds::QWEN_QWEN3_5_122B_A10B,
     ModelIds::QWEN_QWEN3_5_27B,
-    ModelIds::QWEN_QWEN3_5_2B,
     ModelIds::QWEN_QWEN3_5_35B_A3B,
     ModelIds::QWEN_QWEN3_5_397B_A17B,
     ModelIds::QWEN_QWEN3_5_4B,
@@ -1747,6 +1711,7 @@ module AIStatsSdk
     ModelIds::QWEN_TEXT_EMBEDDING_V4,
     ModelIds::QWEN_WAN2_7_T2V,
     ModelIds::STEPFUN_STEP_3_5_FLASH,
+    ModelIds::STEPFUN_STEP_3_7_FLASH,
     ModelIds::TENCENT_HUNYUAN_A13B_INSTRUCT,
     ModelIds::TENCENT_HY3_PREVIEW,
     ModelIds::VENICE_VENICE_UNCENSORED,
@@ -1779,8 +1744,6 @@ module AIStatsSdk
     ModelIds::VOYAGE_VOYAGE_MULTILINGUAL_2,
     ModelIds::VOYAGE_VOYAGE_MULTIMODAL_3,
     ModelIds::VOYAGE_VOYAGE_MULTIMODAL_3_5,
-    ModelIds::X_AI_GROK_2_VISION,
-    ModelIds::X_AI_GROK_3_MINI,
     ModelIds::X_AI_GROK_4_20_BETA_0309,
     ModelIds::X_AI_GROK_4_20_MULTI_AGENT_BETA_0309,
     ModelIds::X_AI_GROK_4_3,
@@ -1813,6 +1776,7 @@ module AIStatsSdk
     ModelIds::Z_AI_GLM_5_CODE,
     ModelIds::Z_AI_GLM_5_TURBO,
     ModelIds::Z_AI_GLM_5_1,
+    ModelIds::Z_AI_GLM_5_2,
     ModelIds::Z_AI_GLM_5V_TURBO,
     ModelIds::ZAI_ORG_GLM_4_5_AIR,
     ModelIds::ZAI_GLM_5,

@@ -210,6 +210,27 @@
     ]
   },
   {
+    "api_model_id": "qwen/qwen3.6-27b",
+    "provider_api_model_id": "groq:qwen/qwen3.6-27b",
+    "provider_model_slug": "qwen/qwen3.6-27b",
+    "internal_model_id": "qwen/qwen3.6-27b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-16T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "openai/whisper-large-v3",
     "provider_api_model_id": "groq:openai/whisper-large-v3",
     "provider_model_slug": "whisper-large-v3",

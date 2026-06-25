@@ -4,14 +4,14 @@
     "provider_api_model_id": "anthropic:anthropic/claude-3.5-haiku",
     "provider_model_slug": "claude-3-5-haiku-20241022",
     "internal_model_id": "anthropic/claude-3.5-haiku",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2024-11-04T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-15T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -89,14 +89,14 @@
     "provider_api_model_id": "anthropic:anthropic/claude-3.7-sonnet",
     "provider_model_slug": "claude-3-7-sonnet-20250219",
     "internal_model_id": "anthropic/claude-3.7-sonnet",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": null,
     "max_output_tokens": null,
     "effective_from": "2025-02-24T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-15T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -393,7 +393,7 @@
     "context_length": 200000,
     "max_output_tokens": 32000,
     "effective_from": "2025-05-21T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-15T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
@@ -761,7 +761,7 @@
     "context_length": 200000,
     "max_output_tokens": 64000,
     "effective_from": "2025-05-21T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-15T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",

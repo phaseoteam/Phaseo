@@ -862,7 +862,8 @@ function isBedrockOpenAIModel(model: string): boolean {
 		normalizedModel.startsWith("openai.") ||
 		normalizedModel.startsWith("us.openai.") ||
 		normalizedModel.startsWith("eu.openai.") ||
-		normalizedModel.startsWith("apac.openai.")
+		normalizedModel.startsWith("apac.openai.") ||
+		normalizedModel.startsWith("xai.")
 	);
 }
 
