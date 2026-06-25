@@ -29,7 +29,10 @@ guides/private/
 *.tmp
 *.tmp.*
 /tmp
+.playwright-cli/
+.tools/
 .codex/tmp/
+packages/data/catalog/src/data/monitor-history.json
 packages/sdk/sdk-csharp/bin/
 packages/sdk/sdk-csharp/obj/
 packages/sdk/sdk-csharp/**/bin/
@@ -39,3 +42,7 @@ packages/sdk/sdk-rust/target/
 packages/sdk/sdk-php/vendor/
 packages/sdk/sdk-ruby/*.gem
 .vercel
+
+# React Doctor local scan outputs
+/apps/web/.react-doctor-current.json
+/apps/web/react-doctor-report*.json

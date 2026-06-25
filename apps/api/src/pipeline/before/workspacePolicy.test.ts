@@ -55,8 +55,8 @@ describe("applyWorkspacePolicy", () => {
         expect(result.providers[0]?.providerId).toBe("google-ai-studio");
     });
 
-    it("filters provider candidates by blocked model ids", () => {
-        const result = applyWorkspacePolicy({
+	it("filters provider candidates by blocked model ids", () => {
+		const result = applyWorkspacePolicy({
             providers: [
                 candidate({
                     providerId: "openai",
@@ -86,8 +86,47 @@ describe("applyWorkspacePolicy", () => {
         expect(result.ok).toBe(true);
         if (!result.ok) return;
         expect(result.providers).toHaveLength(1);
-        expect(result.providers[0]?.providerId).toBe("anthropic");
-    });
+		expect(result.providers[0]?.providerId).toBe("anthropic");
+	});
+
+	it("treats provider.only aliases as the canonical provider id", () => {
+		const result = applyWorkspacePolicy({
+			providers: [
+				candidate({
+					providerId: "novita",
+					apiModelId: "deepseek/deepseek-r1-turbo",
+				}),
+				candidate({
+					providerId: "openai",
+					apiModelId: "openai/gpt-5-nano",
+				}),
+			],
+			resolvedModel: "deepseek/deepseek-r1-turbo",
+			body: {
+				provider: {
+					only: ["NovitaAI"],
+				},
+			},
+			workspacePolicy: {
+				providerAllowlist: null,
+				providerBlocklist: null,
+				allowedApiModels: null,
+				blockedApiModels: null,
+				promptInjectionAction: null,
+				promptInjectionGuardrailIds: [],
+				sensitiveInfoRules: [],
+				sensitiveInfoGuardrailIds: [],
+				enforceAllowed: false,
+				activeGuardrailIds: [],
+			},
+		});
+
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.providers).toHaveLength(1);
+		expect(result.providers[0]?.providerId).toBe("novita");
+		expect(result.diagnostics.requestProviderOnly).toEqual(["novita"]);
+	});
 
     it("merges model blocklists across enabled guardrails", () => {
         const policy = buildWorkspacePolicy({

@@ -1,43 +1,49 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
+import { permanentRedirect, redirect } from "next/navigation";
 
 import { createClient } from "@/utils/supabase/server";
 import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { CHAT_MANAGED_KEY_NAME } from "@/lib/gateway/managed-chat-key";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-
-import UsageHeader from "@/components/(gateway)/usage/UsageHeader/UsageHeader";
-import MetricsOverview from "@/components/(gateway)/usage/MetricsOverview";
-import AsyncJobsPanel from "@/components/(gateway)/usage/AsyncJobsPanel";
+import ObservabilityHub from "@/components/(gateway)/usage/observability/ObservabilityHub";
+import type {
+	ObservabilityData,
+	ObservabilityExploreRow,
+	ObservabilityKpi,
+	ObservabilityRange,
+	ObservabilityRankedItem,
+	ObservabilitySeriesPoint,
+	ObservabilityTab,
+	ObservabilityTimeSeriesChart,
+} from "@/components/(gateway)/usage/observability/types";
+import { extractUsageMeters } from "@/components/(gateway)/usage/usageMeters";
 import {
-	fetchAppMetadata,
-	fetchChartData,
-	fetchRecentAsyncJobs,
-	fetchOrganizationColors,
+	LONG_RUNNING_REQUEST_ENDPOINTS,
+	buildNotInFilter,
+} from "@/lib/gateway/usage/logFilters";
+import {
+	getUsageRangeLabel,
+	getUsageRangeParamKeys,
+	parseUsageDateInput,
+	parseUsageRangePreset,
+	resolveUsageTimeRange,
+	type UsageRangePreset,
+} from "@/lib/gateway/usage/timeRange";
+import {
+	buildGuardrailEnforcementMetrics,
+	type GuardrailEnforcementMetricsResult,
+} from "@/lib/gateway/usage/guardrailEnforcementMetrics";
+import {
+	fetchAppNames,
 	fetchModelMetadata,
-	fetchProviderNames,
 } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 export const metadata: Metadata = {
-	title: "Usage - Settings",
+	title: "Observability - Settings",
 };
 
-type RangeKey = "1h" | "1d" | "1w" | "1m" | "1y";
-
-function parseRange(range?: string | null): RangeKey {
-	const r = (range ?? "").toLowerCase();
-	return r === "1h" || r === "1d" || r === "1w" || r === "1m" || r === "1y"
-		? r
-		: "1m";
-}
-
-type GroupBy = "model" | "key";
-
-function parseGroup(group?: string | null): GroupBy {
-	return group === "key" ? "key" : "model";
-}
+type SearchParams = Record<string, string | string[] | undefined>;
 
 type ApiKeyOption = {
 	id: string;
@@ -45,214 +51,1033 @@ type ApiKeyOption = {
 	prefix: string | null;
 };
 
-function fromForRange(key: RangeKey): Date {
-	const now = new Date();
-	const d = new Date(now);
-	if (key === "1h") d.setHours(now.getHours() - 1);
-	else if (key === "1d") d.setDate(now.getDate() - 1);
-	else if (key === "1w") d.setDate(now.getDate() - 7);
-	else if (key === "1m") d.setMonth(now.getMonth() - 1);
-	else if (key === "1y") d.setFullYear(now.getFullYear() - 1);
+type RawRequestRow = {
+	created_at: string;
+	model_id: string | null;
+	provider: string | null;
+	app_id: string | null;
+	key_id: string | null;
+	usage: unknown;
+	cost_nanos: number | string | null;
+	success: boolean | null;
+	error_payload: Record<string, unknown> | null;
+	error_message: string | null;
+	pricing_lines: unknown;
+};
+
+type RawRequestResult = {
+	rows: RawRequestRow[];
+	isSampled: boolean;
+	limit: number;
+};
+
+const RAW_REQUEST_SAMPLE_LIMIT = 5000;
+
+function firstParam(value: string | string[] | undefined): string | undefined {
+	if (typeof value === "string") return value;
+	if (Array.isArray(value)) return value[0];
+	return undefined;
+}
+
+function toNumber(value: unknown): number {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return 0;
+}
+
+function metricValue(usage: unknown, key: string): number {
+	const meters = extractUsageMeters(usage as any);
+	return meters.find((meter) => meter.key === key)?.value ?? 0;
+}
+
+function usageTokens(usage: unknown): number {
+	const meters = extractUsageMeters(usage as any);
+	const total = meters.find((meter) => meter.key === "total_tokens")?.value;
+	if (total && total > 0) return total;
+	const input = meters.find((meter) => meter.key === "input_tokens")?.value ?? 0;
+	const output = meters.find((meter) => meter.key === "output_tokens")?.value ?? 0;
+	return input + output;
+}
+
+function deltaPercent(current: number, previous: number): number | null {
+	if (previous === 0) return current > 0 ? 100 : null;
+	return ((current - previous) / previous) * 100;
+}
+
+function floorToBucket(date: Date, range: ObservabilityRange): Date {
+	const d = new Date(date);
+	if (range === "1h") {
+		d.setSeconds(0, 0);
+		d.setMinutes(Math.floor(d.getMinutes() / 5) * 5);
+		return d;
+	}
+	if (range === "1d") {
+		d.setMinutes(0, 0, 0);
+		return d;
+	}
+	if (range === "1w" || range === "1m") {
+		d.setHours(0, 0, 0, 0);
+		return d;
+	}
+	d.setDate(1);
+	d.setHours(0, 0, 0, 0);
 	return d;
 }
 
-export default function Page(props: {
-	searchParams: Promise<Record<string, string | string[] | undefined>>;
+function advanceBucket(date: Date, range: ObservabilityRange): Date {
+	const d = new Date(date);
+	if (range === "1h") d.setMinutes(d.getMinutes() + 5);
+	else if (range === "1d") d.setHours(d.getHours() + 1);
+	else if (range === "1w" || range === "1m") d.setDate(d.getDate() + 1);
+	else d.setMonth(d.getMonth() + 1);
+	return d;
+}
+
+function formatBucketLabel(date: Date, range: ObservabilityRange): string {
+	if (range === "1h") {
+		return new Intl.DateTimeFormat("en-GB", {
+			hour: "2-digit",
+			minute: "2-digit",
+		}).format(date);
+	}
+	if (range === "1d") {
+		return new Intl.DateTimeFormat("en-GB", {
+			hour: "2-digit",
+			day: "numeric",
+			month: "short",
+		}).format(date);
+	}
+	if (range === "1w" || range === "1m") {
+		return new Intl.DateTimeFormat("en-GB", {
+			day: "numeric",
+			month: "short",
+		}).format(date);
+	}
+	return new Intl.DateTimeFormat("en-GB", {
+		month: "short",
+		year: "numeric",
+	}).format(date);
+}
+
+function buildEmptySeries(args: {
+	from: string;
+	to: string;
+	range: ObservabilityRange;
+}): ObservabilitySeriesPoint[] {
+	const from = new Date(args.from);
+	const to = new Date(args.to);
+	if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return [];
+	const points: ObservabilitySeriesPoint[] = [];
+	for (
+		let cursor = floorToBucket(from, args.range);
+		cursor <= to;
+		cursor = advanceBucket(cursor, args.range)
+	) {
+		points.push({
+			bucket: cursor.toISOString(),
+			label: formatBucketLabel(cursor, args.range),
+			value: 0,
+		});
+	}
+	return points;
+}
+
+function sumByBucket(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+	getValue: (row: RawRequestRow) => number;
+}): ObservabilitySeriesPoint[] {
+	const points = buildEmptySeries(args);
+	const pointMap = new Map(points.map((point) => [point.bucket, point]));
+	for (const row of args.rows) {
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const bucket = floorToBucket(created, args.range).toISOString();
+		const point = pointMap.get(bucket);
+		if (!point) continue;
+		point.value += args.getValue(row);
+	}
+	return points;
+}
+
+function cacheHitRateByBucket(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+}): ObservabilitySeriesPoint[] {
+	const points = buildEmptySeries(args);
+	const totals = new Map(
+		points.map((point) => [
+			point.bucket,
+			{
+				cachedTokens: 0,
+				totalTokens: 0,
+			},
+		]),
+	);
+	for (const row of args.rows) {
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const bucket = floorToBucket(created, args.range).toISOString();
+		const total = totals.get(bucket);
+		if (!total) continue;
+		const cachedTokens =
+			metricValue(row.usage, "cache_read_tokens") +
+			metricValue(row.usage, "cache_write_tokens");
+		total.cachedTokens += cachedTokens;
+		total.totalTokens += usageTokens(row.usage);
+	}
+	return points.map((point) => {
+		const total = totals.get(point.bucket);
+		return {
+			...point,
+			value:
+				total && total.totalTokens > 0
+					? total.cachedTokens / total.totalTokens
+					: 0,
+		};
+	});
+}
+
+function makeKpi(args: {
+	id: ObservabilityKpi["id"];
+	label: string;
+	value: number;
+	previous: number;
+	sparkline: ObservabilitySeriesPoint[];
+	format: ObservabilityKpi["format"];
+}): ObservabilityKpi {
+	return {
+		...args,
+		deltaPercent: deltaPercent(args.value, args.previous),
+	};
+}
+
+function isByokRequest(row: RawRequestRow): boolean {
+	const lines = Array.isArray(row.pricing_lines) ? row.pricing_lines : [];
+	const searchable = JSON.stringify(lines).toLowerCase();
+	const usageText = JSON.stringify(row.usage ?? {}).toLowerCase();
+	return (
+		searchable.includes("byok") ||
+		searchable.includes("bring_your_own") ||
+		usageText.includes("byok_key") ||
+		usageText.includes("provider_key")
+	);
+}
+
+function makeRankedItems(args: {
+	rows: RawRequestRow[];
+	previousRows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+	getId: (row: RawRequestRow) => string | null;
+	getLabel: (id: string) => string;
+	getSubtitle?: (id: string) => string | null | undefined;
+	limit?: number;
+}): ObservabilityRankedItem[] {
+	const current = new Map<string, { tokens: number; requests: number; cost: number }>();
+	const previous = new Map<string, number>();
+
+	for (const row of args.rows) {
+		const id = args.getId(row);
+		if (!id) continue;
+		const entry = current.get(id) ?? { tokens: 0, requests: 0, cost: 0 };
+		entry.tokens += usageTokens(row.usage);
+		entry.requests += 1;
+		entry.cost += toNumber(row.cost_nanos) / 1e9;
+		current.set(id, entry);
+	}
+
+	for (const row of args.previousRows) {
+		const id = args.getId(row);
+		if (!id) continue;
+		previous.set(id, (previous.get(id) ?? 0) + usageTokens(row.usage));
+	}
+
+	return Array.from(current.entries())
+		.map(([id, values]) => ({
+			id,
+			label: args.getLabel(id),
+			subtitle: args.getSubtitle?.(id) ?? null,
+			tokens: values.tokens,
+			requests: values.requests,
+			cost: values.cost,
+			previousTokens: previous.get(id) ?? 0,
+			deltaPercent: deltaPercent(values.tokens, previous.get(id) ?? 0),
+			sparkline: sumByBucket({
+				rows: args.rows.filter((row) => args.getId(row) === id),
+				range: args.range,
+				from: args.from,
+				to: args.to,
+				getValue: (row) => usageTokens(row.usage),
+			}),
+		}))
+		.sort((a, b) => b.tokens - a.tokens)
+		.slice(0, args.limit ?? 6);
+}
+
+function buildBreakdown(args: {
+	rows: RawRequestRow[];
+	getId: (row: RawRequestRow) => string | null;
+	getLabel: (id: string) => string;
+	getValue: (row: RawRequestRow) => number;
+	limit?: number;
+}) {
+	const totals = new Map<string, number>();
+	for (const row of args.rows) {
+		const id = args.getId(row);
+		if (!id) continue;
+		totals.set(id, (totals.get(id) ?? 0) + args.getValue(row));
+	}
+	return Array.from(totals.entries())
+		.map(([id, value]) => ({ id, label: args.getLabel(id), value }))
+		.sort((a, b) => b.value - a.value)
+		.slice(0, args.limit ?? 8);
+}
+
+function buildTimeSeriesBreakdown(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+	getId: (row: RawRequestRow) => string | null;
+	getLabel: (id: string) => string;
+	getValue: (row: RawRequestRow) => number;
+	limit?: number;
+	includeOther?: boolean;
+}): ObservabilityTimeSeriesChart {
+	const totals = new Map<string, number>();
+	for (const row of args.rows) {
+		const id = args.getId(row);
+		if (!id) continue;
+		totals.set(id, (totals.get(id) ?? 0) + args.getValue(row));
+	}
+	const series = Array.from(totals.entries())
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, args.limit ?? 6)
+		.map(([sourceId], index) => ({
+			id: `series${index + 1}`,
+			label: args.getLabel(sourceId),
+			sourceId,
+		}));
+	const topSourceIds = new Set(series.map((item) => item.sourceId));
+	const hasOther =
+		Boolean(args.includeOther) &&
+		Array.from(totals.keys()).some((sourceId) => !topSourceIds.has(sourceId));
+	const chartSeries = hasOther
+		? [
+				...series,
+				{
+					id: "other",
+					label: "Other",
+					sourceId: "__other",
+				},
+			]
+		: series;
+	const seriesIdBySourceId = new Map(
+		series.map((item) => [item.sourceId, item.id]),
+	);
+	const points = buildEmptySeries(args).map((point) => {
+		const row: Record<string, string | number> = {
+			bucket: point.bucket,
+			label: point.label,
+		};
+		for (const item of chartSeries) row[item.id] = 0;
+		return row;
+	});
+	const pointMap = new Map(points.map((point) => [String(point.bucket), point]));
+	for (const row of args.rows) {
+		const sourceId = args.getId(row);
+		const id = sourceId
+			? seriesIdBySourceId.get(sourceId) ?? (hasOther ? "other" : null)
+			: null;
+		if (!id) continue;
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const point = pointMap.get(floorToBucket(created, args.range).toISOString());
+		if (!point) continue;
+		point[id] = Number(point[id] ?? 0) + args.getValue(row);
+	}
+	return {
+		series: chartSeries.map(({ id, label }) => ({ id, label })),
+		data: points,
+	};
+}
+
+function buildFixedTimeSeries(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	from: string;
+	to: string;
+	series: Array<{ id: string; label: string; color?: string }>;
+	getValues: (row: RawRequestRow) => Record<string, number>;
+}): ObservabilityTimeSeriesChart {
+	const points = buildEmptySeries(args).map((point) => {
+		const row: Record<string, string | number> = {
+			bucket: point.bucket,
+			label: point.label,
+		};
+		for (const item of args.series) row[item.id] = 0;
+		return row;
+	});
+	const pointMap = new Map(points.map((point) => [String(point.bucket), point]));
+	for (const row of args.rows) {
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const point = pointMap.get(floorToBucket(created, args.range).toISOString());
+		if (!point) continue;
+		const values = args.getValues(row);
+		for (const item of args.series) {
+			point[item.id] = Number(point[item.id] ?? 0) + (values[item.id] ?? 0);
+		}
+	}
+	return { series: args.series, data: points };
+}
+
+function buildExploreRows(args: {
+	rows: RawRequestRow[];
+	range: ObservabilityRange;
+	keyLabel: (id: string | null) => string;
+	appLabel: (id: string | null) => string;
+	modelLabel: (id: string | null) => string;
+}): ObservabilityExploreRow[] {
+	const grouped = new Map<string, ObservabilityExploreRow>();
+	for (const row of args.rows) {
+		const created = new Date(row.created_at);
+		if (Number.isNaN(created.getTime())) continue;
+		const bucket = formatBucketLabel(floorToBucket(created, args.range), args.range);
+		const model = args.modelLabel(row.model_id);
+		const apiKey = args.keyLabel(row.key_id);
+		const app = args.appLabel(row.app_id);
+		const provider = row.provider ?? "Unknown";
+		const key = `${bucket}\n${model}\n${apiKey}\n${app}\n${provider}`;
+		const existing =
+			grouped.get(key) ??
+			({
+				bucket,
+				model,
+				apiKey,
+				app,
+				provider,
+				requests: 0,
+				tokens: 0,
+				inputTokens: 0,
+				outputTokens: 0,
+				reasoningTokens: 0,
+				cachedTokens: 0,
+				uncachedTokens: 0,
+				cost: 0,
+				errors: 0,
+			} satisfies ObservabilityExploreRow);
+		const inputTokens = metricValue(row.usage, "input_tokens");
+		const outputTokens = metricValue(row.usage, "output_tokens");
+		const reasoningTokens =
+			metricValue(row.usage, "reasoning_tokens") +
+			metricValue(row.usage, "output_reasoning_tokens");
+		const cachedTokens =
+			metricValue(row.usage, "cache_read_tokens") +
+			metricValue(row.usage, "cache_write_tokens");
+		const tokens = usageTokens(row.usage);
+		existing.requests += 1;
+		existing.tokens += tokens;
+		existing.inputTokens += inputTokens;
+		existing.outputTokens += outputTokens;
+		existing.reasoningTokens += reasoningTokens;
+		existing.cachedTokens += cachedTokens;
+		existing.uncachedTokens += Math.max(0, tokens - cachedTokens);
+		existing.cost += toNumber(row.cost_nanos) / 1e9;
+		existing.errors += row.success === false ? 1 : 0;
+		grouped.set(key, existing);
+	}
+	return Array.from(grouped.values()).sort((a, b) => b.tokens - a.tokens);
+}
+
+function rangeForTimeWindow(from: string, to: string): ObservabilityRange {
+	const fromTime = new Date(from).getTime();
+	const toTime = new Date(to).getTime();
+	const hours = Math.max(1, (toTime - fromTime) / 3_600_000);
+	if (hours <= 2) return "1h";
+	if (hours <= 48) return "1d";
+	if (hours <= 24 * 14) return "1w";
+	if (hours <= 24 * 400) return "1m";
+	return "1y";
+}
+
+function parseLegacyRangePreset(value?: string | null): UsageRangePreset {
+	if (value === "1h") return "past_hour";
+	if (value === "1d") return "past_24h";
+	if (value === "1w") return "last_7d";
+	if (value === "1y") return "last_year";
+	return "last_30d";
+}
+
+async function fetchRawRequests(args: {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	workspaceId: string;
+	from: string;
+	to: string;
+	limit?: number;
+}): Promise<RawRequestResult> {
+	try {
+		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
+		const { data, error } = await args.supabase
+			.from("gateway_requests")
+			.select(
+				"created_at,model_id,provider,app_id,key_id,usage,cost_nanos,success,error_payload,error_message,pricing_lines",
+			)
+			.eq("workspace_id", args.workspaceId)
+			.gte("created_at", args.from)
+			.lte("created_at", args.to)
+			.not("endpoint", "in", buildNotInFilter(LONG_RUNNING_REQUEST_ENDPOINTS))
+			.order("created_at", { ascending: true })
+			.limit(limit + 1);
+
+		if (error) {
+			console.error("Error fetching observability request rows:", error);
+			return { rows: [], isSampled: false, limit };
+		}
+		const rows = (data ?? []) as RawRequestRow[];
+		return {
+			rows: rows.slice(0, limit),
+			isSampled: rows.length > limit,
+			limit,
+		};
+	} catch (error) {
+		console.error("Failed to fetch observability request rows:", error);
+		const limit = args.limit ?? RAW_REQUEST_SAMPLE_LIMIT;
+		return { rows: [], isSampled: false, limit };
+	}
+}
+
+async function fetchApiKeyOptions(args: {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	workspaceId: string;
+}): Promise<ApiKeyOption[]> {
+	try {
+		const { data, error } = await args.supabase
+			.from("keys")
+			.select("id,name,prefix")
+			.eq("workspace_id", args.workspaceId)
+			.neq("status", "deleted")
+			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.order("created_at", { ascending: true });
+
+		if (error) {
+			console.error("Error fetching observability API keys:", error);
+			return [];
+		}
+		return (data ?? []).map((row: any) => ({
+			id: row.id,
+			name: row?.name ?? null,
+			prefix: row?.prefix ?? null,
+		}));
+	} catch (error) {
+		console.error("Failed to fetch observability API keys:", error);
+		return [];
+	}
+}
+
+async function safeMapLoad<T>(
+	label: string,
+	load: () => Promise<Map<string, T>>,
+): Promise<Map<string, T>> {
+	try {
+		return await load();
+	} catch (error) {
+		console.error(`Failed to fetch observability ${label}:`, error);
+		return new Map<string, T>();
+	}
+}
+
+function routeForLegacyTab(tab?: string | null) {
+	const normalized = (tab ?? "").toLowerCase();
+	if (
+		normalized === "trends" ||
+		normalized === "explore" ||
+		normalized === "guardrails"
+	) {
+		return `/settings/usage/${normalized}`;
+	}
+	return "/settings/usage/overview";
+}
+
+export default async function Page(props: {
+	searchParams: Promise<SearchParams>;
+}) {
+	const sp = await props.searchParams;
+	const target = routeForLegacyTab(firstParam(sp.tab));
+	const params = new URLSearchParams();
+	for (const [key, rawValue] of Object.entries(sp)) {
+		if (key === "tab") continue;
+		if (typeof rawValue === "string") {
+			params.set(key, rawValue);
+			continue;
+		}
+		if (Array.isArray(rawValue)) {
+			for (const item of rawValue) {
+				if (typeof item === "string") params.append(key, item);
+			}
+		}
+	}
+	const query = params.toString();
+	permanentRedirect(query ? `${target}?${query}` : target);
+}
+
+export function ObservabilityPageContent(props: {
+	searchParams: Promise<SearchParams>;
+	initialTab: ObservabilityTab;
 }) {
 	return (
 		<Suspense fallback={<SettingsSectionFallback />}>
-			<UsageSettingsContent searchParams={props.searchParams} />
+			<ObservabilityContent
+				searchParams={props.searchParams}
+				initialTab={props.initialTab}
+			/>
 		</Suspense>
 	);
 }
 
-async function UsageSettingsContent({
+async function ObservabilityContent({
 	searchParams,
+	initialTab,
 }: {
-	searchParams: Promise<Record<string, string | string[] | undefined>>;
+	searchParams: Promise<SearchParams>;
+	initialTab: ObservabilityTab;
 }) {
 	const supabase = await createClient();
-
-	// Check if user signed in
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user) {
-		redirect("/sign-in");
+	let user: { id: string } | null = null;
+	try {
+		const authResult = await supabase.auth.getUser();
+		user = authResult.data.user;
+	} catch (error) {
+		console.error("Failed to resolve observability user:", error);
 	}
 
+	if (!user) redirect("/sign-in");
+
 	const workspaceId = await getWorkspaceIdFromCookie();
-
-	const sp = await searchParams;
-	const range = parseRange(
-		typeof sp?.range === "string"
-			? sp?.range
-			: Array.isArray(sp?.range)
-				? sp?.range?.[0]
-				: undefined,
-	);
-	const groupParam =
-		typeof sp?.group === "string"
-			? sp.group
-			: Array.isArray(sp?.group)
-				? sp.group?.[0]
-				: undefined;
-	const groupBy = parseGroup(groupParam);
-
-	// Optional key filter coming from Settings/Keys "Usage" action
-	const keyParam =
-		typeof sp?.key === "string"
-			? sp.key
-			: Array.isArray(sp?.key)
-				? sp.key?.[0]
-				: undefined;
-	let activeKey: ApiKeyOption | null = null;
-
 	if (!workspaceId) {
 		return (
-			<Card>
-				<CardHeader>
-					<CardTitle>Usage</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p className="text-sm text-muted-foreground">
-						You need to be signed in and have a team selected to view usage.
-					</p>
-				</CardContent>
-			</Card>
+			<div className="rounded-xl border bg-card p-6">
+				<h1 className="text-xl font-semibold">Observability</h1>
+				<p className="mt-2 text-sm text-muted-foreground">
+					You need to be signed in and have a team selected to view observability.
+				</p>
+			</div>
 		);
 	}
 
-        const from = fromForRange(range).toISOString();
-        const nowIso = new Date().toISOString();
+	const sp = await searchParams;
+	const rangeKeys = getUsageRangeParamKeys();
+	const presetParam = firstParam(sp[rangeKeys.preset]);
+	const preset = presetParam
+		? parseUsageRangePreset(presetParam)
+		: parseLegacyRangePreset(firstParam(sp.range));
+	const customFrom = parseUsageDateInput(firstParam(sp[rangeKeys.from]));
+	const customTo = parseUsageDateInput(firstParam(sp[rangeKeys.to]));
+	const { from, to } = resolveUsageTimeRange({
+		preset,
+		customFrom,
+		customTo,
+	});
+	const range = rangeForTimeWindow(from, to);
+	const fromDate = new Date(from);
+	const toDate = new Date(to);
+	const windowMs = toDate.getTime() - fromDate.getTime();
+	const previousFrom = new Date(fromDate.getTime() - windowMs).toISOString();
+	const previousTo = from;
 
-        // Prefer rollup-derived IDs, but union with request-derived IDs so usage
-        // metadata still populates when rollups are delayed.
-        const [{ data: keyRows }, { data: modelProviderRollups }, { data: requestUniques }] =
-                await Promise.all([
-                        supabase
-                                .from("keys")
-                                .select("id,name,prefix")
-                                .eq("workspace_id", workspaceId)
-                                .neq("status", "deleted")
-                                .neq("name", CHAT_MANAGED_KEY_NAME)
-                                .order("created_at", { ascending: true }),
-                        supabase
-                                .from("gateway_usage_rollup_15m_workspace_provider_model")
-                                .select("canonical_model_id, provider")
-                                .eq("workspace_id", workspaceId)
-                                .gte("bucket_15m", from)
-                                .lte("bucket_15m", nowIso),
-                        supabase
-                                .from("gateway_requests")
-                                .select("model_id")
-                                .eq("workspace_id", workspaceId)
-                                .gte("created_at", from)
-                                .lte("created_at", nowIso),
-                ]);
-
-        const availableKeys: ApiKeyOption[] = (keyRows ?? []).map((row: any) => ({
-                id: row.id,
-                name: row?.name ?? null,
-                prefix: row?.prefix ?? null,
-        }));
-        if (keyParam && groupBy === "key") {
-                activeKey = availableKeys.find((k) => k.id === keyParam) ?? null;
-        }
-
-	// Extract unique values for filters
-	const uniqueModels = Array.from(
-		new Set(
-			[
-				...(modelProviderRollups ?? []).map((r: any) => r.canonical_model_id),
-				...(requestUniques ?? []).map((r: any) => r.model_id),
-			].filter(Boolean),
-		),
-	);
-	const [colorMap, modelMetadata, recentAsyncJobs, initialChartData] = await Promise.all([
-		fetchOrganizationColors(uniqueModels),
-		fetchModelMetadata(uniqueModels),
-		fetchRecentAsyncJobs({ limit: 20 }),
-		fetchChartData({
-			timeRange: { from, to: nowIso },
-			range,
-			keyFilter: activeKey?.id ?? null,
+	const [keys, currentRequestResult, previousRequestResult] = await Promise.all([
+		fetchApiKeyOptions({ supabase, workspaceId }),
+		fetchRawRequests({ supabase, workspaceId, from, to }),
+		fetchRawRequests({
+			supabase,
+			workspaceId,
+			from: previousFrom,
+			to: previousTo,
 		}),
 	]);
-	const asyncJobModelIds = Array.from(
+	const rawRows = currentRequestResult.rows;
+	const previousRows = previousRequestResult.rows;
+
+	const keyMap = new Map(keys.map((key) => [key.id, key]));
+	const modelIds = Array.from(
 		new Set(
-			recentAsyncJobs
-				.map((job) => job.model)
-				.filter(
-					(modelId): modelId is string =>
-						typeof modelId === "string" && modelId.trim().length > 0,
-				),
+			[...rawRows, ...previousRows]
+				.map((row) => row.model_id)
+				.filter((id): id is string => Boolean(id)),
 		),
 	);
-	const asyncJobProviderIds = Array.from(
+	const appIds = Array.from(
 		new Set(
-			recentAsyncJobs
-				.map((job) => job.provider)
-				.filter(
-					(providerId): providerId is string =>
-						typeof providerId === "string" && providerId.trim().length > 0,
-				),
+			rawRows
+				.map((row) => row.app_id)
+				.filter((id): id is string => Boolean(id)),
 		),
 	);
-	const asyncJobAppIds = Array.from(
-		new Set(
-			recentAsyncJobs
-				.map((job) => job.app_id)
-				.filter(
-					(appId): appId is string =>
-						typeof appId === "string" && appId.trim().length > 0,
-				),
-		),
-	);
-	const [asyncJobProviderNames, asyncJobModelMetadata, asyncJobAppMetadata] = await Promise.all([
-		fetchProviderNames(asyncJobProviderIds),
-		fetchModelMetadata(asyncJobModelIds),
-		fetchAppMetadata(asyncJobAppIds),
+
+	const [modelMetadata, appNames] = await Promise.all([
+		safeMapLoad("model metadata", () => fetchModelMetadata(modelIds)),
+		safeMapLoad("app names", () => fetchAppNames(appIds)),
 	]);
 
+	const modelLabel = (id: string | null) => {
+		if (!id) return "Unknown model";
+		const meta = modelMetadata.get(id);
+		return meta?.modelName || id;
+	};
+	const keyLabel = (id: string | null) => {
+		if (!id) return "No API key";
+		const key = keyMap.get(id);
+		return key?.name || key?.prefix || id;
+	};
+	const keySubtitle = (id: string) => {
+		const key = keyMap.get(id);
+		return key?.name && key?.prefix ? key.prefix : null;
+	};
+	const appLabel = (id: string | null) => {
+		if (!id) return "No app";
+		return appNames.get(id) || id;
+	};
+	const modelFilterOptions = Array.from(new Set(rawRows.flatMap((row) => {
+		const id = row.model_id?.trim();
+		return id ? [id] : [];
+	}))
+	)
+		.map((id) => {
+			const meta = modelMetadata.get(id);
+			return {
+				value: id,
+				label: modelLabel(id),
+				logoId: meta?.organisationId ?? null,
+			};
+		})
+		.sort((a, b) => a.label.localeCompare(b.label));
+
+	const currentSpend = rawRows.reduce(
+		(sum, row) => sum + toNumber(row.cost_nanos) / 1e9,
+		0,
+	);
+	const previousSpend = previousRows.reduce(
+		(sum, row) => sum + toNumber(row.cost_nanos) / 1e9,
+		0,
+	);
+	const currentTokens = rawRows.reduce((sum, row) => sum + usageTokens(row.usage), 0);
+	const previousTokens = previousRows.reduce(
+		(sum, row) => sum + usageTokens(row.usage),
+		0,
+	);
+	const currentCachedTokens = rawRows.reduce(
+		(sum, row) =>
+			sum +
+			metricValue(row.usage, "cache_read_tokens") +
+			metricValue(row.usage, "cache_write_tokens"),
+		0,
+	);
+	const previousCachedTokens = previousRows.reduce(
+		(sum, row) =>
+			sum +
+			metricValue(row.usage, "cache_read_tokens") +
+			metricValue(row.usage, "cache_write_tokens"),
+		0,
+	);
+
+	const kpis: ObservabilityKpi[] = [
+		makeKpi({
+			id: "spend",
+			label: "Total Spend",
+			value: currentSpend,
+			previous: previousSpend,
+			format: "currency",
+			sparkline: sumByBucket({
+				rows: rawRows,
+				range,
+				from,
+				to,
+				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+			}),
+		}),
+		makeKpi({
+			id: "requests",
+			label: "Requests",
+			value: rawRows.length,
+			previous: previousRows.length,
+			format: "number",
+			sparkline: sumByBucket({
+				rows: rawRows,
+				range,
+				from,
+				to,
+				getValue: () => 1,
+			}),
+		}),
+		makeKpi({
+			id: "tokens",
+			label: "Tokens",
+			value: currentTokens,
+			previous: previousTokens,
+			format: "number",
+			sparkline: sumByBucket({
+				rows: rawRows,
+				range,
+				from,
+				to,
+				getValue: (row) => usageTokens(row.usage),
+			}),
+		}),
+		makeKpi({
+			id: "cache",
+			label: "Cache Hit Rate",
+			value: currentTokens > 0 ? currentCachedTokens / currentTokens : 0,
+			previous: previousTokens > 0 ? previousCachedTokens / previousTokens : 0,
+			format: "percent",
+			sparkline: cacheHitRateByBucket({
+				rows: rawRows,
+				range,
+				from,
+				to,
+			}),
+		}),
+	];
+
+	const topApiKeys = makeRankedItems({
+		rows: rawRows,
+		previousRows,
+		range,
+		from,
+		to,
+		getId: (row) => row.key_id,
+		getLabel: keyLabel,
+		getSubtitle: keySubtitle,
+	});
+	const topApps = makeRankedItems({
+		rows: rawRows,
+		previousRows,
+		range,
+		from,
+		to,
+		getId: (row) => row.app_id,
+		getLabel: appLabel,
+	});
+	const trendingModels = makeRankedItems({
+		rows: rawRows,
+		previousRows,
+		range,
+		from,
+		to,
+		getId: (row) => row.model_id,
+		getLabel: modelLabel,
+	});
+
+	const usageByModelCost = buildTimeSeriesBreakdown({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		getId: (row) => row.model_id,
+		getLabel: modelLabel,
+		getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+	});
+	const requestVolumeByModel = buildTimeSeriesBreakdown({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		getId: (row) => row.model_id,
+		getLabel: modelLabel,
+		getValue: () => 1,
+	});
+	const trendChartArgs = {
+		rows: rawRows,
+		range,
+		from,
+		to,
+		limit: 10,
+		includeOther: true,
+	};
+	const modelTrendCharts = {
+		spend: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.model_id,
+			getLabel: modelLabel,
+			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+		}),
+		requests: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.model_id,
+			getLabel: modelLabel,
+			getValue: () => 1,
+		}),
+		tokens: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.model_id,
+			getLabel: modelLabel,
+			getValue: (row) => usageTokens(row.usage),
+		}),
+	};
+	const keyTrendCharts = {
+		spend: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.key_id,
+			getLabel: keyLabel,
+			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+		}),
+		requests: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.key_id,
+			getLabel: keyLabel,
+			getValue: () => 1,
+		}),
+		tokens: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.key_id,
+			getLabel: keyLabel,
+			getValue: (row) => usageTokens(row.usage),
+		}),
+	};
+	const appTrendCharts = {
+		spend: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.app_id,
+			getLabel: appLabel,
+			getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+		}),
+		requests: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.app_id,
+			getLabel: appLabel,
+			getValue: () => 1,
+		}),
+		tokens: buildTimeSeriesBreakdown({
+			...trendChartArgs,
+			getId: (row) => row.app_id,
+			getLabel: appLabel,
+			getValue: (row) => usageTokens(row.usage),
+		}),
+	};
+	const usageTypeCost = buildFixedTimeSeries({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		series: [
+			{ id: "aiStats", label: "AI Stats Credits", color: "#2563eb" },
+			{ id: "byok", label: "BYOK", color: "#059669" },
+		],
+		getValues: (row) => {
+			const cost = toNumber(row.cost_nanos) / 1e9;
+			return isByokRequest(row)
+				? { aiStats: 0, byok: cost }
+				: { aiStats: cost, byok: 0 };
+		},
+	});
+	const tokenSplit = buildFixedTimeSeries({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		series: [
+			{ id: "input", label: "Input", color: "#2563eb" },
+			{ id: "output", label: "Output", color: "#059669" },
+			{ id: "reasoning", label: "Reasoning", color: "#d97706" },
+		],
+		getValues: (row) => ({
+			input: metricValue(row.usage, "input_tokens"),
+			output: metricValue(row.usage, "output_tokens"),
+			reasoning:
+				metricValue(row.usage, "reasoning_tokens") +
+				metricValue(row.usage, "output_reasoning_tokens"),
+		}),
+	});
+	const cacheSplit = buildFixedTimeSeries({
+		rows: rawRows,
+		range,
+		from,
+		to,
+		series: [
+			{ id: "cached", label: "Cached", color: "#059669" },
+			{ id: "uncached", label: "Uncached", color: "#94a3b8" },
+		],
+		getValues: (row) => {
+			const tokens = usageTokens(row.usage);
+			const cached =
+				metricValue(row.usage, "cache_read_tokens") +
+				metricValue(row.usage, "cache_write_tokens");
+			return {
+				cached,
+				uncached: Math.max(0, tokens - cached),
+			};
+		},
+	});
+
+	const data: ObservabilityData = {
+		range,
+		periodLabel: getUsageRangeLabel({ preset, customFrom, customTo }),
+		isSampled: currentRequestResult.isSampled,
+		sampleLimit: currentRequestResult.limit,
+		kpis,
+		topApiKeys,
+		topApps,
+		trendingModels,
+		trendingKeys: topApiKeys,
+		trendingApps: topApps,
+		charts: {
+			usageByModelCost,
+			usageTypeCost,
+			requestVolumeByModel,
+			tokenSplit,
+			cacheSplit,
+			spendOverTime: sumByBucket({
+				rows: rawRows,
+				range,
+				from,
+				to,
+				getValue: (row) => toNumber(row.cost_nanos) / 1e9,
+			}),
+			trends: {
+				models: modelTrendCharts,
+				keys: keyTrendCharts,
+				apps: appTrendCharts,
+			},
+		},
+		filterOptions: {
+			models: modelFilterOptions,
+		},
+		exploreRows: buildExploreRows({
+			rows: rawRows,
+			range,
+			keyLabel,
+			appLabel,
+			modelLabel,
+		}),
+	};
+
+	const guardrailMetrics: GuardrailEnforcementMetricsResult =
+		buildGuardrailEnforcementMetrics({
+			rows: rawRows.map((row) => ({
+				createdAt: row.created_at,
+				errorPayload: row.error_payload,
+				errorMessage: row.error_message,
+			})),
+			timeRange: { from, to },
+			range,
+		});
+
 	return (
-		<div className="space-y-6">
-			<UsageHeader keys={availableKeys} />
-
-			{activeKey ? (
-				<div className="text-sm text-muted-foreground">
-					Showing usage for key{" "}
-					<span className="font-mono">{activeKey.prefix ?? ""}</span>
-					{activeKey.name ? (
-						<>
-							{" "}
-							(<span className="font-medium">{activeKey.name}</span>)
-						</>
-					) : null}
-					.{" "}
-					<a className="underline" href="/settings/usage">
-						Clear filter
-					</a>
-				</div>
-			) : null}
-
-			<MetricsOverview
-				timeRange={{ from, to: nowIso }}
-				range={range}
-				colorMap={Object.fromEntries(colorMap)}
-				modelMetadata={modelMetadata}
-				validKeyIds={availableKeys.map((key) => key.id)}
-				initialChartData={initialChartData}
-			/>
-
-			<AsyncJobsPanel
-				initialJobs={recentAsyncJobs}
-				providerNames={asyncJobProviderNames}
-				modelMetadata={asyncJobModelMetadata}
-				appMetadata={asyncJobAppMetadata}
-			/>
-		</div>
+		<ObservabilityHub
+			data={data}
+			guardrailMetrics={guardrailMetrics}
+			initialTab={initialTab}
+			preset={preset}
+			customFrom={customFrom}
+			customTo={customTo}
+		/>
 	);
 }
-

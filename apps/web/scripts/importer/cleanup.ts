@@ -31,10 +31,18 @@ export async function cleanDeleted() {
     const pricingProviderModels: string[] = [];
     const pricingCapabilities: Array<{ provider_api_model_id: string; capability_id: string }> = [];
     const aliases: string[] = [];
+    const modelPageNoticeApiModelIdByModelId = new Map<string, string>();
 
     for (const { path, meta } of toDelete) {
         if (path.startsWith(DIR_MODELS)) {
-            if (meta?.model_id) models.push(meta.model_id);
+            if (meta?.model_id) {
+                models.push(meta.model_id);
+                const apiModelId =
+                    typeof meta?.api_model_id === "string" && meta.api_model_id
+                        ? meta.api_model_id
+                        : meta.model_id;
+                modelPageNoticeApiModelIdByModelId.set(meta.model_id, apiModelId);
+            }
         } else if (path.startsWith(DIR_BENCHMARKS)) {
             if (meta?.benchmark_id) benchmarks.push(meta.benchmark_id);
         } else if (path.startsWith(DIR_FAMILIES)) {
@@ -63,6 +71,8 @@ export async function cleanDeleted() {
         console.log(`Removing models from DB: ${models.join(", ")}`);
         if (isDryRun()) {
             for (const id of models) {
+                const apiModelId = modelPageNoticeApiModelIdByModelId.get(id) ?? id;
+                logWrite("public.data_api_model_page_notices", "DELETE", { api_model_id: apiModelId });
                 logWrite("public.data_model_links", "DELETE", { model_id: id });
                 logWrite("public.data_model_details", "DELETE", { model_id: id });
                 logWrite("public.data_benchmark_results", "DELETE", { model_id: id });
@@ -70,7 +80,15 @@ export async function cleanDeleted() {
             }
         } else {
             for (const id of models) {
+                const apiModelId = modelPageNoticeApiModelIdByModelId.get(id) ?? id;
                 // remove children first
+                assertOk(
+                    await supa
+                        .from("data_api_model_page_notices")
+                        .delete()
+                        .eq("api_model_id", apiModelId),
+                    "delete data_api_model_page_notices"
+                );
                 assertOk(await supa.from("data_model_links").delete().eq("model_id", id), "delete data_model_links");
                 assertOk(await supa.from("data_model_details").delete().eq("model_id", id), "delete data_model_details");
                 assertOk(await supa.from("data_benchmark_results").delete().eq("model_id", id), "delete data_benchmark_results");

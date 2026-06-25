@@ -7,15 +7,14 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
-import { getModelProviderRuntimeStatsCached } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
-import {
-	getModelPricingHistoryRules,
-	type ModelPricingHistoryProviderInput,
-} from "@/lib/fetchers/models/getModelPricingHistoryRules";
 import ModelPricingInsightsClient from "@/components/(data)/model/pricing/ModelPricingInsightsClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
-import { getModelPendingApiReleaseState } from "@/lib/fetchers/models/getModelPendingApiReleaseState";
+import {
+	fetchFrontendModelPendingApiReleaseState,
+	fetchFrontendModelPricing,
+	fetchFrontendModelPricingHistory,
+	fetchFrontendModelProviderRuntimeStats,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function ModelPricingInsightsSection({
 	modelId,
@@ -26,8 +25,8 @@ export default async function ModelPricingInsightsSection({
 	includeHidden: boolean;
 	showPageHeader?: boolean;
 }) {
-	const providers = await getModelPricingCached(modelId, includeHidden);
-	const pendingApiRelease = await getModelPendingApiReleaseState(
+	const providers = await fetchFrontendModelPricing(modelId);
+	const pendingApiRelease = await fetchFrontendModelPendingApiReleaseState(
 		modelId,
 		includeHidden,
 	).catch(() => null);
@@ -50,46 +49,6 @@ export default async function ModelPricingInsightsSection({
 			),
 		),
 	).sort((a, b) => a.localeCompare(b));
-	const providersForHistory: ModelPricingHistoryProviderInput[] = providersForDisplay
-		.map((provider) => ({
-			providerId: provider.provider.api_provider_id,
-			providerName:
-				provider.provider.api_provider_name ||
-				provider.provider.api_provider_id,
-			models: Array.from(
-				new Map(
-					provider.provider_models.map((providerModel) => {
-						const apiProviderId = String(providerModel.api_provider_id ?? "").trim();
-						const modelId = String(providerModel.model_id ?? "").trim();
-						const endpoint = String(providerModel.endpoint ?? "").trim();
-						const key = `${apiProviderId}:${modelId}:${endpoint}`;
-						return [
-							key,
-							{
-								apiProviderId,
-								modelId,
-								endpoint,
-							},
-						];
-					}),
-				).values(),
-			)
-				.filter(
-					(model) =>
-						Boolean(model.apiProviderId) &&
-						Boolean(model.modelId) &&
-						Boolean(model.endpoint),
-				)
-				.sort((a, b) => {
-					const providerCompare = a.apiProviderId.localeCompare(b.apiProviderId);
-					if (providerCompare !== 0) return providerCompare;
-					const modelCompare = a.modelId.localeCompare(b.modelId);
-					if (modelCompare !== 0) return modelCompare;
-					return a.endpoint.localeCompare(b.endpoint);
-				}),
-		}))
-		.sort((a, b) => a.providerId.localeCompare(b.providerId));
-
 	if (!providersForDisplay.length) {
 		return (
 			<div className="space-y-3">
@@ -121,14 +80,13 @@ export default async function ModelPricingInsightsSection({
 	}
 
 	const [runtimeStats, pricingHistoryRules] = await Promise.all([
-		getModelProviderRuntimeStatsCached({
+		fetchFrontendModelProviderRuntimeStats({
 			modelId,
 			providerIds,
 			modelAliases,
 		}),
-		getModelPricingHistoryRules({
-			modelId,
-			providers: providersForHistory,
+		fetchFrontendModelPricingHistory(modelId, {
+			includeHidden,
 			days: 30,
 		}).catch((error) => {
 			console.warn("[pricing] failed to fetch pricing history rules", {

@@ -19,6 +19,7 @@ type ActiveGatewayModelRow = {
         name?: string | null;
         status?: string | null;
         organisation_id?: string | null;
+        previous_model_id?: string | null;
         release_date?: string | null;
         announcement_date?: string | null;
         organisation?: {
@@ -40,6 +41,8 @@ const CAPABILITY_QUERY_CHUNK_SIZE = 200;
 
 export type GatewaySupportedModel = {
     modelId: string;
+    internalModelId: string | null;
+    selectorModelId: string;
     providerId: string;
     capabilities: string[];
     effectiveFrom: string | null;
@@ -50,6 +53,7 @@ export type GatewaySupportedModel = {
     modelStatus: string | null;
     organisationId: string | null;
     organisationName: string | null;
+    previousModelId: string | null;
     releaseDate: string | null;
     announcementDate: string | null;
     isAvailable: boolean;
@@ -58,6 +62,20 @@ export type GatewaySupportedModel = {
 const GATEWAY_MODEL_DEBUG_ENABLED =
     process.env.NODE_ENV !== "production" ||
     process.env.DEBUG_GATEWAY_SUPPORTED_MODELS === "1";
+
+function getCanonicalGatewaySelectorModelId(row: {
+    api_model_id: string | null;
+    model?: { model_id?: string | null } | null;
+}): string | null {
+    const apiModelId = row.api_model_id?.trim() ?? null;
+    if (!apiModelId) return null;
+    const internalModelId = row.model?.model_id?.trim() ?? null;
+    const baseModelId = internalModelId || apiModelId;
+    if (apiModelId.endsWith(":free") && !baseModelId.endsWith(":free")) {
+        return `${baseModelId}:free`;
+    }
+    return baseModelId;
+}
 
 function isHailuoModelId(modelId: string | null | undefined): boolean {
     return String(modelId ?? "").trim().toLowerCase().startsWith("minimax/hailuo");
@@ -151,7 +169,7 @@ async function fetchActiveGatewayModels(
     const { data: models } = await client
         .from("data_models")
         .select(
-            "model_id, name, status, organisation_id, release_date, announcement_date, hidden, organisation:data_organisations!data_models_organisation_id_fkey(name)"
+            "model_id, name, status, organisation_id, previous_model_id, release_date, announcement_date, hidden, organisation:data_organisations!data_models_organisation_id_fkey(name)"
         )
         .in("model_id", modelIds);
 
@@ -271,6 +289,9 @@ export async function getGatewaySupportedModels(
         seen.add(key);
         models.push({
             modelId: row.api_model_id,
+            internalModelId: row.model?.model_id ?? null,
+            selectorModelId:
+                getCanonicalGatewaySelectorModelId(row) ?? row.api_model_id,
             providerId: row.api_provider_id,
             capabilities: Array.from(new Set(row.capability_ids ?? [])),
             effectiveFrom: row.effective_from ?? null,
@@ -281,6 +302,7 @@ export async function getGatewaySupportedModels(
             modelStatus: status,
             organisationId: row.model?.organisation_id ?? null,
             organisationName: row.model?.organisation?.name ?? null,
+            previousModelId: row.model?.previous_model_id ?? null,
             releaseDate: row.model?.release_date ?? null,
             announcementDate: row.model?.announcement_date ?? null,
             isAvailable,

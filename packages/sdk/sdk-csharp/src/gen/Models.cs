@@ -413,6 +413,126 @@ public sealed class ApiKeyWithValueResponse
 
 }
 
+public sealed class AsyncJobWebSocketClientEvent
+{
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class AsyncJobWebSocketServerEvent
+{
+	[JsonPropertyName("data")]
+	public object? Data { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class AsyncJobWebSocketUpgradeRequiredResponse
+{
+	[JsonPropertyName("error")]
+	public Dictionary<string, object>? Error { get; set; }
+
+}
+
+public sealed class AsyncWebhookDeliveryAttempt
+{
+	[JsonPropertyName("attempt_number")]
+	public int? AttemptNumber { get; set; }
+
+	[JsonPropertyName("delivered_at")]
+	public string? DeliveredAt { get; set; }
+
+	[JsonPropertyName("delivery_key")]
+	public string? DeliveryKey { get; set; }
+
+	[JsonPropertyName("error_message")]
+	public string? ErrorMessage { get; set; }
+
+	[JsonPropertyName("event_type")]
+	public string? EventType { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("max_attempts")]
+	public int? MaxAttempts { get; set; }
+
+	[JsonPropertyName("next_retry_at")]
+	public string? NextRetryAt { get; set; }
+
+	[JsonPropertyName("response_body_preview")]
+	public string? ResponseBodyPreview { get; set; }
+
+	[JsonPropertyName("response_status")]
+	public int? ResponseStatus { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("tried_at")]
+	public string? TriedAt { get; set; }
+
+}
+
+public sealed class AsyncWebhookDeliverySummary
+{
+	[JsonPropertyName("delivered_event_types")]
+	public List<string>? DeliveredEventTypes { get; set; }
+
+	[JsonPropertyName("delivered_events")]
+	public int? DeliveredEvents { get; set; }
+
+	[JsonPropertyName("last_attempt_at")]
+	public string? LastAttemptAt { get; set; }
+
+	[JsonPropertyName("last_attempt_status")]
+	public string? LastAttemptStatus { get; set; }
+
+	[JsonPropertyName("last_delivered_at")]
+	public string? LastDeliveredAt { get; set; }
+
+	[JsonPropertyName("last_error_message")]
+	public string? LastErrorMessage { get; set; }
+
+	[JsonPropertyName("last_failure_at")]
+	public string? LastFailureAt { get; set; }
+
+	[JsonPropertyName("last_response_status")]
+	public int? LastResponseStatus { get; set; }
+
+	[JsonPropertyName("next_retry_at")]
+	public string? NextRetryAt { get; set; }
+
+	[JsonPropertyName("pending_retries")]
+	public int? PendingRetries { get; set; }
+
+	[JsonPropertyName("total_attempts")]
+	public int? TotalAttempts { get; set; }
+
+}
+
+public sealed class AsyncWebhookPublicState
+{
+	[JsonPropertyName("attempts")]
+	public List<Dictionary<string, object>>? Attempts { get; set; }
+
+	[JsonPropertyName("delivery")]
+	public Dictionary<string, object>? Delivery { get; set; }
+
+	[JsonPropertyName("events")]
+	public List<string>? Events { get; set; }
+
+	[JsonPropertyName("has_secret")]
+	public bool? HasSecret { get; set; }
+
+	[JsonPropertyName("url")]
+	public string? Url { get; set; }
+
+}
+
 public sealed class AudioContentPart
 {
 	[JsonPropertyName("input_audio")]
@@ -514,6 +634,27 @@ public sealed class BatchBillingSummary
 	[JsonPropertyName("cost_usd")]
 	public double? CostUsd { get; set; }
 
+	[JsonPropertyName("currency")]
+	public string? Currency { get; set; }
+
+	[JsonPropertyName("estimated_nanos")]
+	public int? EstimatedNanos { get; set; }
+
+	[JsonPropertyName("estimated_provider_cost")]
+	public string? EstimatedProviderCost { get; set; }
+
+	[JsonPropertyName("estimated_user_cost")]
+	public string? EstimatedUserCost { get; set; }
+
+	[JsonPropertyName("estimation_sample_size")]
+	public int? EstimationSampleSize { get; set; }
+
+	[JsonPropertyName("estimation_total_rows")]
+	public int? EstimationTotalRows { get; set; }
+
+	[JsonPropertyName("estimation_truncated")]
+	public bool? EstimationTruncated { get; set; }
+
 	[JsonPropertyName("finalized_at")]
 	public string? FinalizedAt { get; set; }
 
@@ -522,6 +663,112 @@ public sealed class BatchBillingSummary
 
 	[JsonPropertyName("reason")]
 	public string? Reason { get; set; }
+
+	[JsonPropertyName("reservation_id")]
+	public string? ReservationId { get; set; }
+
+	[JsonPropertyName("reservation_status")]
+	public string? ReservationStatus { get; set; }
+
+	[JsonPropertyName("reserved_nanos")]
+	public int? ReservedNanos { get; set; }
+
+	[JsonPropertyName("settled_provider_cost")]
+	public string? SettledProviderCost { get; set; }
+
+	[JsonPropertyName("settled_user_cost")]
+	public string? SettledUserCost { get; set; }
+
+	[JsonPropertyName("state")]
+	public string? State { get; set; }
+
+	[JsonPropertyName("total_nanos")]
+	public int? TotalNanos { get; set; }
+
+}
+
+public sealed class BatchListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("first_id")]
+	public string? FirstId { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool? HasMore { get; set; }
+
+	[JsonPropertyName("last_id")]
+	public string? LastId { get; set; }
+
+	[JsonPropertyName("object")]
+	public string? Object { get; set; }
+
+}
+
+public sealed class BatchModelCapability
+{
+	[JsonPropertyName("input_types")]
+	public List<string>? InputTypes { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("output_types")]
+	public List<string>? OutputTypes { get; set; }
+
+	[JsonPropertyName("pricing")]
+	public Dictionary<string, object>? Pricing { get; set; }
+
+	[JsonPropertyName("providers")]
+	public List<Dictionary<string, object>>? Providers { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("supported_parameters")]
+	public List<string>? SupportedParameters { get; set; }
+
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
+
+	[JsonPropertyName("supported_params")]
+	public List<string>? SupportedParams { get; set; }
+
+	[JsonPropertyName("supported_params_detail")]
+	public Dictionary<string, object>? SupportedParamsDetail { get; set; }
+
+}
+
+public sealed class BatchModelProviderCapability
+{
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("supported_parameters")]
+	public List<string>? SupportedParameters { get; set; }
+
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
+
+	[JsonPropertyName("supported_params")]
+	public List<string>? SupportedParams { get; set; }
+
+	[JsonPropertyName("supported_params_detail")]
+	public Dictionary<string, object>? SupportedParamsDetail { get; set; }
+
+}
+
+public sealed class BatchModelsResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("object")]
+	public string? Object { get; set; }
 
 }
 
@@ -571,6 +818,9 @@ public sealed class BatchResponse
 	[JsonPropertyName("billing")]
 	public Dictionary<string, object>? Billing { get; set; }
 
+	[JsonPropertyName("cancel_url")]
+	public string? CancelUrl { get; set; }
+
 	[JsonPropertyName("cancelled_at")]
 	public int? CancelledAt { get; set; }
 
@@ -604,6 +854,9 @@ public sealed class BatchResponse
 	[JsonPropertyName("failed_at")]
 	public int? FailedAt { get; set; }
 
+	[JsonPropertyName("finalized_at")]
+	public string? FinalizedAt { get; set; }
+
 	[JsonPropertyName("finalizing_at")]
 	public int? FinalizingAt { get; set; }
 
@@ -616,8 +869,26 @@ public sealed class BatchResponse
 	[JsonPropertyName("input_file_id")]
 	public string? InputFileId { get; set; }
 
+	[JsonPropertyName("last_webhook_dispatched_at")]
+	public string? LastWebhookDispatchedAt { get; set; }
+
+	[JsonPropertyName("last_webhook_progress")]
+	public double? LastWebhookProgress { get; set; }
+
+	[JsonPropertyName("last_webhook_progress_at")]
+	public string? LastWebhookProgressAt { get; set; }
+
+	[JsonPropertyName("lifecycle_status")]
+	public string? LifecycleStatus { get; set; }
+
 	[JsonPropertyName("metadata")]
 	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("native_batch_id")]
+	public string? NativeBatchId { get; set; }
+
+	[JsonPropertyName("next_webhook_retry_at")]
+	public string? NextWebhookRetryAt { get; set; }
 
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
@@ -625,8 +896,14 @@ public sealed class BatchResponse
 	[JsonPropertyName("output_file_id")]
 	public string? OutputFileId { get; set; }
 
+	[JsonPropertyName("polling_url")]
+	public string? PollingUrl { get; set; }
+
 	[JsonPropertyName("pricing_lines")]
 	public List<Dictionary<string, object>>? PricingLines { get; set; }
+
+	[JsonPropertyName("progress")]
+	public int? Progress { get; set; }
 
 	[JsonPropertyName("provider")]
 	public string? Provider { get; set; }
@@ -645,6 +922,9 @@ public sealed class BatchResponse
 
 	[JsonPropertyName("webhook")]
 	public Dictionary<string, object>? Webhook { get; set; }
+
+	[JsonPropertyName("websocket_url")]
+	public string? WebsocketUrl { get; set; }
 
 }
 
@@ -1808,8 +2088,14 @@ public sealed class Model
 	[JsonPropertyName("supported_parameters")]
 	public List<string>? SupportedParameters { get; set; }
 
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
+
 	[JsonPropertyName("supported_params")]
 	public List<string>? SupportedParams { get; set; }
+
+	[JsonPropertyName("supported_params_detail")]
+	public Dictionary<string, object>? SupportedParamsDetail { get; set; }
 
 	[JsonPropertyName("top_provider")]
 	public Dictionary<string, object>? TopProvider { get; set; }
@@ -1891,11 +2177,20 @@ public sealed class ModelProviderAvailability
 	[JsonPropertyName("params")]
 	public List<string> Params { get; set; }
 
+	[JsonPropertyName("params_detail")]
+	public Dictionary<string, object>? ParamsDetail { get; set; }
+
 	[JsonPropertyName("provider_routing_status")]
 	public string ProviderRoutingStatus { get; set; }
 
 	[JsonPropertyName("provider_status")]
 	public string ProviderStatus { get; set; }
+
+	[JsonPropertyName("supported_parameters")]
+	public List<string>? SupportedParameters { get; set; }
+
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
 
 }
 
@@ -2681,6 +2976,10 @@ public sealed class ServerToolUsage
 
 }
 
+public sealed class SupportedParameterDetails
+{
+}
+
 public sealed class TextContentPart
 {
 	[JsonPropertyName("text")]
@@ -2744,6 +3043,55 @@ public sealed class Usage
 
 	[JsonPropertyName("total_tokens")]
 	public int? TotalTokens { get; set; }
+
+}
+
+public sealed class VideoBillingSummary
+{
+	[JsonPropertyName("billable")]
+	public bool? Billable { get; set; }
+
+	[JsonPropertyName("billed_at")]
+	public string? BilledAt { get; set; }
+
+	[JsonPropertyName("charge_reason")]
+	public string? ChargeReason { get; set; }
+
+	[JsonPropertyName("charged")]
+	public bool? Charged { get; set; }
+
+	[JsonPropertyName("currency")]
+	public string? Currency { get; set; }
+
+	[JsonPropertyName("estimated_nanos")]
+	public int? EstimatedNanos { get; set; }
+
+	[JsonPropertyName("estimated_provider_cost")]
+	public string? EstimatedProviderCost { get; set; }
+
+	[JsonPropertyName("estimated_user_cost")]
+	public string? EstimatedUserCost { get; set; }
+
+	[JsonPropertyName("reservation_id")]
+	public string? ReservationId { get; set; }
+
+	[JsonPropertyName("reservation_status")]
+	public string? ReservationStatus { get; set; }
+
+	[JsonPropertyName("reserved_nanos")]
+	public int? ReservedNanos { get; set; }
+
+	[JsonPropertyName("settled_provider_cost")]
+	public string? SettledProviderCost { get; set; }
+
+	[JsonPropertyName("settled_user_cost")]
+	public string? SettledUserCost { get; set; }
+
+	[JsonPropertyName("state")]
+	public string? State { get; set; }
+
+	[JsonPropertyName("total_nanos")]
+	public int? TotalNanos { get; set; }
 
 }
 
@@ -2842,6 +3190,9 @@ public sealed class VideoGenerationResponse
 	[JsonPropertyName("billing")]
 	public Dictionary<string, object>? Billing { get; set; }
 
+	[JsonPropertyName("cancel_url")]
+	public string? CancelUrl { get; set; }
+
 	[JsonPropertyName("completed_at")]
 	public object? CompletedAt { get; set; }
 
@@ -2866,8 +3217,26 @@ public sealed class VideoGenerationResponse
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
 
+	[JsonPropertyName("last_webhook_dispatched_at")]
+	public string? LastWebhookDispatchedAt { get; set; }
+
+	[JsonPropertyName("last_webhook_progress")]
+	public double? LastWebhookProgress { get; set; }
+
+	[JsonPropertyName("last_webhook_progress_at")]
+	public string? LastWebhookProgressAt { get; set; }
+
+	[JsonPropertyName("lifecycle_status")]
+	public string? LifecycleStatus { get; set; }
+
 	[JsonPropertyName("model")]
 	public string? Model { get; set; }
+
+	[JsonPropertyName("native_video_id")]
+	public string? NativeVideoId { get; set; }
+
+	[JsonPropertyName("next_webhook_retry_at")]
+	public string? NextWebhookRetryAt { get; set; }
 
 	[JsonPropertyName("object")]
 	public string? Object { get; set; }
@@ -2914,6 +3283,12 @@ public sealed class VideoGenerationResponse
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
 
+	[JsonPropertyName("webhook")]
+	public Dictionary<string, object>? Webhook { get; set; }
+
+	[JsonPropertyName("websocket_url")]
+	public string? WebsocketUrl { get; set; }
+
 }
 
 public sealed class VideoInputReference
@@ -2929,6 +3304,91 @@ public sealed class VideoInputReference
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
+
+}
+
+public sealed class VideoListResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("first_id")]
+	public string? FirstId { get; set; }
+
+	[JsonPropertyName("has_more")]
+	public bool? HasMore { get; set; }
+
+	[JsonPropertyName("last_id")]
+	public string? LastId { get; set; }
+
+	[JsonPropertyName("object")]
+	public string? Object { get; set; }
+
+}
+
+public sealed class VideoModelCapability
+{
+	[JsonPropertyName("input_types")]
+	public List<string>? InputTypes { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("output_types")]
+	public List<string>? OutputTypes { get; set; }
+
+	[JsonPropertyName("pricing")]
+	public Dictionary<string, object>? Pricing { get; set; }
+
+	[JsonPropertyName("providers")]
+	public List<Dictionary<string, object>>? Providers { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("supported_parameters")]
+	public List<string>? SupportedParameters { get; set; }
+
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
+
+	[JsonPropertyName("supported_params")]
+	public List<string>? SupportedParams { get; set; }
+
+	[JsonPropertyName("supported_params_detail")]
+	public Dictionary<string, object>? SupportedParamsDetail { get; set; }
+
+}
+
+public sealed class VideoModelProviderCapability
+{
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("supported_parameters")]
+	public List<string>? SupportedParameters { get; set; }
+
+	[JsonPropertyName("supported_parameters_detail")]
+	public Dictionary<string, object>? SupportedParametersDetail { get; set; }
+
+	[JsonPropertyName("supported_params")]
+	public List<string>? SupportedParams { get; set; }
+
+	[JsonPropertyName("supported_params_detail")]
+	public Dictionary<string, object>? SupportedParamsDetail { get; set; }
+
+}
+
+public sealed class VideoModelsResponse
+{
+	[JsonPropertyName("data")]
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("object")]
+	public string? Object { get; set; }
 
 }
 

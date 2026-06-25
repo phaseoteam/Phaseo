@@ -82,6 +82,10 @@ export async function verifyOpenAiWebhookSignature(req: Request, rawBody: string
 	const timestamp = req.headers.get("webhook-timestamp")?.trim() ?? "";
 	const signatures = parseOpenAiSignatureCandidates(req.headers.get("webhook-signature"));
 	if (!id || !timestamp || signatures.length === 0) return false;
+	const timestampSeconds = Number(timestamp);
+	if (!Number.isFinite(timestampSeconds)) return false;
+	const skewSeconds = Math.abs(Date.now() / 1000 - timestampSeconds);
+	if (skewSeconds > 300) return false;
 
 	const payload = `${id}.${timestamp}.${rawBody}`;
 	const expected = await signHmacSha256(secret, payload);
@@ -174,7 +178,7 @@ export function extractAlibabaTaskId(payload: any): string | null {
 	return null;
 }
 
-export function mapAlibabaTerminalStatus(eventType: string, payload: any): "completed" | "failed" | null {
+export function mapAlibabaTerminalStatus(eventType: string, payload: any): "completed" | "failed" | "cancelled" | "expired" | null {
 	const joined = [
 		eventType,
 		payload?.status,
@@ -187,9 +191,16 @@ export function mapAlibabaTerminalStatus(eventType: string, payload: any): "comp
 		.join(" ");
 
 	if (
-		joined.includes("fail") ||
-		joined.includes("error") ||
 		joined.includes("cancel")
+	) {
+		return "cancelled";
+	}
+	if (joined.includes("expire")) {
+		return "expired";
+	}
+	if (
+		joined.includes("fail") ||
+		joined.includes("error")
 	) {
 		return "failed";
 	}
@@ -201,6 +212,39 @@ export function mapAlibabaTerminalStatus(eventType: string, payload: any): "comp
 	) {
 		return "completed";
 	}
+	return null;
+}
+
+export function mapOpenAiTerminalStatus(eventType: string, payload: any): "completed" | "failed" | "cancelled" | "expired" | null {
+	const joined = [
+		eventType,
+		payload?.status,
+		payload?.data?.status,
+		payload?.data?.task_status,
+		payload?.data?.error?.code,
+	]
+		.map((value) => String(value ?? "").toLowerCase())
+		.join(" ");
+	if (joined.includes("cancel")) return "cancelled";
+	if (joined.includes("expire")) return "expired";
+	if (joined.includes("fail") || joined.includes("error")) return "failed";
+	if (
+		joined.includes("complete") ||
+		joined.includes("succeed") ||
+		joined.includes("success")
+	) {
+		return "completed";
+	}
+	return null;
+}
+
+function videoWebhookEventForTerminalStatus(
+	status: string,
+): "video.completed" | "video.failed" | "video.cancelled" | "video.expired" | null {
+	if (status === "completed") return "video.completed";
+	if (status === "cancelled") return "video.cancelled";
+	if (status === "expired") return "video.expired";
+	if (status === "failed") return "video.failed";
 	return null;
 }
 
@@ -299,9 +343,8 @@ export async function processOpenAiVideoWebhook(args: {
 		return;
 	}
 
-	const isCompleted = eventType === "video.completed";
-	const isFailed = eventType === "video.failed";
-	if (!isCompleted && !isFailed) {
+	const terminal = mapOpenAiTerminalStatus(eventType, payload);
+	if (!terminal) {
 		await markProviderEventProcessed({
 			provider: OPENAI_PROVIDER_ID,
 			providerEventId: eventId,
@@ -312,11 +355,11 @@ export async function processOpenAiVideoWebhook(args: {
 	}
 
 	const data = payload?.data ?? {};
-	await finalizeVideoJob({
+	const finalized = await finalizeVideoJob({
 		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		providerId: OPENAI_PROVIDER_ID,
-		status: isCompleted ? "completed" : "failed",
+		status: terminal,
 		model: typeof data?.model === "string" ? data.model : job.model,
 		seconds: toPositiveNumber(data?.seconds ?? data?.duration_seconds ?? data?.duration),
 		requestOptions: buildVideoPricingRequestOptions({
@@ -329,11 +372,14 @@ export async function processOpenAiVideoWebhook(args: {
 			lastWebhookAt: new Date().toISOString(),
 		},
 	});
-	dispatchVideoWebhookEventInBackground({
-		workspaceId: job.workspaceId,
-		videoId: job.videoId,
-		eventType: isCompleted ? "video.completed" : "video.failed",
-	});
+	const finalizedEventType = videoWebhookEventForTerminalStatus(finalized.status);
+	if (finalizedEventType) {
+		dispatchVideoWebhookEventInBackground({
+			workspaceId: job.workspaceId,
+			videoId: job.videoId,
+			eventType: finalizedEventType,
+		});
+	}
 
 	await markProviderEventProcessed({
 		provider: OPENAI_PROVIDER_ID,
@@ -372,7 +418,7 @@ export async function processAlibabaVideoWebhook(args: {
 	}
 
 	const requestOptions = extractAlibabaOptions(payload);
-	await finalizeVideoJob({
+	const finalized = await finalizeVideoJob({
 		workspaceId: job.workspaceId,
 		videoId: job.videoId,
 		providerId: ALIBABA_PROVIDER_ID,
@@ -389,11 +435,14 @@ export async function processAlibabaVideoWebhook(args: {
 			lastWebhookAt: new Date().toISOString(),
 		},
 	});
-	dispatchVideoWebhookEventInBackground({
-		workspaceId: job.workspaceId,
-		videoId: job.videoId,
-		eventType: terminal === "completed" ? "video.completed" : "video.failed",
-	});
+	const finalizedEventType = videoWebhookEventForTerminalStatus(finalized.status);
+	if (finalizedEventType) {
+		dispatchVideoWebhookEventInBackground({
+			workspaceId: job.workspaceId,
+			videoId: job.videoId,
+			eventType: finalizedEventType,
+		});
+	}
 
 	await markProviderEventProcessed({
 		provider: ALIBABA_PROVIDER_ID,

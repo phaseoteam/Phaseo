@@ -5,6 +5,7 @@
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { ResponsesRequest } from "@core/schemas";
 import { ResponsesSchema } from "@core/schemas";
+import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
@@ -24,15 +25,13 @@ function createBill(res: Response) {
 
 function normalizeUsage(usage: any) {
     if (!usage || typeof usage !== "object") return usage;
-    const inputTokens = typeof usage.input_tokens === "number" ? usage.input_tokens : undefined;
-    const outputTokens = typeof usage.output_tokens === "number" ? usage.output_tokens : undefined;
-    const totalTokens = typeof usage.total_tokens === "number" ? usage.total_tokens : undefined;
+    const tokens = resolveCanonicalTokenUsage(usage);
 
     return {
         ...usage,
-        input_tokens: inputTokens ?? 0,
-        output_tokens: outputTokens ?? 0,
-        total_tokens: totalTokens ?? (inputTokens ?? 0) + (outputTokens ?? 0),
+        input_tokens: tokens.inputTokens,
+        output_tokens: tokens.outputTokens,
+        total_tokens: tokens.totalTokens,
     };
 }
 

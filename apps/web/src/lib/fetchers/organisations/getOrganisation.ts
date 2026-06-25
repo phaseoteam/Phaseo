@@ -4,7 +4,7 @@ import {
     ModelCard,
     mapRawToModelCard,
 } from "@/lib/fetchers/models/getAllModels";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 
 const DEFAULT_LATEST_MODELS_LIMIT = 8;
@@ -43,7 +43,7 @@ export async function getOrganisationData(
         ? Math.max(1, Math.floor(latestModelsLimit))
         : DEFAULT_LATEST_MODELS_LIMIT;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Fetch organisation and links in one query via joins
     const { data: orgs, error: orgError } = await supabase
@@ -130,6 +130,10 @@ export async function getOrganisationDataCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:organisations");
+    cacheTag("frontend:organisation-header");
+    cacheTag("frontend:organisation-models");
     cacheTag("data:organisations");
     cacheTag(`data:organisations:${organisationId}`);
     cacheTag(`organisation:header:${organisationId}`);
@@ -147,7 +151,7 @@ export async function getOrganisationModels(
         throw new Error('getOrganisationModels: organisationId must be a non-empty string');
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Fetch organisation metadata (name and colour) so we can include it on each model card
     const { data: orgData, error: orgError } = await supabase
@@ -200,6 +204,8 @@ export async function getOrganisationModelsCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:organisation-models");
     cacheTag("data:organisations");
     cacheTag(`data:organisations:${organisationId}`);
     cacheTag(`organisation:header:${organisationId}`);

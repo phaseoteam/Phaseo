@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from qwen3-max",
       "source_link": "https://nousresearch.com/wp-content/uploads/2025/08/Hermes_4_Technical_Report.pdf",
-      "rank": 155
+      "rank": 156
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from qwen3-max",
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "supergpqa",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from qwen3-max",
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 49
+      "rank": 53
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -126,7 +126,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.285; games 286; avg points 0.516",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 21
+      "rank": 20
     },
     {
       "benchmark_id": "nyt-connections",
@@ -134,7 +134,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 70
+      "rank": 69
     }
   ]
 }

@@ -1,3 +1,5 @@
+export {};
+
 function percentile(values: number[], p: number): number {
         const sorted = values.slice().sort((a, b) => a - b);
         const index = Math.ceil((p / 100) * sorted.length) - 1;

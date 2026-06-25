@@ -15,6 +15,7 @@ describe("resolveCapabilityFromEndpoint", () => {
 
 	it("maps canonical path aliases", () => {
 		expect(resolveCapabilityFromEndpoint("/videos")).toBe("video.generation");
+		expect(resolveCapabilityFromEndpoint("/completions")).toBe("text.generate");
 		expect(resolveCapabilityFromEndpoint("/video/generations")).toBe("video.generation");
 		expect(resolveCapabilityFromEndpoint("/music/generate")).toBe("music.generate");
 		expect(resolveCapabilityFromEndpoint("/music/generations")).toBe("music.generate");

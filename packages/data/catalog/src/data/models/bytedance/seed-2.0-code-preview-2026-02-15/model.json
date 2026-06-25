@@ -1,0 +1,24 @@
+{
+  "model_id": "bytedance/seed-2.0-code-preview-2026-02-15",
+  "organisation_id": "bytedance",
+  "name": "Seed 2.0 Code Preview (2026-02-15)",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Seed 2.0 Code Preview (2026-02-15) is a ByteDance Seed 2.0 variant focused on code generation and software engineering tasks.",
+  "announced_date": null,
+  "release_date": "2026-02-15T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "bytedance/seed-2.0-code-preview-2026-02-15",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://seed.bytedance.com/en/blog/seed-2-0-official-launch"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

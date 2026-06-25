@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "blueprint-bench-2",
+  "benchmark_name": "Blueprint Bench 2",
+  "category": "reasoning",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

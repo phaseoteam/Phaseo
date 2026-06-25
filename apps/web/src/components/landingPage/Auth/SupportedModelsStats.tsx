@@ -1,7 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { getSupportedModelsStatsCached } from "@/lib/fetchers/landing/sign-in/getSupportedModelsStats";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import { fetchFrontendSignInSupportedModelsStats } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 function formatWithK(value: number) {
 	if (value >= 1000) {
@@ -20,13 +19,12 @@ export default async function SupportedModelsStats() {
 	let recentCount = 0;
 
 	try {
-		const includeHidden = await resolveIncludeHidden();
-		const stats = await getSupportedModelsStatsCached(includeHidden);
+		const stats = await fetchFrontendSignInSupportedModelsStats();
 		modelsCount = stats.modelsCount ?? 0;
 		orgsCount = stats.orgsCount ?? 0;
 		apiCount = stats.apiCount ?? 0;
 		recentCount = stats.recentCount ?? 0;
-	} catch (e) {
+	} catch {
 		// noop - fallback to defaults
 	}
 
@@ -39,7 +37,7 @@ export default async function SupportedModelsStats() {
 		{
 			label: "Organisations",
 			raw: orgsCount,
-			route: "/providers",
+			route: "/api-providers",
 		},
 		{
 			label: "API Models",

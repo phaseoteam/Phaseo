@@ -22,7 +22,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 3
+      "rank": 6
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -30,7 +30,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 20
+      "rank": 26
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -38,7 +38,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "terminal-bench-hard",
@@ -46,7 +46,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "scicode",
@@ -54,7 +54,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 17
+      "rank": 18
     },
     {
       "benchmark_id": "aa-lcr",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 3
+      "rank": 4
     },
     {
       "benchmark_id": "ifbench",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 9
+      "rank": 11
     },
     {
       "benchmark_id": "hle-verified",
@@ -94,7 +94,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis structured model metrics",
       "source_link": "https://artificialanalysis.ai/models/solar-pro-3",
-      "rank": 80
+      "rank": 86
     },
     {
       "benchmark_id": "critpt",

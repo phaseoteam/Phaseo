@@ -1,4 +1,5 @@
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
+import { fetchFrontendModelOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
 	ModelCreatorModelsSection,
 	ModelCreatorModelsSkeleton,
@@ -6,7 +7,7 @@ import ModelOverviewSections, {
 } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import type { Metadata } from "next";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import {
 	getModelPath,
 	getModelMetadataIdentity,
@@ -23,6 +24,7 @@ import {
 	type QuickstartRequestContext,
 	type QuickstartSearchParams,
 } from "@/components/(data)/model/quickstart/requestContext";
+import Script from "next/script";
 
 async function ModelOverviewSectionsContent({
 	modelId,
@@ -32,7 +34,7 @@ async function ModelOverviewSectionsContent({
 }: {
 	modelId: string;
 	includeHidden: boolean;
-	modelPromise: ReturnType<typeof getModelOverviewCached>;
+	modelPromise: Promise<ModelOverviewPage | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
 	const model = await modelPromise;
@@ -54,7 +56,7 @@ async function ModelCreatorModelsSectionContent({
 }: {
 	modelId: string;
 	includeHidden: boolean;
-	modelPromise: ReturnType<typeof getModelOverviewCached>;
+	modelPromise: Promise<ModelOverviewPage | null>;
 }) {
 	const model = await modelPromise;
 	if (!model) return null;
@@ -82,12 +84,12 @@ export async function generateMetadata(props: {
 	const imagePath = `/og/models/${modelId}`;
 
 	return buildMetadata({
-		title: `${modelName} - Benchmarks, Pricing & API Access`,
+		title: `${modelName} Pricing, Benchmarks, Latency & Providers`,
 		description: buildModelPageMetadataDescription({
 			modelDescription,
 			suffix:
-				"Browse benchmarks, providers, pricing, deployment options, and compatibility details on AI Stats.",
-			fallback: `Browse benchmarks, providers, pricing, deployment options, and compatibility details for ${modelName} on AI Stats.`,
+				"Compare pricing, benchmarks, providers, latency signals, and compatibility details on AI Stats.",
+			fallback: `Compare pricing, benchmarks, providers, latency signals, and compatibility details for ${modelName} on AI Stats.`,
 		}),
 		path,
 		keywords: [
@@ -131,25 +133,87 @@ export default async function Page({
 			</ModelDetailShell>
 		);
 	}
-	const modelPromise = getModelOverviewCached(modelId, includeHidden);
+	const modelPromise = fetchFrontendModelOverview(modelId);
+	const modelOverview = await modelPromise;
+	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
+	const organisationName =
+		modelOverview?.organisation?.name ?? routeParams.organisationId;
+	const datasetSchema = {
+		"@context": "https://schema.org",
+		"@type": "Dataset",
+		name: `${organisationName} ${modelName}`.trim(),
+		description: `AI Stats profile for ${modelName} with pricing, benchmarks, providers, latency signals, and gateway compatibility details.`,
+		url: absoluteUrl(getModelPath(modelId)),
+		creator: {
+			"@type": "Organization",
+			name: organisationName,
+		},
+		keywords: [
+			modelName,
+			`${modelName} pricing`,
+			`${modelName} benchmarks`,
+			`${modelName} providers`,
+		],
+		dateModified:
+			modelOverview?.updated_at ??
+			modelOverview?.release_date ??
+			modelOverview?.announcement_date ??
+			undefined,
+	};
+	const breadcrumbSchema = {
+		"@context": "https://schema.org",
+		"@type": "BreadcrumbList",
+		itemListElement: [
+			{
+				"@type": "ListItem",
+				position: 1,
+				name: "Home",
+				item: absoluteUrl("/"),
+			},
+			{
+				"@type": "ListItem",
+				position: 2,
+				name: "Models",
+				item: absoluteUrl("/models"),
+			},
+			{
+				"@type": "ListItem",
+				position: 3,
+				name: modelName,
+				item: absoluteUrl(getModelPath(modelId)),
+			},
+		],
+	};
 
 	return (
-		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
-			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
-				<ModelOverviewSectionsContent
-					modelId={modelId}
-					includeHidden={includeHidden}
-					modelPromise={modelPromise}
-					quickstartRequestContext={quickstartRequestContext}
-				/>
-			</Suspense>
-			<Suspense fallback={<ModelCreatorModelsSkeleton />}>
-				<ModelCreatorModelsSectionContent
-					modelId={modelId}
-					includeHidden={includeHidden}
-					modelPromise={modelPromise}
-				/>
-			</Suspense>
-		</ModelDetailShell>
+		<>
+			<Script
+				id="model-dataset-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }}
+			/>
+			<Script
+				id="model-breadcrumb-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+			/>
+			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
+				<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
+					<ModelOverviewSectionsContent
+						modelId={modelId}
+						includeHidden={includeHidden}
+						modelPromise={modelPromise}
+						quickstartRequestContext={quickstartRequestContext}
+					/>
+				</Suspense>
+				<Suspense fallback={<ModelCreatorModelsSkeleton />}>
+					<ModelCreatorModelsSectionContent
+						modelId={modelId}
+						includeHidden={includeHidden}
+						modelPromise={modelPromise}
+					/>
+				</Suspense>
+			</ModelDetailShell>
+		</>
 	);
 }

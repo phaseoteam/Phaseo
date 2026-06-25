@@ -1,7 +1,14 @@
 import { join, basename } from "path";
 import { DIR_PRICING } from "../paths";
 import { listDirs, readJsonWithHash, chunk } from "../util";
-import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
+import {
+    client,
+    isDryRun,
+    logWrite,
+    assertOk,
+    pruneRowsByColumn,
+    touchModelTimestamps,
+} from "../supa";
 import { createHash } from "crypto";
 import { ChangeTracker } from "../state";
 
@@ -27,6 +34,138 @@ function normalizeTimestamp(value: unknown): string | null {
         return new Date(excelEpochMs + value * 86_400_000).toISOString();
     }
     return String(value);
+}
+
+function normalizeModelIdForMatch(value: string): string {
+    let normalized = value.trim().toLowerCase();
+    if (!normalized) return normalized;
+    normalized = normalized.replace(/-\d{4}-\d{2}-\d{2}$/, "");
+    normalized = normalized.replace(/qwen3(?=[^0-9]|$)/g, "qwen-3");
+    normalized = normalized.replace(/qwen2\.5(?=[^0-9]|$)/g, "qwen-2-5");
+    normalized = normalized.replace(/(\d)\.(\d)/g, "$1-$2");
+    normalized = normalized.replace(/[._]/g, "-");
+    normalized = normalized.replace(/-+/g, "-");
+    return normalized;
+}
+
+function parseDateSuffix(value: string): number | null {
+    const match = value.match(/-(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const ts = Date.parse(`${match[1]}-${match[2]}-${match[3]}T00:00:00Z`);
+    return Number.isFinite(ts) ? ts : null;
+}
+
+function choosePreferredModelId(modelIds: string[]): string | null {
+    if (!modelIds.length) return null;
+    if (modelIds.length === 1) return modelIds[0];
+    const sorted = [...modelIds].sort((a, b) => {
+        const aDate = parseDateSuffix(a);
+        const bDate = parseDateSuffix(b);
+        if (aDate !== null || bDate !== null) {
+            if (aDate === null) return 1;
+            if (bDate === null) return -1;
+            if (aDate !== bDate) return bDate - aDate;
+        }
+        return a.localeCompare(b);
+    });
+    return sorted[0] ?? null;
+}
+
+async function loadKnownModelIds(
+    supa: ReturnType<typeof client>
+): Promise<{
+    modelIds: Set<string>;
+    apiToModelId: Map<string, string>;
+    normalizedModelIdToModelId: Map<string, string>;
+}> {
+    const modelIds = new Set<string>();
+    const apiToModelId = new Map<string, string>();
+    const normalizedModelIdCandidates = new Map<string, string[]>();
+    const pageSize = 1000;
+
+    const probe = await supa.from("data_models").select("api_model_id").limit(1);
+    let hasApiModelIdColumn = true;
+    if (probe.error) {
+        const code = String((probe.error as any)?.code ?? "");
+        const message = String(probe.error?.message ?? "");
+        const missingColumn =
+            code === "42703" || /column .*api_model_id/i.test(message);
+        if (!missingColumn) {
+            throw new Error(
+                `probe data_models.api_model_id failed: ${message}${
+                    code ? ` | code=${code}` : ""
+                }`
+            );
+        }
+        hasApiModelIdColumn = false;
+    }
+
+    for (let offset = 0; ; offset += pageSize) {
+        const res = hasApiModelIdColumn
+            ? await supa
+                  .from("data_models")
+                  .select("model_id,api_model_id")
+                  .range(offset, offset + pageSize - 1)
+            : await supa
+                  .from("data_models")
+                  .select("model_id")
+                  .range(offset, offset + pageSize - 1);
+        const rows = assertOk(
+            res,
+            "select data_models (model_id,api_model_id)"
+        ) as Array<{
+            model_id?: string | null;
+            api_model_id?: string | null;
+        }>;
+
+        for (const row of rows) {
+            if (typeof row?.model_id === "string" && row.model_id) {
+                modelIds.add(row.model_id);
+                const normalized = normalizeModelIdForMatch(row.model_id);
+                if (normalized) {
+                    const list = normalizedModelIdCandidates.get(normalized) ?? [];
+                    if (!list.includes(row.model_id)) list.push(row.model_id);
+                    normalizedModelIdCandidates.set(normalized, list);
+                }
+                if (typeof row?.api_model_id === "string" && row.api_model_id) {
+                    if (!apiToModelId.has(row.api_model_id)) {
+                        apiToModelId.set(row.api_model_id, row.model_id);
+                    }
+                }
+            }
+        }
+
+        if (rows.length < pageSize) break;
+    }
+
+    const normalizedModelIdToModelId = new Map<string, string>();
+    for (const [normalized, modelIdCandidates] of normalizedModelIdCandidates.entries()) {
+        const preferred = choosePreferredModelId(modelIdCandidates);
+        if (preferred) normalizedModelIdToModelId.set(normalized, preferred);
+    }
+
+    return { modelIds, apiToModelId, normalizedModelIdToModelId };
+}
+
+function resolveTouchedModelId(
+    rawModelId: string,
+    lookups: {
+        modelIds: Set<string>;
+        apiToModelId: Map<string, string>;
+        normalizedModelIdToModelId: Map<string, string>;
+    }
+): string | null {
+    const normalizedValue = rawModelId.trim();
+    if (!normalizedValue) return null;
+
+    return (
+        (lookups.modelIds.has(normalizedValue) ? normalizedValue : "") ||
+        lookups.apiToModelId.get(normalizedValue) ||
+        lookups.normalizedModelIdToModelId.get(
+            normalizeModelIdForMatch(normalizedValue)
+        ) ||
+        null
+    );
 }
 
 function deepSortObjectKeys(x: any): any {
@@ -116,6 +255,8 @@ export async function loadPricing(
     { modelId, forceFull = false }: { modelId: string | null; forceFull?: boolean }
 ) {
     const supa = client();
+    const knownModelIds = await loadKnownModelIds(supa);
+    const touchedModelIds = new Set<string>();
     if (!modelId) tracker.touchPrefix(DIR_PRICING);
     const pricingRuleKeys = new Set<string>();
     let hasChanges = false;
@@ -153,6 +294,15 @@ export async function loadPricing(
                     model_id: modelIdFromFile,
                     model_key: computedKey,
                 });
+                if (change.status !== "unchanged") {
+                    const resolvedModelId = resolveTouchedModelId(
+                        modelIdFromFile,
+                        knownModelIds
+                    );
+                    if (resolvedModelId) {
+                        touchedModelIds.add(resolvedModelId);
+                    }
+                }
 
                 const capabilityKey = `${api_provider_id}::${capability_id}`;
                 const capabilityState: CapabilityState = capabilities.get(capabilityKey) ?? {
@@ -209,6 +359,16 @@ export async function loadPricing(
     }
 
     const deleted = modelId ? [] : tracker.getDeleted(DIR_PRICING);
+    for (const deletion of deleted) {
+        const deletedModelId =
+            typeof deletion.info.meta?.model_id === "string"
+                ? deletion.info.meta.model_id
+                : "";
+        const resolvedModelId = resolveTouchedModelId(deletedModelId, knownModelIds);
+        if (resolvedModelId) {
+            touchedModelIds.add(resolvedModelId);
+        }
+    }
     if (deleted.length) hasChanges = true;
     const deletedByCapability = new Map<string, Array<{ model_key?: string }>>();
     for (const d of deleted) {
@@ -290,4 +450,6 @@ export async function loadPricing(
     console.log(
         `[pricing-import] Applied pricing updates. scanned_files=${scannedFiles} queued_model_keys=${queuedModelKeys} keep_model_keys=${pricingRuleKeys.size} full_mode=${forceFull ? "yes" : "no"} model_filter=${modelId ?? "none"}`
     );
+
+    await touchModelTimestamps(supa, touchedModelIds);
 }

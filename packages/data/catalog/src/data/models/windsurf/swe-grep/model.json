@@ -1,0 +1,24 @@
+{
+  "model_id": "windsurf/swe-grep",
+  "organisation_id": "windsurf",
+  "name": "SWE-grep",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "SWE-grep powers context retrieval and Fast Context in Windsurf.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "windsurf/swe-grep",
+  "links": [
+    {
+      "platform": "docs",
+      "url": "https://docs.windsurf.com/windsurf/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": []
+}

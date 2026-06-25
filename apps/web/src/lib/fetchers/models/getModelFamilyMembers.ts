@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import getModelOverviewHeader from "./getModelOverviewHeader";
-import getFamilyModels, { FamilyModelItem, getFamilyModelsCached } from "./getFamilyModels";
+import { FamilyModelItem, getFamilyModelsCached } from "./getFamilyModels";
 
 async function fetchFamilyMembers(
 	modelId: string,
@@ -31,7 +31,10 @@ export async function getModelFamilyMembersCached(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
 	cacheTag("data:models");
+	cacheTag("data:families");
+	cacheTag("frontend:families");
 
 	return fetchFamilyMembers(modelId, includeHidden);
 }

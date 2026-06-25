@@ -40,7 +40,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gpt-5.1-codex",
       "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
-      "rank": 33
+      "rank": 37
     },
     {
       "benchmark_id": "swe-lancer",
@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": "manual fallback alias from gpt-5.1-codex",
       "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
-      "rank": 30
+      "rank": 34
     }
   ]
 }

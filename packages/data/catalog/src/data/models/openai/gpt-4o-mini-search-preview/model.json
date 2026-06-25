@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-mini-2024-07-18",
       "source_link": "https://openai.com/blog/gpt-4o-mini-announcement",
-      "rank": 200
+      "rank": 201
     },
     {
       "benchmark_id": "humaneval",
@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-mini-2024-07-18",
       "source_link": "https://openai.com/blog/gpt-4o-mini-announcement",
-      "rank": 46
+      "rank": 47
     },
     {
       "benchmark_id": "mgsm",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-mini-2024-07-18",
       "source_link": "https://openai.com/blog/gpt-4o-mini-announcement",
-      "rank": 92
+      "rank": 93
     },
     {
       "benchmark_id": "swe-bench",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-mini-2024-07-18",
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 134
+      "rank": 137
     }
   ]
 }

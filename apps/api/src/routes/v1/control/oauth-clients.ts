@@ -21,14 +21,36 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
 import { z } from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { CAPABILITIES, normalizeScopeList } from "@/lib/authz/capabilities";
+import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { createOpaqueCode, hashOAuthSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 5000;
+const DEFAULT_THIRD_PARTY_ALLOWED_SCOPES = [
+	"openid",
+	"profile",
+	"email",
+	CAPABILITIES.ME_READ,
+	CAPABILITIES.WORKSPACES_READ,
+	CAPABILITIES.MODELS_READ,
+	CAPABILITIES.PROVIDERS_READ,
+	CAPABILITIES.PRICING_READ,
+] as const;
 
-function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): { workspaceId: string | null; userId: string | null } {
+function readAuthContext(ctx: Env["Variables"]["ctx"] | undefined): {
+	workspaceId: string | null;
+	userId: string | null;
+	authMethod: "api_key" | "oauth" | null;
+	scopes: string[];
+} {
+	const authMethod = ctx?.authMethod;
+	const scopes = ctx?.scopes;
 	return {
 		workspaceId: typeof ctx?.workspaceId === "string" ? ctx.workspaceId : null,
 		userId: typeof ctx?.userId === "string" ? ctx.userId : null,
+		authMethod: authMethod === "api_key" || authMethod === "oauth" ? authMethod : null,
+		scopes: Array.isArray(scopes) ? scopes.filter((scope): scope is string => typeof scope === "string") : [],
 	};
 }
 
@@ -46,6 +68,8 @@ app.use("*", async (c, next) => {
 			apiKeyRef: auth.value.apiKeyRef,
 			apiKeyKid: auth.value.apiKeyKid,
 			internal: auth.value.internal,
+			authMethod: auth.value.authMethod ?? null,
+			scopes: auth.value.scopes ?? auth.value.oauthScopes ?? [],
 		});
 		return await next();
 	} finally {
@@ -56,6 +80,8 @@ app.use("*", async (c, next) => {
 // Validation schemas
 const createOAuthClientSchema = z.object({
 	name: z.string().min(3).max(100),
+	client_type: z.enum(["public", "confidential"]).default("confidential"),
+	allowed_scopes: z.array(z.string().trim().min(1)).optional(),
 	description: z.string().optional(),
 	homepage_url: z.string().url().optional(),
 	redirect_uris: z.array(z.string().url()).min(1),
@@ -66,6 +92,7 @@ const createOAuthClientSchema = z.object({
 
 const updateOAuthClientSchema = z.object({
 	name: z.string().min(3).max(100).optional(),
+	allowed_scopes: z.array(z.string().trim().min(1)).optional(),
 	description: z.string().optional(),
 	homepage_url: z.string().url().optional(),
 	logo_url: z.string().url().optional(),
@@ -198,6 +225,48 @@ async function resolveCreatorUserId(workspaceId: string): Promise<string> {
 	return ownerUserId;
 }
 
+function resolveAllowedScopes(
+	input: unknown,
+	defaultScopes: readonly string[] = DEFAULT_THIRD_PARTY_ALLOWED_SCOPES,
+) {
+	return normalizeScopeList(input, {
+		allowIdentityScopes: true,
+		defaultScopes,
+	});
+}
+
+function serializeOAuthClientRecord(
+	record: Record<string, unknown>,
+	options: { clientSecret?: string | null } = {},
+) {
+	const {
+		client_secret_hash: _clientSecretHash,
+		...rest
+	} = record;
+	return {
+		...rest,
+		...(options.clientSecret !== undefined
+			? { client_secret: options.clientSecret }
+			: {}),
+	};
+}
+
+function thirdPartyOAuthComingSoon() {
+	return new Response(
+		JSON.stringify({
+			error: "third_party_oauth_disabled",
+			message: "OAuth client management is coming soon. The AI Stats CLI is available during the private OAuth beta.",
+		}),
+		{
+			status: 403,
+			headers: {
+				"Content-Type": "application/json",
+				"Cache-Control": "no-store",
+			},
+		},
+	);
+}
+
 /**
  * POST /v1/oauth-clients
  *
@@ -210,6 +279,11 @@ app.post("/", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_WRITE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		// Parse and validate input
 		const body = await c.req.json();
@@ -227,6 +301,11 @@ app.post("/", async (c) => {
 
 		const input = parsed.data;
 		const createdBy = authCtx.userId ?? await resolveCreatorUserId(authCtx.workspaceId);
+		const clientType = input.client_type;
+		const allowedScopes = resolveAllowedScopes(input.allowed_scopes);
+		if (allowedScopes.ok === false) {
+			return c.json({ error: allowedScopes.message }, 400);
+		}
 
 		// Create OAuth client using Supabase Admin SDK
 		const supabase = getSupabaseAdmin();
@@ -244,6 +323,11 @@ app.post("/", async (c) => {
 			);
 		}
 
+		const clientSecretHash =
+			typeof oauthClient.client_secret === "string" && oauthClient.client_secret.trim().length > 0
+				? await hashOAuthSecret(oauthClient.client_secret)
+				: null;
+
 		// Store metadata in database
 		const { data: metadata, error: metadataError } = await supabase
 			.from("oauth_app_metadata")
@@ -257,6 +341,9 @@ app.post("/", async (c) => {
 				logo_url: input.logo_url,
 				privacy_policy_url: input.privacy_policy_url,
 				terms_of_service_url: input.terms_of_service_url,
+				client_type: clientType,
+				allowed_scopes: allowedScopes.value,
+				client_secret_hash: clientType === "confidential" ? clientSecretHash : null,
 				created_by: createdBy,
 				status: "active",
 			})
@@ -274,11 +361,13 @@ app.post("/", async (c) => {
 		}
 
 		return c.json(
-			{
-				...metadata,
-				client_secret: oauthClient.client_secret, // Only returned on creation!
-				redirect_uris: input.redirect_uris,
-			},
+			serializeOAuthClientRecord(
+				metadata as Record<string, unknown>,
+				{
+					clientSecret:
+						clientType === "confidential" ? oauthClient.client_secret : null,
+				},
+			),
 			201
 		);
 	} catch (error: any) {
@@ -298,6 +387,11 @@ app.get("/", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_READ);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		// Fetch OAuth apps for workspace and attach derived stats
 		const supabase = getSupabaseAdmin();
@@ -315,7 +409,9 @@ app.get("/", async (c) => {
 		const apps = await attachOAuthAppStats(supabase, appMetadataRows ?? []);
 
 		return c.json({
-			data: apps || [],
+			data: (apps || []).map((entry) =>
+				serializeOAuthClientRecord(entry as Record<string, unknown>),
+			),
 			pagination: {
 				total: apps?.length || 0,
 				page: 1,
@@ -339,6 +435,11 @@ app.get("/:clientId", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_READ);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -359,7 +460,7 @@ app.get("/:clientId", async (c) => {
 		const withStats = await attachOAuthAppStats(supabase, [appMetadata]);
 		const app = withStats[0];
 
-		return c.json(app);
+		return c.json(serializeOAuthClientRecord(app as Record<string, unknown>));
 	} catch (error: any) {
 		console.error("Error fetching OAuth client:", error);
 		return c.json({ error: "Internal server error" }, 500);
@@ -377,6 +478,11 @@ app.patch("/:clientId", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_WRITE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -397,6 +503,28 @@ app.patch("/:clientId", async (c) => {
 		const supabase = getSupabaseAdmin();
 		const updates = parsed.data;
 		const oauthAdmin = (supabase.auth.admin as any).oauth;
+		const allowedScopes =
+			updates.allowed_scopes === undefined
+				? { ok: true as const, value: undefined }
+				: resolveAllowedScopes(updates.allowed_scopes, []);
+		if (allowedScopes.ok === false) {
+			return c.json({ error: allowedScopes.message }, 400);
+		}
+
+		const { data: existingApp, error: fetchError } = await supabase
+			.from("oauth_app_metadata")
+			.select("client_id")
+			.eq("client_id", clientId)
+			.eq("workspace_id", authCtx.workspaceId)
+			.maybeSingle();
+
+		if (fetchError) {
+			console.error("Error loading OAuth metadata:", fetchError);
+			return c.json({ error: "Failed to update OAuth app" }, 500);
+		}
+		if (!existingApp) {
+			return c.json({ error: "OAuth app not found" }, 404);
+		}
 
 		// If updating redirect URIs, update in Supabase OAuth client
 		if (updates.redirect_uris) {
@@ -411,18 +539,23 @@ app.patch("/:clientId", async (c) => {
 		}
 
 		// Update metadata in database
+		const metadataUpdates: Record<string, unknown> = {
+			name: updates.name,
+			description: updates.description,
+			homepage_url: updates.homepage_url,
+			logo_url: updates.logo_url,
+			privacy_policy_url: updates.privacy_policy_url,
+			terms_of_service_url: updates.terms_of_service_url,
+			redirect_uris: updates.redirect_uris,
+			updated_at: new Date().toISOString(),
+		};
+		if (allowedScopes.value !== undefined) {
+			metadataUpdates.allowed_scopes = allowedScopes.value;
+		}
+
 		const { data: updated, error: metadataError } = await supabase
 			.from("oauth_app_metadata")
-			.update({
-				name: updates.name,
-				description: updates.description,
-				homepage_url: updates.homepage_url,
-				logo_url: updates.logo_url,
-				privacy_policy_url: updates.privacy_policy_url,
-				terms_of_service_url: updates.terms_of_service_url,
-				redirect_uris: updates.redirect_uris,
-				updated_at: new Date().toISOString(),
-			})
+			.update(metadataUpdates)
 			.eq("client_id", clientId)
 			.eq("workspace_id", authCtx.workspaceId)
 			.select()
@@ -433,10 +566,7 @@ app.patch("/:clientId", async (c) => {
 			return c.json({ error: "Failed to update OAuth app" }, 500);
 		}
 
-		return c.json({
-			...updated,
-			redirect_uris: updates.redirect_uris,
-		});
+		return c.json(serializeOAuthClientRecord(updated as Record<string, unknown>));
 	} catch (error: any) {
 		console.error("Error updating OAuth client:", error);
 		return c.json({ error: "Internal server error" }, 500);
@@ -454,6 +584,11 @@ app.delete("/:clientId", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_DELETE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -512,6 +647,11 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		if (!authCtx.workspaceId) {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
+		const scopeError = requireCapability(authCtx, CAPABILITIES.OAUTH_CLIENTS_WRITE);
+		if (scopeError) return scopeError;
+		const roleError = await requireOAuthWorkspaceRole(authCtx, authCtx.workspaceId, ["owner", "admin"]);
+		if (roleError) return roleError;
+		if (!isThirdPartyOAuthEnabled()) return thirdPartyOAuthComingSoon();
 
 		const clientId = c.req.param("clientId");
 
@@ -520,7 +660,7 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		// Verify ownership
 		const { data: app, error: fetchError } = await supabase
 			.from("oauth_app_metadata")
-			.select("client_id")
+			.select("client_id, client_type")
 			.eq("client_id", clientId)
 			.eq("workspace_id", authCtx.workspaceId)
 			.single();
@@ -528,19 +668,29 @@ app.post("/:clientId/regenerate-secret", async (c) => {
 		if (fetchError || !app) {
 			return c.json({ error: "OAuth app not found" }, 404);
 		}
+		if (String((app as any).client_type ?? "confidential") !== "confidential") {
+			return c.json({ error: "Public OAuth apps do not use client secrets" }, 400);
+		}
 
-		// Regenerate secret via Supabase Admin SDK
-		const oauthAdmin = (supabase.auth.admin as any).oauth;
-		const { data: newSecret, error: secretError } = await oauthAdmin.regenerateSecret(clientId);
+		const nextSecret = createOpaqueCode();
+		const nextSecretHash = await hashOAuthSecret(nextSecret);
+		const { error: secretError } = await supabase
+			.from("oauth_app_metadata")
+			.update({
+				client_secret_hash: nextSecretHash,
+				updated_at: new Date().toISOString(),
+			})
+			.eq("client_id", clientId)
+			.eq("workspace_id", authCtx.workspaceId);
 
-		if (secretError || !newSecret) {
+		if (secretError) {
 			console.error("Error regenerating OAuth secret:", secretError);
 			return c.json({ error: "Failed to regenerate secret" }, 500);
 		}
 
 		return c.json({
 			client_id: clientId,
-			client_secret: newSecret.client_secret, // Only returned once!
+			client_secret: nextSecret, // Only returned once!
 			message: "Client secret regenerated successfully",
 		});
 	} catch (error: any) {

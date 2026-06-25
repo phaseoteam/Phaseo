@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 32
+      "rank": 33
     },
     {
       "benchmark_id": "livebench",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 6
+      "rank": 11
     },
     {
       "benchmark_id": "livecodebench",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "multilf",

@@ -23,7 +23,10 @@ function buildServerToolUsePayload(
 		| {
 			datetime_requests?: number;
 			web_search_requests?: number;
+			web_search_results?: number;
+			web_search_extra_results?: number;
 			web_fetch_requests?: number;
+			advisor_requests?: number;
 			apply_patch_requests?: number;
 			image_generation_requests?: number;
 			fusion_requests?: number;
@@ -39,8 +42,17 @@ function buildServerToolUsePayload(
 		...(typeof serverToolUse.web_search_requests === "number"
 			? { web_search_requests: serverToolUse.web_search_requests }
 			: {}),
+		...(typeof serverToolUse.web_search_results === "number"
+			? { web_search_results: serverToolUse.web_search_results }
+			: {}),
+		...(typeof serverToolUse.web_search_extra_results === "number"
+			? { web_search_extra_results: serverToolUse.web_search_extra_results }
+			: {}),
 		...(typeof serverToolUse.web_fetch_requests === "number"
 			? { web_fetch_requests: serverToolUse.web_fetch_requests }
+			: {}),
+		...(typeof serverToolUse.advisor_requests === "number"
+			? { advisor_requests: serverToolUse.advisor_requests }
 			: {}),
 		...(typeof serverToolUse.apply_patch_requests === "number"
 			? { apply_patch_requests: serverToolUse.apply_patch_requests }
@@ -77,6 +89,7 @@ export async function enrichSuccessPayload(ctx: PipelineContext, result: Request
     if (ctx.endpoint === "responses") {
         const fullPayload = buildResponsesPayload(ctx, result);
         fullPayload.provider = result.provider;
+        fullPayload.provider_id = result.provider;
         fullPayload.meta = {
             ...fullPayload.meta,
         };
@@ -267,6 +280,15 @@ function encodeResponsesUsage(usage: IRUsage) {
 		output_tokens: usage.outputTokens,
 		total_tokens: usage.totalTokens,
 	};
+	if (typeof usage._ext?.cachedWriteTokens === "number") {
+		out.cached_write_text_tokens = usage._ext.cachedWriteTokens;
+	}
+	if (typeof usage._ext?.cachedWriteTokens5m === "number") {
+		out.cached_write_text_tokens_5m = usage._ext.cachedWriteTokens5m;
+	}
+	if (typeof usage._ext?.cachedWriteTokens1h === "number") {
+		out.cached_write_text_tokens_1h = usage._ext.cachedWriteTokens1h;
+	}
 	const serverToolUse = buildServerToolUsePayload(usage._ext?.serverToolUse);
 	if (serverToolUse) out.server_tool_use = serverToolUse;
 	if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
@@ -605,6 +627,8 @@ function buildChatCompletionsPayload(
         object: "chat.completion",
         created,
         model: payload?.model ?? ctx.model,
+        provider: payload?.provider ?? result.provider,
+        provider_id: payload?.provider_id ?? payload?.provider ?? result.provider,
         choices,
         ...(usage ? { usage } : {}),
     };
@@ -735,6 +759,8 @@ function encodeChatUsage(usage: IRUsage) {
         cached_read_tokens_are_subset_of_input: usage.cachedReadTokensAreSubsetOfInput,
         reasoning_tokens: usage.reasoningTokens,
         cached_write_text_tokens: usage._ext?.cachedWriteTokens,
+        cached_write_text_tokens_5m: usage._ext?.cachedWriteTokens5m,
+        cached_write_text_tokens_1h: usage._ext?.cachedWriteTokens1h,
         server_tool_use: buildServerToolUsePayload(usage._ext?.serverToolUse),
     };
 }
@@ -886,7 +912,6 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
 
 
 

@@ -5,17 +5,20 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { guardAuth, type GuardErr } from "@pipeline/before/guards";
+import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { fetchGatewayContext } from "@pipeline/before/context";
 import { json, withRuntime, cacheHeaders } from "@/routes/utils";
+import { requireCapability } from "./route-helpers";
 import {
     fetchCatalogue,
     type CatalogueModel,
     type PricingMeterSummary,
     type PricingSummary,
+    type SupportedParamDetail,
+    type SupportedParamDetails,
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 
-type ModelVisibilityScope = "shared" | "team";
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
 
@@ -212,8 +215,14 @@ function toCompatibilityPricing(pricing: PricingSummary): CompatibilityPricing {
         image: meterToUnitPrice(
             meters.output_image ?? meters.input_image ?? meters.input_image_tokens ?? meters.output_image_tokens
         ),
-        input_cache_read: meterToUnitPrice(meters.cached_read_text_tokens),
-        input_cache_write: meterToUnitPrice(meters.cached_write_text_tokens),
+        input_cache_read: meterToUnitPrice(
+            meters.implicit_cached_input_text_tokens ?? meters.cached_read_text_tokens
+        ),
+        input_cache_write: meterToUnitPrice(
+            meters.cached_write_text_tokens ??
+                meters.cached_write_text_tokens_5m ??
+                meters.cached_write_text_tokens_1h
+        ),
         web_search: meterToUnitPrice(meters.web_search),
     };
 }
@@ -281,6 +290,62 @@ function buildFreeRouterPricingMeters(args: {
     return meters;
 }
 
+function cloneJsonObject<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value ?? {}));
+}
+
+function toRichModelProvider(provider: CatalogueModel["providers"][number]) {
+    return {
+        ...provider,
+        supported_parameters: [...provider.params],
+        supported_parameters_detail: cloneJsonObject(provider.params_detail ?? {}),
+    };
+}
+
+function mergeParamDetail(a: SupportedParamDetail, b: SupportedParamDetail): SupportedParamDetail {
+    const merged: SupportedParamDetail = { ...a, ...b };
+    const values = [
+        ...(Array.isArray(a.values) ? a.values : []),
+        ...(Array.isArray(b.values) ? b.values : []),
+    ];
+    if (values.length > 0) {
+        merged.values = Array.from(new Set(values.map((value) => JSON.stringify(value))))
+            .map((value) => JSON.parse(value))
+            .sort((left, right) => String(left).localeCompare(String(right)));
+    }
+    const providers = [
+        ...(Array.isArray(a.providers) ? a.providers : []),
+        ...(Array.isArray(b.providers) ? b.providers : []),
+    ].filter((provider): provider is string => typeof provider === "string" && provider.length > 0);
+    if (providers.length > 0) {
+        merged.providers = Array.from(new Set(providers)).sort((left, right) => left.localeCompare(right));
+    }
+    return merged;
+}
+
+function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
+    const out: SupportedParamDetails = {};
+    for (const item of items) {
+        if (!item) continue;
+        for (const [name, detail] of Object.entries(item)) {
+            out[name] = out[name] ? mergeParamDetail(out[name], detail) : { ...detail };
+        }
+    }
+    return out;
+}
+
+function detailsForParamNames(params: string[], providerId: string): SupportedParamDetails {
+    return Object.fromEntries(
+        params.map((param) => [
+            param,
+            {
+                supported: true,
+                providers: [providerId],
+            },
+        ])
+    );
+}
+
 async function buildFreeRouterCatalogueModel(args: {
     workspaceId: string;
     apiKeyId: string;
@@ -324,6 +389,10 @@ async function buildFreeRouterCatalogueModel(args: {
                         ...Object.keys(snapshot.capabilityParams ?? {}),
                     ])
                 ).sort(),
+                params_detail: mergeParamDetails(
+                    concreteProvider.params_detail,
+                    detailsForParamNames(Object.keys(snapshot.capabilityParams ?? {}), providerId)
+                ),
             });
         }
 
@@ -346,6 +415,10 @@ async function buildFreeRouterCatalogueModel(args: {
                 ...providers.flatMap((provider) => provider.params),
             ])
         ).sort();
+        const supportedParamsDetail = mergeParamDetails(
+            ...matchedConcreteModels.map((model) => model.supported_params_detail),
+            ...providers.map((provider) => provider.params_detail)
+        );
 
         return {
             model_id: FREE_ROUTER_MODEL_ID,
@@ -365,6 +438,7 @@ async function buildFreeRouterCatalogueModel(args: {
             output_types: outputTypes,
             providers,
             supported_params: supportedParams,
+            supported_params_detail: supportedParamsDetail,
             top_provider: providers[0]?.api_provider_id ?? null,
             pricing: {
                 pricing_plan: "standard",
@@ -389,7 +463,11 @@ async function buildFreeRouterCatalogueModel(args: {
 }
 
 function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
-    const { previous_model_id: _previousModelId, ...publicModel } = model;
+    const {
+        previous_model_id: _previousModelId,
+        supported_params_detail: _supportedParamsDetail,
+        ...publicModel
+    } = model;
     const legacyTopProvider = model.top_provider;
     const legacyPricing = model.pricing;
     const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
@@ -400,6 +478,7 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
         created: toUnixSeconds(model.release_date),
         description: buildDescription(model),
         architecture: toCompatibilityArchitecture(model),
+        providers: model.providers.map(toRichModelProvider),
         top_provider_id: legacyTopProvider,
         top_provider: toCompatibilityTopProvider(model),
         lifecycle: {
@@ -415,20 +494,22 @@ function toRichModel(model: CatalogueModel, replacementModelId: string | null) {
             ),
         },
         supported_parameters: [...model.supported_params],
+        supported_params_detail: cloneJsonObject(model.supported_params_detail ?? {}),
+        supported_parameters_detail: cloneJsonObject(model.supported_params_detail ?? {}),
         pricing_detail: legacyPricing,
         pricing: toCompatibilityPricing(legacyPricing),
         per_request_limits: null,
     };
 }
 
-export async function handleModels(req: Request, scope: ModelVisibilityScope) {
+export async function handleModels(req: Request) {
     const url = new URL(req.url);
     if (hasDeprecatedPrivacyScopeQuery(url)) {
         return json(
             {
                 ok: false,
                 error: "invalid_request",
-                message: "privacy_scope query is no longer supported. Use /gateway/models for shared or /gateway/models/me for team-scoped listings.",
+                message: "privacy_scope query is no longer supported. Use /models.",
             },
             400,
             { "Cache-Control": "no-store" }
@@ -453,6 +534,8 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
     if (!auth.ok) {
         return (auth as GuardErr).response;
     }
+    const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
+    if (scopeError) return scopeError;
 
     const requestedFormat = parseFeedFormat(url);
     if (requestedFormat.ok === false) {
@@ -468,7 +551,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
         );
     }
 
-    const cacheScope = scope === "team" ? `models:team:${auth.value.workspaceId}:v1` : "models:shared:v1";
+    const cacheScope = "models:shared:v1";
 
     const cacheOptions = {
         scope: cacheScope,
@@ -498,6 +581,10 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
         url.searchParams,
         "provider_availability_reason"
     );
+    const modelIds = [
+        ...parseMultiValue(url.searchParams, "model_id"),
+        ...parseMultiValue(url.searchParams, "id"),
+    ];
     const organisationIds = parseMultiValue(url.searchParams, "organisation");
     const inputTypes = parseMultiValue(url.searchParams, "input_types");
     const outputTypes = parseMultiValue(url.searchParams, "output_types");
@@ -514,6 +601,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
             { "Cache-Control": "no-store" }
         );
     }
+
     try {
         const catalogue = await fetchCatalogue({
             endpoints,
@@ -542,9 +630,11 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
                 ? [freeRouterModel, ...catalogue]
                 : catalogue;
         const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
-        const models = enrichedCatalogue.map((model) =>
-            toRichModel(model, replacementByPreviousModel.get(model.model_id) ?? null)
-        );
+        const models = enrichedCatalogue
+            .filter((model) => !modelIds.length || modelIds.includes(model.model_id))
+            .map((model) =>
+                toRichModel(model, replacementByPreviousModel.get(model.model_id) ?? null)
+            );
         const paged = models.slice(offset, offset + limit);
         const headers = cacheHeaders(cacheOptions);
         if (requestedFormat.format !== "json") {
@@ -566,7 +656,7 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
         return json(
             {
                 ok: true,
-                privacy_scope: scope,
+                privacy_scope: "shared",
                 availability_mode: availabilityMode,
                 limit,
                 offset,
@@ -585,8 +675,26 @@ export async function handleModels(req: Request, scope: ModelVisibilityScope) {
     }
 }
 
+export async function handleMyModels(req: Request) {
+    const auth = await guardAuth(req);
+    if (!auth.ok) {
+        return (auth as GuardErr).response;
+    }
+
+    return json(
+        {
+            status_code: 501,
+            error: "not_implemented",
+            description:
+                "GET /models/me is reserved for future guardrail-aware model filtering and is not implemented yet. Use /models for the shared gateway catalogue.",
+        },
+        501,
+        { "Cache-Control": "no-store" }
+    );
+}
+
 export const modelsRoutes = new Hono<Env>();
 
-modelsRoutes.get("/me", withRuntime((req) => handleModels(req, "team")));
-modelsRoutes.get("/", withRuntime((req) => handleModels(req, "shared")));
+modelsRoutes.get("/me", withRuntime((req) => handleMyModels(req)));
+modelsRoutes.get("/", withRuntime((req) => handleModels(req)));
 

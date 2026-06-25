@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { sendBillingDiscordWebhook } from "@/lib/automations/billingDiscord";
 import {
 	deriveFirstName,
 	sendCreditsPurchasedEvent,
@@ -115,70 +116,85 @@ async function resolveWalletForTopUpPaymentIntent(args: {
         ? "workspace_id,stripe_customer_id,balance_nanos"
         : "workspace_id,stripe_customer_id";
 
-    if (stripeCustomerId) {
-        const { data: byCustomerWalletRaw, error: byCustomerErr } = await supabase
+    async function resolveByWorkspaceId(workspaceId: string): Promise<WalletAttributionRow | null> {
+        const { data: byWorkspaceWalletRaw, error: byWorkspaceErr } = await supabase
             .from("wallets")
             .select(walletSelect as any)
-            .eq("stripe_customer_id", stripeCustomerId)
+            .eq("workspace_id", workspaceId)
             .maybeSingle();
-        if (byCustomerErr) throw byCustomerErr;
-        const byCustomerWallet = (byCustomerWalletRaw ?? null) as WalletAttributionRow | null;
-        if (byCustomerWallet?.workspace_id) {
-            return byCustomerWallet;
+        if (byWorkspaceErr) throw byWorkspaceErr;
+        const byWorkspaceWallet = (byWorkspaceWalletRaw ?? null) as WalletAttributionRow | null;
+        if (!byWorkspaceWallet?.workspace_id) return null;
+
+        if (!stripeCustomerId || byWorkspaceWallet.stripe_customer_id === stripeCustomerId) {
+            if (!stripeCustomerId) {
+                console.warn("[stripe-webhook] Resolved wallet without customer via metadata workspace_id fallback", {
+                    paymentIntentId,
+                    workspaceId: byWorkspaceWallet.workspace_id,
+                });
+            }
+            return byWorkspaceWallet;
+        }
+
+        const updateQuery = supabase
+            .from("wallets")
+            .update({ stripe_customer_id: stripeCustomerId })
+            .eq("workspace_id", byWorkspaceWallet.workspace_id);
+        if (byWorkspaceWallet.stripe_customer_id) {
+            updateQuery.eq("stripe_customer_id", byWorkspaceWallet.stripe_customer_id);
+        } else {
+            updateQuery.is("stripe_customer_id", null);
+        }
+
+        const { error: backfillErr } = await updateQuery;
+        if (backfillErr) {
+            console.warn("[stripe-webhook] Failed to refresh wallet stripe_customer_id from metadata fallback", {
+                paymentIntentId,
+                workspaceId: byWorkspaceWallet.workspace_id,
+                existingCustomerId: byWorkspaceWallet.stripe_customer_id,
+                newCustomerId: stripeCustomerId,
+                error: backfillErr.message,
+            });
+            return byWorkspaceWallet;
+        }
+
+        console.log("[stripe-webhook] Refreshed wallet stripe_customer_id from metadata fallback", {
+            paymentIntentId,
+            workspaceId: byWorkspaceWallet.workspace_id,
+            previousCustomerId: byWorkspaceWallet.stripe_customer_id,
+            newCustomerId: stripeCustomerId,
+        });
+        return { ...byWorkspaceWallet, stripe_customer_id: stripeCustomerId };
+    }
+
+    if (metadataTeamId) {
+        const byWorkspaceWallet = await resolveByWorkspaceId(metadataTeamId);
+        if (byWorkspaceWallet?.workspace_id) {
+            return byWorkspaceWallet;
         }
     }
 
-    if (!metadataTeamId) return null;
+    if (!stripeCustomerId) return null;
 
-    const { data: byTeamWalletRaw, error: byTeamErr } = await supabase
+    const { data: byCustomerWalletRaw, error: byCustomerErr } = await supabase
         .from("wallets")
         .select(walletSelect as any)
-        .eq("workspace_id", metadataTeamId)
+        .eq("stripe_customer_id", stripeCustomerId)
         .maybeSingle();
-    if (byTeamErr) throw byTeamErr;
-    const byTeamWallet = (byTeamWalletRaw ?? null) as WalletAttributionRow | null;
-    if (!byTeamWallet?.workspace_id) return null;
 
-    const resolvedWallet = byTeamWallet;
-    if (!stripeCustomerId || resolvedWallet.stripe_customer_id === stripeCustomerId) {
-        if (!stripeCustomerId) {
-            console.warn("[stripe-webhook] Resolved wallet without customer via metadata workspace_id fallback", {
+    if (byCustomerErr) {
+        if (byCustomerErr.code === "PGRST116") {
+            console.warn("[stripe-webhook] Multiple wallets share stripe_customer_id; workspace metadata required", {
                 paymentIntentId,
-                workspaceId: resolvedWallet.workspace_id,
+                stripeCustomerId,
+                workspaceId: metadataTeamId,
             });
+            return null;
         }
-        return resolvedWallet;
+        throw byCustomerErr;
     }
 
-    const updateQuery = supabase
-        .from("wallets")
-        .update({ stripe_customer_id: stripeCustomerId })
-        .eq("workspace_id", resolvedWallet.workspace_id);
-    if (resolvedWallet.stripe_customer_id) {
-        updateQuery.eq("stripe_customer_id", resolvedWallet.stripe_customer_id);
-    } else {
-        updateQuery.is("stripe_customer_id", null);
-    }
-
-    const { error: backfillErr } = await updateQuery;
-    if (backfillErr) {
-        console.warn("[stripe-webhook] Failed to refresh wallet stripe_customer_id from metadata fallback", {
-            paymentIntentId,
-            workspaceId: resolvedWallet.workspace_id,
-            existingCustomerId: resolvedWallet.stripe_customer_id,
-            newCustomerId: stripeCustomerId,
-            error: backfillErr.message,
-        });
-        return resolvedWallet;
-    }
-
-    console.log("[stripe-webhook] Refreshed wallet stripe_customer_id from metadata fallback", {
-        paymentIntentId,
-        workspaceId: resolvedWallet.workspace_id,
-        previousCustomerId: resolvedWallet.stripe_customer_id,
-        newCustomerId: stripeCustomerId,
-    });
-    return { ...resolvedWallet, stripe_customer_id: stripeCustomerId };
+    return (byCustomerWalletRaw ?? null) as WalletAttributionRow | null;
 }
 
 async function ensureReusablePaymentMethod(
@@ -492,7 +508,7 @@ export async function POST(req: Request) {
                 const tier = teamData?.tier ?? 'basic';
                 const feePct = 5.0;
 
-                console.log(`[stripe-webhook] Team ${wallet.workspace_id} tier: ${tier}, fee: ${feePct}%`);
+                console.log(`[stripe-webhook] Workspace ${wallet.workspace_id} tier: ${tier}, fee: ${feePct}%`);
 
                 if (paymentMethodId && stripeCustomerId) {
                     try {
@@ -540,21 +556,23 @@ export async function POST(req: Request) {
                 );
 
                 const customerIdentity = await resolveCustomerIdentity(stripe, stripeCustomerId);
+                const creditedAtIso = new Date().toISOString();
+                const checkoutSessionId = await resolveCheckoutSessionIdForPaymentIntent(stripe, pi.id);
+                const creditsPurchasedPayload = {
+                    workspaceId: wallet.workspace_id,
+                    paymentIntentId: pi.id,
+                    firstName: customerIdentity.firstName,
+                    checkoutSessionId,
+                    currency: String(pi.currency ?? "usd").toLowerCase(),
+                    amountNanos: netNanos,
+                    kind,
+                    creditedAtIso,
+                };
                 if (customerIdentity.email) {
-                    const checkoutSessionId = await resolveCheckoutSessionIdForPaymentIntent(stripe, pi.id);
                     try {
                         await sendCreditsPurchasedEvent({
                             email: customerIdentity.email,
-                            payload: {
-                                workspaceId: wallet.workspace_id,
-                                paymentIntentId: pi.id,
-                                firstName: customerIdentity.firstName,
-                                checkoutSessionId,
-                                currency: String(pi.currency ?? "usd").toLowerCase(),
-                                amountNanos: netNanos,
-                                kind,
-                                creditedAtIso: new Date().toISOString(),
-                            },
+                            payload: creditsPurchasedPayload,
                         });
                     } catch (error) {
                         console.error("[stripe-webhook] Failed sending credits.purchased event", {
@@ -564,6 +582,20 @@ export async function POST(req: Request) {
                             error: error instanceof Error ? error.message : String(error),
                         });
                     }
+                }
+                try {
+                    await sendBillingDiscordWebhook({
+                        event: "credits_purchased",
+                        email: customerIdentity.email,
+                        payload: creditsPurchasedPayload,
+                    });
+                } catch (error) {
+                    console.error("[stripe-webhook] Failed sending billing Discord webhook", {
+                        paymentIntentId: pi.id,
+                        workspaceId: wallet.workspace_id,
+                        checkoutSessionId: checkoutSessionId ?? null,
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 }
 
                 break;

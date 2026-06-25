@@ -1,0 +1,76 @@
+name: Hugging Face Model Discovery
+
+on:
+    schedule:
+        - cron: "17 * * * *"
+    workflow_dispatch:
+
+concurrency:
+    group: huggingface-model-discovery
+    cancel-in-progress: false
+
+env:
+    NODE_VERSION: 22
+    MODEL_DISCOVERY_HF_GITHUB_ISSUES: "false"
+
+permissions:
+    contents: read
+
+jobs:
+    huggingface-model-discovery:
+        name: Hugging Face model discovery
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                  fetch-depth: 1
+                  persist-credentials: false
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              with:
+                  version: 10.33.0
+                  run_install: false
+
+            - name: Setup Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Restore lockfile (guard setup-node cache mutation)
+              run: git checkout -- pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Ensure state directory exists
+              run: mkdir -p scripts/model-discovery/state
+
+            - name: Restore Hugging Face discovery state cache
+              id: hf-model-discovery-state-cache
+              uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              with:
+                  path: scripts/model-discovery/state
+                  key: hf-model-discovery-state-${{ github.ref_name }}-${{ github.run_id }}
+                  restore-keys: |
+                      hf-model-discovery-state-${{ github.ref_name }}-
+
+            - name: Check watched Hugging Face orgs
+              env:
+                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
+                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
+                  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+              run: >
+                  pnpm exec tsx scripts/model-discovery/run-hf-private.ts
+                  --discord-role-id "${DISCORD_ROLE_ID}"
+                  --discord-user-id "${DISCORD_USER_ID}"
+                  --hf-token "${HF_TOKEN}"
+                  --hf-orgs "primeintellect,voyageai,arcee-ai,apple,baidu,suno,perplexity-ai,moonshotai,elevenlabs,cohere,anthropic,amazon,ai21labs,ai-stats,ibm-granite,nousresearch,bytedance-seed,minimaxai,microsoft,xai-org,zai-org,lgai-exaone,mistralai,meta-llama,nvidia,google,openai,deepseek-ai,qwen"
+
+            - name: Save Hugging Face discovery state cache
+              if: always()
+              uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              with:
+                  path: scripts/model-discovery/state
+                  key: ${{ steps.hf-model-discovery-state-cache.outputs.cache-primary-key }}

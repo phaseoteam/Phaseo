@@ -32,7 +32,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/blog/gpt-4o-mini-announcement",
-      "rank": 149
+      "rank": 155
     },
     {
       "benchmark_id": "lmarena-text",
@@ -48,7 +48,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 36
+      "rank": 46
     },
     {
       "benchmark_id": "swe-bench",
@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 131
+      "rank": 134
     },
     {
       "benchmark_id": "confabulations",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": "Confab 60.9%; non-response 13.5%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 65
+      "rank": 2
     },
     {
       "benchmark_id": "elimination-game",
@@ -72,7 +72,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.144; games 1114; avg points 0.462",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 48
+      "rank": 44
     }
   ]
 }

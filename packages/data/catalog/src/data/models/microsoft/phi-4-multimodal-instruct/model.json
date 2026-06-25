@@ -109,7 +109,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "mmbench",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 108
+      "rank": 109
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 90
+      "rank": 94
     },
     {
       "benchmark_id": "ocrbench",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-      "rank": 31
+      "rank": 32
     }
   ]
 }

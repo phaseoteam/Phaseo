@@ -1,14 +1,14 @@
 {
   "model_id": "meituan/longcat-flash-cat",
   "organisation_id": "meituan",
-  "name": "Longcat Flash Cat",
-  "status": "Available",
+  "name": "LongCat Flash Chat",
+  "status": "Retired",
   "previous_model_id": null,
-  "description": "Longcat Flash Cat is a language model from Meituan for chat, writing, analysis, and general-purpose automation. It is tuned for lower latency and cost-sensitive production use.",
+  "description": "LongCat Flash Chat was a legacy language model from Meituan for chat, writing, analysis, and general-purpose automation. Meituan retired this legacy model on May 29, 2026 as part of its migration toward LongCat 2.0 Preview.",
   "announced_date": null,
   "release_date": null,
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-05-29T00:00:00",
+  "retirement_date": "2026-05-29T00:00:00",
   "license": null,
   "input_types": null,
   "output_types": null,
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 88
+      "rank": 89
     },
     {
       "benchmark_id": "humaneval",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 51
+      "rank": 52
     },
     {
       "benchmark_id": "math-500",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 34
+      "rank": 36
     },
     {
       "benchmark_id": "swe-bench",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 87
+      "rank": 91
     },
     {
       "benchmark_id": "tau2-airline",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from longcat-flash-chat (score=0.4667; benches=16)",
       "source_link": "https://huggingface.co/meituan-longcat/LongCat-Flash-Chat",
-      "rank": 27
+      "rank": 29
     },
     {
       "benchmark_id": "terminal-bench",
@@ -150,7 +150,7 @@
       "is_self_reported": false,
       "other_info": "Thinking; 940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 59
+      "rank": 58
     }
   ]
 }

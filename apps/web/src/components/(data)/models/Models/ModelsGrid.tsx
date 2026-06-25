@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
-import { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
+import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?: ModelCardType["gateway_status"] | "coming_soon" | null;
@@ -13,6 +13,10 @@ interface ModelsGridProps {
 	filteredModels: ModelCardLike[];
 	showOrganisationPrefix?: boolean;
 }
+
+type ModelsGridContentProps = ModelsGridProps & {
+	columns: number;
+};
 
 type ModelRow = {
 	key: string;
@@ -84,19 +88,11 @@ function getCellPaddingClass(rowColumnIndex: number, renderedColumns: number): s
 	return "";
 }
 
-function ModelsGridImpl({
+function ModelsGridContent({
 	filteredModels,
 	showOrganisationPrefix = false,
-}: ModelsGridProps) {
-	if (filteredModels.length === 0) {
-		return (
-			<div className="rounded-2xl border bg-card px-4 py-10 text-center text-muted-foreground">
-				No models found for the selected filters.
-			</div>
-		);
-	}
-
-	const columns = useColumnCount();
+	columns,
+}: ModelsGridContentProps) {
 	const rows = useMemo(
 		() => chunkModels(filteredModels, columns),
 		[filteredModels, columns],
@@ -115,11 +111,6 @@ function ModelsGridImpl({
 	const [estimatedRowHeight, setEstimatedRowHeight] = useState(
 		baseEstimatedRowHeight,
 	);
-
-	useEffect(() => {
-		setEstimatedRowHeight(baseEstimatedRowHeight);
-		hasCalibratedEstimateRef.current = false;
-	}, [baseEstimatedRowHeight]);
 
 	useEffect(() => {
 		if (!shouldVirtualize || typeof window === "undefined") return;
@@ -257,4 +248,20 @@ function ModelsGridImpl({
 	);
 }
 
+function ModelsGridImpl(props: ModelsGridProps) {
+	const columns = useColumnCount();
+
+	if (props.filteredModels.length === 0) {
+		return (
+			<div className="rounded-2xl border bg-card px-4 py-10 text-center text-muted-foreground">
+				No models found for the selected filters.
+			</div>
+		);
+	}
+
+	return <ModelsGridContent key={columns} {...props} columns={columns} />;
+}
+
 export const ModelsGrid = React.memo(ModelsGridImpl);
+
+export default ModelsGrid;

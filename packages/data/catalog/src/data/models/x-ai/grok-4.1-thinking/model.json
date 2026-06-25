@@ -115,7 +115,7 @@
       "is_self_reported": false,
       "other_info": "Fast reasoning; sigma 0.246; games 385; avg points 0.455",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 39
+      "rank": 36
     },
     {
       "benchmark_id": "nyt-connections",

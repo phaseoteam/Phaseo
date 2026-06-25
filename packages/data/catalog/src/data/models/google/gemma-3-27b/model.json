@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_3",
-      "rank": 141
+      "rank": 147
     },
     {
       "benchmark_id": "lmarena-text",
@@ -81,7 +81,7 @@
       "is_self_reported": false,
       "other_info": "Confab 66.3%; non-response 14.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 66
+      "rank": 1
     }
   ]
 }

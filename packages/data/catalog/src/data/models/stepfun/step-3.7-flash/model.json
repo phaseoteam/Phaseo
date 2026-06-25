@@ -1,0 +1,45 @@
+{
+  "model_id": "stepfun/step-3.7-flash",
+  "organisation_id": "stepfun",
+  "name": "Step 3.7 Flash",
+  "status": "Available",
+  "previous_model_id": "stepfun/step-3.6",
+  "description": "Step 3.7 Flash is StepFun's flagship multimodal reasoning model for real-world agent, coding, and workflow tasks. It supports text, image, and video inputs with low-latency tool use.",
+  "announced_date": "2026-05-29T00:00:00",
+  "release_date": "2026-05-29T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "stepfun/step-3.7-flash",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://static.stepfun.com/blog/step-3.7-flash/"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://platform.stepfun.com/docs/zh/guides/models/step-3.7-flash"
+    },
+    {
+      "platform": "website",
+      "url": "https://www.stepfun.com/"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 256000
+    },
+    {
+      "name": "parameter_count",
+      "value": 198000000000
+    },
+    {
+      "name": "active_parameter_count",
+      "value": 11000000000
+    }
+  ],
+  "benchmarks": []
+}

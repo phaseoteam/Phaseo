@@ -96,6 +96,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     scaleway: createOpenAICompatibleAdapter("scaleway"),
     siliconflow: createOpenAICompatibleAdapter("siliconflow"),
     together: createOpenAICompatibleAdapter("together"),
+    venice: createOpenAICompatibleAdapter("venice"),
     "venice-e2ee": createOpenAICompatibleAdapter("venice-e2ee"),
     "weights-and-biases": createOpenAICompatibleAdapter("weights-and-biases"),
     // New providers - added during IR optimization and provider onboarding

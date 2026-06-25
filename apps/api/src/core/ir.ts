@@ -49,6 +49,10 @@ export type IRContentPart =
 		type: "video";
 		source: "url";
 		url: string;
+	}
+	| {
+		type: "provider_block";
+		block: Record<string, any>;
 	};
 
 // ============================================================================
@@ -64,6 +68,7 @@ export type IRTool = {
 	type?: string; // Provider-native tool type (for example web_search_preview)
 	description?: string;
 	parameters: Record<string, any>; // JSON Schema
+	cacheControl?: IRCacheControl;
 	raw?: Record<string, any>; // Original provider-native tool payload for passthrough
 };
 
@@ -91,6 +96,7 @@ export type IRToolResult = {
 	toolCallId: string; // References IRToolCall.id
 	content: string; // Result (can be structured JSON string)
 	isError?: boolean; // Optional error flag
+	cacheControl?: IRCacheControl;
 };
 
 // ============================================================================
@@ -261,7 +267,6 @@ export type IRChatRequest = {
 	};
 	background?: boolean;
 	serviceTier?: string;
-	speed?: string;
 	geo?: IRGeoPreferences;
 	promptCacheKey?: string;
 	promptCacheRetention?: string;
@@ -635,6 +640,7 @@ export type IROcrResponse = {
 	model: string;
 	provider: string;
 	text: string;
+	usage?: IRUsage;
 	rawResponse?: any;
 };
 
@@ -727,10 +733,15 @@ export type IRUsage = {
 		outputAudioTokens?: number;
 		outputVideoTokens?: number;
 		cachedWriteTokens?: number;
+		cachedWriteTokens5m?: number;
+		cachedWriteTokens1h?: number;
 		serverToolUse?: {
 			datetime_requests?: number;
 			web_search_requests?: number;
+			web_search_results?: number;
+			web_search_extra_results?: number;
 			web_fetch_requests?: number;
+			advisor_requests?: number;
 			apply_patch_requests?: number;
 			image_generation_requests?: number;
 			fusion_requests?: number;
@@ -905,6 +916,3 @@ export function hasToolCalls(message: IRMessage): boolean {
 export function countTotalTokens(usage?: IRUsage): number {
 	return usage?.totalTokens ?? 0;
 }
-
-
-

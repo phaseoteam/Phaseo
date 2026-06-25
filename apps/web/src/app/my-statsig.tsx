@@ -11,7 +11,7 @@ import { StatsigClient } from "@statsig/js-client";
 import { StatsigSessionReplayPlugin } from "@statsig/session-replay";
 import { StatsigAutoCapturePlugin } from "@statsig/web-analytics";
 
-import { createClient as createSupabaseClient } from "@/utils/supabase/client";
+import { fetchClientAuthStatsigData } from "@/lib/fetchers/internal/fetchClientAuthStatsigData";
 import {
 	ANALYTICS_CONSENT_EVENT,
 	readAnalyticsConsent,
@@ -22,7 +22,6 @@ import {
 	BETA_PROFILE_CHANGED_EVENT,
 	buildAnonymousStatsigUser,
 	buildAuthenticatedStatsigUser,
-	normalizeBetaFeatures,
 	readStableIdCookie,
 	readStoredBetaProfile,
 	writeStableIdCookie,
@@ -48,31 +47,15 @@ function StatsigUserSync() {
 
 		writeStableIdCookie(stableID);
 
-		const supabase = createSupabaseClient();
 		let mounted = true;
 
-		const syncAuthenticatedUser = async (authUser: {
-			id: string;
-			email?: string | null;
-		}) => {
-			let profile = readStoredBetaProfile();
-
-			try {
-				const { data } = await supabase
-					.from("users")
-					.select("beta_opt_in, beta_features")
-					.eq("user_id", authUser.id)
-					.maybeSingle();
-
-				profile = {
-					betaOptIn: Boolean(data?.beta_opt_in),
-					betaFeatures: normalizeBetaFeatures(data?.beta_features),
-				};
-				writeStoredBetaProfile(profile);
-			} catch {
-				// Keep previous client-side values when profile fetch fails.
-			}
-
+		const syncAuthenticatedUser = async (
+			authUser: {
+				id: string;
+				email?: string | null;
+			},
+			profile = readStoredBetaProfile()
+		) => {
 			if (!mounted) return;
 
 			void updateUserAsync(
@@ -89,6 +72,25 @@ function StatsigUserSync() {
 			});
 		};
 
+		const syncCurrentUser = async () => {
+			try {
+				const data = await fetchClientAuthStatsigData();
+				if (!mounted) return;
+
+				if (data.signedIn && data.user) {
+					writeStoredBetaProfile(data.profile);
+					await syncAuthenticatedUser(data.user, data.profile);
+					return;
+				}
+
+				syncAnonymousUser();
+			} catch {
+				if (mounted) {
+					syncAnonymousUser();
+				}
+			}
+		};
+
 		const syncAnonymousUser = () => {
 			const profile = readStoredBetaProfile();
 			void updateUserAsync(
@@ -101,42 +103,7 @@ function StatsigUserSync() {
 			});
 		};
 
-		void supabase.auth
-			.getUser()
-			.then(async ({ data }) => {
-				if (data.user?.id) {
-					await syncAuthenticatedUser({
-						id: data.user.id,
-						email: data.user.email,
-					});
-					return;
-				}
-
-				if (mounted) {
-					syncAnonymousUser();
-				}
-			})
-			.catch(() => {
-				if (mounted) {
-					syncAnonymousUser();
-				}
-			});
-
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange(async (_event, session) => {
-			if (session?.user?.id) {
-				await syncAuthenticatedUser({
-					id: session.user.id,
-					email: session.user.email,
-				});
-				return;
-			}
-
-			if (mounted) {
-				syncAnonymousUser();
-			}
-		});
+		void syncCurrentUser();
 
 		const syncBetaProfileFromStorage = () => {
 			const profile = readStoredBetaProfile();
@@ -175,7 +142,6 @@ function StatsigUserSync() {
 
 		return () => {
 			mounted = false;
-			subscription.unsubscribe();
 			window.removeEventListener(
 				BETA_PROFILE_CHANGED_EVENT,
 				syncBetaProfileFromStorage

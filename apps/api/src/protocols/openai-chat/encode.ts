@@ -180,15 +180,18 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 	}
 
 	const serverToolUse = usage._ext?.serverToolUse;
-	if (
-		typeof serverToolUse?.datetime_requests === "number" ||
-		typeof serverToolUse?.web_search_requests === "number" ||
-		typeof serverToolUse?.web_fetch_requests === "number" ||
-		typeof serverToolUse?.apply_patch_requests === "number" ||
-		typeof serverToolUse?.image_generation_requests === "number" ||
-		typeof serverToolUse?.fusion_requests === "number" ||
-		typeof serverToolUse?.tool_search_requests === "number"
-	) {
+		if (
+			typeof serverToolUse?.datetime_requests === "number" ||
+			typeof serverToolUse?.web_search_requests === "number" ||
+			typeof serverToolUse?.web_search_results === "number" ||
+			typeof serverToolUse?.web_search_extra_results === "number" ||
+			typeof serverToolUse?.web_fetch_requests === "number" ||
+			typeof serverToolUse?.advisor_requests === "number" ||
+			typeof serverToolUse?.apply_patch_requests === "number" ||
+			typeof serverToolUse?.image_generation_requests === "number" ||
+			typeof serverToolUse?.fusion_requests === "number" ||
+			typeof serverToolUse?.tool_search_requests === "number"
+		) {
 		(result as any).server_tool_use = {
 			...(typeof serverToolUse?.datetime_requests === "number"
 				? { datetime_requests: serverToolUse.datetime_requests }
@@ -196,23 +199,32 @@ function encodeUsage(usage?: IRUsage): GatewayUsage | undefined {
 			...(typeof serverToolUse?.web_search_requests === "number"
 				? { web_search_requests: serverToolUse.web_search_requests }
 				: {}),
-			...(typeof serverToolUse?.web_fetch_requests === "number"
-				? { web_fetch_requests: serverToolUse.web_fetch_requests }
+			...(typeof serverToolUse?.web_search_results === "number"
+				? { web_search_results: serverToolUse.web_search_results }
 				: {}),
-			...(typeof serverToolUse?.apply_patch_requests === "number"
-				? { apply_patch_requests: serverToolUse.apply_patch_requests }
+			...(typeof serverToolUse?.web_search_extra_results === "number"
+				? { web_search_extra_results: serverToolUse.web_search_extra_results }
 				: {}),
-			...(typeof serverToolUse?.image_generation_requests === "number"
-				? { image_generation_requests: serverToolUse.image_generation_requests }
-				: {}),
-			...(typeof serverToolUse?.fusion_requests === "number"
-				? { fusion_requests: serverToolUse.fusion_requests }
-				: {}),
-			...(typeof serverToolUse?.tool_search_requests === "number"
-				? { tool_search_requests: serverToolUse.tool_search_requests }
-				: {}),
-		};
-	}
+				...(typeof serverToolUse?.web_fetch_requests === "number"
+					? { web_fetch_requests: serverToolUse.web_fetch_requests }
+					: {}),
+				...(typeof serverToolUse?.advisor_requests === "number"
+					? { advisor_requests: serverToolUse.advisor_requests }
+					: {}),
+				...(typeof serverToolUse?.apply_patch_requests === "number"
+					? { apply_patch_requests: serverToolUse.apply_patch_requests }
+					: {}),
+				...(typeof serverToolUse?.image_generation_requests === "number"
+					? { image_generation_requests: serverToolUse.image_generation_requests }
+					: {}),
+				...(typeof serverToolUse?.fusion_requests === "number"
+					? { fusion_requests: serverToolUse.fusion_requests }
+					: {}),
+				...(typeof serverToolUse?.tool_search_requests === "number"
+					? { tool_search_requests: serverToolUse.tool_search_requests }
+					: {}),
+			};
+		}
 
 	return result;
 }

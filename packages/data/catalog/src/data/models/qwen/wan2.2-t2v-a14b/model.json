@@ -1,0 +1,19 @@
+{
+  "model_id": "qwen/wan2.2-t2v-a14b",
+  "organisation_id": "qwen",
+  "name": "Wan2.2-T2V-A14B",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Wan2.2-T2V-A14B is a DigitalOcean-hosted text-to-video model exposed through DigitalOcean Inference.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "video",
+  "api_model_id": "qwen/wan2.2-t2v-a14b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

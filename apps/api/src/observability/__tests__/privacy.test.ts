@@ -56,4 +56,50 @@ describe("observability privacy sanitization", () => {
 		expect(sanitized.output.data.size).toBe(128);
 		expect(String(sanitized.prompt)).toContain("[redacted");
 	});
+
+	it("keeps provider diagnostics visible while redacting only model text bodies", () => {
+		const sanitized = sanitizeForAxiom({
+			error: {
+				code: "PERMISSION_DENIED",
+				message: "The caller does not have permission.",
+				content: "Provider diagnostic content should remain visible.",
+				details: [{ text: "Diagnostic text should remain visible." }],
+			},
+			output: [
+				{
+					type: "message",
+					role: "assistant",
+					content: [{ type: "output_text", text: "completion body" }],
+				},
+			],
+			stream_event: {
+				event: "response.output_text.delta",
+				delta: "streamed completion",
+			},
+		}) as any;
+
+		expect(sanitized.error.message).toBe("The caller does not have permission.");
+		expect(sanitized.error.content).toBe("Provider diagnostic content should remain visible.");
+		expect(sanitized.error.details[0].text).toBe("Diagnostic text should remain visible.");
+		expect(String(sanitized.output[0].content)).toContain("[redacted");
+		expect(String(sanitized.stream_event.delta)).toContain("[redacted");
+	});
+
+	it("keeps token usage but redacts credentials", () => {
+		const sanitized = sanitizeForAxiom({
+			usage: {
+				input_tokens: 10,
+				output_tokens: 5,
+			},
+			authorization: "Bearer secret",
+			api_key: "sk-secret",
+			token: "opaque-token",
+		}) as any;
+
+		expect(sanitized.usage.input_tokens).toBe(10);
+		expect(sanitized.usage.output_tokens).toBe(5);
+		expect(String(sanitized.authorization)).toContain("[redacted");
+		expect(String(sanitized.api_key)).toContain("[redacted");
+		expect(String(sanitized.token)).toContain("[redacted");
+	});
 });

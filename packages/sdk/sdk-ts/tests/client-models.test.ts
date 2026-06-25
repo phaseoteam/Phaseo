@@ -2,10 +2,10 @@ import { describe, expect, test, vi } from "vitest";
 import { AIStats } from "../src/index.js";
 
 describe("AIStats models helper", () => {
-  test("preserves preview-only and coming-soon provider availability metadata from /gateway/models", async () => {
+  test("preserves preview-only and coming-soon provider availability metadata from /models", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
-      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/gateway/models");
+      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/models");
       expect(url.searchParams.get("availability")).toBe("all");
       expect(init?.method).toBe("GET");
       expect(init?.headers).toMatchObject({
@@ -57,7 +57,7 @@ describe("AIStats models helper", () => {
     expect(response.models[0].providers[0].capability_status).toBe("coming_soon");
   });
 
-  test("forwards provider availability filters to /gateway/models", async () => {
+  test("forwards provider availability filters to /models", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       const statusValues = url
@@ -70,7 +70,7 @@ describe("AIStats models helper", () => {
         .getAll("provider_availability_reason")
         .flatMap((value) => value.split(","))
         .filter(Boolean);
-      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/gateway/models");
+      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/models");
       expect(statusValues).toEqual(["coming_soon", "inactive"]);
       expect(reasonValues).toEqual(["preview_only", "provider_not_ready"]);
       return new Response(
@@ -99,7 +99,7 @@ describe("AIStats models helper", () => {
     expect(response.ok).toBe(true);
   });
 
-  test("forwards provider and capability status filters to /gateway/models", async () => {
+  test("forwards provider and capability status filters to /models", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       const providerStatusValues = url
@@ -112,7 +112,7 @@ describe("AIStats models helper", () => {
         .getAll("capability_status")
         .flatMap((value) => value.split(","))
         .filter(Boolean);
-      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/gateway/models");
+      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/models");
       expect(providerStatusValues).toEqual(["beta", "alpha"]);
       expect(capabilityStatusValues).toEqual(["coming_soon", "internal_testing", "disabled"]);
       return new Response(
@@ -141,7 +141,7 @@ describe("AIStats models helper", () => {
     expect(response.ok).toBe(true);
   });
 
-  test("forwards provider and model routing status filters to /gateway/models", async () => {
+  test("forwards provider and model routing status filters to /models", async () => {
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
       const providerRoutingValues = url
@@ -154,7 +154,7 @@ describe("AIStats models helper", () => {
         .getAll("model_routing_status")
         .flatMap((value) => value.split(","))
         .filter(Boolean);
-      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/gateway/models");
+      expect(`${url.origin}${url.pathname}`).toBe("https://example.test/models");
       expect(providerRoutingValues).toEqual(["deranked_lvl1", "disabled"]);
       expect(modelRoutingValues).toEqual(["active", "deranked_lvl2"]);
       return new Response(

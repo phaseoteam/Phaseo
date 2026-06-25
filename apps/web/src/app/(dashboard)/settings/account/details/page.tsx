@@ -1,11 +1,8 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import AccountSettingsClient, {
-	UserPayload,
-} from "@/components/(gateway)/settings/account/AccountSettingsClient";
+import AccountSettingsClient from "@/components/(gateway)/settings/account/AccountSettingsClient";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import { fetchSettingsAccountDetailsInitialData } from "@/lib/fetchers/internal/fetchSettingsAccountDetailsInitialData";
 
 export const metadata = {
 	title: "Account Details - Settings",
@@ -26,11 +23,9 @@ export default function AccountDetailsPage() {
 }
 
 async function AccountDetailsContent() {
-	const supabase = await createClient();
-	const { data: authData } = await supabase.auth.getUser();
-	const authUser = authData.user;
+	const initialData = await fetchSettingsAccountDetailsInitialData();
 
-	if (!authUser) {
+	if (!initialData.user) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
 				Not signed in.
@@ -38,41 +33,16 @@ async function AccountDetailsContent() {
 		);
 	}
 
-	const { data: userRow } = await supabase
-		.from("users")
-		.select("user_id, display_name, default_workspace_id, created_at")
-		.eq("user_id", authUser.id)
-		.maybeSingle();
-	const obfuscateInfo = await getUserObfuscationPreference(authUser.id);
-
-	const user: UserPayload = {
-		id: authUser.id,
-		displayName: userRow?.display_name,
-		email: authUser.email ?? null,
-		defaultWorkspaceId: userRow?.default_workspace_id ?? null,
-		obfuscateInfo,
-		createdAt: userRow?.created_at,
-	};
-
-	const provider = authUser.app_metadata?.provider;
-	const isOAuthUser = provider && provider !== "email";
-	const hasPassword = !isOAuthUser;
-
-	const { data: teamMembersData } = await supabase
-		.from("workspace_members")
-		.select("workspace_id, teams:workspaces(id, name)")
-		.eq("user_id", authUser.id);
-
-	const teams = (teamMembersData ?? [])
-		.map((tm: any) => tm.teams)
-		.filter((t: any) => t && t.id && t.name) as { id: string; name: string }[];
-
 	return (
 		<div
-			data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
+			data-obfuscate-pii={initialData.user.obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>
-			<AccountSettingsClient user={user} teams={teams} hasPassword={hasPassword} />
+			<AccountSettingsClient
+				user={initialData.user}
+				teams={initialData.teams}
+				hasPassword={initialData.hasPassword}
+			/>
 		</div>
 	);
 }

@@ -1130,7 +1130,7 @@ describe("DevTools Integration", () => {
       const url = new URL(String(input));
       const method = String(init?.method ?? "GET").toUpperCase();
 
-      if (`${url.origin}${url.pathname}` === "https://example.test/gateway/models/me" && method === "GET") {
+      if (`${url.origin}${url.pathname}` === "https://example.test/models" && method === "GET") {
         expect(url.searchParams.get("limit")).toBe("2");
         expect(url.searchParams.get("endpoints")).toBe("responses");
         return new Response(JSON.stringify({
@@ -1162,14 +1162,14 @@ describe("DevTools Integration", () => {
       }
     });
 
-    await adminClient.listTeamModels({ limit: 2, endpoints: "responses" });
+    await adminClient.getModels({ limit: 2, endpoints: "responses" });
 
     await new Promise((resolve) => setTimeout(resolve, 120));
 
     const entries = writer.readEntries();
     expect(entries).toHaveLength(1);
     expect(entries[0]).toMatchObject({
-      type: "models.team",
+      type: "models.list",
       request: {
         limit: 2,
         endpoints: "responses"

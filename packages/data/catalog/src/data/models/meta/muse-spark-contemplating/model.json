@@ -27,7 +27,7 @@
       "is_self_reported": true,
       "other_info": "No tools",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 16
+      "rank": 18
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://about.fb.com/news/2026/04/introducing-muse-spark-meta-superintelligence-labs/",
-      "rank": 3
+      "rank": 5
     },
     {
       "benchmark_id": "hipho",

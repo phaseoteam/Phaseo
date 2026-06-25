@@ -1,6 +1,6 @@
 // lib/fetchers/models/getModelAvailability.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface ModelAvailabilityItem {
     id: string;
@@ -30,7 +30,7 @@ export default async function getModelAvailability(
     modelId: string,
     includeHidden: boolean
 ): Promise<ModelAvailabilityItem[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: modelRow, error: modelError } = await supabase
         .from("data_models")
@@ -175,10 +175,12 @@ export async function getModelAvailabilityCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_provider_models");
+    cacheTag("frontend:model-availability");
 
     console.log("[fetch] HIT DB for model availability", modelId);
     return getModelAvailability(modelId, includeHidden);

@@ -4,15 +4,17 @@ import {
 	getHelpCategoryParams,
 } from "@/lib/content/helpCenter";
 import { getMigrationPosts } from "@/lib/content/migrations";
-import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
-import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
-import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
-import { getAllOrganisationsCached } from "@/lib/fetchers/organisations/getAllOrganisations";
-import { getAllBenchmarksCached } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
-import { getAllSubscriptionPlansCached } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
-import { getCountrySummariesCached } from "@/lib/fetchers/countries/getCountrySummaries";
+import {
+	fetchFrontendAPIProviders,
+	fetchFrontendBenchmarks,
+	fetchFrontendCountrySummaries,
+	fetchFrontendMarketplacePresets,
+	fetchFrontendModels,
+	fetchFrontendOrganisations,
+	fetchFrontendPublicAppIds,
+	fetchFrontendSubscriptionPlans,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
-import { createAdminClient } from "@/utils/supabase/admin";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
@@ -36,10 +38,9 @@ type RouteSuffix = {
 
 type ModelSitemapSource = {
 	model_id?: string | null;
-};
-
-type PresetSitemapSource = {
-	id?: string | null;
+	updated_at?: string | null;
+	primary_date?: string | null;
+	announcement_date?: string | null;
 };
 
 const baseUrl = SITE_URL;
@@ -60,6 +61,11 @@ const staticRoutes: Array<{
         { path: "/families", changeFrequency: "weekly", priority: 0.75 },
         { path: "/subscription-plans", changeFrequency: "weekly", priority: 0.75 },
         { path: "/pricing", changeFrequency: "weekly", priority: 0.75 },
+        { path: "/methodology", changeFrequency: "monthly", priority: 0.68 },
+        { path: "/how-ai-stats-calculates-model-pricing", changeFrequency: "monthly", priority: 0.65 },
+        { path: "/how-ai-stats-measures-latency-throughput", changeFrequency: "monthly", priority: 0.65 },
+        { path: "/how-ai-stats-normalises-ai-benchmarks", changeFrequency: "monthly", priority: 0.65 },
+        { path: "/how-ai-stats-tracks-provider-availability", changeFrequency: "monthly", priority: 0.65 },
         { path: "/faq", changeFrequency: "monthly", priority: 0.6 },
 		{ path: "/compare", changeFrequency: "weekly", priority: 0.7 },
 		{ path: "/migrate", changeFrequency: "weekly", priority: 0.7 },
@@ -228,34 +234,6 @@ function fromSettled<T>(
 	return fallback;
 }
 
-async function getPublicMarketplacePresetIds(): Promise<string[]> {
-	try {
-		const supabase = createAdminClient();
-		const { data, error } = await supabase
-			.from("presets")
-			.select("id")
-			.eq("visibility", "public");
-
-		if (error) {
-			console.warn(
-				"[sitemap] failed to load marketplace presets for sitemap",
-				error
-			);
-			return [];
-		}
-
-		return normalizeSingleSegmentSlugs(
-			(data as PresetSitemapSource[] | null | undefined)?.map(
-				(preset) => String(preset.id ?? "").trim()
-			) ?? [],
-			"marketplace preset"
-		);
-	} catch (error) {
-		console.warn("[sitemap] failed to load marketplace presets for sitemap", error);
-		return [];
-	}
-}
-
 function applySuffixes(
     prefix: string,
     slugs: string[],
@@ -279,6 +257,53 @@ function applySuffixes(
     return items;
 }
 
+function resolveLastModified(
+	...candidates: Array<string | null | undefined>
+): string | null {
+	let latest: string | null = null;
+	let latestMs = Number.NEGATIVE_INFINITY;
+
+	for (const candidate of candidates) {
+		if (!candidate) continue;
+		const parsed = Date.parse(candidate);
+		if (!Number.isFinite(parsed) || parsed <= latestMs) continue;
+		latestMs = parsed;
+		latest = candidate;
+	}
+
+	return latest;
+}
+
+function applySuffixesWithEntries<T extends { slug: string; lastModified?: string | null }>(
+	prefix: string,
+	entries: T[],
+	suffixes: RouteSuffix[],
+	fallbackLastModified: string,
+): SitemapItem[] {
+	if (!entries.length) {
+		return [];
+	}
+
+	const items: SitemapItem[] = [];
+	for (const entry of entries) {
+		for (const suffix of suffixes) {
+			const route = suffix.suffix
+				? `${prefix}/${entry.slug}${suffix.suffix}`
+				: `${prefix}/${entry.slug}`;
+			items.push(
+				createItem(
+					route,
+					suffix.changeFrequency,
+					suffix.priority,
+					entry.lastModified ?? fallbackLastModified,
+				),
+			);
+		}
+	}
+
+	return items;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const lastModified =
 		process.env.NEXT_PUBLIC_DEPLOY_TIME ?? new Date().toISOString();
@@ -298,27 +323,55 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		helpCategoryResult,
 		helpArticleResult,
 	] = await Promise.allSettled([
-		getAllModelsCached(false),
-		getAllAPIProvidersCached(),
-		getAllOrganisationsCached(),
-		getAllBenchmarksCached(false),
-		getAllSubscriptionPlansCached(),
-		getCountrySummariesCached(false),
-		getPublicMarketplacePresetIds(),
-		getPublicAppIdsCached(),
+		fetchFrontendModels(),
+		fetchFrontendAPIProviders(),
+		fetchFrontendOrganisations(),
+		fetchFrontendBenchmarks(false),
+		fetchFrontendSubscriptionPlans(),
+		fetchFrontendCountrySummaries(),
+		fetchFrontendMarketplacePresets(),
+		fetchFrontendPublicAppIds(),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 	]);
 
-	const modelSlugs = normalizeModelRouteSlugs(
-		fromSettled(modelsResult, "models for sitemap", [])
+	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
+	const modelSlugs = normalizeModelRouteSlugs(modelsForSitemap);
+	const modelEntries = modelSlugs.map((slug) => {
+		const source = modelsForSitemap.find(
+			(model) => String(model.model_id ?? "").trim() === slug,
+		);
+		return {
+			slug,
+			lastModified:
+				resolveLastModified(
+					source?.updated_at,
+					source?.primary_date,
+					source?.announcement_date,
+				) ?? lastModified,
+		};
+	});
+	const providersForSitemap = fromSettled(
+		apiProvidersResult,
+		"api providers for sitemap",
+		[],
 	);
 	const providerSlugs = normalizeSingleSegmentSlugs(
-		fromSettled(apiProvidersResult, "api providers for sitemap", []).map(
-			(provider) => String(provider.api_provider_id ?? "").trim()
+		providersForSitemap.map((provider) =>
+			String(provider.api_provider_id ?? "").trim()
 		),
 		"api provider",
 	);
+	const providerEntries = providerSlugs.map((slug) => {
+		const source = providersForSitemap.find(
+			(provider) => String(provider.api_provider_id ?? "").trim() === slug,
+		);
+		return {
+			slug,
+			lastModified:
+				resolveLastModified(source?.last_updated_at) ?? lastModified,
+		};
+	});
 	const organisationSlugs = normalizeSingleSegmentSlugs(
 		fromSettled(organisationsResult, "organisations for sitemap", []).map(
 			(organisation) => String(organisation.organisation_id ?? "").trim()
@@ -343,10 +396,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 		),
 		"country",
 	);
-	const marketplacePresetSlugs = fromSettled(
-		marketplacePresetsResult,
-		"marketplace presets for sitemap",
-		[]
+	const marketplacePresetSlugs = normalizeSingleSegmentSlugs(
+		fromSettled(
+			marketplacePresetsResult,
+			"marketplace presets for sitemap",
+			[],
+		).map((preset) => String(preset.id ?? "").trim()),
+		"marketplace preset",
 	);
 	const publicAppIds = normalizeSingleSegmentSlugs(
 		fromSettled(publicAppsResult, "public apps for sitemap", []),
@@ -354,10 +410,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	);
 
 	const dynamicItems = [
-		...applySuffixes("/models", modelSlugs, MODEL_SUFFIXES, lastModified),
-		...applySuffixes(
+		...applySuffixesWithEntries(
+			"/models",
+			modelEntries,
+			MODEL_SUFFIXES,
+			lastModified,
+		),
+		...applySuffixesWithEntries(
 			"/api-providers",
-			providerSlugs,
+			providerEntries,
 			PROVIDER_SUFFIXES,
 			lastModified
 		),

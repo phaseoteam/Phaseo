@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.2-2025-12-11",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 24
+      "rank": 25
     },
     {
       "benchmark_id": "browsecomp-long-128k",
@@ -133,7 +133,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.2-2025-12-11",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 55
+      "rank": 60
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -141,7 +141,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.2-2025-12-11",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 13
+      "rank": 18
     },
     {
       "benchmark_id": "mmmlu",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.2-2025-12-11",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "swe-lancer",
@@ -205,7 +205,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gpt-5.2-2025-12-11",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 7
+      "rank": 9
     },
     {
       "benchmark_id": "video-mmmu",

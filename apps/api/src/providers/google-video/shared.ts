@@ -93,6 +93,21 @@ export function extractGoogleOperationError(payload: unknown): unknown {
 	return (payload as any).error;
 }
 
+export function mapGoogleOperationErrorToVideoStatus(error: unknown): "failed" | "cancelled" | "expired" {
+	if (!error || typeof error !== "object") return "failed";
+	const record = error as Record<string, unknown>;
+	const status = String(record.status ?? record.reason ?? "")
+		.trim()
+		.toUpperCase()
+		.replace(/-/g, "_");
+	const message = String(record.message ?? "").toLowerCase();
+	const code = typeof record.code === "number" && Number.isFinite(record.code) ? record.code : undefined;
+
+	if (code === 1 || status === "CANCELLED" || status === "CANCELED") return "cancelled";
+	if (status === "EXPIRED" || message.includes("expired")) return "expired";
+	return "failed";
+}
+
 export function isGoogleOperationsGetAuthFailure(status: number, payload: unknown): boolean {
 	if (status !== 401) return false;
 	if (!payload || typeof payload !== "object") return false;

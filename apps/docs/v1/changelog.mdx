@@ -1,573 +1,691 @@
 ---
-title: "Product Changelog"
-description: "Product updates, releases, and fixes across AI Stats."
+title: "Changelog"
+description: "Recent product updates, SDK changes, and model releases across AI Stats."
 rss: true
 ---
-<Update label="16th May 2026">
-# Provider Activation, Regions, and Free Router Fixes
 
-We tightened model-routing visibility across the product so it is clearer which providers are active, where they can execute, and how free-router and pricing views should behave.
+## June 15, 2026
 
-This release includes:
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Provider Coverage</p>
 
-- Active gateway provider states are now surfaced more consistently across model pages, comparison views, and model discovery flows.
-- The models dashboard now supports execution-region filtering, making it easier to narrow results to EU, US, APAC, Japan, and Australia coverage where available.
-- Free Router overview and model detail flows now resolve more reliably, including the dedicated free-router model page and related monitor fetches.
-- Homepage gateway token and monthly request summaries now use the corrected public metrics fetch path instead of under-reporting current activity.
+- Amazon Bedrock provider coverage was staged for xAI Grok 4.3 with Bedrock Mantle model id `xai.grok-4.3`, standard pricing, and current `us-west-2` in-region availability. The provider-model capability is currently disabled pending setup. AWS currently lists Grok 4.3 as the only xAI model on Bedrock, and does not list Geo or Global inference for it.
+- Amazon Bedrock OpenAI frontier model coverage was checked; AWS still documents GPT-5.5 and GPT-5.4 as regional/Geo in-region offerings, with Global cross-region pricing marked as coming soon.
 
-</Update>
+***
 
-<Update label="7th May 2026">
-# Clearer Provider Availability and Pricing
+## June 11, 2026
 
-We refreshed model pages and routing visibility so it is easier to see which providers are currently usable for a model and how pricing compares at a glance.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-This release includes:
+- GLM 5.2 was added in `Rumoured` state based on leaked private-testing references rather than a public Z.AI release.
 
-- Provider activation states are now exposed across catalog and quickstart surfaces, so availability is clearer before you send a request.
-- Models pages now have better pricing summaries, cleaner hover cards, and improved minute-price display for realtime usage.
-- OpenAI realtime model coverage has been refreshed across product and gateway surfaces.
-- Recent catalog fixes also improve model family naming consistency and reduce missing-model edge cases.
+***
 
-</Update>
+## June 9, 2026
 
-<Update label="6th May 2026">
-# Video and Async Jobs Rollout
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We expanded AI Stats video support and made async activity easier to inspect from the gateway.
+- Claude Fable 5 moved to `Available`.
+- Anthropic, Claude Platform on AWS, Amazon Bedrock, and Google Vertex AI provider coverage for Claude Fable 5 was activated.
+- The `anthropic/claude-fable-latest` alias, release pricing, cache pricing, and launch benchmark coverage were added for Claude Fable 5.
 
-This release includes:
+***
 
-- Broader video lifecycle coverage, including better status, cancellation, content, and download flows.
-- More complete batch lifecycle handling across API and gateway tooling.
-- Richer usage observability with sessions, async jobs, request details, and better filtering in usage logs.
-- Improved replay and debugging detail for gateway requests so failures are easier to understand and retry.
+## June 4, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-<Update label="25th April 2026">
-# Low-Balance Alerts and Billing Safeguards
+- Nemotron 3 Ultra moved to `Available`.
+- DigitalOcean provider coverage was added for Nemotron 3 Ultra as a coming-soon endpoint with reference pricing.
+- NVIDIA NIM provider coverage was added for Nemotron 3 Ultra, Nemotron 3 Super, Nemotron 3 Nano, and Nemotron 3 Nano Omni.
 
-We added low-balance alerting for gateway workspaces and tightened several pricing and billing edge cases.
+***
 
-This release includes:
+## June 1, 2026
 
-- Low-balance email alert wiring for supported workspace billing flows.
-- Resend onboarding inside settings for teams that want alert destinations configured in-product.
-- Safer pricing behavior for non-standard tiers and clearer unreleased-model banner handling.
-- Follow-up fixes across subscription plan sync, usage rollups, and workspace billing flows.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-</Update>
+- MiniMax M3 moved to `Available` with MiniMax API, NovitaAI, and Venice coverage.
+- CrofAI pricing and live model coverage were synced.
+- Nemotron 3 Ultra was added in `Announced` state.
 
-<Update label="21st April 2026">
-# Announcements Hub and Workspace Management
+***
 
-We introduced a dedicated announcements hub and expanded workspace management across settings.
+## May 31, 2026
 
-This release includes:
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-- A new announcements area on the site and homepage so product and incident updates are easier to follow.
-- Workspace management pages for members and settings, with broader navigation cleanup around the workspace model.
-- Hardening for invites, membership handling, and related settings flows.
-- Follow-up polish for security notices, homepage announcements UX, and workspace naming across the product.
+- Cosmos 3 Super Reasoner was added.
 
-</Update>
+***
 
-<Update label="4th April 2026">
-# Mobile Model Pages and Pricing Improvements
+## May 30, 2026
 
-This release improves model browsing and pricing clarity on mobile, while keeping billing simpler and more predictable.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-This release includes:
+- Grok Imagine Video 1.5 Preview was added.
 
-- Better mobile behavior for model pages, including cleaner handling of "Other models" cards and long model names.
-- Improved mobile pricing layouts to reduce horizontal scrolling and make provider pricing easier to compare.
-- More accurate tiered provider visibility for free model routes.
-- Updated Pay As You Go top-up fee from 7% to 5%, while keeping the existing $1 minimum fee.
+***
 
-</Update>
+## May 28, 2026
 
-<Update label="22nd March 2026">
-# Chat Rooms Go Multimodal, Foundry Introduced, and LLM Council Launches
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-## New language SDKs introduced
+- Qwen 3.7 Max pricing selectors and provider display were cleaned up.
+- Anthropic-on-AWS branding and related provider display details were refreshed.
 
-We have introduced new language SDKs across the platform to expand access and improve developer choice across ecosystems.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## TypeScript and Python SDKs have been significantly updated
+- Claude Opus 4.8 was added.
+- Gemini 3.1 Flash Image and Gemini 3 Pro Image were added.
+- Greg RP was added.
 
-Both the **TypeScript** and **Python** SDKs have received a much-needed update, bringing them in line with recent REST API changes and introducing new features to improve day-to-day integration workflows.
+***
 
-These updates are focused on improving consistency, reducing API surface mismatches, and making SDK behavior more predictable as the REST API evolves.
+## May 25, 2026
 
-If you experience any bugs or unexpected behavior, please report them so we can fix them quickly.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## Chat rooms are now multimodal
+- Qwen 3.7 Max Preview and the dated `2026-05-17` snapshot were added.
 
-Chat rooms now support multimodal workflows so you can operate across text and additional modalities in a single conversation flow, instead of splitting work across separate tools.
+***
 
-Right now, you can try **Audio**, **Moderations**, and **Embeddings** models directly in the chatroom.
+## May 21, 2026
 
-**Images** and **Video** support are coming soon.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-Our goal is to build the best possible experience for you to try and test all of the models we offer.
+- Qwen 3.7 Max was added.
 
-## Foundry is now available
+***
 
-We are introducing **Foundry** as the place for experimental products and projects inside AI Stats.
+## May 20, 2026
 
-Foundry gives us a dedicated space to launch new ideas quickly, gather feedback, and iterate in public before broader rollout across the rest of the platform.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## LLM Council is the first Foundry project
+- Command A Plus was added.
 
-The first Foundry project is **LLM Council**.
+***
 
-LLM Council lets you combine responses from multiple LLMs and synthesize them into what should be a stronger final answer than a single-model response on its own.
+## May 19, 2026
 
-LLM Council is available in chat now, with API availability coming very soon.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-</Update>
+- The public TypeScript Agent SDK launch was added to the product changelog.
 
-<Update label="12th March 2026">
-# Models Display Page Overhaul
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We overhauled the **models display page** to make it clearer which models are available and what information is available for each model on the gateway.
+- Gemini 3.5 Flash was added.
+- Qwen 3.5 LiveTranslate Flash Realtime (`2026-05-19`) was added.
 
-This update includes:
+***
 
-- clearer model availability visibility across gateway-supported routes
-- cleaner information hierarchy for model details and metadata
-- improved readability for model capability and support context
+## May 18, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-<Update label="10th March 2026">
-# Brand Refresh
+- Composer 2.5 was added.
 
-We have rolled out a broader **brand refresh** across AI Stats today.
+***
 
-This release includes:
+## May 16, 2026
 
-- refreshed branding across key product surfaces
-- updated visual assets and wordmarks
-- consistency improvements across the website and documentation
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-The goal of this refresh is to make AI Stats feel cleaner, more consistent, and more recognisable as we continue to expand the product and gateway.
+- Provider activation states, region filters, and free-router fixes shipped.
+- `@ai-stats/agent-sdk` launched with docs and examples.
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-<Update label="10th March 2026">
-# Alibaba Cloud Added
+- OpenAI EU, Google Vertex EU, and Nebius Token Factory Fast were added.
+- Grok TTS was added.
+- OVHcloud and Scaleway pricing coverage expanded.
 
-We rolled out **Alibaba Cloud** across AI Stats today, adding another provider option for supported gateway and API workflows.
+***
 
-### [Alibaba Cloud](https://www.alibabacloud.com/help/en/model-studio/getting-started/what-is-model-studio)
-Alibaba Cloud gives us another production provider route, including support for its DashScope-compatible model surfaces and broader provider redundancy for teams deploying globally.
+## May 15, 2026
 
-This rollout includes:
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-- provider availability across AI Stats
-- gateway coverage for Alibaba Cloud compatible routes
-- documentation and provider-surface updates for the new integration
+- Grok Build 0.1 was added.
+- Aion 3.0 and Step 3.6 were tracked as `Rumoured`.
 
-You can explore Alibaba Cloud support through the latest provider coverage and gateway updates.
+***
 
-![Alibaba Cloud](../images/Alibaba-Cloud.png)
+## May 7, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-<Update label="5th March 2026">
-# GPT 5.4 and GPT 5.4 Pro Introduced
+- Provider availability, pricing summaries, and realtime minute pricing were improved.
 
-We introduced **GPT 5.4** and **GPT 5.4 Pro** across AI Stats and exposed both models through the API.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-![GPT 5.4](../images/gpt-5-4.png)
+- Gemini 3.1 Flash-Lite was added.
+- GPT Realtime 2, GPT Realtime Translate, and GPT Realtime Whisper were added.
+- Kimi K2 metadata was refreshed.
 
-This rollout includes:
+***
 
-- Model discovery and availability updates in AI Stats
-- Gateway and API availability for GPT 5.4 and GPT 5.4 Pro
-- Documentation updates to reflect the latest OpenAI model support
+## May 6, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-<Update label="3rd March 2026">
-# Gemini 3.1 Flash Lite Preview Introduced
+- Video and async job lifecycle coverage expanded.
 
-We introduced **Gemini 3.1 Flash Lite Preview** across AI Stats and rolled out support across product surfaces.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-![Gemini 3.1 Flash Lite Preview](../images/gemini-3.1-flash-lite.png)
+- Grok Imagine Image Quality was added.
 
-This rollout includes:
+***
 
-- Model discovery and availability updates in AI Stats
-- Gateway compatibility and routing coverage updates for Gemini 3.1 Flash Lite Preview
-- Documentation updates to reflect the latest Gemini 3.1 support
+## May 5, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-<Update label="2nd March 2026">
-# Responses API Assistant Phase Support
+- `chat-latest` was added.
 
-We added support for OpenAI Responses assistant message `phase` values:
+***
 
-- Request handling now accepts assistant message `phase` in Responses input items (`commentary` or `final_answer`)
-- Gateway Responses payloads now preserve and return assistant message `phase` when present
-- OpenAPI documentation has been updated to document `phase` in Responses request and response message items
+## May 1, 2026
 
-## How to pass `phase` across turns
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-Use `phase` only on assistant messages:
+- SDK `2.0.3` was released across TypeScript, Python, Go, C#, Java, PHP, and Ruby.
 
-- `commentary` for intermediate assistant steps
-- `final_answer` for final assistant answers
-- Preserve and resend the original assistant message `phase` values on follow-up turns
+***
 
-### Example: turn 1 request
+## April 30, 2026
 
-```json
-{
-  "model": "openai/gpt-5.3-codex",
-  "input": [
-    { "type": "message", "role": "user", "content": "Plan this refactor." }
-  ]
-}
-```
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-### Example: turn 1 response excerpt
+- GPT 5.5 Cyber was announced and tracked as `Withheld`.
+- Benchmark metadata, benchmark ranks, and CrofAI pricing or discovery checks were refreshed.
 
-```json
-{
-  "output": [
-    {
-      "type": "message",
-      "role": "assistant",
-      "phase": "commentary",
-      "content": [{ "type": "output_text", "text": "First, break this into modules..." }]
-    },
-    {
-      "type": "message",
-      "role": "assistant",
-      "phase": "final_answer",
-      "content": [{ "type": "output_text", "text": "Recommended approach: ..." }]
-    }
-  ]
-}
-```
+***
 
-### Example: turn 2 request (resend assistant messages with `phase`)
+## April 29, 2026
 
-```json
-{
-  "model": "openai/gpt-5.3-codex",
-  "input": [
-    {
-      "type": "message",
-      "role": "assistant",
-      "phase": "commentary",
-      "content": [{ "type": "output_text", "text": "First, break this into modules..." }]
-    },
-    {
-      "type": "message",
-      "role": "assistant",
-      "phase": "final_answer",
-      "content": [{ "type": "output_text", "text": "Recommended approach: ..." }]
-    },
-    { "type": "message", "role": "user", "content": "Now generate the migration checklist." }
-  ]
-}
-```
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-</Update>
+- SDK `2.0.2` landed with runtime model identifiers and callable-on-gateway helper updates.
 
-<Update label="26th February 2026">
-# Nano Banana 2 Introduced
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We have introduced **Nano Banana 2** across AI Stats, released as **Gemini 3.1 Flash Image Preview**.
+- Mistral Medium 3.5 was added.
+- IBM Granite 4.1 3B, 8B, and 30B were added.
 
-![Nano Banana 2](../images/nano-banana-2.png)
+***
 
-This rollout includes:
+## April 25, 2026
 
-- Model availability and discovery updates in AI Stats
-- Gateway compatibility coverage updates for Gemini 3.1 Flash Image Preview
-- Documentation refreshes to reflect the latest Nano Banana model support
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-</Update>
+- Low-balance alerts, billing safeguards, and related pricing edge-case fixes shipped.
 
-<Update label="19th February 2026">
-# Gemini 3.1 Pro Preview Introduced
+***
 
-We have introduced **Gemini 3.1 Pro Preview** across AI Stats and surfaced it across our product experiences.
+## April 22, 2026
 
-![Gemini 3.1 Pro Preview](../images/gemini-3.1-pro.png)
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-This rollout includes:
+- SDK `2.0.0` shipped with regenerated clients and broader parity against the current gateway contract.
 
-- Model availability and discovery updates in AI Stats
-- Gateway coverage and pricing surface updates for Gemini 3.1 text-generation support
-- Documentation refreshes to reflect the latest Gemini 3.1 model support
+***
 
-</Update>
+## April 21, 2026
 
-<Update label="18th February 2026">
-# Claude Sonnet 4.6 Introduced
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-We have introduced **Claude Sonnet 4.6** across AI Stats and surfaced it across our product experiences.
+- The announcements hub, workspace management surfaces, and related membership flows shipped.
 
-![Claude Sonnet 4.6](../images/sonnet-4.6.png)
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-This rollout includes:
+- GPT Image 2 was added.
+- Qwen 3.6 Max Preview was added.
+- Kimi K2.6 was added.
 
-- Model availability and discovery updates in AI Stats
-- Gateway compatibility coverage updates for the latest Anthropic model line
-- Documentation refreshes to reflect the latest model support
+***
 
-</Update>
+## April 18, 2026
 
-<Update label="30th January 2026">
-# Major Overhaul Completion and Enhanced Compatibility
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-We have been tirelessly working on the next phase of AI Stats, and we're thrilled to announce that this comprehensive overhaul has now been completed. This update represents a significant leap forward in our mission to provide a unified, scalable platform for AI model access and insights.
+- SDK `1.2.0` synced model availability, generated types, and docs with the latest catalog changes.
 
-## AI Stats Gateway gets another overhaul
+***
 
-The AI Stats Gateway has had another major overhaul behind the scenes, this has allowed us to introduce compatibility with Anthropic Messages API, giving another way for you to use our gateway. We have also enhanced the way that operations are done, meaning it should be faster, and add less latency than ever before, allowing you to build even more! We also are now confident in this design to allow us to expand rapidly, and across new modalities without major changes being required. We hope that we can continue to expand the gateway comprehensively in the coming month or two.
+## April 17, 2026
 
-## Database Overhaul for Long-Term Expansion
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-At the core of this update is a complete redesign of our database architecture. We've implemented a more flexible and robust schema that ensures our gateway can scale seamlessly to support an ever-growing number of models across all modalities - text, image, video, audio, moderations, embeddings, and beyond. This foundation should allow us to rapidly expand our coverage while maintaining high performance and reliability. This also ties into the Gateway overhaul, ensuring we have the data to offer the best developer experience possible - whilst also being part of our longer term plans to move the data from static JSON files into the database for accuracy, this **does not** mean we won't accept contributions via GitHub, we always will!
+- Grok 4.3 was added.
+- Qwen 3.6 35B A3B was added.
 
-## OpenAI & Anthropic Compatibility with New /messages Endpoint
+***
 
-Building on our existing OpenAI compatibility through the `/chat/completions` and `/responses` endpoints, we're now introducing Anthropic compatibility with our new `/messages` endpoint. This endpoint provides a standardized interface for chat-based interactions, making it easier than ever for developers to integrate with our gateway regardless of their familiarity with specific provider APIs. The `/messages` endpoint supports advanced features like streaming responses, tool calling, and multi-modal inputs, ensuring a smooth transition for existing OpenAI or Anthropic users. We have done our best to make things completely interoperable, however, please be aware there are some differences in how certain features work between providers, so please review the documentation carefully and report anything that seems off!
+## April 16, 2026
 
-## Website Improvements for Better User Experience
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-To make AI Stats the "one stop shop" platform for staying up to date with AI developments, we've overhauled key sections of the website. These improvements include:
+- Claude Opus 4.7 was added.
 
-- Optimized load times and mobile responsiveness for on-the-go access
-- Improved search and filtering capabilities across all data sets
-- Introduced a Playground for easily testing models through the gateway in a simple but powerful interface - more features planned for this!
-- Enhanced model pages with clearer pricing, availability, and performance metrics
+***
 
-These changes create a more intuitive and efficient experience, helping users quickly find the information they need and make informed decisions about AI models.
+## April 15, 2026
 
-We would appreciate any feedback on these changes or any parts of the website, so please get in touch if you have any suggestions!
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## SDK Developments
+- Gemini 3.1 Flash TTS Preview was added.
 
-We're overhauling our in house SDKs to move away from AI SDK-style integrations and instead develop our own native implementations. This shift enables us to create a unified interface across all our SDKs, allowing developers to interact with any supported model through a single, consistent method. We're excited about the possibilities unlocked by our gateway-powered SDKs and believe that making a wide range of models accessible across multiple programming languages will empower the community to build truly innovative applications. We also are working on our own AI SDK (Vercel) to allow even easier integration with our gateway, more details on this will be shared soon!
+***
 
-## Exploring New Endpoints for Expanded Model Access
+## April 14, 2026
 
-To maximize access to cutting-edge AI models, we're actively exploring and prototyping new endpoints. These will include specialized interfaces for emerging modalities like video generation, embeddings, and audio processing as well as lesser accessible modalities like music and high quality speech generation. Our goal is to provide developers with the broadest possible range of AI capabilities through a single, unified gateway.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-Our ultimate aspiration is to support every model in our database through the gateway, making one of the most powerful technologies available as accessible as possible. We aim to enable seamless model switching, democratizing AI for developers and researchers across the globe.
+- Gemini Robotics ER 1.6 Preview was added.
+- GPT 5.4 Cyber was added.
 
-This update marks a pivotal moment in AI Stats' evolution. We're committed to continuing our rapid pace of innovation, driven by community feedback and the ever-advancing AI landscape. Stay tuned for more updates as we roll out these new features and expand our model coverage.
+***
 
-Thanks for being part of this journey with us!
+## April 8, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-<Update label="15th December 2025">
-# SDKs Alpha Release
+- Muse Spark and Muse Spark Contemplating were added.
 
-Our SDKs are now available in an early alpha stage in V0.2.0. We initially released them with the expectation that the OpenAPI Generator would work seamlessly, but we quickly realized it wasn't performing as expected and needs significant review and improvement. The SDKs are still available for use, but we want to be transparent that they are in alpha and may require updates as we refine the generation process.
+***
 
-If anyone can help with testing these or has experience with OpenAPI generators, we would be very grateful for your input. We want to build a world-class Developer Experience, where AI becomes something so trivial to use, it can easily be added, experimented, used for research, all through our single platform.
+## April 7, 2026
 
-We have decided for now to remove the C++ and Rust SDKs from our plans. We might add them back in the future should there be demand, but we are focusing on a smaller set of languages whilst we find the best API generators that we can use and make sure the most used languages are supported. We hope to have all SDKs moved to a V1 ASAP - targeting no later than mid-January 2026.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We also plan to unify all SDK versions alongside the API and Website + Docs at some point in the future for better consistency.
+- Claude Mythos Preview was added.
+- GLM 5.1 was added.
 
-#### Python SDK Alpha
+***
 
-```bash
-pip install --upgrade ai-stats-py-sdk==0.2.0a1
-```
+## April 4, 2026
 
-#### TypeScript / JavaScript SDK Alpha
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-<CodeGroup>
+- Mobile model pages, pricing layouts, and free-route visibility were improved, and the Pay As You Go top-up fee dropped to 5%.
 
-    ```bash title="npm"
-    npm install @ai-stats/sdk@0.2.0-alpha.1
-    ```
+***
 
-    ```bash title="pnpm"
-    pnpm install @ai-stats/sdk@0.2.0-alpha.1
-    ```
+## April 2, 2026
 
-    ```bash title="yarn"
-    yarn add @ai-stats/sdk@0.2.0-alpha.1
-    ```
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-    </CodeGroup>
+- Gemma 4 26B A4B and Gemma 4 31B were added.
 
-</Update>
+***
 
-<Update label="12th December 2025">
-# Improving Our API
+## April 1, 2026
 
-## API
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-The API has received a major breaking change update, introducing OpenAI Compatibility, with the `/responses` endpoint added for unified model responses supporting text, images, and other modalities. We have done this to align with the OpenAI API structure, making it easier for us to add more models, whilst also making it easier for developers to integrate with our gateway if they are already familiar with the OpenAI API. We will always maintain a superset of the OpenAI API to ensure we can support all models and features available on our gateway.
+- GLM 5V Turbo was added.
+- Qwen 3.6 Plus was added.
 
-Additionally, the existing `/chat/completions`, `/moderations` and `/embeddings` endpoints have been updated to align with the OpenAI API structure. Other endpoints will be coming soon to provide full OpenAI API compatibility while maintaining the gateway's unified interface and metadata. To be transparent about our future plans, we have added placeholder endpoints and their corresponding documentation. However, models for these endpoints have yet to be enabled. We are looking to bring as many of these endpoints online as soon as possible, providing as many models and as many providers for these models too.
+***
 
-## SDKs
+## March 31, 2026
 
-The SDKs have been updated to reflect breaking changes made to the API, this means if you are using the SDKs, you will need to update to the latest major versions and adapt. If any help is needed with this migration, please get in touch and we will be happy to help!
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We have also made some substantial progress on SDKs for other languages, with initial versions hoped to be released by the end of 2025 - these will likely be spotted around the website, and documentation, whilst they aren't all available yet, we are working as hard as we can to get them available as soon as possible.
+- Veo 3.1 Lite Preview was added.
 
-### Updating SDKs
+***
 
-Due to breaking changes, please update your SDKs to the latest versions:
+## March 22, 2026
 
-#### Python SDK
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-```bash
-pip install --upgrade ai-stats-py-sdk
-```
+- New language SDKs shipped, TypeScript and Python SDKs were overhauled, and chat rooms went multimodal.
+- Foundry launched, LLM Council became the first Foundry project, and SDK `1.1.0` aligned model availability and lifecycle warnings with the API.
 
-#### TypeScript / JavaScript SDK
+***
 
-<CodeGroup>
+## March 19, 2026
 
-    ```bash title="npm"
-    npm update @ai-stats/sdk
-    ```
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-    ```bash title="pnpm"
-    pnpm update @ai-stats/sdk
-    ```
+- MiMo V2 Pro, MiMo V2 Omni, and MiMo V2 TTS were added.
+- Cursor Composer 2 was added.
 
-    ```bash title="yarn"
-    yarn upgrade @ai-stats/sdk
-    ```
+***
 
-    </CodeGroup>
+## March 18, 2026
 
-### Reviewing API Implementations
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-This is a major milestone on our journey to a V1 API. We hope this will be the last breaking change to the API as we take the decision to align with OpenAI's Standard. Please review your REST API implementations and refer to the updated [API reference](./api-reference/introduction.mdx) for the latest schema and endpoints. The changes are rather minor, however, please review them.
+- MiniMax M2.7 was added.
 
-## Website
+***
 
-The website has undergone significant updates to the Model Gateway Page and Model Pricing Page. The Model Gateway Page is now a Quickstart page, supporting more code samples to get up and running quicker, as well as trimming of unnecessary information on the page. This information has largely been moved to the updated Model Pricing Page, which has been enhanced to provide clearer pricing information and set up for future enhancements across all providers.
+## March 17, 2026
 
-We have also added full Cookie Preferences for better user control over privacy settings.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-Additionally, we fixed an issue where Model Updates were incorrectly showing as "Today" even when they occurred on historical dates due to our Upgrade to Next.js 16.
+- GPT 5.4 Mini and GPT 5.4 Nano were added.
+- Mistral Moderation 2 was added.
 
-We have also tweaked Web Watchers to be more useful.
+***
 
-## Documentation
+## March 16, 2026
 
-We have expanded the SDK documentation in preperation for launching these shortly, with more examples and improved guides for each endpoint to help developers integrate our APIs more easily.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## Infrastructure
+- Leanstral was added.
+- Mistral Small 4 was added.
 
-We have implemented a Nightly CI process to automatically update model statuses based on their release dates, ensuring the data remains current and accurate.
+***
 
-</Update>
+## March 15, 2026
 
-<Update label="5th December 2025">
-# UI Improvements
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-Dark Mode has been implemented, offering users a darker theme to reduce eye strain and improve comfort in low-light environments.
+- GLM 5 Turbo was added.
 
-</Update>
+***
 
-<Update label="1st December 2025">
-# Introducing The New AI Stats
+## March 12, 2026
 
-We are excited to announce a major update to AI Stats. This is the culmination of months of work to bring a major overhaul to our website and offering. Today, we are introducing a unified model gateway, massively expanded data coverage, and a revamped user experience, as well as much more. This release marks a significant step towards our vision of making AI integration a seamless experience for developers and researchers alike.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-## Rebranding
+- The models display page was overhauled for clearer availability, metadata hierarchy, and support context.
 
-We have rebranded slightly, with adjusted logos and wordmarks to better reflect our mission and vision. The new design is more modern, clean, and versatile, allowing us to better represent our brand across various platforms and media. We hope you like the new look as much as we do!
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## Data coverage
+- Nemotron 3 Super was added.
 
-At the heart of AI Stats is our database. It is designed to be a highly expansive and flexible store of model data. If you have used AI Stats before, you may know we only used to have text-based models. However, we always wanted to change that, so today we are announcing that we have grown our entire data coverage dramatically to allow us to track more models, such as image, video, and embedding models, in as much detail as possible.
+***
 
-There is still a long road to capture every organisation, model, and benchmark result. We currently sit at ~30% coverage, but we are prioritising expanding this as quickly as possible and aim to reach at least 60% over the next year. We want our database to be the gold standard, whilst still keeping it open source so anyone can contribute. We always welcome contributions to help us get there faster!
+## March 11, 2026
 
-### Model Availability
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-With the introduction of the AI Stats Gateway, we have also reworked how we track model availability. A full subscription plan section now allows you to see all the subscription plans we track, the models they include, and the features they offer, as well as clearly seeing the price. We have also adjusted how we display availability to make it clearer and easier to see where models are available. We plan to continue tweaking this section to make it as useful as possible.
+- Grok 4.20 was added.
 
-## Data Overhaul
+***
 
-We have revisited what data we store, how we store it, and how we present that data, so we have built a smoother, more reliable experience across every page. It is not perfect yet, and we have plenty of optimisations ahead. We are working hard to adjust certain pages to make them clearer and easier to use. We know there is more to do, and we plan to make trends easier to track, comparisons easier to make, and data more accessible. If you have any feedback on how we can improve - whether that is certain pages and their designs or layouts, or even tracking new data points - please reach out!
+## March 10, 2026
 
-## User Experience Improvements
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-We have redesigned many parts of the website to make it easier to navigate, find information, and understand the data presented. We have worked on improving load times and responsiveness, so you can keep up to date on the go, as well as overall usability. We are committed to making AI Stats a joy to use, no matter how much data we have, and we will continue to refine the user experience based on your feedback.
+- A broader brand refresh shipped across the website and docs.
+- Alibaba Cloud provider coverage landed across AI Stats, gateway routes, and documentation.
 
-### Benchmark pages
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We have revamped and overhauled the benchmark pages to make them clearer and easier to see which models are performing best, and how scores were achieved, with more detailed information on the methodology used. We plan to continue to work on these pages to make them as easy as possible to interpret, and to filter the data so you can conduct your own analysis.
+- Gemini Embedding 2 Preview was added.
 
-### API provider pages
+***
 
-We have also redesigned the API provider pages to give a clear overview of the performance data we get from our gateway, so you can see exactly how each provider is performing and which models are being used most. We then also give a breakdown of each set of models provided by the provider, so you can see what models are available per provider, as well as easily see if they are available on the gateway. We plan to adjust this shortly to include detailed pricing information, so you can easily compare models' pricing.
+## March 5, 2026
 
-## Updates
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-I am excited to announce an expansion of the Latest Updates section on the homepage. This section will now feature not only the latest model changes, but also the latest news and YouTube releases, alongside the model updates. With new pages inside the [Updates](https://ai-stats.phaseo.app/updates) section too, there has never been a better place to stay updated in the ever-changing world of AI! Stay tuned for even more updates to this section in the near future, as we plan to add more to keep you up to date with everything AI and AI Stats.
+- GPT 5.4 and GPT 5.4 Pro landed across discovery, gateway, and docs.
 
-## Our Model Gateway - Alpha
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-We are also introducing a brand-new unified gateway to use any supported AI model with a single API interface. We are expanding coverage as fast as possible while keeping the service reliable at scale - please stress-test it and tell us what breaks. The integration steps are all covered per model page, and you can find the full API reference in our [docs](./api-reference/introduction.mdx).
+- GPT 5.4 was added.
+- GPT 5.4 Pro was added.
 
-We would not yet recommend the API for production use, but we are excited to get feedback from the community to help us improve it rapidly. We will take any feedback as seriously as possible to make the gateway as reliable and useful as possible.
+***
 
-> Please also be aware we are yet to fully finalise the schema for requests and responses, so these may change in the coming weeks.
+## March 3, 2026
 
-### SDKs - Alpha
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-Today, we are also announcing official SDKs for Python and TypeScript/JavaScript. Pick your preferred package manager and run one of the commands below to get up and running.
+- Gemini 3.1 Flash Lite Preview landed across product surfaces, gateway routing, and docs.
 
-#### Python SDK
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-The Python SDK provides a simple interface to interact with the Model Gateway, manage API keys, and handle requests/responses.
+- Gemini 3.1 Flash Lite Preview was added.
 
-```bash
-pip install ai-stats-py-sdk
-```
+***
 
-#### TypeScript / JavaScript SDK
+## March 2, 2026
 
-The TypeScript/JavaScript SDK makes it easy to integrate AI models into web and backend applications, with first-class async support and built-in error handling.
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-<CodeGroup>
+- Responses API assistant `phase` support landed across request handling, response payloads, and OpenAPI docs.
 
-    ```bash title="npm"
-    npm install @ai-stats/sdk
-    ```
+***
 
-    ```bash title="pnpm"
-    pnpm install @ai-stats/sdk
-    ```
+## February 26, 2026
 
-    ```bash title="yarn"
-    yarn add @ai-stats/sdk
-    ```
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
 
-    </CodeGroup>
+- Gemini 3.1 Flash Image Preview support landed across discovery, gateway compatibility, and docs.
 
-We plan to expand SDK support to other languages based on community feedback, so please let us know what you would like to see next!
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
-## Our Future Plan
+- Gemini 3.1 Flash Image Preview (Nano Banana 2) was added.
 
-Right from the start of AI Stats, we believe that a completely public, open source approach is the best way to build a reliable, trustworthy service. We want to continue this with our new version of AI Stats, which is why the entire source code for the website, gateway, and database is available on [GitHub](https://github.com/AI-Stats/AI-Stats). We welcome contributions, feature ideas, and performance testing - help us push the limits of infra together to build a better gateway, and a better AI Stats. Open to everyone, built by the community.
+***
 
-We plan to currently work at a rapid pace to expand data coverage, refine the user experience and expand our gateway. We have a public [roadmap](https://ai-stats.phaseo.app/roadmap) of features and improvements we want to make, but we are always open to feedback from our users to help us prioritise what matters most to them.
+## February 24, 2026
 
-</Update>
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
 
+- Mercury Edit 2 was added.
+
+***
+
+## February 23, 2026
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- GPT Realtime 1.5 and GPT Audio 1.5 were added.
+
+***
+
+## February 19, 2026
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- Gemini 3.1 Pro Preview coverage landed across discovery, pricing, gateway support, and docs.
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Gemini 3.1 Pro Preview was added.
+
+***
+
+## February 18, 2026
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- Claude Sonnet 4.6 coverage landed across discovery, gateway compatibility, and docs.
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Claude Sonnet 4.6 was added.
+
+***
+
+## January 30, 2026
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- The gateway was overhauled again, including Anthropic-compatible `/messages` support.
+- Database architecture, website UX, playground tooling, and SDK direction were all refreshed for broader expansion.
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- GLM 4.5 Air X and GLM 4.5 X were added.
+- Grok Imagine Image and Grok Imagine Video were added.
+- Qwen 3 Max Thinking, Kimi K2.5, and MiniMax M2 Her were added.
+
+***
+
+## January 19, 2026
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Bulk catalog additions were imported through Database Monitor.
+
+***
+
+## January 3, 2026
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Organisation coverage expanded with Relace, Arcee AI, Liquid AI, Sourceful, Prime Intellect, and Naver HyperClova.
+- New model coverage included Music 2.0, Speech 2.6, GLM 4.7, Seed 1.6, Seed 1.6 Flash, Seed 1.8, Seedream 4.5, Relace Search, and Trinity Large.
+- Provider coverage expanded across Moonshot AI Turbo, Nebius Token Factory, Crusoe, Liquid, Mancer, Xiaomi, Cloudflare, Hyperbolic, Perplexity, Fireworks, SiliconFlow, and more.
+
+***
+
+## December 31, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- K EXAONE was added.
+
+***
+
+## December 29, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- HyperClova X Seed Omni 8B and HyperClova X Seed Think 32B were added.
+
+***
+
+## December 23, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- MiniMax M2.1 was added.
+
+***
+
+## December 22, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- GLM 4.7 was added.
+
+***
+
+## December 19, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- GPT 5.2 Codex, OCR 3, and GLM 4.7 were added.
+
+***
+
+## December 18, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Gemini 3 Flash Preview was added.
+
+***
+
+## December 17, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Organisation coverage expanded with Xiaomi and AllenAI.
+- New model coverage included GPT Image 1.5, ChatGPT Image Latest, MiMo V2 Flash, Bolmo 1B, Bolmo 7B, Molmo 2 4B, Molmo 2 8B, and several OLMo 3 variants.
+
+***
+
+## December 15, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- Early alpha SDK releases landed for Python and TypeScript or JavaScript.
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- GPT 5.2 Mini, GPT 4o Mini TTS, GPT 4o Mini Transcribe, GPT Realtime Mini, GPT Audio Mini, and Claude 4.7 Sonnet were added.
+
+***
+
+## December 12, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- OpenAI-compatible `/responses` support, aligned SDKs, and gateway quickstart or pricing page updates shipped.
+- Docs expanded ahead of the SDK launch, and nightly CI started automatically refreshing model statuses.
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- GPT 5.2, GPT 5.2 Chat, GPT 5.2 Pro, GPT 5.2 Mini, Rerank V4 Pro, and Rerank V4 Fast were added.
+
+***
+
+## December 10, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Qwen 3 Omni Flash was added.
+
+***
+
+## December 9, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Devstral 2, Devstral Small 2, and Nomos 1 were added.
+
+***
+
+## December 8, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Essential AI Rnj-1, Nous Research Hermes 4.3, Jamba Reasoning 3B, GLM 4.6V, GLM 4.6V Flash, Qwen 3 TTS, and Gemini 3 Flash Image were added.
+
+***
+
+## December 5, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- Dark mode shipped.
+
+***
+
+## December 2, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Mistral Large 3 675B, Ministral 3 14B, Ministral 3 8B, Ministral 3 3B, Nova 2 Lite, Nova 2 Pro, Nova 2 Sonic, Nova 2 Omni, and Nova Multimodal Embeddings were added.
+
+***
+
+## December 1, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+
+- AI Stats relaunched with a refreshed brand, a broader gateway, and much wider data coverage.
+- Model availability, benchmark pages, provider pages, and the latest-updates surfaces were overhauled.
+- The unified gateway entered alpha, and the first Python and TypeScript or JavaScript SDKs launched alongside it.
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Deepseek V3.2 Speciale and DeepSeek V3.2 were added.
+
+***
+
+## June 30, 2025
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Hunyuan A13B Instruct was added.
+
+***
+
+## August 30, 2024
+
+<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+
+- Command R was added.

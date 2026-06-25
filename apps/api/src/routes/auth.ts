@@ -11,7 +11,6 @@ import {
 	exchangeSchema,
 	generateGatewayKey,
 	hmacSecret,
-	normalizeScopeInput,
 	normalizeSupabaseBase,
 	parseRedirectUriFromQuery,
 	resolveOAuthApp,
@@ -142,10 +141,13 @@ authRouter.post(
 			return resolvedApp.response;
 		}
 
-		const scopeInput = normalizeScopeInput(input.scopes);
-		if (scopeInput.ok === false) {
+		if (input.scopes !== undefined) {
 			return json(
-				{ ok: false, error: "invalid_scopes", message: scopeInput.message },
+				{
+					ok: false,
+					error: "invalid_scopes",
+					message: "API key scopes are not supported. Use guardrails, workspace settings, and related policy controls instead.",
+				},
 				400,
 				{ "Cache-Control": "no-store" },
 			);
@@ -292,7 +294,7 @@ authRouter.post(
 					hash,
 					prefix: generated.prefix,
 					status: "active",
-					scopes: scopeInput.value,
+					scopes: "[]",
 					created_by: oauthUserId,
 					daily_limit_requests: 0,
 					weekly_limit_requests: 0,

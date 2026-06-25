@@ -43,6 +43,11 @@ export interface ModelProviderAvailability {
     | "deranked_lvl3"
     | "disabled";
   params: string[];
+  params_detail?: {
+    [key: string]: {
+      [key: string]: unknown;
+    };
+  };
   provider_routing_status:
     | "active"
     | "deranked_lvl1"
@@ -60,4 +65,10 @@ export interface ModelProviderAvailability {
     | "project_limited"
     | "paused"
     | "soft_blocked";
+  supported_parameters?: string[];
+  supported_parameters_detail?: {
+    [key: string]: {
+      [key: string]: unknown;
+    };
+  };
 }

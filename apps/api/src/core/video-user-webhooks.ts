@@ -9,7 +9,8 @@ type VideoWebhookEventType =
 	| "video.progress"
 	| "video.completed"
 	| "video.failed"
-	| "video.cancelled";
+	| "video.cancelled"
+	| "video.expired";
 
 function toPhase(eventType: VideoWebhookEventType): AsyncNotificationPhase {
 	switch (eventType) {
@@ -23,6 +24,8 @@ function toPhase(eventType: VideoWebhookEventType): AsyncNotificationPhase {
 			return "failed";
 		case "video.cancelled":
 			return "cancelled";
+		case "video.expired":
+			return "expired";
 	}
 }
 

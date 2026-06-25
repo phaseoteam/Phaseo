@@ -1,7 +1,10 @@
 import { ReactNode, Suspense } from "react";
 import Link from "next/link";
-import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
-import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
+import {
+	fetchFrontendModelHeader,
+	fetchFrontendModelOverview,
+	fetchFrontendModelPageNotice,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import TabBar from "@/components/(data)/model/ModelTabs";
 import { Logo } from "@/components/Logo";
 import ModelEditButton from "./edit/ModelEditButton";
@@ -13,6 +16,7 @@ import { redirect } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
+import ModelPageNotice from "./ModelPageNotice";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -64,7 +68,7 @@ export default async function ModelDetailShell({
 	includeHidden = false,
 }: ModelDetailShellProps) {
 	const isFreeRouter = isFreeRouterModelId(modelId);
-	const [header, modelOverview] = isFreeRouter
+	const [header, modelOverview, modelPageNotice] = isFreeRouter
 		? [
 				{
 					model_id: FREE_ROUTER_MODEL_ID,
@@ -79,15 +83,17 @@ export default async function ModelDetailShell({
 					hidden: false,
 				},
 				null,
+				null,
 			]
 		: await Promise.all([
-				getModelOverviewHeader(modelId, includeHidden).catch((error) => {
+				fetchFrontendModelHeader(modelId, includeHidden).catch((error) => {
 					if (isModelNotFoundError(error)) {
 						return null;
 					}
 					throw error;
 				}),
-				getModelOverviewCached(modelId, includeHidden).catch(() => null),
+				fetchFrontendModelOverview(modelId).catch(() => null),
+				fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null),
 			]);
 
 	if (!header) {
@@ -110,6 +116,12 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
+				{modelPageNotice ? (
+					<div className="mb-6">
+						<ModelPageNotice notice={modelPageNotice} />
+					</div>
+				) : null}
+
 				<div className="mb-8 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="flex w-full items-start gap-4">
 						<div className="flex shrink-0 items-center justify-center">

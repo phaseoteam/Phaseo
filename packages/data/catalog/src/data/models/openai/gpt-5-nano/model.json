@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 8
+      "rank": 10
     },
     {
       "benchmark_id": "collie",
@@ -125,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 85
+      "rank": 91
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -157,7 +157,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5/",
-      "rank": 126
+      "rank": 132
     },
     {
       "benchmark_id": "longfact-concepts-hallucination-rate",
@@ -165,7 +165,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "longfact-objects-hallucination-rate",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 5
+      "rank": 3
     },
     {
       "benchmark_id": "mmmu",
@@ -189,7 +189,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 45
+      "rank": 49
     },
     {
       "benchmark_id": "multi-challenge",
@@ -221,7 +221,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort, No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 94
+      "rank": 97
     },
     {
       "benchmark_id": "tau-2-airline",
@@ -245,7 +245,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 34
+      "rank": 36
     },
     {
       "benchmark_id": "videomme",
@@ -261,7 +261,7 @@
       "is_self_reported": true,
       "other_info": "High Reasoning Effort",
       "source_link": "https://openai.com/index/introducing-gpt-5-for-developers/",
-      "rank": 41
+      "rank": 42
     },
     {
       "benchmark_id": "arc-agi-1",

@@ -445,13 +445,11 @@ describe("decodeOpenAIChatRequest", () => {
 			messages: [{ role: "user", content: "Hello" }],
 			stream_options: { include_usage: true },
 			service_tier: "standard",
-			speed: "slow",
 		};
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 		expect(ir.streamOptions).toEqual({ include_usage: true });
 		expect(ir.serviceTier).toBe("standard");
-		expect(ir.speed).toBe("slow");
 	});
 
 	it("should preserve json_schema strict=false in response_format", () => {
@@ -559,7 +557,7 @@ describe("decodeOpenAIChatRequest", () => {
 			requireZeroDataRetention: true,
 		});
 	});
-	it("should map speed fast to priority service tier", () => {
+	it("should ignore text speed because service_tier is the public control", () => {
 		const request = {
 			model: "gpt-4",
 			messages: [{ role: "user", content: "Hello" }],
@@ -568,8 +566,7 @@ describe("decodeOpenAIChatRequest", () => {
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 
-		expect(ir.speed).toBe("fast");
-		expect(ir.serviceTier).toBe("priority");
+		expect(ir.serviceTier).toBeUndefined();
 	});
 
 	it("should preserve explicit service_tier from OpenAI request", () => {
@@ -582,7 +579,6 @@ describe("decodeOpenAIChatRequest", () => {
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 
 		expect(ir.serviceTier).toBe("priority");
-		expect(ir.speed).toBeUndefined();
 	});
 
 	it("should decode user metadata", () => {
@@ -720,7 +716,7 @@ describe("decodeOpenAIChatRequest cache options", () => {
 	});
 
 
-	it("ignores top-level cache aliases", () => {
+	it("decodes top-level cache_control and ignores unrelated top-level cache aliases", () => {
 		const request = {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "Hello" }],
@@ -731,7 +727,10 @@ describe("decodeOpenAIChatRequest cache options", () => {
 
 		const ir: IRChatRequest = decodeOpenAIChatRequest(request as any);
 		expect(ir.promptCacheRetention).toBeUndefined();
-		expect(ir.anthropicCacheControl).toBeUndefined();
+		expect(ir.anthropicCacheControl).toEqual({
+			type: "ephemeral",
+			ttl: "5m",
+		});
 		expect(ir.googleCachedContent).toBeUndefined();
 	});
 
@@ -781,7 +780,6 @@ describe("decodeOpenAIChatRequest cache options", () => {
 		});
 	});
 });
-
 
 
 

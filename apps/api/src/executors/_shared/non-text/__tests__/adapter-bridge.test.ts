@@ -1,7 +1,52 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 import { installFetchMock, jsonResponse } from "../../../../../tests/helpers/mock-fetch";
 import { execute } from "../adapter-bridge";
+
+const saveVideoJobMetaMock = vi.fn(async () => undefined);
+const state = vi.hoisted(() => ({
+	reservationResult: null as Record<string, unknown> | null,
+	reservationCalls: [] as Array<Record<string, unknown>>,
+	releaseCalls: [] as Array<Record<string, unknown>>,
+	saveVideoJobMetaError: null as Error | null,
+}));
+
+vi.mock("@core/video-reservations", () => ({
+	isInsufficientVideoReservationStatus: (status: unknown) =>
+		status === "insufficient_funds" || status === "insufficient_balance",
+	reserveVideoGenerationCredits: vi.fn(async (args: Record<string, unknown>) => {
+		state.reservationCalls.push(args);
+		return state.reservationResult ?? {
+			reservationId: "video_hold:req_bridge_video_1",
+			held: false,
+			amountNanos: 0,
+			status: "skip_zero_cost",
+		};
+	}),
+}));
+
+vi.mock("@core/video-jobs", () => ({
+	saveVideoJobMeta: (...args: unknown[]) => {
+		if (state.saveVideoJobMetaError) throw state.saveVideoJobMetaError;
+		return saveVideoJobMetaMock(...args);
+	},
+}));
+
+vi.mock("@core/wallet-reservations", () => ({
+	releaseWalletReservation: vi.fn(async (args: Record<string, unknown>) => {
+		state.releaseCalls.push(args);
+		return {
+			status: "released",
+			applied: true,
+			alreadyApplied: false,
+			amountNanos: 123_000_000,
+			beforeBalanceNanos: null,
+			afterBalanceNanos: null,
+			beforeReservedNanos: null,
+			afterReservedNanos: null,
+		};
+	}),
+}));
 
 beforeAll(() => {
 	setupTestRuntime();
@@ -12,6 +57,14 @@ afterAll(() => {
 });
 
 describe("non-text adapter bridge", () => {
+	beforeEach(() => {
+		saveVideoJobMetaMock.mockClear();
+		state.reservationResult = null;
+		state.reservationCalls = [];
+		state.releaseCalls = [];
+		state.saveVideoJobMetaError = null;
+	});
+
 	it("routes ElevenLabs audio.speech and emits audio data + character usage", async () => {
 		const mock = installFetchMock([
 			{
@@ -79,7 +132,7 @@ describe("non-text adapter bridge", () => {
 		expect(result.mappedRequest).toContain("\"voice\":\"rachel\"");
 	});
 
-	it("passes OpenAI video core fields and Veo superset options through to compat providers", async () => {
+	it("passes OpenAI video fields through to compat providers and stores the async job id", async () => {
 		let capturedBody: any = null;
 		const mock = installFetchMock([
 			{
@@ -98,21 +151,24 @@ describe("non-text adapter bridge", () => {
 				seconds: 6,
 				size: "1280x720",
 				aspectRatio: "16:9",
-				numberOfVideos: 1,
+				sampleCount: 1,
 				compressionQuality: 70,
 				negativePrompt: "low quality",
 				seed: 42,
 				generateAudio: true,
-				referenceImages: [
-					{
-						reference_type: "style",
-						uri: "gs://bucket/style.png",
-					},
-				],
+				rawRequest: {
+					input_references: [
+						{
+							type: "image_url",
+							reference_type: "style",
+							image_url: { url: "https://example.com/style.png" },
+						},
+					],
+				},
 			},
 			requestId: "req_bridge_video_1",
 			workspaceId: "team_test",
-			providerId: "minimax",
+			providerId: "novita",
 			endpoint: "video.generation",
 			byokMeta: [],
 			pricingCard: {
@@ -132,12 +188,241 @@ describe("non-text adapter bridge", () => {
 		expect(capturedBody.prompt).toContain("sunrise");
 		expect(capturedBody.seconds).toBe(6);
 		expect(capturedBody.size).toBe("1280x720");
-		expect(capturedBody.aspect_ratio).toBe("16:9");
-		expect(capturedBody.number_of_videos).toBe(1);
+		expect(capturedBody.aspect_ratio).toBeUndefined();
+		expect(capturedBody.sample_count).toBe(1);
 		expect(capturedBody.compression_quality).toBe(70);
 		expect(capturedBody.negative_prompt).toBe("low quality");
 		expect(capturedBody.seed).toBe(42);
 		expect(capturedBody.generate_audio).toBe(true);
-		expect(Array.isArray(capturedBody.reference_images)).toBe(true);
+		expect(capturedBody.input_reference).toBe("https://example.com/style.png");
+		expect((result as any).ir?.nativeId).toBe("vid_456");
+		expect(state.reservationCalls).toEqual([
+			expect.objectContaining({
+				workspaceId: "team_test",
+				videoId: "req_bridge_video_1",
+				providerId: "novita",
+				model: "google/veo-3.1-generate-preview",
+				seconds: 6,
+			}),
+		]);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledWith(
+			"team_test",
+			"req_bridge_video_1",
+			expect.objectContaining({
+				provider: "novita",
+				providerTaskId: "vid_456",
+				requestId: "req_bridge_video_1",
+				reservationId: "video_hold:req_bridge_video_1",
+				reservationStatus: "skip_zero_cost",
+			}),
+			"vid_456",
+			"queued",
+		);
+	});
+
+	it("releases a held video reservation when compat video success omits native id", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_bridge_video_1",
+			held: true,
+			amountNanos: 123_000_000,
+			status: "held",
+		};
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/videos"),
+				response: jsonResponse({ status: "queued" }),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "google/veo-3.1-generate-preview",
+				prompt: "A quiet sunrise over the ocean.",
+				seconds: 6,
+				size: "1280x720",
+			},
+			requestId: "req_bridge_video_1",
+			workspaceId: "team_test",
+			providerId: "novita",
+			endpoint: "video.generation",
+			byokMeta: [],
+			pricingCard: {
+				provider: "novita",
+				model: "google/veo-3.1-generate-preview",
+				endpoint: "video.generation",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "invalid_upstream_response",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([
+			{
+				workspaceId: "team_test",
+				reservationId: "video_hold:req_bridge_video_1",
+				releaseRefId: "req_bridge_video_1",
+			},
+		]);
+	});
+
+	it("fails the compat video response when async job metadata cannot be persisted", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_bridge_video_1",
+			held: true,
+			amountNanos: 123_000_000,
+			status: "held",
+		};
+		state.saveVideoJobMetaError = new Error("async operation store unavailable");
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/videos"),
+				response: jsonResponse({ id: "vid_bridge_meta_failed", status: "queued" }),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "google/veo-3.1-generate-preview",
+				prompt: "A quiet sunrise over the ocean.",
+				seconds: 6,
+				size: "1280x720",
+			},
+			requestId: "req_bridge_video_1",
+			workspaceId: "team_test",
+			providerId: "novita",
+			endpoint: "video.generation",
+			byokMeta: [],
+			pricingCard: {
+				provider: "novita",
+				model: "google/veo-3.1-generate-preview",
+				endpoint: "video.generation",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(502);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "async_job_persistence_failed",
+				native_video_id: "vid_bridge_meta_failed",
+				reservation_id: "video_hold:req_bridge_video_1",
+				reservation_status: "held",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([]);
+	});
+
+	it("does not submit compat video upstream when reservation pricing dimensions are missing", async () => {
+		state.reservationResult = {
+			reservationId: "video_hold:req_bridge_video_1",
+			held: false,
+			amountNanos: 0,
+			status: "skip_missing_seconds_or_pricing",
+		};
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/videos"),
+				response: jsonResponse({ id: "vid_should_not_submit", status: "queued" }),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "google/veo-3.1-generate-preview",
+				prompt: "A quiet sunrise over the ocean.",
+				size: "1280x720",
+			},
+			requestId: "req_bridge_video_1",
+			workspaceId: "team_test",
+			providerId: "novita",
+			endpoint: "video.generation",
+			byokMeta: [],
+			pricingCard: {
+				provider: "novita",
+				model: "google/veo-3.1-generate-preview",
+				endpoint: "video.generation",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(400);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: {
+				type: "missing_billing_dimensions",
+			},
+		});
+		expect(result.ir).toBeUndefined();
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalled();
+		expect(state.releaseCalls).toEqual([]);
+		expect(mock.calls).toEqual([]);
+	});
+
+	it("preserves cancelled compat video lifecycle status instead of storing it as failed", async () => {
+		const mock = installFetchMock([
+			{
+				match: (url) => url.includes("/videos"),
+				response: jsonResponse({ id: "vid_cancelled_456", status: "canceled" }),
+			},
+		]);
+
+		const result = await execute({
+			ir: {
+				model: "google/veo-3.1-generate-preview",
+				prompt: "A quiet sunrise over the ocean.",
+				seconds: 6,
+				size: "1280x720",
+			},
+			requestId: "req_bridge_video_cancelled",
+			workspaceId: "team_test",
+			providerId: "novita",
+			endpoint: "video.generation",
+			byokMeta: [],
+			pricingCard: {
+				provider: "novita",
+				model: "google/veo-3.1-generate-preview",
+				endpoint: "video.generation",
+				currency: "USD",
+				rules: [],
+			},
+			meta: {},
+		} as any);
+
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect((result.ir as any)?.status).toBe("cancelled");
+		expect(saveVideoJobMetaMock).toHaveBeenCalledWith(
+			"team_test",
+			"req_bridge_video_cancelled",
+			expect.objectContaining({
+				provider: "novita",
+				providerTaskId: "vid_cancelled_456",
+				requestId: "req_bridge_video_cancelled",
+				reservationId: "video_hold:req_bridge_video_1",
+			}),
+			"vid_cancelled_456",
+			"cancelled",
+		);
+		expect(state.releaseCalls).toEqual([]);
 	});
 });

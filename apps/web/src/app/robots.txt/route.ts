@@ -2,18 +2,31 @@ import { CONTENT_SIGNAL_VALUE } from "@/lib/agent-discovery";
 import { PUBLIC_CDN_CACHE_CONTROL } from "@/lib/cache/publicCacheHeaders";
 import { SITE_URL } from "@/lib/seo";
 
+const DISALLOW_PATHS = [
+	"/api/",
+	"/auth/",
+	"/sign-in",
+	"/sign-up",
+	"/settings/",
+	"/internal/",
+	"/gateway/usage",
+] as const;
+
+function buildRobotBlock(userAgent: string): string[] {
+	return [
+		`User-agent: ${userAgent}`,
+		`Content-Signal: ${CONTENT_SIGNAL_VALUE}`,
+		"Allow: /",
+		...DISALLOW_PATHS.map((path) => `Disallow: ${path}`),
+		"",
+	];
+}
+
 const ROBOTS_BODY = [
-	"User-agent: *",
-	`Content-Signal: ${CONTENT_SIGNAL_VALUE}`,
-	"Allow: /",
-	"Disallow: /api/",
-	"Disallow: /auth/",
-	"Disallow: /sign-in",
-	"Disallow: /sign-up",
-	"Disallow: /settings/",
-	"Disallow: /internal/",
-	"Disallow: /gateway/usage",
-	"",
+	...buildRobotBlock("*"),
+	...buildRobotBlock("OAI-SearchBot"),
+	...buildRobotBlock("ChatGPT-User"),
+	...buildRobotBlock("GPTBot"),
 	`Sitemap: ${SITE_URL}/sitemap.xml`,
 	`Host: ${SITE_URL}`,
 	"",

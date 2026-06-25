@@ -1,7 +1,7 @@
 // lib/fetchers/landing/sign-in/getMainModels.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from '@/utils/supabase/client';
 import { applyHiddenFilter } from '@/lib/fetchers/models/visibility';
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface SignInModel {
     model_id: string;
@@ -19,7 +19,7 @@ export async function getMainModels(
     includeHidden: boolean
 ): Promise<SignInModel[]> {
     if (!modelIds || modelIds.length === 0) return [];
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await applyHiddenFilter(
         supabase
@@ -44,7 +44,9 @@ export async function getMainModelsCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:sign-in:models");
+    cacheTag("frontend:sign-in-main-models");
 
     console.log("[fetch] HIT for main models", modelIds);
     return getMainModels(modelIds, includeHidden);

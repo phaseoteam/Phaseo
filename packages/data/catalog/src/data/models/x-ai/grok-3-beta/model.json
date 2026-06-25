@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": "Think, Cons@64",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 31
+      "rank": 36
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -160,7 +160,7 @@
       "is_self_reported": true,
       "other_info": "Think",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 53
+      "rank": 58
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -168,7 +168,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 72
+      "rank": 78
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -176,7 +176,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 73
+      "rank": 79
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -184,7 +184,7 @@
       "is_self_reported": true,
       "other_info": "Reasoning",
       "source_link": "https://x.ai/blog/grok-3",
-      "rank": 100
+      "rank": 106
     },
     {
       "benchmark_id": "lisanbench",
@@ -192,7 +192,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 5
+      "rank": 8
     },
     {
       "benchmark_id": "lisanbench",
@@ -200,7 +200,7 @@
       "is_self_reported": false,
       "other_info": "Reasoning",
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 9
+      "rank": 12
     },
     {
       "benchmark_id": "livebench",
@@ -208,7 +208,7 @@
       "is_self_reported": false,
       "other_info": "High Reasoning Effort",
       "source_link": "https://livebench.ai/#/",
-      "rank": 27
+      "rank": 41
     },
     {
       "benchmark_id": "livebench",
@@ -216,7 +216,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 30
+      "rank": 44
     },
     {
       "benchmark_id": "lmarena-text",
@@ -232,7 +232,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 52
+      "rank": 54
     },
     {
       "benchmark_id": "mmmu",
@@ -256,7 +256,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://x.ai/news/grok-3",
-      "rank": 46
+      "rank": 47
     },
     {
       "benchmark_id": "simpleqa",
@@ -272,7 +272,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; Confab 17.8%; non-response 10.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 18
+      "rank": 45
     },
     {
       "benchmark_id": "elimination-game",
@@ -280,7 +280,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; sigma 0.207; games 539; avg points 0.579",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 15
+      "rank": 14
     }
   ]
 }

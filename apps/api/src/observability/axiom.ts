@@ -9,19 +9,27 @@ let warnedMissingWideDataset = false;
 let localTestingAxiomWideIngestDisabled = false;
 let warnedLocalTestingAxiomWideIngestDisabled = false;
 
+function shouldAutoDisableWideIngest(bindings: ReturnType<typeof getBindings>): boolean {
+    if (!isLocalTestingModeEnabled(bindings)) {
+        return false;
+    }
+    const env = typeof bindings.ENV === "string" ? bindings.ENV.trim().toLowerCase() : "";
+    return env !== "prod" && env !== "production";
+}
+
 export async function sendAxiomWideEvent(event: WideEvent) {
     if (localTestingAxiomWideIngestDisabled) {
         return;
     }
 
     const bindings = getBindings();
-    const dataset = bindings.AXIOM_DATASET ?? bindings.AXIOM_WIDE_DATASET;
+    const dataset = bindings.AXIOM_WIDE_DATASET ?? bindings.AXIOM_DATASET;
     const token = bindings.AXIOM_API_KEY;
 
     if (!dataset || !token) {
         if (!dataset && !warnedMissingWideDataset) {
             warnedMissingWideDataset = true;
-            console.warn("[observability] AXIOM_DATASET not set; skipping wide event ingestion.");
+            console.warn("[observability] AXIOM_WIDE_DATASET/AXIOM_DATASET not set; skipping wide event ingestion.");
         }
         return;
     }
@@ -45,7 +53,7 @@ export async function sendAxiomWideEvent(event: WideEvent) {
         if (!res.ok) {
             const body = await res.text().catch(() => "");
             if (
-                isLocalTestingModeEnabled(bindings) &&
+                shouldAutoDisableWideIngest(bindings) &&
                 (res.status === 401 || res.status === 403)
             ) {
                 localTestingAxiomWideIngestDisabled = true;

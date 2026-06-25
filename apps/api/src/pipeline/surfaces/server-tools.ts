@@ -10,30 +10,46 @@ import { getBindings } from "@/runtime/env";
 
 export const DATETIME_SERVER_TOOL_TYPE = "gateway:datetime";
 export const DATETIME_SERVER_TOOL_FUNCTION_NAME = "gateway_datetime";
-export const WEB_SEARCH_SERVER_TOOL_TYPE = "gateway:web_search";
-export const WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME = "gateway_web_search";
-export const WEB_FETCH_SERVER_TOOL_TYPE = "gateway:web_fetch";
-export const WEB_FETCH_SERVER_TOOL_FUNCTION_NAME = "gateway_web_fetch";
-export const APPLY_PATCH_SERVER_TOOL_TYPE = "gateway:apply_patch";
-export const APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME = "gateway_apply_patch";
-export const IMAGE_GENERATION_SERVER_TOOL_TYPE = "gateway:image_generation";
-export const IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME = "gateway_image_generation";
-export const FUSION_SERVER_TOOL_TYPE = "gateway:fusion";
-export const FUSION_SERVER_TOOL_FUNCTION_NAME = "gateway_fusion";
-export const TOOL_SEARCH_SERVER_TOOL_TYPE = "gateway:tool_search";
-export const TOOL_SEARCH_SERVER_TOOL_FUNCTION_NAME = "gateway_tool_search";
+export const WEB_SEARCH_SERVER_TOOL_TYPE = "ai-stats:web_search";
+export const GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE = "gateway:web_search";
+export const WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_web_search";
+export const WEB_FETCH_SERVER_TOOL_TYPE = "ai-stats:web_fetch";
+export const GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE = "gateway:web_fetch";
+export const WEB_FETCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_web_fetch";
+export const ADVISOR_SERVER_TOOL_TYPE = "ai-stats:advisor";
+export const ADVISOR_SERVER_TOOL_FUNCTION_NAME = "ai_stats_advisor";
+export const IMAGE_GENERATION_SERVER_TOOL_TYPE = "ai-stats:image_generation";
+export const GATEWAY_IMAGE_GENERATION_SERVER_TOOL_TYPE = "gateway:image_generation";
+export const IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME = "ai_stats_image_generation";
+export const APPLY_PATCH_SERVER_TOOL_TYPE = "ai-stats:apply_patch";
+export const GATEWAY_APPLY_PATCH_SERVER_TOOL_TYPE = "gateway:apply_patch";
+export const APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_apply_patch";
+export const FUSION_SERVER_TOOL_TYPE = "ai-stats:fusion";
+export const GATEWAY_FUSION_SERVER_TOOL_TYPE = "gateway:fusion";
+export const FUSION_SERVER_TOOL_FUNCTION_NAME = "ai_stats_fusion";
+export const TOOL_SEARCH_SERVER_TOOL_TYPE = "ai-stats:tool_search";
+export const GATEWAY_TOOL_SEARCH_SERVER_TOOL_TYPE = "gateway:tool_search";
+export const TOOL_SEARCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_tool_search";
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_WEB_SEARCH_MAX_RESULTS = 5;
 const MAX_WEB_SEARCH_RESULTS = 25;
-const DEFAULT_WEB_SEARCH_ENGINE = "exa";
-const DEFAULT_WEB_SEARCH_CONTEXT_SIZE = "medium";
-const MAX_WEB_SEARCH_TOTAL_RESULTS = 100;
+const DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS = 25;
+const MAX_WEB_SEARCH_MAX_TOTAL_RESULTS = 100;
 const DEFAULT_WEB_FETCH_MAX_CHARS = 12000;
 const MAX_WEB_FETCH_MAX_CHARS = 50000;
+const SERVER_TOOL_FETCH_TIMEOUT_MS = 15000;
+const SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS = 5;
 const DEFAULT_EXA_BASE_URL = "https://api.exa.ai";
-const DEFAULT_IMAGE_GENERATION_MODEL = "openai/gpt-image-latest";
+const DEFAULT_PARALLEL_BASE_URL = "https://api.parallel.ai";
+const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
+const DEFAULT_WEB_SEARCH_ENGINE = "exa";
+const DEFAULT_WEB_FETCH_ENGINE = "direct";
+const DEFAULT_IMAGE_GENERATION_MODEL = "openai/gpt-image-2";
 const DEFAULT_FUSION_MAX_ANALYSIS_MODELS = 5;
 const MAX_TOOL_SEARCH_RESULTS = 20;
+
+const WEB_SEARCH_ENGINE_VALUES = ["auto", "native", "exa", "firecrawl", "parallel"] as const;
+const WEB_FETCH_ENGINE_VALUES = ["auto", "native", "direct", "exa", "firecrawl", "parallel"] as const;
 
 const DATETIME_TOOL_DESCRIPTION =
 	"Get the current date and time. Optionally provide an IANA timezone (for example, Europe/London).";
@@ -57,23 +73,33 @@ const WEB_SEARCH_TOOL_PARAMETERS = {
 			type: "string",
 			description: "The search query to run.",
 		},
-		engine: {
-			type: "string",
-			enum: ["auto", "exa"],
-			description: "Search engine to use. auto currently resolves to Exa for gateway-managed search.",
-		},
 		max_results: {
 			type: "integer",
-			description: "Maximum number of results to return per search call. Defaults to 5 and caps at 25.",
+			description: "Maximum number of results per search call. Defaults to 5 and caps at 25.",
 		},
 		max_total_results: {
 			type: "integer",
-			description: "Maximum cumulative results across all gateway web search calls in this request.",
+			description: "Maximum cumulative result count across all search calls in this request.",
+		},
+		engine: {
+			type: "string",
+			enum: WEB_SEARCH_ENGINE_VALUES,
+			description: "Search engine. auto resolves to managed Exa search; native is converted to a provider-native web search tool.",
 		},
 		search_context_size: {
 			type: "string",
 			enum: ["low", "medium", "high"],
-			description: "How much excerpt context to retrieve for each result.",
+			description: "Requested search context budget for returned highlights/text.",
+		},
+		allowed_domains: {
+			type: "array",
+			items: { type: "string" },
+			description: "Only return results from these domains when supported by the engine.",
+		},
+		excluded_domains: {
+			type: "array",
+			items: { type: "string" },
+			description: "Exclude results from these domains when supported by the engine.",
 		},
 		include_text: {
 			type: "boolean",
@@ -83,19 +109,13 @@ const WEB_SEARCH_TOOL_PARAMETERS = {
 			type: "boolean",
 			description: "Include query-relevant highlights for each result. Defaults to true.",
 		},
-		allowed_domains: {
-			type: "array",
-			items: { type: "string" },
-			description: "Only return results from these domains.",
-		},
-		excluded_domains: {
-			type: "array",
-			items: { type: "string" },
-			description: "Exclude results from these domains.",
+		max_characters: {
+			type: "integer",
+			description: "Maximum characters of text per result when include_text is true.",
 		},
 		user_location: {
 			type: "object",
-			description: "Approximate location metadata. Accepted for compatibility; currently ignored by Exa-backed gateway search.",
+			description: "Approximate user location for engines that support localized search.",
 			additionalProperties: true,
 		},
 	},
@@ -112,82 +132,110 @@ const WEB_FETCH_TOOL_PARAMETERS = {
 			type: "string",
 			description: "HTTP(S) URL to fetch.",
 		},
+		engine: {
+			type: "string",
+			enum: WEB_FETCH_ENGINE_VALUES,
+			description: "Fetch engine. direct uses gateway HTTP fetch; exa uses Exa contents extraction.",
+		},
 		max_chars: {
 			type: "integer",
 			description: "Maximum number of characters to return. Defaults to 12000 and caps at 50000.",
 		},
+		max_content_tokens: {
+			type: "integer",
+			description: "Token-style bounded fetch size alias; approximated as max_chars when max_chars is omitted.",
+		},
 		allowed_domains: {
 			type: "array",
 			items: { type: "string" },
-			description: "If provided, only fetch URLs whose hostname matches one of these domains.",
+			description: "Only fetch URLs from these domains.",
 		},
-		excluded_domains: {
+		blocked_domains: {
 			type: "array",
 			items: { type: "string" },
-			description: "If provided, reject URLs whose hostname matches one of these domains.",
+			description: "Reject fetches for these domains.",
 		},
 	},
 	required: ["url"],
 	additionalProperties: false,
 } as const;
 
-const APPLY_PATCH_TOOL_DESCRIPTION =
-	"Capture a proposed file edit as a Codex-style apply_patch block. The gateway validates the patch envelope and returns it as an artifact; it does not apply files.";
-const APPLY_PATCH_TOOL_PARAMETERS = {
-	type: "object",
-	properties: {
-		patch: {
-			type: "string",
-			description: "Complete patch block beginning with *** Begin Patch and ending with *** End Patch.",
-		},
-		summary: {
-			type: "string",
-			description: "Optional short human-readable summary of the intended change.",
-		},
-	},
-	required: ["patch"],
-	additionalProperties: false,
-} as const;
-
 const IMAGE_GENERATION_TOOL_DESCRIPTION =
-	"Generate an image from a text prompt using the gateway image generation endpoint. The request is routed, billed, and audited like a normal image generation request.";
+	"Generate an image from a text prompt using an AI Stats image generation model.";
 const IMAGE_GENERATION_TOOL_PARAMETERS = {
 	type: "object",
 	properties: {
 		prompt: {
 			type: "string",
-			description: "Image prompt to generate.",
+			description: "Detailed description of the image to generate.",
+		},
+		description: {
+			type: "string",
+			description: "Alias for prompt. Use this when the model describes the image to generate.",
 		},
 		model: {
 			type: "string",
-			description: "Optional image model id. Defaults to the configured gateway image model.",
-		},
-		size: {
-			type: "string",
-			description: "Optional image size or aspect ratio supported by the selected model.",
+			description: "Optional image generation model override when the tool definition does not pin one.",
 		},
 		quality: {
 			type: "string",
-			description: "Optional quality setting supported by the selected model.",
+			description: "Model-dependent image quality level such as low, medium, or high.",
 		},
-		n: {
-			type: "integer",
-			description: "Number of images to generate.",
-		},
-		response_format: {
+		size: {
 			type: "string",
-			description: "Optional image response format, such as url or b64_json where supported.",
+			description: "Model-dependent output size such as 1024x1024.",
 		},
-		output_format: {
+		aspect_ratio: {
 			type: "string",
-			description: "Optional output image format, such as png, jpeg, or webp where supported.",
+			description: "Requested aspect ratio such as 1:1, 16:9, or 4:3.",
 		},
 		background: {
 			type: "string",
-			description: "Optional background setting where supported.",
+			description: "Requested background style such as transparent or opaque.",
+		},
+		output_format: {
+			type: "string",
+			description: "Requested output format such as png, jpeg, or webp.",
+		},
+		output_compression: {
+			type: "number",
+			description: "Compression level from 0 to 100 for lossy output formats.",
+		},
+		moderation: {
+			type: "string",
+			description: "Model-dependent moderation setting.",
 		},
 	},
-	required: ["prompt"],
+	additionalProperties: false,
+} as const;
+
+const APPLY_PATCH_TOOL_DESCRIPTION =
+	"Propose a file create, update, or delete as a V4A-style patch. AI Stats validates the patch but does not apply it.";
+const APPLY_PATCH_TOOL_PARAMETERS = {
+	type: "object",
+	properties: {
+		operation: {
+			type: "object",
+			properties: {
+				type: {
+					type: "string",
+					enum: ["create_file", "update_file", "delete_file"],
+					description: "Patch operation type.",
+				},
+				path: {
+					type: "string",
+					description: "Target file path for the patch operation.",
+				},
+				diff: {
+					type: "string",
+					description: "Patch diff. Required for create_file and update_file.",
+				},
+			},
+			required: ["type", "path"],
+			additionalProperties: false,
+		},
+	},
+	required: ["operation"],
 	additionalProperties: false,
 } as const;
 
@@ -203,15 +251,15 @@ const FUSION_TOOL_PARAMETERS = {
 		analysis_models: {
 			type: "array",
 			items: { type: "string" },
-			description: "Optional analysis model ids. Defaults to the tool configuration or the outer request model.",
+			description: "Optional analysis model IDs. Defaults to the tool configuration or the outer request model.",
 		},
 		model: {
 			type: "string",
-			description: "Optional judge/synthesis model id. Defaults to the outer request model.",
+			description: "Optional judge/synthesis model ID. Defaults to the outer request model.",
 		},
 		include_web: {
 			type: "boolean",
-			description: "Enable gateway web search and fetch on analysis calls. Defaults to true.",
+			description: "Enable AI Stats web search and fetch on analysis calls. Defaults to true.",
 		},
 	},
 	required: ["input"],
@@ -219,13 +267,13 @@ const FUSION_TOOL_PARAMETERS = {
 } as const;
 
 const TOOL_SEARCH_TOOL_DESCRIPTION =
-	"Search the AI Stats gateway server-tool catalog and return matching tool definitions.";
+	"Search the AI Stats server-tool catalog and return matching tool definitions.";
 const TOOL_SEARCH_TOOL_PARAMETERS = {
 	type: "object",
 	properties: {
 		query: {
 			type: "string",
-			description: "Tool capability to search for, such as web, image, datetime, patch, fusion, or model search.",
+			description: "Tool capability to search for, such as web, image, datetime, patch, fusion, or advisor.",
 		},
 		max_results: {
 			type: "integer",
@@ -236,31 +284,113 @@ const TOOL_SEARCH_TOOL_PARAMETERS = {
 	additionalProperties: false,
 } as const;
 
+export type ImageGenerationServerToolConfig = {
+	model?: string;
+	quality?: string;
+	size?: string;
+	aspectRatio?: string;
+	background?: string;
+	outputFormat?: string;
+	outputCompression?: number;
+	moderation?: string;
+};
+
+const ADVISOR_MIN_MAX_TOKENS = 1024;
+const DEFAULT_ADVISOR_MAX_TOKENS = 1400;
+const DEFAULT_ADVISOR_MAX_USES = 1;
+const ADVISOR_NAME_PATTERN = /^[A-Za-z0-9 _-]{1,64}$/;
+
+export const ADVISOR_DEFAULT_INSTRUCTIONS =
+	"You are an expert advisor model. Provide concise, actionable guidance for the calling model. Do not answer the user directly unless the prompt asks for it; give advice the calling model can use.";
+
+function advisorToolParameters(allowModelOverride: boolean, requirePrompt: boolean) {
+	return {
+		type: "object",
+		properties: {
+			prompt: {
+				type: "string",
+				description: "The specific question, plan, or context to ask the advisor model to review.",
+			},
+			...(allowModelOverride
+				? {
+					model: {
+						type: "string",
+						description: "Advisor model to call when the tool definition does not pin one.",
+					},
+				}
+				: {}),
+		},
+		...(requirePrompt ? { required: ["prompt"] } : {}),
+		additionalProperties: false,
+	} as const;
+}
+
+export type AdvisorServerToolConfig = {
+	functionName: string;
+	name?: string;
+	model?: string;
+	instructions?: string;
+	forwardTranscript: boolean;
+	maxUses: number;
+	maxTokens: number;
+	reasoning?: Record<string, unknown>;
+	temperature?: number;
+};
+
+function advisorInputSchema(config: AdvisorServerToolConfig) {
+	return advisorToolParameters(!config.model, !config.forwardTranscript);
+}
+
+function advisorToolDescription(config: AdvisorServerToolConfig): string {
+	const name = config.name ? ` "${config.name}"` : "";
+	return `Consult the${name} advisor model for planning, review, or course correction. Provide a concise prompt describing what advice is needed.`;
+}
+
+function sanitizeAdvisorFunctionName(name: string | undefined): string {
+	if (!name) return ADVISOR_SERVER_TOOL_FUNCTION_NAME;
+	const suffix = name
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9_-]+/g, "_")
+		.replace(/_+/g, "_")
+		.replace(/^_+|_+$/g, "");
+	return suffix ? `${ADVISOR_SERVER_TOOL_FUNCTION_NAME}_${suffix}` : ADVISOR_SERVER_TOOL_FUNCTION_NAME;
+}
+
+type WebSearchEngine = (typeof WEB_SEARCH_ENGINE_VALUES)[number];
+type WebSearchContextSize = "low" | "medium" | "high";
+type WebFetchEngine = (typeof WEB_FETCH_ENGINE_VALUES)[number];
+
 export type ServerToolConfig = {
 	enabled: boolean;
 	datetimeDefaultTimezone: string;
 	webSearchEnabled: boolean;
-	webSearchEngine: "auto" | "exa";
+	webSearchEngine?: WebSearchEngine;
 	webSearchMaxResults: number;
-	webSearchMaxTotalResults: number | null;
-	webSearchResultsUsed: number;
-	webSearchContextSize: "low" | "medium" | "high" | null;
+	webSearchMaxTotalResults?: number;
+	webSearchContextSize?: WebSearchContextSize;
+	webSearchMaxCharacters?: number;
 	webSearchIncludeText: boolean;
 	webSearchIncludeHighlights: boolean;
-	webSearchAllowedDomains: string[];
-	webSearchExcludedDomains: string[];
+	webSearchAllowedDomains?: string[];
+	webSearchExcludedDomains?: string[];
 	webFetchEnabled: boolean;
+	webFetchEngine?: WebFetchEngine;
 	webFetchMaxChars: number;
-	webFetchAllowedDomains: string[];
-	webFetchExcludedDomains: string[];
-	applyPatchEnabled: boolean;
-	imageGenerationEnabled: boolean;
-	imageGenerationModel: string;
-	fusionEnabled: boolean;
-	fusionAnalysisModels: string[];
-	fusionModel: string | null;
-	fusionIncludeWeb: boolean;
-	toolSearchEnabled: boolean;
+	webFetchAllowedDomains?: string[];
+	webFetchBlockedDomains?: string[];
+	advisorEnabled?: boolean;
+	advisors?: Record<string, AdvisorServerToolConfig>;
+	defaultAdvisorFunctionName?: string;
+	defaultAdvisorModel?: string;
+	imageGenerationEnabled?: boolean;
+	imageGeneration?: ImageGenerationServerToolConfig;
+	applyPatchEnabled?: boolean;
+	fusionEnabled?: boolean;
+	fusionAnalysisModels?: string[];
+	fusionModel?: string;
+	fusionIncludeWeb?: boolean;
+	toolSearchEnabled?: boolean;
 };
 
 type PrepareRequestResult =
@@ -277,22 +407,70 @@ type PrepareRequestResult =
 export type ServerToolExecutionMetrics = {
 	datetimeRequests: number;
 	webSearchRequests: number;
+	webSearchResults: number;
+	webSearchExtraResults: number;
 	webFetchRequests: number;
-	applyPatchRequests: number;
+	advisorRequests: number;
 	imageGenerationRequests: number;
+	applyPatchRequests: number;
 	fusionRequests: number;
 	toolSearchRequests: number;
-};
-
-type ServerToolRuntime = {
-	sourceRequest?: Request;
-	outerModel?: string;
 };
 
 export type ServerToolContinuation = {
 	assistantMessage: Extract<IRMessage, { role: "assistant" }>;
 	toolResults: IRToolResult[];
 	usage: ServerToolExecutionMetrics;
+	advisorUsage?: IRUsage;
+	imageGenerationUsage?: IRUsage;
+};
+
+export type AdvisorExecutionResult = {
+	ok: true;
+	content: string;
+	usage?: IRUsage;
+} | {
+	ok: false;
+	message: string;
+};
+
+export type AdvisorExecutor = (args: {
+	model: string;
+	prompt: string;
+	maxTokens: number;
+	instructions?: string;
+	forwardTranscript: boolean;
+	reasoning?: Record<string, unknown>;
+	temperature?: number;
+}) => Promise<AdvisorExecutionResult>;
+
+export type ImageGenerationExecutionResult = {
+	ok: true;
+	imageUrl?: string;
+	b64Json?: string;
+	mimeType?: string;
+	model: string;
+	usage?: IRUsage;
+} | {
+	ok: false;
+	message: string;
+};
+
+export type ImageGenerationExecutor = (args: {
+	model: string;
+	prompt: string;
+	quality?: string;
+	size?: string;
+	aspectRatio?: string;
+	background?: string;
+	outputFormat?: string;
+	outputCompression?: number;
+	moderation?: string;
+}) => Promise<ImageGenerationExecutionResult>;
+
+type ServerToolRuntime = {
+	sourceRequest?: Request;
+	outerModel?: string | null;
 };
 
 function cloneBody(body: any): any {
@@ -333,59 +511,48 @@ function readPositiveIntWithFallback(
 	return Math.min(maximum, next);
 }
 
-function readOptionalPositiveInt(value: unknown, maximum: number): number | null {
-	if (typeof value !== "number" || !Number.isFinite(value)) return null;
-	const next = Math.floor(value);
-	if (next <= 0) return null;
-	return Math.min(maximum, next);
-}
-
-function readStringArray(value: unknown, maximum = 50): string[] {
+function readStringArray(value: unknown): string[] {
 	if (!Array.isArray(value)) return [];
-	const seen = new Set<string>();
-	const output: string[] = [];
-	for (const entry of value) {
-		const normalized = toNonEmptyString(entry);
-		if (!normalized) continue;
-		const lower = normalized.toLowerCase();
-		if (seen.has(lower)) continue;
-		seen.add(lower);
-		output.push(normalized);
-		if (output.length >= maximum) break;
-	}
-	return output;
+	return value
+		.map((entry) => toNonEmptyString(entry))
+		.filter((entry): entry is string => Boolean(entry));
 }
 
-function readDomainArray(value: unknown): string[] {
-	return readStringArray(value, 100).map((domain) =>
-		domain
-			.replace(/^https?:\/\//i, "")
-			.replace(/\/.*$/, "")
-			.replace(/^\.+/, "")
-			.toLowerCase(),
-	).filter((domain) => /^[a-z0-9*.-]+$/i.test(domain));
-}
-
-function readSearchEngine(value: unknown): "auto" | "exa" {
+function readWebSearchEngine(value: unknown): WebSearchEngine {
 	const normalized = toNonEmptyString(value)?.toLowerCase();
-	return normalized === "auto" || normalized === "exa"
-		? normalized
-		: DEFAULT_WEB_SEARCH_ENGINE;
+	if (WEB_SEARCH_ENGINE_VALUES.includes(normalized as WebSearchEngine)) {
+		return normalized as WebSearchEngine;
+	}
+	return DEFAULT_WEB_SEARCH_ENGINE;
 }
 
-function readSearchContextSize(value: unknown): "low" | "medium" | "high" | null {
+function readWebSearchContextSize(value: unknown): WebSearchContextSize {
 	const normalized = toNonEmptyString(value)?.toLowerCase();
 	if (normalized === "low" || normalized === "medium" || normalized === "high") {
 		return normalized;
 	}
-	return null;
+	return "medium";
+}
+
+function readWebFetchEngine(value: unknown): WebFetchEngine {
+	const normalized = toNonEmptyString(value)?.toLowerCase();
+	if (WEB_FETCH_ENGINE_VALUES.includes(normalized as WebFetchEngine)) {
+		return normalized as WebFetchEngine;
+	}
+	return DEFAULT_WEB_FETCH_ENGINE;
+}
+
+function resolveDefaultWebFetchEngine(protocol: Protocol): WebFetchEngine {
+	if (protocol === "anthropic.messages") return "native";
+	return resolveExaSearchConfig() ? "exa" : "direct";
 }
 
 function parseWebSearchToolDefaults(tool: any): {
-	engine: "auto" | "exa";
+	engine: WebSearchEngine;
 	maxResults: number;
-	maxTotalResults: number | null;
-	searchContextSize: "low" | "medium" | "high" | null;
+	maxTotalResults: number;
+	searchContextSize: WebSearchContextSize;
+	maxCharacters: number | null;
 	includeText: boolean;
 	includeHighlights: boolean;
 	allowedDomains: string[];
@@ -395,14 +562,16 @@ function parseWebSearchToolDefaults(tool: any): {
 		tool?.parameters && typeof tool.parameters === "object"
 			? tool.parameters
 			: {};
-	const maxTotalResults = readOptionalPositiveInt(
-		parameters?.max_total_results ?? tool?.max_total_results,
-		MAX_WEB_SEARCH_TOTAL_RESULTS,
-	);
+	const maxResultsRaw = parameters?.max_results ?? tool?.max_results;
 	const maxResults = readPositiveIntWithFallback(
-		parameters?.max_results ?? tool?.max_results,
+		maxResultsRaw,
 		DEFAULT_WEB_SEARCH_MAX_RESULTS,
 		MAX_WEB_SEARCH_RESULTS,
+	);
+	const maxTotalResults = readPositiveIntWithFallback(
+		parameters?.max_total_results ?? tool?.max_total_results,
+		Math.max(DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS, maxResults),
+		MAX_WEB_SEARCH_MAX_TOTAL_RESULTS,
 	);
 	const includeText = readBooleanWithFallback(
 		parameters?.include_text ?? tool?.include_text,
@@ -413,72 +582,354 @@ function parseWebSearchToolDefaults(tool: any): {
 		true,
 	);
 	return {
-		engine: readSearchEngine(parameters?.engine ?? tool?.engine),
+		engine: readWebSearchEngine(parameters?.engine ?? tool?.engine),
 		maxResults,
-		maxTotalResults,
-		searchContextSize:
-			readSearchContextSize(parameters?.search_context_size ?? tool?.search_context_size) ??
-			DEFAULT_WEB_SEARCH_CONTEXT_SIZE,
+		maxTotalResults: Math.max(maxResults, maxTotalResults),
+		searchContextSize: readWebSearchContextSize(
+			parameters?.search_context_size ?? tool?.search_context_size,
+		),
+		maxCharacters:
+			typeof (parameters?.max_characters ?? tool?.max_characters) === "number"
+				? readPositiveIntWithFallback(
+					parameters?.max_characters ?? tool?.max_characters,
+					0,
+					MAX_WEB_FETCH_MAX_CHARS,
+				)
+				: null,
 		includeText,
 		includeHighlights,
-		allowedDomains: readDomainArray(parameters?.allowed_domains ?? tool?.allowed_domains),
-		excludedDomains: readDomainArray(parameters?.excluded_domains ?? tool?.excluded_domains),
-	};
-}
-
-function parseWebFetchToolDefaults(tool: any): {
-	maxChars: number;
-	allowedDomains: string[];
-	excludedDomains: string[];
-} {
-	const parameters =
-		tool?.parameters && typeof tool.parameters === "object"
-			? tool.parameters
-			: {};
-	return {
-		maxChars: readPositiveIntWithFallback(
-			parameters?.max_chars ?? tool?.max_chars,
-			DEFAULT_WEB_FETCH_MAX_CHARS,
-			MAX_WEB_FETCH_MAX_CHARS,
+		allowedDomains: readStringArray(
+			parameters?.allowed_domains ?? parameters?.include_domains ?? tool?.allowed_domains ?? tool?.include_domains,
 		),
-		allowedDomains: readDomainArray(parameters?.allowed_domains ?? tool?.allowed_domains),
-		excludedDomains: readDomainArray(parameters?.excluded_domains ?? tool?.excluded_domains),
+		excludedDomains: readStringArray(
+			parameters?.excluded_domains ?? parameters?.exclude_domains ?? tool?.excluded_domains ?? tool?.exclude_domains,
+		),
 	};
 }
 
-function parseImageGenerationToolDefaults(tool: any): {
-	model: string;
-} {
-	const parameters =
-		tool?.parameters && typeof tool.parameters === "object"
-			? tool.parameters
-			: {};
+function buildNativeWebSearchTool(tool: any, protocol: Protocol): any {
+	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
+	const searchContextSize =
+		parameters?.search_context_size ?? tool?.search_context_size;
+	const userLocation = parameters?.user_location ?? tool?.user_location;
+	const allowedDomains =
+		parameters?.allowed_domains ?? parameters?.include_domains ?? tool?.allowed_domains ?? tool?.include_domains;
+	const blockedDomains =
+		parameters?.blocked_domains ?? parameters?.excluded_domains ?? parameters?.exclude_domains ??
+		tool?.blocked_domains ?? tool?.excluded_domains ?? tool?.exclude_domains;
+
+	if (protocol === "anthropic.messages") {
+		return {
+			type: "web_search_20250305",
+			name: toNonEmptyString(tool?.name) ?? "web_search",
+			...(typeof tool?.max_uses === "number" ? { max_uses: tool.max_uses } : {}),
+			...(Array.isArray(allowedDomains) ? { allowed_domains: allowedDomains } : {}),
+			...(Array.isArray(blockedDomains) ? { blocked_domains: blockedDomains } : {}),
+			...(userLocation && typeof userLocation === "object" ? { user_location: userLocation } : {}),
+		};
+	}
+
 	return {
-		model:
-			toNonEmptyString(parameters?.model) ??
-			toNonEmptyString(tool?.model) ??
-			DEFAULT_IMAGE_GENERATION_MODEL,
+		type: "web_search_preview",
+		...(toNonEmptyString(searchContextSize) ? { search_context_size: searchContextSize } : {}),
+		...(userLocation && typeof userLocation === "object" ? { user_location: userLocation } : {}),
+		...(Array.isArray(allowedDomains) ? { allowed_domains: allowedDomains } : {}),
+		...(Array.isArray(blockedDomains) ? { blocked_domains: blockedDomains } : {}),
+	};
+}
+
+function nativeWebSearchToolChoice(protocol: Protocol): any {
+	if (protocol === "anthropic.messages") {
+		return { type: "tool", name: "web_search" };
+	}
+	return "web_search_preview";
+}
+
+function buildNativeWebFetchTool(tool: any, protocol: Protocol): any | null {
+	if (protocol !== "anthropic.messages") return null;
+	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
+	const maxContentTokens =
+		parameters?.max_content_tokens ?? parameters?.max_chars ?? tool?.max_content_tokens ?? tool?.max_chars;
+	const allowedDomains =
+		parameters?.allowed_domains ?? tool?.allowed_domains;
+	const blockedDomains =
+		parameters?.blocked_domains ?? parameters?.excluded_domains ?? tool?.blocked_domains ?? tool?.excluded_domains;
+
+	return {
+		type: "web_fetch_20260209",
+		name: toNonEmptyString(tool?.name) ?? "web_fetch",
+		...(typeof tool?.max_uses === "number" ? { max_uses: tool.max_uses } : {}),
+		...(typeof maxContentTokens === "number" ? {
+			max_content_tokens: readPositiveIntWithFallback(
+				maxContentTokens,
+				DEFAULT_WEB_FETCH_MAX_CHARS,
+				MAX_WEB_FETCH_MAX_CHARS,
+			),
+		} : {}),
+		...(Array.isArray(allowedDomains) ? { allowed_domains: allowedDomains } : {}),
+		...(Array.isArray(blockedDomains) ? { blocked_domains: blockedDomains } : {}),
+	};
+}
+
+function nativeWebFetchToolChoice(protocol: Protocol): any {
+	if (protocol === "anthropic.messages") {
+		return { type: "tool", name: "web_fetch" };
+	}
+	return null;
+}
+
+function parseAdvisorToolDefaults(tool: any): AdvisorServerToolConfig | { error: string } {
+	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
+	const name = toNonEmptyString(parameters?.name ?? tool?.name) ?? undefined;
+	if (name && !ADVISOR_NAME_PATTERN.test(name)) {
+		return {
+			error: "Advisor name must be 1-64 characters and can contain letters, numbers, spaces, underscores, and dashes.",
+		};
+	}
+	const advisorModel =
+		toNonEmptyString(parameters?.model) ??
+		toNonEmptyString(tool?.model) ??
+		undefined;
+	const maxTokens =
+		parameters?.max_completion_tokens ??
+		tool?.max_completion_tokens ??
+		parameters?.max_tokens ??
+		tool?.max_tokens;
+	const maxUses = parameters?.max_uses ?? tool?.max_uses;
+	const instructions = toNonEmptyString(parameters?.instructions ?? tool?.instructions) ?? undefined;
+	const forwardTranscript =
+		typeof parameters?.forward_transcript === "boolean"
+			? parameters.forward_transcript
+			: typeof tool?.forward_transcript === "boolean"
+				? tool.forward_transcript
+				: false;
+	const reasoning =
+		parameters?.reasoning && typeof parameters.reasoning === "object" && !Array.isArray(parameters.reasoning)
+			? parameters.reasoning as Record<string, unknown>
+			: tool?.reasoning && typeof tool.reasoning === "object" && !Array.isArray(tool.reasoning)
+				? tool.reasoning as Record<string, unknown>
+				: undefined;
+	const temperature =
+		typeof parameters?.temperature === "number"
+			? parameters.temperature
+			: typeof tool?.temperature === "number"
+				? tool.temperature
+				: undefined;
+	return {
+		functionName: sanitizeAdvisorFunctionName(name),
+		...(name ? { name } : {}),
+		...(advisorModel ? { model: advisorModel } : {}),
+		...(instructions ? { instructions } : {}),
+		forwardTranscript,
+		maxUses: typeof maxUses === "number"
+			? Math.max(1, Math.floor(maxUses))
+			: DEFAULT_ADVISOR_MAX_USES,
+		maxTokens: typeof maxTokens === "number"
+			? Math.max(ADVISOR_MIN_MAX_TOKENS, Math.floor(maxTokens))
+			: DEFAULT_ADVISOR_MAX_TOKENS,
+		...(reasoning ? { reasoning } : {}),
+		...(typeof temperature === "number" ? { temperature } : {}),
+	};
+}
+
+function parseImageGenerationToolDefaults(tool: any): ImageGenerationServerToolConfig {
+	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
+	const outputCompression = parameters?.output_compression ?? tool?.output_compression;
+	return {
+		...(toNonEmptyString(parameters?.model ?? tool?.model) ? { model: toNonEmptyString(parameters?.model ?? tool?.model)! } : {}),
+		...(toNonEmptyString(parameters?.quality ?? tool?.quality) ? { quality: toNonEmptyString(parameters?.quality ?? tool?.quality)! } : {}),
+		...(toNonEmptyString(parameters?.size ?? tool?.size) ? { size: toNonEmptyString(parameters?.size ?? tool?.size)! } : {}),
+		...(toNonEmptyString(parameters?.aspect_ratio ?? tool?.aspect_ratio) ? { aspectRatio: toNonEmptyString(parameters?.aspect_ratio ?? tool?.aspect_ratio)! } : {}),
+		...(toNonEmptyString(parameters?.background ?? tool?.background) ? { background: toNonEmptyString(parameters?.background ?? tool?.background)! } : {}),
+		...(toNonEmptyString(parameters?.output_format ?? tool?.output_format) ? { outputFormat: toNonEmptyString(parameters?.output_format ?? tool?.output_format)! } : {}),
+		...(typeof outputCompression === "number" && Number.isFinite(outputCompression)
+			? { outputCompression: Math.max(0, Math.min(100, outputCompression)) }
+			: {}),
+		...(toNonEmptyString(parameters?.moderation ?? tool?.moderation) ? { moderation: toNonEmptyString(parameters?.moderation ?? tool?.moderation)! } : {}),
 	};
 }
 
 function parseFusionToolDefaults(tool: any): {
 	analysisModels: string[];
-	model: string | null;
+	model?: string;
 	includeWeb: boolean;
+} {
+	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
+	const analysisModels = readStringArray(
+		parameters?.analysis_models ?? tool?.analysis_models,
+	).slice(0, DEFAULT_FUSION_MAX_ANALYSIS_MODELS);
+	const model = toNonEmptyString(parameters?.model ?? tool?.model) ?? undefined;
+	const includeWeb = readBooleanWithFallback(
+		parameters?.include_web ?? tool?.include_web,
+		true,
+	);
+	return {
+		analysisModels,
+		...(model ? { model } : {}),
+		includeWeb,
+	};
+}
+
+type ApplyPatchOperation = {
+	type: "create_file" | "update_file" | "delete_file";
+	path: string;
+	diff?: string;
+};
+
+function normalizeApplyPatchOperation(args: Record<string, unknown>): ApplyPatchOperation | { error: string } {
+	const rawOperation =
+		args.operation && typeof args.operation === "object" && !Array.isArray(args.operation)
+			? args.operation as Record<string, unknown>
+			: args;
+	const type = toNonEmptyString(rawOperation.type);
+	const path = toNonEmptyString(rawOperation.path);
+	const diff = toNonEmptyString(rawOperation.diff) ?? undefined;
+	if (type !== "create_file" && type !== "update_file" && type !== "delete_file") {
+		return { error: "operation.type must be create_file, update_file, or delete_file." };
+	}
+	if (!path) {
+		return { error: "operation.path is required." };
+	}
+	if (path.includes("\0")) {
+		return { error: "operation.path cannot contain null bytes." };
+	}
+	if ((type === "create_file" || type === "update_file") && !diff) {
+		return { error: `operation.diff is required for ${type}.` };
+	}
+	if (type === "create_file" && diff) {
+		const invalidLine = diff.split(/\r?\n/).find((line) => line.length > 0 && !line.startsWith("+"));
+		if (invalidLine != null) {
+			return { error: "create_file diff lines must start with +." };
+		}
+	}
+	if (type === "update_file" && diff) {
+		const invalidLine = diff
+			.split(/\r?\n/)
+			.find((line) =>
+				line.length > 0 &&
+				!line.startsWith("@@") &&
+				!line.startsWith("+") &&
+				!line.startsWith("-") &&
+				!line.startsWith(" "),
+			);
+		if (invalidLine != null) {
+			return { error: "update_file diff lines must start with @@, space, +, or -." };
+		}
+	}
+	return {
+		type,
+		path,
+		...(diff ? { diff } : {}),
+	};
+}
+
+function isWebSearchAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === WEB_SEARCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === WEB_SEARCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE;
+}
+
+function isWebFetchAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === WEB_FETCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === WEB_FETCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE;
+}
+
+function isAdvisorAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === ADVISOR_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === ADVISOR_SERVER_TOOL_TYPE;
+}
+
+function isImageGenerationAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === IMAGE_GENERATION_SERVER_TOOL_TYPE || toolChoice === GATEWAY_IMAGE_GENERATION_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === IMAGE_GENERATION_SERVER_TOOL_TYPE || choiceName === GATEWAY_IMAGE_GENERATION_SERVER_TOOL_TYPE;
+}
+
+function isApplyPatchAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === APPLY_PATCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_APPLY_PATCH_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === APPLY_PATCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_APPLY_PATCH_SERVER_TOOL_TYPE;
+}
+
+function isFusionAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === FUSION_SERVER_TOOL_TYPE || toolChoice === GATEWAY_FUSION_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === FUSION_SERVER_TOOL_TYPE || choiceName === GATEWAY_FUSION_SERVER_TOOL_TYPE;
+}
+
+function isToolSearchAliasToolChoice(toolChoice: any): boolean {
+	if (typeof toolChoice === "string") {
+		return toolChoice === TOOL_SEARCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_TOOL_SEARCH_SERVER_TOOL_TYPE;
+	}
+	if (!toolChoice || typeof toolChoice !== "object") return false;
+	const choiceName =
+		toNonEmptyString(toolChoice?.function?.name) ??
+		toNonEmptyString(toolChoice?.name) ??
+		null;
+	return choiceName === TOOL_SEARCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_TOOL_SEARCH_SERVER_TOOL_TYPE;
+}
+
+function parseWebFetchToolDefaults(tool: any): {
+	engine: WebFetchEngine;
+	maxChars: number;
+	allowedDomains: string[];
+	blockedDomains: string[];
 } {
 	const parameters =
 		tool?.parameters && typeof tool.parameters === "object"
 			? tool.parameters
 			: {};
+	const maxContentTokens = parameters?.max_content_tokens ?? tool?.max_content_tokens;
 	return {
-		analysisModels: readStringArray(
-			parameters?.analysis_models ?? tool?.analysis_models,
-			DEFAULT_FUSION_MAX_ANALYSIS_MODELS,
+		engine: readWebFetchEngine(parameters?.engine ?? tool?.engine),
+		maxChars: readPositiveIntWithFallback(
+			parameters?.max_chars ?? tool?.max_chars ?? maxContentTokens,
+			DEFAULT_WEB_FETCH_MAX_CHARS,
+			MAX_WEB_FETCH_MAX_CHARS,
 		),
-		model: toNonEmptyString(parameters?.model) ?? toNonEmptyString(tool?.model),
-		includeWeb: readBooleanWithFallback(
-			parameters?.include_web ?? tool?.include_web,
-			true,
+		allowedDomains: readStringArray(
+			parameters?.allowed_domains ?? tool?.allowed_domains,
+		),
+		blockedDomains: readStringArray(
+			parameters?.blocked_domains ?? parameters?.excluded_domains ?? tool?.blocked_domains ?? tool?.excluded_domains,
 		),
 	};
 }
@@ -509,7 +960,7 @@ function hasAnthropicToolNamed(tools: any[], name: string): boolean {
 	});
 }
 
-function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
+function rewriteToolChoice(toolChoice: any, protocol: Protocol, advisorFunctionName = ADVISOR_SERVER_TOOL_FUNCTION_NAME): any {
 	if (toolChoice == null) return toolChoice;
 	if (typeof toolChoice === "string") {
 		if (toolChoice === DATETIME_SERVER_TOOL_TYPE) {
@@ -521,7 +972,7 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 				function: { name: DATETIME_SERVER_TOOL_FUNCTION_NAME },
 			};
 		}
-		if (toolChoice === WEB_SEARCH_SERVER_TOOL_TYPE) {
+		if (toolChoice === WEB_SEARCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE) {
 			if (protocol === "anthropic.messages") {
 				return { type: "tool", name: WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME };
 			}
@@ -530,7 +981,7 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 				function: { name: WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME },
 			};
 		}
-		if (toolChoice === WEB_FETCH_SERVER_TOOL_TYPE) {
+		if (toolChoice === WEB_FETCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE) {
 			if (protocol === "anthropic.messages") {
 				return { type: "tool", name: WEB_FETCH_SERVER_TOOL_FUNCTION_NAME };
 			}
@@ -539,16 +990,16 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 				function: { name: WEB_FETCH_SERVER_TOOL_FUNCTION_NAME },
 			};
 		}
-		if (toolChoice === APPLY_PATCH_SERVER_TOOL_TYPE) {
+		if (toolChoice === ADVISOR_SERVER_TOOL_TYPE) {
 			if (protocol === "anthropic.messages") {
-				return { type: "tool", name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME };
+				return { type: "tool", name: advisorFunctionName };
 			}
 			return {
 				type: "function",
-				function: { name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME },
+				function: { name: advisorFunctionName },
 			};
 		}
-		if (toolChoice === IMAGE_GENERATION_SERVER_TOOL_TYPE) {
+		if (toolChoice === IMAGE_GENERATION_SERVER_TOOL_TYPE || toolChoice === GATEWAY_IMAGE_GENERATION_SERVER_TOOL_TYPE) {
 			if (protocol === "anthropic.messages") {
 				return { type: "tool", name: IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME };
 			}
@@ -557,7 +1008,16 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 				function: { name: IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME },
 			};
 		}
-		if (toolChoice === FUSION_SERVER_TOOL_TYPE) {
+		if (toolChoice === APPLY_PATCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_APPLY_PATCH_SERVER_TOOL_TYPE) {
+			if (protocol === "anthropic.messages") {
+				return { type: "tool", name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME };
+			}
+			return {
+				type: "function",
+				function: { name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME },
+			};
+		}
+		if (toolChoice === FUSION_SERVER_TOOL_TYPE || toolChoice === GATEWAY_FUSION_SERVER_TOOL_TYPE) {
 			if (protocol === "anthropic.messages") {
 				return { type: "tool", name: FUSION_SERVER_TOOL_FUNCTION_NAME };
 			}
@@ -566,7 +1026,7 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 				function: { name: FUSION_SERVER_TOOL_FUNCTION_NAME },
 			};
 		}
-		if (toolChoice === TOOL_SEARCH_SERVER_TOOL_TYPE) {
+		if (toolChoice === TOOL_SEARCH_SERVER_TOOL_TYPE || toolChoice === GATEWAY_TOOL_SEARCH_SERVER_TOOL_TYPE) {
 			if (protocol === "anthropic.messages") {
 				return { type: "tool", name: TOOL_SEARCH_SERVER_TOOL_FUNCTION_NAME };
 			}
@@ -598,7 +1058,7 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 		};
 	}
 
-	if (choiceName === WEB_SEARCH_SERVER_TOOL_TYPE) {
+	if (choiceName === WEB_SEARCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE) {
 		if (protocol === "anthropic.messages") {
 			return {
 				type: "tool",
@@ -612,7 +1072,7 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 		};
 	}
 
-	if (choiceName === WEB_FETCH_SERVER_TOOL_TYPE) {
+	if (choiceName === WEB_FETCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE) {
 		if (protocol === "anthropic.messages") {
 			return {
 				type: "tool",
@@ -626,21 +1086,21 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 		};
 	}
 
-	if (choiceName === APPLY_PATCH_SERVER_TOOL_TYPE) {
+	if (choiceName === ADVISOR_SERVER_TOOL_TYPE) {
 		if (protocol === "anthropic.messages") {
 			return {
 				type: "tool",
-				name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+				name: advisorFunctionName,
 			};
 		}
 
 		return {
 			type: "function",
-			function: { name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME },
+			function: { name: advisorFunctionName },
 		};
 	}
 
-	if (choiceName === IMAGE_GENERATION_SERVER_TOOL_TYPE) {
+	if (choiceName === IMAGE_GENERATION_SERVER_TOOL_TYPE || choiceName === GATEWAY_IMAGE_GENERATION_SERVER_TOOL_TYPE) {
 		if (protocol === "anthropic.messages") {
 			return {
 				type: "tool",
@@ -654,7 +1114,20 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 		};
 	}
 
-	if (choiceName === FUSION_SERVER_TOOL_TYPE) {
+	if (choiceName === APPLY_PATCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_APPLY_PATCH_SERVER_TOOL_TYPE) {
+		if (protocol === "anthropic.messages") {
+			return {
+				type: "tool",
+				name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+			};
+		}
+		return {
+			type: "function",
+			function: { name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME },
+		};
+	}
+
+	if (choiceName === FUSION_SERVER_TOOL_TYPE || choiceName === GATEWAY_FUSION_SERVER_TOOL_TYPE) {
 		if (protocol === "anthropic.messages") {
 			return {
 				type: "tool",
@@ -668,7 +1141,7 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol): any {
 		};
 	}
 
-	if (choiceName === TOOL_SEARCH_SERVER_TOOL_TYPE) {
+	if (choiceName === TOOL_SEARCH_SERVER_TOOL_TYPE || choiceName === GATEWAY_TOOL_SEARCH_SERVER_TOOL_TYPE) {
 		if (protocol === "anthropic.messages") {
 			return {
 				type: "tool",
@@ -691,30 +1164,40 @@ export function prepareServerToolsForTextRequest(
 ): PrepareRequestResult {
 	const nextBody = cloneBody(body);
 	const tools = Array.isArray(nextBody?.tools) ? nextBody.tools : [];
+	const defaultAdvisorModel = toNonEmptyString(nextBody?.model) ?? undefined;
 
 	let datetimeEnabled = false;
 	let datetimeDefaultTimezone = DEFAULT_TIMEZONE;
 	let webSearchEnabled = false;
-	let webSearchEngine: "auto" | "exa" = DEFAULT_WEB_SEARCH_ENGINE;
+	let webSearchEngine: WebSearchEngine = DEFAULT_WEB_SEARCH_ENGINE;
 	let webSearchMaxResults = DEFAULT_WEB_SEARCH_MAX_RESULTS;
-	let webSearchMaxTotalResults: number | null = null;
-	let webSearchContextSize: "low" | "medium" | "high" | null = DEFAULT_WEB_SEARCH_CONTEXT_SIZE;
+	let webSearchMaxTotalResults = DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
+	let webSearchContextSize: WebSearchContextSize = "medium";
+	let webSearchMaxCharacters: number | undefined;
 	let webSearchIncludeText = false;
 	let webSearchIncludeHighlights = true;
 	let webSearchAllowedDomains: string[] = [];
 	let webSearchExcludedDomains: string[] = [];
-	let webFetchEnabled = false;
-	let webFetchMaxChars = DEFAULT_WEB_FETCH_MAX_CHARS;
-	let webFetchAllowedDomains: string[] = [];
-	let webFetchExcludedDomains: string[] = [];
-	let applyPatchEnabled = false;
+	let nativeWebSearchRequested = false;
+	let nativeWebFetchRequested = false;
+	let advisorEnabled = false;
+	const advisors: Record<string, AdvisorServerToolConfig> = {};
+	const advisorNames = new Set<string>();
+	let defaultAdvisorFunctionName: string | undefined;
+	let unnamedAdvisorSeen = false;
 	let imageGenerationEnabled = false;
-	let imageGenerationModel = DEFAULT_IMAGE_GENERATION_MODEL;
+	let imageGeneration: ImageGenerationServerToolConfig = {};
+	let applyPatchEnabled = false;
 	let fusionEnabled = false;
 	let fusionAnalysisModels: string[] = [];
-	let fusionModel: string | null = null;
+	let fusionModel: string | undefined;
 	let fusionIncludeWeb = true;
 	let toolSearchEnabled = false;
+	let webFetchEnabled = false;
+	let webFetchEngine: WebFetchEngine = DEFAULT_WEB_FETCH_ENGINE;
+	let webFetchMaxChars = DEFAULT_WEB_FETCH_MAX_CHARS;
+	let webFetchAllowedDomains: string[] = [];
+	let webFetchBlockedDomains: string[] = [];
 	const filteredTools: any[] = [];
 
 	for (const tool of tools) {
@@ -738,13 +1221,19 @@ export function prepareServerToolsForTextRequest(
 			continue;
 		}
 
-		if (tool.type === WEB_SEARCH_SERVER_TOOL_TYPE) {
-			webSearchEnabled = true;
+		if (tool.type === WEB_SEARCH_SERVER_TOOL_TYPE || tool.type === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE) {
 			const defaults = parseWebSearchToolDefaults(tool);
+			if (defaults.engine === "native") {
+				nativeWebSearchRequested = true;
+				filteredTools.push(buildNativeWebSearchTool(tool, protocol));
+				continue;
+			}
+			webSearchEnabled = true;
 			webSearchEngine = defaults.engine;
 			webSearchMaxResults = defaults.maxResults;
 			webSearchMaxTotalResults = defaults.maxTotalResults;
 			webSearchContextSize = defaults.searchContextSize;
+			webSearchMaxCharacters = defaults.maxCharacters ?? undefined;
 			webSearchIncludeText = defaults.includeText;
 			webSearchIncludeHighlights = defaults.includeHighlights;
 			webSearchAllowedDomains = defaults.allowedDomains;
@@ -752,52 +1241,108 @@ export function prepareServerToolsForTextRequest(
 			continue;
 		}
 
-		if (tool.type === WEB_FETCH_SERVER_TOOL_TYPE) {
-			webFetchEnabled = true;
+		if (tool.type === WEB_FETCH_SERVER_TOOL_TYPE || tool.type === GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE) {
 			const defaults = parseWebFetchToolDefaults(tool);
+			const resolvedEngine =
+				defaults.engine === "auto" ? resolveDefaultWebFetchEngine(protocol) : defaults.engine;
+			if (resolvedEngine === "native") {
+				const nativeTool = buildNativeWebFetchTool(tool, protocol);
+				if (!nativeTool) {
+					return {
+						ok: false,
+						message: "Native web fetch is currently available through the Anthropic Messages surface. Use engine \"direct\" for gateway-managed fetch on this request surface.",
+					};
+				}
+				nativeWebFetchRequested = true;
+				filteredTools.push(nativeTool);
+				continue;
+			}
+			webFetchEnabled = true;
+			webFetchEngine = resolvedEngine;
 			webFetchMaxChars = defaults.maxChars;
 			webFetchAllowedDomains = defaults.allowedDomains;
-			webFetchExcludedDomains = defaults.excludedDomains;
+			webFetchBlockedDomains = defaults.blockedDomains;
 			continue;
 		}
 
-		if (tool.type === APPLY_PATCH_SERVER_TOOL_TYPE) {
+		if (tool.type === ADVISOR_SERVER_TOOL_TYPE) {
+			const defaults = parseAdvisorToolDefaults(tool);
+			if ("error" in defaults) {
+				return {
+					ok: false,
+					message: defaults.error,
+				};
+			}
+			const normalizedName = defaults.name?.trim().toLowerCase();
+			if (!normalizedName) {
+				if (unnamedAdvisorSeen) {
+					return {
+						ok: false,
+						message: "Only one unnamed Advisor tool can be configured. Add parameters.name to use multiple advisors.",
+					};
+				}
+				unnamedAdvisorSeen = true;
+			} else if (advisorNames.has(normalizedName)) {
+				return {
+					ok: false,
+					message: `Duplicate Advisor name "${defaults.name}". Advisor names must be unique after trimming.`,
+				};
+			} else {
+				advisorNames.add(normalizedName);
+			}
+			if (advisors[defaults.functionName]) {
+				return {
+					ok: false,
+					message: `Advisor function name collision for "${defaults.name ?? "default"}". Choose a different Advisor name.`,
+				};
+			}
+			advisorEnabled = true;
+			advisors[defaults.functionName] = defaults;
+			defaultAdvisorFunctionName ??= defaults.functionName;
+			continue;
+		}
+
+		if (tool.type === IMAGE_GENERATION_SERVER_TOOL_TYPE || tool.type === GATEWAY_IMAGE_GENERATION_SERVER_TOOL_TYPE) {
+			imageGenerationEnabled = true;
+			imageGeneration = parseImageGenerationToolDefaults(tool);
+			continue;
+		}
+
+		if (tool.type === APPLY_PATCH_SERVER_TOOL_TYPE || tool.type === GATEWAY_APPLY_PATCH_SERVER_TOOL_TYPE) {
 			applyPatchEnabled = true;
 			continue;
 		}
 
-		if (tool.type === IMAGE_GENERATION_SERVER_TOOL_TYPE) {
-			imageGenerationEnabled = true;
-			const defaults = parseImageGenerationToolDefaults(tool);
-			imageGenerationModel = defaults.model;
-			continue;
-		}
-
-		if (tool.type === FUSION_SERVER_TOOL_TYPE) {
-			fusionEnabled = true;
+		if (tool.type === FUSION_SERVER_TOOL_TYPE || tool.type === GATEWAY_FUSION_SERVER_TOOL_TYPE) {
 			const defaults = parseFusionToolDefaults(tool);
+			fusionEnabled = true;
 			fusionAnalysisModels = defaults.analysisModels;
 			fusionModel = defaults.model;
 			fusionIncludeWeb = defaults.includeWeb;
 			continue;
 		}
 
-		if (tool.type === TOOL_SEARCH_SERVER_TOOL_TYPE) {
+		if (tool.type === TOOL_SEARCH_SERVER_TOOL_TYPE || tool.type === GATEWAY_TOOL_SEARCH_SERVER_TOOL_TYPE) {
 			toolSearchEnabled = true;
 			continue;
 		}
 
-		filteredTools.push(tool);
+		if (tool.type !== DATETIME_SERVER_TOOL_TYPE) {
+			filteredTools.push(tool);
+		}
 	}
 
 	if (
 		!datetimeEnabled &&
 		!webSearchEnabled &&
 		!webFetchEnabled &&
-		!applyPatchEnabled &&
+		!advisorEnabled &&
 		!imageGenerationEnabled &&
+		!applyPatchEnabled &&
 		!fusionEnabled &&
-		!toolSearchEnabled
+		!toolSearchEnabled &&
+		!nativeWebSearchRequested &&
+		!nativeWebFetchRequested
 	) {
 		return {
 			ok: true,
@@ -808,23 +1353,28 @@ export function prepareServerToolsForTextRequest(
 				webSearchEnabled: false,
 				webSearchEngine: DEFAULT_WEB_SEARCH_ENGINE,
 				webSearchMaxResults: DEFAULT_WEB_SEARCH_MAX_RESULTS,
-				webSearchMaxTotalResults: null,
-				webSearchResultsUsed: 0,
-				webSearchContextSize: DEFAULT_WEB_SEARCH_CONTEXT_SIZE,
+				webSearchMaxTotalResults: DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS,
+				webSearchContextSize: "medium",
+				webSearchMaxCharacters: undefined,
 				webSearchIncludeText: false,
 				webSearchIncludeHighlights: true,
 				webSearchAllowedDomains: [],
 				webSearchExcludedDomains: [],
 				webFetchEnabled: false,
+				webFetchEngine: DEFAULT_WEB_FETCH_ENGINE,
 				webFetchMaxChars: DEFAULT_WEB_FETCH_MAX_CHARS,
 				webFetchAllowedDomains: [],
-				webFetchExcludedDomains: [],
-				applyPatchEnabled: false,
+				webFetchBlockedDomains: [],
+				advisorEnabled: false,
+				advisors: {},
+				defaultAdvisorFunctionName: undefined,
+				defaultAdvisorModel,
 				imageGenerationEnabled: false,
-				imageGenerationModel: DEFAULT_IMAGE_GENERATION_MODEL,
+				imageGeneration: {},
+				applyPatchEnabled: false,
 				fusionEnabled: false,
 				fusionAnalysisModels: [],
-				fusionModel: null,
+				fusionModel: undefined,
 				fusionIncludeWeb: true,
 				toolSearchEnabled: false,
 			},
@@ -853,18 +1403,27 @@ export function prepareServerToolsForTextRequest(
 				input_schema: WEB_FETCH_TOOL_PARAMETERS,
 			});
 		}
-		if (applyPatchEnabled && !hasAnthropicToolNamed(filteredTools, APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME)) {
-			filteredTools.push({
-				name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
-				description: APPLY_PATCH_TOOL_DESCRIPTION,
-				input_schema: APPLY_PATCH_TOOL_PARAMETERS,
-			});
+		for (const advisor of Object.values(advisors)) {
+			if (!hasAnthropicToolNamed(filteredTools, advisor.functionName)) {
+				filteredTools.push({
+					name: advisor.functionName,
+					description: advisorToolDescription(advisor),
+				input_schema: advisorInputSchema(advisor),
+				});
+			}
 		}
 		if (imageGenerationEnabled && !hasAnthropicToolNamed(filteredTools, IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME)) {
 			filteredTools.push({
 				name: IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME,
 				description: IMAGE_GENERATION_TOOL_DESCRIPTION,
 				input_schema: IMAGE_GENERATION_TOOL_PARAMETERS,
+			});
+		}
+		if (applyPatchEnabled && !hasAnthropicToolNamed(filteredTools, APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME)) {
+			filteredTools.push({
+				name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+				description: APPLY_PATCH_TOOL_DESCRIPTION,
+				input_schema: APPLY_PATCH_TOOL_PARAMETERS,
 			});
 		}
 		if (fusionEnabled && !hasAnthropicToolNamed(filteredTools, FUSION_SERVER_TOOL_FUNCTION_NAME)) {
@@ -912,15 +1471,17 @@ export function prepareServerToolsForTextRequest(
 				},
 			});
 		}
-		if (applyPatchEnabled && !hasOpenAIFunctionToolNamed(filteredTools, APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME)) {
-			filteredTools.push({
-				type: "function",
-				function: {
-					name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
-					description: APPLY_PATCH_TOOL_DESCRIPTION,
-					parameters: APPLY_PATCH_TOOL_PARAMETERS,
-				},
-			});
+		for (const advisor of Object.values(advisors)) {
+			if (!hasOpenAIFunctionToolNamed(filteredTools, advisor.functionName)) {
+				filteredTools.push({
+					type: "function",
+					function: {
+						name: advisor.functionName,
+						description: advisorToolDescription(advisor),
+						parameters: advisorInputSchema(advisor),
+					},
+				});
+			}
 		}
 		if (imageGenerationEnabled && !hasOpenAIFunctionToolNamed(filteredTools, IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME)) {
 			filteredTools.push({
@@ -929,6 +1490,16 @@ export function prepareServerToolsForTextRequest(
 					name: IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME,
 					description: IMAGE_GENERATION_TOOL_DESCRIPTION,
 					parameters: IMAGE_GENERATION_TOOL_PARAMETERS,
+				},
+			});
+		}
+		if (applyPatchEnabled && !hasOpenAIFunctionToolNamed(filteredTools, APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME)) {
+			filteredTools.push({
+				type: "function",
+				function: {
+					name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+					description: APPLY_PATCH_TOOL_DESCRIPTION,
+					parameters: APPLY_PATCH_TOOL_PARAMETERS,
 				},
 			});
 		}
@@ -955,38 +1526,42 @@ export function prepareServerToolsForTextRequest(
 	}
 
 	nextBody.tools = filteredTools;
-	nextBody.tool_choice = rewriteToolChoice(nextBody.tool_choice, protocol);
+	if (nativeWebSearchRequested && isWebSearchAliasToolChoice(nextBody.tool_choice)) {
+		nextBody.tool_choice = nativeWebSearchToolChoice(protocol);
+	} else if (nativeWebFetchRequested && isWebFetchAliasToolChoice(nextBody.tool_choice)) {
+		nextBody.tool_choice = nativeWebFetchToolChoice(protocol);
+	} else {
+		nextBody.tool_choice = rewriteToolChoice(nextBody.tool_choice, protocol, defaultAdvisorFunctionName);
+	}
 
 	return {
 		ok: true,
 		body: nextBody,
 		config: {
-			enabled:
-				datetimeEnabled ||
-				webSearchEnabled ||
-				webFetchEnabled ||
-				applyPatchEnabled ||
-				imageGenerationEnabled ||
-				fusionEnabled ||
-				toolSearchEnabled,
+			enabled: datetimeEnabled || webSearchEnabled || webFetchEnabled || advisorEnabled || imageGenerationEnabled || applyPatchEnabled || fusionEnabled || toolSearchEnabled,
 			datetimeDefaultTimezone,
 			webSearchEnabled,
 			webSearchEngine,
 			webSearchMaxResults,
 			webSearchMaxTotalResults,
-			webSearchResultsUsed: 0,
 			webSearchContextSize,
+			webSearchMaxCharacters,
 			webSearchIncludeText,
 			webSearchIncludeHighlights,
 			webSearchAllowedDomains,
 			webSearchExcludedDomains,
 			webFetchEnabled,
+			webFetchEngine,
 			webFetchMaxChars,
 			webFetchAllowedDomains,
-			webFetchExcludedDomains,
-			applyPatchEnabled,
+			webFetchBlockedDomains,
+			advisorEnabled,
+			advisors,
+			defaultAdvisorFunctionName,
+			defaultAdvisorModel,
 			imageGenerationEnabled,
-			imageGenerationModel,
+			imageGeneration,
+			applyPatchEnabled,
 			fusionEnabled,
 			fusionAnalysisModels,
 			fusionModel,
@@ -1119,46 +1694,121 @@ function parseWebFetchUrl(args: Record<string, unknown>): string | null {
 	}
 }
 
+function resolveParallelSearchConfig(): { apiKey: string; baseUrl: string } | null {
+	try {
+		const bindings = getBindings();
+		const apiKey = String(bindings.PARALLEL_API_KEY ?? "").trim();
+		if (!apiKey) return null;
+		const baseUrl = String(bindings.PARALLEL_BASE_URL ?? DEFAULT_PARALLEL_BASE_URL).trim() || DEFAULT_PARALLEL_BASE_URL;
+		return {
+			apiKey,
+			baseUrl: baseUrl.replace(/\/+$/, ""),
+		};
+	} catch {
+		return null;
+	}
+}
+
+function resolveFirecrawlSearchConfig(): { apiKey: string; baseUrl: string } | null {
+	try {
+		const bindings = getBindings();
+		const apiKey = String(bindings.FIRECRAWL_API_KEY ?? "").trim();
+		if (!apiKey) return null;
+		const baseUrl = String(bindings.FIRECRAWL_BASE_URL ?? DEFAULT_FIRECRAWL_BASE_URL).trim() || DEFAULT_FIRECRAWL_BASE_URL;
+		return {
+			apiKey,
+			baseUrl: baseUrl.replace(/\/+$/, ""),
+		};
+	} catch {
+		return null;
+	}
+}
+
 function hostnameMatchesDomain(hostname: string, domain: string): boolean {
 	const normalizedHost = hostname.toLowerCase();
-	const normalizedDomain = domain.toLowerCase().replace(/^\*\./, "");
+	const normalizedDomain = domain.trim().toLowerCase().replace(/^\*\./, "");
 	if (!normalizedDomain) return false;
 	return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
 }
 
-function validateUrlAgainstDomainFilters(
+function parseIPv4Address(hostname: string): number[] | null {
+	const parts = hostname.split(".");
+	if (parts.length !== 4) return null;
+	const bytes = parts.map((part) => {
+		if (!/^\d{1,3}$/.test(part)) return Number.NaN;
+		const value = Number(part);
+		return Number.isInteger(value) && value >= 0 && value <= 255 ? value : Number.NaN;
+	});
+	return bytes.every((value) => Number.isFinite(value)) ? bytes : null;
+}
+
+function isPrivateOrLocalHostname(hostname: string): boolean {
+	const normalized = hostname.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+	if (!normalized) return true;
+	if (
+		normalized === "localhost" ||
+		normalized.endsWith(".localhost") ||
+		normalized.endsWith(".local") ||
+		normalized.endsWith(".internal")
+	) {
+		return true;
+	}
+	const ipv4 = parseIPv4Address(normalized);
+	if (ipv4) {
+		const [a, b] = ipv4;
+		return (
+			a === 0 ||
+			a === 10 ||
+			a === 127 ||
+			(a === 100 && b >= 64 && b <= 127) ||
+			(a === 169 && b === 254) ||
+			(a === 172 && b >= 16 && b <= 31) ||
+			(a === 192 && b === 168)
+		);
+	}
+	return (
+		normalized === "::1" ||
+		normalized.startsWith("fc") ||
+		normalized.startsWith("fd") ||
+		normalized.startsWith("fe80:")
+	);
+}
+
+function isUrlAllowedByDomainPolicy(
 	url: string,
 	allowedDomains: string[],
-	excludedDomains: string[],
-): { ok: true } | { ok: false; error: string; message: string } {
-	let hostname = "";
+	blockedDomains: string[],
+): boolean {
+	let hostname: string;
 	try {
-		hostname = new URL(url).hostname.toLowerCase();
+		hostname = new URL(url).hostname;
 	} catch {
-		return {
-			ok: false,
-			error: "invalid_url",
-			message: "url must be a valid HTTP(S) URL",
-		};
+		return false;
 	}
-	if (
-		allowedDomains.length > 0 &&
-		!allowedDomains.some((domain) => hostnameMatchesDomain(hostname, domain))
-	) {
-		return {
-			ok: false,
-			error: "domain_not_allowed",
-			message: "url hostname is not included in allowed_domains",
-		};
+	if (isPrivateOrLocalHostname(hostname)) {
+		return false;
 	}
-	if (excludedDomains.some((domain) => hostnameMatchesDomain(hostname, domain))) {
-		return {
-			ok: false,
-			error: "domain_excluded",
-			message: "url hostname is excluded by excluded_domains",
-		};
+	if (allowedDomains.length === 0 && blockedDomains.length === 0) return true;
+	if (blockedDomains.some((domain) => hostnameMatchesDomain(hostname, domain))) {
+		return false;
 	}
-	return { ok: true };
+	if (allowedDomains.length > 0) {
+		return allowedDomains.some((domain) => hostnameMatchesDomain(hostname, domain));
+	}
+	return true;
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), SERVER_TOOL_FETCH_TIMEOUT_MS);
+	try {
+		return await fetch(input, {
+			...init,
+			signal: controller.signal,
+		});
+	} finally {
+		clearTimeout(timeout);
+	}
 }
 
 function parseWebFetchMaxChars(
@@ -1166,7 +1816,7 @@ function parseWebFetchMaxChars(
 	fallback: number,
 ): number {
 	return readPositiveIntWithFallback(
-		args.max_chars,
+		args.max_chars ?? args.max_content_tokens,
 		fallback,
 		MAX_WEB_FETCH_MAX_CHARS,
 	);
@@ -1213,6 +1863,563 @@ function isSupportedFetchedContentType(contentType: string | null): boolean {
 	);
 }
 
+function parseWebSearchMaxResults(
+	args: Record<string, unknown>,
+	config: ServerToolConfig,
+	remainingResults: number,
+): number {
+	const requested = readPositiveIntWithFallback(
+		args.max_results,
+		config.webSearchMaxResults,
+		MAX_WEB_SEARCH_RESULTS,
+	);
+	return Math.max(0, Math.min(requested, remainingResults));
+}
+
+function parseWebSearchMaxCharacters(
+	args: Record<string, unknown>,
+	config: ServerToolConfig,
+): number | undefined {
+	const raw = args.max_characters ?? config.webSearchMaxCharacters;
+	if (typeof raw !== "number" || !Number.isFinite(raw)) return undefined;
+	return readPositiveIntWithFallback(raw, DEFAULT_WEB_FETCH_MAX_CHARS, MAX_WEB_FETCH_MAX_CHARS);
+}
+
+function resolveSearchDomains(args: Record<string, unknown>, config: ServerToolConfig): {
+	allowedDomains: string[];
+	excludedDomains: string[];
+} {
+	const allowedDomains = readStringArray(args.allowed_domains ?? args.include_domains);
+	const excludedDomains = readStringArray(args.excluded_domains ?? args.exclude_domains);
+	return {
+		allowedDomains: allowedDomains.length > 0 ? allowedDomains : (config.webSearchAllowedDomains ?? []),
+		excludedDomains: excludedDomains.length > 0 ? excludedDomains : (config.webSearchExcludedDomains ?? []),
+	};
+}
+
+function resolveFetchDomains(args: Record<string, unknown>, config: ServerToolConfig): {
+	allowedDomains: string[];
+	blockedDomains: string[];
+} {
+	const allowedDomains = readStringArray(args.allowed_domains);
+	const blockedDomains = readStringArray(args.blocked_domains ?? args.excluded_domains);
+	return {
+		allowedDomains: allowedDomains.length > 0 ? allowedDomains : (config.webFetchAllowedDomains ?? []),
+		blockedDomains: blockedDomains.length > 0 ? blockedDomains : (config.webFetchBlockedDomains ?? []),
+	};
+}
+
+function buildExaContentsForSearch(args: {
+	includeText: boolean;
+	includeHighlights: boolean;
+	searchContextSize: WebSearchContextSize;
+	maxCharacters?: number;
+}): Record<string, unknown> {
+	const contents: Record<string, unknown> = {};
+	const highlightCount =
+		args.searchContextSize === "high" ? 5 : args.searchContextSize === "low" ? 2 : 3;
+	if (args.includeText) {
+		contents.text =
+			typeof args.maxCharacters === "number" && args.maxCharacters > 0
+				? { maxCharacters: args.maxCharacters }
+				: true;
+	}
+	if (args.includeHighlights || !args.includeText) {
+		contents.highlights = {
+			numSentences: highlightCount,
+			highlightsPerUrl: highlightCount,
+		};
+	}
+	return contents;
+}
+
+async function executeExaFetchToolCall(args: {
+	call: { id: string; arguments: string };
+	url: string;
+	maxChars: number;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/contents`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-api-key": args.searchConfig.apiKey,
+			},
+			body: JSON.stringify({
+				urls: [args.url],
+				text: true,
+			}),
+		});
+
+		if (!response.ok) {
+			const failureText = await response.text();
+			return {
+				toolResult: {
+					toolCallId: args.call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_request_failed",
+						engine: "exa",
+						status: response.status,
+						message: failureText.slice(0, 1000),
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+
+		const json = await response.json() as Record<string, any>;
+		const result = Array.isArray(json.results) ? json.results[0] : null;
+		const normalizedText = toNonEmptyString(result?.text) ?? "";
+		const text = normalizedText.slice(0, args.maxChars);
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "exa",
+					url: args.url,
+					final_url: toNonEmptyString(result?.url) ?? args.url,
+					title: toNonEmptyString(result?.title) ?? null,
+					text,
+					truncated: normalizedText.length > text.length,
+					returned_chars: text.length,
+				}),
+			},
+			webFetchRequests: 1,
+		};
+	} catch (error) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "fetch_request_error",
+					engine: "exa",
+					message: error instanceof Error ? error.message : String(error),
+				}),
+			},
+			webFetchRequests: 0,
+		};
+	}
+}
+
+function extractCountryFromUserLocation(value: unknown): string | null {
+	if (!value || typeof value !== "object") return null;
+	const location = value as Record<string, unknown>;
+	return (
+		toNonEmptyString(location.country) ??
+		toNonEmptyString(location.country_code) ??
+		null
+	);
+}
+
+function extractLocationStringFromUserLocation(value: unknown): string | null {
+	if (!value || typeof value !== "object") return null;
+	const location = value as Record<string, unknown>;
+	const direct = toNonEmptyString(location.location);
+	if (direct) return direct;
+	const parts = [
+		toNonEmptyString(location.city),
+		toNonEmptyString(location.region),
+		toNonEmptyString(location.country),
+	].filter(Boolean);
+	return parts.length > 0 ? parts.join(", ") : null;
+}
+
+async function executeParallelSearchToolCall(args: {
+	call: { id: string; arguments: string };
+	query: string;
+	maxResults: number;
+	searchContextSize: WebSearchContextSize;
+	maxCharacters?: number;
+	allowedDomains: string[];
+	excludedDomains: string[];
+	userLocation?: unknown;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{ toolResult: IRToolResult; webSearchResults: number; webSearchExtraResults: number }> {
+	const advancedSettings: Record<string, unknown> = {
+		max_results: args.maxResults,
+	};
+	const sourcePolicy: Record<string, unknown> = {};
+	if (args.allowedDomains.length > 0) sourcePolicy.include_domains = args.allowedDomains;
+	if (args.excludedDomains.length > 0) sourcePolicy.exclude_domains = args.excludedDomains;
+	if (Object.keys(sourcePolicy).length > 0) advancedSettings.source_policy = sourcePolicy;
+	if (typeof args.maxCharacters === "number" && args.maxCharacters > 0) {
+		advancedSettings.excerpt_settings = { max_chars_per_result: args.maxCharacters };
+	}
+	const country = extractCountryFromUserLocation(args.userLocation);
+	if (country) advancedSettings.location = country.toLowerCase();
+
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/search`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-api-key": args.searchConfig.apiKey,
+			},
+			body: JSON.stringify({
+				objective: args.query,
+				search_queries: [args.query],
+				advanced_settings: advancedSettings,
+			}),
+		});
+
+		if (!response.ok) {
+			const failureText = await response.text();
+			return {
+				toolResult: {
+					toolCallId: args.call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "search_request_failed",
+						engine: "parallel",
+						status: response.status,
+						message: failureText.slice(0, 1000),
+					}),
+				},
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
+			};
+		}
+
+		const json = await response.json() as Record<string, any>;
+		const rawResults = Array.isArray(json.results) ? json.results : [];
+		const normalizedResults = rawResults.slice(0, args.maxResults).map((result) => ({
+			title: toNonEmptyString(result?.title) ?? null,
+			url: toNonEmptyString(result?.url) ?? null,
+			published_date: toNonEmptyString(result?.publish_date) ?? toNonEmptyString(result?.published_date) ?? null,
+			author: null,
+			highlights: Array.isArray(result?.excerpts)
+				? result.excerpts.filter((entry: unknown) => typeof entry === "string")
+				: [],
+			text: null,
+			summary: null,
+		}));
+		const webSearchResults = normalizedResults.length;
+
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "parallel",
+					engine: "parallel",
+					request_id: toNonEmptyString(json.search_id) ?? null,
+					query: args.query,
+					search_context_size: args.searchContextSize,
+					allowed_domains: args.allowedDomains,
+					excluded_domains: args.excludedDomains,
+					results: normalizedResults,
+				}),
+			},
+			webSearchResults,
+			webSearchExtraResults: Math.max(0, webSearchResults - 10),
+		};
+	} catch (error) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "search_request_error",
+					engine: "parallel",
+					message: error instanceof Error ? error.message : String(error),
+				}),
+			},
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
+}
+
+async function executeFirecrawlSearchToolCall(args: {
+	call: { id: string; arguments: string };
+	query: string;
+	maxResults: number;
+	includeText: boolean;
+	maxCharacters?: number;
+	allowedDomains: string[];
+	excludedDomains: string[];
+	userLocation?: unknown;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{ toolResult: IRToolResult; webSearchResults: number; webSearchExtraResults: number }> {
+	if (args.allowedDomains.length > 0 && args.excludedDomains.length > 0) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "invalid_domain_policy",
+					engine: "firecrawl",
+					message: "Firecrawl web search supports allowed_domains or excluded_domains, not both.",
+					allowed_domains: args.allowedDomains,
+					excluded_domains: args.excludedDomains,
+				}),
+			},
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
+	const body: Record<string, unknown> = {
+		query: args.query,
+		limit: args.maxResults,
+	};
+	if (args.allowedDomains.length > 0) body.includeDomains = args.allowedDomains;
+	if (args.excludedDomains.length > 0) body.excludeDomains = args.excludedDomains;
+	const country = extractCountryFromUserLocation(args.userLocation);
+	if (country) body.country = country.toUpperCase();
+	const location = extractLocationStringFromUserLocation(args.userLocation);
+	if (location) body.location = location;
+	if (args.includeText) {
+		body.scrapeOptions = {
+			formats: [{ type: "markdown" }],
+			...(typeof args.maxCharacters === "number" && args.maxCharacters > 0
+				? { maxAge: 0, onlyMainContent: true }
+				: {}),
+		};
+	}
+
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v2/search`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${args.searchConfig.apiKey}`,
+			},
+			body: JSON.stringify(body),
+		});
+
+		if (!response.ok) {
+			const failureText = await response.text();
+			return {
+				toolResult: {
+					toolCallId: args.call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "search_request_failed",
+						engine: "firecrawl",
+						status: response.status,
+						message: failureText.slice(0, 1000),
+					}),
+				},
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
+			};
+		}
+
+		const json = await response.json() as Record<string, any>;
+		const webResults = Array.isArray(json?.data?.web) ? json.data.web : [];
+		const normalizedResults = webResults.slice(0, args.maxResults).map((result) => {
+			const text = toNonEmptyString(result?.markdown);
+			const boundedText =
+				text && typeof args.maxCharacters === "number" && args.maxCharacters > 0
+					? text.slice(0, args.maxCharacters).trim()
+					: text;
+			return {
+				title: toNonEmptyString(result?.title) ?? toNonEmptyString(result?.metadata?.title) ?? null,
+				url: toNonEmptyString(result?.url) ?? toNonEmptyString(result?.metadata?.sourceURL) ?? null,
+				published_date: null,
+				author: null,
+				highlights: toNonEmptyString(result?.description) ? [String(result.description)] : [],
+				text: args.includeText ? (boundedText ?? null) : null,
+				summary: toNonEmptyString(result?.description) ?? toNonEmptyString(result?.metadata?.description) ?? null,
+			};
+		});
+		const webSearchResults = normalizedResults.length;
+
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "firecrawl",
+					engine: "firecrawl",
+					request_id: toNonEmptyString(json.id) ?? null,
+					query: args.query,
+					credits_used: typeof json.creditsUsed === "number" ? json.creditsUsed : null,
+					allowed_domains: args.allowedDomains,
+					excluded_domains: args.excludedDomains,
+					results: normalizedResults,
+				}),
+			},
+			webSearchResults,
+			webSearchExtraResults: Math.max(0, webSearchResults - 10),
+		};
+	} catch (error) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "search_request_error",
+					engine: "firecrawl",
+					message: error instanceof Error ? error.message : String(error),
+				}),
+			},
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
+}
+
+async function executeParallelFetchToolCall(args: {
+	call: { id: string; arguments: string };
+	url: string;
+	maxChars: number;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/extract`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"x-api-key": args.searchConfig.apiKey,
+			},
+			body: JSON.stringify({
+				urls: [args.url],
+				advanced_settings: {
+					full_content: {
+						max_chars_per_result: args.maxChars,
+					},
+				},
+			}),
+		});
+
+		if (!response.ok) {
+			const failureText = await response.text();
+			return {
+				toolResult: {
+					toolCallId: args.call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_request_failed",
+						engine: "parallel",
+						status: response.status,
+						message: failureText.slice(0, 1000),
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+
+		const json = await response.json() as Record<string, any>;
+		const result = Array.isArray(json.results) ? json.results[0] : null;
+		const rawText =
+			toNonEmptyString(result?.full_content) ??
+			(Array.isArray(result?.excerpts)
+				? result.excerpts.filter((entry: unknown) => typeof entry === "string").join("\n\n")
+				: "");
+		const text = rawText.slice(0, args.maxChars).trim();
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "parallel",
+					engine: "parallel",
+					request_id: toNonEmptyString(json.extract_id) ?? null,
+					url: args.url,
+					final_url: toNonEmptyString(result?.url) ?? args.url,
+					title: toNonEmptyString(result?.title) ?? null,
+					published_date: toNonEmptyString(result?.publish_date) ?? null,
+					text,
+					truncated: rawText.length > text.length,
+					returned_chars: text.length,
+				}),
+			},
+			webFetchRequests: 1,
+		};
+	} catch (error) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "fetch_request_error",
+					engine: "parallel",
+					message: error instanceof Error ? error.message : String(error),
+				}),
+			},
+			webFetchRequests: 0,
+		};
+	}
+}
+
+async function executeFirecrawlFetchToolCall(args: {
+	call: { id: string; arguments: string };
+	url: string;
+	maxChars: number;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v2/scrape`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${args.searchConfig.apiKey}`,
+			},
+			body: JSON.stringify({
+				url: args.url,
+				formats: ["markdown"],
+				onlyMainContent: true,
+			}),
+		});
+
+		if (!response.ok) {
+			const failureText = await response.text();
+			return {
+				toolResult: {
+					toolCallId: args.call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_request_failed",
+						engine: "firecrawl",
+						status: response.status,
+						message: failureText.slice(0, 1000),
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+
+		const json = await response.json() as Record<string, any>;
+		const data = json?.data && typeof json.data === "object" ? json.data : {};
+		const metadata = data?.metadata && typeof data.metadata === "object" ? data.metadata : {};
+		const rawText = toNonEmptyString(data?.markdown) ?? "";
+		const text = rawText.slice(0, args.maxChars).trim();
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "firecrawl",
+					engine: "firecrawl",
+					request_id: toNonEmptyString(json.id) ?? null,
+					url: args.url,
+					final_url: toNonEmptyString(metadata?.sourceURL) ?? toNonEmptyString(metadata?.url) ?? args.url,
+					title: toNonEmptyString(metadata?.title) ?? null,
+					content_type: toNonEmptyString(metadata?.contentType) ?? null,
+					status: typeof metadata?.statusCode === "number" ? metadata.statusCode : null,
+					text,
+					truncated: rawText.length > text.length,
+					returned_chars: text.length,
+				}),
+			},
+			webFetchRequests: 1,
+		};
+	} catch (error) {
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "fetch_request_error",
+					engine: "firecrawl",
+					message: error instanceof Error ? error.message : String(error),
+				}),
+			},
+			webFetchRequests: 0,
+		};
+	}
+}
+
 async function executeWebFetchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
@@ -1234,36 +2441,139 @@ async function executeWebFetchToolCall(
 	}
 
 	const maxChars = parseWebFetchMaxChars(args, config.webFetchMaxChars);
-	const allowedDomains = readDomainArray(args.allowed_domains);
-	const excludedDomains = readDomainArray(args.excluded_domains);
-	const domainValidation = validateUrlAgainstDomainFilters(
-		url,
-		allowedDomains.length > 0 ? allowedDomains : config.webFetchAllowedDomains,
-		excludedDomains.length > 0 ? excludedDomains : config.webFetchExcludedDomains,
-	);
-	if (domainValidation.ok === false) {
+	const { allowedDomains, blockedDomains } = resolveFetchDomains(args, config);
+	if (!isUrlAllowedByDomainPolicy(url, allowedDomains, blockedDomains)) {
 		return {
 			toolResult: {
 				toolCallId: call.id,
 				isError: true,
 				content: JSON.stringify({
-					error: domainValidation.error,
-					message: domainValidation.message,
+					error: "url_blocked_by_domain_policy",
+					message: "url is not allowed by this gateway web fetch domain policy",
 				}),
 			},
 			webFetchRequests: 0,
 		};
 	}
 
-	try {
-		const response = await fetch(url, {
-			method: "GET",
-			headers: {
-				Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
-				"User-Agent": "AI-Stats-Gateway/1.0 (+https://ai-stats.phaseo.app)",
+	const requestedEngine = toNonEmptyString(args.engine) ? readWebFetchEngine(args.engine) : "auto";
+	const engine = requestedEngine === "auto" ? (config.webFetchEngine ?? DEFAULT_WEB_FETCH_ENGINE) : requestedEngine;
+	if (engine === "native") {
+		return {
+			toolResult: {
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "unsupported_fetch_engine",
+					engine,
+					message: "Native web fetch is provider-specific. Use the Anthropic Messages surface for native web fetch, or engine \"direct\" for gateway-managed fetch.",
+				}),
 			},
-			redirect: "follow",
-		});
+			webFetchRequests: 0,
+		};
+	}
+	if (engine === "exa") {
+		const searchConfig = resolveExaSearchConfig();
+		if (!searchConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_not_configured",
+						engine: "exa",
+						message: "Exa web fetch is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+		return executeExaFetchToolCall({ call, url, maxChars, searchConfig });
+	}
+	if (engine === "parallel") {
+		const searchConfig = resolveParallelSearchConfig();
+		if (!searchConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_not_configured",
+						engine: "parallel",
+						message: "Parallel web fetch is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+		return executeParallelFetchToolCall({ call, url, maxChars, searchConfig });
+	}
+	if (engine === "firecrawl") {
+		const searchConfig = resolveFirecrawlSearchConfig();
+		if (!searchConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_not_configured",
+						engine: "firecrawl",
+						message: "Firecrawl web fetch is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+		return executeFirecrawlFetchToolCall({ call, url, maxChars, searchConfig });
+	}
+
+	try {
+		let currentUrl = url;
+		let response: Response | null = null;
+		for (let redirectCount = 0; redirectCount <= SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS; redirectCount += 1) {
+			response = await fetchWithTimeout(currentUrl, {
+				method: "GET",
+				headers: {
+					Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
+					"User-Agent": "AI-Stats-Gateway/1.0 (+https://ai-stats.phaseo.app)",
+				},
+				redirect: "manual",
+			});
+			if (response.status < 300 || response.status >= 400) break;
+			const location = response.headers.get("location");
+			if (!location) break;
+			const nextUrl = new URL(location, currentUrl).toString();
+			if (!isUrlAllowedByDomainPolicy(nextUrl, allowedDomains, blockedDomains)) {
+				return {
+					toolResult: {
+						toolCallId: call.id,
+						isError: true,
+						content: JSON.stringify({
+							error: "redirect_blocked_by_domain_policy",
+							message: "redirect target is not allowed by this gateway web fetch domain policy",
+						}),
+					},
+					webFetchRequests: 0,
+				};
+			}
+			currentUrl = nextUrl;
+		}
+		if (!response) {
+			throw new Error("web fetch did not return a response");
+		}
+		if (response.status >= 300 && response.status < 400) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "too_many_redirects",
+						message: "gateway web fetch exceeded the redirect limit",
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
 
 		if (!response.ok) {
 			const failureText = await response.text();
@@ -1314,8 +2624,9 @@ async function executeWebFetchToolCall(
 				toolCallId: call.id,
 				content: JSON.stringify({
 					provider: "fetch",
+					engine: "direct",
 					url,
-					final_url: toNonEmptyString(response.url) ?? url,
+					final_url: toNonEmptyString(response.url) ?? currentUrl,
 					status: response.status,
 					content_type: contentType,
 					title,
@@ -1344,7 +2655,8 @@ async function executeWebFetchToolCall(
 async function executeWebSearchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
-): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	remainingResults: number,
+): Promise<{ toolResult: IRToolResult; webFetchRequests: number; webSearchResults: number; webSearchExtraResults: number }> {
 	const args = parseJsonObject(call.arguments);
 	const query = parseWebSearchQuery(args);
 	if (!query) {
@@ -1358,6 +2670,126 @@ async function executeWebSearchToolCall(
 				}),
 			},
 			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
+
+	if (remainingResults <= 0) {
+		return {
+			toolResult: {
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "max_total_results_reached",
+					message: "gateway web search max_total_results has already been reached for this request",
+				}),
+			},
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
+
+	const requestedEngine = toNonEmptyString(args.engine) ? readWebSearchEngine(args.engine) : "auto";
+	const engine = requestedEngine === "auto" ? (config.webSearchEngine ?? DEFAULT_WEB_SEARCH_ENGINE) : requestedEngine;
+	if (engine === "native") {
+		return {
+			toolResult: {
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "unsupported_search_engine",
+					engine,
+					message: "Use engine native in the tool declaration so the gateway can route a provider-native web search tool upstream.",
+				}),
+			},
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+		};
+	}
+
+	const maxResults = parseWebSearchMaxResults(args, config, remainingResults);
+	const includeText = readBooleanWithFallback(
+		args.include_text,
+		config.webSearchIncludeText,
+	);
+	const includeHighlights = readBooleanWithFallback(
+		args.include_highlights,
+		config.webSearchIncludeHighlights,
+	);
+	const searchContextSize = readWebSearchContextSize(args.search_context_size ?? config.webSearchContextSize ?? "medium");
+	const maxCharacters = parseWebSearchMaxCharacters(args, config);
+	const { allowedDomains, excludedDomains } = resolveSearchDomains(args, config);
+
+	if (engine === "parallel") {
+		const parallelConfig = resolveParallelSearchConfig();
+		if (!parallelConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "search_not_configured",
+						engine: "parallel",
+						message: "Parallel web search is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
+			};
+		}
+		const executed = await executeParallelSearchToolCall({
+			call,
+			query,
+			maxResults,
+			searchContextSize,
+			maxCharacters,
+			allowedDomains,
+			excludedDomains,
+			userLocation: args.user_location,
+			searchConfig: parallelConfig,
+		});
+		return {
+			...executed,
+			webFetchRequests: 0,
+		};
+	}
+
+	if (engine === "firecrawl") {
+		const firecrawlConfig = resolveFirecrawlSearchConfig();
+		if (!firecrawlConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "search_not_configured",
+						engine: "firecrawl",
+						message: "Firecrawl web search is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
+			};
+		}
+		const executed = await executeFirecrawlSearchToolCall({
+			call,
+			query,
+			maxResults,
+			includeText,
+			maxCharacters,
+			allowedDomains,
+			excludedDomains,
+			userLocation: args.user_location,
+			searchConfig: firecrawlConfig,
+		});
+		return {
+			...executed,
+			webFetchRequests: 0,
 		};
 	}
 
@@ -1369,113 +2801,33 @@ async function executeWebSearchToolCall(
 				isError: true,
 				content: JSON.stringify({
 					error: "search_not_configured",
-					message: "server-managed web search is not configured",
+					engine: "exa",
+					message: "server-managed Exa web search is not configured",
 				}),
 			},
 			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
 		};
 	}
-
-	const maxResults = readPositiveIntWithFallback(
-		args.max_results,
-		config.webSearchMaxResults,
-		MAX_WEB_SEARCH_RESULTS,
-	);
-	const maxTotalResults =
-		readOptionalPositiveInt(args.max_total_results, MAX_WEB_SEARCH_TOTAL_RESULTS) ??
-		config.webSearchMaxTotalResults;
-	if (
-		typeof maxTotalResults === "number" &&
-		config.webSearchResultsUsed >= maxTotalResults
-	) {
-		return {
-			toolResult: {
-				toolCallId: call.id,
-				isError: true,
-				content: JSON.stringify({
-					error: "search_result_limit_reached",
-					message: "gateway web search max_total_results has already been reached",
-					max_total_results: maxTotalResults,
-				}),
-			},
-			webFetchRequests: 0,
-		};
-	}
-	const remainingResults =
-		typeof maxTotalResults === "number"
-			? Math.max(0, maxTotalResults - config.webSearchResultsUsed)
-			: maxResults;
-	const cappedMaxResults = Math.max(1, Math.min(maxResults, remainingResults));
-	const includeText = readBooleanWithFallback(
-		args.include_text,
-		config.webSearchIncludeText,
-	);
-	const includeHighlights = readBooleanWithFallback(
-		args.include_highlights,
-		config.webSearchIncludeHighlights,
-	);
-	const engine = readSearchEngine(args.engine ?? config.webSearchEngine);
-	if (engine !== "auto" && engine !== "exa") {
-		return {
-			toolResult: {
-				toolCallId: call.id,
-				isError: true,
-				content: JSON.stringify({
-					error: "unsupported_search_engine",
-					message: "gateway web search currently supports auto and exa engines",
-				}),
-			},
-			webFetchRequests: 0,
-		};
-	}
-	const allowedDomains = readDomainArray(args.allowed_domains);
-	const excludedDomains = readDomainArray(args.excluded_domains);
-	const searchContextSize =
-		readSearchContextSize(args.search_context_size) ??
-		config.webSearchContextSize;
-
-	const contents: Record<string, unknown> = {};
-	if (includeText) {
-		contents.text = true;
-	}
-	if (includeHighlights || !includeText) {
-		const highlights: Record<string, unknown> = {};
-		if (searchContextSize) {
-			highlights.maxCharacters =
-				searchContextSize === "low"
-					? 5000
-					: searchContextSize === "high"
-						? 30000
-						: 15000;
-		}
-		contents.highlights = Object.keys(highlights).length > 0 ? highlights : true;
-	}
+	const contents = buildExaContentsForSearch({ includeText, includeHighlights, searchContextSize, maxCharacters });
+	const exaBody: Record<string, unknown> = {
+		query,
+		type: "auto",
+		numResults: maxResults,
+		contents,
+	};
+	if (allowedDomains.length > 0) exaBody.includeDomains = allowedDomains;
+	if (excludedDomains.length > 0) exaBody.excludeDomains = excludedDomains;
 
 	try {
-		const searchBody: Record<string, unknown> = {
-			query,
-			type: "auto",
-			numResults: cappedMaxResults,
-			contents,
-		};
-		const includeDomains =
-			allowedDomains.length > 0 ? allowedDomains : config.webSearchAllowedDomains;
-		const excludeDomains =
-			excludedDomains.length > 0 ? excludedDomains : config.webSearchExcludedDomains;
-		if (includeDomains.length > 0) {
-			searchBody.includeDomains = includeDomains;
-		}
-		if (excludeDomains.length > 0) {
-			searchBody.excludeDomains = excludeDomains;
-		}
-
-		const response = await fetch(`${searchConfig.baseUrl}/search`, {
+		const response = await fetchWithTimeout(`${searchConfig.baseUrl}/search`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				"x-api-key": searchConfig.apiKey,
 			},
-			body: JSON.stringify(searchBody),
+			body: JSON.stringify(exaBody),
 		});
 
 		if (!response.ok) {
@@ -1491,12 +2843,14 @@ async function executeWebSearchToolCall(
 					}),
 				},
 				webFetchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
 			};
 		}
 
 		const json = await response.json() as Record<string, any>;
 		const results = Array.isArray(json.results) ? json.results : [];
-		const normalizedResults = results.slice(0, cappedMaxResults).map((result) => ({
+		const normalizedResults = results.slice(0, maxResults).map((result) => ({
 			title: toNonEmptyString(result?.title) ?? null,
 			url: toNonEmptyString(result?.url) ?? null,
 			published_date: toNonEmptyString(result?.publishedDate) ?? null,
@@ -1507,27 +2861,26 @@ async function executeWebSearchToolCall(
 			text: includeText ? (toNonEmptyString(result?.text) ?? null) : null,
 			summary: toNonEmptyString(result?.summary) ?? null,
 		}));
-		config.webSearchResultsUsed += normalizedResults.length;
-		const webFetchRequests = normalizedResults.filter((result) =>
-			(includeText && typeof result.text === "string" && result.text.length > 0) ||
-			(Array.isArray(result.highlights) && result.highlights.length > 0)
-		).length;
+		const webSearchResults = normalizedResults.length;
 
 		return {
 			toolResult: {
 				toolCallId: call.id,
 				content: JSON.stringify({
-					provider: "exa",
+					provider: engine === "auto" ? "exa" : engine,
+					engine: "exa",
 					request_id: toNonEmptyString(json.requestId) ?? null,
 					search_type: toNonEmptyString(json.searchType) ?? null,
-					engine,
 					query,
+					search_context_size: searchContextSize,
+					allowed_domains: allowedDomains,
+					excluded_domains: excludedDomains,
 					results: normalizedResults,
-					max_total_results: maxTotalResults,
-					results_used: config.webSearchResultsUsed,
 				}),
 			},
-			webFetchRequests,
+			webFetchRequests: 0,
+			webSearchResults,
+			webSearchExtraResults: Math.max(0, webSearchResults - 10),
 		};
 	} catch (error) {
 		return {
@@ -1540,75 +2893,10 @@ async function executeWebSearchToolCall(
 				}),
 			},
 			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
 		};
 	}
-}
-
-function validateApplyPatchBlock(patch: string): { ok: true; patch: string } | { ok: false; message: string } {
-	const normalized = patch.replace(/\r\n/g, "\n").trim();
-	if (!normalized.startsWith("*** Begin Patch")) {
-		return {
-			ok: false,
-			message: "patch must begin with *** Begin Patch",
-		};
-	}
-	if (!normalized.endsWith("*** End Patch")) {
-		return {
-			ok: false,
-			message: "patch must end with *** End Patch",
-		};
-	}
-	if (
-		!normalized.includes("\n*** Add File: ") &&
-		!normalized.includes("\n*** Update File: ") &&
-		!normalized.includes("\n*** Delete File: ")
-	) {
-		return {
-			ok: false,
-			message: "patch must contain at least one Add File, Update File, or Delete File section",
-		};
-	}
-	return { ok: true, patch: normalized };
-}
-
-function executeApplyPatchToolCall(
-	call: { id: string; arguments: string },
-): IRToolResult {
-	const args = parseJsonObject(call.arguments);
-	const patch = toNonEmptyString(args.patch);
-	if (!patch) {
-		return {
-			toolCallId: call.id,
-			isError: true,
-			content: JSON.stringify({
-				error: "invalid_patch",
-				message: "patch is required for gateway apply patch",
-			}),
-		};
-	}
-
-	const validation = validateApplyPatchBlock(patch);
-	if (validation.ok === false) {
-		return {
-			toolCallId: call.id,
-			isError: true,
-			content: JSON.stringify({
-				error: "invalid_patch",
-				message: validation.message,
-			}),
-		};
-	}
-
-	return {
-		toolCallId: call.id,
-		content: JSON.stringify({
-			type: "apply_patch",
-			format: "codex_v4a",
-			applied: false,
-			summary: toNonEmptyString(args.summary),
-			patch: validation.patch,
-		}),
-	};
 }
 
 const TOOL_SEARCH_REGISTRY = [
@@ -1637,12 +2925,17 @@ const TOOL_SEARCH_REGISTRY = [
 		parameters: WEB_FETCH_TOOL_PARAMETERS,
 	},
 	{
-		type: APPLY_PATCH_SERVER_TOOL_TYPE,
-		function_name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
-		category: "coding",
-		description: APPLY_PATCH_TOOL_DESCRIPTION,
+		type: ADVISOR_SERVER_TOOL_TYPE,
+		function_name: ADVISOR_SERVER_TOOL_FUNCTION_NAME,
+		category: "orchestration",
+		description: advisorToolDescription({
+			functionName: ADVISOR_SERVER_TOOL_FUNCTION_NAME,
+			forwardTranscript: false,
+			maxUses: DEFAULT_ADVISOR_MAX_USES,
+			maxTokens: DEFAULT_ADVISOR_MAX_TOKENS,
+		}),
 		status: "available",
-		parameters: APPLY_PATCH_TOOL_PARAMETERS,
+		parameters: advisorToolParameters(true, true),
 	},
 	{
 		type: IMAGE_GENERATION_SERVER_TOOL_TYPE,
@@ -1651,6 +2944,14 @@ const TOOL_SEARCH_REGISTRY = [
 		description: IMAGE_GENERATION_TOOL_DESCRIPTION,
 		status: "beta",
 		parameters: IMAGE_GENERATION_TOOL_PARAMETERS,
+	},
+	{
+		type: APPLY_PATCH_SERVER_TOOL_TYPE,
+		function_name: APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME,
+		category: "coding",
+		description: APPLY_PATCH_TOOL_DESCRIPTION,
+		status: "available",
+		parameters: APPLY_PATCH_TOOL_PARAMETERS,
 	},
 	{
 		type: FUSION_SERVER_TOOL_TYPE,
@@ -1747,7 +3048,7 @@ function buildInternalJsonRequest(
 
 async function runInternalJsonEndpoint(args: {
 	sourceRequest: Request;
-	endpoint: "chat.completions" | "images.generations";
+	endpoint: "chat.completions";
 	pathname: string;
 	body: Record<string, unknown>;
 }): Promise<{ ok: true; json: Record<string, any> } | { ok: false; status: number; json: Record<string, any> | null; text: string }> {
@@ -1783,71 +3084,6 @@ async function runInternalJsonEndpoint(args: {
 	return {
 		ok: true,
 		json: json ?? {},
-	};
-}
-
-async function executeImageGenerationToolCall(
-	call: { id: string; arguments: string },
-	config: ServerToolConfig,
-	runtime: ServerToolRuntime,
-): Promise<IRToolResult> {
-	const args = parseJsonObject(call.arguments);
-	const prompt = toNonEmptyString(args.prompt);
-	if (!prompt) {
-		return {
-			toolCallId: call.id,
-			isError: true,
-			content: JSON.stringify({
-				error: "invalid_prompt",
-				message: "prompt is required for gateway image generation",
-			}),
-		};
-	}
-	if (!runtime.sourceRequest) {
-		return {
-			toolCallId: call.id,
-			isError: true,
-			content: JSON.stringify({
-				error: "server_tool_context_missing",
-				message: "gateway image generation requires request context",
-			}),
-		};
-	}
-
-	const requestBody: Record<string, unknown> = {
-		model: toNonEmptyString(args.model) ?? config.imageGenerationModel,
-		prompt,
-	};
-	for (const key of ["size", "quality", "n", "response_format", "output_format", "background", "style"]) {
-		if (args[key] !== undefined) requestBody[key] = args[key];
-	}
-
-	const result = await runInternalJsonEndpoint({
-		sourceRequest: runtime.sourceRequest,
-		endpoint: "images.generations",
-		pathname: "/v1/images/generations",
-		body: requestBody,
-	});
-	if (result.ok === false) {
-		return {
-			toolCallId: call.id,
-			isError: true,
-			content: JSON.stringify({
-				error: "image_generation_failed",
-				status: result.status,
-				response: result.json ?? result.text,
-			}),
-		};
-	}
-
-	return {
-		toolCallId: call.id,
-		content: JSON.stringify({
-			type: "image_generation",
-			model: result.json.model ?? requestBody.model,
-			data: Array.isArray(result.json.data) ? result.json.data : [],
-			usage: result.json.usage ?? null,
-		}),
 	};
 }
 
@@ -1929,18 +3165,21 @@ async function executeFusionToolCall(
 			}),
 		};
 	}
-	const outerModel = runtime.outerModel ?? "auto";
-	const analysisModels = (
-		readStringArray(args.analysis_models, DEFAULT_FUSION_MAX_ANALYSIS_MODELS).length > 0
-			? readStringArray(args.analysis_models, DEFAULT_FUSION_MAX_ANALYSIS_MODELS)
-			: config.fusionAnalysisModels
-	).slice(0, DEFAULT_FUSION_MAX_ANALYSIS_MODELS);
+	const outerModel = toNonEmptyString(runtime.outerModel) ?? "auto";
+	const requestedAnalysisModels = readStringArray(args.analysis_models)
+		.slice(0, DEFAULT_FUSION_MAX_ANALYSIS_MODELS);
+	const analysisModels = requestedAnalysisModels.length > 0
+		? requestedAnalysisModels
+		: config.fusionAnalysisModels ?? [];
 	const panelModels = analysisModels.length > 0 ? analysisModels : [outerModel];
 	const judgeModel =
 		toNonEmptyString(args.model) ??
 		config.fusionModel ??
 		outerModel;
-	const includeWeb = readBooleanWithFallback(args.include_web, config.fusionIncludeWeb);
+	const includeWeb = readBooleanWithFallback(
+		args.include_web,
+		config.fusionIncludeWeb ?? true,
+	);
 	const analysisTools = includeWeb
 		? [
 			{ type: WEB_SEARCH_SERVER_TOOL_TYPE, parameters: { max_results: 5, max_total_results: 10 } },
@@ -2047,7 +3286,12 @@ async function executeFusionToolCall(
 export async function buildServerToolContinuation(
 	irResponse: IRChatResponse,
 	config: ServerToolConfig,
-	runtime: ServerToolRuntime = {},
+	options?: {
+		sourceRequest?: Request;
+		outerModel?: string | null;
+		executeAdvisor?: AdvisorExecutor;
+		executeImageGeneration?: ImageGenerationExecutor;
+	},
 ) : Promise<ServerToolContinuation | null> {
 	if (!config.enabled) return null;
 	const firstChoice = Array.isArray(irResponse.choices) ? irResponse.choices[0] : null;
@@ -2062,10 +3306,11 @@ export async function buildServerToolContinuation(
 			call?.name === DATETIME_SERVER_TOOL_FUNCTION_NAME ||
 			call?.name === WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME ||
 			call?.name === WEB_FETCH_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME ||
 			call?.name === IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME ||
+			call?.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME ||
 			call?.name === FUSION_SERVER_TOOL_FUNCTION_NAME ||
-			call?.name === TOOL_SEARCH_SERVER_TOOL_FUNCTION_NAME,
+			call?.name === TOOL_SEARCH_SERVER_TOOL_FUNCTION_NAME ||
+			Boolean(config.advisors?.[call?.name]),
 	);
 	if (serverToolCalls.length === 0) return null;
 
@@ -2073,15 +3318,22 @@ export async function buildServerToolContinuation(
 	if (serverToolCalls.length !== toolCalls.length) return null;
 
 	const toolResults: IRToolResult[] = [];
+	let advisorUsage: IRUsage | undefined;
+	let imageGenerationUsage: IRUsage | undefined;
 	const usage: ServerToolExecutionMetrics = {
 		datetimeRequests: 0,
 		webSearchRequests: 0,
+		webSearchResults: 0,
+		webSearchExtraResults: 0,
 		webFetchRequests: 0,
-		applyPatchRequests: 0,
+		advisorRequests: 0,
 		imageGenerationRequests: 0,
+		applyPatchRequests: 0,
 		fusionRequests: 0,
 		toolSearchRequests: 0,
 	};
+	const advisorCallsUsed = new Map<string, number>();
+	let remainingSearchResults = config.webSearchMaxTotalResults ?? DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
 	for (const call of serverToolCalls) {
 		if (call.name === DATETIME_SERVER_TOOL_FUNCTION_NAME) {
 			toolResults.push(
@@ -2098,10 +3350,14 @@ export async function buildServerToolContinuation(
 			const executed = await executeWebSearchToolCall(
 				{ id: call.id, arguments: call.arguments },
 				config,
+				remainingSearchResults,
 			);
 			toolResults.push(executed.toolResult);
 			usage.webSearchRequests += 1;
+			usage.webSearchResults += Math.max(0, executed.webSearchResults);
+			usage.webSearchExtraResults += Math.max(0, executed.webSearchExtraResults);
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
+			remainingSearchResults = Math.max(0, remainingSearchResults - Math.max(0, executed.webSearchResults));
 			continue;
 		}
 
@@ -2115,26 +3371,101 @@ export async function buildServerToolContinuation(
 			continue;
 		}
 
-		if (call.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME) {
-			toolResults.push(
-				executeApplyPatchToolCall({
-					id: call.id,
-					arguments: call.arguments,
+		if (call.name === IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME) {
+			const args = parseJsonObject(call.arguments);
+			const prompt = toNonEmptyString(args.prompt) ?? toNonEmptyString(args.description);
+			const model =
+				toNonEmptyString(config.imageGeneration?.model) ??
+				toNonEmptyString(args.model) ??
+				DEFAULT_IMAGE_GENERATION_MODEL;
+			if (!prompt) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "image_generation_invalid_request",
+						message: "Image generation requires a prompt.",
+					}),
+				});
+				continue;
+			}
+			if (!options?.executeImageGeneration) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "image_generation_executor_unavailable",
+						message: "Image generation execution is not available in this runtime.",
+					}),
+				});
+				continue;
+			}
+			const imageResult = await options.executeImageGeneration({
+				model,
+				prompt,
+				quality: toNonEmptyString(args.quality) ?? config.imageGeneration?.quality,
+				size: toNonEmptyString(args.size) ?? config.imageGeneration?.size,
+				aspectRatio: toNonEmptyString(args.aspect_ratio) ?? config.imageGeneration?.aspectRatio,
+				background: toNonEmptyString(args.background) ?? config.imageGeneration?.background,
+				outputFormat: toNonEmptyString(args.output_format) ?? config.imageGeneration?.outputFormat,
+				outputCompression:
+					typeof args.output_compression === "number" && Number.isFinite(args.output_compression)
+						? Math.max(0, Math.min(100, args.output_compression))
+						: config.imageGeneration?.outputCompression,
+				moderation: toNonEmptyString(args.moderation) ?? config.imageGeneration?.moderation,
+			});
+			if (imageResult.ok === false) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						status: "error",
+						error: "image_generation_failed",
+						message: imageResult.message,
+					}),
+				});
+				continue;
+			}
+			usage.imageGenerationRequests += 1;
+			toolResults.push({
+				toolCallId: call.id,
+				content: JSON.stringify({
+					status: "ok",
+					model: imageResult.model,
+					...(imageResult.imageUrl ? { imageUrl: imageResult.imageUrl } : {}),
+					...(imageResult.b64Json ? { b64_json: imageResult.b64Json } : {}),
+					...(imageResult.mimeType ? { mime_type: imageResult.mimeType } : {}),
 				}),
-			);
-			usage.applyPatchRequests += 1;
+			});
+			if (imageResult.usage) {
+				imageGenerationUsage = mergeIRUsageTotals(imageGenerationUsage, imageResult.usage);
+			}
 			continue;
 		}
 
-		if (call.name === IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME) {
-			toolResults.push(
-				await executeImageGenerationToolCall(
-					{ id: call.id, arguments: call.arguments },
-					config,
-					runtime,
-				),
-			);
-			usage.imageGenerationRequests += 1;
+		if (call.name === APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME) {
+			const operation = normalizeApplyPatchOperation(parseJsonObject(call.arguments));
+			usage.applyPatchRequests += 1;
+			if ("error" in operation) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						status: "error",
+						error: "apply_patch_invalid_operation",
+						message: operation.error,
+					}),
+				});
+				continue;
+			}
+			toolResults.push({
+				toolCallId: call.id,
+				content: JSON.stringify({
+					status: "completed",
+					operation,
+					message: "Patch operation validated. The client must apply or reject this patch and report the result.",
+				}),
+			});
 			continue;
 		}
 
@@ -2143,7 +3474,10 @@ export async function buildServerToolContinuation(
 				await executeFusionToolCall(
 					{ id: call.id, arguments: call.arguments },
 					config,
-					runtime,
+					{
+						sourceRequest: options?.sourceRequest,
+						outerModel: options?.outerModel,
+					},
 				),
 			);
 			usage.fusionRequests += 1;
@@ -2158,6 +3492,87 @@ export async function buildServerToolContinuation(
 				}),
 			);
 			usage.toolSearchRequests += 1;
+			continue;
+		}
+
+		const advisorConfig = config.advisors?.[call.name];
+		if (advisorConfig) {
+			const used = (advisorCallsUsed.get(advisorConfig.functionName) ?? 0) + 1;
+			advisorCallsUsed.set(advisorConfig.functionName, used);
+			if (used > advisorConfig.maxUses) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "advisor_max_uses_exceeded",
+						message: `Advisor max_uses exceeded (${advisorConfig.maxUses}).`,
+					}),
+				});
+				continue;
+			}
+			const args = parseJsonObject(call.arguments);
+			const prompt =
+				toNonEmptyString(args.prompt) ??
+				(advisorConfig.forwardTranscript
+					? "Review the forwarded conversation and provide concise advice for the calling model."
+					: null);
+			const advisorModel =
+				toNonEmptyString(advisorConfig.model) ??
+				toNonEmptyString(args.model) ??
+				toNonEmptyString(config.defaultAdvisorModel);
+			if (!prompt || !advisorModel) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "advisor_invalid_request",
+						message: "Advisor requires a prompt and advisor model.",
+					}),
+				});
+				continue;
+			}
+			if (!options?.executeAdvisor) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "advisor_executor_unavailable",
+						message: "Advisor execution is not available in this runtime.",
+					}),
+				});
+				continue;
+			}
+			usage.advisorRequests += 1;
+			const advisorResult = await options.executeAdvisor({
+				model: advisorModel,
+				prompt,
+				maxTokens: advisorConfig.maxTokens,
+				instructions: advisorConfig.instructions,
+				forwardTranscript: advisorConfig.forwardTranscript,
+				reasoning: advisorConfig.reasoning,
+				temperature: advisorConfig.temperature,
+			});
+			if (advisorResult.ok === false) {
+				toolResults.push({
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "advisor_request_failed",
+						message: advisorResult.message,
+					}),
+				});
+				continue;
+			}
+			advisorUsage = mergeIRUsageTotals(advisorUsage, advisorResult.usage);
+			toolResults.push({
+				toolCallId: call.id,
+				content: JSON.stringify({
+					status: "ok",
+					...(advisorConfig.name ? { name: advisorConfig.name } : {}),
+					model: advisorModel,
+					advice: advisorResult.content,
+				}),
+			});
 		}
 	}
 
@@ -2178,6 +3593,8 @@ export async function buildServerToolContinuation(
 		},
 		toolResults,
 		usage,
+		advisorUsage,
+		imageGenerationUsage,
 	};
 }
 
@@ -2199,6 +3616,8 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 		outputAudioTokens: sumMaybe(base._ext?.outputAudioTokens, incoming._ext?.outputAudioTokens),
 		outputVideoTokens: sumMaybe(base._ext?.outputVideoTokens, incoming._ext?.outputVideoTokens),
 		cachedWriteTokens: sumMaybe(base._ext?.cachedWriteTokens, incoming._ext?.cachedWriteTokens),
+		cachedWriteTokens5m: sumMaybe(base._ext?.cachedWriteTokens5m, incoming._ext?.cachedWriteTokens5m),
+		cachedWriteTokens1h: sumMaybe(base._ext?.cachedWriteTokens1h, incoming._ext?.cachedWriteTokens1h),
 	};
 
 	return {
@@ -2222,15 +3641,24 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 					web_search_requests:
 						(base._ext?.serverToolUse?.web_search_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.web_search_requests ?? 0),
+					web_search_results:
+						(base._ext?.serverToolUse?.web_search_results ?? 0) +
+						(incoming._ext?.serverToolUse?.web_search_results ?? 0),
+					web_search_extra_results:
+						(base._ext?.serverToolUse?.web_search_extra_results ?? 0) +
+						(incoming._ext?.serverToolUse?.web_search_extra_results ?? 0),
 					web_fetch_requests:
 						(base._ext?.serverToolUse?.web_fetch_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.web_fetch_requests ?? 0),
-					apply_patch_requests:
-						(base._ext?.serverToolUse?.apply_patch_requests ?? 0) +
-						(incoming._ext?.serverToolUse?.apply_patch_requests ?? 0),
+					advisor_requests:
+						(base._ext?.serverToolUse?.advisor_requests ?? 0) +
+						(incoming._ext?.serverToolUse?.advisor_requests ?? 0),
 					image_generation_requests:
 						(base._ext?.serverToolUse?.image_generation_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.image_generation_requests ?? 0),
+					apply_patch_requests:
+						(base._ext?.serverToolUse?.apply_patch_requests ?? 0) +
+						(incoming._ext?.serverToolUse?.apply_patch_requests ?? 0),
 					fusion_requests:
 						(base._ext?.serverToolUse?.fusion_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.fusion_requests ?? 0),
@@ -2247,15 +3675,24 @@ export function mergeIRUsageTotals(base?: IRUsage, incoming?: IRUsage): IRUsage 
 					web_search_requests:
 						(base._ext?.serverToolUse?.web_search_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.web_search_requests ?? 0),
+					web_search_results:
+						(base._ext?.serverToolUse?.web_search_results ?? 0) +
+						(incoming._ext?.serverToolUse?.web_search_results ?? 0),
+					web_search_extra_results:
+						(base._ext?.serverToolUse?.web_search_extra_results ?? 0) +
+						(incoming._ext?.serverToolUse?.web_search_extra_results ?? 0),
 					web_fetch_requests:
 						(base._ext?.serverToolUse?.web_fetch_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.web_fetch_requests ?? 0),
-					apply_patch_requests:
-						(base._ext?.serverToolUse?.apply_patch_requests ?? 0) +
-						(incoming._ext?.serverToolUse?.apply_patch_requests ?? 0),
+					advisor_requests:
+						(base._ext?.serverToolUse?.advisor_requests ?? 0) +
+						(incoming._ext?.serverToolUse?.advisor_requests ?? 0),
 					image_generation_requests:
 						(base._ext?.serverToolUse?.image_generation_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.image_generation_requests ?? 0),
+					apply_patch_requests:
+						(base._ext?.serverToolUse?.apply_patch_requests ?? 0) +
+						(incoming._ext?.serverToolUse?.apply_patch_requests ?? 0),
 					fusion_requests:
 						(base._ext?.serverToolUse?.fusion_requests ?? 0) +
 						(incoming._ext?.serverToolUse?.fusion_requests ?? 0),
@@ -2275,9 +3712,12 @@ export function attachServerToolUsage(
 		!usage &&
 		args.datetimeRequests <= 0 &&
 		args.webSearchRequests <= 0 &&
+		args.webSearchResults <= 0 &&
+		args.webSearchExtraResults <= 0 &&
 		args.webFetchRequests <= 0 &&
-		args.applyPatchRequests <= 0 &&
+		args.advisorRequests <= 0 &&
 		args.imageGenerationRequests <= 0 &&
+		args.applyPatchRequests <= 0 &&
 		args.fusionRequests <= 0 &&
 		args.toolSearchRequests <= 0
 	) return usage;
@@ -2295,11 +3735,17 @@ export function attachServerToolUsage(
 			...(existing ?? {}),
 			datetime_requests: (existing?.datetime_requests ?? 0) + Math.max(0, args.datetimeRequests),
 			web_search_requests: (existing?.web_search_requests ?? 0) + Math.max(0, args.webSearchRequests),
+			web_search_results: (existing?.web_search_results ?? 0) + Math.max(0, args.webSearchResults),
+			web_search_extra_results:
+				(existing?.web_search_extra_results ?? 0) + Math.max(0, args.webSearchExtraResults),
 			web_fetch_requests: (existing?.web_fetch_requests ?? 0) + Math.max(0, args.webFetchRequests),
-			apply_patch_requests: (existing?.apply_patch_requests ?? 0) + Math.max(0, args.applyPatchRequests),
+			advisor_requests: (existing?.advisor_requests ?? 0) + Math.max(0, args.advisorRequests),
 			image_generation_requests:
 				(existing?.image_generation_requests ?? 0) + Math.max(0, args.imageGenerationRequests),
-			fusion_requests: (existing?.fusion_requests ?? 0) + Math.max(0, args.fusionRequests),
+			apply_patch_requests:
+				(existing?.apply_patch_requests ?? 0) + Math.max(0, args.applyPatchRequests),
+			fusion_requests:
+				(existing?.fusion_requests ?? 0) + Math.max(0, args.fusionRequests),
 			tool_search_requests:
 				(existing?.tool_search_requests ?? 0) + Math.max(0, args.toolSearchRequests),
 		},
@@ -2315,9 +3761,12 @@ export function attachServerToolUsageToRawUsage(
 		!usage &&
 		args.datetimeRequests <= 0 &&
 		args.webSearchRequests <= 0 &&
+		args.webSearchResults <= 0 &&
+		args.webSearchExtraResults <= 0 &&
 		args.webFetchRequests <= 0 &&
-		args.applyPatchRequests <= 0 &&
+		args.advisorRequests <= 0 &&
 		args.imageGenerationRequests <= 0 &&
+		args.applyPatchRequests <= 0 &&
 		args.fusionRequests <= 0 &&
 		args.toolSearchRequests <= 0
 	) return usage;
@@ -2329,17 +3778,39 @@ export function attachServerToolUsageToRawUsage(
 			(Number(existing?.datetime_requests ?? 0) || 0) + Math.max(0, args.datetimeRequests),
 		web_search_requests:
 			(Number(existing?.web_search_requests ?? 0) || 0) + Math.max(0, args.webSearchRequests),
-	web_fetch_requests:
-		(Number(existing?.web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests),
-	apply_patch_requests:
+		web_search_results:
+			(Number(existing?.web_search_results ?? 0) || 0) + Math.max(0, args.webSearchResults),
+		web_search_extra_results:
+			(Number(existing?.web_search_extra_results ?? 0) || 0) + Math.max(0, args.webSearchExtraResults),
+		web_fetch_requests:
+			(Number(existing?.web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests),
+		advisor_requests:
+			(Number(existing?.advisor_requests ?? 0) || 0) + Math.max(0, args.advisorRequests),
+		image_generation_requests:
+			(Number(existing?.image_generation_requests ?? 0) || 0) + Math.max(0, args.imageGenerationRequests),
+		apply_patch_requests:
 		(Number(existing?.apply_patch_requests ?? 0) || 0) + Math.max(0, args.applyPatchRequests),
-	image_generation_requests:
-		(Number(existing?.image_generation_requests ?? 0) || 0) + Math.max(0, args.imageGenerationRequests),
 	fusion_requests:
 		(Number(existing?.fusion_requests ?? 0) || 0) + Math.max(0, args.fusionRequests),
 	tool_search_requests:
 		(Number(existing?.tool_search_requests ?? 0) || 0) + Math.max(0, args.toolSearchRequests),
 	};
+	base.server_tool_web_search_requests =
+		(Number(base.server_tool_web_search_requests ?? 0) || 0) + Math.max(0, args.webSearchRequests);
+	base.server_tool_web_search_extra_results =
+		(Number(base.server_tool_web_search_extra_results ?? 0) || 0) + Math.max(0, args.webSearchExtraResults);
+	base.server_tool_web_fetch_requests =
+		(Number(base.server_tool_web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests);
+	base.server_tool_advisor_requests =
+		(Number(base.server_tool_advisor_requests ?? 0) || 0) + Math.max(0, args.advisorRequests);
+	base.server_tool_image_generation_requests =
+		(Number(base.server_tool_image_generation_requests ?? 0) || 0) + Math.max(0, args.imageGenerationRequests);
+	base.server_tool_apply_patch_requests =
+		(Number(base.server_tool_apply_patch_requests ?? 0) || 0) + Math.max(0, args.applyPatchRequests);
+	base.server_tool_fusion_requests =
+		(Number(base.server_tool_fusion_requests ?? 0) || 0) + Math.max(0, args.fusionRequests);
+	base.server_tool_tool_search_requests =
+		(Number(base.server_tool_tool_search_requests ?? 0) || 0) + Math.max(0, args.toolSearchRequests);
 	return base;
 }
 

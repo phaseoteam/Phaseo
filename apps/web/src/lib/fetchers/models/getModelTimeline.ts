@@ -1,7 +1,7 @@
 // lib/fetchers/models/getModelTimeline.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export type RawEvent = {
     date: string;
@@ -23,7 +23,7 @@ export default async function getModelTimeline(
     modelId: string,
     includeHidden: boolean
 ): Promise<{ events: RawEvent[] } | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: model, error } = await applyHiddenFilter(
         supabase.from("data_models").select(`
@@ -158,9 +158,11 @@ export async function getModelTimelineCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:data:${modelId}`);
+    cacheTag("frontend:model-timeline");
 
     return getModelTimeline(modelId, includeHidden);
 }

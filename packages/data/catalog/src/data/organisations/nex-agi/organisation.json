@@ -1,0 +1,21 @@
+{
+  "organisation_id": "nex-agi",
+  "name": "Nex AGI",
+  "country_code": "CN",
+  "description": "Nex AGI is an open-source model and agent systems group focused on agency-driven, closed-loop AI systems for real-world productivity and long-horizon task execution.",
+  "colour": "#1f8f7a",
+  "organisation_links": [
+    {
+      "platform": "github",
+      "url": "https://github.com/nex-agi"
+    },
+    {
+      "platform": "hugging_face",
+      "url": "https://huggingface.co/nex-agi"
+    },
+    {
+      "platform": "website",
+      "url": "https://nex-agi.com"
+    }
+  ]
+}

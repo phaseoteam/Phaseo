@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import path from "node:path";
 import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
 import addFormats from "ajv-formats";
 import { load as yamlLoad } from "js-yaml";
@@ -18,49 +17,15 @@ type ValidatorMap = Record<CompatibilityTarget, ValidateFunction>;
 
 let cachedValidators: ValidatorMap | null = null;
 
-const OPENAI_SPEC_PATH = "apps/api/openapi.openai.yml";
-
-let cachedRepoRoot: string | null = null;
-
-async function resolveRepoRoot(): Promise<string> {
-	if (cachedRepoRoot) {
-		return cachedRepoRoot;
-	}
-	const cwd = /* turbopackIgnore: true */ process.cwd();
-	const candidates = [cwd, path.resolve(cwd, ".."), path.resolve(cwd, "../..")];
-	for (const candidate of candidates) {
-		const openaiSpec = path.join(candidate, OPENAI_SPEC_PATH);
-		try {
-			await fs.access(openaiSpec);
-			cachedRepoRoot = candidate;
-			return candidate;
-		} catch {
-			// Try next candidate.
-		}
-	}
-	throw new Error("Failed to resolve repository root for compatibility validators");
-}
+const OPENAI_SPEC_URL = new URL("../../../../../api/openapi.openai.yml", import.meta.url);
+const ANTHROPIC_SPEC_URL = new URL("../../../../../api/openapi.anthropic.json", import.meta.url);
 
 async function readOpenAiSpecFromRepo(): Promise<string> {
-	const repoRoot = await resolveRepoRoot();
-	const filePath = path.join(
-		/* turbopackIgnore: true */ repoRoot,
-		"apps",
-		"api",
-		"openapi.openai.yml",
-	);
-	return fs.readFile(filePath, "utf8");
+	return fs.readFile(OPENAI_SPEC_URL, "utf8");
 }
 
 async function readAnthropicSpecFromRepo(): Promise<string> {
-	const repoRoot = await resolveRepoRoot();
-	const filePath = path.join(
-		/* turbopackIgnore: true */ repoRoot,
-		"apps",
-		"api",
-		"openapi.anthropic.json",
-	);
-	return fs.readFile(filePath, "utf8");
+	return fs.readFile(ANTHROPIC_SPEC_URL, "utf8");
 }
 
 function encodeJsonPointer(value: string): string {

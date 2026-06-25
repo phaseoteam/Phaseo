@@ -1,14 +1,14 @@
 import OrganisationPageContent from "@/components/(data)/organisation/OrganisationOverview";
-import { getOrganisationDataCached } from "@/lib/fetchers/organisations/getOrganisation";
+import { fetchFrontendOrganisation } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import Image from "next/image";
 import OrganisationDetailShell from "@/components/(data)/organisation/OrganisationDetailShell";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import Script from "next/script";
 
-async function fetchOrganisation(organisationId: string, includeHidden: boolean) {
+async function fetchOrganisation(organisationId: string) {
 	try {
-		return await getOrganisationDataCached(organisationId, 12, includeHidden);
+		return await fetchFrontendOrganisation(organisationId, 12);
 	} catch (error) {
 		console.warn("[seo] failed to load organisation metadata", {
 			organisationId,
@@ -22,8 +22,7 @@ export async function generateMetadata(props: {
 	params: Promise<{ organisationId: string }>;
 }): Promise<Metadata> {
 	const { organisationId } = await props.params;
-	const includeHidden = false;
-	const organisation = await fetchOrganisation(organisationId, includeHidden);
+	const organisation = await fetchOrganisation(organisationId);
 	const path = `/organisations/${organisationId}`;
 	const imagePath = `/og/organisations/${organisationId}`;
 
@@ -82,8 +81,7 @@ export default async function Page({
 }) {
 	const { organisationId } = await params;
 
-	const includeHidden = false;
-	const organisation = await getOrganisationDataCached(organisationId, 12, includeHidden);
+	const organisation = await fetchFrontendOrganisation(organisationId, 12);
 
 	// Generate structured data and FAQs for SEO
 	const generateStructuredData = () => {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { BookText, ExternalLink, Gamepad2 } from "lucide-react";
-import { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";
 
 interface ModelLinksProps {

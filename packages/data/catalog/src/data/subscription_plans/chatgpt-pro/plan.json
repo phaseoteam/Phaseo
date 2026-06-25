@@ -1,14 +1,14 @@
 {
   "plan_id": "chatgpt-pro",
-  "name": "ChatGPT Pro",
+  "name": "ChatGPT Pro 5x",
   "organisation_id": "openai",
   "description": null,
   "pricing_options": [
     {
       "frequency": "monthly",
-      "usd_price": 200,
+      "usd_price": 100,
       "link": "https://chatgpt.com/pricing",
-      "other_info": null
+      "other_info": "5x higher usage limits than ChatGPT Plus"
     }
   ],
   "features": [
@@ -147,33 +147,21 @@
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.3-chat",
-      "model_info": null,
-      "rate_limit": "Unlimited within abuse guardrails",
+      "model_id": "openai/chat-latest",
+      "model_info": "Instant",
+      "rate_limit": "5x higher usage limits than ChatGPT Plus",
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.4",
+      "model_id": "openai/gpt-5.5",
       "model_info": "Thinking",
-      "rate_limit": "Unlimited within abuse guardrails",
+      "rate_limit": "5x higher usage limits than ChatGPT Plus",
       "other_info": null
     },
     {
-      "model_id": "openai/gpt-5.4-pro",
-      "model_info": null,
-      "rate_limit": "Unlimited within abuse guardrails",
-      "other_info": null
-    },
-    {
-      "model_id": "openai/gpt-5.4-mini",
-      "model_info": "Thinking Fallback",
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "openai/gpt-5.2",
-      "model_info": "Legacy (Temporary)",
-      "rate_limit": null,
+      "model_id": "openai/gpt-5.5-pro",
+      "model_info": "Pro",
+      "rate_limit": "5x higher usage limits than ChatGPT Plus",
       "other_info": null
     },
     {

@@ -19,12 +19,26 @@ export default async function Page(props: {
 	const params = new URLSearchParams();
 	if (sp) {
 		for (const [k, v] of Object.entries(sp)) {
+			if (k === "tab") continue;
 			if (Array.isArray(v)) v.forEach((val) => params.append(k, val));
 			else if (typeof v === "string") params.append(k, v);
 		}
 	}
 
+	const tab =
+		typeof sp?.tab === "string"
+			? sp.tab
+			: Array.isArray(sp?.tab)
+				? sp.tab[0]
+				: undefined;
+	const normalizedTab = (tab ?? "").toLowerCase();
+	const target =
+		normalizedTab === "trends" ||
+		normalizedTab === "explore" ||
+		normalizedTab === "guardrails"
+			? `/settings/usage/${normalizedTab}`
+			: "/settings/usage/overview";
 	const qs = params.toString();
-	permanentRedirect(qs ? `/settings/usage?${qs}` : "/settings/usage");
+	permanentRedirect(qs ? `${target}?${qs}` : target);
 }
 

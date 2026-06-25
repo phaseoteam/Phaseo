@@ -62,6 +62,43 @@ describe("shapeUsageForClient", () => {
 		expect(shaped.requests).toBe(7);
 	});
 
+	it("normalizes common provider token aliases", () => {
+		const shaped = shapeUsageForClient({
+			promptTokens: 11,
+			completion_token_count: 5,
+			totalTokenCount: 16,
+		});
+
+		expect(shaped.input_tokens).toBe(11);
+		expect(shaped.output_tokens).toBe(5);
+		expect(shaped.total_tokens).toBe(16);
+	});
+
+	it("preserves non-token workload meters for downstream usage columns", () => {
+		const shaped = shapeUsageForClient({
+			total_tokens: 12,
+			input_characters: 44,
+			output_characters: 20,
+			image_megapixels: 2.5,
+			input_audio_seconds: 3.25,
+			output_audio_seconds: 4.5,
+			video_pixels: 921_600,
+			output_video_seconds: 6.75,
+			input_pages: 2,
+			document_bytes: 1024,
+		});
+
+		expect(shaped.input_characters).toBe(44);
+		expect(shaped.output_characters).toBe(20);
+		expect(shaped.image_megapixels).toBe(2.5);
+		expect(shaped.input_audio_seconds).toBe(3.25);
+		expect(shaped.output_audio_seconds).toBe(4.5);
+		expect(shaped.video_pixels).toBe(921_600);
+		expect(shaped.output_video_seconds).toBe(6.75);
+		expect(shaped.input_pages).toBe(2);
+		expect(shaped.document_bytes).toBe(1024);
+	});
+
 	it("defaults text endpoints to one request when usage has no token meters", () => {
 		const shaped = shapeUsageForClient(
 			{},
@@ -79,13 +116,45 @@ describe("shapeUsageForClient", () => {
 			total_tokens: 120,
 			cache_read_input_tokens: 45,
 			cache_creation_input_tokens: 12,
+			cache_creation: {
+				ephemeral_5m_input_tokens: 8,
+				ephemeral_1h_input_tokens: 4,
+			},
 		});
 
 		expect(shaped.cached_read_text_tokens).toBeUndefined();
-		expect(shaped.cached_write_text_tokens).toBeUndefined();
+		expect(shaped.cached_write_text_tokens).toBe(12);
+		expect(shaped.cached_write_text_tokens_5m).toBe(8);
+		expect(shaped.cached_write_text_tokens_1h).toBe(4);
 		expect(shaped.input_text_tokens).toBeUndefined();
 		expect(shaped.input_tokens_details.cached_tokens).toBe(45);
 		expect(shaped.output_tokens_details.cached_tokens).toBe(12);
+	});
+
+	it("maps China-lab cache hit aliases to client cached-token details", () => {
+		const shaped = shapeUsageForClient({
+			prompt_tokens: 100,
+			completion_tokens: 5,
+			total_tokens: 105,
+			prompt_cache_hit_tokens: 42,
+		});
+
+		expect(shaped.input_tokens).toBe(100);
+		expect(shaped.output_tokens).toBe(5);
+		expect(shaped.input_tokens_details.cached_tokens).toBe(42);
+	});
+
+	it("maps OpenAI-compatible explicit cache creation aliases to output cached-token details", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 100,
+			output_tokens: 5,
+			total_tokens: 105,
+			input_tokens_details: {
+				cache_creation_input_tokens: 31,
+			},
+		});
+
+		expect(shaped.output_tokens_details.cached_tokens).toBe(31);
 	});
 
 	it("keeps canonical token totals without exposing legacy uncached-input aliases", () => {

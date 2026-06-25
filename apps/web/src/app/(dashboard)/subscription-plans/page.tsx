@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import {
-	SubscriptionPlanSummary,
-	getAllSubscriptionPlansCached,
-} from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
+import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
+import { fetchFrontendSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import SubscriptionPlansDisplay from "@/components/(data)/subscription-plans/SubscriptionPlansDisplay";
 
 export const metadata: Metadata = {
@@ -28,7 +26,7 @@ export const metadata: Metadata = {
 
 export default async function SubscriptionPlansPage() {
 	const subscriptionPlans =
-		(await getAllSubscriptionPlansCached()) as SubscriptionPlanSummary[];
+		(await fetchFrontendSubscriptionPlans()) as SubscriptionPlanSummary[];
 
 	console.log("Fetched subscription plans:", subscriptionPlans.length);
 

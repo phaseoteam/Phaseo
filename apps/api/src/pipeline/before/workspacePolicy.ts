@@ -1,6 +1,11 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
-import type { ProviderCandidate, WorkspacePolicy } from "./types";
+import type {
+	ProviderCandidate,
+	SensitiveInfoAction,
+	SensitiveInfoRule,
+	WorkspacePolicy,
+} from "./types";
 
 type ProviderRestrictionMode = "none" | "allowlist" | "blocklist";
 
@@ -15,7 +20,11 @@ type GuardrailRow = {
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
+	model_restriction_mode?: string | null;
 	allowed_api_model_ids?: string[] | null;
+	sensitive_info_enabled?: boolean | null;
+	sensitive_info_default_action?: string | null;
+	sensitive_info_rules?: unknown;
 };
 
 type ProviderHintSet = {
@@ -124,6 +133,7 @@ function isWorkspacePolicyLike(value: unknown): value is WorkspacePolicy {
 		isStringArrayOrNull(policy.providerAllowlist) &&
 		isStringArrayOrNull(policy.providerBlocklist) &&
 		isStringArrayOrNull(policy.allowedApiModels) &&
+		isStringArrayOrNull(policy.blockedApiModels) &&
 		(policy.promptInjectionAction === "flag" ||
 			policy.promptInjectionAction === "redact" ||
 			policy.promptInjectionAction === "block" ||
@@ -209,6 +219,58 @@ function normalizeStringList(values: string[] | null | undefined): string[] {
 		.filter(Boolean);
 }
 
+function normalizeAction(value: unknown): SensitiveInfoAction | null {
+	const normalized = String(value ?? "")
+		.trim()
+		.toLowerCase();
+	if (normalized === "flag" || normalized === "redact" || normalized === "block") {
+		return normalized;
+	}
+	return null;
+}
+
+function actionRank(action: SensitiveInfoAction): number {
+	if (action === "block") return 3;
+	if (action === "redact") return 2;
+	return 1;
+}
+
+function mostRestrictiveAction(
+	current: SensitiveInfoAction | null,
+	next: SensitiveInfoAction,
+): SensitiveInfoAction {
+	if (!current) return next;
+	return actionRank(next) > actionRank(current) ? next : current;
+}
+
+function normalizeSensitiveInfoRule(
+	value: unknown,
+	defaultAction: SensitiveInfoAction,
+): SensitiveInfoRule | null {
+	if (!value || typeof value !== "object") return null;
+	const raw = value as Record<string, unknown>;
+	if (raw.enabled === false) return null;
+
+	const id = String(raw.id ?? "").trim();
+	if (!id) return null;
+
+	const action = normalizeAction(raw.action) ?? defaultAction;
+	const kind = String(raw.kind ?? "builtin").trim().toLowerCase();
+	if (kind === "custom") {
+		const name = String(raw.name ?? "").trim();
+		const pattern = String(raw.pattern ?? "").trim();
+		if (!name || !pattern) return null;
+		const flags = typeof raw.flags === "string" && raw.flags.trim() ? raw.flags.trim() : null;
+		return { id, kind: "custom", action, name, pattern, flags };
+	}
+
+	return { id: id as SensitiveInfoRule["id"], kind: "builtin", action } as SensitiveInfoRule;
+}
+
+function sensitiveInfoRuleKey(rule: SensitiveInfoRule): string {
+	return `${rule.kind}:${rule.id}`;
+}
+
 function intersectSets(
 	current: Set<string> | null,
 	values: string[],
@@ -240,6 +302,9 @@ export function buildWorkspacePolicy(args: {
 	let providerAllowlist: Set<string> | null = null;
 	const providerBlocklist = new Set<string>();
 	let allowedApiModels: Set<string> | null = null;
+	const blockedApiModels = new Set<string>();
+	const sensitiveInfoRules = new Map<string, SensitiveInfoRule>();
+	const sensitiveInfoGuardrailIds: string[] = [];
 	let enforceAllowed = false;
 
 	const globalMode = normalizeMode(args.globalSettings?.provider_restriction_mode);
@@ -270,12 +335,43 @@ export function buildWorkspacePolicy(args: {
 			}
 		}
 
-		allowedApiModels = intersectSets(
-			allowedApiModels,
-			normalizeStringList(guardrail.allowed_api_model_ids ?? []),
-		);
+		const modelIds = normalizeStringList(guardrail.allowed_api_model_ids ?? []);
+		const modelMode = normalizeMode(guardrail.model_restriction_mode);
+		if (modelMode === "allowlist") {
+			allowedApiModels = intersectSets(allowedApiModels, modelIds);
+		} else if (modelMode === "blocklist") {
+			for (const modelId of modelIds) {
+				blockedApiModels.add(modelId);
+			}
+		}
 		if (guardrail.provider_restriction_enforce_allowed) {
 			enforceAllowed = true;
+		}
+
+		if (guardrail.sensitive_info_enabled) {
+			const defaultAction = normalizeAction(guardrail.sensitive_info_default_action) ?? "flag";
+			const rawRules = Array.isArray(guardrail.sensitive_info_rules)
+				? guardrail.sensitive_info_rules
+				: [];
+			let includedRule = false;
+			for (const rawRule of rawRules) {
+				const rule = normalizeSensitiveInfoRule(rawRule, defaultAction);
+				if (!rule) continue;
+				includedRule = true;
+				const key = sensitiveInfoRuleKey(rule);
+				const existing = sensitiveInfoRules.get(key);
+				if (existing) {
+					sensitiveInfoRules.set(key, {
+						...existing,
+						action: mostRestrictiveAction(existing.action, rule.action),
+					} as SensitiveInfoRule);
+				} else {
+					sensitiveInfoRules.set(key, rule);
+				}
+			}
+			if (includedRule) {
+				sensitiveInfoGuardrailIds.push(guardrail.id);
+			}
 		}
 	}
 
@@ -290,11 +386,11 @@ export function buildWorkspacePolicy(args: {
 			allowedApiModels && allowedApiModels.size > 0
 				? [...allowedApiModels]
 				: null,
-		blockedApiModels: null,
+		blockedApiModels: blockedApiModels.size > 0 ? [...blockedApiModels] : null,
 		promptInjectionAction: null,
 		promptInjectionGuardrailIds: [],
-		sensitiveInfoRules: [],
-		sensitiveInfoGuardrailIds: [],
+		sensitiveInfoRules: [...sensitiveInfoRules.values()],
+		sensitiveInfoGuardrailIds,
 		enforceAllowed,
 		activeGuardrailIds: (args.guardrails ?? []).map((guardrail) => guardrail.id),
 	};
@@ -355,7 +451,7 @@ export async function fetchWorkspacePolicy(args: {
 		const guardrailsResult = await supabase
 			.from("workspace_guardrails")
 			.select(
-				"id,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,allowed_api_model_ids",
+				"id,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules",
 			)
 			.eq("workspace_id", args.workspaceId)
 			.eq("enabled", true)
@@ -414,19 +510,39 @@ export function applyWorkspacePolicy(args: {
 		afterCount: args.providers.length,
 	};
 
-	if (
-		workspacePolicy?.allowedApiModels?.length &&
-		!workspacePolicy.allowedApiModels.includes(args.resolvedModel)
-	) {
-		diagnostics.afterCount = 0;
-		return {
-			ok: false,
-			reason: "model_not_allowed",
-			diagnostics,
-		};
+	let filtered = [...args.providers];
+
+	if (workspacePolicy?.allowedApiModels?.length) {
+		const allowSet = new Set(workspacePolicy.allowedApiModels);
+		if (!allowSet.has(args.resolvedModel)) {
+			filtered = filtered.filter((provider) =>
+				Boolean(provider.apiModelId && allowSet.has(provider.apiModelId)),
+			);
+			if (!filtered.length) {
+				diagnostics.afterCount = 0;
+				return {
+					ok: false,
+					reason: "model_not_allowed",
+					diagnostics,
+				};
+			}
+		}
 	}
 
-	let filtered = [...args.providers];
+	if (workspacePolicy?.blockedApiModels?.length) {
+		const blockSet = new Set(workspacePolicy.blockedApiModels);
+		if (blockSet.has(args.resolvedModel)) {
+			diagnostics.afterCount = 0;
+			return {
+				ok: false,
+				reason: "model_not_allowed",
+				diagnostics,
+			};
+		}
+		filtered = filtered.filter((provider) =>
+			!(provider.apiModelId && blockSet.has(provider.apiModelId)),
+		);
+	}
 
 	if (workspacePolicy?.providerAllowlist?.length) {
 		const allowSet = new Set(workspacePolicy.providerAllowlist);

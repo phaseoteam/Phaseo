@@ -35,7 +35,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 166
+      "rank": 172
     },
     {
       "benchmark_id": "ai2d",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "giantsteps-tempo",
@@ -115,7 +115,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 224
+      "rank": 225
     },
     {
       "benchmark_id": "gsm8k",
@@ -123,7 +123,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "humaneval",
@@ -139,7 +139,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 48
+      "rank": 62
     },
     {
       "benchmark_id": "math",
@@ -163,7 +163,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 25
+      "rank": 26
     },
     {
       "benchmark_id": "mbpp",
@@ -235,7 +235,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 145
+      "rank": 148
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -259,7 +259,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 103
+      "rank": 104
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -267,7 +267,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-Omni",
-      "rank": 101
+      "rank": 105
     },
     {
       "benchmark_id": "mmstar",

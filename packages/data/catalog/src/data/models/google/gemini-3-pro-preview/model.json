@@ -53,7 +53,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 51
+      "rank": 55
     },
     {
       "benchmark_id": "arc-agi-2",
@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 11
+      "rank": 13
     },
     {
       "benchmark_id": "aime-2025",
@@ -101,7 +101,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 4
+      "rank": 5
     },
     {
       "benchmark_id": "video-mmmu",
@@ -117,7 +117,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf",
-      "rank": 24
+      "rank": 28
     },
     {
       "benchmark_id": "simpleqa",
@@ -141,7 +141,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://arcprize.org/leaderboard",
-      "rank": 1
+      "rank": 3
     },
     {
       "benchmark_id": "arc-agi-1",
@@ -173,7 +173,7 @@
       "is_self_reported": true,
       "other_info": "With Search & Code Execution",
       "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
-      "rank": 27
+      "rank": 29
     },
     {
       "benchmark_id": "matharena-apex",
@@ -197,7 +197,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
-      "rank": 2
+      "rank": 19
     },
     {
       "benchmark_id": "livecodebench-pro",
@@ -213,7 +213,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/deepmind-media/gemini/gemini_3_pro_model_evaluation.pdf",
-      "rank": 27
+      "rank": 31
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -261,7 +261,7 @@
       "is_self_reported": true,
       "other_info": "Deep Think, Tools Off",
       "source_link": "https://blog.google/products/gemini/gemini-3/",
-      "rank": 39
+      "rank": 42
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -325,7 +325,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/products/gemini/gemini-3",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "screenspot-pro",
@@ -357,7 +357,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.271; games 324; avg points 0.544",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 16
+      "rank": 15
     },
     {
       "benchmark_id": "nyt-connections",

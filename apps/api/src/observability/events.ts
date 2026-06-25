@@ -48,6 +48,8 @@ type EventArgs = {
     requestId?: string | null;
     workspaceId?: string | null;
     model?: string | null;
+    requestedModel?: string | null;
+    requestPayload?: unknown;
     endpoint?: string | null;
     mappedRequest?: string | null;
     gatewayResponse?: unknown;
@@ -134,7 +136,7 @@ export function buildObservabilityPlan(
         | "AXIOM_SLOW_REQUEST_MS"
     >,
 ): ObservabilityPlan {
-    const successSampleRate = clampRate(bindings.AXIOM_SUCCESS_SAMPLE_RATE, 0.05);
+    const successSampleRate = clampRate(bindings.AXIOM_SUCCESS_SAMPLE_RATE, 1);
     const detailSampleRate = clampRate(bindings.AXIOM_DETAIL_SAMPLE_RATE, 0.01);
     const slowRequestMs = parsePositiveThreshold(bindings.AXIOM_SLOW_REQUEST_MS, 8000);
     const requestId = args.requestId ?? args.ctx?.requestId ?? "unknown";
@@ -249,6 +251,28 @@ function usageSummary(usage: any) {
             usage.output_video_count ?? usage.output_video_seconds ?? outputDetails.output_videos ?? outputDetails.output_video_count ?? null
         ),
     };
+}
+
+function isMeaningfulAxiomValue(value: unknown): boolean {
+    if (value === null || value === undefined) return false;
+    if (typeof value === "string") return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === "object") return Object.keys(value).length > 0;
+    return true;
+}
+
+function stringifyDetailForAxiom(value: unknown, maxChars?: number): string | null {
+    if (!isMeaningfulAxiomValue(value)) return null;
+    return stringifyForAxiom(value, maxChars);
+}
+
+function compactAxiomEvent(event: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(event)) {
+        if (!isMeaningfulAxiomValue(value)) continue;
+        out[key] = value;
+    }
+    return out;
 }
 
 function classifyErrorType(args: EventArgs): "system" | "user" | null {
@@ -385,6 +409,15 @@ type UpstreamErrorSummary = {
     message: string | null;
     status: number | null;
     raw: unknown;
+};
+
+type ErrorOrigin = "user" | "gateway" | "upstream";
+
+type OperationalErrorClassification = {
+    origin: ErrorOrigin | null;
+    kind: string | null;
+    owner: "caller" | "workspace_admin" | "gateway" | "provider" | null;
+    requiresInvestigation: boolean | null;
 };
 
 type ProviderFailureSummary = {
@@ -553,6 +586,292 @@ function asNumber(value: unknown): number | null {
     return null;
 }
 
+function asStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function firstString(values: unknown[]): string | null {
+    for (const value of values) {
+        const stringValue = asString(value);
+        if (stringValue) return stringValue;
+    }
+    return null;
+}
+
+function normalizeDimension(value: string | null): string | null {
+    return value ? value.trim().toLowerCase() : null;
+}
+
+function readNestedString(root: unknown, path: string[]): string | null {
+    let current: unknown = root;
+    for (const key of path) {
+        if (!current || typeof current !== "object") return null;
+        current = (current as Record<string, unknown>)[key];
+    }
+    return asString(current);
+}
+
+function resolveServiceTier(args: EventArgs): {
+    requested: string | null;
+    observed: string | null;
+    effective: string | null;
+} {
+    const requested = normalizeDimension(firstString([
+        (args.ctx?.rawBody as any)?.service_tier,
+        (args.ctx?.rawBody as any)?.serviceTier,
+        (args.ctx?.body as any)?.service_tier,
+        (args.ctx?.body as any)?.serviceTier,
+        readNestedString(args.errorDetails, ["request", "service_tier"]),
+        readNestedString(args.gatewayResponse, ["request", "service_tier"]),
+    ]));
+    const observed = normalizeDimension(firstString([
+        (args.usage as any)?.service_tier,
+        (args.usage as any)?.serviceTier,
+        readNestedString(args.gatewayResponse, ["usage", "service_tier"]),
+        readNestedString(args.gatewayResponse, ["usage", "serviceTier"]),
+        readNestedString(args.providerResponse, ["usage", "service_tier"]),
+        readNestedString(args.providerResponse, ["usage", "serviceTier"]),
+        (args.providerResponse as any)?.service_tier,
+        (args.providerResponse as any)?.serviceTier,
+        (args.result?.rawResponse as any)?.service_tier,
+        (args.result?.rawResponse as any)?.serviceTier,
+        readNestedString(args.result?.rawResponse, ["usage", "service_tier"]),
+        readNestedString(args.result?.rawResponse, ["usage", "serviceTier"]),
+    ]));
+    return {
+        requested,
+        observed,
+        effective: observed ?? requested,
+    };
+}
+
+function resolveProviderModelSlug(args: EventArgs, provider: string | null): string | null {
+    const attempts = getProviderAttemptsFromArgs(args);
+    const matchingAttempt =
+        attempts.find((attempt) =>
+            asString((attempt as any)?.provider) === provider &&
+            asString((attempt as any)?.outcome) === "success"
+        ) ??
+        attempts.find((attempt) => asString((attempt as any)?.provider) === provider) ??
+        attempts[attempts.length - 1] ??
+        null;
+    return firstString([
+        (matchingAttempt as any)?.provider_model_slug,
+        (matchingAttempt as any)?.api_model_id,
+        (args.ctx?.providers ?? []).find((candidate) => candidate.providerId === provider)?.providerModelSlug,
+    ]);
+}
+
+function getFirstDetailKeyword(args: EventArgs): string | null {
+    const sources = [args.gatewayResponse, args.errorDetails, args.providerResponse];
+    for (const source of sources) {
+        const root = asObject(source);
+        const details = Array.isArray((root as any)?.details)
+            ? (root as any).details
+            : null;
+        if (!details?.length) continue;
+        for (const detail of details) {
+            const keyword = asString((detail as any)?.keyword);
+            if (keyword) return keyword;
+        }
+    }
+    return null;
+}
+
+function getWorkspacePolicyDiagnostics(args: EventArgs): Record<string, unknown> | null {
+    const sources = [args.gatewayResponse, args.errorDetails, args.providerResponse];
+    for (const source of sources) {
+        const root = asObject(source);
+        const routingDiagnostics = asObject((root as any)?.routing_diagnostics);
+        const workspacePolicy = asObject((routingDiagnostics as any)?.workspacePolicy);
+        if (workspacePolicy) return workspacePolicy;
+    }
+    return null;
+}
+
+function getProviderCandidateDiagnostics(args: EventArgs): Record<string, unknown> | null {
+    const sources = [args.gatewayResponse, args.errorDetails, args.providerResponse];
+    for (const source of sources) {
+        const root = asObject(source);
+        const diagnostics = asObject((root as any)?.provider_candidate_diagnostics);
+        if (diagnostics) return diagnostics;
+    }
+    return null;
+}
+
+function readPayloadString(args: EventArgs, key: string): string | null {
+    const sources = [args.gatewayResponse, args.errorDetails, args.providerResponse];
+    for (const source of sources) {
+        const root = asObject(source);
+        const value = asString((root as any)?.[key]);
+        if (value) return value;
+    }
+    return null;
+}
+
+function normalizeErrorOrigin(value: string | null): ErrorOrigin | null {
+    if (value === "user" || value === "gateway" || value === "upstream") {
+        return value;
+    }
+    return null;
+}
+
+function classifyOperationalError(args: EventArgs): OperationalErrorClassification {
+    if (args.success) {
+        return {
+            origin: null,
+            kind: null,
+            owner: null,
+            requiresInvestigation: null,
+        };
+    }
+
+    const explicitKind = readPayloadString(args, "error_operational_kind");
+    const explicitOrigin = normalizeErrorOrigin(readPayloadString(args, "error_origin"));
+    if (explicitKind) {
+        return {
+            origin: explicitOrigin,
+            kind: explicitKind,
+            owner:
+                explicitOrigin === "gateway"
+                    ? "gateway"
+                    : explicitOrigin === "upstream"
+                        ? "provider"
+                        : explicitKind.startsWith("workspace_")
+                            ? "workspace_admin"
+                            : "caller",
+            requiresInvestigation:
+                explicitOrigin === "gateway" ||
+                explicitOrigin === "upstream" ||
+                explicitKind.includes("availability_gap"),
+        };
+    }
+
+    const code = String(args.errorCode ?? "").toLowerCase();
+    const rawCode = code.includes(":") ? code.split(":").slice(1).join(":") : code;
+    const detailKeyword = getFirstDetailKeyword(args);
+
+    if (
+        rawCode === "invalid_json" ||
+        rawCode === "model_required" ||
+        detailKeyword === "unknown_param"
+    ) {
+        return {
+            origin: "user",
+            kind: "invalid_request",
+            owner: "caller",
+            requiresInvestigation: false,
+        };
+    }
+
+    if (detailKeyword === "model_not_allowed_by_workspace_policy") {
+        return {
+            origin: "user",
+            kind: "workspace_model_not_allowed",
+            owner: "workspace_admin",
+            requiresInvestigation: false,
+        };
+    }
+
+    if (detailKeyword === "no_providers_after_workspace_policy_filter") {
+        const diagnostics = getWorkspacePolicyDiagnostics(args);
+        const requestFilterCount =
+            asStringArray((diagnostics as any)?.requestProviderOnly).length +
+            asStringArray((diagnostics as any)?.requestProviderIgnore).length;
+        const workspaceFilterCount =
+            asStringArray((diagnostics as any)?.providerAllowlist).length +
+            asStringArray((diagnostics as any)?.providerBlocklist).length +
+            asStringArray((diagnostics as any)?.allowedApiModels).length +
+            asStringArray((diagnostics as any)?.activeGuardrailIds).length;
+        if (requestFilterCount > 0 && workspaceFilterCount === 0) {
+            return {
+                origin: "user",
+                kind: "request_provider_filter_no_match",
+                owner: "caller",
+                requiresInvestigation: false,
+            };
+        }
+        if (workspaceFilterCount > 0) {
+            return {
+                origin: "user",
+                kind: "workspace_policy_no_providers",
+                owner: "workspace_admin",
+                requiresInvestigation: false,
+            };
+        }
+        return {
+            origin: "gateway",
+            kind: "gateway_provider_availability_gap",
+            owner: "gateway",
+            requiresInvestigation: true,
+        };
+    }
+
+    if (rawCode === "unsupported_model_or_endpoint") {
+        const diagnostics = getProviderCandidateDiagnostics(args);
+        const totalProviders = asNumber((diagnostics as any)?.totalProviders);
+        const supportsEndpointCount = asNumber((diagnostics as any)?.supportsEndpointCount);
+        if (totalProviders !== null && totalProviders <= 0) {
+            return {
+                origin: "user",
+                kind: "invalid_model_slug",
+                owner: "caller",
+                requiresInvestigation: false,
+            };
+        }
+        if (supportsEndpointCount !== null && supportsEndpointCount <= 0) {
+            return {
+                origin: "user",
+                kind: "unsupported_endpoint_for_model",
+                owner: "caller",
+                requiresInvestigation: false,
+            };
+        }
+        return {
+            origin: "gateway",
+            kind: "gateway_provider_availability_gap",
+            owner: "gateway",
+            requiresInvestigation: true,
+        };
+    }
+
+    if (args.internalCode === "UPSTREAM_UNSUPPORTED_PARAM" || args.internalCode === "UPSTREAM_UNSUPPORTED_PARAM_COMBO") {
+        return {
+            origin: "gateway",
+            kind: "provider_capability_mapping_gap",
+            owner: "gateway",
+            requiresInvestigation: true,
+        };
+    }
+
+    if (rawCode === "upstream_error" || rawCode === "provider_payment_required") {
+        return {
+            origin: "upstream",
+            kind: "upstream_provider_failure",
+            owner: "provider",
+            requiresInvestigation: true,
+        };
+    }
+
+    if (rawCode === "gateway_error" || Number(args.statusCode ?? 0) >= 500) {
+        return {
+            origin: "gateway",
+            kind: "gateway_internal",
+            owner: "gateway",
+            requiresInvestigation: true,
+        };
+    }
+
+    const resolvedType = classifyErrorType(args);
+    return {
+        origin: resolvedType === "system" ? "gateway" : "user",
+        kind: resolvedType === "system" ? "system_error" : "invalid_request",
+        owner: resolvedType === "system" ? "gateway" : "caller",
+        requiresInvestigation: resolvedType === "system",
+    };
+}
+
 export function extractUpstreamErrorSummary(args: EventArgs): UpstreamErrorSummary | null {
     const sources = [
         args.errorDetails,
@@ -689,8 +1008,8 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
 
         const includeDetailedPayloads = observabilityPlan.detailLevel === "full";
 
-        const sanitizedGatewayRequest = includeDetailedPayloads && ctx
-            ? sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null)
+        const sanitizedGatewayRequest = includeDetailedPayloads
+            ? sanitizeForAxiom(args.requestPayload ?? ctx?.rawBody ?? ctx?.body ?? null)
             : null;
         const sanitizedUpstreamRequest = includeDetailedPayloads
             ? sanitizeJsonStringForAxiom(args.mappedRequest ?? args.result?.mappedRequest ?? null)
@@ -710,9 +1029,6 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const sanitizedParamRoutingDiagnostics = includeDetailedPayloads
             ? sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null)
             : null;
-        const sanitizedRoutingSnapshot = includeDetailedPayloads
-            ? sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null)
-            : null;
         const sanitizedRoutingDiagnostics = includeDetailedPayloads
             ? sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null)
             : null;
@@ -728,6 +1044,9 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const requestedParams = Array.isArray(ctx?.requestedParams) ? ctx.requestedParams : [];
         const upstreamError = extractUpstreamErrorSummary(args);
         const modelRequested = (() => {
+            if (typeof args.requestedModel === "string" && args.requestedModel.length > 0) {
+                return args.requestedModel;
+            }
             const fromCtxBody = (ctx?.rawBody as any)?.model;
             if (typeof fromCtxBody === "string" && fromCtxBody.length > 0) return fromCtxBody;
             const fromGatewayResponse = (args.gatewayResponse as any)?.model;
@@ -736,74 +1055,37 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             if (typeof fromErrorDetails === "string" && fromErrorDetails.length > 0) return fromErrorDetails;
             return null;
         })();
-        const modelResolved = args.model ?? ctx?.model ?? null;
+        const modelResolved = args.model ?? ctx?.model ?? modelRequested ?? null;
         const sanitizedProviderAttempts = includeDetailedPayloads
             ? sanitizeForAxiom(getProviderAttemptsFromArgs(args))
             : null;
         const providerFailure = extractProviderFailureSummary(args);
         const failureSample = extractFailureSampleSummary(args);
-        const mappingSnapshot = includeDetailedPayloads
-            ? sanitizeForAxiom({
-                protocol: args.protocolOverride ?? ctx?.protocol ?? null,
-                endpoint: args.endpoint ?? ctx?.endpoint ?? null,
-                model_requested: modelRequested,
-                model_resolved: modelResolved,
-                provider: args.result?.provider ?? args.provider ?? null,
-                mapped_request: sanitizedUpstreamRequest,
-                gateway_request: sanitizedGatewayRequest,
-                gateway_response: sanitizedGatewayResponse,
-                provider_response: sanitizedProviderResponse,
-                provider_response_headers: sanitizedProviderResponseHeaders,
-                requested_params: requestedParams,
-                param_routing_diagnostics: sanitizedParamRoutingDiagnostics,
-                routing_snapshot: sanitizedRoutingSnapshot,
-                routing_diagnostics: sanitizedRoutingDiagnostics,
-                provider_attempts: sanitizedProviderAttempts,
-                attempt_errors: sanitizedAttemptErrors,
-                provider_enablement_diagnostics: sanitizedProviderEnablement,
-                provider_candidate_build_diagnostics: sanitizedProviderCandidateBuild,
-            })
-            : null;
-        const providerCandidates = Array.isArray(ctx?.providers)
-            ? ctx.providers.map((provider) => ({
-                provider_id: provider.providerId ?? null,
-                provider_status: provider.providerStatus ?? null,
-                capability_status: provider.capabilityStatus ?? null,
-                has_pricing: Boolean(provider.pricingCard),
-            }))
-            : null;
         const routingSignals = extractRoutingFailureSignals(args);
         const attemptSignals = extractAttemptSignals(args);
         const keyGate = ctx?.gating?.key ?? null;
         const keyLimitGate = ctx?.gating?.keyLimit ?? null;
         const creditGate = ctx?.gating?.credit ?? null;
-        const generationContext = includeDetailedPayloads
-            ? sanitizeForAxiom({
-                model_requested: modelRequested,
-                model_resolved: modelResolved,
-                endpoint: args.endpoint ?? ctx?.endpoint ?? null,
-                protocol: args.protocolOverride ?? ctx?.protocol ?? null,
-                provider: args.result?.provider ?? args.provider ?? null,
-                testing_mode: Boolean(ctx?.testingMode),
-                provider_capabilities_beta: Boolean(ctx?.providerCapabilitiesBeta),
-                workspace_settings: ctx?.teamSettings ?? null,
-                gates: {
-                    key: keyGate,
-                    key_limit: keyLimitGate,
-                    credit: creditGate,
-                },
-                team_enrichment: ctx?.teamEnrichment ?? null,
-                key_enrichment: ctx?.keyEnrichment ?? null,
-                provider_candidates: providerCandidates,
-                routing_diagnostics: getRoutingDiagnosticsFromArgs(args),
-                routing_signals: routingSignals,
-                attempt_signals: attemptSignals,
-                provider_attempts: getProviderAttemptsFromArgs(args),
-                attempt_errors: getAttemptErrorsFromArgs(args),
-            })
-            : null;
+        const chosenProvider = args.result?.provider ?? args.provider ?? null;
+        const serviceTier = resolveServiceTier(args);
+        const providerModelSlug = resolveProviderModelSlug(args, chosenProvider);
+        const providerModel =
+            chosenProvider && modelResolved ? `${chosenProvider}:${modelResolved}` : null;
+        const providerModelServiceTier =
+            providerModel && serviceTier.effective
+                ? `${providerModel}:${serviceTier.effective}`
+                : providerModel;
         const mediaCounts = countMediaFromContext(ctx);
         const resolvedErrorType = classifyErrorType(args);
+        const operationalError = classifyOperationalError(args);
+        const eventErrorType =
+            args.success
+                ? null
+                : operationalError.origin === "gateway" || operationalError.origin === "upstream"
+                    ? "system"
+                    : operationalError.origin === "user"
+                        ? "user"
+                        : resolvedErrorType;
         const beforeLatencyMs = resolveBeforeLatencyMs(ctx);
         const beforeLatencyBudgetMsRaw = Number((bindings as any)?.GATEWAY_BEFORE_BUDGET_MS ?? 15);
         const beforeLatencyBudgetMs =
@@ -813,14 +1095,11 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
         const beforeLatencyOverBudget =
             beforeLatencyMs === null ? null : beforeLatencyMs > beforeLatencyBudgetMs;
 
-        const event = {
-            event_schema_version: "2026-03-10.1",
+        const event = compactAxiomEvent({
+            event_schema_version: "2026-06-04.2",
             observability_mode: "single_wide_event",
             observability_detail_level: observabilityPlan.detailLevel,
             observability_emit_reason: observabilityPlan.reason,
-            observability_success_sample_rate: observabilityPlan.successSampleRate,
-            observability_detail_sample_rate: observabilityPlan.detailSampleRate,
-            observability_slow_request_ms: observabilityPlan.slowRequestMs,
             event_type: "gateway.request",
             event_emitted_at: new Date().toISOString(),
             request_stage: args.success ? "after" : (args.errorStage ?? null),
@@ -834,12 +1113,13 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             request_path: args.requestPath ?? ctx?.requestPath ?? ctx?.meta?.requestPath ?? null,
             request_url: args.requestUrl ?? ctx?.meta?.requestUrl ?? null,
             user_agent: args.userAgent ?? ctx?.meta?.userAgent ?? null,
-            client_ip: args.clientIp ?? ctx?.meta?.clientIp ?? null,
             cf_ray: args.cfRay ?? ctx?.meta?.cfRay ?? null,
             endpoint: args.endpoint ?? ctx?.endpoint ?? null,
             model: modelResolved,
             model_requested: modelRequested,
-            model_resolved: modelResolved,
+            service_tier_requested: serviceTier.requested,
+            service_tier: serviceTier.effective,
+            service_tier_observed: serviceTier.observed,
             stream: ctx?.stream ?? false,
             strictness: ctx?.strictness ?? null,
             testing_mode: Boolean(ctx?.testingMode),
@@ -870,90 +1150,67 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             success: args.success,
             error_code: args.errorCode ?? null,
             error_message: args.errorMessage ?? null,
-            error_type: resolvedErrorType,
+            error_type: eventErrorType,
+            error_origin: operationalError.origin,
+            error_operational_kind: operationalError.kind,
+            error_action_owner: operationalError.owner,
+            error_requires_investigation: operationalError.requiresInvestigation,
             error_stage: args.errorStage ?? null,
             error_internal_reason: args.internalReason ?? null,
             error_internal_code: args.internalCode ?? null,
             error_unsupported_param: args.unsupportedParam ?? null,
             error_unsupported_param_path: args.unsupportedParamPath ?? null,
-            error_details_redacted_json: stringifyForAxiom(sanitizedErrorDetails),
-            provider: args.result?.provider ?? args.provider ?? null,
-            chosen_surface: ctx?.endpoint ?? null,
+            error_details_redacted_json: stringifyDetailForAxiom(sanitizedErrorDetails),
+            provider: chosenProvider,
+            provider_model_slug: providerModelSlug,
+            provider_model: providerModel,
+            provider_model_service_tier: providerModelServiceTier,
             chosen_executor: ctx?.capability ?? null,
             provider_candidates_count: ctx?.providers?.length ?? null,
-            provider_candidates_status_json: includeDetailedPayloads
-                ? stringifyForAxiom(providerCandidates)
-                : null,
             attempt_count: attemptSignals.attemptCount,
             attempted_providers_count: attemptSignals.attemptedProviders.length || null,
-            attempted_providers_json: includeDetailedPayloads
-                ? stringifyForAxiom(attemptSignals.attemptedProviders)
-                : null,
+            attempted_providers_json: stringifyDetailForAxiom(attemptSignals.attemptedProviders),
             attempt_success_count: attemptSignals.successCount ?? null,
             attempt_failure_count: attemptSignals.failureCount ?? null,
             attempt_total_duration_ms: attemptSignals.totalDurationMs,
             attempt_max_duration_ms: attemptSignals.maxDurationMs,
-            attempt_outcomes_json: includeDetailedPayloads
-                ? stringifyForAxiom(attemptSignals.attemptOutcomes)
-                : null,
-            attempt_failure_types_json: includeDetailedPayloads
-                ? stringifyForAxiom(attemptSignals.attemptFailureTypes)
-                : null,
-            attempt_statuses_json: includeDetailedPayloads
-                ? stringifyForAxiom(attemptSignals.attemptStatuses)
-                : null,
             provider_attempts_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedProviderAttempts)
-                : null,
-            attempt_last_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizeForAxiom(attemptSignals.lastAttempt))
+                ? stringifyDetailForAxiom(sanitizedProviderAttempts)
                 : null,
             requested_params_count: requestedParams.length || null,
             requested_params_json: includeDetailedPayloads
-                ? stringifyForAxiom(requestedParams.length ? requestedParams : null)
+                ? stringifyDetailForAxiom(requestedParams)
                 : null,
             param_routing_provider_count_before: ctx?.paramRoutingDiagnostics?.providerCountBefore ?? null,
             param_routing_provider_count_after: ctx?.paramRoutingDiagnostics?.providerCountAfter ?? null,
             param_routing_dropped_provider_count: ctx?.paramRoutingDiagnostics?.droppedProviders?.length ?? null,
             param_routing_diagnostics_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedParamRoutingDiagnostics)
-                : null,
-            routing_candidates_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedRoutingSnapshot)
+                ? stringifyDetailForAxiom(sanitizedParamRoutingDiagnostics)
                 : null,
             routing_diagnostics_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedRoutingDiagnostics)
+                ? stringifyDetailForAxiom(sanitizedRoutingDiagnostics)
                 : null,
             routing_final_candidate_count: routingSignals.finalCandidateCount,
             routing_filter_stage_count: routingSignals.filterStageCount,
             routing_drop_reason_count: routingSignals.dropReasons.length || null,
-            routing_drop_reasons_json: includeDetailedPayloads
-                ? stringifyForAxiom(routingSignals.dropReasons)
-                : null,
-            routing_dropped_providers_json: includeDetailedPayloads
-                ? stringifyForAxiom(routingSignals.droppedProviders)
-                : null,
+            routing_drop_reasons_json: stringifyDetailForAxiom(routingSignals.dropReasons),
             routing_status_gate_before_count: routingSignals.statusGateBeforeCount,
             routing_status_gate_after_count: routingSignals.statusGateAfterCount,
             routing_capability_gate_before_count: routingSignals.capabilityGateBeforeCount,
             routing_capability_gate_after_count: routingSignals.capabilityGateAfterCount,
             routing_provider_status_not_ready_count: routingSignals.providerStatusNotReadyProviders.length || null,
-            routing_provider_status_not_ready_providers_json: includeDetailedPayloads
-                ? stringifyForAxiom(routingSignals.providerStatusNotReadyProviders)
-                : null,
             error_is_provider_status_not_ready:
                 routingSignals.providerStatusNotReadyProviders.length > 0,
             attempt_errors_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedAttemptErrors)
+                ? stringifyDetailForAxiom(sanitizedAttemptErrors)
                 : null,
             provider_enablement_diagnostics_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedProviderEnablement)
+                ? stringifyDetailForAxiom(sanitizedProviderEnablement)
                 : null,
             provider_candidate_build_diagnostics_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedProviderCandidateBuild)
+                ? stringifyDetailForAxiom(sanitizedProviderCandidateBuild)
                 : null,
             before_latency_ms: beforeLatencyMs,
-            before_latency_budget_ms: beforeLatencyBudgetMs,
             before_latency_over_budget: beforeLatencyOverBudget,
             before_context_ms: toNum(ctx?.meta?.beforeContextMs),
             before_context_cache_status: ctx?.meta?.beforeContextCacheStatus ?? null,
@@ -970,37 +1227,36 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             generation_ms: toNum(ctx?.meta?.generation_ms),
             internal_latency_ms: toNum((ctx as any)?.timing?.internal_latency_ms),
             throughput_tps: toNum(ctx?.meta?.throughput_tps),
-            timing_json: includeDetailedPayloads && ctx?.timing ? JSON.stringify(ctx.timing) : null,
+            timing_json: includeDetailedPayloads ? stringifyDetailForAxiom(ctx?.timing ?? null) : null,
             finish_reason: args.finishReason ?? null,
             ...usageSummary(args.usage),
             request_input_images: mediaCounts.inputImages,
             request_input_audio: mediaCounts.inputAudio,
             request_input_video: mediaCounts.inputVideo,
-            cost_total_cents: toNum(args.pricing?.total_cents),
             cost_total_nanos: toNum(args.pricing?.total_nanos),
             cost_currency: args.pricing?.currency ?? null,
             request_payload_redacted_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedGatewayRequest)
+                ? stringifyDetailForAxiom(sanitizedGatewayRequest)
                 : null,
             upstream_request_redacted_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedUpstreamRequest)
+                ? stringifyDetailForAxiom(sanitizedUpstreamRequest)
                 : null,
             provider_response_redacted_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedProviderResponse)
+                ? stringifyDetailForAxiom(sanitizedProviderResponse)
                 : null,
             provider_response_headers_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedProviderResponseHeaders)
+                ? stringifyDetailForAxiom(sanitizedProviderResponseHeaders)
                 : null,
             provider_status_code: args.result?.upstream?.status ?? args.statusCode ?? null,
             provider_status_text: args.result?.upstream?.statusText ?? null,
-            provider_url: args.result?.upstream?.url ?? null,
+            provider_url: includeDetailedPayloads ? args.result?.upstream?.url ?? null : null,
             upstream_error_code: upstreamError?.code ?? null,
             upstream_error_type: upstreamError?.type ?? null,
             upstream_error_param: upstreamError?.param ?? null,
             upstream_error_message: upstreamError?.message ?? null,
             upstream_error_status: upstreamError?.status ?? null,
             upstream_error_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizeForAxiom(upstreamError?.raw ?? null))
+                ? stringifyDetailForAxiom(sanitizeForAxiom(upstreamError?.raw ?? null))
                 : null,
             provider_failure_category: providerFailure?.category ?? null,
             provider_failure_provider: providerFailure?.provider ?? null,
@@ -1014,18 +1270,12 @@ export async function emitGatewayRequestEvent(args: EventArgs) {
             failure_sample_first_upstream_error_message:
                 failureSample?.upstreamErrorMessage ?? null,
             gateway_response_redacted_json: includeDetailedPayloads
-                ? stringifyForAxiom(sanitizedGatewayResponse)
-                : null,
-            mapping_snapshot_json: includeDetailedPayloads
-                ? stringifyForAxiom(mappingSnapshot)
-                : null,
-            generation_context_json: includeDetailedPayloads
-                ? stringifyForAxiom(generationContext)
+                ? stringifyDetailForAxiom(sanitizedGatewayResponse)
                 : null,
             transform_has_upstream_request: Boolean(args.mappedRequest ?? args.result?.mappedRequest),
             env: bindings.NODE_ENV ?? null,
             gateway_version: bindings.NEXT_PUBLIC_GATEWAY_VERSION ?? null,
-        };
+        });
 
         await sendAxiomWideEvent(event);
     } finally {

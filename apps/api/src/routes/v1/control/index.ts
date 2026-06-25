@@ -6,7 +6,6 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 
 import { modelsRoutes } from "./models";
-import { dataModelsRoutes } from "./models-data";
 import { generationsRoutes } from "./generations";
 import { placeholdersRoutes } from "./placeholders";
 import { healthRoutes } from "./health";
@@ -19,11 +18,15 @@ import { currentKeyRoutes, keysRoutes } from "./keys";
 import { securityRoutes } from "./security";
 import { workspacesRoutes } from "./workspaces";
 import oauthClientsRoutes from "./oauth-clients";
+import { meRoutes } from "./me";
+import { presetsRoutes } from "./presets";
+import { settingsRoutes } from "./settings";
+import { guardrailsRoutes } from "./guardrails";
+import { managementKeysRoutes } from "./management-keys";
 
 export const platformRouter = new Hono<Env>();
 
-platformRouter.route("/gateway/models", modelsRoutes);
-platformRouter.route("/data/models", dataModelsRoutes);
+platformRouter.route("/models", modelsRoutes);
 platformRouter.route("/generations", generationsRoutes);
 platformRouter.route("/organisations", organisationsRoutes);
 platformRouter.route("/providers", providersRoutes);
@@ -37,10 +40,12 @@ platformRouter.route("/key", currentKeyRoutes);
 platformRouter.route("/keys", keysRoutes);
 platformRouter.route("/workspaces", workspacesRoutes);
 platformRouter.route("/oauth-clients", oauthClientsRoutes);
+platformRouter.route("/presets", presetsRoutes);
+platformRouter.route("/settings", settingsRoutes);
+platformRouter.route("/guardrails", guardrailsRoutes);
+platformRouter.route("/management-keys", managementKeysRoutes);
+platformRouter.route("/me", meRoutes);
 platformRouter.route("/", placeholdersRoutes);
 
 // Backward-compatible alias for existing imports.
 export const controlRouter = platformRouter;
-
-
-

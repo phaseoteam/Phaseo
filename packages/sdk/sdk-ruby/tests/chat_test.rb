@@ -11,7 +11,7 @@ class ChatTest < Minitest::Test
     calls = []
     client.raw_client.define_singleton_method(:request) do |method:, path:, query: nil, headers: nil, body: nil|
       calls << [method, path, query, headers, body]
-      if method == "GET" && path == "/data/models"
+      if method == "GET" && path == "/gateway/models"
         next({
           "models" => [
             {
@@ -68,7 +68,7 @@ class ChatTest < Minitest::Test
     assert_equal 1, response["usage"]["output_tokens"]
     assert_equal 3, response["usage"]["total_tokens"]
     assert_equal [
-      ["GET", "/data/models", { "model_id" => "openai/gpt-5-nano", "limit" => "1" }, nil, nil],
+      ["GET", "/gateway/models", { "model_id" => "openai/gpt-5-nano", "limit" => "1" }, nil, nil],
       ["POST", "/chat/completions", nil, nil, { model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hi" }] }]
     ], calls
   end

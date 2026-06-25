@@ -1,5 +1,5 @@
 // lib/fetchers/organisations/getOrganisationOverviewHeader.ts
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { cacheLife, cacheTag } from "next/cache";
 
 export interface OrganisationOverviewHeader {
@@ -11,7 +11,7 @@ export interface OrganisationOverviewHeader {
 export async function fetchOrganisationOverviewHeader(
 	organisationId: string
 ): Promise<OrganisationOverviewHeader> {
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const { data, error } = await supabase
 		.from("data_organisations")
@@ -68,6 +68,9 @@ export default async function getOrganisationOverviewHeader(
 	"use cache";
 
 	cacheLife("days");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:organisations");
+	cacheTag("frontend:organisation-header");
 	cacheTag("data:organisations");
 	cacheTag(`data:organisations:${organisationId}`);
 	cacheTag(`organisation:header:${organisationId}`);

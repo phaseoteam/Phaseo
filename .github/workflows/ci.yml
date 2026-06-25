@@ -378,6 +378,37 @@ jobs:
             - name: Build SDKs
               run: pnpm run validate:packages
 
+    cli:
+        name: CLI package
+        runs-on: ubuntu-latest
+        needs: sdk-gen
+        if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
+        steps:
+            - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+              with:
+                  persist-credentials: false
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a8198c4bff370c8506180b035930dea56dbd5288
+              with:
+                  version: 10.33.0
+                  run_install: false
+                  standalone: true
+
+            - name: Setup Node.js
+              uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Restore lockfile (guard setup-node cache mutation)
+              run: git checkout -- pnpm-lock.yaml
+
+            - name: Install dependencies
+              run: corepack pnpm install --frozen-lockfile
+
+            - name: Build, test, and pack CLI
+              run: pnpm run validate:cli
+
     sdk-lifecycle-tests:
         name: SDK lifecycle tests (${{ matrix.sdk }})
         runs-on: ubuntu-latest
@@ -416,7 +447,7 @@ jobs:
 
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7
+              uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2
               with:
                   dotnet-version: "8.0.x"
 
@@ -430,7 +461,7 @@ jobs:
 
             - name: Setup PHP
               if: matrix.sdk == 'php'
-              uses: shivammathur/setup-php@728c6c6b8cf02c2e48117716a91ee48313958a19
+              uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc
               with:
                   php-version: "8.2"
 
@@ -581,7 +612,7 @@ jobs:
 
             - name: Deploy API app to Cloudflare
               if: matrix.target == 'api'
-              uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd
+              uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0
               with:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -672,7 +703,7 @@ jobs:
 
             - name: Create release PR / publish
               id: changesets
-              uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b
+              uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d
               with:
                   version: pnpm run changeset:version
                   publish: pnpm run changeset:publish

@@ -7,9 +7,10 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
 import { saveVideoJobMeta } from "@core/video-jobs";
-import { reserveVideoGenerationCredits } from "@core/video-reservations";
+import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
 import { releaseWalletReservation } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions, resolveVideoSize } from "@core/video-request-options";
+import { asyncVideoJobPersistenceFailureResult } from "@executors/_shared/async-job-persistence";
 import type { ProviderExecutor } from "../../types";
 
 const DEFAULT_RUNWAY_BASE_URL = "https://api.dev.runwayml.com";
@@ -210,7 +211,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const reserved = await reserveVideoGenerationCredits({
 			workspaceId: args.workspaceId,
-			videoId: `req_${args.requestId}`,
+			videoId: args.requestId,
 			providerId: args.providerId,
 			model,
 			seconds: seconds ?? null,
@@ -232,7 +233,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				message: "Video duration seconds and pricing must be resolvable before submission.",
 			};
 		}
-		if (reserved.amountNanos > 0 && !reserved.held && reserved.status !== "insufficient_funds") {
+		if (reserved.amountNanos > 0 && !reserved.held && !isInsufficientVideoReservationStatus(reserved.status)) {
 			reservationGateError = {
 				status: 503,
 				type: "reservation_not_held",
@@ -270,7 +271,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		}
 	};
 
-	if (reservationStatus === "insufficient_funds") {
+	if (isInsufficientVideoReservationStatus(reservationStatus)) {
 		const upstream = new Response(
 			JSON.stringify({
 				error: {
@@ -370,6 +371,29 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const taskId = extractTaskId(json);
 	const encodedId = taskId ? encodeRunwayTaskId(taskId) : undefined;
 	const status = toVideoStatus(json?.status ?? json?.task_status ?? json?.data?.status);
+	if (!encodedId) {
+		await releaseReservationOnFailure();
+		const upstream = new Response(
+			JSON.stringify({
+				error: {
+					type: "invalid_upstream_response",
+					message: "Runway video create response did not include a task id.",
+				},
+			}),
+			{ status: 502, headers: { "Content-Type": "application/json" } },
+		);
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill,
+			upstream,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+			mappedRequest,
+			rawResponse: json,
+		};
+	}
+
 	if (encodedId) {
 		try {
 			await saveVideoJobMeta(args.workspaceId, args.requestId, {
@@ -400,6 +424,17 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationId,
 				reservationStatus,
 				note: "reservation_retained_for_manual_reconciliation",
+			});
+			return asyncVideoJobPersistenceFailureResult({
+				providerLabel: "Runway",
+				nativeVideoId: encodedId,
+				reservationId,
+				reservationStatus,
+				bill,
+				keySource: keyInfo.source,
+				byokKeyId: keyInfo.byokId,
+				mappedRequest,
+				rawResponse: json,
 			});
 		}
 	}

@@ -446,6 +446,13 @@ describe("encodeOpenAIChatResponse", () => {
 				_ext: {
 					serverToolUse: {
 						datetime_requests: 1,
+						web_search_requests: 2,
+						web_search_results: 14,
+						web_search_extra_results: 4,
+						web_fetch_requests: 1,
+						advisor_requests: 1,
+						image_generation_requests: 1,
+						apply_patch_requests: 1,
 					},
 				},
 			},
@@ -454,6 +461,13 @@ describe("encodeOpenAIChatResponse", () => {
 		const response = encodeOpenAIChatResponse(ir, "req-server-tools");
 		expect((response.usage as any)?.server_tool_use).toEqual({
 			datetime_requests: 1,
+			web_search_requests: 2,
+			web_search_results: 14,
+			web_search_extra_results: 4,
+			web_fetch_requests: 1,
+			advisor_requests: 1,
+			image_generation_requests: 1,
+			apply_patch_requests: 1,
 		});
 	});
 });

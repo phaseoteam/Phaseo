@@ -249,7 +249,6 @@ export function irToOpenAIResponses(
 	if (ir.maxToolCalls !== undefined) request.max_tool_calls = ir.maxToolCalls;
 	if (ir.background !== undefined) request.background = ir.background;
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
-	if (ir.speed !== undefined) request.speed = ir.speed;
 	if (ir.store !== undefined) request.store = ir.store;
 	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
 	if (ir.truncation !== undefined) request.truncation = ir.truncation;
@@ -288,6 +287,14 @@ export function irToOpenAIResponses(
 				: {}),
 		};
 	}
+	const rawRequest = ir.rawRequest && typeof ir.rawRequest === "object" && !Array.isArray(ir.rawRequest)
+		? ir.rawRequest as Record<string, any>
+		: {};
+	if (rawRequest.quality !== undefined) request.quality = rawRequest.quality;
+	if (rawRequest.background !== undefined) request.background = rawRequest.background;
+	if (rawRequest.output_format !== undefined) request.output_format = rawRequest.output_format;
+	if (rawRequest.output_compression !== undefined) request.output_compression = rawRequest.output_compression;
+	if (rawRequest.moderation !== undefined) request.moderation = rawRequest.moderation;
 	if (ir.userId) request.user = ir.userId;
 	if (ir.metadata) request.metadata = ir.metadata;
 
@@ -334,7 +341,11 @@ function toOpenAIResponsesTool(tool: IRTool, useOpenAIShape: boolean): any {
  */
 function mapContentPart(part: IRContentPart): any {
 	if (part.type === "text") {
-		return { type: "input_text", text: part.text };
+		return {
+			type: "input_text",
+			text: part.text,
+			...(part.cacheControl ? { cache_control: part.cacheControl } : {}),
+		};
 	}
 
 	if (part.type === "reasoning_text") {
@@ -756,6 +767,10 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
 	const cachedInputTokens = inputDetails?.cached_tokens;
+	const cachedWriteTokens =
+		inputDetails?.cache_creation_input_tokens ??
+		inputDetails?.cache_creation_tokens ??
+		outputDetails?.cached_tokens;
 	const reasoningTokens = outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 	const serverToolUseRaw =
@@ -772,9 +787,21 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 		typeof serverToolUseRaw?.web_search_requests === "number"
 			? serverToolUseRaw.web_search_requests
 			: undefined;
+	const webSearchResults =
+		typeof serverToolUseRaw?.web_search_results === "number"
+			? serverToolUseRaw.web_search_results
+			: undefined;
+	const webSearchExtraResults =
+		typeof serverToolUseRaw?.web_search_extra_results === "number"
+			? serverToolUseRaw.web_search_extra_results
+			: undefined;
 	const webFetchRequests =
 		typeof serverToolUseRaw?.web_fetch_requests === "number"
 			? serverToolUseRaw.web_fetch_requests
+			: undefined;
+	const advisorRequests =
+		typeof serverToolUseRaw?.advisor_requests === "number"
+			? serverToolUseRaw.advisor_requests
 			: undefined;
 	const applyPatchRequests =
 		typeof serverToolUseRaw?.apply_patch_requests === "number"
@@ -795,7 +822,10 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 	const serverToolUse =
 		datetimeRequests != null ||
 		webSearchRequests != null ||
+		webSearchResults != null ||
+		webSearchExtraResults != null ||
 		webFetchRequests != null ||
+		advisorRequests != null ||
 		applyPatchRequests != null ||
 		imageGenerationRequests != null ||
 		fusionRequests != null ||
@@ -803,7 +833,10 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			? {
 				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+				...(webSearchResults != null ? { web_search_results: webSearchResults } : {}),
+				...(webSearchExtraResults != null ? { web_search_extra_results: webSearchExtraResults } : {}),
 				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+				...(advisorRequests != null ? { advisor_requests: advisorRequests } : {}),
 				...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
 				...(imageGenerationRequests != null ? { image_generation_requests: imageGenerationRequests } : {}),
 				...(fusionRequests != null ? { fusion_requests: fusionRequests } : {}),
@@ -825,9 +858,8 @@ function normalizeUsage(usage: any): IRUsage | undefined {
 			outputImageTokens: outputDetails?.output_images,
 			outputAudioTokens: outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
-			cachedWriteTokens: outputDetails?.cached_tokens,
+			cachedWriteTokens,
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};
 }
-

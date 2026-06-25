@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import OrganisationsDisplay from "@/components/(data)/organisations/OrganisationDisplay";
-import {
-	getAllOrganisationsCached,
-	OrganisationCard,
-} from "@/lib/fetchers/organisations/getAllOrganisations";
+import type { OrganisationCard } from "@/lib/fetchers/organisations/getAllOrganisations";
+import { fetchFrontendOrganisations } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
@@ -29,7 +27,7 @@ export const metadata: Metadata = {
 
 async function OrganisationsSection() {
 	const organisations =
-		(await getAllOrganisationsCached()) as OrganisationCard[];
+		(await fetchFrontendOrganisations()) as OrganisationCard[];
 	return <OrganisationsDisplay organisations={organisations} />;
 }
 

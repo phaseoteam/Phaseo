@@ -1,7 +1,7 @@
 // lib/fetchers/models/getModel.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
 import { applyHiddenFilter } from "./visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface ModelPage {
     model_id: string;
@@ -78,7 +78,7 @@ export default async function getModel(
     modelId: string,
     includeHidden: boolean
 ): Promise<ModelPage> {
-    const supabase = await createClient(); // must allow read via RLS for these tables
+    const supabase = createAdminClient();
 
     console.log("[getModel] Fetching model", modelId);
     const query = applyHiddenFilter(
@@ -300,7 +300,7 @@ export async function getModelOverview(
     modelId: string,
     includeHidden: boolean
 ): Promise<ModelOverviewPage | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const query = applyHiddenFilter(
         supabase.from("data_models").select(`
@@ -368,6 +368,8 @@ export async function getModelCached(
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:data:${modelId}`);
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:model-overview");
 
     console.log("[getModelCached] Cache-aware fetch for model", modelId);
     return getModel(modelId, includeHidden);
@@ -395,6 +397,8 @@ export async function getModelOverviewCached(
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:data:${modelId}`);
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:model-overview");
 
     console.log("[getModelOverviewCached] Cache-aware fetch for model overview", modelId);
     return getModelOverview(modelId, includeHidden);

@@ -1,14 +1,14 @@
 import APIProviderDetailShell from "@/components/(data)/api-providers/APIProviderDetailShell";
 import ProviderTokenUsageChart from "@/components/(data)/api-providers/Gateway/ProviderTokenUsageChart";
 import PerformanceCards from "@/components/(data)/api-providers/Gateway/PerformanceCards";
-import getAPIProviderHeader from "@/lib/fetchers/api-providers/getAPIProviderHeader";
+import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import Script from "next/script";
 
 async function fetchProviderMeta(apiProviderId: string) {
 	try {
-		return await getAPIProviderHeader(apiProviderId);
+		return await fetchFrontendAPIProviderHeader(apiProviderId);
 	} catch (error) {
 		console.warn("[seo] failed to load api provider metadata", {
 			apiProviderId,

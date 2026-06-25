@@ -32,7 +32,7 @@
       "is_self_reported": false,
       "other_info": "Artificial Analysis Intelligence Index v4",
       "source_link": "https://artificialanalysis.ai/articles/xai-launches-grok-4-3-with-improved-agentic-performance-and-lower-pricing",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -40,7 +40,7 @@
       "is_self_reported": false,
       "other_info": "Elo",
       "source_link": "https://artificialanalysis.ai/articles/xai-launches-grok-4-3-with-improved-agentic-performance-and-lower-pricing",
-      "rank": null
+      "rank": 13
     },
     {
       "benchmark_id": "tau-2-telecom",
@@ -48,7 +48,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://artificialanalysis.ai/articles/xai-launches-grok-4-3-with-improved-agentic-performance-and-lower-pricing",
-      "rank": null
+      "rank": 10
     },
     {
       "benchmark_id": "ifbench",
@@ -56,7 +56,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://artificialanalysis.ai/articles/xai-launches-grok-4-3-with-improved-agentic-performance-and-lower-pricing",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "livebench",
@@ -64,7 +64,7 @@
       "is_self_reported": false,
       "other_info": "2026-01-08 release",
       "source_link": "https://livebench.ai/#/",
-      "rank": 47
+      "rank": 36
     },
     {
       "benchmark_id": "creative-story-writing",
@@ -72,7 +72,7 @@
       "is_self_reported": false,
       "other_info": "win prob 0.07; 95% CI -3.8..-3.4",
       "source_link": "https://github.com/lechmazur/writing",
-      "rank": 31
+      "rank": 30
     },
     {
       "benchmark_id": "nyt-connections",

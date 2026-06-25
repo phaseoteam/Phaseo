@@ -7,19 +7,38 @@ const MAX_ARRAY_ITEMS = 32;
 const MAX_OBJECT_KEYS = 80;
 const MAX_STRING_LENGTH = 800;
 
-const CONTENT_KEYS = new Set([
-	"content",
-	"text",
+const PROMPT_COMPLETION_KEYS = new Set([
 	"prompt",
+	"prompts",
 	"instructions",
 	"input_text",
 	"output_text",
 	"reasoning_content",
-	"delta",
-	"summary",
 	"summary_text",
-	"transcript",
 	"response_text",
+	"completion",
+	"completions",
+	"generated_text",
+]);
+
+const TEXT_CONTENT_TYPES = new Set([
+	"input_text",
+	"output_text",
+	"text",
+	"thinking",
+	"reasoning_text",
+]);
+
+const TEXT_CONTENT_CHANNELS = new Set([
+	"output_text",
+	"reasoning_text",
+]);
+
+const MESSAGE_ROLES = new Set([
+	"assistant",
+	"system",
+	"user",
+	"tool",
 ]);
 
 const SECRET_KEY_PATTERNS = [
@@ -28,7 +47,9 @@ const SECRET_KEY_PATTERNS = [
 	/bearer/i,
 	/secret/i,
 	/password/i,
-	/token(?!s?$)/i,
+	/(^|[_-])token($|[_-])/i,
+	/access[_-]?token/i,
+	/refresh[_-]?token/i,
 ];
 
 function truncateString(value: string): string {
@@ -47,12 +68,75 @@ function isSecretKey(key: string): boolean {
 	return SECRET_KEY_PATTERNS.some((pattern) => pattern.test(key));
 }
 
-function shouldRedactByKey(key: string, value: unknown): boolean {
+function isTokenUsageKey(key: string): boolean {
+	const normalized = key.toLowerCase();
+	return (
+		normalized.endsWith("_tokens") ||
+		normalized.endsWith("_token_count") ||
+		normalized.includes("tokens_") ||
+		normalized === "total_tokens" ||
+		normalized === "prompt_tokens" ||
+		normalized === "completion_tokens"
+	);
+}
+
+function shouldRedactTextValue(
+	key: string,
+	value: unknown,
+	parent: Record<string, unknown>,
+): boolean {
+	const type = typeof parent.type === "string" ? parent.type.toLowerCase() : "";
+	const channel = typeof parent.channel === "string" ? parent.channel.toLowerCase() : "";
+	const role = typeof parent.role === "string" ? parent.role.toLowerCase() : "";
+	const event = typeof parent.event === "string" ? parent.event.toLowerCase() : "";
+
+	if (key === "content") {
+		return (
+			MESSAGE_ROLES.has(role) ||
+			type === "message" ||
+			TEXT_CONTENT_TYPES.has(type)
+		);
+	}
+
+	if (typeof value !== "string") return false;
+
+	if (key === "text") {
+		return (
+			TEXT_CONTENT_TYPES.has(type) ||
+			TEXT_CONTENT_CHANNELS.has(channel) ||
+			MESSAGE_ROLES.has(role)
+		);
+	}
+
+	if (key === "delta") {
+		return (
+			TEXT_CONTENT_CHANNELS.has(channel) ||
+			event.includes("output_text") ||
+			event.includes("reasoning")
+		);
+	}
+
+	if (key === "input" || key === "output") {
+		return true;
+	}
+
+	if (key === "summary") {
+		return type === "summary_text" || channel === "reasoning_text";
+	}
+
+	return false;
+}
+
+function shouldRedactByKey(
+	key: string,
+	value: unknown,
+	parent: Record<string, unknown>,
+): boolean {
 	const normalized = key.toLowerCase();
 
 	// Keep usage/cost stats queryable.
 	if (
-		normalized.includes("token") ||
+		isTokenUsageKey(normalized) ||
 		normalized.includes("usage") ||
 		normalized.includes("count") ||
 		normalized.includes("latency") ||
@@ -62,10 +146,8 @@ function shouldRedactByKey(key: string, value: unknown): boolean {
 	}
 
 	if (isSecretKey(normalized)) return true;
-	if (CONTENT_KEYS.has(normalized)) return true;
-
-	// "input" can be either raw user text or a nested array/object.
-	if (normalized === "input" && typeof value === "string") return true;
+	if (PROMPT_COMPLETION_KEYS.has(normalized)) return true;
+	if (shouldRedactTextValue(normalized, value, parent)) return true;
 
 	return false;
 }
@@ -90,7 +172,7 @@ function sanitizeInternal(value: unknown, depth: number): unknown {
 	const output: Record<string, unknown> = {};
 
 	for (const [key, val] of entries) {
-		if (shouldRedactByKey(key, val)) {
+		if (shouldRedactByKey(key, val, input)) {
 			output[key] = redactedMarker(val);
 			continue;
 		}

@@ -6,7 +6,7 @@ import {
 	normalizeProviderGeoPreferences,
 	normalizeThinkingConfig,
 	normalizeResponseFormat,
-	resolveServiceTierFromSpeedAndTier,
+	resolveTextServiceTier,
 } from "./text-normalizers";
 
 describe("normalizeResponseFormat", () => {
@@ -111,27 +111,25 @@ describe("normalizeThinkingConfig", () => {
 	});
 });
 
-describe("resolveServiceTierFromSpeedAndTier", () => {
-	it("promotes speed=fast to priority", () => {
-		expect(
-			resolveServiceTierFromSpeedAndTier({
-				speed: "fast",
-				service_tier: "default",
-			}),
-		).toBe("priority");
+describe("resolveTextServiceTier", () => {
+	it("normalizes supported service tiers", () => {
+		expect(resolveTextServiceTier({ service_tier: "standard" })).toBe("standard");
+		expect(resolveTextServiceTier({ service_tier: "batch" })).toBe("batch");
 	});
 
-	it("keeps explicit service_tier when speed is not fast", () => {
+	it("keeps explicit priority and flex tiers", () => {
 		expect(
-			resolveServiceTierFromSpeedAndTier({
-				speed: "slow",
+			resolveTextServiceTier({
 				service_tier: "flex",
 			}),
 		).toBe("flex");
+		expect(resolveTextServiceTier({ service_tier: "priority" })).toBe("priority");
 	});
 
 	it("returns undefined when neither value is usable", () => {
-		expect(resolveServiceTierFromSpeedAndTier({})).toBeUndefined();
+		expect(resolveTextServiceTier({})).toBeUndefined();
+		expect(resolveTextServiceTier({ service_tier: "default" })).toBeUndefined();
+		expect(resolveTextServiceTier({ service_tier: "auto" })).toBeUndefined();
 	});
 });
 

@@ -7,23 +7,36 @@ description: "Create an async batch job and attach observability metadata such a
 
 Creates an async batch job.
 
-<Warning>
-The public batch routes are currently mounted but temporarily disabled, so requests currently return `501 not_implemented`.
-</Warning>
-
 AI Stats also accepts these extra fields:
 
 - `session_id` to group the batch with related requests in logs and activity views
 - `webhook` to configure async notifications when the batch transitions state.
 - `metadata` to persist caller-defined tags alongside the batch.
 
-Use `GET /batches/{batch_id}` to poll status and `POST /batches/{batch_id}/cancel` to stop a pending or processing batch.
+Webhook `events` may use generic `job.*` names or matching `batch.*` names. Include `job.progress` or `batch.progress` to receive progress notifications when the provider reports request counts. If omitted, terminal `job.completed`, `job.failed`, `job.cancelled`, and `job.expired` events are used. If supplied, at least one event must be valid for batch jobs; cross-kind-only or malformed event lists are rejected.
+
+Webhook callback URLs must use HTTPS. Literal private, loopback, link-local, and wildcard hosts are rejected; `http://localhost`, `http://127.0.0.1`, and `http://[::1]` are allowed only for local development callbacks.
+
+Use `GET /batches/models` to discover batch-capable models and supported batch parameters, `GET /batches` to list owned batch jobs, `GET /batches/{batch_id}` to poll status, and `POST /batches/{batch_id}/cancel` to stop a pending or processing batch.
+
+Persist and poll the gateway-owned response `id`. When AI Stats also returns `native_batch_id`, that value is the provider-native id used for upstream correlation; do not use it in AI Stats polling, websocket, or cancellation URLs unless it is also the gateway `id`.
+
+Batch creation reserves gateway credits before submitting upstream when the input can be priced. If the gateway cannot read the input file or resolve pricing, creation fails before provider submission instead of starting unreserved work.
 
 Batch responses can also include:
 
 - `request_id`
+- `native_batch_id` when the provider id differs from the gateway id
 - `provider`
 - echoed `session_id`
-- echoed `webhook`
-- terminal `billing` summary data
+- sanitized `webhook` configuration and delivery state
+- `lifecycle_status`, `polling_url`, and `cancel_url`
+- `billing` reservation and settlement state, including held estimates before final settlement
 - terminal `pricing_lines`
+
+Related endpoints:
+
+- [Batch models](./batches-models.mdx)
+- [Batch list](./batches-list.mdx)
+- [Batch status](./batches-status.mdx)
+- [Cancel batch](./batches-cancel.mdx)

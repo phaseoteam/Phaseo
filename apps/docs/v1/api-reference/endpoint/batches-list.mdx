@@ -1,0 +1,40 @@
+---
+title: "Batch list (Beta)"
+badge: "Beta"
+openapi: "GET /batches"
+description: "List owned async batch jobs for the authenticated workspace."
+---
+
+Returns the authenticated workspace's owned batch jobs from AI Stats' persisted async job store.
+
+Use query parameters to narrow the response:
+
+- `limit` to cap the number of returned jobs. The gateway defaults to `20` and caps the value at `100`.
+- repeated `status` values, comma-separated `status` values, or a comma-separated `statuses` value, to filter by lifecycle state.
+
+Public status filters map onto the stored provider lifecycle aliases:
+
+- `pending` or `queued`
+- `in_progress`, `running`, or `processing`
+- `completed`
+- `failed`
+- `cancelled` or `canceled`
+- `expired`
+
+The response is a standard `list` envelope whose `data` array contains the same public `batch` objects returned by `POST /batches` and `GET /batches/{batch_id}`.
+
+Use each item's gateway-owned `id` for future polling, cancellation, and websocket subscriptions. `native_batch_id`, when present, is provider-native correlation metadata and may not be resolvable by AI Stats routes.
+
+Batch objects can include:
+
+- `lifecycle_status`
+- `progress` derived from provider request counts when available
+- `polling_url`
+- `cancel_url` when the batch is still cancellable and the provider supports gateway cancellation
+- `native_batch_id` when the provider id differs from the gateway id
+- `request_id`, `provider`, and `session_id`
+- sanitized `webhook` configuration and delivery state
+- `billing` reservation/settlement state, including held estimates before final settlement
+- `pricing_lines` when settlement details are available
+
+This endpoint is intentionally workspace-scoped. It does not proxy the provider's shared upstream batch list, so callers only see jobs that were created through their authenticated AI Stats workspace.

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getModelCollections } from "@/lib/fetchers/collections/getCollections";
+import { fetchFrontendModelCollections } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CollectionDetailDisplay from "@/components/(data)/models/Collections/CollectionDetailDisplay";
 
 type CollectionPageProps = {
@@ -9,12 +9,12 @@ type CollectionPageProps = {
 };
 
 async function findCollection(collectionId: string, limit = 10) {
-	const collections = await getModelCollections(limit);
+	const collections = await fetchFrontendModelCollections(limit);
 	return collections.find((collection) => collection.id === collectionId) ?? null;
 }
 
 export async function generateStaticParams() {
-	const collections = await getModelCollections(1);
+	const collections = await fetchFrontendModelCollections(1);
 	return collections.map((collection) => ({ collectionId: collection.id }));
 }
 

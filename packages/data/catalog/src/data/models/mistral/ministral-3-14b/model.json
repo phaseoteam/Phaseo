@@ -1,0 +1,19 @@
+{
+  "model_id": "mistral/ministral-3-14b",
+  "organisation_id": "mistral",
+  "name": "Ministral 3 14B Instruct",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Ministral 3 14B Instruct is a DigitalOcean-hosted Mistral model exposed through DigitalOcean Inference.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "text",
+  "output_types": "text",
+  "api_model_id": "mistral/ministral-3-14b",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

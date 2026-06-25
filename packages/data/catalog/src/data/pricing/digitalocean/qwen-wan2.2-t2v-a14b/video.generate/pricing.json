@@ -1,0 +1,21 @@
+{
+  "key": "digitalocean:qwen/wan2.2-t2v-a14b:video.generate",
+  "api_provider_id": "digitalocean",
+  "provider_slug": "digitalocean",
+  "api_model_id": "qwen/wan2.2-t2v-a14b",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-05-29T00:00:00Z"
+    }
+  ]
+}

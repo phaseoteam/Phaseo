@@ -4,11 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import {
-	type DeprecationWarning,
-	getDeprecationWarningsForTeam,
-} from "@/lib/fetchers/usage/deprecationWarnings";
+import type { DeprecationWarning } from "@/lib/fetchers/usage/deprecationWarnings";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import RetiresBadge from "./RetiresBadge";
 
@@ -311,10 +307,7 @@ export default async function DeprecationWarnings({
 	id = "lifecycle-alerts",
 	showHeader = true,
 }: DeprecationWarningsProps = {}) {
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) return null;
-
-	const rawWarnings = warnings ?? (await getDeprecationWarningsForTeam(workspaceId));
+	const rawWarnings = warnings ?? [];
 	if (!rawWarnings.length) return null;
 
 	const deprecatedRows = sortByRetirementDateAsc(

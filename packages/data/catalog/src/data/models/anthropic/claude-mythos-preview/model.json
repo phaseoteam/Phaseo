@@ -13,6 +13,7 @@
   "input_types": "text,image",
   "output_types": "text",
   "api_model_id": "anthropic/claude-mythos-preview",
+  "family_id": "anthropic/claude-mythos",
   "links": [
     {
       "platform": "announcement",
@@ -44,7 +45,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -63,12 +64,12 @@
       "rank": 1
     },
     {
-      "benchmark_id": "swe-bench",
+      "benchmark_id": "swe-bench-multimodal",
       "score": 59,
       "is_self_reported": true,
       "other_info": "Multimodal (internal implementation)",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 90
+      "rank": 1
     },
     {
       "benchmark_id": "swe-bench-multilingual",
@@ -100,7 +101,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 5
+      "rank": 7
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -124,7 +125,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://www.anthropic.com/glasswing",
-      "rank": 1
+      "rank": 3
     }
   ]
 }

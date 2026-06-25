@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { cacheLife, cacheTag } from "next/cache";
 import { Activity, BarChart3, ExternalLink } from "lucide-react";
 import AppUsageChart from "@/components/(data)/apps/AppUsageChart";
 import { ModelLeaderboard } from "@/components/(rankings)/ModelLeaderboard";
@@ -11,14 +10,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getAppDetailsCached } from "@/lib/fetchers/apps/getAppDetails";
+import type { AppUsageRow } from "@/lib/fetchers/apps/getAppUsageOverTime";
 import {
-	type AppUsageRow,
-	getAppUsageOverTime,
-} from "@/lib/fetchers/apps/getAppUsageOverTime";
-import { getModelLeaderboardMetaByIds } from "@/lib/fetchers/rankings/getRankingsData";
+	fetchFrontendAppDetails,
+	fetchFrontendAppProviderModelMappings,
+	fetchFrontendAppUsage,
+	fetchFrontendModelLeaderboardMetaByIds,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
-import { createAdminClient } from "@/utils/supabase/admin";
 
 type PageProps = {
 	params: Promise<{ appId: string }>;
@@ -77,47 +76,9 @@ function getModelLookupVariants(modelId: string): string[] {
 	return Array.from(variants).filter(Boolean);
 }
 
-type ProviderModelMapping = {
-	provider_id: string | null;
-	api_model_id: string | null;
-	model_id: string | null;
-};
-
-async function getProviderModelMappingsCached(
-	apiLookupIds: string[],
-	providerIds: string[],
-): Promise<ProviderModelMapping[]> {
-	"use cache";
-
-	cacheLife("hours");
-	cacheTag("data:models");
-	cacheTag("data:data_api_provider_models");
-
-	if (apiLookupIds.length === 0) return [];
-
-	const supabase = createAdminClient();
-	let query = supabase
-		.from("data_api_provider_models")
-		.select("provider_id, api_model_id, model_id")
-		.in("api_model_id", apiLookupIds)
-		.not("model_id", "is", null);
-
-	if (providerIds.length > 0) {
-		query = query.in("provider_id", providerIds);
-	}
-
-	const { data, error } = await query;
-	if (error) {
-		throw new Error(
-			`Failed to load provider model mappings: ${error.message}`,
-		);
-	}
-	return (data ?? []) as ProviderModelMapping[];
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
 	const { appId } = await params;
-	const app = await getAppDetailsCached(appId);
+	const app = await fetchFrontendAppDetails(appId);
 	const path = `/apps/${encodeURIComponent(appId)}`;
 
 	if (!app) {
@@ -148,7 +109,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function Page({ params }: PageProps) {
 	const { appId } = await params;
-	const app = await getAppDetailsCached(appId);
+	const app = await fetchFrontendAppDetails(appId);
 
 	if (!app) {
 		return (
@@ -165,7 +126,7 @@ export default async function Page({ params }: PageProps) {
 		);
 	}
 
-	const rows4w = await getAppUsageOverTime(appId, "4w");
+	const rows4w = await fetchFrontendAppUsage(appId, "4w");
 	const successful4w = rows4w.filter(isSuccessful);
 
 	const rawModelIds = Array.from(
@@ -193,7 +154,8 @@ export default async function Page({ params }: PageProps) {
 	const canonicalByApi = new Map<string, Set<string>>();
 
 	if (apiLookupIds.length > 0) {
-		const providerModels = await getProviderModelMappingsCached(
+		const providerModels = await fetchFrontendAppProviderModelMappings(
+			appId,
 			apiLookupIds,
 			normalizedProviderIds,
 		);
@@ -224,7 +186,7 @@ export default async function Page({ params }: PageProps) {
 		}
 	}
 
-	const modelMetaById = await getModelLeaderboardMetaByIds(
+	const modelMetaById = await fetchFrontendModelLeaderboardMetaByIds(
 		Array.from(candidateModelIds),
 	);
 	const hasMeta = (modelId: string) =>

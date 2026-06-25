@@ -13,11 +13,12 @@ import type {
 	IRToolResult,
 	IRTool,
 } from "@core/ir";
-import { extractToolNameOrType, isNativeWebSearchTool } from "@core/nativeTools";
+import { extractToolNameOrType, isNativeAdvisorTool, isNativeWebFetchTool, isNativeWebSearchTool } from "@core/nativeTools";
 import { mapAnthropicEffortToIr } from "@core/reasoningEffort";
 import {
 	normalizeProviderGeoPreferences,
-	resolveServiceTierFromSpeedAndTier,
+	normalizeProviderCacheOptions,
+	resolveTextServiceTier,
 } from "../shared/text-normalizers";
 
 /**
@@ -33,11 +34,14 @@ export type AnthropicMessagesRequest = {
 	top_p?: number;
 	top_k?: number;
 	stream?: boolean;
-	tools?: Array<AnthropicTool | AnthropicNativeWebSearchTool>;
+	tools?: Array<AnthropicTool | AnthropicNativeWebSearchTool | AnthropicNativeWebFetchTool | AnthropicNativeAdvisorTool>;
 	tool_choice?: AnthropicToolChoice;
 	metadata?: Record<string, any>;
 	service_tier?: string;
-	speed?: string;
+	provider_options?: Record<string, any>;
+	providerOptions?: Record<string, any>;
+	cache_control?: AnthropicCacheControl;
+	cacheControl?: AnthropicCacheControl;
 	inference_geo?: "global" | "us" | string;
 	web_search_options?: Record<string, any>;
 	webSearchOptions?: Record<string, any>;
@@ -72,18 +76,41 @@ export type AnthropicContentBlock =
 	| { type: "text"; text: string; cache_control?: AnthropicCacheControl }
 	| { type: "image"; cache_control?: AnthropicCacheControl; source: { type: "base64" | "url"; data?: string; url?: string; media_type?: string } }
 	| { type: "tool_use"; id: string; name: string; input: Record<string, any> }
-	| { type: "tool_result"; tool_use_id: string; content: string | any[]; cache_control?: AnthropicCacheControl };
+	| { type: "tool_result"; tool_use_id: string; content: string | any[]; cache_control?: AnthropicCacheControl }
+	| { type: "server_tool_use"; id: string; name: string; input?: Record<string, any> }
+	| { type: "advisor_tool_result"; tool_use_id: string; content?: string | any[] };
 
 export type AnthropicTool = {
 	name: string;
 	description?: string;
 	input_schema: Record<string, any>;
+	cache_control?: AnthropicCacheControl;
 };
 
 export type AnthropicNativeWebSearchTool = {
 	type: string;
 	name?: string;
 	description?: string;
+	[key: string]: any;
+};
+
+export type AnthropicNativeWebFetchTool = {
+	type: string;
+	name?: string;
+	description?: string;
+	max_uses?: number;
+	max_content_tokens?: number;
+	allowed_domains?: string[];
+	blocked_domains?: string[];
+	[key: string]: any;
+};
+
+export type AnthropicNativeAdvisorTool = {
+	type: string;
+	name?: string;
+	model: string;
+	max_tokens?: number;
+	caching?: Record<string, any>;
 	[key: string]: any;
 };
 
@@ -139,6 +166,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 					toolResults.push({
 						toolCallId: block.tool_use_id,
 						content: normalizeToolResultContent(block.content),
+						cacheControl: normalizeAnthropicCacheControl((block as any).cache_control),
 					});
 					continue;
 				}
@@ -204,6 +232,7 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 	// Transform tool choice
 	const toolChoice = normalizeAnthropicToolChoice(req.tool_choice);
+	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
 	const providerGeo = normalizeProviderGeoPreferences(req as any);
 	const explicitInferenceGeo =
 		typeof req.inference_geo === "string" && req.inference_geo.trim().length > 0
@@ -244,11 +273,10 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// Advanced parameters
 		stop: req.stop_sequences,
 		metadata: req.metadata,
-		speed: typeof req.speed === "string" ? req.speed : undefined,
-		serviceTier: resolveServiceTierFromSpeedAndTier({
+		serviceTier: resolveTextServiceTier({
 			service_tier: req.service_tier,
-			speed: req.speed,
 		}),
+		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		geo,
 		modalities: Array.isArray((req as any).modalities) ? (req as any).modalities : undefined,
 		imageConfig: req.image_config
@@ -361,6 +389,13 @@ function normalizeAnthropicContent(block: AnthropicContentBlock): IRContentPart 
 		return undefined;
 	}
 
+	if (block.type === "server_tool_use" || block.type === "advisor_tool_result") {
+		return {
+			type: "provider_block",
+			block: { ...(block as any) },
+		};
+	}
+
 	// Fallback: unknown type -> text
 	return { type: "text", text: String(block) };
 }
@@ -406,12 +441,14 @@ function normalizeAnthropicToolChoice(choice: any): IRChatRequest["toolChoice"] 
 }
 
 function decodeAnthropicTool(
-	tool: AnthropicTool | AnthropicNativeWebSearchTool,
+	tool: AnthropicTool | AnthropicNativeWebSearchTool | AnthropicNativeWebFetchTool | AnthropicNativeAdvisorTool,
 ): IRTool {
-	if (isNativeWebSearchTool(tool)) {
-		const nativeTool = tool as AnthropicNativeWebSearchTool;
+	if (isNativeWebSearchTool(tool) || isNativeWebFetchTool(tool) || isNativeAdvisorTool(tool)) {
+		const nativeTool = tool as AnthropicNativeWebSearchTool | AnthropicNativeWebFetchTool | AnthropicNativeAdvisorTool;
 		return {
-			name: extractToolNameOrType(nativeTool) ?? "web_search",
+			name:
+				extractToolNameOrType(nativeTool) ??
+				(isNativeAdvisorTool(tool) ? "advisor" : isNativeWebFetchTool(tool) ? "web_fetch" : "web_search"),
 			type: nativeTool.type,
 			description: nativeTool.description,
 			parameters: {},
@@ -423,6 +460,6 @@ function decodeAnthropicTool(
 		name: (tool as AnthropicTool).name,
 		description: (tool as AnthropicTool).description,
 		parameters: (tool as AnthropicTool).input_schema,
+		cacheControl: normalizeAnthropicCacheControl((tool as AnthropicTool).cache_control),
 	};
 }
-

@@ -1,0 +1,138 @@
+---
+title: "Server Tools"
+description: "Let models call AI Stats-operated tools during a request."
+---
+
+Server tools are tools that AI Stats runs for you during a model request. The model decides when to call them, AI Stats executes the tool server-side, and the tool result is fed back into the model loop.
+
+Use server tools when the model needs current time, web context, fetched page text, or a second model's advice without adding your own tool executor.
+
+<Note>
+Server tools are in beta. Request shapes and result payloads may evolve as provider support changes.
+</Note>
+
+## Available tools
+
+| Tool | Type | Use it for |
+| --- | --- | --- |
+| Datetime | `gateway:datetime` | Current date and time in a chosen timezone |
+| Web Search | `ai-stats:web_search` | Model-directed web searches during a request |
+| Web Fetch | `ai-stats:web_fetch` | Fetching and extracting text from specific URLs |
+| Advisor | `ai-stats:advisor` | Consulting another model mid-generation |
+| Image Generation | `ai-stats:image_generation` | Creating images from the model tool loop |
+| Apply Patch | `ai-stats:apply_patch` | Returning validated patch operations from Responses |
+
+## How server tools work
+
+1. Add one or more server tools to the `tools` array.
+2. The model decides whether it needs a tool and emits a tool call.
+3. AI Stats intercepts the server-tool call, executes it, and sends the result back to the model.
+4. The model continues and writes the final response.
+
+Server tools can be used alongside your own function tools. AI Stats executes only the server tools; your application still handles regular `function` tool calls.
+
+## Quick start
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What are the latest AI policy updates this week?" }
+    ],
+    "tools": [
+      { "type": "ai-stats:web_search" },
+      { "type": "gateway:datetime", "parameters": { "timezone": "Europe/London" } }
+    ]
+  }'
+```
+
+## Combining with function tools
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Find recent funding news and save the best item." }
+  ],
+  "tools": [
+    { "type": "ai-stats:web_search", "parameters": { "max_results": 3 } },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_research_item",
+        "description": "Save a selected research item",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["title", "url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+If the model calls `ai-stats:web_search`, AI Stats executes that call automatically. If it calls `save_research_item`, your application receives the function call and must return the function result in a follow-up request.
+
+## Supported endpoints
+
+Server tools are supported on:
+
+- `/v1/chat/completions`
+- `/v1/responses`
+- `/v1/messages`
+
+Streaming requests are supported. For gateway-managed server tools, AI Stats may materialize the upstream tool-call turn, execute the server tool, continue the loop, and emit a synthetic stream for the final response.
+
+## Usage tracking
+
+Server-tool usage is reported in `usage.server_tool_use`:
+
+```json
+{
+  "usage": {
+    "input_tokens": 105,
+    "output_tokens": 250,
+    "server_tool_use": {
+      "datetime_requests": 1,
+      "web_search_requests": 2,
+      "web_search_results": 8,
+      "web_fetch_requests": 1,
+      "advisor_requests": 1,
+      "image_generation_requests": 1,
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+Pricing can also use server-tool meters such as `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `server_tool_apply_patch_requests`, `native_web_search_requests`, and `native_web_fetch_requests` when configured on model price cards.
+
+## Tool pages
+
+<Columns cols={2}>
+  <Card title="Datetime" icon="clock" href="./datetime">
+    Give the model the current date and time.
+  </Card>
+  <Card title="Web Search" icon="search" href="./web-search">
+    Let the model search the web when it needs current information.
+  </Card>
+  <Card title="Web Fetch" icon="file-search" href="./web-fetch">
+    Let the model fetch and read specific URLs.
+  </Card>
+  <Card title="Advisor" icon="message-square" href="./advisor">
+    Let one model consult another model for guidance mid-generation.
+  </Card>
+  <Card title="Image Generation" icon="image" href="./image-generation">
+    Let the model create images while answering.
+  </Card>
+  <Card title="Apply Patch" icon="file-code" href="./apply-patch">
+    Let the model return patch operations for a client to apply.
+  </Card>
+</Columns>

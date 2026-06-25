@@ -59,7 +59,11 @@ import {
 	shortenIdentifier,
 } from "@/lib/gateway/usage/timeFormatting";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
-import { extractUsageMeters, formatUsageNumber } from "./usageMeters";
+import {
+	buildUsageFromNormalizedRequestFields,
+	extractUsageMeters,
+	formatUsageNumber,
+} from "./usageMeters";
 import {
         DetailKeyValueGrid,
         DetailMetricTile,
@@ -95,14 +99,15 @@ function getModelLogoId(
 	return null;
 }
 
-function getUsageTokenCounts(usage: any): {
+function getUsageTokenCounts(request: SessionRequestRow): {
 	input: number | null;
 	output: number | null;
 } {
+	const usage = buildUsageFromNormalizedRequestFields(request.usage, request);
 	const meters = extractUsageMeters(usage);
-	const input = meters.find((meter) => meter.key === "input_text_tokens")?.value ?? null;
+	const input = meters.find((meter) => meter.key === "input_tokens")?.value ?? null;
 	const output =
-		meters.find((meter) => meter.key === "output_text_tokens")?.value ?? null;
+		meters.find((meter) => meter.key === "output_tokens")?.value ?? null;
 	return { input, output };
 }
 
@@ -678,7 +683,7 @@ function SessionDetailDialog({
 											const appLabel = request.app_id
 												? buildAppLabel(appInfo, request.app_title ?? request.app_id)
 												: request.app_title ?? "-";
-											const tokens = getUsageTokenCounts(request.usage);
+											const tokens = getUsageTokenCounts(request);
 											const errorSummary = request.success
 												? null
 												: formatErrorListSummary(request);

@@ -1,11 +1,12 @@
 import { Megaphone, Rocket, Archive, Ban } from "lucide-react";
+import RelativeDateBadge from "./RelativeDateBadge";
+import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
 
 interface KeyDatesProps {
 	announced?: string;
 	released?: string;
 	deprecated?: string;
 	retired?: string;
-	formatDate: (dateStr?: string) => string;
 	showHeading?: boolean;
 }
 
@@ -14,7 +15,6 @@ export default function KeyDates({
 	released,
 	deprecated,
 	retired,
-	formatDate,
 	showHeading = true,
 }: KeyDatesProps) {
 	const entries = [
@@ -57,17 +57,22 @@ export default function KeyDates({
 	return (
 		<div className="space-y-2">
 			{showHeading ? <h3 className="text-base font-semibold">Key Dates</h3> : null}
-			<div className="flex flex-wrap gap-2">
+			<div className="grid gap-2 md:grid-cols-2">
 				{entries.map(({ key, label, value, Icon, className }) => (
 					<div
 						key={key}
-						className={`min-w-[12rem] flex-1 rounded-md border px-3 py-2 ${className}`}
+						className={`rounded-lg border px-3 py-3 ${className}`}
 					>
-						<div className="flex items-center gap-1.5 text-xs font-medium">
-							<Icon className="h-3.5 w-3.5" />
-							<span>{label}</span>
+						<div className="flex flex-wrap items-start justify-between gap-2">
+							<div className="flex items-center gap-1.5 text-xs font-medium">
+								<Icon className="h-3.5 w-3.5" />
+								<span>{label}</span>
+							</div>
+							{value ? <RelativeDateBadge date={value} /> : null}
 						</div>
-						<p className="mt-1 text-sm font-semibold">{formatDate(value)}</p>
+						<p className="mt-2 text-sm font-semibold">
+							{formatModelLifecycleDate(value)}
+						</p>
 					</div>
 				))}
 			</div>

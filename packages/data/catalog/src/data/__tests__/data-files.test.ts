@@ -66,6 +66,7 @@ for (const b of listDirs(benchmarksDir)) {
 type ModelIndex = {
   model_id: string;
   organisation_id: string;
+  status?: string | null;
   family_id?: string | null;
   previous_model_id?: string | null;
   filePath: string;
@@ -85,6 +86,7 @@ for (const org of listDirs(modelsDir)) {
       models.push({
         model_id: j.model_id,
         organisation_id: j.organisation_id,
+        status: j.status ?? null,
         family_id: j.family_id ?? null,
         previous_model_id: j.previous_model_id ?? null,
         filePath: p,
@@ -101,10 +103,37 @@ for (const ap of listDirs(apiProvidersDir)) {
     try { apiProviderIds.add(readJson(p).provider_id); } catch {}
   }
 }
+const modelStatusById = new Map(models.map((m) => [m.model_id, m.status]));
+const videoProvidersWithExecutorMetadata = new Set([
+  'alibaba-cloud',
+  'atlascloud',
+  'byteplus',
+  'google-ai-studio',
+  'google-vertex',
+  'minimax',
+  'openai',
+  'runway',
+  'x-ai',
+]);
 
 // Pretty print helpers for CLI-like output ------------------------------
 const ok = (msg: string) => `✅ ${msg}`;
 const fail = (msg: string) => `❌ ${msg}`;
+
+function activeCapability(capability: any): boolean {
+  const status = typeof capability?.status === 'string' ? capability.status.trim().toLowerCase() : '';
+  return status.length === 0 || status === 'active' || status.startsWith('deranked_');
+}
+
+function paramDetail(params: unknown, name: string): Record<string, any> | null {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) return null;
+  const value = (params as Record<string, unknown>)[name];
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : null;
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
 
 // Organisations ----------------------------------------------------------
 describe('Organisations', () => {
@@ -135,6 +164,7 @@ describe('Families', () => {
         expect(organisationIds.has(j.organisation_id)).toBe(true);
       }
     });
+
   }
 });
 
@@ -184,6 +214,13 @@ describe('Models', () => {
         expect(isrType === 'boolean' || isrType === 'number').toBe(true);
       }
     });
+    test(`${m.model_id} page_notice shape`, () => {
+      const j = readJson(m.filePath);
+      if (!j.page_notice) return;
+      expect(['info', 'warning', 'critical']).toContain(j.page_notice.tone);
+      expect(typeof j.page_notice.markdown).toBe('string');
+      expect(j.page_notice.markdown.trim().length).toBeGreaterThan(0);
+    });
   }
 });
 
@@ -223,6 +260,43 @@ describe('API Providers', () => {
         }
       }
     });
+
+    if (videoProvidersWithExecutorMetadata.has(ap)) {
+      test(`${ap} active video capabilities expose duration and resolution metadata`, () => {
+        const modelsPath = path.join(apiProvidersDir, ap, 'models.json');
+        if (!exists(modelsPath)) return;
+        const rows = readJson(modelsPath);
+        expect(Array.isArray(rows)).toBe(true);
+        for (const row of rows) {
+          if (row?.is_active_gateway !== true) continue;
+          const capabilities = Array.isArray(row.capabilities) ? row.capabilities : [];
+          for (const capability of capabilities) {
+            if (capability?.capability_id !== 'video.generate' || !activeCapability(capability)) continue;
+            const duration = paramDetail(capability.params, 'duration');
+            const size = paramDetail(capability.params, 'size');
+            expect(duration, `${ap}:${row.api_model_id} duration metadata`).not.toBeNull();
+            expect(size, `${ap}:${row.api_model_id} size metadata`).not.toBeNull();
+            expect(['number', 'enum']).toContain(duration?.type);
+            expect(['string', 'enum']).toContain(size?.type);
+            expect(stringArray(duration?.aliases)).toEqual(expect.arrayContaining(['duration_seconds']));
+            expect(stringArray(size?.aliases)).toEqual(expect.arrayContaining(['resolution']));
+            if (duration?.type === 'enum') {
+              expect(duration.values?.length).toBeGreaterThan(0);
+              for (const value of duration.values) {
+                expect(Number.isFinite(typeof value === 'string' ? Number(value) : value)).toBe(true);
+              }
+            }
+            if (size?.type === 'enum') {
+              expect(size.values?.length).toBeGreaterThan(0);
+              for (const value of size.values) {
+                expect(typeof value).toBe('string');
+                expect(value.trim().length).toBeGreaterThan(0);
+              }
+            }
+          }
+        }
+      });
+    }
   }
 });
 
@@ -254,8 +328,12 @@ describe('Subscription Plans', () => {
       // Provider here refers to an organisation (consumer subscription provider like OpenAI/Anthropic)
       if (j.provider_id) expect(organisationIds.has(j.provider_id)).toBe(true);
       const modelsList = Array.isArray(j.models) ? j.models : [];
+      const seenModels = new Set<string>();
       for (const m of modelsList) {
         expect(modelIds.has(m.model_id)).toBe(true);
+        expect(seenModels.has(m.model_id)).toBe(false);
+        seenModels.add(m.model_id);
+        expect(modelStatusById.get(m.model_id)).not.toBe('Retired');
       }
     });
   }

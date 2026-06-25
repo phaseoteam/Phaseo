@@ -1,28 +1,24 @@
-name: Check New Models
+name: Check Internal Models
 
 on:
-    schedule:
-        - cron: "*/15 * * * *"
-    workflow_dispatch:
+    push:
+        branches:
+            - main
 
 concurrency:
-    group: check-new-models
+    group: check-internal-models
     cancel-in-progress: false
 
 env:
     NODE_VERSION: 22
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC }}
-    DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-    DISCORD_ROLE_ID_MODEL_UPDATES: "1377690778478055584"
-    DISCORD_ROLE_ID_DEV: ${{ vars.DISCORD_ROLE_ID_DEV }}
 
 permissions:
     contents: read
-    issues: write
 
 jobs:
-    check-new-models:
-        name: Check for new models
+    check-internal-models:
+        name: Check internal models
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -35,6 +31,7 @@ jobs:
               with:
                   version: 10.33.0
                   run_install: false
+
             - name: Setup Node.js
               uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
               with:
@@ -58,44 +55,12 @@ jobs:
                   restore-keys: |
                       internal-model-state-${{ github.ref_name }}-
 
-            - name: Check for new internal models
-              env:
-                  DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: ${{ github.ref == 'refs/heads/main' && secrets.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC || '' }}
+            - name: Check for internal models
               run: |
                   pnpm exec tsx scripts/model-discovery/run-internal-public.ts \
-                    --discord-role-id "${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}" \
-                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png"
-
-            - name: Check for new external provider models
-              if: github.ref == 'refs/heads/main'
-              env:
-                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-                  DISCORD_USER_ID: ${{ secrets.DISCORD_USER_ID }}
-                  DISCORD_ROLE_ID: ${{ env.DISCORD_ROLE_ID_MODEL_UPDATES }}
-                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-                  AION_LABS_API_KEY: ${{ secrets.AION_LABS_API_KEY }}
-                  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-                  ARCEE_AI_API_KEY: ${{ secrets.ARCEE_AI_API_KEY }}
-                  GITHUB_TOKEN: ${{ github.token }}
-              run: |
-                  if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" ]; then
-                    echo "Skipping external provider model check: missing Supabase secrets."
-                    exit 0
-                  fi
-                  pnpm exec tsx scripts/model-discovery/run.ts
-
-            - name: Check for new external Hugging Face models
-              if: github.ref == 'refs/heads/main'
-              env:
-                  DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-                  DISCORD_ROLE_ID_DEV: ${{ env.DISCORD_ROLE_ID_DEV }}
-                  GITHUB_TOKEN: ${{ github.token }}
-              run: |
-                  pnpm exec tsx scripts/model-discovery/run-hf-private.ts \
-                    --discord-role-id "${{ env.DISCORD_ROLE_ID_DEV }}" \
-                    --hf-orgs "${{ vars.HF_WATCH_ORGS }}" \
-                    --hf-token "${{ secrets.HF_TOKEN }}"
+                    --discord-role-id "1377690778478055584" \
+                    --discord-avatar-url "https://ai-stats.phaseo.app/png_logo_light.png" \
+                    --skip-hf
 
             - name: Save internal model state cache
               if: always()

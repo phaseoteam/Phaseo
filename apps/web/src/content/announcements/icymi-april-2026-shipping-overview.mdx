@@ -17,9 +17,9 @@ Welcome to the first public **ICYMI**: a quick recap of the biggest updates we s
 
 ## The Big Drops
 
-### New pricing insights
+### Pricing and billing got sharper
 
-We upgraded pricing across model pages with clearer pricing history and stronger pricing insights.
+We upgraded pricing across model pages with clearer pricing history and stronger pricing insights, then closed the month with tighter billing behavior for multimodal usage, non-standard tiers, and unreleased model handling.
 
 Try it in product:
 
@@ -28,26 +28,26 @@ Try it in product:
 
 ### Stronger gateway and SDK surface
 
-April included major gateway and SDK progress: full API rollout work, rerank support, and active-model gating across API and SDKs.
+April included major gateway and SDK progress: full API rollout work, rerank support, active-model gating, and follow-up SDK model-surface cleanup so newly released models land more cleanly across docs and generated clients.
 
 The result is a more consistent experience across docs, API behavior, and SDK clients.
 
 ### Model coverage jumped
 
-We shipped Claude Opus 4.7 compatibility and expanded provider coverage, including deeper Anthropic Bedrock/Vertex mappings and pricing updates.
+We shipped Claude Opus 4.7 compatibility earlier in the month, then finished April with Mistral Medium 3.5, IBM Granite 4.1, GPT-5.5 Cyber withheld tracking, CrofAI discovery coverage, and broader provider mapping refreshes.
 
-### Catalog updates kept landing
+### Catalog and benchmark updates kept landing
 
-We added and enriched support for major models, including Qwen 3.6 35B A3B, Grok 4.3, and other catalog improvements throughout the month.
+We added and enriched support for major models, including Qwen 3.6 35B A3B, Grok 4.3, and other catalog improvements throughout the month, while also adding missing benchmark metadata and introducing a cleaner rank recompute flow before month-end.
 
-Explore it:
+Explore models here:
 
-- [/models](/models)
-- [/updates](/updates)
+- [Explore models here](/models)
+- [Explore recent updates here](/updates)
 
 ### Faster model pages and better updates UX
 
-We improved model page performance by reducing fetch fanout and refining cache behavior, plus updates UX improvements like clearer calendar release-day drilldowns.
+We improved model page performance by reducing fetch fanout and refining cache behavior, then followed up with other-models carousel improvements, homepage feed iteration, update-card date fixes, and clearer calendar release-day drilldowns.
 
 ## Under the Hood Hardening
 
@@ -58,14 +58,12 @@ Alongside features, we shipped production hardening across billing, auth, cache,
 - Supabase/cache egress reductions
 - Free-model gating and pricing-rule corrections
 
-## Shipping Stats (Apr 1-30)
+## Late-April Catch-Up
 
-- **112 commits** merged to `main`
-- **16 feature commits**
-- **20 fix commits**
-- **37 data/model-focused commits**
-- **3 SDK version package releases**
+- April 29 added Mistral Medium 3.5, IBM Granite 4.1, benchmark rank recompute support, and additional pricing fixes.
+- April 30 added withheld GPT-5.5 Cyber tracking, missing `investment-banking-modeling` and `expert-swe` benchmark metadata, and final homepage/update-feed fixes.
+- CrofAI pricing and discovery checks were tightened before month-end so new catalog entries behaved more reliably.
 
 ## Next Up
 
-We are keeping this as a monthly public format: feature highlights first, shipping stats second, and reliability improvements throughout.
+We are keeping this as a monthly public format: feature highlights first, then release follow-ups and reliability improvements throughout.

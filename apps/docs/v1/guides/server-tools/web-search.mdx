@@ -1,0 +1,135 @@
+---
+title: "Web Search Server Tool"
+description: "Let models search the web during a request."
+---
+
+Use `ai-stats:web_search` when the model needs current or source-backed information. The model decides when to search, writes the query, and can search multiple times in one request.
+
+AI Stats returns URLs, titles, snippets, highlights, and optional page text to the model so it can write a grounded response.
+
+<Note>
+Google native web search is not enabled in AI Stats server tools yet. Use managed search or provider-native search on supported OpenAI and Anthropic routes.
+</Note>
+
+## How it works
+
+1. Add `{ "type": "ai-stats:web_search" }` to `tools`.
+2. The model decides whether it needs a search and emits a query.
+3. AI Stats executes the search using the configured engine.
+4. Results are returned to the model as tool context.
+5. The model writes the final response and may search again if needed.
+
+## Quick start
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "ai-stats:web_search" }
+    ]
+  }'
+```
+
+## Configuration
+
+```json
+{
+  "type": "ai-stats:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | Search engine: `auto`, `native`, `exa`, `parallel`, or `firecrawl`. |
+| `max_results` | integer | `5` | Maximum results returned per search call. |
+| `max_total_results` | integer | `10` | Maximum cumulative results across the server-tool loop. |
+| `search_context_size` | string | `medium` | Context size for engines that support highlight sizing: `low`, `medium`, or `high`. |
+| `max_characters` | integer | engine default | Maximum text characters per result when text is included. |
+| `allowed_domains` | string[] | none | Only return results from these domains. Alias: `include_domains`. |
+| `excluded_domains` | string[] | none | Exclude results from these domains. Alias: `exclude_domains`. |
+| `include_highlights` | boolean | `true` | Include engine-provided highlights/snippets when available. |
+| `include_text` | boolean | `false` | Include fuller result text when the engine supports it. |
+| `user_location` | object | none | Optional location hint for engines that support localized search. |
+
+## Engine selection
+
+| Engine | Behavior |
+| --- | --- |
+| `exa` | Managed Exa search. Requires AI Stats to have Exa configured for the gateway runtime. |
+| `auto` | Uses the configured managed default, currently Exa. |
+| `parallel` | Uses Parallel search when configured. |
+| `firecrawl` | Uses Firecrawl search when configured. |
+| `native` | Converts the declaration to a provider-native web-search tool before the upstream model call when the request surface supports it. |
+
+Use `engine: "native"` only in the tool declaration. If a model tries to pass `engine: "native"` inside an already-emitted gateway search call, AI Stats returns a tool error because native tools must be selected before the upstream request is sent.
+
+## Domain filtering
+
+Use `allowed_domains` when the answer must come from a controlled source set:
+
+```json
+{
+  "type": "ai-stats:web_search",
+  "parameters": {
+    "allowed_domains": ["docs.ai-stats.com", "github.com"]
+  }
+}
+```
+
+Use `excluded_domains` when broad web search is allowed but specific domains should be removed from the result set.
+
+## Responses API
+
+The same tool shape works with `/v1/responses`:
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for AI Stats.",
+  "tools": [
+    { "type": "ai-stats:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## Usage and pricing
+
+Web search calls increment:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+Managed search pricing can use `server_tool_web_search_requests` and `server_tool_web_search_extra_results`. Provider-native search usage can use `native_web_search_requests` where a model price card defines that meter.
+
+## Related
+
+- [Web Fetch](./web-fetch)
+- [Server Tools](./index)
+- [Tool grounding with web fetch](../../cookbook/tool-grounding-with-web-fetch)
+

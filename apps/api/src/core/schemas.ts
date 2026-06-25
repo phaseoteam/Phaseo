@@ -4,7 +4,10 @@
 
 import { z } from "zod";
 import type { Endpoint } from "./types";
+import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
+	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
+	ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES,
 	ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES,
 	OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES,
 } from "./nativeTools";
@@ -74,6 +77,8 @@ const BetaOptionsSchema = z.object({
         websocketMode: z.boolean().optional(),
     }).optional(),
 }).passthrough().optional();
+
+const ServiceTierSchema = z.enum(["standard", "priority", "flex", "batch"]);
 
 const ImageConfigSchema = z.object({
     aspect_ratio: z.string().optional(),
@@ -223,7 +228,7 @@ export const ResponsesSchema = z.object({
         max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
 
-    service_tier: z.enum(["auto", "default", "flex", "standard", "priority"]).optional(),
+    service_tier: ServiceTierSchema.optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
     n: z.never().optional(),
@@ -472,63 +477,118 @@ const GatewayDatetimeToolSchema = z.object({
 });
 
 const GatewayWebSearchToolSchema = z.object({
-	type: z.literal("gateway:web_search"),
+	type: z.enum(["ai-stats:web_search", "gateway:web_search"]),
 	parameters: z.object({
-		engine: z.enum(["auto", "exa"]).optional(),
+		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel"]).optional(),
 		max_results: z.number().int().positive().max(25).optional(),
 		max_total_results: z.number().int().positive().max(100).optional(),
 		search_context_size: z.enum(["low", "medium", "high"]).optional(),
-		include_text: z.boolean().optional(),
-		include_highlights: z.boolean().optional(),
+		max_characters: z.number().int().positive().max(50000).optional(),
 		allowed_domains: z.array(z.string().min(1)).optional(),
 		excluded_domains: z.array(z.string().min(1)).optional(),
+		include_domains: z.array(z.string().min(1)).optional(),
+		exclude_domains: z.array(z.string().min(1)).optional(),
+		include_text: z.boolean().optional(),
+		include_highlights: z.boolean().optional(),
 		user_location: z.record(z.string(), z.any()).optional(),
 	}).optional(),
-	engine: z.enum(["auto", "exa"]).optional(),
+	engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel"]).optional(),
 	max_results: z.number().int().positive().max(25).optional(),
 	max_total_results: z.number().int().positive().max(100).optional(),
 	search_context_size: z.enum(["low", "medium", "high"]).optional(),
-	include_text: z.boolean().optional(),
-	include_highlights: z.boolean().optional(),
+	max_characters: z.number().int().positive().max(50000).optional(),
 	allowed_domains: z.array(z.string().min(1)).optional(),
 	excluded_domains: z.array(z.string().min(1)).optional(),
+	include_domains: z.array(z.string().min(1)).optional(),
+	exclude_domains: z.array(z.string().min(1)).optional(),
+	include_text: z.boolean().optional(),
+	include_highlights: z.boolean().optional(),
 	user_location: z.record(z.string(), z.any()).optional(),
 });
 
 const GatewayWebFetchToolSchema = z.object({
-	type: z.literal("gateway:web_fetch"),
+	type: z.enum(["ai-stats:web_fetch", "gateway:web_fetch"]),
 	parameters: z.object({
+		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
 		max_chars: z.number().int().positive().max(50000).optional(),
+		max_content_tokens: z.number().int().positive().max(50000).optional(),
 		allowed_domains: z.array(z.string().min(1)).optional(),
+		blocked_domains: z.array(z.string().min(1)).optional(),
 		excluded_domains: z.array(z.string().min(1)).optional(),
 	}).optional(),
+	engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
 	url: z.string().url().optional(),
 	max_chars: z.number().int().positive().max(50000).optional(),
+	max_content_tokens: z.number().int().positive().max(50000).optional(),
 	allowed_domains: z.array(z.string().min(1)).optional(),
+	blocked_domains: z.array(z.string().min(1)).optional(),
 	excluded_domains: z.array(z.string().min(1)).optional(),
 });
 
-const GatewayApplyPatchToolSchema = z.object({
-	type: z.literal("gateway:apply_patch"),
-	parameters: z.object({}).optional(),
+const GatewayAdvisorToolSchema = z.object({
+	type: z.literal("ai-stats:advisor"),
+	parameters: z.object({
+		name: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9 _-]+$/).optional(),
+		model: z.string().min(1).optional(),
+		instructions: z.string().min(1).optional(),
+		forward_transcript: z.boolean().optional(),
+		max_uses: z.number().int().positive().optional(),
+		max_tokens: z.number().int().min(1024).optional(),
+		max_completion_tokens: z.number().int().min(1024).optional(),
+		reasoning: z.record(z.string(), z.unknown()).optional(),
+		temperature: z.number().min(0).max(2).optional(),
+	}).optional(),
+	name: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9 _-]+$/).optional(),
+	model: z.string().min(1).optional(),
+	instructions: z.string().min(1).optional(),
+	forward_transcript: z.boolean().optional(),
+	max_uses: z.number().int().positive().optional(),
+	max_tokens: z.number().int().min(1024).optional(),
+	max_completion_tokens: z.number().int().min(1024).optional(),
+	reasoning: z.record(z.string(), z.unknown()).optional(),
+	temperature: z.number().min(0).max(2).optional(),
 });
 
 const GatewayImageGenerationToolSchema = z.object({
-	type: z.literal("gateway:image_generation"),
+	type: z.enum(["ai-stats:image_generation", "gateway:image_generation"]),
 	parameters: z.object({
+		prompt: z.string().min(1).optional(),
+		description: z.string().min(1).optional(),
 		model: z.string().min(1).optional(),
-		size: z.string().min(1).optional(),
 		quality: z.string().min(1).optional(),
+		size: z.string().min(1).optional(),
 		n: z.number().int().positive().max(10).optional(),
+		aspect_ratio: z.string().min(1).optional(),
+		background: z.string().min(1).optional(),
 		response_format: z.string().min(1).optional(),
 		output_format: z.string().min(1).optional(),
-		background: z.string().min(1).optional(),
+		output_compression: z.number().min(0).max(100).optional(),
+		moderation: z.string().min(1).optional(),
 	}).optional(),
 	model: z.string().min(1).optional(),
+	quality: z.string().min(1).optional(),
+	size: z.string().min(1).optional(),
+	n: z.number().int().positive().max(10).optional(),
+	aspect_ratio: z.string().min(1).optional(),
+	background: z.string().min(1).optional(),
+	response_format: z.string().min(1).optional(),
+	output_format: z.string().min(1).optional(),
+	output_compression: z.number().min(0).max(100).optional(),
+	moderation: z.string().min(1).optional(),
+	prompt: z.string().min(1).optional(),
+	description: z.string().min(1).optional(),
+});
+
+const GatewayApplyPatchToolSchema = z.object({
+	type: z.enum(["ai-stats:apply_patch", "gateway:apply_patch"]),
+	parameters: z.object({
+		engine: z.enum(["auto", "native", "ai-stats"]).optional(),
+	}).optional(),
+	engine: z.enum(["auto", "native", "ai-stats"]).optional(),
 });
 
 const GatewayFusionToolSchema = z.object({
-	type: z.literal("gateway:fusion"),
+	type: z.enum(["ai-stats:fusion", "gateway:fusion"]),
 	parameters: z.object({
 		analysis_models: z.array(z.string().min(1)).max(5).optional(),
 		model: z.string().min(1).optional(),
@@ -540,7 +600,7 @@ const GatewayFusionToolSchema = z.object({
 });
 
 const GatewayToolSearchToolSchema = z.object({
-	type: z.literal("gateway:tool_search"),
+	type: z.enum(["ai-stats:tool_search", "gateway:tool_search"]),
 	parameters: z.object({}).optional(),
 });
 
@@ -561,6 +621,27 @@ const AnthropicNativeWebSearchToolSchema = z.object({
 		country: z.string().optional(),
 		timezone: z.string().optional(),
 	}).passthrough().optional(),
+}).passthrough();
+
+const AnthropicNativeWebFetchToolSchema = z.object({
+	type: z.enum(ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES),
+	name: z.string().optional(),
+	max_uses: z.number().int().positive().optional(),
+	max_content_tokens: z.number().int().positive().optional(),
+	allowed_domains: z.array(z.string().min(1)).optional(),
+	blocked_domains: z.array(z.string().min(1)).optional(),
+}).passthrough();
+
+const AnthropicNativeAdvisorToolSchema = z.object({
+	type: z.enum(ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES),
+	name: z.literal("advisor").optional(),
+	model: z.string().min(1),
+	max_uses: z.number().int().positive().optional(),
+	max_tokens: z.number().int().min(1024).optional(),
+	caching: z.object({
+		type: z.literal("ephemeral"),
+		ttl: z.enum(["5m", "1h"]),
+	}).optional(),
 }).passthrough();
 
 export const ChatCompletionsSchema = z.object({
@@ -632,6 +713,7 @@ export const ChatCompletionsSchema = z.object({
 			GatewayWebSearchToolSchema,
 			GatewayWebFetchToolSchema,
 			GatewayApplyPatchToolSchema,
+			GatewayAdvisorToolSchema,
 			GatewayImageGenerationToolSchema,
 			GatewayFusionToolSchema,
 			GatewayToolSearchToolSchema,
@@ -655,7 +737,7 @@ export const ChatCompletionsSchema = z.object({
     user: z.string().optional(),
     user_id: z.string().optional(),
 
-    service_tier: z.enum(["auto", "default", "flex", "standard", "priority"]).optional(),
+    service_tier: ServiceTierSchema.optional(),
     prompt_cache_key: z.string().nullable().optional(),
     provider_options: ResponsesProviderOptionsSchema.optional(),
     safety_identifier: z.string().nullable().optional(),
@@ -695,6 +777,20 @@ const AnthropicToolResultContentSchema = z.object({
     type: z.literal("tool_result"),
     tool_use_id: z.string(),
     content: z.union([z.string(), z.array(z.any())]),
+    cache_control: CacheControlSchema.optional(),
+});
+
+const AnthropicServerToolUseContentSchema = z.object({
+    type: z.literal("server_tool_use"),
+    id: z.string(),
+    name: z.string(),
+    input: z.record(z.string(), z.any()).optional(),
+});
+
+const AnthropicAdvisorToolResultContentSchema = z.object({
+    type: z.literal("advisor_tool_result"),
+    tool_use_id: z.string(),
+    content: z.union([z.string(), z.array(z.any())]).optional(),
 });
 
 const AnthropicContentBlockSchema = z.union([
@@ -702,6 +798,8 @@ const AnthropicContentBlockSchema = z.union([
     AnthropicImageContentSchema,
     AnthropicToolUseContentSchema,
     AnthropicToolResultContentSchema,
+    AnthropicServerToolUseContentSchema,
+    AnthropicAdvisorToolResultContentSchema,
 ]);
 
 const AnthropicMessageContentSchema = z.union([
@@ -713,6 +811,7 @@ const AnthropicToolSchema = z.object({
     name: z.string(),
     description: z.string().optional(),
     input_schema: z.record(z.string(), z.any()),
+    cache_control: CacheControlSchema.optional(),
 });
 
 const AnthropicToolChoiceSchema = z.union([
@@ -742,15 +841,19 @@ export const AnthropicMessagesSchema = z.object({
 		GatewayWebSearchToolSchema,
 		GatewayWebFetchToolSchema,
 		GatewayApplyPatchToolSchema,
+		GatewayAdvisorToolSchema,
 		GatewayImageGenerationToolSchema,
 		GatewayFusionToolSchema,
 		GatewayToolSearchToolSchema,
 		AnthropicNativeWebSearchToolSchema,
+		AnthropicNativeWebFetchToolSchema,
+		AnthropicNativeAdvisorToolSchema,
 	])).optional(),
     tool_choice: AnthropicToolChoiceSchema.optional(),
     metadata: z.object({
         user_id: z.string().optional(),
     }).passthrough().optional(),
+    service_tier: ServiceTierSchema.optional(),
     reasoning: z.object({
         effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
         enabled: z.boolean().optional(),
@@ -996,9 +1099,19 @@ const VideoOutputConfigSchema = z.object({
 }).default({ access: "both" });
 
 const VideoWebhookSchema = z.object({
-	url: z.string().url(),
+	url: z.string().min(1),
 	secret: z.string().min(1).optional(),
-	events: z.array(z.string().min(1)).default(["completed", "failed", "cancelled"]),
+	events: z.array(z.string().min(1)).optional(),
+}).strict().transform((value, ctx) => {
+	const parsed = parseAsyncWebhookConfig("video", value);
+	if (!parsed) {
+		ctx.addIssue({
+			code: z.ZodIssueCode.custom,
+			message: "Invalid video webhook configuration",
+		});
+		return z.NEVER;
+	}
+	return parsed;
 });
 
 // Video Generation schema

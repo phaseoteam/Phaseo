@@ -7,8 +7,10 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import ProviderTokenUsageChartClient from "./ProviderTokenUsageChartClient";
-import { getProviderModelTokenTimeseries } from "@/lib/fetchers/api-providers/api-provider/providerTokenTimeseries";
-import { getProviderAppTokenTimeseries } from "@/lib/fetchers/api-providers/api-provider/providerAppTokenTimeseries";
+import {
+	fetchFrontendAPIProviderAppTokenTimeseries,
+	fetchFrontendAPIProviderModelTokenTimeseries,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function ProviderTokenUsageChart({
 	apiProviderId,
@@ -16,11 +18,11 @@ export default async function ProviderTokenUsageChart({
 	apiProviderId: string;
 }) {
 	const [{ models, points }, { apps, points: appPoints }] = await Promise.all([
-		getProviderModelTokenTimeseries(apiProviderId, {
+		fetchFrontendAPIProviderModelTokenTimeseries(apiProviderId, {
 			days: 30,
 			topModels: 8,
 		}),
-		getProviderAppTokenTimeseries(apiProviderId, {
+		fetchFrontendAPIProviderAppTokenTimeseries(apiProviderId, {
 			days: 30,
 			topApps: 20,
 		}),

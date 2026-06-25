@@ -1,40 +1,18 @@
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import EnterpriseBillingOnboardingClient from "@/components/(gateway)/credits/EnterpriseBillingOnboardingClient";
 import { Card, CardContent } from "@/components/ui/card";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { fetchSettingsCreditsOnboardingInitialData } from "@/lib/fetchers/internal/fetchSettingsCreditsOnboardingInitialData";
 
 export const metadata: Metadata = {
 	title: "Billing Onboarding - Settings",
 };
 
-function getDisplayName(user: {
-	email?: string | null;
-	user_metadata?: Record<string, unknown> | null;
-}) {
-	const fullName = typeof user.user_metadata?.full_name === "string"
-		? user.user_metadata.full_name
-		: null;
-	const name = typeof user.user_metadata?.name === "string"
-		? user.user_metadata.name
-		: null;
-	return (
-		fullName?.trim() ||
-		name?.trim() ||
-		user.email?.split("@")[0] ||
-		"Authorized Signer"
-	);
-}
-
 export default async function BillingOnboardingPage() {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	const initialData = await fetchSettingsCreditsOnboardingInitialData();
 
-	if (!user?.id) {
+	if (!initialData.signedIn) {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
@@ -44,10 +22,8 @@ export default async function BillingOnboardingPage() {
 			</div>
 		);
 	}
-	const signerName = getDisplayName(user);
 
-	const workspaceId = await getWorkspaceIdFromCookie();
-	if (!workspaceId) {
+	if (!initialData.workspaceId) {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
@@ -58,23 +34,7 @@ export default async function BillingOnboardingPage() {
 		);
 	}
 
-	const { data: membership } = await supabase
-		.from("workspace_members")
-		.select("role")
-		.eq("workspace_id", workspaceId)
-		.eq("user_id", user.id)
-		.maybeSingle();
-
-	const role = String(membership?.role ?? "").toLowerCase();
-	const canManageBilling = role === "owner" || role === "admin";
-
-	const { data: team } = await supabase
-		.from("workspaces")
-		.select("name,tier,billing_mode,invoice_onboarding_status")
-		.eq("id", workspaceId)
-		.maybeSingle();
-
-	if (!team) {
+	if (!initialData.team) {
 		return (
 			<div className="space-y-6">
 				<SettingsPageHeader
@@ -85,42 +45,21 @@ export default async function BillingOnboardingPage() {
 		);
 	}
 
-	const { data: invoiceProfile } = await supabase
-		.from("workspace_invoice_profiles")
-		.select("enabled,billing_day,payment_terms_days")
-		.eq("workspace_id", workspaceId)
-		.maybeSingle();
-
-	const currentBillingMode: "wallet" | "invoice" =
-		team.billing_mode === "invoice" ? "invoice" : "wallet";
-	const invoiceOnboardingStatus = String(
-		team.invoice_onboarding_status ?? "none"
-	).toLowerCase();
-	const canAccessOnboarding =
-		currentBillingMode === "invoice" || invoiceOnboardingStatus === "pre_invoice";
-
-	if (!canAccessOnboarding) {
+	if (!initialData.canAccessOnboarding) {
 		redirect("/settings/credits");
 	}
 
-	const initialBillingDay = Math.min(
-		28,
-		Math.max(1, Number(invoiceProfile?.billing_day ?? 1) || 1),
-	);
-	const initialPaymentTermsDays =
-		Number(invoiceProfile?.payment_terms_days) === 14 ? 14 : 30;
-
 	return (
 		<div className="space-y-6">
-			{canManageBilling ? (
+			{initialData.canManageBilling ? (
 				<EnterpriseBillingOnboardingClient
-					teamName={String(team.name ?? "Workspace")}
-					teamTier={String(team.tier ?? "basic")}
-					currentBillingMode={currentBillingMode}
-					invoiceProfileEnabled={Boolean(invoiceProfile?.enabled)}
-					initialBillingDay={initialBillingDay}
-					initialPaymentTermsDays={initialPaymentTermsDays}
-					signerName={signerName}
+					teamName={initialData.team.name}
+					teamTier={initialData.team.tier}
+					currentBillingMode={initialData.currentBillingMode}
+					invoiceProfileEnabled={initialData.invoiceProfileEnabled}
+					initialBillingDay={initialData.initialBillingDay}
+					initialPaymentTermsDays={initialData.initialPaymentTermsDays}
+					signerName={initialData.signerName}
 				/>
 			) : (
 				<Card>

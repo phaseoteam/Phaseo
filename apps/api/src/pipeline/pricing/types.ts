@@ -18,8 +18,10 @@ export type PriceBand = {
 export type PricingDimensionKey =
     | "input_tokens"
     | "input_characters"
+    | "input_pages"
     | "input_text_tokens"
     | "input_image_tokens"
+    | "input_audio_minutes"
     | "input_audio_tokens"
     | "input_video_tokens"
     | "output_tokens"
@@ -31,7 +33,10 @@ export type PricingDimensionKey =
     | "output_image"
     | "output_video"
     | "output_video_seconds"
+    | "implicit_cached_input_text_tokens"
     | "cached_write_text_tokens"
+    | "cached_write_text_tokens_5m"
+    | "cached_write_text_tokens_1h"
     | "cached_write_image_tokens"
     | "cached_write_audio_tokens"
     | "cached_write_video_tokens"
@@ -41,6 +46,14 @@ export type PricingDimensionKey =
     | "cached_read_audio_tokens"
     | "embedding_tokens"
     | "bfl_credits"
+    | "server_tool_web_search_requests"
+    | "server_tool_web_search_extra_results"
+    | "server_tool_web_fetch_requests"
+    | "server_tool_advisor_requests"
+    | "server_tool_image_generation_requests"
+    | "server_tool_apply_patch_requests"
+    | "native_web_search_requests"
+    | "native_web_fetch_requests"
     | "requests";
 
 export type ConditionOp =
@@ -104,7 +117,6 @@ export type PricingResult = {
     currency: "USD";
     lines: PricingBreakdownLine[];
 };
-
 
 
 

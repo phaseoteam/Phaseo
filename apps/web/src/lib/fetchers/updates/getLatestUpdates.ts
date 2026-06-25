@@ -1,10 +1,8 @@
 // lib/fetchers/updates/getLatestUpdates.ts
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 
-import type React from "react";
-import type { LucideIcon } from "lucide-react";
-import { Package, Globe, MonitorPlay } from "lucide-react";
+import type { UpdateBadgeIconName } from "@/components/updates/UpdateCard";
 
 // ------------------------------
 // Types
@@ -23,7 +21,7 @@ export type UpdateCardProps = {
     id?: string | number;
     badges?: Array<{
         label: string;
-        icon?: React.ComponentType<{ className?: string }> | null;
+        iconName?: UpdateBadgeIconName | null;
         className?: string;
     }>;
     avatar?: { organisationId: string; name?: string | null } | null;
@@ -44,21 +42,21 @@ const UPDATE_ENTRY_META: Record<
     "web" | "youtube",
     {
         label: string;
-        icon: LucideIcon;
+        iconName: UpdateBadgeIconName;
         badgeClass: string;
         accentClass: string;
     }
 > = {
     web: {
         label: "Web",
-        icon: Globe,
+        iconName: "globe",
         badgeClass:
             "px-2 py-1 text-xs flex items-center gap-1 transition-colors bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200 hover:text-sky-900 hover:border-sky-400 dark:bg-sky-900/60 dark:text-sky-200 dark:border-sky-700 dark:hover:bg-sky-900 dark:hover:text-sky-200 dark:hover:border-sky-600 rounded-full",
         accentClass: "bg-sky-500",
     },
     youtube: {
         label: "YouTube",
-        icon: MonitorPlay,
+        iconName: "monitor-play",
         badgeClass:
             "px-2 py-1 text-xs flex items-center gap-1 transition-colors bg-rose-100 text-rose-900 border border-rose-300 hover:bg-rose-200 hover:text-rose-900 hover:border-rose-400 dark:bg-rose-900/60 dark:text-rose-200 dark:border-rose-700 dark:hover:bg-rose-900 dark:hover:text-rose-200 dark:hover:border-rose-600 rounded-full",
         accentClass: "bg-rose-500",
@@ -109,7 +107,7 @@ function normaliseCategory(
 // Low-level DB fetch (NOT exported)
 // ------------------------------
 async function fetchLatestUpdateRows(limit: number): Promise<DbRow[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = (await supabase
         .from("updates")
@@ -142,7 +140,9 @@ async function getLatestUpdateRowsCached(): Promise<{
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:latest-updates");
+    cacheTag("frontend:update-cards");
 
     const now = new Date();
     const rows = await fetchLatestUpdateRows(CACHE_LIMIT);
@@ -179,10 +179,7 @@ export async function getLatestUpdateCards(
             badges: [
                 {
                     label: `${meta.label} Watcher`,
-                    // cast to the minimal icon prop surface you use
-                    icon: meta.icon as unknown as React.ComponentType<{
-                        className?: string;
-                    }>,
+                    iconName: meta.iconName,
                     className: meta.badgeClass,
                 },
             ],

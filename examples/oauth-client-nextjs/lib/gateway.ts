@@ -9,7 +9,6 @@ const GATEWAY_PATH_PREFIX = /\/v1$/i.test(GATEWAY_ORIGIN) ? '' : '/v1';
 const ALLOWED_EXACT_SURFACES = new Set<string>([
   'health',
   'models',
-  'gateway/models',
   'providers',
   'generations',
   'chat/completions',

@@ -2,7 +2,7 @@
   "model_id": "google/gemini-2.0-flash",
   "organisation_id": "google",
   "name": "Gemini 2.0 Flash",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": "google/gemini-1-5-flash-002-2024-09-24",
   "description": "Gemini 2.0 Flash is a text-to-speech model from Google, and a substantial generational step up from Gemini 2.5 Flash TTS. It supports up to 1.0M of input context for long documents, codebases, and agent workflows.",
   "announced_date": "2025-02-05T00:00:00",
@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": "Single Attempt",
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 60
+      "rank": 66
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 111
+      "rank": 117
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -97,7 +97,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 145
+      "rank": 152
     },
     {
       "benchmark_id": "lmarena-text",
@@ -145,7 +145,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 59
+      "rank": 60
     },
     {
       "benchmark_id": "simplebench",
@@ -153,7 +153,7 @@
       "is_self_reported": false,
       "other_info": "Thinking",
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 20
+      "rank": 30
     },
     {
       "benchmark_id": "simpleqa",
@@ -161,7 +161,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://storage.googleapis.com/model-cards/documents/gemini-2.5-flash-preview.pdf",
-      "rank": 49
+      "rank": 50
     },
     {
       "benchmark_id": "simpleqa",
@@ -169,7 +169,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "gemini_2-5_flashcomp_benchmarks_dark2x.original.png (1920×2820)",
-      "rank": 50
+      "rank": 51
     },
     {
       "benchmark_id": "bird-sql-(dev)",
@@ -209,7 +209,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 150
+      "rank": 151
     },
     {
       "benchmark_id": "hiddenmath",
@@ -225,7 +225,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 56
+      "rank": 57
     },
     {
       "benchmark_id": "math",
@@ -241,7 +241,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 71
+      "rank": 74
     },
     {
       "benchmark_id": "mmmu",
@@ -249,7 +249,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 60
+      "rank": 61
     },
     {
       "benchmark_id": "mrcr",
@@ -281,7 +281,7 @@
       "is_self_reported": false,
       "other_info": "Confab 24.3%; non-response 29.4%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 58
+      "rank": 9
     },
     {
       "benchmark_id": "elimination-game",
@@ -289,7 +289,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.177; games 757; avg points 0.376",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 59
+      "rank": 54
     }
   ]
 }

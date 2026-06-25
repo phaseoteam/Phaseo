@@ -258,7 +258,7 @@ export default function TeamSwitcher({
 				onOpenChange={setIsProfileMenuOpen}
 			>
 				<DropdownMenuTrigger asChild>
-					<button
+					<button type="button"
 						aria-label="Open profile menu"
 						className={cn(
 							"inline-flex items-center justify-center rounded-lg cursor-pointer",

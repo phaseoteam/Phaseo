@@ -69,7 +69,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 122
+      "rank": 128
     },
     {
       "benchmark_id": "aime",
@@ -85,7 +85,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-4-mini-reasoning",
-      "rank": 176
+      "rank": 177
     },
     {
       "benchmark_id": "math-500",

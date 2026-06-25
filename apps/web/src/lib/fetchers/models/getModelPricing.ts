@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
 
 /** mirrors new rules schema */
@@ -54,26 +54,12 @@ function normalizePricingPlanForRule(
     return normalizedPlan;
 }
 
-function isWithinActivePricingWindow(
-    effectiveFrom: string | null | undefined,
-    effectiveTo: string | null | undefined,
-    nowMs: number
-): boolean {
-    const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
-    const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
-    const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
-    const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
-    return nowMs >= fromMs && nowMs < toMs;
-}
-
 function isWithinActiveOrUpcomingPricingWindow(
     effectiveFrom: string | null | undefined,
     effectiveTo: string | null | undefined,
     nowMs: number
 ): boolean {
-    const fromMsRaw = effectiveFrom ? Date.parse(effectiveFrom) : Number.NEGATIVE_INFINITY;
     const toMsRaw = effectiveTo ? Date.parse(effectiveTo) : Number.POSITIVE_INFINITY;
-    const fromMs = Number.isFinite(fromMsRaw) ? fromMsRaw : Number.NEGATIVE_INFINITY;
     const toMs = Number.isFinite(toMsRaw) ? toMsRaw : Number.POSITIVE_INFINITY;
     if (toMs <= nowMs) return false;
     return true;
@@ -210,7 +196,7 @@ export default async function getModelPricing(
     includeHidden: boolean
 ): Promise<ProviderPricing[]> {
     // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: modelRow, error: modelError } = await supabase
         .from("data_models")
@@ -747,11 +733,14 @@ export async function getModelPricingCached(
     "use cache";
 
     cacheLife("hours");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_pricing_rules");
     cacheTag("data:data_api_provider_models");
+    cacheTag("frontend:model-pricing");
+    cacheTag("frontend:model-pricing-history");
 
     // console.log("[fetch] HIT DB for model pricing", modelId);
     return getModelPricing(modelId, includeHidden);

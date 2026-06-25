@@ -119,8 +119,6 @@ export function cherryPickIRParams(
 					return "background";
 				case "service_tier":
 					return "serviceTier";
-				case "speed":
-					return "speed";
 				case "prompt_cache_key":
 					return "promptCacheKey";
 				case "prompt_cache_retention":
@@ -192,7 +190,6 @@ export function buildTextExecutor(args: {
 		return result;
 	};
 }
-
 
 
 

@@ -1,7 +1,7 @@
 // lib/fetchers/models/getModelOverviewHeader.ts
-import { createClient } from "@/utils/supabase/client";
 import { cacheLife, cacheTag } from "next/cache";
 import { applyHiddenFilter } from "./visibility";
+import { createAdminClient } from "@/utils/supabase/admin";
 import {
 	FREE_ROUTER_MODEL_ID,
 	FREE_ROUTER_NAME,
@@ -43,7 +43,7 @@ function organisationFromModelId(modelId: string | null | undefined): string | n
 }
 
 async function fetchAliasesForApiModel(
-	supabase: Awaited<ReturnType<typeof createClient>>,
+	supabase: ReturnType<typeof createAdminClient>,
 	apiModelId: string | null | undefined,
 ): Promise<string[]> {
 	const normalizedApiModelId = normalizeId(apiModelId);
@@ -90,7 +90,7 @@ export async function fetchModelOverviewHeader(
 		};
 	}
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 
 	const query = applyHiddenFilter(
 		supabase.from("data_models").select(
@@ -241,6 +241,8 @@ export default async function getModelOverviewHeader(
 	cacheTag("data:organisations");
 	cacheTag("data:data_api_models");
 	cacheTag("data:data_api_provider_models");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:model-header");
 	cacheTag(`model:data:${modelId}`);
 	cacheTag(`model:header:${modelId}`);
 	return fetchModelOverviewHeader(modelId, includeHidden);

@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 168
+      "rank": 174
     },
     {
       "benchmark_id": "arc-c",
@@ -108,7 +108,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 226
+      "rank": 227
     },
     {
       "benchmark_id": "gsm8k",
@@ -116,7 +116,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 37
+      "rank": 38
     },
     {
       "benchmark_id": "hellaswag",
@@ -212,7 +212,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 138
+      "rank": 141
     },
     {
       "benchmark_id": "mmmlu",
@@ -220,7 +220,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
-      "rank": 55
+      "rank": 57
     },
     {
       "benchmark_id": "openbookqa",

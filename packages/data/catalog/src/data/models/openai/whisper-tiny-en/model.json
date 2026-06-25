@@ -1,0 +1,19 @@
+{
+  "model_id": "openai/whisper-tiny-en",
+  "organisation_id": "openai",
+  "name": "Whisper Tiny EN",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Whisper is a pre-trained model for automatic speech recognition (ASR) and speech translation. Trained on 680k hours of labelled data, Whisper models demonstrate a strong ability to generalize to many datasets and domains without the need for fine-tuning. This is the English-only version of the Whisper Tiny model which was trained on the task of speech recognition.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": "audio",
+  "output_types": "text",
+  "api_model_id": "openai/whisper-tiny-en",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

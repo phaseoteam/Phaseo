@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 27
+      "rank": 28
     },
     {
       "benchmark_id": "collie",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 107
+      "rank": 108
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -151,7 +151,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 141
+      "rank": 147
     },
     {
       "benchmark_id": "if-eval",
@@ -175,7 +175,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 38
+      "rank": 39
     },
     {
       "benchmark_id": "mmlu",
@@ -191,7 +191,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://huggingface.co/spaces/TIGER-Lab/MMLU-Pro",
-      "rank": 91
+      "rank": 94
     },
     {
       "benchmark_id": "mmmlu",
@@ -199,7 +199,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 38
+      "rank": 40
     },
     {
       "benchmark_id": "mmmu",
@@ -207,7 +207,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 56
+      "rank": 57
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -215,7 +215,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 66
+      "rank": 70
     },
     {
       "benchmark_id": "multi-challenge",
@@ -247,7 +247,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/introducing-gpt-4-5/",
-      "rank": 44
+      "rank": 45
     },
     {
       "benchmark_id": "swe-bench",
@@ -255,7 +255,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 121
+      "rank": 124
     },
     {
       "benchmark_id": "swe-lancer",
@@ -295,7 +295,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 41
+      "rank": 43
     },
     {
       "benchmark_id": "tau-bench-airline",
@@ -319,7 +319,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gpt-4o-2024-08-06",
       "source_link": "https://openai.com/index/gpt-5/",
-      "rank": 50
+      "rank": 51
     }
   ]
 }

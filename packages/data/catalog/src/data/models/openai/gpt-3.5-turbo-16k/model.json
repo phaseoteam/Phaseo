@@ -6,7 +6,7 @@
   "previous_model_id": null,
   "description": "This model offers four times the context length of gpt-3.5-turbo, allowing it to support approximately 20 pages of text in a single request at a higher cost.",
   "announced_date": null,
-  "release_date": null,
+  "release_date": "2023-06-13T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": null,

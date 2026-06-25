@@ -395,6 +395,13 @@ function directionLabel(dir: Direction): string | null {
     return null;
 }
 
+function cacheWriteTtlLabelFromMeter(meter?: string | null): string | null {
+    const normalized = String(meter ?? "").trim().toLowerCase();
+    if (normalized === "cached_write_text_tokens_5m") return "5 min TTL";
+    if (normalized === "cached_write_text_tokens_1h") return "1 hour TTL";
+    return null;
+}
+
 function modalityLabel(mod: Modality): string | null {
     if (mod === "text") return "Text";
     if (mod === "image") return "Image";
@@ -430,7 +437,10 @@ function buildUpcomingChangeLabels(
 
     if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
         const modLabel = modalityLabel(mod) ?? "Token";
-        const scope = tokenRangeFromConditions(conds) ?? conciseConditionLabel(conds);
+        const scope =
+            cacheWriteTtlLabelFromMeter(rule.meter) ??
+            tokenRangeFromConditions(conds) ??
+            conciseConditionLabel(conds);
         return {
             sectionKey:
                 mod === "text"
@@ -999,7 +1009,10 @@ export function buildProviderSections(p: ProviderPricing, plan: string): Provide
         // 1) token tiles (text/image/audio/video)
         if (unit === "token" && ["text", "image", "audio", "video"].includes(mod)) {
             const range = tokenRangeFromConditions(conds);
-            const label = range ?? conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
+            const label =
+                cacheWriteTtlLabelFromMeter(r.meter) ??
+                range ??
+                conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
             const tier: TokenTier = {
                 per1M: per1M ?? 0,
                 price,

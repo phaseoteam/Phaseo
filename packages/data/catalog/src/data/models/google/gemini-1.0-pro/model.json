@@ -53,7 +53,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": null,
-      "rank": 170
+      "rank": 176
     },
     {
       "benchmark_id": "big-bench",
@@ -77,7 +77,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://example.com/benchmark-image",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "gpqa",
@@ -85,7 +85,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://example.com/benchmark-image",
-      "rank": 228
+      "rank": 229
     },
     {
       "benchmark_id": "math",
@@ -101,7 +101,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://example.com/benchmark-image",
-      "rank": 60
+      "rank": 61
     },
     {
       "benchmark_id": "mmlu",
@@ -117,7 +117,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://example.com/benchmark-image",
-      "rank": 120
+      "rank": 121
     },
     {
       "benchmark_id": "wmt23",

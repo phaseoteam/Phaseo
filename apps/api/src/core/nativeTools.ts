@@ -11,6 +11,15 @@ export const OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES = [
 
 export const ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES = [
 	"web_search_20250305",
+	"web_search_20260209",
+] as const;
+
+export const ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES = [
+	"web_fetch_20260209",
+] as const;
+
+export const ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES = [
+	"advisor_20260301",
 ] as const;
 
 export const NATIVE_WEB_SEARCH_TOOL_TYPES = [
@@ -18,12 +27,28 @@ export const NATIVE_WEB_SEARCH_TOOL_TYPES = [
 	...ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES,
 ] as const;
 
+export const NATIVE_WEB_FETCH_TOOL_TYPES = [
+	...ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES,
+] as const;
+
+export const NATIVE_ADVISOR_TOOL_TYPES = [
+	...ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
+] as const;
+
 export type OpenAINativeWebSearchToolType =
 	(typeof OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES)[number];
 export type AnthropicNativeWebSearchToolType =
 	(typeof ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES)[number];
+export type AnthropicNativeWebFetchToolType =
+	(typeof ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES)[number];
+export type AnthropicNativeAdvisorToolType =
+	(typeof ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES)[number];
 export type NativeWebSearchToolType =
 	(typeof NATIVE_WEB_SEARCH_TOOL_TYPES)[number];
+export type NativeWebFetchToolType =
+	(typeof NATIVE_WEB_FETCH_TOOL_TYPES)[number];
+export type NativeAdvisorToolType =
+	(typeof NATIVE_ADVISOR_TOOL_TYPES)[number];
 
 function toNonEmptyString(value: unknown): string | undefined {
 	if (typeof value !== "string") return undefined;
@@ -58,6 +83,36 @@ export function isNativeWebSearchToolType(
 	);
 }
 
+export function isAnthropicNativeWebFetchToolType(
+	value: unknown,
+): value is AnthropicNativeWebFetchToolType {
+	return (
+		typeof value === "string" &&
+		(ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES as readonly string[]).includes(value)
+	);
+}
+
+export function isNativeWebFetchToolType(
+	value: unknown,
+): value is NativeWebFetchToolType {
+	return isAnthropicNativeWebFetchToolType(value);
+}
+
+export function isAnthropicNativeAdvisorToolType(
+	value: unknown,
+): value is AnthropicNativeAdvisorToolType {
+	return (
+		typeof value === "string" &&
+		(ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES as readonly string[]).includes(value)
+	);
+}
+
+export function isNativeAdvisorToolType(
+	value: unknown,
+): value is NativeAdvisorToolType {
+	return isAnthropicNativeAdvisorToolType(value);
+}
+
 export function isOpenAINativeWebSearchTool(tool: unknown): boolean {
 	if (!tool || typeof tool !== "object") return false;
 	return isOpenAINativeWebSearchToolType((tool as Record<string, unknown>).type);
@@ -66,6 +121,16 @@ export function isOpenAINativeWebSearchTool(tool: unknown): boolean {
 export function isNativeWebSearchTool(tool: unknown): boolean {
 	if (!tool || typeof tool !== "object") return false;
 	return isNativeWebSearchToolType((tool as Record<string, unknown>).type);
+}
+
+export function isNativeWebFetchTool(tool: unknown): boolean {
+	if (!tool || typeof tool !== "object") return false;
+	return isNativeWebFetchToolType((tool as Record<string, unknown>).type);
+}
+
+export function isNativeAdvisorTool(tool: unknown): boolean {
+	if (!tool || typeof tool !== "object") return false;
+	return isNativeAdvisorToolType((tool as Record<string, unknown>).type);
 }
 
 export function extractToolNameOrType(tool: unknown): string | undefined {
@@ -81,5 +146,10 @@ export function extractToolNameOrType(tool: unknown): string | undefined {
 export function isIRNativeToolDefinition(tool: unknown): boolean {
 	if (!tool || typeof tool !== "object") return false;
 	const type = toNonEmptyString((tool as Record<string, unknown>).type);
-	return Boolean(type && type !== "function" && !type.startsWith("gateway:"));
+	return Boolean(
+		type &&
+			type !== "function" &&
+			!type.startsWith("gateway:") &&
+			!type.startsWith("ai-stats:"),
+	);
 }

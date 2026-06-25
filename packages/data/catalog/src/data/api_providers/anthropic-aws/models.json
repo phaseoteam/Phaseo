@@ -11,7 +11,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2024-11-04T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-06-15T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -96,7 +96,7 @@
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-02-24T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-06-15T00:00:00",
         "capabilities":  [
                              {
                                  "capability_id":  "text.generate",
@@ -1152,6 +1152,29 @@
                              {
                                  "capability_id":  "text.generate",
                                  "status":  "inactive",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "anthropic/claude-fable-5",
+        "provider_api_model_id":  "anthropic-aws:anthropic/claude-fable-5",
+        "provider_model_slug":  "claude-fable-5",
+        "internal_model_id":  "anthropic/claude-fable-5",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image",
+        "output_modalities":  "text",
+        "context_length":  1000000,
+        "max_output_tokens":  128000,
+        "effective_from":  "2026-06-09T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
                                  "params":  [
 
                                             ]

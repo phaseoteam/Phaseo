@@ -220,6 +220,7 @@ describe("openAIResponsesToIR", () => {
 					total_tokens: 120,
 					input_tokens_details: {
 						cached_tokens: 40,
+						cache_creation_input_tokens: 9,
 						input_images: 3,
 					},
 					output_tokens_details: {
@@ -235,6 +236,7 @@ describe("openAIResponsesToIR", () => {
 			expect(ir.usage?.reasoningTokens).toBe(8);
 			expect(ir.usage?._ext?.inputImageTokens).toBe(3);
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
+			expect(ir.usage?._ext?.cachedWriteTokens).toBe(9);
 		});
 
 		it("maps server-side web search usage into IR usage", () => {
@@ -259,6 +261,9 @@ describe("openAIResponsesToIR", () => {
 						datetime_requests: 1,
 						web_search_requests: 2,
 						web_fetch_requests: 3,
+						advisor_requests: 1,
+						image_generation_requests: 1,
+						apply_patch_requests: 1,
 					},
 				},
 			};
@@ -268,6 +273,9 @@ describe("openAIResponsesToIR", () => {
 				datetime_requests: 1,
 				web_search_requests: 2,
 				web_fetch_requests: 3,
+				advisor_requests: 1,
+				image_generation_requests: 1,
+				apply_patch_requests: 1,
 			});
 		});
 
@@ -341,6 +349,29 @@ describe("openAIResponsesToIR", () => {
 });
 
 describe("irToOpenAIResponses", () => {
+	it("preserves cache_control markers for explicit cache providers", () => {
+		const request = irToOpenAIResponses({
+			model: "qwen/qwen3.7-max",
+			messages: [{
+				role: "user",
+				content: [{
+					type: "text",
+					text: "stable context",
+					cacheControl: { type: "ephemeral" },
+				}],
+			}],
+			stream: false,
+		} as any, "qwen3.7-max", "alibaba-cloud");
+
+		expect(request.input_items[0].content).toEqual([
+			{
+				type: "input_text",
+				text: "stable context",
+				cache_control: { type: "ephemeral" },
+			},
+		]);
+	});
+
 	it("preserves native web search tools and tool choice", () => {
 		const request = irToOpenAIResponses({
 			model: "openai/gpt-4.1",
@@ -384,6 +415,39 @@ describe("irToOpenAIResponses", () => {
 		expect(request.web_search_options).toEqual({
 			search_context_size: "high",
 		});
+	});
+
+	it("passes image generation raw request options through to upstream responses requests", () => {
+		const request = irToOpenAIResponses({
+			model: "openai/gpt-image-2",
+			messages: [{
+				role: "user",
+				content: [{ type: "text", text: "make an image" }],
+			}],
+			stream: false,
+			modalities: ["text", "image"],
+			imageConfig: {
+				aspectRatio: "16:9",
+				imageSize: "1024x1024",
+			},
+			rawRequest: {
+				quality: "high",
+				background: "transparent",
+				output_format: "png",
+				output_compression: 80,
+				moderation: "auto",
+			},
+		} as any, "gpt-image-2", "openai");
+
+		expect(request.image_config).toEqual({
+			aspect_ratio: "16:9",
+			image_size: "1024x1024",
+		});
+		expect(request.quality).toBe("high");
+		expect(request.background).toBe("transparent");
+		expect(request.output_format).toBe("png");
+		expect(request.output_compression).toBe(80);
+		expect(request.moderation).toBe("auto");
 	});
 
 	it("preserves caller-provided OpenAI reasoning.summary", () => {

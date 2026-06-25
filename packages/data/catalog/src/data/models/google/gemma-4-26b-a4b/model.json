@@ -22,7 +22,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 35
+      "rank": 37
     },
     {
       "benchmark_id": "aime-2026",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 42
+      "rank": 47
     },
     {
       "benchmark_id": "tau-2-bench",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "Average over 3",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 125
+      "rank": 131
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -78,7 +78,7 @@
       "is_self_reported": true,
       "other_info": "With search",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 86
+      "rank": 91
     },
     {
       "benchmark_id": "mmmlu",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 22
+      "rank": 23
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 34
+      "rank": 36
     },
     {
       "benchmark_id": "omnidocbench-1.5",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "Average edit distance (lower is better)",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 6
+      "rank": 14
     },
     {
       "benchmark_id": "openai-mrcr-8-needle-128k",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": "Average",
       "source_link": "https://ai.google.dev/gemma/docs/core/model_card_4",
-      "rank": 8
+      "rank": 9
     }
   ]
 }

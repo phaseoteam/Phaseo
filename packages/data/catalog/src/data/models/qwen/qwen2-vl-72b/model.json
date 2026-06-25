@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2",
-      "rank": 88
+      "rank": 92
     },
     {
       "benchmark_id": "mmmuval",

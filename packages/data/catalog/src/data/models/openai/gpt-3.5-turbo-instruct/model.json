@@ -53,7 +53,7 @@
       "is_self_reported": false,
       "other_info": "inferred high-confidence family alias from gpt-3.5-turbo-0125 (score=0.5539; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 217
+      "rank": 218
     },
     {
       "benchmark_id": "humaneval",
@@ -77,7 +77,7 @@
       "is_self_reported": false,
       "other_info": "inferred high-confidence family alias from gpt-3.5-turbo-0125 (score=0.5539; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 66
+      "rank": 67
     },
     {
       "benchmark_id": "mgsm",
@@ -101,7 +101,7 @@
       "is_self_reported": false,
       "other_info": "inferred high-confidence family alias from gpt-3.5-turbo-0125 (score=0.5539; benches=8)",
       "source_link": "https://example.com/benchmark-image",
-      "rank": 127
+      "rank": 128
     }
   ]
 }

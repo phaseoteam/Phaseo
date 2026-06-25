@@ -4,6 +4,7 @@ import type {
   AudioTranscriptionResponse,
   AudioTranslationRequest,
   AudioTranslationResponse,
+  BatchBillingSummary,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -19,6 +20,12 @@ import type {
   ModelId as OapiModelId,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  MusicGenerateResponse,
+  OcrRequest,
+  OcrResponse,
+  RerankRequest,
+  RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
   VideoGenerationRequest,
@@ -62,6 +69,7 @@ type Options = {
 
 export type AIStatsLogLevel = "info" | "warn" | "error";
 export type AIStatsLogger = (level: AIStatsLogLevel, message: string, meta?: Record<string, unknown>) => void;
+export type QueryParamValue = string | number | boolean | readonly (string | number | boolean)[];
 
 export type ModelLifecycleInfo = {
   modelId: string;
@@ -72,6 +80,8 @@ export type ModelLifecycleInfo = {
   replacementModelId: string | null;
   message: string | null;
 };
+
+type DataModelLike = DataModel & { id?: string | null };
 
 type MessageContentPartInput = Record<string, unknown> | string;
 export type VideoOutputAccess = "bytes" | "signed_url" | "both";
@@ -84,6 +94,11 @@ export type VideoInputReference = {
   mime_type?: string;
   asset_id?: string;
 };
+
+type AsyncWebhookDeliveryAttempt = Record<string, unknown>;
+type AsyncWebhookDeliverySummary = Record<string, unknown>;
+type AsyncWebhookPublicState = Record<string, unknown>;
+type VideoBillingSummary = Record<string, unknown>;
 
 export type VideoCreateRequest = {
   model: ModelId;
@@ -109,11 +124,17 @@ export type VideoCreateRequest = {
   beta?: Record<string, unknown>;
 };
 
-export type VideoStatusResponse = {
+export type VideoStatusResponse = Omit<
+  VideoGenerationResponse,
+  "id" | "object" | "status" | "polling_url" | "webhook" | "billing" | "asset" | "outputs" | "progress_source"
+> & {
   id: string;
   object: "video";
-  status: "queued" | "in_progress" | "completed" | "failed" | "cancelled";
+  status: "queued" | "processing" | "in_progress" | "completed" | "failed" | "cancelled" | "expired";
+  lifecycle_status?: "pending" | "running" | "completed" | "failed" | "cancelled" | "expired";
   polling_url: string;
+  cancel_url?: string | null;
+  websocket_url?: string;
   poll_after_seconds?: number;
   provider?: string | null;
   model?: string | null;
@@ -149,7 +170,13 @@ export type VideoStatusResponse = {
     download_url?: string;
     expires_at?: number | null;
   }>;
-  billing?: Record<string, unknown>;
+  billing?: VideoBillingSummary;
+  webhook?: AsyncWebhookPublicState;
+  native_video_id?: string | null;
+  next_webhook_retry_at?: string | null;
+  last_webhook_progress?: number | null;
+  last_webhook_progress_at?: string | null;
+  last_webhook_dispatched_at?: string | null;
   usage?: Record<string, unknown>;
   error?: unknown;
 };
@@ -187,6 +214,10 @@ export type {
   AudioTranscriptionResponse,
   AudioTranslationRequest,
   AudioTranslationResponse,
+  AsyncWebhookDeliveryAttempt,
+  AsyncWebhookDeliverySummary,
+  AsyncWebhookPublicState,
+  BatchBillingSummary,
   BatchRequest,
   BatchResponse,
   ChatCompletionsRequest,
@@ -201,20 +232,38 @@ export type {
   ImagesGenerationResponse,
   ModerationsRequest,
   ModerationsResponse,
+  MusicGenerateRequest,
+  MusicGenerateResponse,
+  OcrRequest,
+  OcrResponse,
+  RerankRequest,
+  RerankResponse,
   ResponsesRequest,
   ResponsesResponse,
+  VideoBillingSummary,
   VideoGenerationRequest,
   VideoGenerationResponse
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
-export type VideoModelsResponse = { object: "list"; data: Array<Record<string, unknown>> };
-export type VideoListResponse = { object: "list"; data: VideoStatusResponse[] };
+export type VideoListResponse = {
+  object: "list";
+  data: VideoStatusResponse[];
+  first_id?: string | null;
+  last_id?: string | null;
+  has_more?: boolean;
+};
 export type Healthz200Response = {
   status: string;
 };
 export { ops as operations };
 export { ModelIds, MODEL_IDS, MODEL_ID_SET } from "./modelIds.js";
+export {
+  computeAsyncWebhookSignature,
+  verifyAsyncWebhookSignature,
+  type AsyncWebhookHeaders,
+  type VerifyAsyncWebhookSignatureOptions
+} from "./webhooks.js";
 export type AIStatsOptions = Options;
 
 export class AIStats {
@@ -235,7 +284,9 @@ export class AIStats {
         return this.streamResponse(req);
       }
       return this.generateResponse(req);
-    }
+    },
+    websocketUrl: (options: { model?: string; sessionId?: string } = {}): string =>
+      this.getResponsesWebSocketUrl(options),
   };
 
   readonly chat = {
@@ -276,9 +327,29 @@ export class AIStats {
     cancel: async (videoId: string): Promise<VideoStatusResponse> => this.cancelVideo(videoId),
     delete: async (videoId: string): Promise<{ id: string; object: "video"; deleted: boolean }> =>
       this.deleteVideo(videoId),
-    listModels: async (): Promise<VideoModelsResponse> => this.listVideoModels(),
     websocketUrl: (videoId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("video", videoId, options),
+  };
+
+  readonly music = {
+    create: async (req: MusicGenerateRequest): Promise<MusicGenerateResponse> => this.generateMusic(req),
+    get: async (musicId: string): Promise<MusicGenerateResponse> => this.getMusicGeneration(musicId),
+  };
+
+  readonly ocr = {
+    create: async (req: OcrRequest): Promise<OcrResponse> => this.createOcr(req),
+  };
+
+  readonly rerank = {
+    create: async (req: RerankRequest): Promise<RerankResponse> => this.createRerank(req),
+  };
+
+  readonly providers = {
+    list: async (params: Record<string, unknown> = {}): Promise<unknown> => this.listProviders(params),
+    derankStatus: async (
+      providerId: string,
+      params: Record<string, string | number | boolean> = {},
+    ): Promise<unknown> => this.getProviderDerankStatus(providerId, params),
   };
 
   readonly asyncJobs = {
@@ -301,7 +372,7 @@ export class AIStats {
     this.warningsAsErrors = opts.warningsAsErrors ?? false;
     this.logger = opts.logger;
 
-    this.telemetry = new TelemetryCapture(opts.devtools, "2.0.4");
+    this.telemetry = new TelemetryCapture(opts.devtools, "2.0.5");
 
   }
 
@@ -310,14 +381,20 @@ export class AIStats {
   }
 
   async request(method: string, path: string, options: {
-    query?: Record<string, string | number | boolean>;
+    query?: Record<string, QueryParamValue>;
     headers?: Record<string, string>;
     body?: unknown;
   } = {}): Promise<unknown> {
     const url = new URL(path.replace(/^\/+/, ""), `${this.basePath}/`);
     if (options.query) {
       for (const [key, value] of Object.entries(options.query)) {
-        url.searchParams.set(key, String(value));
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            url.searchParams.append(key, String(item));
+          }
+        } else {
+          url.searchParams.set(key, String(value));
+        }
       }
     }
     const res = await this.fetchImpl(url.toString(), {
@@ -427,13 +504,16 @@ export class AIStats {
     }
 
     try {
-      const payload = await this.request("GET", "/data/models", {
+      const payload = await this.request("GET", "/models", {
         query: { model_id: normalizedModelId, limit: 1 },
       });
       const models = Array.isArray((payload as { models?: unknown }).models)
-        ? ((payload as { models: DataModel[] }).models ?? [])
+        ? ((payload as { models: DataModelLike[] }).models ?? [])
         : [];
-      const model = models.find((entry) => (entry?.model_id ?? "").trim() === normalizedModelId);
+      const model = models.find((entry) => {
+        const candidateId = asTrimmedString(entry?.model_id) ?? asTrimmedString(entry?.id);
+        return candidateId === normalizedModelId;
+      });
       if (!model) {
         this.modelLifecycleCache.set(normalizedModelId, null);
         return null;
@@ -467,7 +547,7 @@ export class AIStats {
     const body = JSON.stringify(payload);
 
     const generator = async function* (this: AIStats) {
-      const res = await fetch(`${this.basePath}/chat/completions`, {
+      const res = await this.fetchImpl(`${this.basePath}/chat/completions`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
         body
@@ -511,7 +591,7 @@ export class AIStats {
             form.append(key, value as string | Blob);
           }
         });
-        const res = await fetch(`${this.basePath}/images/edits`, {
+        const res = await this.fetchImpl(`${this.basePath}/images/edits`, {
           method: "POST",
           headers: this.headers,
           body: form
@@ -550,7 +630,28 @@ export class AIStats {
     );
   }
 
-  listVideos(params: Record<string, string | number | boolean> = {}): Promise<VideoListResponse> {
+  generateMusic(req: MusicGenerateRequest): Promise<MusicGenerateResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "music.generations",
+        () => ops.generateMusic(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
+  getMusicGeneration(musicId: string): Promise<MusicGenerateResponse> {
+    return this.telemetry.wrap(
+      "music.retrieve",
+      () => ops.getMusicGeneration(this.client, { path: { music_id: musicId } as any }) as Promise<MusicGenerateResponse>,
+      () => ({ music_id: musicId }),
+      extractGatewayMetadata
+    );
+  }
+
+  listVideos(params: Record<string, QueryParamValue> = {}): Promise<VideoListResponse> {
     return this.telemetry.wrap(
       "video.list",
       () => ops.listVideos(this.client, { query: params as any }) as Promise<VideoListResponse>,
@@ -600,10 +701,6 @@ export class AIStats {
     return this.request("DELETE", `/videos/${encodeURIComponent(videoId)}`) as Promise<{ id: string; object: "video"; deleted: boolean }>;
   }
 
-  listVideoModels(): Promise<VideoModelsResponse> {
-    return this.request("GET", "/videos/models") as Promise<VideoModelsResponse>;
-  }
-
   generateEmbedding(body: Record<string, unknown>): Promise<unknown> {
     return this.withLifecycleGuard(
       body,
@@ -611,6 +708,30 @@ export class AIStats {
         "embeddings",
         () => ops.createEmbedding(this.client, { body: body as any }),
         () => body
+      )
+    );
+  }
+
+  createOcr(req: OcrRequest): Promise<OcrResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "ocr",
+        () => ops.createOcr(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
+      )
+    );
+  }
+
+  createRerank(req: RerankRequest): Promise<RerankResponse> {
+    return this.withLifecycleGuard(
+      req,
+      () => this.telemetry.wrap(
+        "rerank",
+        () => ops.createRerank(this.client, { body: req }),
+        () => req,
+        extractGatewayMetadata
       )
     );
   }
@@ -632,7 +753,7 @@ export class AIStats {
     await this.maybeWarnForPayload(payload);
 
     const generator = async function* (this: AIStats) {
-      const res = await fetch(`${this.basePath}/responses`, {
+      const res = await this.fetchImpl(`${this.basePath}/responses`, {
         method: "POST",
         headers: { ...this.headers, "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -718,7 +839,7 @@ export class AIStats {
         if (params.purpose) {
           form.append("purpose", params.purpose);
         }
-        const res = await fetch(`${this.basePath}/files`, {
+        const res = await this.fetchImpl(`${this.basePath}/files`, {
           method: "POST",
           headers: this.headers,
           body: form
@@ -741,19 +862,25 @@ export class AIStats {
     );
   }
 
-  listTeamModels(params: Record<string, unknown> = {}): Promise<unknown> {
-    return this.telemetry.wrap(
-      "models.team",
-      () => ops.listTeamModels(this.client, { query: params as any }),
-      () => params
-    );
-  }
-
   listProviders(params: Record<string, unknown> = {}): Promise<unknown> {
     return this.telemetry.wrap(
       "providers",
       () => ops.listProviders(this.client, { query: params as any }),
       () => params
+    );
+  }
+
+  getProviderDerankStatus(
+    providerId: string,
+    params: Record<string, string | number | boolean> = {},
+  ): Promise<unknown> {
+    return this.telemetry.wrap(
+      "providers.derank",
+      () => ops.getProviderDerankStatus(this.client, {
+        path: { provider_id: providerId } as any,
+        query: params as any,
+      }),
+      () => ({ provider_id: providerId, ...params })
     );
   }
 
@@ -914,7 +1041,7 @@ export class AIStats {
     return this.telemetry.wrap(
       "audio.speech",
       async () => {
-        const res = await fetch(`${this.basePath}/audio/speech`, {
+        const res = await this.fetchImpl(`${this.basePath}/audio/speech`, {
           method: "POST",
           headers: { ...this.headers, "Content-Type": "application/json" },
           body: JSON.stringify(body)
@@ -963,6 +1090,18 @@ export class AIStats {
       () => ({ id }),
       extractGatewayMetadata
     );
+  }
+
+  getResponsesWebSocketUrl(options: { model?: string; sessionId?: string } = {}): string {
+    const url = new URL("responses/ws", `${this.basePath}/`);
+    if (options.model) {
+      url.searchParams.set("model", options.model);
+    }
+    if (options.sessionId) {
+      url.searchParams.set("session_id", options.sessionId);
+    }
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    return url.toString();
   }
 }
 
@@ -1115,11 +1254,14 @@ function extractModelIdFromPayload(payload: unknown): string | null {
 }
 
 function toModelLifecycleInfo(
-  model: DataModel & { lifecycle?: Record<string, unknown> | null },
+  model: DataModelLike & { lifecycle?: Record<string, unknown> | null },
   fallbackModelId: string
 ): ModelLifecycleInfo {
   const lifecycle = (model.lifecycle ?? {}) as Record<string, unknown>;
-  const modelId = asTrimmedString(model.model_id) ?? fallbackModelId;
+  const modelId =
+    asTrimmedString(model.model_id) ??
+    asTrimmedString(model.id) ??
+    fallbackModelId;
   const sourceStatus =
     asTrimmedString(model.status) ??
     asTrimmedString(lifecycle.status) ??

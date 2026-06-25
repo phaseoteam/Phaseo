@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 16
+      "rank": 18
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 69
+      "rank": 75
     },
     {
       "benchmark_id": "tau2-airline",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 15
+      "rank": 16
     },
     {
       "benchmark_id": "pinchbench",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 29
+      "rank": 31
     },
     {
       "benchmark_id": "swe-bench",
@@ -100,7 +100,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face model card benchmark table (arcee-ai/Trinity-Large-Thinking)",
       "source_link": "https://huggingface.co/arcee-ai/Trinity-Large-Thinking/raw/main/README.md",
-      "rank": 68
+      "rank": 72
     },
     {
       "benchmark_id": "nyt-connections",
@@ -108,7 +108,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 63
+      "rank": 62
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -116,7 +116,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 66.1%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 25
+      "rank": 6
     }
   ]
 }

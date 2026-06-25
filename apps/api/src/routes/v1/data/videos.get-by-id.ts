@@ -2,7 +2,6 @@ import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks
 import { setVideoJobStatus, type VideoJobMeta, type VideoJobRecord } from "@core/video-jobs";
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
-import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
 
 import * as videoHelpers from "./videos.helpers";
 
@@ -15,6 +14,7 @@ const {
 	inferGoogleModelFromOperation,
 	extractGoogleOperationError,
 	isGoogleOperationsGetAuthFailure,
+	mapGoogleOperationErrorToVideoStatus,
 	mapOpenAiVideoStatus,
 	mapBytedanceVideoStatus,
 	mapRunwayVideoStatus,
@@ -48,13 +48,17 @@ const {
 	mapMiniMaxVideoStatus,
 	mapXAiVideoStatus,
 	extractVideoOutputFromPayload,
-	OPENAI_PROVIDER_ID,
+	resolveOpenAiCompatVideoProviderForFallback,
 	XAI_PROVIDER_ID,
 	MINIMAX_PROVIDER_ID,
 	BYTEDANCE_PROVIDER_ID,
 	RUNWAY_PROVIDER_ID,
 	ATLAS_PROVIDER_ID,
 } = videoHelpers;
+
+function isTerminalVideoStatus(status: string): boolean {
+	return status === "completed" || status === "failed" || status === "cancelled" || status === "expired";
+}
 
 export async function getVideoByIdHandler(req: Request): Promise<Response> {	const auth = await guardAuth(req);
 	if (!auth.ok) return (auth as { ok: false; response: Response }).response;
@@ -111,8 +115,8 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 			const operationError = done ? extractGoogleOperationError(json) : undefined;
 			const failed = done && operationError !== undefined;
 			const generatedVideo = extractGoogleVertexGeneratedVideoPayload(json);
-			const status: "queued" | "in_progress" | "completed" | "failed" = failed
-				? "failed"
+			const status: videoHelpers.VideoStatus | "in_progress" = operationError !== undefined
+				? mapGoogleOperationErrorToVideoStatus(operationError)
 				: done
 					? "completed"
 					: "in_progress";
@@ -159,7 +163,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 					...(generatedVideo.mimeType ? { googleVideoMimeType: generatedVideo.mimeType } : {}),
 				},
 			});
-			if (status === "completed" || status === "failed") {
+			if (isTerminalVideoStatus(status)) {
 				const refreshed = await refreshOwnedVideoJob(authValue, id);
 				if (refreshed) {
 					videoRecord = refreshed.record;
@@ -271,8 +275,8 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 			const operationError = done ? extractGoogleOperationError(json) : undefined;
 			const failed = done && operationError !== undefined;
 			const generatedVideo = extractGoogleGeneratedVideoPayload(json);
-			const status: "queued" | "in_progress" | "completed" | "failed" = failed
-				? "failed"
+			const status: videoHelpers.VideoStatus | "in_progress" = operationError !== undefined
+				? mapGoogleOperationErrorToVideoStatus(operationError)
 				: done
 					? "completed"
 					: "in_progress";
@@ -318,7 +322,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						...(generatedVideo.mimeType ? { googleVideoMimeType: generatedVideo.mimeType } : {}),
 					},
 				});
-				if (status === "completed" || status === "failed") {
+				if (isTerminalVideoStatus(status)) {
 					const refreshed = await refreshOwnedVideoJob(authValue, id);
 					if (refreshed) {
 						videoRecord = refreshed.record;
@@ -376,12 +380,15 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		const json = await res.clone().json().catch(() => null);
 		const taskStatus = String(json?.output?.task_status ?? json?.status ?? "").toUpperCase();
 		const completed = taskStatus === "SUCCEEDED";
-		const failed = taskStatus === "FAILED" || taskStatus === "CANCELED" || taskStatus === "CANCELLED";
-		const status: "queued" | "in_progress" | "completed" | "failed" = completed
+		const cancelled = taskStatus === "CANCELED" || taskStatus === "CANCELLED";
+		const failed = taskStatus === "FAILED";
+		const status: "queued" | "in_progress" | "completed" | "failed" | "cancelled" = completed
 			? "completed"
-			: failed
-				? "failed"
-				: "in_progress";
+			: cancelled
+				? "cancelled"
+				: failed
+					? "failed"
+					: "in_progress";
 		const videoUrl =
 			json?.output?.video_url ??
 			json?.output?.videoUrl ??
@@ -417,7 +424,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						? json.output.quality
 						: videoMeta?.quality) ?? null,
 			});
-			if (status === "completed" || status === "failed") {
+			if (isTerminalVideoStatus(status)) {
 				const refreshed = await refreshOwnedVideoJob(authValue, id);
 				if (refreshed) {
 					videoRecord = refreshed.record;
@@ -486,7 +493,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						? json.quality
 						: videoMeta?.quality) ?? null,
 			});
-			if (status === "completed" || status === "failed") {
+			if (isTerminalVideoStatus(status)) {
 				const refreshed = await refreshOwnedVideoJob(authValue, id);
 				if (refreshed) {
 					videoRecord = refreshed.record;
@@ -554,7 +561,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						? json.quality
 						: videoMeta?.quality) ?? null,
 			});
-			if (status === "completed" || status === "failed") {
+			if (isTerminalVideoStatus(status)) {
 				const refreshed = await refreshOwnedVideoJob(authValue, id);
 				if (refreshed) {
 					videoRecord = refreshed.record;
@@ -630,7 +637,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						? json.parameters.quality
 						: videoMeta?.quality) ?? null,
 		});
-		if (status === "completed" || status === "failed") {
+		if (isTerminalVideoStatus(status)) {
 			const refreshed = await refreshOwnedVideoJob(authValue, id);
 			if (refreshed) {
 				videoRecord = refreshed.record;
@@ -705,7 +712,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 						? json.task.quality
 						: videoMeta?.quality) ?? null,
 		});
-		if (status === "completed" || status === "failed") {
+		if (isTerminalVideoStatus(status)) {
 			const refreshed = await refreshOwnedVideoJob(authValue, id);
 			if (refreshed) {
 				videoRecord = refreshed.record;
@@ -778,7 +785,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 				providerTaskId: atlasTaskId,
 			},
 		});
-		if (status === "completed" || status === "failed") {
+		if (isTerminalVideoStatus(status)) {
 			const refreshed = await refreshOwnedVideoJob(authValue, id);
 			if (refreshed) {
 				videoRecord = refreshed.record;
@@ -807,11 +814,11 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 		});
 	}
 
-	const resolvedProviderForFallback =
+	const rawProviderForFallback =
 		normalizeText(videoRecord?.provider)?.toLowerCase() ??
 		normalizeText(videoMeta?.provider)?.toLowerCase() ??
-		OPENAI_PROVIDER_ID;
-	if ((resolvedProviderForFallback === "atlascloud" || resolvedProviderForFallback === "atlas-cloud") && !atlasTaskId) {
+		null;
+	if ((rawProviderForFallback === "atlascloud" || rawProviderForFallback === "atlas-cloud") && !atlasTaskId) {
 		return err("not_ready", {
 			reason: "atlas_prediction_id_missing",
 			request_id: authValue.requestId,
@@ -819,14 +826,15 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 			video_id: id,
 		});
 	}
-	const openAiCompatProviderId = resolvedProviderForFallback;
-	if (!isOpenAICompatProvider(openAiCompatProviderId)) {
+	const openAiCompatProviderId = resolveOpenAiCompatVideoProviderForFallback(videoRecord, videoMeta);
+	if (!openAiCompatProviderId) {
 		return err("not_supported", {
 			reason: "video_status_unsupported",
 			request_id: authValue.requestId,
 			workspace_id: authValue.workspaceId,
 			video_id: id,
-			provider: openAiCompatProviderId,
+			provider: rawProviderForFallback,
+			native_video_id: normalizeText(videoRecord?.nativeId) ?? normalizeText(videoMeta?.providerTaskId) ?? null,
 		});
 	}
 	const openAiNativeId = normalizeText(videoRecord?.nativeId) ?? id;
@@ -871,20 +879,33 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {	con
 				? (statusJson as any).quality
 				: videoMeta?.quality) ?? null,
 	});
-	if (openAiStatus === "completed" || openAiStatus === "failed") {
+	if (isTerminalVideoStatus(openAiStatus)) {
 		const refreshed = await refreshOwnedVideoJob(authValue, id);
 		if (refreshed) {
 			videoRecord = refreshed.record;
 			videoMeta = refreshed.meta;
 		}
 	}
-	const enriched = enrichVideoPayloadWithJobMetrics(statusJson as Record<string, unknown>, videoRecord, videoMeta);
+	let enriched = enrichVideoPayloadWithJobMetrics(statusJson as Record<string, unknown>, videoRecord, videoMeta);
 	if (openAiStatus === "in_progress" && typeof (enriched as any).progress === "number") {
+		const progress = (enriched as any).progress;
+		await setVideoJobStatus(authValue.workspaceId, id, "in_progress", {
+			progress,
+			progressSource: "provider",
+			lastPolledAt: new Date().toISOString(),
+			polledStatus: openAiStatus,
+		});
+		const refreshed = await refreshOwnedVideoJob(authValue, id);
+		if (refreshed) {
+			videoRecord = refreshed.record;
+			videoMeta = refreshed.meta;
+			enriched = enrichVideoPayloadWithJobMetrics(statusJson as Record<string, unknown>, videoRecord, videoMeta);
+		}
 		dispatchVideoWebhookEventInBackground({
 			workspaceId: authValue.workspaceId,
 			videoId: id,
 			eventType: "video.progress",
-			progress: (enriched as any).progress,
+			progress,
 		});
 	}
 	return new Response(JSON.stringify(await toPublicVideoResponse({

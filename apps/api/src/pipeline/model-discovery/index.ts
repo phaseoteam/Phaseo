@@ -16,12 +16,18 @@ import {
 	readBindingEnv,
 	runPricingMonitorCheck,
 	sendDiscordNotification,
+	shouldNotifyConfiguredModelCoverage,
 	shouldRunPricingMonitor,
 	summarizeMissingConfiguredProviderModels,
 	toBool,
 	toInt,
 	toPricingFingerprint,
 } from "./helpers";
+import {
+	buildProviderIssueEntries,
+	shouldSyncProviderDiscoveryIssues,
+	syncUpstreamDiscoveryIssues,
+} from "./github-issues";
 
 type DiscoveryTrigger = "scheduled" | "manual";
 
@@ -39,8 +45,16 @@ type ProviderConfig = {
 	providerId: string;
 	providerName: string;
 	modelsEndpoint: string;
+	pathPrefix?: string;
+	modelsPath?: string;
+	baseUrlEnv?: string[];
 	apiKeyEnv?: string[];
 	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
+	pagination?: {
+		nextPageTokenFields: string[];
+		pageTokenQueryParam: string;
+		maxPages?: number;
+	};
 };
 
 type ProviderChange = {
@@ -166,6 +180,15 @@ type DiscoveryRunSummary = {
 	staleModelsDeleted: number;
 	results: ProviderResult[];
 	changes: ProviderChange[];
+	issueSync?: {
+		created: number;
+		updated: number;
+		skipped: boolean;
+		reason?: string | null;
+		error?: string | null;
+	};
+	statePersisted: boolean;
+	persistenceDeferredReason?: string | null;
 	pricingMonitor: PricingMonitorSummary;
 	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
@@ -226,7 +249,7 @@ const PROVIDERS: ProviderConfig[] = [
 		apiKeyEnv: ["ANTHROPIC_API_KEY"],
 		authStyle: "anthropic",
 	},
-	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] },
+	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_API_KEY"] },
 	{ providerId: "atlascloud", providerName: "AtlasCloud", modelsEndpoint: "https://api.atlascloud.ai/api/v1/models", apiKeyEnv: ["ATLAS_CLOUD_API_KEY"] },
 	{ providerId: "crofai", providerName: "CrofAI", modelsEndpoint: "https://crof.ai/v1/models", authStyle: "none" },
 	{
@@ -258,15 +281,25 @@ const PROVIDERS: ProviderConfig[] = [
 		providerId: "elevenlabs",
 		providerName: "ElevenLabs",
 		modelsEndpoint: "https://api.elevenlabs.io/v1/models",
-		apiKeyEnv: ["ELEVEN_LABS_API_KEY", "ELEVENLABS_API_KEY"],
+		apiKeyEnv: ["ELEVENLABS_API_KEY"],
 		authStyle: "elevenlabs",
 	},
-	{ providerId: "fireworks", providerName: "Fireworks", modelsEndpoint: "https://api.fireworks.ai/inference/v1/models", apiKeyEnv: ["FIREWORKS_API_KEY"] },
+	{
+		providerId: "fireworks",
+		providerName: "Fireworks",
+		modelsEndpoint: "https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
+		apiKeyEnv: ["FIREWORKS_API_KEY"],
+		pagination: {
+			nextPageTokenFields: ["nextPageToken"],
+			pageTokenQueryParam: "pageToken",
+			maxPages: 50,
+		},
+	},
 	{
 		providerId: "gmicloud",
 		providerName: "GMICloud",
 		modelsEndpoint: "https://api.gmi-serving.com/v1/models",
-		apiKeyEnv: ["GMI_CLOUD_API_KEY", "GMI_API_KEY"],
+		apiKeyEnv: ["GMI_API_KEY"],
 	},
 	{
 		providerId: "google-ai-studio",
@@ -278,21 +311,37 @@ const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
 	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
 	{ providerId: "ionrouter", providerName: "IonRouter", modelsEndpoint: "https://api.ionrouter.io/v1/models", apiKeyEnv: ["IONROUTER_API_KEY"] },
+	{
+		providerId: "longcat",
+		providerName: "LongCat",
+		modelsEndpoint: "https://api.longcat.chat/openai/v1/models",
+		pathPrefix: "/openai/v1",
+		baseUrlEnv: ["MEITUAN_BASE_URL", "LONGCAT_BASE_URL"],
+		apiKeyEnv: ["MEITUAN_API_KEY", "LONGCAT_API_KEY"],
+	},
 	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY"] },
 	{ providerId: "moonshot-ai", providerName: "Moonshot AI", modelsEndpoint: "https://api.moonshot.ai/v1/models", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	{
 		providerId: "nebius-token-factory",
 		providerName: "Nebius Token Factory",
 		modelsEndpoint: "https://api.tokenfactory.nebius.com/v1/models",
-		apiKeyEnv: ["NEBIUS_TOKEN_FACTORY_API_KEY", "NEBIUS_API_KEY"],
+		apiKeyEnv: ["NEBIUS_API_KEY"],
 	},
 	{ providerId: "nextbit", providerName: "NextBit", modelsEndpoint: "https://api.nextbit256.com/v1/models", apiKeyEnv: ["NEXTBIT_API_KEY"] },
 	{ providerId: "novitaai", providerName: "NovitaAI", modelsEndpoint: "https://api.novita.ai/openai/v1/models", apiKeyEnv: ["NOVITA_API_KEY"] },
 	{ providerId: "openai", providerName: "OpenAI", modelsEndpoint: "https://api.openai.com/v1/models", apiKeyEnv: ["OPENAI_API_KEY"] },
 	{ providerId: "perplexity", providerName: "Perplexity", modelsEndpoint: "https://api.perplexity.ai/v1/models", apiKeyEnv: ["PERPLEXITY_API_KEY"] },
+	{
+		providerId: "poolside",
+		providerName: "Poolside",
+		modelsEndpoint: "https://inference.poolside.ai/openai/v1/models",
+		pathPrefix: "/openai/v1",
+		baseUrlEnv: ["POOLSIDE_BASE_URL"],
+		apiKeyEnv: ["POOLSIDE_API_KEY"],
+	},
 	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
 	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
-	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.xyz/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
+	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.ai/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
 	{ providerId: "venice", providerName: "Venice", modelsEndpoint: "https://api.venice.ai/api/v1/models", apiKeyEnv: ["VENICE_API_KEY"] },
 		{
 			providerId: "weights-and-biases",
@@ -356,6 +405,8 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
 	return {
+		statePersisted: summary.statePersisted,
+		persistenceDeferredReason: summary.persistenceDeferredReason ?? undefined,
 		results: summary.results.map((result) => ({
 			providerId: result.providerId,
 			status: result.status,
@@ -609,6 +660,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	try {
 		const results: ProviderResult[] = [];
 		const changes: ProviderChange[] = [];
+		let issueSyncSummary: DiscoveryRunSummary["issueSync"] = {
+			created: 0,
+			updated: 0,
+			skipped: false,
+			reason: "not attempted",
+		};
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
@@ -730,16 +787,6 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		await upsertCurrentModels(upsertRows);
-		await deleteRemovedModels(deleteRows);
-		let staleModelsDeleted = 0;
-		if (shouldPrune) {
-			staleModelsDeleted = await pruneOldRows(staleCutoff);
-			if (shouldPruneRunsDaily(args, startedAt)) {
-				await pruneOldRuns(runsCutoff);
-			}
-		}
-
 		let pricingMonitor: PricingMonitorSummary = {
 			enabled: pricingEnabled,
 			executed: pricingExecuted,
@@ -847,9 +894,18 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		}
 
 		let notificationError: string | null = null;
+		let notificationSummary: {
+			delivered: boolean;
+			skipped: boolean;
+			reason?: string | null;
+		} = {
+			delivered: false,
+			skipped: true,
+			reason: shouldNotify ? "not attempted" : "notifications disabled",
+		};
 		if (shouldNotify) {
 			try {
-				await sendDiscordNotification({
+				notificationSummary = await sendDiscordNotification({
 					modelChanges: changes,
 					pricing: pricingMonitor,
 					providerApiPricing: providerApiPricingMonitor,
@@ -858,6 +914,71 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			} catch (error) {
 				notificationError = error instanceof Error ? error.message : String(error);
 				console.error("[model-discovery] Discord notification failed:", notificationError);
+			}
+		}
+
+		const includeConfiguredCoverageNotifications = shouldNotifyConfiguredModelCoverage();
+		const hasNotifiableChanges =
+			changes.length > 0 ||
+			pricingMonitor.updatesDetected > 0 ||
+			providerApiPricingMonitor.updatesDetected > 0 ||
+			(includeConfiguredCoverageNotifications &&
+				configuredModelCoverageNotificationSummary.updatesDetected > 0);
+		const requiresNotificationDelivery = shouldNotify && hasNotifiableChanges;
+		const notificationDelivered = !requiresNotificationDelivery || notificationSummary.delivered;
+		const persistenceDeferredReason = !notificationDelivered
+			? notificationError ?? notificationSummary.reason ?? "Discord notification not delivered"
+			: null;
+
+		let staleModelsDeleted = 0;
+		if (!persistenceDeferredReason) {
+			await upsertCurrentModels(upsertRows);
+			await deleteRemovedModels(deleteRows);
+			if (shouldPrune) {
+				staleModelsDeleted = await pruneOldRows(staleCutoff);
+				if (shouldPruneRunsDaily(args, startedAt)) {
+					await pruneOldRuns(runsCutoff);
+				}
+			}
+		}
+
+		if (changes.length > 0) {
+			if (!shouldSyncProviderDiscoveryIssues()) {
+				issueSyncSummary = {
+					created: 0,
+					updated: 0,
+					skipped: true,
+					reason: "disabled by MODEL_DISCOVERY_ISSUE_SYNC_ENABLED",
+				};
+				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason);
+			} else {
+				try {
+					const issueEntries = buildProviderIssueEntries({
+						changes,
+						detectedAt: new Date().toISOString(),
+						detectionSource: args.source,
+					});
+					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
+					if (issueSyncSummary.skipped) {
+						console.log(
+							"[model-discovery] Provider GitHub issue sync skipped:",
+							issueSyncSummary.reason ?? "no reason provided"
+						);
+					} else {
+						console.log(
+							`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
+						);
+					}
+				} catch (error) {
+					const reason = error instanceof Error ? error.message : String(error);
+					issueSyncSummary = {
+						created: 0,
+						updated: 0,
+						skipped: false,
+						error: reason,
+					};
+					console.error("[model-discovery] Provider GitHub issue sync failed:", reason);
+				}
 			}
 		}
 
@@ -876,6 +997,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted,
 			results,
 			changes,
+			issueSync: issueSyncSummary,
+			statePersisted: !persistenceDeferredReason,
+			persistenceDeferredReason,
 			pricingMonitor,
 			providerApiPricingMonitor,
 			configuredModelCoverageMonitor,
@@ -884,6 +1008,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const status: RunStatus =
 			summary.providersError > 0 ||
 			notificationError ||
+			Boolean(summary.issueSync?.error) ||
+			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
 			Boolean(summary.configuredModelCoverageMonitor.error)
@@ -908,6 +1034,14 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			staleModelsDeleted: 0,
 			results: [],
 			changes: [],
+			issueSync: {
+				created: 0,
+				updated: 0,
+				skipped: false,
+				error: reason,
+			},
+			statePersisted: false,
+			persistenceDeferredReason: null,
 			pricingMonitor: {
 				enabled: pricingEnabled,
 				executed: false,
@@ -944,6 +1078,4 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		throw error;
 	}
 }
-
-
 

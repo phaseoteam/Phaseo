@@ -233,6 +233,7 @@ export async function getFreeRouterOverview(): Promise<FreeRouterOverview> {
 	cacheTag("data:data_api_pricing_rules");
 	cacheTag("data:data_models");
 	cacheTag("data:gateway_requests");
+	cacheTag("frontend:free-router-overview");
 
 	let supabase: ReturnType<typeof createAdminClient> | null = null;
 	try {

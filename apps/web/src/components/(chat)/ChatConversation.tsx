@@ -5,6 +5,7 @@ import type { ChangeEvent } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
+import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
 import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
 import { Square } from "lucide-react";
 import {
@@ -54,6 +55,8 @@ type ChatConversationProps = {
 	selectedModelsHint?: string;
 	onOpenModelPicker: () => void;
 	onAudioAttachmentRequirementChange?: (requiresAudioInput: boolean) => void;
+	requestError?: ChatRequestErrorDetails | null;
+	onDismissRequestError?: () => void;
 };
 
 type SendGateType = "auth";
@@ -89,6 +92,8 @@ export function ChatConversation({
 	selectedModelsHint,
 	onOpenModelPicker,
 	onAudioAttachmentRequirementChange,
+	requestError = null,
+	onDismissRequestError,
 }: ChatConversationProps) {
 	const isUnified = mode === "unified";
 	const [composer, setComposer] = useState("");
@@ -397,6 +402,13 @@ export function ChatConversation({
 		[onReasoningEffortChange, onReasoningEnabledChange],
 	);
 
+	const handleSelectEvaluationPrompt = useCallback((prompt: string) => {
+		setComposer(prompt);
+		requestAnimationFrame(() => {
+			textareaRef.current?.focus();
+		});
+	}, []);
+
 	const handleSubmit = () => {
 		if (isSending) return;
 		const text = composer.trim();
@@ -484,6 +496,8 @@ export function ChatConversation({
 						onBranchAssistant={onBranchAssistant}
 						onSelectVariant={onSelectVariant}
 						onCopy={handleCopy}
+						requestError={requestError}
+						onDismissRequestError={onDismissRequestError}
 					/>
 				</div>
 			</ScrollArea>
@@ -502,6 +516,7 @@ export function ChatConversation({
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
 				apiServerToolsEnabled={apiServerToolsEnabled}
 				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
+				showEvaluationPrompts={(activeThread?.messages.length ?? 0) === 0}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}
@@ -519,6 +534,7 @@ export function ChatConversation({
 				onToggleRecording={toggleRecording}
 				onOpenModelPicker={onOpenModelPicker}
 				onSubmit={handleSubmit}
+				onSelectEvaluationPrompt={handleSelectEvaluationPrompt}
 				onComposerChange={setComposer}
 				onRemoveAttachment={(index) =>
 					setAttachments((prev) => prev.filter((_, i) => i !== index))

@@ -1,5 +1,5 @@
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
-import { getSubscriptionPlanCached } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
+import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -7,7 +7,7 @@ import { buildMetadata } from "@/lib/seo";
 
 async function fetchPlanForModels(planId: string) {
 	try {
-		return await getSubscriptionPlanCached(planId, false);
+		return await fetchFrontendSubscriptionPlan(planId);
 	} catch (error) {
 		console.warn("[seo] failed to load subscription plan models metadata", {
 			planId,
@@ -71,7 +71,7 @@ export default async function Page({
 }) {
 	const { planId } = await params;
 
-	const plan = await getSubscriptionPlanCached(planId, false);
+	const plan = await fetchFrontendSubscriptionPlan(planId);
 
 	if (!plan) {
 		return null; // Shell handles not found
@@ -86,7 +86,7 @@ export default async function Page({
 				<CardContent>
 					{plan.models && plan.models.length > 0 ? (
 						<div className="space-y-3">
-							{plan.models.map((modelInfo, index) => (
+							{plan.models.map((modelInfo) => (
 								<div
 									key={modelInfo.model_id}
 									className="flex items-center justify-between p-3 border rounded-lg"

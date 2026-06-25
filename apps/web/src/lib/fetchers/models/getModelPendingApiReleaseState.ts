@@ -1,5 +1,11 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { getModelOverviewCached } from "@/lib/fetchers/models/getModel";
 import { getModelPricingCached, type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
+
+export type ModelPendingApiReleaseState = {
+	isPendingApiRelease: boolean;
+	modelName: string;
+};
 
 function isProviderModelActiveNow(
 	providerModel: ProviderPricing["provider_models"][number],
@@ -33,10 +39,17 @@ function hasActiveApiProviders(providers: ProviderPricing[]): boolean {
 export async function getModelPendingApiReleaseState(
 	modelId: string,
 	includeHidden: boolean,
-): Promise<{
-	isPendingApiRelease: boolean;
-	modelName: string;
-}> {
+): Promise<ModelPendingApiReleaseState> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("public-model-catalogue");
+	cacheTag("data:models");
+	cacheTag(`data:models:${modelId}`);
+	cacheTag(`model:data:${modelId}`);
+	cacheTag(`model:api:${modelId}`);
+	cacheTag("frontend:model-pending-api-release");
+
 	const [model, providers] = await Promise.all([
 		getModelOverviewCached(modelId, includeHidden).catch(() => null),
 		getModelPricingCached(modelId, includeHidden).catch((error) => {

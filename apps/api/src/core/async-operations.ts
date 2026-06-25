@@ -170,19 +170,22 @@ export async function upsertAsyncOperation(args: {
 export async function listAsyncOperations(args: {
 	kind: AsyncOperationKind;
 	limit?: number;
+	offset?: number;
 	providers?: string[];
 	statuses?: Array<string | null>;
 	unbilledOnly?: boolean;
 }): Promise<AsyncOperationRecord[]> {
 	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
+	const offset = Number.isFinite(args.offset) ? Math.max(0, Math.trunc(args.offset!)) : 0;
 	let query = getSupabaseAdmin()
 		.from("gateway_async_operations")
 		.select(
 			"workspace_id,kind,internal_id,request_id,session_id,app_id,provider,native_id,model,status,meta,billed_at,created_at,updated_at",
 		)
 		.eq("kind", args.kind)
-		.order("updated_at", { ascending: true })
-		.limit(limit);
+		.order("updated_at", { ascending: true });
+
+	query = offset > 0 ? query.range(offset, offset + limit - 1) : query.limit(limit);
 
 	if (args.unbilledOnly) {
 		query = query.is("billed_at", null);

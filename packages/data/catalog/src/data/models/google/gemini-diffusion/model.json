@@ -48,7 +48,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 148
+      "rank": 154
     },
     {
       "benchmark_id": "humaneval",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1",
       "source_link": "https://deepmind.google/models/gemini-diffusion/#benchmarks",
-      "rank": 128
+      "rank": 131
     },
     {
       "benchmark_id": "big-bench-extra-hard",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 1
+      "rank": 2
     },
     {
       "benchmark_id": "global-mmlu-lite",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 197
+      "rank": 198
     },
     {
       "benchmark_id": "lbpp-(v2)",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://deepmind.google/models/gemini-diffusion/",
-      "rank": 63
+      "rank": 64
     },
     {
       "benchmark_id": "mbpp",

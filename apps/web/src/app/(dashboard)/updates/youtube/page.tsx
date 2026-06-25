@@ -1,6 +1,6 @@
 import UpdateCard from "@/components/updates/UpdateCard";
 import { Card, CardContent } from "@/components/ui/card";
-import { getYouTubeUpdatesCached } from "@/lib/fetchers/updates/getYouTubeUpdates";
+import { fetchFrontendYouTubeUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 
@@ -20,7 +20,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function Page() {
-	const cards = await getYouTubeUpdatesCached(100);
+	const cards = await fetchFrontendYouTubeUpdates(100);
 
 	return (
 		<div className="space-y-6">

@@ -55,7 +55,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 151
+      "rank": 152
     },
     {
       "benchmark_id": "hiddenmath",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 57
+      "rank": 58
     },
     {
       "benchmark_id": "math",
@@ -87,7 +87,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 72
+      "rank": 75
     },
     {
       "benchmark_id": "mmmu",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.0-flash",
       "source_link": "https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/",
-      "rank": 61
+      "rank": 62
     },
     {
       "benchmark_id": "mrcr",

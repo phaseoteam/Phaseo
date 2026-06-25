@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from granite-3.3-8b-instruct (score=0.4062; benches=14)",
       "source_link": "https://huggingface.co/ibm-granite/granite-3.3-8b-instruct",
-      "rank": 46
+      "rank": 47
     },
     {
       "benchmark_id": "humaneval",

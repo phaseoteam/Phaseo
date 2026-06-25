@@ -1,58 +1,476 @@
 ---
 title: "Parameters"
-description: "Common request parameters across API endpoints, including routing and debug controls."
+description: "Field-by-field request parameter reference for AI Stats text, routing, and debug controls."
 icon: "sliders-horizontal"
 ---
 
-Parameter support varies by endpoint and model.
+This page is the field-by-field reference for request parameters exposed by AI Stats.
 
-## Common request parameters
+Use it when you want to know:
 
-| Parameter | Type | Typical usage |
+- what a parameter does
+- what type it expects
+- the typical range or accepted values
+- whether it changes quality, cost, latency, or routing behavior
+
+If you want tuning advice instead of field definitions, use [Inference Parameters](/v1/guides/inference-parameters) and [Sampling and Decoding](/v1/guides/sampling-and-decoding).
+
+Parameter support still varies by endpoint, model, and provider. The model quickstart table shows support aggregated across currently active providers for a specific route.
+
+## Quick lookup
+
+| Parameter | Type | Use it for |
 | --- | --- | --- |
-| `model` | string | Required model id (for example `openai/gpt-5-nano`). |
-| `stream` | boolean | Enable SSE token streaming on text endpoints. |
-| `temperature` | number | Control output randomness when supported. |
-| `top_p` | number | Nucleus sampling control where supported. |
-| `max_tokens` / `max_output_tokens` | integer | Cap output length and cost. |
-| `stop` | string or string[] | Define explicit stop sequences. |
-| `tools`, `tool_choice` | object / string | Tool-calling controls on compatible endpoints. |
-| `response_format` | string or object | Ask for plain text, JSON, or schema-constrained responses. |
-| `service_tier` | string | Request a supported pricing or routing tier such as `priority` or `flex` on compatible text APIs. |
-| `meta`, `usage` | boolean | Include extra metadata and usage details in responses. |
+| [`model`](#model) | `string` | Selecting the gateway model id to run. |
+| [`stream`](#stream) | `boolean` | Returning SSE output incrementally instead of one final payload. |
+| [`temperature`](#temperature) | `number` | Increasing or reducing randomness. |
+| [`top_p`](#top_p) | `number` | Narrowing or widening the nucleus sampling pool. |
+| [`top_k`](#top_k) | `integer` | Restricting sampling to the top-k candidate tokens. |
+| [`max_tokens`](#max_tokens) | `integer` | Capping output length on routes that still use this field name. |
+| [`max_output_tokens`](#max_output_tokens) | `integer` | Capping output length on routes that use the newer field name. |
+| [`max_completion_tokens`](#max_completion_tokens) | `integer` | Capping output length on newer OpenAI-style text APIs. |
+| [`frequency_penalty`](#frequency_penalty) | `number` | Discouraging repeated tokens and phrases. |
+| [`presence_penalty`](#presence_penalty) | `number` | Encouraging topic or vocabulary change. |
+| [`repetition_penalty`](#repetition_penalty) | `number` | Provider-specific anti-repetition control. |
+| [`seed`](#seed) | `integer` | Improving reproducibility when the upstream provider supports it. |
+| [`stop`](#stop) | `string` or `string[]` | Defining explicit stop sequences. |
+| [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | Requesting token probability data. |
+| [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | Tool calling and function execution control. |
+| [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | Allowing or forcing sequential tool execution behavior. |
+| [`response_format`](#response_format) | `string` or `object` | Plain text, JSON, or schema-constrained output. |
+| [`json_schema`](#json_schema) | `object` | Defining the schema for structured output workflows. |
+| [`structured_outputs`](#structured_outputs) | `boolean` | Capability signal for reliable schema-constrained output. |
+| [`reasoning`](#reasoning) | `object` | Provider-specific reasoning configuration. |
+| [`reasoning_effort`](#reasoning_effort) | `string` | Lowering or increasing reasoning budget. |
+| [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-specific token limit or accounting field. |
+| [`include_reasoning`](#include_reasoning) | `boolean` | Returning reasoning content or summaries where supported. |
+| [`service_tier`](#service_tier) | `string` | Choosing a supported request tier such as `priority` or `flex`. |
+| [`provider`](#provider) | `object` | Influencing routing and provider selection. |
+| [`provider_options`](#provider_options) | `object` | Passing provider-native settings through the gateway. |
+| [`meta`](#meta) / [`usage`](#usage) | `boolean` | Returning extra metadata or usage accounting in the response. |
+| [`debug`](#debug) | `object` | Requesting routing traces and diagnostic payloads. |
+
+## Endpoint notes
 
 `service_tier` is supported on the main text request surfaces:
 
 - [Anthropic Messages](./endpoint/anthropic-messages.mdx)
 - [Chat Completions](./endpoint/chat-completions.mdx)
-- [Responses](./endpoint/responses.mdx)
+- [Responses](/v1/api-reference/endpoint/responses)
 
-Use `priority` or `flex` when the model/provider combination supports those tiers. `Standard` is the default when `service_tier` is omitted. `Batch` uses the Batch API rather than this field.
+Use `priority` or `flex` only when the selected model and provider combination supports them. `standard` is the default when `service_tier` is omitted.
 
-For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. AI Stats may normalize or map these values across providers while preserving Anthropic-compatible request behavior on `/v1/messages`.
+`Batch` is not a `service_tier` value. Batch requests use the separate Batch API.
 
-If you are using an official Anthropic SDK with a custom base URL pointed at AI Stats, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, prefer raw HTTP requests or the gateway-native/OpenAI-style text APIs.
+For Anthropic-compatible Messages requests, Anthropic's native upstream values are `auto` and `standard_only`. AI Stats may normalize or map these values across providers while preserving Anthropic-compatible behavior on `/v1/messages`.
 
-## Provider routing parameters
+If you are using an official Anthropic SDK with a custom base URL pointed at AI Stats, prefer Anthropic-native values on `/v1/messages`. For normalized cross-provider tier controls such as `priority` and `flex`, prefer raw HTTP requests or the gateway-native / OpenAI-style text APIs.
 
-The `provider` object lets you influence routing behavior:
+## Parameter reference
+
+<span id="model"></span>
+<h3 id="parameter-model"><code>model</code></h3>
+
+Selects the gateway model id for the request.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` |
+| Required | Yes |
+| Example | `openai/gpt-5-nano` |
+
+Use the canonical model id shown on each model page quickstart unless you intentionally want to rely on an accepted alias. Canonical ids are the safest choice for examples, automation, and long-lived integrations.
+
+<span id="stream"></span>
+<h3 id="parameter-stream"><code>stream</code></h3>
+
+Returns output incrementally over Server-Sent Events instead of waiting for one final response body.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Default | `false` |
+| Typical values | `true`, `false` |
+
+Turn this on for chat UIs, token-by-token rendering, or long responses where early output improves UX. Leave it off when you want one complete JSON response, simpler retries, or easier structured parsing.
+
+Notes:
+
+- Streaming support varies by endpoint.
+- Streaming is usually a transport choice, not a quality control.
+- Tool-calling or structured-output flows may still stream differently by provider.
+
+<span id="temperature"></span>
+<h3 id="parameter-temperature"><code>temperature</code></h3>
+
+Controls how random token selection can be.
+
+| Field | Value |
+| --- | --- |
+| Type | `number` |
+| Typical range | `0.0` to `2.0` when supported |
+| Default | Provider and model specific |
+| Good starting point | `0.2` to `0.7` |
+
+Lower values make output more conservative and repeatable. Higher values increase variety, which can help for brainstorming or creative writing but can also reduce consistency and schema adherence.
+
+Good fits:
+
+- extraction
+- classification
+- JSON or schema output
+- creative generation
+
+Practical guidance:
+
+- Start low for structured tasks.
+- Change either `temperature` or `top_p` first, not both.
+- High temperature plus aggressive quantization can magnify instability.
+
+<span id="top_p"></span>
+<h3 id="parameter-top_p"><code>top_p</code></h3>
+
+Applies nucleus sampling by limiting candidates to the smallest token set whose cumulative probability mass reaches `top_p`.
+
+| Field | Value |
+| --- | --- |
+| Type | `number` |
+| Typical range | `0.0` to `1.0` when supported |
+| Default | Provider and model specific |
+| Good starting point | `0.9` to `1.0` |
+
+Lower values make the model choose from a narrower probability mass, which usually produces safer and more focused output. Higher values let the model consider a broader set of tokens.
+
+Notes:
+
+- Tune `top_p` when you want a narrower or broader search space without directly changing temperature.
+- For most applications, moderate `temperature` and near-1.0 `top_p` is a reasonable baseline.
+
+<span id="top_k"></span>
+<h3 id="parameter-top_k"><code>top_k</code></h3>
+
+Restricts sampling to the top-k candidate tokens at each step on providers that expose it.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Typical range | `>= 1` when supported |
+| Default | Provider and model specific |
+
+Lower `top_k` values tighten the model's choices and can make output more predictable. Higher values widen the candidate pool.
+
+Notes:
+
+- `top_k` is not available on every provider.
+- Treat it as a more explicit token-pool limiter than `top_p`.
+
+<span id="max_tokens"></span>
+<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
+
+Caps output length on endpoints and providers that still use the `max_tokens` field name.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Typical range | `>= 1` |
+| Default | Provider and model specific |
+
+Use it to control cost, latency, and truncation risk. If this value is too small, the output can appear incomplete even when the model behaved correctly.
+
+<span id="max_output_tokens"></span>
+<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
+
+Caps output length on routes that use `max_output_tokens` instead of `max_tokens`.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Typical range | `>= 1` |
+| Default | Provider and model specific |
+
+This is semantically the same kind of control as `max_tokens`, but you should send the field name expected by the selected endpoint or SDK surface.
+
+<span id="max_completion_tokens"></span>
+<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
+
+Caps output length on newer OpenAI-style text APIs that use `max_completion_tokens`.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Typical range | `>= 1` |
+| Default | Provider and model specific |
+
+This is another output-token budget field. Use the endpoint's expected name rather than mixing output-length aliases in one request shape.
+
+<span id="frequency_penalty"></span>
+<h3 id="parameter-frequency_penalty"><code>frequency_penalty</code></h3>
+
+Discourages repeated tokens in proportion to how often they have already appeared.
+
+| Field | Value |
+| --- | --- |
+| Type | `number` |
+| Typical range | Commonly `-2.0` to `2.0` when supported |
+| Default | Usually `0` |
+
+Raise this when the model loops, repeats phrases, or overuses the same wording.
+
+<span id="presence_penalty"></span>
+<h3 id="parameter-presence_penalty"><code>presence_penalty</code></h3>
+
+Discourages reusing tokens once they have appeared at all, which can help the model explore new topics or wording.
+
+| Field | Value |
+| --- | --- |
+| Type | `number` |
+| Typical range | Commonly `-2.0` to `2.0` when supported |
+| Default | Usually `0` |
+
+Compared with `frequency_penalty`, this is usually a broader novelty control rather than a repeat-count control.
+
+<span id="repetition_penalty"></span>
+<h3 id="parameter-repetition_penalty"><code>repetition_penalty</code></h3>
+
+Applies provider-specific anti-repetition behavior outside the classic OpenAI-style penalty fields.
+
+| Field | Value |
+| --- | --- |
+| Type | `number` |
+| Typical range | Provider and model specific, often around `0.0` to `2.0` |
+| Default | Provider and model specific |
+
+The intent is similar to `frequency_penalty` and `presence_penalty`, but the semantics vary more by provider. Treat it as provider-native behavior rather than a universally identical control.
+
+<span id="seed"></span>
+<h3 id="parameter-seed"><code>seed</code></h3>
+
+Requests deterministic sampling when the upstream provider supports seeded generation.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Default | Unset |
+
+Use this for debugging, regression testing, and reproducing behavior as closely as the upstream platform allows. Seeded generation improves reproducibility, but exact determinism is not guaranteed across all providers or infrastructure changes.
+
+<span id="stop"></span>
+<h3 id="parameter-stop"><code>stop</code></h3>
+
+Defines one or more sequences that terminate generation early.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` or `string[]` |
+| Default | Unset |
+| Common use | Parser boundaries, template endings, protocol markers |
+
+This is useful when you need hard output boundaries, such as stopping before a footer, tool delimiter, or next synthetic section.
+
+<span id="logprobs"></span>
+<h3 id="parameter-logprobs"><code>logprobs</code></h3>
+
+Requests token-level probability metadata where available.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Default | `false` |
+
+This is mainly useful for analysis, evaluation, ranking, debugging, and confidence-style workflows. It is not usually needed for standard product responses.
+
+<span id="top_logprobs"></span>
+<h3 id="parameter-top_logprobs"><code>top_logprobs</code></h3>
+
+Requests the top alternative candidate tokens for each output position alongside their log probabilities.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Typical range | Provider specific, often `0` to `20` |
+| Requires | `logprobs: true` |
+
+Use this when you need to inspect alternative token branches rather than only the chosen output token.
+
+<span id="tools"></span>
+<h3 id="parameter-tools"><code>tools</code></h3>
+
+Declares callable tools or functions for tool-using model workflows.
+
+| Field | Value |
+| --- | --- |
+| Type | `array` |
+| Default | Unset |
+
+Use the OpenAI-style tool schema unless the endpoint docs say otherwise. Tool declarations describe what the model may call, not whether it must call one.
+
+<span id="tool_choice"></span>
+<h3 id="parameter-tool_choice"><code>tool_choice</code></h3>
+
+Controls whether the model may call tools automatically, must not call tools, or must use a specific tool.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` or `object` |
+| Common values | `none`, `auto`, `required` |
+
+Use `none` when you want content only, `auto` when the model may decide, and stricter values when downstream orchestration requires a tool call.
+
+<span id="parallel_tool_calls"></span>
+<h3 id="parameter-parallel_tool_calls"><code>parallel_tool_calls</code></h3>
+
+Allows or disallows concurrent tool calls on compatible tool-calling APIs.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Default | Endpoint and provider specific |
+
+Disable this when downstream systems require strictly sequential execution, ordered side effects, or simpler agent traces.
+
+<span id="response_format"></span>
+<h3 id="parameter-response_format"><code>response_format</code></h3>
+
+Requests a particular output format such as plain text, JSON, or schema-constrained responses.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` or `object` |
+| Default | Endpoint and provider specific |
+
+Exact accepted shapes depend on the endpoint and provider adapter. Use this when you want more than free-form text, especially for JSON responses and structured extraction flows.
+
+<span id="structured_outputs"></span>
+<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
+
+Signals support for reliably structured or schema-constrained responses on the selected route and provider set.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Meaning | Capability signal rather than a direct tuning knob |
+
+In quickstart tables, this helps you understand whether the selected endpoint and active providers can reliably support structured-output workflows. It is best interpreted as support metadata.
+
+<span id="json_schema"></span>
+<h3 id="parameter-json_schema"><code>json_schema</code></h3>
+
+Supplies the JSON schema used for structured output enforcement on compatible models and endpoints.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Used with | Structured output or schema-constrained response flows |
+
+Use this when your application needs guaranteed fields, typed extraction, or a strict response contract. Keep schemas narrow and task-specific for better adherence.
+
+<span id="reasoning"></span>
+<h3 id="parameter-reasoning"><code>reasoning</code></h3>
+
+Contains provider-specific reasoning configuration for reasoning-capable APIs.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Default | Unset |
+
+Depending on the route, this may include enablement, effort, token budget, verbosity, or whether reasoning content is returned.
+
+<span id="reasoning_effort"></span>
+<h3 id="parameter-reasoning_effort"><code>reasoning_effort</code></h3>
+
+Requests a lower or higher reasoning budget when the endpoint and model expose that control.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` |
+| Common values | Provider specific, often values like `minimal`, `low`, `medium`, `high`, `none` |
+| Default | Provider and model specific |
+
+Higher effort can improve difficult reasoning tasks at the cost of latency and token usage. Lower effort is often a better fit for faster, cheaper requests.
+
+<span id="reasoning_tokens"></span>
+<h3 id="parameter-reasoning_tokens"><code>reasoning_tokens</code></h3>
+
+Represents a reasoning-specific token field where supported.
+
+| Field | Value |
+| --- | --- |
+| Type | `integer` |
+| Default | Provider and model specific |
+
+Depending on the route, this may be a request knob, a limit, or a response accounting field rather than a universally supported request parameter.
+
+<span id="include_reasoning"></span>
+<h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
+
+Requests reasoning content or reasoning summaries in responses where supported.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Default | `false` |
+
+Use this carefully. Reasoning payloads can be larger, may not be available on every model, and may be a poor fit for production responses that do not need extra diagnostic detail.
+
+<span id="service_tier"></span>
+<h3 id="parameter-service_tier"><code>service_tier</code></h3>
+
+Selects a supported routing or pricing tier on compatible text APIs.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` |
+| Supported values | `standard`, `priority`, `flex` |
+| Default | `standard` |
+
+Use `priority` or `flex` only when the chosen model and provider combination supports them. Omit the field to stay on the default standard tier.
+
+AI Stats maps these gateway-normalized tier values to provider-native controls internally, so callers can use the same `service_tier` values across supported text surfaces.
+
+Notes:
+
+- `Batch` is a separate API flow, not a service-tier value.
+- Support varies by endpoint and provider.
+
+<span id="provider"></span>
+<h3 id="parameter-provider"><code>provider</code></h3>
+
+Contains routing constraints and provider preferences.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Use for | Routing rules, provider selection, compliance constraints |
+
+Use this when you want to influence which upstream providers may execute the request, how they should be ranked, or what compliance requirements must be satisfied.
+
+Common fields include:
 
 | Field | Type | Purpose |
 | --- | --- | --- |
-| `order` | string[] | Preferred provider order. |
-| `only` | string[] | Restrict routing to specific providers. |
-| `ignore` | string[] | Exclude specific providers. |
-| `include_alpha` | boolean | Allow alpha providers in routing decisions. |
-| `sort` | string or object | Rank providers for this request, typically by `price`, `latency`, or `throughput`. |
-| `required_execution_region` | string | Restrict routing to providers that execute in a required region. |
-| `required_data_region` | string | Restrict routing to providers that store or process data in a required region. |
-| `require_zero_data_retention` | boolean | Restrict routing to providers that meet zero-data-retention requirements. |
-| `max_price` | object | Set price ceilings for prompt, completion, image, audio, or request costs. |
-| `quantizations` | string[] | Narrow routing to specific quantization variants when supported. |
+| `order` | `string[]` | Preferred provider order. |
+| `only` | `string[]` | Restrict routing to specific providers. |
+| `ignore` | `string[]` | Exclude specific providers. |
+| `include_alpha` | `boolean` | Allow alpha providers in routing decisions. |
+| `sort` | `string` or `object` | Rank providers, often by `price`, `latency`, or `throughput`. |
+| `required_execution_region` | `string` | Restrict execution to a required region. |
+| `required_data_region` | `string` | Restrict data handling to a required region. |
+| `require_zero_data_retention` | `boolean` | Require providers that meet zero-data-retention constraints. |
+| `max_price` | `object` | Set ceilings for prompt, completion, image, audio, or request costs. |
+| `quantizations` | `string[]` | Narrow routing to specific quantization variants when supported. |
 
-## Provider-specific options
+<span id="provider_options"></span>
+<h3 id="parameter-provider_options"><code>provider_options</code></h3>
 
-Use `provider_options` when you need provider-native configuration such as:
+Contains provider-specific passthrough settings that should not be normalized into the shared gateway request shape.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Use for | Provider-native controls |
+
+Examples include:
 
 - `openai.context_management`
 - `openai.prompt_cache_retention`
@@ -60,23 +478,57 @@ Use `provider_options` when you need provider-native configuration such as:
 - `google.cache_control`
 - `google.cached_content`
 
-Keep these isolated so you can preserve portability between providers.
+Use this when you need a provider-native feature but still want the rest of the request to stay on the gateway's common schema.
 
-## Debug parameters
+For provider prompt caching examples across Chat Completions, Responses, and Anthropic Messages, see [Prompt Caching](../guides/prompt-caching.mdx).
 
-Use `debug` for controlled troubleshooting:
+<span id="meta"></span>
+<h3 id="parameter-meta"><code>meta</code></h3>
+
+Requests extra response metadata where supported.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Default | Endpoint specific |
+
+Use this when you want additional non-core response metadata for debugging, analytics, or downstream inspection.
+
+<span id="usage"></span>
+<h3 id="parameter-usage"><code>usage</code></h3>
+
+Requests usage accounting details where supported.
+
+| Field | Value |
+| --- | --- |
+| Type | `boolean` |
+| Default | Endpoint specific |
+
+This is useful when you want explicit token or usage accounting in the response body rather than only relying on headers or dashboards.
+
+<span id="debug"></span>
+<h3 id="parameter-debug"><code>debug</code></h3>
+
+Enables controlled request and routing diagnostics.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Use for | Development and troubleshooting only |
+
+Supported debug fields include:
 
 | Field | Type | Purpose |
 | --- | --- | --- |
-| `enabled` | boolean | Enable debug mode for the request. |
-| `return_upstream_request` | boolean | Include transformed upstream request payload. |
-| `return_upstream_response` | boolean | Include upstream response payload where available. |
-| `trace` | boolean | Return routing/debug traces. |
+| `enabled` | `boolean` | Enable debug mode for the request. |
+| `return_upstream_request` | `boolean` | Include the transformed upstream request payload. |
+| `return_upstream_response` | `boolean` | Include upstream response payload where available. |
+| `trace` | `boolean` | Return routing or debug traces. |
 | `trace_level` | `summary` or `full` | Control trace verbosity. |
 
-`debug` data may contain sensitive request context. Use only in development or controlled environments.
+Debug payloads can contain sensitive request context. Use them only in development or tightly controlled environments.
 
-## Example
+## Example request
 
 ```json
 {
@@ -100,16 +552,25 @@ Use `debug` for controlled troubleshooting:
 }
 ```
 
+## Detailed explanations
+
+If you want the deeper "how should I tune this?" guidance rather than the raw field reference, use these next:
+
+- [Inference Parameters](/v1/guides/inference-parameters) for practical advice on temperature, top_p, top_k, max token limits, stop sequences, and tuning workflow
+- [Sampling and Decoding](/v1/guides/sampling-and-decoding) for how randomness, penalties, and decoding controls change model behavior
+
 ## Related pages
 
-- [Streaming](./streaming)
-- [Limits](./limits)
-- [Errors and Debugging](./errors)
+- [Inference Parameters](/v1/guides/inference-parameters)
+- [Sampling and Decoding](/v1/guides/sampling-and-decoding)
+- [Streaming](./streaming.mdx)
+- [Limits](./limits.mdx)
+- [Errors and Debugging](/v1/api-reference/errors)
 
 <Visibility for="agents">
 If you are implementing parameter handling as an agent:
 
-- Use repository skills for schema validation and request-shape checks.
-- Preserve unknown provider-specific keys in pass-through flows when allowed.
-- Validate endpoint compatibility before setting advanced fields like tools, streaming, or debug options together.
+- use repository skills for schema validation and request-shape checks
+- preserve unknown provider-specific keys in pass-through flows when allowed
+- validate endpoint compatibility before setting advanced fields like tools, streaming, or debug options together
 </Visibility>

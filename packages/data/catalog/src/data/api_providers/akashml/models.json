@@ -1,47 +1,5 @@
 [
   {
-    "api_model_id": "qwen/qwen3.6-35b-a3b",
-    "provider_api_model_id": "akashml:qwen/qwen3.6-35b-a3b",
-    "provider_model_slug": "Qwen/Qwen3.6-35B-A3B",
-    "internal_model_id": "qwen/qwen3.6-35b-a3b",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
-    "api_model_id": "moonshotai/kimi-k2.6",
-    "provider_api_model_id": "akashml:moonshotai/kimi-k2.6",
-    "provider_model_slug": "moonshotai/Kimi-K2.6",
-    "internal_model_id": "moonshotai/kimi-k2.6",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 256000,
-    "max_output_tokens": null,
-    "effective_from": "2026-04-28T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "deepseek/deepseek-v4-flash",
     "provider_api_model_id": "akashml:deepseek/deepseek-v4-flash",
     "provider_model_slug": "deepseek-ai/DeepSeek-V4-Flash",
@@ -63,15 +21,15 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3.5-35b-a3b",
-    "provider_api_model_id": "akashml:qwen/qwen3.5-35b-a3b",
-    "provider_model_slug": "Qwen/Qwen3.5-35B-A3B",
-    "internal_model_id": "qwen/qwen3.5-35b-a3b",
+    "api_model_id": "google/gemma-4-31b",
+    "provider_api_model_id": "akashml:google/gemma-4-31b",
+    "provider_model_slug": "google/gemma-4-31B-it",
+    "internal_model_id": "google/gemma-4-31b",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
-    "context_length": 262144,
+    "context_length": 256000,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,
@@ -126,15 +84,57 @@
     ]
   },
   {
-    "api_model_id": "google/gemma-4-31b",
-    "provider_api_model_id": "akashml:google/gemma-4-31b",
-    "provider_model_slug": "google/gemma-4-31B-it",
-    "internal_model_id": "google/gemma-4-31b",
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "akashml:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "moonshotai/Kimi-K2.7-Code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
     "is_active_gateway": true,
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 256000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-15T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.5-35b-a3b",
+    "provider_api_model_id": "akashml:qwen/qwen3.5-35b-a3b",
+    "provider_model_slug": "Qwen/Qwen3.5-35B-A3B",
+    "internal_model_id": "qwen/qwen3.5-35b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-04-28T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "qwen/qwen3.6-35b-a3b",
+    "provider_api_model_id": "akashml:qwen/qwen3.6-35b-a3b",
+    "provider_model_slug": "Qwen/Qwen3.6-35B-A3B",
+    "internal_model_id": "qwen/qwen3.6-35b-a3b",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 262144,
     "max_output_tokens": null,
     "effective_from": "2026-04-28T00:00:00",
     "effective_to": null,

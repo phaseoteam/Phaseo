@@ -2,7 +2,14 @@ import { join } from "path";
 import { createHash } from "crypto";
 import { DIR_SUBSCRIPTION_PLANS } from "../paths";
 import { listDirs, readJsonWithHash } from "../util";
-import { client, isDryRun, logWrite, assertOk, pruneRowsByColumn } from "../supa";
+import {
+    client,
+    isDryRun,
+    logWrite,
+    assertOk,
+    pruneRowsByColumn,
+    touchModelTimestamps,
+} from "../supa";
 import { ChangeTracker } from "../state";
 
 const normalizeModelIdForMatch = (value: string): string => {
@@ -77,6 +84,34 @@ const loadKnownModelIds = async (
     return { modelIds, normalizedModelIdToModelId };
 };
 
+function resolveTouchedModelIds(
+    rawModelIds: Iterable<string | null | undefined>,
+    lookups: {
+        knownModelIds: Set<string>;
+        normalizedModelIdToModelId: Map<string, string>;
+    }
+): string[] {
+    const resolved = new Set<string>();
+
+    for (const value of rawModelIds) {
+        const normalizedValue = typeof value === "string" ? value.trim() : "";
+        if (!normalizedValue) continue;
+
+        const modelId =
+            (lookups.knownModelIds.has(normalizedValue) ? normalizedValue : "") ||
+            lookups.normalizedModelIdToModelId.get(
+                normalizeModelIdForMatch(normalizedValue)
+            ) ||
+            "";
+
+        if (modelId) {
+            resolved.add(modelId);
+        }
+    }
+
+    return Array.from(resolved);
+}
+
 function generateDeterministicUUID(input: string): string {
     const hash = createHash('md5').update(input).digest('hex');
     return hash.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
@@ -132,6 +167,7 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
     const { modelIds: knownModelIds, normalizedModelIdToModelId } = await loadKnownModelIds(supa);
     const remappedModelRefs: Array<{ source: string; from: string; to: string }> = [];
     const missingModelRefs: Array<{ source: string; model_id: string }> = [];
+    const touchedModelIds = new Set<string>();
     tracker.touchPrefix(DIR_SUBSCRIPTION_PLANS);
     const planUuids = new Set<string>();
     const dirs = await listDirs(DIR_SUBSCRIPTION_PLANS);
@@ -139,7 +175,17 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
     for (const d of dirs) {
         const fp = join(d, "plan.json");
         const { data: j, hash } = await readJsonWithHash<any>(fp);
-        const change = tracker.track(fp, hash, { plan_id: j.plan_id, organisation_id: j.organisation_id });
+        const change = tracker.track(fp, hash, {
+            plan_id: j.plan_id,
+            organisation_id: j.organisation_id,
+            model_ids: Array.isArray(j.models)
+                ? j.models
+                      .map((model: RawPlanModel) =>
+                          typeof model?.model_id === "string" ? model.model_id.trim() : ""
+                      )
+                      .filter(Boolean)
+                : [],
+        });
 
         if (!j.plan_id || !j.name || !j.organisation_id) {
             console.error(`Skipping ${d}: missing required fields plan_id, name, or organisation_id`);
@@ -233,6 +279,7 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
                     };
 
                     if (!shouldWrite) continue;
+                    touchedModelIds.add(resolvedModelId);
 
                     if (isDryRun()) {
                         logWrite("public.data_subscription_plan_models", "UPSERT", modelRow, { onConflict: "plan_uuid,model_id" });
@@ -303,6 +350,17 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
     }
 
     const deletions = tracker.getDeleted(DIR_SUBSCRIPTION_PLANS);
+    for (const deletion of deletions) {
+        const rawModelIds = Array.isArray(deletion.info.meta?.model_ids)
+            ? deletion.info.meta.model_ids
+            : [];
+        for (const touchedModelId of resolveTouchedModelIds(rawModelIds, {
+            knownModelIds,
+            normalizedModelIdToModelId,
+        })) {
+            touchedModelIds.add(touchedModelId);
+        }
+    }
     touched = touched || deletions.length > 0;
     if (!touched) return;
 
@@ -327,4 +385,6 @@ export async function loadSubscriptionPlans(tracker: ChangeTracker) {
         planUuids,
         "data_subscription_plans"
     );
+
+    await touchModelTimestamps(supa, touchedModelIds);
 }

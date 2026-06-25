@@ -59,7 +59,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 104
+      "rank": 110
     },
     {
       "benchmark_id": "lmarena-text",
@@ -91,7 +91,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 130
+      "rank": 131
     },
     {
       "benchmark_id": "livebench",
@@ -99,7 +99,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 8
+      "rank": 13
     },
     {
       "benchmark_id": "livecodebench",
@@ -107,7 +107,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen3/",
-      "rank": 29
+      "rank": 30
     },
     {
       "benchmark_id": "multi-if",
@@ -123,7 +123,7 @@
       "is_self_reported": false,
       "other_info": "Confab 12.9%; non-response 11.7%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 7
+      "rank": 55
     },
     {
       "benchmark_id": "elimination-game",
@@ -131,7 +131,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.212; games 535; avg points 0.358",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 60
+      "rank": 55
     }
   ]
 }

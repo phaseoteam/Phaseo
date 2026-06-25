@@ -1,0 +1,54 @@
+{
+  "plan_id": "v0-free",
+  "name": "v0 Free",
+  "organisation_id": "vercel",
+  "description": "Free v0 plan with limited included usage for design and web application generation.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 0,
+      "link": "https://v0.dev/pricing",
+      "other_info": "$5 monthly included usage"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Included Usage",
+      "feature_value": "$5 / Month",
+      "feature_description": "Included usage renews monthly.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Messages",
+      "feature_value": "7 / Day",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Deployments",
+      "feature_value": "Deploy To Vercel",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "vercel/v0-1.5-sm",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage",
+      "other_info": "v0's chat selector exposes marketing tiers such as v0 Mini, v0 Pro, v0 Max, and v0 Max Fast; catalog API model IDs remain versioned."
+    },
+    {
+      "model_id": "vercel/v0-1.5-md",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage",
+      "other_info": "Availability can vary by selector and account."
+    },
+    {
+      "model_id": "vercel/v0-1.5-lg",
+      "model_info": "v0 model family",
+      "rate_limit": "Consumes included usage",
+      "other_info": "Availability can vary by selector and account."
+    }
+  ]
+}

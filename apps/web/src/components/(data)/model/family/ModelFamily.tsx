@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FamilyModelItem } from "@/lib/fetchers/models/getFamilyModels";
+import type { FamilyModelItem } from "@/lib/fetchers/models/getFamilyModels";
 
 type Props = {
 	modelId: string;

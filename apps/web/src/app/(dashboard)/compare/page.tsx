@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 
 import { buildMetadata } from "@/lib/seo";
 import type { ExtendedModel } from "@/data/types";
-import { loadCompareModelsCached } from "@/lib/fetchers/compare/loadCompareModels";
-import { getComparisonModelsCached } from "@/lib/fetchers/compare/getComparisonModels";
-import { getModelPerformanceMetricsCached } from "@/lib/fetchers/models/getModelPerformance";
-import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
-import { getModelRealtimeWindowStatsCached } from "@/lib/fetchers/models/getModelRealtimeWindowStats";
+import {
+	fetchFrontendCompareModels,
+	fetchFrontendComparisonModels,
+	fetchFrontendModelPerformance,
+	fetchFrontendModelRealtimeWindowStats,
+	fetchFrontendModelTokenTrajectory,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
 import CompareMiniHeader from "@/components/(data)/compare/CompareMiniHeader";
 import type { CompareGatewayUsageByModel } from "@/components/(data)/compare/types";
@@ -64,9 +66,8 @@ const average = (values: Array<number | null | undefined>): number | null => {
 };
 
 export default async function Page({ searchParams }: PageProps = {}) {
-	const includeHidden = false;
 	const [models, resolvedSearchParams] = await Promise.all([
-		loadCompareModelsCached(includeHidden),
+		fetchFrontendCompareModels(),
 		searchParams,
 	]);
 	const typedModels = models as ExtendedModel[];
@@ -86,14 +87,14 @@ export default async function Page({ searchParams }: PageProps = {}) {
 
 	const [comparisonData, usageByModel] = resolvedIds.length
 		? await Promise.all([
-				getComparisonModelsCached(resolvedIds, includeHidden),
+				fetchFrontendComparisonModels(resolvedIds),
 				Promise.all(
 					resolvedIds.map(async (id) => {
 						try {
 							const [metrics, trajectory, realtime30m] = await Promise.all([
-								getModelPerformanceMetricsCached(id, includeHidden),
-								getModelTokenTrajectoryCached(id, includeHidden),
-								getModelRealtimeWindowStatsCached(id, 30),
+								fetchFrontendModelPerformance(id),
+								fetchFrontendModelTokenTrajectory(id),
+								fetchFrontendModelRealtimeWindowStats(id, 30),
 							]);
 							const points30d = (trajectory?.points ?? [])
 								.slice(-30)
@@ -108,22 +109,27 @@ export default async function Page({ searchParams }: PageProps = {}) {
 							const latestDate = points30d.length
 								? points30d[points30d.length - 1].date
 								: null;
+							const summary = metrics?.summary ?? null;
+							const hourly = metrics?.hourly ?? [];
+							const timeOfDay = metrics?.timeOfDay ?? [];
+							const providerPerformance = metrics?.providerPerformance ?? [];
+							const providerDaily7d = metrics?.providerDaily7d ?? [];
 							const fallbackLatencyMs =
-								metrics.summary.avgLatencyMs ??
-								average(metrics.hourly.map((point) => point.avgLatencyMs)) ??
-								average(metrics.timeOfDay.map((point) => point.avgLatencyMs)) ??
+								summary?.avgLatencyMs ??
+								average(hourly.map((point) => point.avgLatencyMs)) ??
+								average(timeOfDay.map((point) => point.avgLatencyMs)) ??
 								average(
-									metrics.providerPerformance.map((provider) => provider.avgLatencyMs)
+									providerPerformance.map((provider) => provider.avgLatencyMs)
 								) ??
-								average(metrics.providerDaily7d.map((point) => point.avgLatencyMs));
+								average(providerDaily7d.map((point) => point.avgLatencyMs));
 							const fallbackThroughput =
-								metrics.summary.avgThroughput ??
-								average(metrics.hourly.map((point) => point.avgThroughput)) ??
-								average(metrics.timeOfDay.map((point) => point.avgThroughput)) ??
+								summary?.avgThroughput ??
+								average(hourly.map((point) => point.avgThroughput)) ??
+								average(timeOfDay.map((point) => point.avgThroughput)) ??
 								average(
-									metrics.providerPerformance.map((provider) => provider.avgThroughput)
+									providerPerformance.map((provider) => provider.avgThroughput)
 								) ??
-								average(metrics.providerDaily7d.map((point) => point.avgThroughput));
+								average(providerDaily7d.map((point) => point.avgThroughput));
 							return [
 								id,
 								{
@@ -131,14 +137,14 @@ export default async function Page({ searchParams }: PageProps = {}) {
 									tokens30d,
 									latestDate,
 									points30d,
-									totalRequests: metrics.summary.totalRequests,
-									requests30m: realtime30m.requestsInWindow,
+									totalRequests: summary?.totalRequests ?? 0,
+									requests30m: realtime30m?.requestsInWindow ?? 0,
 									latencyP50Ms30m:
-										realtime30m.latencyP50Ms ?? fallbackLatencyMs ?? null,
+										realtime30m?.latencyP50Ms ?? fallbackLatencyMs ?? null,
 									throughputP50TokPerSec30m:
-										realtime30m.throughputP50TokPerSec ?? fallbackThroughput ?? null,
-									cumulativeTokens: metrics.cumulativeTokens ?? null,
-									requestPoints24h: metrics.hourly.map((point) => ({
+										realtime30m?.throughputP50TokPerSec ?? fallbackThroughput ?? null,
+									cumulativeTokens: metrics?.cumulativeTokens ?? null,
+									requestPoints24h: hourly.map((point) => ({
 										date: point.bucket,
 										value: point.requests,
 									})),
