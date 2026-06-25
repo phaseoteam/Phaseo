@@ -117,13 +117,13 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
-				<ModelStatusBanner status={header.status} className="mb-6" />
-
 				{modelPageNotice ? (
 					<div className="mb-6">
 						<ModelPageNotice notice={modelPageNotice} />
 					</div>
-				) : null}
+				) : (
+					<ModelStatusBanner status={header.status} className="mb-6" />
+				)}
 
 				<div className="mb-8 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="flex w-full items-start gap-4">
