@@ -57,6 +57,8 @@ import {
 
 const SERVICE_TIERS_DOCS_HREF =
 	"https://docs.ai-stats.phaseo.app/v1/guides/service-tiers";
+const PROVIDER_STATUSES_DOCS_HREF =
+	"https://docs.ai-stats.phaseo.app/v1/guides/provider-statuses";
 
 function formatLatencySeconds(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value)) return "--";
@@ -790,22 +792,22 @@ const PROVIDER_STATUS_META: Record<
 		description: "Not active yet.",
 	},
 	deranked_lvl1: {
-		label: "Limited",
+		label: "Deranked L1",
 		icon: AlertTriangle,
 		iconClass: "text-amber-500",
-		description: "Temporarily limited.",
+		description: "Routable, but slightly deprioritized by routing health.",
 	},
 	deranked_lvl2: {
-		label: "Limited",
+		label: "Deranked L2",
 		icon: AlertTriangle,
 		iconClass: "text-amber-600",
-		description: "Temporarily limited.",
+		description: "Routable, but currently deprioritized by routing health.",
 	},
 	deranked_lvl3: {
-		label: "Limited",
+		label: "Deranked L3",
 		icon: AlertTriangle,
 		iconClass: "text-red-500",
-		description: "Temporarily limited.",
+		description: "Routable, but heavily deprioritized by routing health.",
 	},
 	inactive: {
 		label: "Not Active",
@@ -817,7 +819,7 @@ const PROVIDER_STATUS_META: Record<
 		label: "Disabled",
 		icon: Ban,
 		iconClass: "text-red-600",
-		description: "Disabled.",
+		description: "Explicitly disabled and not routable.",
 	},
 	not_listed: {
 		label: "Not Active",
@@ -875,6 +877,7 @@ export default function ProviderCard({
 	runtimeStats,
 	routingStatus,
 	displayNameOverride,
+	variantLabels,
 }: {
 	provider: ProviderPricing;
 	defaultPlan: string;
@@ -884,6 +887,7 @@ export default function ProviderCard({
 	runtimeStats: ProviderRuntimeStats | null;
 	routingStatus: ProviderRoutingStatus | null;
 	displayNameOverride?: string | null;
+	variantLabels?: string[] | null;
 }) {
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
 	const [copiedUsageSnippet, setCopiedUsageSnippet] = useState<string | null>(null);
@@ -1385,6 +1389,21 @@ export default function ProviderCard({
 									</span>
 								) : null}
 							</div>
+							{variantLabels?.length ? (
+								<div className="flex flex-wrap items-center gap-1.5">
+									<span className="text-[11px] font-medium text-muted-foreground">
+										Variants
+									</span>
+									{variantLabels.map((label) => (
+										<span
+											key={label}
+											className="inline-flex items-center rounded-full border border-zinc-200/80 bg-zinc-50/80 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200"
+										>
+											{label}
+										</span>
+									))}
+								</div>
+							) : null}
 							<div className="flex flex-wrap items-center gap-1.5">
 								<HoverCard openDelay={120} closeDelay={80}>
 									<HoverCardTrigger asChild>
@@ -1400,13 +1419,22 @@ export default function ProviderCard({
 									</HoverCardTrigger>
 										<HoverCardContent align="start" className="w-auto p-2 text-xs">
 											<p className="font-semibold">{statusLabel}</p>
-											<p>{statusDetail}</p>
 											{routingHealthSummary ? (
 												<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 													<p className="font-semibold">{routingHealthSummary.label}</p>
 													<p>{routingHealthSummary.description}</p>
 												</div>
 											) : null}
+											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+												<Link
+													href={PROVIDER_STATUSES_DOCS_HREF}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+												>
+													Learn more about provider statuses
+												</Link>
+											</div>
 										</HoverCardContent>
 									</HoverCard>
 								{privacyIgnoredReasons?.length ? (

@@ -22,7 +22,7 @@ export default async function HomePage() {
         <ul className="checklist">
           <li>OAuth 2.1 + PKCE flow</li>
           <li>Automatic token refresh and session persistence</li>
-          <li>Control route integration (`/health`, `/providers`, `/models`, `/gateway/models`)</li>
+          <li>Control route integration (`/health`, `/providers`, `/models`)</li>
           <li>Generation surface integration via Responses API and a generic proxy</li>
           <li>Endpoint tester for embeddings, moderation, images, video, OCR, and music</li>
         </ul>

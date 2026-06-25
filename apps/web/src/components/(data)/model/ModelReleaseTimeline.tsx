@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { getModelTimelineCached } from "@/lib/fetchers/models/getModelTimeline";
+import { fetchFrontendModelTimeline } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 type RawEvent = {
 	date: string;
@@ -207,7 +207,7 @@ export default async function ModelReleaseTimeline({
 	includeHidden?: boolean;
 }) {
 	// const modelId = (await params).modelId;
-	const modelTimeline = await getModelTimelineCached(modelId, includeHidden);
+	const modelTimeline = await fetchFrontendModelTimeline(modelId);
 
 	const events = modelTimeline?.events ?? [];
 	if (!events.length) return null;

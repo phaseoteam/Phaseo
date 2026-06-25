@@ -268,13 +268,52 @@
     "effective_from": "2026-01-28T00:00:00",
     "effective_to": null,
     "capabilities": [
-      {
-        "capability_id": "video.generate",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
-  },
+        {
+          "capability_id": "video.generate",
+          "status": "coming_soon",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "number",
+              "min": 1,
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "string",
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "aspect_ratio": {
+              "type": "string"
+            },
+            "negative_prompt": {
+              "type": "string"
+            },
+            "input_image": {
+              "type": "string"
+            },
+            "input_video": {
+              "type": "string"
+            },
+            "last_frame": {
+              "type": "string"
+            },
+            "generate_audio": {
+              "type": "boolean"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
   {
     "api_model_id": "bytedance/seedance-2.0-fast",
     "provider_api_model_id": "byteplus:bytedance/seedance-2.0-fast",
@@ -289,12 +328,66 @@
     "effective_from": "2026-01-28T00:00:00",
     "effective_to": null,
     "capabilities": [
-      {
-        "capability_id": "video.generate",
-        "status": "coming_soon",
-        "params": []
-      }
-    ]
+        {
+          "capability_id": "video.generate",
+          "status": "coming_soon",
+          "params": {
+            "prompt": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "number",
+              "min": 1,
+              "aliases": [
+                "seconds",
+                "duration_seconds"
+              ]
+            },
+            "size": {
+              "type": "string",
+              "aliases": [
+                "resolution"
+              ]
+            },
+            "aspect_ratio": {
+              "type": "string"
+            },
+            "negative_prompt": {
+              "type": "string"
+            },
+            "input_image": {
+              "type": "string"
+            },
+            "input_video": {
+              "type": "string"
+            },
+            "last_frame": {
+              "type": "string"
+            },
+            "generate_audio": {
+              "type": "boolean"
+            },
+            "seed": {
+              "type": "integer"
+            }
+          }
+        }
+      ]
+    },
+  {
+    "api_model_id": "bytedance/seedance-2.0-mini-260615",
+    "provider_api_model_id": "byteplus:bytedance/seedance-2.0-mini-260615",
+    "provider_model_slug": "dreamina-seedance-2-0-mini-260615",
+    "internal_model_id": "bytedance/seedance-2.0-mini-260615",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image,video",
+    "output_modalities": "video",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-15T00:00:00",
+    "effective_to": null,
+    "capabilities": []
   },
   {
     "api_model_id": "bytedance/seedream-4.0",

@@ -7,8 +7,8 @@ import ByokProviderRow from "@/components/(gateway)/settings/byok/ByokProviderRo
 import ResetWindowHover from "@/components/(gateway)/settings/byok/ResetWindowHover";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
+import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchSettingsByokInitialData } from "@/lib/fetchers/internal/fetchSettingsByokInitialData";
 
 export const metadata = { title: "BYOK - Settings" };
 
@@ -103,9 +103,12 @@ export default function BYOKPage() {
 }
 
 async function ByokProvidersSection() {
-	const supabase = await createClient();
-	const currentTeam = await getWorkspaceIdFromCookie();
-	if (!currentTeam) {
+	const [initialData, providerCatalogData] = await Promise.all([
+		fetchSettingsByokInitialData(),
+		fetchFrontendAPIProviders(),
+	]);
+
+	if (!initialData.workspaceId) {
 		return (
 			<div className="rounded-xl border border-dashed border-zinc-300/70 p-6 text-sm text-muted-foreground">
 				Select a workspace to manage BYOK settings.
@@ -113,81 +116,17 @@ async function ByokProvidersSection() {
 		);
 	}
 
-	const now = new Date();
-	const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0));
-	const nextMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0));
-	const monthStartIso = monthStart.toISOString();
-	const nextMonthStartIso = nextMonthStart.toISOString();
+	const keyByProvider = new Map<string, KeyEntry>(
+		initialData.keyEntries.map((entry) => [entry.providerId, entry]),
+	);
 
-	const [
-		{ data: byokRows, error: byokError },
-		{ data: monthlyUsageRows },
-		{ data: providerRowsData, error: providerRowsError },
-	] = await Promise.all([
-		supabase
-			.from("byok_keys")
-			.select("id,provider_id,name,prefix,suffix,created_at,enabled,always_use")
-			.eq("workspace_id", currentTeam)
-			.order("created_at", { ascending: false }),
-		supabase
-			.from("workspace_byok_monthly_usage")
-			.select("month_start,request_count")
-			.eq("workspace_id", currentTeam)
-			.gte("month_start", monthStartIso)
-			.lt("month_start", nextMonthStartIso)
-			.order("month_start", { ascending: false })
-			.limit(1),
-		supabase
-			.from("data_api_providers")
-			.select("api_provider_id,api_provider_name")
-			.order("api_provider_name", { ascending: true }),
-	]);
-
-	if (byokError) {
-		console.error("[settings/byok] failed to load keys", byokError);
-	}
-	if (providerRowsError) {
-		console.error("[settings/byok] failed to load providers", providerRowsError);
-	}
-
-	const keyRows = (byokRows ?? []) as Array<{
-		id: string;
-		provider_id: string;
-		name: string;
-		prefix: string | null;
-		suffix: string | null;
-		created_at: string;
-		enabled: boolean;
-		always_use: boolean;
-	}>;
-
-	const keyByProvider = new Map<string, KeyEntry>();
-	const hiddenLegacyCountByProvider = new Map<string, number>();
-	for (const row of keyRows) {
-		if (!keyByProvider.has(row.provider_id)) {
-			keyByProvider.set(row.provider_id, {
-				id: row.id,
-				providerId: row.provider_id,
-				name: row.name,
-				prefix: row.prefix ?? undefined,
-				suffix: row.suffix ?? undefined,
-				createdAt: row.created_at,
-				enabled: row.enabled,
-				alwaysUse: row.always_use,
-			});
-			continue;
-		}
-		hiddenLegacyCountByProvider.set(
-			row.provider_id,
-			(hiddenLegacyCountByProvider.get(row.provider_id) ?? 0) + 1,
-		);
-	}
-
-	const providerCatalog: ProviderItem[] = (providerRowsData ?? [])
-		.map((row: any) => ({
-			id: String(row?.api_provider_id ?? "").trim(),
-			name: String(row?.api_provider_name ?? "").trim() || String(row?.api_provider_id ?? "").trim(),
-			logoId: String(row?.api_provider_id ?? "").trim(),
+	const providerCatalog: ProviderItem[] = providerCatalogData
+		.map((provider) => ({
+			id: String(provider.api_provider_id ?? "").trim(),
+			name:
+				String(provider.api_provider_name ?? "").trim() ||
+				String(provider.api_provider_id ?? "").trim(),
+			logoId: String(provider.api_provider_id ?? "").trim(),
 		}))
 		.filter((provider: ProviderItem) => provider.id.length > 0);
 	const baseProviders = providerCatalog.length > 0 ? providerCatalog : FALLBACK_PROVIDERS;
@@ -203,11 +142,6 @@ async function ByokProvidersSection() {
 		}));
 	const providerRows = [...baseProviders, ...unknownProviders];
 
-	const legacyHiddenTotal = Array.from(hiddenLegacyCountByProvider.values()).reduce((sum, count) => sum + count, 0);
-	const monthlyRequestCount = Number(monthlyUsageRows?.[0]?.request_count ?? 0);
-	const freeRemaining = Math.max(0, BYOK_MONTHLY_FREE_REQUESTS - monthlyRequestCount);
-	const paidTierRequests = Math.max(0, monthlyRequestCount - BYOK_MONTHLY_FREE_REQUESTS);
-
 	return (
 		<div className="space-y-4">
 			<Card className="rounded-2xl">
@@ -220,21 +154,21 @@ async function ByokProvidersSection() {
 				<CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 					<div>
 						<div className="text-xs uppercase tracking-wide text-muted-foreground">Used requests</div>
-						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(monthlyRequestCount)}</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.monthlyRequestCount)}</div>
 					</div>
 					<div>
 						<div className="text-xs uppercase tracking-wide text-muted-foreground">Free remaining</div>
-						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(freeRemaining)}</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.freeRemaining)}</div>
 					</div>
 					<div>
 						<div className="text-xs uppercase tracking-wide text-muted-foreground">Paid-tier requests</div>
-						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(paidTierRequests)}</div>
+						<div className="mt-1 text-2xl font-semibold">{fmtCompactInt(initialData.paidTierRequests)}</div>
 					</div>
 					<div className="sm:col-span-3 text-xs text-muted-foreground">
 						Usage resets at{" "}
 						<ResetWindowHover
-							iso={nextMonthStartIso}
-							triggerText={`${formatUtcDateTime(nextMonthStartIso)} UTC`}
+							iso={initialData.nextMonthStartIso}
+							triggerText={`${formatUtcDateTime(initialData.nextMonthStartIso)} UTC`}
 						/>
 						.
 					</div>
@@ -246,12 +180,12 @@ async function ByokProvidersSection() {
 					<h2 className="text-base font-semibold">Provider keys</h2>
 				</div>
 
-				{legacyHiddenTotal > 0 ? (
+				{initialData.legacyHiddenTotal > 0 ? (
 					<Alert>
 						<TriangleAlert className="h-4 w-4" />
 						<AlertTitle>Legacy duplicate keys detected</AlertTitle>
 						<AlertDescription>
-							{fmtCompactInt(legacyHiddenTotal)} legacy key entries are hidden. Only the newest key per provider is editable.
+							{fmtCompactInt(initialData.legacyHiddenTotal)} legacy key entries are hidden. Only the newest key per provider is editable.
 						</AlertDescription>
 					</Alert>
 				) : null}

@@ -175,7 +175,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct",
-      "rank": 107
+      "rank": 108
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -183,7 +183,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://github.com/QwenLM/Qwen2.5-VL",
-      "rank": 94
+      "rank": 98
     },
     {
       "benchmark_id": "mmstar",

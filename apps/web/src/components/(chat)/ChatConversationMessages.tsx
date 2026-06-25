@@ -12,6 +12,10 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
 import {
+	ChatRequestErrorNotice,
+	type ChatRequestErrorDetails,
+} from "@/components/(chat)/ChatRequestErrorNotice";
+import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
@@ -102,6 +106,8 @@ type ChatConversationMessagesProps = {
 	onBranchAssistant: (messageId: string) => void;
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	onCopy: (text: string) => boolean | Promise<boolean>;
+	requestError?: ChatRequestErrorDetails | null;
+	onDismissRequestError?: () => void;
 };
 
 export function ChatConversationMessages({
@@ -124,8 +130,13 @@ export function ChatConversationMessages({
 	onBranchAssistant,
 	onSelectVariant,
 	onCopy,
+	requestError = null,
+	onDismissRequestError,
 }: ChatConversationMessagesProps) {
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
+	const [dismissedErrorMessageIds, setDismissedErrorMessageIds] = useState<
+		Set<string>
+	>(() => new Set());
 	const copiedResetTimeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
@@ -219,6 +230,16 @@ export function ChatConversationMessages({
 			: null;
 	const throughputDisplay =
 		typeof throughput === "number" ? Math.round(throughput) : null;
+	const metadataProviderId =
+		typeof (meta as any)?.provider === "string" &&
+		(meta as any).provider.trim().length > 0
+			? (meta as any).provider.trim()
+			: typeof (meta as any)?.routing?.selected_provider === "string" &&
+					(meta as any).routing.selected_provider.trim().length > 0
+				? (meta as any).routing.selected_provider.trim()
+				: metadataMessage?.providerId?.trim() || null;
+	const metadataProviderLabel =
+		metadataMessage?.providerName?.trim() || metadataProviderId || null;
 
 	const messagesContent = useMemo(() => {
 		if (!activeThread?.messages.length) {
@@ -252,6 +273,30 @@ export function ChatConversationMessages({
 			const activeVariantIndex = message.activeVariantIndex ?? 0;
 			const activeVariant = variants[activeVariantIndex] ?? variants[0];
 			const content = activeVariant?.content ?? message.content;
+			const activeMeta =
+				(activeVariant?.meta as Record<string, unknown> | null) ??
+				(message.meta as Record<string, unknown> | null) ??
+				null;
+			let messageRequestError: ChatRequestErrorDetails | null = null;
+			if (!isUser) {
+				if (
+					activeMeta?.chat_request_error &&
+					typeof activeMeta.chat_request_error === "object" &&
+					!Array.isArray(activeMeta.chat_request_error)
+				) {
+					messageRequestError =
+						activeMeta.chat_request_error as ChatRequestErrorDetails;
+				} else if (
+					requestError &&
+					lastMessageId === message.id &&
+					!dismissedErrorMessageIds.has(message.id)
+				) {
+					messageRequestError = requestError;
+				}
+			}
+			const showRequestError =
+				Boolean(messageRequestError) &&
+				!dismissedErrorMessageIds.has(message.id);
 			const videoUrl = isUser
 				? null
 				: sanitizeHttpMediaUrl(extractGeneratedVideoUrl(content));
@@ -306,6 +351,22 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
+			const routingSelectedProvider =
+				(activeMeta?.routing as any)?.selected_provider;
+			let responseProviderId = message.providerId?.trim() || null;
+			if (
+				typeof activeMeta?.provider === "string" &&
+				activeMeta.provider.trim().length > 0
+			) {
+				responseProviderId = activeMeta.provider.trim();
+			} else if (
+				typeof routingSelectedProvider === "string" &&
+				routingSelectedProvider.trim().length > 0
+			) {
+				responseProviderId = routingSelectedProvider.trim();
+			}
+			const responseProviderLabel =
+				message.providerName?.trim() || responseProviderId || null;
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -340,32 +401,39 @@ export function ChatConversationMessages({
 					)}
 				>
 					{!isUser && displayModelId && (
-						hasModelLink ? (
-							<Link
-								href={modelLink}
-								className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
-							>
-								<Logo
-									id={orgId}
-									alt={orgName}
-									width={18}
-									height={18}
-									className="shrink-0 rounded-none"
-								/>
-								<span className="truncate">{modelLabel}</span>
-							</Link>
-						) : (
-							<span className="mb-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-								<Logo
-									id={orgId}
-									alt={orgName}
-									width={18}
-									height={18}
-									className="shrink-0 rounded-none"
-								/>
-								<span className="truncate">{modelLabel}</span>
-							</span>
-						)
+						<div className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
+							{hasModelLink ? (
+								<Link
+									href={modelLink}
+									className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
+								>
+									<Logo
+										id={orgId}
+										alt={orgName}
+										width={18}
+										height={18}
+										className="shrink-0 rounded-none"
+									/>
+									<span className="truncate">{modelLabel}</span>
+								</Link>
+							) : (
+								<span className="inline-flex items-center gap-2">
+									<Logo
+										id={orgId}
+										alt={orgName}
+										width={18}
+										height={18}
+										className="shrink-0 rounded-none"
+									/>
+									<span className="truncate">{modelLabel}</span>
+								</span>
+							)}
+							{responseProviderLabel ? (
+								<span className="pl-6 text-[11px] text-muted-foreground/80">
+									via {responseProviderLabel}
+								</span>
+							) : null}
+						</div>
 					)}
 					<div
 						className={cn(
@@ -513,8 +581,7 @@ export function ChatConversationMessages({
 									) : null}
 								</div>
 							)
-						) : isSending &&
-						  (!content || content === "Generating...") ? (
+						) : isSending && (!content || content === "Generating...") ? (
 							<div className="flex min-h-7 items-center">
 								<Shimmer className="text-sm text-muted-foreground">
 									Generating...
@@ -531,11 +598,31 @@ export function ChatConversationMessages({
 									>
 										<ReasoningTrigger />
 										<ReasoningContent>
-											{reasoningText}
-										</ReasoningContent>
+										{reasoningText}
+									</ReasoningContent>
 									</Reasoning>
 								) : null}
-								{contentWithoutMediaLinks ? (
+								{showRequestError && messageRequestError ? (
+									<ChatRequestErrorNotice
+										error={messageRequestError}
+										threadTitle={activeThread.title}
+										className="not-prose"
+										onDismiss={() => {
+											setDismissedErrorMessageIds((current) => {
+												const next = new Set(current);
+												next.add(message.id);
+												return next;
+											});
+											onDismissRequestError?.();
+										}}
+									/>
+								) : !contentWithoutMediaLinks &&
+									messageRequestError ? (
+									<p className="not-prose text-sm text-muted-foreground">
+										Request failed. Use Retry to run this message again.
+									</p>
+								) : null}
+								{!showRequestError && contentWithoutMediaLinks ? (
 									<Streamdown>{contentWithoutMediaLinks}</Streamdown>
 								) : null}
 								{imageUrl ? (
@@ -770,6 +857,14 @@ export function ChatConversationMessages({
 												<div className="grid gap-1.5">
 													<div className="flex items-center justify-between">
 														<span className="text-muted-foreground">
+															Provider
+														</span>
+														<span className="truncate pl-3 text-right">
+															{metadataProviderLabel ?? "-"}
+														</span>
+													</div>
+													<div className="flex items-center justify-between">
+														<span className="text-muted-foreground">
 															Total tokens
 														</span>
 														<span>
@@ -882,6 +977,9 @@ export function ChatConversationMessages({
 		modelLinkById,
 		accentColor,
 		onCopy,
+		requestError,
+		onDismissRequestError,
+		dismissedErrorMessageIds,
 		handleCopyForMessage,
 		copiedMessageKey,
 		onEditingValueChange,

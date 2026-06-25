@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://api-docs.deepseek.com/news/news250325",
-      "rank": 90
+      "rank": 96
     },
     {
       "benchmark_id": "lmarena-text",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 22
+      "rank": 32
     },
     {
       "benchmark_id": "confabulations",
@@ -78,7 +78,7 @@
       "is_self_reported": false,
       "other_info": "Confab 39.1%; non-response 13.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 57
+      "rank": 10
     }
   ]
 }

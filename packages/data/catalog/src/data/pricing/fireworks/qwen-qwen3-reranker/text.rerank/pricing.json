@@ -1,0 +1,20 @@
+{
+  "key": "fireworks:qwen/qwen3-reranker:text.rerank",
+  "api_provider_id": "fireworks",
+  "provider_slug": "fireworks",
+  "api_model_id": "qwen/qwen3-reranker",
+  "capability_id": "text.rerank",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.1,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Fireworks lists Qwen3 8B embedding/reranking serverless availability and Qwen3 8B embedding pricing at $0.10 per 1M input tokens.",
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

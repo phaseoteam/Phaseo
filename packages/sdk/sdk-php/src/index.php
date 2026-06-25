@@ -494,16 +494,6 @@ class AIStats
         );
     }
 
-    public function listTeamModels(array $params = []): mixed
-    {
-        return $this->withLifecycleAndTelemetry(
-            "models.team",
-            $params,
-            false,
-            fn () => \AIStats\Gen\listTeamModels($this->client, null, $params, null, null)
-        );
-    }
-
     public function listProviders(array $params = []): mixed
     {
         return $this->withLifecycleAndTelemetry(
@@ -827,7 +817,7 @@ class AIStats
     private function fetchModelLifecycle(string $modelId): ?array
     {
         try {
-            $response = \AIStats\Gen\listDataModels(
+            $response = \AIStats\Gen\listModels(
                 $this->client,
                 null,
                 ["model_id" => $modelId, "limit" => "1"],
@@ -852,7 +842,11 @@ class AIStats
             if (!is_array($modelData)) {
                 continue;
             }
-            if ($this->asTrimmedString((string) ($modelData["model_id"] ?? "")) !== $modelId) {
+            $candidateId = $this->firstNonEmpty(
+                $this->asTrimmedString((string) ($modelData["model_id"] ?? "")),
+                $this->asTrimmedString((string) ($modelData["id"] ?? ""))
+            );
+            if ($candidateId !== $modelId) {
                 continue;
             }
             return $this->toModelLifecycleInfo($modelData, $modelId);
@@ -867,6 +861,7 @@ class AIStats
         $lifecycle = $this->normalizeToArray($model["lifecycle"] ?? null) ?? [];
         $modelId = $this->firstNonEmpty(
             $this->asTrimmedString((string) ($model["model_id"] ?? "")),
+            $this->asTrimmedString((string) ($model["id"] ?? "")),
             $fallbackModelId
         ) ?? $fallbackModelId;
         $sourceStatus = $this->firstNonEmpty(

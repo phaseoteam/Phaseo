@@ -1,16 +1,20 @@
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_ROOT = "packages/data/catalog/src/data";
-const HISTORY_FILE = `${DATA_ROOT}/monitor-history.json`;
+const HISTORY_FILE = path.join(REPO_ROOT, DATA_ROOT, "monitor-history.json");
 
-type ChangeAction = "added" | "changed" | "removed";
+export type ChangeAction = "added" | "changed" | "removed";
 
 type DiffItem = {
   field: string;
   before: any;
   after: any;
+  kind?: "provider-model-listing" | "provider-model-status";
+  modelId?: string;
 };
 
 type ChangeFile = {
@@ -28,8 +32,27 @@ type Meta = {
   orgId: string | null;
 };
 
-function sh(cmd: string): string {
-  return execSync(cmd, { encoding: "utf8" }).toString();
+function git(args: string[]): string {
+  return execFileSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" }).toString();
+}
+
+export function assertSafeGitRef(ref: string, label = "git ref"): string {
+  const trimmed = String(ref ?? "").trim();
+  if (!trimmed) {
+    throw new Error(`${label} is required`);
+  }
+  if (!/^[A-Za-z0-9._/@-]+$/.test(trimmed)) {
+    throw new Error(`${label} contains invalid characters`);
+  }
+  if (
+    trimmed.startsWith("-") ||
+    trimmed.includes("..") ||
+    trimmed.includes("@{") ||
+    /[\\^:~?\[*\s]/.test(trimmed)
+  ) {
+    throw new Error(`${label} contains an unsafe git revision pattern`);
+  }
+  return trimmed;
 }
 
 const DATA_DIRS = new Set([
@@ -43,19 +66,33 @@ const DATA_DIRS = new Set([
   "subscription_plans",
 ]);
 
+function normalizeRepoPath(filePath: string): string {
+  return filePath.replace(/\\/g, "/").replace(/^\.\//, "");
+}
+
+function getDataPathParts(filePath: string): string[] | null {
+  const normalizedPath = normalizeRepoPath(filePath);
+  if (!normalizedPath.startsWith(`${DATA_ROOT}/`)) return null;
+
+  const relativePath = normalizedPath.slice(DATA_ROOT.length + 1);
+  if (!relativePath) return [];
+
+  return relativePath.split("/");
+}
+
 function isDataFile(filePath: string): boolean {
-  if (!filePath.startsWith(`${DATA_ROOT}/`)) return false;
+  const parts = getDataPathParts(filePath);
+  if (!parts) return false;
   if (!filePath.endsWith(".json")) return false;
 
-  const parts = filePath.split("/");
-  const dataIndex = parts.indexOf("data");
-  const dir = dataIndex === -1 ? null : parts[dataIndex + 1];
+  const dir = parts[0] ?? null;
 
   return dir ? DATA_DIRS.has(dir) : false;
 }
 
 function getChangedFiles(commit: string): ChangeFile[] {
-  const output = sh(`git show --name-status --pretty="" ${commit}`).trim();
+  const safeCommit = assertSafeGitRef(commit, "commit");
+  const output = git(["show", "--name-status", "--pretty=", safeCommit, "--", DATA_ROOT]).trim();
   if (!output) return [];
 
   const lines = output
@@ -89,17 +126,55 @@ function getChangedFiles(commit: string): ChangeFile[] {
   return files;
 }
 
-function getFileContent(commit: string, filePath: string): string | null {
-  try {
-    return sh(`git show ${commit}:${filePath}`);
-  } catch {
-    return null;
+function getBlobContents(refs: string[]): Map<string, string | null> {
+  const uniqueRefs = Array.from(new Set(refs));
+  const result = new Map<string, string | null>();
+
+  if (uniqueRefs.length === 0) return result;
+
+  const output = execSync("git cat-file --batch", {
+    cwd: REPO_ROOT,
+    input: uniqueRefs.join("\n") + "\n",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+
+  let offset = 0;
+
+  for (const ref of uniqueRefs) {
+    const headerEnd = output.indexOf(0x0a, offset);
+    if (headerEnd === -1) {
+      result.set(ref, null);
+      break;
+    }
+
+    const header = output.slice(offset, headerEnd).toString("utf8");
+    offset = headerEnd + 1;
+
+    if (header.endsWith(" missing")) {
+      result.set(ref, null);
+      continue;
+    }
+
+    const sizeMatch = header.match(/^[0-9a-f]+ \w+ (\d+)$/);
+    if (!sizeMatch) {
+      result.set(ref, null);
+      continue;
+    }
+
+    const size = Number(sizeMatch[1]);
+    const content = output.slice(offset, offset + size).toString("utf8");
+    result.set(ref, content);
+
+    offset += size;
+    if (output[offset] === 0x0a) offset += 1;
   }
+
+  return result;
 }
 
 function getCommitDate(commit: string): string {
   try {
-    return sh(`git log -1 --format=%ci ${commit}`).trim();
+    return git(["log", "-1", "--format=%ci", assertSafeGitRef(commit, "commit")]).trim();
   } catch {
     return new Date().toISOString();
   }
@@ -107,7 +182,7 @@ function getCommitDate(commit: string): string {
 
 function getParentCommit(commit: string): string | null {
   try {
-    const out = sh(`git log -1 --format=%P ${commit}`).trim();
+    const out = git(["log", "-1", "--format=%P", assertSafeGitRef(commit, "commit")]).trim();
     if (!out) return null;
     return out.split(" ")[0] ?? null;
   } catch {
@@ -133,40 +208,288 @@ function diffBenchmarks(
   after: any[],
   field: string
 ): DiffItem[] {
-  const toKey = (item: any) =>
-    `${item?.benchmark_id ?? "unknown"}::${item?.other_info ?? ""}`;
+  const buildVariantKey = (item: any) => {
+    const benchmarkId = item?.benchmark_id ?? "unknown";
+    const otherInfo = String(item?.other_info ?? "").trim();
+    return `${benchmarkId}::${otherInfo}`;
+  };
 
-  const beforeMap = new Map<string, any>();
-  const afterMap = new Map<string, any>();
+  const groupScores = (items: any[]) => {
+    const map = new Map<string, number[]>();
 
-  for (const item of before) beforeMap.set(toKey(item), item);
-  for (const item of after) afterMap.set(toKey(item), item);
+    for (const item of items) {
+      const variantKey = buildVariantKey(item);
+      const score = item?.score;
+      const existing = map.get(variantKey) ?? [];
 
+      if (typeof score === "number" && Number.isFinite(score)) {
+        existing.push(score);
+      }
+
+      map.set(variantKey, existing);
+    }
+
+    for (const [variantKey, scores] of map.entries()) {
+      map.set(
+        variantKey,
+        [...scores].sort((a, b) => a - b)
+      );
+    }
+
+    return map;
+  };
+
+  const beforeMap = groupScores(before);
+  const afterMap = groupScores(after);
   const keys = new Set([...beforeMap.keys(), ...afterMap.keys()]);
   const diffs: DiffItem[] = [];
 
   for (const key of keys) {
-    const prev = beforeMap.get(key);
-    const next = afterMap.get(key);
-    const name = key.split("::")[0] || "unknown";
-    const note = key.split("::")[1];
-    const label = note ? `${name}[${note}]` : name;
-    const diffField = `${field}.${label}.score`;
+    const prevScores = beforeMap.get(key) ?? [];
+    const nextScores = afterMap.get(key) ?? [];
 
-    if (prev && !next) {
-      diffs.push({ field: diffField, before: prev?.score ?? null, after: null });
+    if (JSON.stringify(prevScores) === JSON.stringify(nextScores)) {
       continue;
     }
 
-    if (!prev && next) {
-      diffs.push({ field: diffField, before: null, after: next?.score ?? null });
-      continue;
+    const beforeValue =
+      prevScores.length === 0
+        ? null
+        : prevScores.length === 1
+        ? prevScores[0]
+        : prevScores;
+    const afterValue =
+      nextScores.length === 0
+        ? null
+        : nextScores.length === 1
+        ? nextScores[0]
+        : nextScores;
+
+    diffs.push({
+      field: (() => {
+        const [benchmarkId, otherInfo = ""] = key.split("::");
+        const label = otherInfo ? `${benchmarkId}[${otherInfo}]` : benchmarkId;
+        return `${field}.${label}.score`;
+      })(),
+      before: beforeValue,
+      after: afterValue,
+    });
+  }
+
+  return diffs;
+}
+
+function diffPricingRules(before: any[], after: any[]): DiffItem[] {
+  const normalizeRuleMatch = (ruleMatch: any) => {
+    const path = String(ruleMatch?.path ?? "condition").trim() || "condition";
+    const op = String(ruleMatch?.op ?? "eq").trim() || "eq";
+    const value = String(ruleMatch?.value ?? "null").trim() || "null";
+    const orGroup =
+      ruleMatch?.or_group == null ? "g0" : `g${String(ruleMatch.or_group).trim()}`;
+    const andIndex =
+      ruleMatch?.and_index == null ? "a0" : `a${String(ruleMatch.and_index).trim()}`;
+
+    return `${path}~${op}~${value}~${orGroup}~${andIndex}`;
+  };
+
+  const normalizeTimestamp = (value: any): string | null => {
+    const text = String(value ?? "").trim();
+    return text || null;
+  };
+
+  type PricingRuleVersion = {
+    effectiveFrom: string | null;
+    effectiveTo: string | null;
+    logicalKey: string;
+    matches: string[];
+    meter: string;
+    plan: string;
+    price: number | null;
+    priority: number;
+  };
+
+  const toPricingRuleVersion = (rule: any): PricingRuleVersion => {
+    const meter = String(rule?.meter ?? "unknown").trim() || "unknown";
+    const plan =
+      String(rule?.pricing_plan ?? "default").trim() || "default";
+    const priority =
+      typeof rule?.priority === "number" && Number.isFinite(rule.priority)
+        ? rule.priority
+        : 100;
+    const matches = Array.isArray(rule?.match)
+      ? rule.match.map(normalizeRuleMatch).filter(Boolean).sort()
+      : [];
+    const logicalKey = JSON.stringify({ meter, plan, priority, matches });
+
+    return {
+      logicalKey,
+      meter,
+      plan,
+      priority,
+      matches,
+      price:
+        typeof rule?.price_per_unit === "number" && Number.isFinite(rule.price_per_unit)
+          ? rule.price_per_unit
+          : null,
+      effectiveFrom: normalizeTimestamp(rule?.effective_from),
+      effectiveTo: normalizeTimestamp(rule?.effective_to),
+    };
+  };
+
+  const buildField = (
+    version: Pick<PricingRuleVersion, "meter" | "plan" | "priority" | "matches">,
+    extraQualifiers: string[] = []
+  ) => {
+    const qualifiers = [
+      version.plan,
+      ...(version.priority !== 100 ? [`priority~eq~${version.priority}`] : []),
+      ...version.matches,
+      ...extraQualifiers,
+    ];
+
+    return `pricing.${[version.meter, ...qualifiers].join("::")}`;
+  };
+
+  const getScheduleQualifiers = (
+    version: Pick<PricingRuleVersion, "effectiveFrom" | "effectiveTo">
+  ) => [
+    ...(version.effectiveFrom ? [`effective_from~eq~${version.effectiveFrom}`] : []),
+    ...(version.effectiveTo ? [`effective_to~eq~${version.effectiveTo}`] : []),
+  ];
+
+  const getScheduleKey = (version: Pick<PricingRuleVersion, "effectiveFrom" | "effectiveTo">) =>
+    JSON.stringify({
+      effectiveFrom: version.effectiveFrom ?? null,
+      effectiveTo: version.effectiveTo ?? null,
+    });
+
+  const compareVersions = (a: PricingRuleVersion, b: PricingRuleVersion) => {
+    const fromA = a.effectiveFrom ?? "";
+    const fromB = b.effectiveFrom ?? "";
+    if (fromA !== fromB) return fromA.localeCompare(fromB);
+
+    const toA = a.effectiveTo ?? "";
+    const toB = b.effectiveTo ?? "";
+    if (toA !== toB) return toA.localeCompare(toB);
+
+    return (a.price ?? 0) - (b.price ?? 0);
+  };
+
+  const groupVersions = (items: any[]) => {
+    const map = new Map<string, PricingRuleVersion[]>();
+
+    for (const item of items) {
+      const version = toPricingRuleVersion(item);
+      const existing = map.get(version.logicalKey) ?? [];
+      existing.push(version);
+      map.set(version.logicalKey, existing);
     }
 
-    const prevScore = prev?.score ?? null;
-    const nextScore = next?.score ?? null;
-    if (prevScore !== nextScore) {
-      diffs.push({ field: diffField, before: prevScore, after: nextScore });
+    return map;
+  };
+
+  const beforeMap = groupVersions(before);
+  const afterMap = groupVersions(after);
+  const logicalKeys = new Set([...beforeMap.keys(), ...afterMap.keys()]);
+  const diffs: DiffItem[] = [];
+
+  for (const logicalKey of logicalKeys) {
+    const prevVersions = [...(beforeMap.get(logicalKey) ?? [])].sort(compareVersions);
+    const nextVersions = [...(afterMap.get(logicalKey) ?? [])].sort(compareVersions);
+    if (prevVersions.length === 0 && nextVersions.length === 0) continue;
+
+    const prevBySchedule = new Map<string, PricingRuleVersion>();
+    const nextBySchedule = new Map<string, PricingRuleVersion>();
+
+    for (const version of prevVersions) {
+      prevBySchedule.set(getScheduleKey(version), version);
+    }
+
+    for (const version of nextVersions) {
+      nextBySchedule.set(getScheduleKey(version), version);
+    }
+
+    const consumedPrev = new Set<string>();
+    const consumedNext = new Set<string>();
+
+    for (const [scheduleKey, previous] of prevBySchedule.entries()) {
+      const next = nextBySchedule.get(scheduleKey);
+      if (!next) continue;
+
+      consumedPrev.add(scheduleKey);
+      consumedNext.add(scheduleKey);
+
+      if (previous.price === next.price) continue;
+
+      diffs.push({
+        field: buildField(next, getScheduleQualifiers(next)),
+        before: previous.price,
+        after: next.price,
+      });
+    }
+
+    const remainingPrev = [...prevBySchedule.entries()]
+      .filter(([scheduleKey]) => !consumedPrev.has(scheduleKey))
+      .map(([scheduleKey, version]) => ({ scheduleKey, version }));
+    const remainingNext = [...nextBySchedule.entries()]
+      .filter(([scheduleKey]) => !consumedNext.has(scheduleKey))
+      .map(([scheduleKey, version]) => ({ scheduleKey, version }));
+
+    for (let nextIndex = remainingNext.length - 1; nextIndex >= 0; nextIndex -= 1) {
+      const nextEntry = remainingNext[nextIndex];
+      const previousIndex = remainingPrev.findIndex(
+        (previousEntry) =>
+          previousEntry.version.price === nextEntry.version.price &&
+          (
+            previousEntry.version.effectiveFrom === nextEntry.version.effectiveFrom ||
+            previousEntry.version.effectiveTo === nextEntry.version.effectiveTo
+          )
+      );
+
+      if (previousIndex === -1) continue;
+
+      remainingPrev.splice(previousIndex, 1);
+      remainingNext.splice(nextIndex, 1);
+    }
+
+    for (const nextEntry of remainingNext) {
+      if (!nextEntry.version.effectiveFrom) continue;
+
+      const previousIndex = remainingPrev.findIndex(
+        (previousEntry) =>
+          previousEntry.version.effectiveTo === nextEntry.version.effectiveFrom
+      );
+
+      if (previousIndex === -1) continue;
+
+      const previousEntry = remainingPrev[previousIndex];
+      remainingPrev.splice(previousIndex, 1);
+
+      if (previousEntry.version.price === nextEntry.version.price) {
+        continue;
+      }
+
+      diffs.push({
+        field: buildField(nextEntry.version, getScheduleQualifiers(nextEntry.version)),
+        before: previousEntry.version.price,
+        after: nextEntry.version.price,
+      });
+    }
+
+    for (const previousEntry of remainingPrev) {
+      diffs.push({
+        field: buildField(previousEntry.version, getScheduleQualifiers(previousEntry.version)),
+        before: previousEntry.version.price,
+        after: null,
+      });
+    }
+
+    for (const nextEntry of remainingNext) {
+      diffs.push({
+        field: buildField(nextEntry.version, getScheduleQualifiers(nextEntry.version)),
+        before: null,
+        after: nextEntry.version.price,
+      });
     }
   }
 
@@ -174,20 +497,115 @@ function diffBenchmarks(
 }
 
 function diffModelList(before: any[], after: any[], field: string): DiffItem[] {
-  const toId = (item: any) => item?.model_id ?? null;
-  const beforeIds = new Set(before.map(toId).filter(Boolean));
-  const afterIds = new Set(after.map(toId).filter(Boolean));
+  const toId = (item: any) => {
+    const candidates = [item?.model_id, item?.internal_model_id, item?.api_model_id];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+    return null;
+  };
+  const toStatus = (item: any): string | null => {
+    if (!item) return null;
+
+    const directStatus =
+      typeof item?.status === "string" && item.status.trim().length > 0
+        ? item.status.trim()
+        : null;
+    if (directStatus) return directStatus;
+
+    const capabilityStatuses: string[] = Array.isArray(item?.capabilities)
+      ? Array.from<string>(
+          new Set(
+            item.capabilities
+              .map((capability: any) =>
+                typeof capability?.status === "string" && capability.status.trim().length > 0
+                  ? capability.status.trim()
+                  : null
+              )
+              .filter((status: string | null): status is string => status != null)
+          )
+        )
+      : [];
+
+    if (capabilityStatuses.length === 1) return capabilityStatuses[0] ?? null;
+
+    if (typeof item?.is_active_gateway === "boolean") {
+      return item.is_active_gateway ? "active" : "inactive";
+    }
+
+    return null;
+  };
+
+  const beforeMap = new Map<string, any>();
+  const afterMap = new Map<string, any>();
+  for (const item of before) {
+    const id = toId(item);
+    if (id) beforeMap.set(id, item);
+  }
+  for (const item of after) {
+    const id = toId(item);
+    if (id) afterMap.set(id, item);
+  }
 
   const diffs: DiffItem[] = [];
-  const allIds = new Set([...beforeIds, ...afterIds]);
+  const allIds = new Set([...beforeMap.keys(), ...afterMap.keys()]);
 
   for (const id of allIds) {
-    if (beforeIds.has(id) && !afterIds.has(id)) {
-      diffs.push({ field: `${field}.${id}`, before: id, after: null });
+    const previousItem = beforeMap.get(id);
+    const nextItem = afterMap.get(id);
+    const previousStatus = toStatus(previousItem);
+    const nextStatus = toStatus(nextItem);
+
+    if (previousItem && !nextItem) {
+      diffs.push({
+        field: `${field}.${id}`,
+        before: id,
+        after: null,
+        kind: "provider-model-listing",
+        modelId: id,
+      });
+      if (previousStatus != null) {
+        diffs.push({
+          field: `${field}.${id}[status]`,
+          before: previousStatus,
+          after: null,
+          kind: "provider-model-status",
+          modelId: id,
+        });
+      }
       continue;
     }
-    if (!beforeIds.has(id) && afterIds.has(id)) {
-      diffs.push({ field: `${field}.${id}`, before: null, after: id });
+
+    if (!previousItem && nextItem) {
+      diffs.push({
+        field: `${field}.${id}`,
+        before: null,
+        after: id,
+        kind: "provider-model-listing",
+        modelId: id,
+      });
+      if (nextStatus != null) {
+        diffs.push({
+          field: `${field}.${id}[status]`,
+          before: null,
+          after: nextStatus,
+          kind: "provider-model-status",
+          modelId: id,
+        });
+      }
+      continue;
+    }
+
+    if (previousItem && nextItem && previousStatus !== nextStatus) {
+      diffs.push({
+        field: `${field}.${id}[status]`,
+        before: previousStatus,
+        after: nextStatus,
+        kind: "provider-model-status",
+        modelId: id,
+      });
     }
   }
 
@@ -295,8 +713,22 @@ function diffValues(before: any, after: any, field = ""): DiffItem[] {
       const diffs = diffBenchmarks(before, after, field);
       return diffs.length ? diffs : [];
     }
-    if (field === "models" && before.every(isPlainObject) && after.every(isPlainObject)) {
-      const diffs = diffModelList(before, after, field);
+    if (field === "rules" && before.every(isPlainObject) && after.every(isPlainObject)) {
+      const diffs = diffPricingRules(before, after);
+      return diffs.length ? diffs : [];
+    }
+    if (
+      (field === "models" || field === "") &&
+      before.every(isPlainObject) &&
+      after.every(isPlainObject) &&
+      [...before, ...after].some(
+        (item) =>
+          item?.model_id != null ||
+          item?.api_model_id != null ||
+          item?.internal_model_id != null
+      )
+    ) {
+      const diffs = diffModelList(before, after, field || "models");
       return diffs.length ? diffs : [];
     }
     if (field === "links" && before.every(isPlainObject) && after.every(isPlainObject)) {
@@ -323,9 +755,8 @@ function diffValues(before: any, after: any, field = ""): DiffItem[] {
 }
 
 function resolveEntityType(filePath: string): string {
-  const parts = filePath.split("/");
-  const dataIndex = parts.indexOf("data");
-  const rawType = dataIndex === -1 ? "unknown" : parts[dataIndex + 1];
+  const parts = getDataPathParts(filePath) ?? [];
+  const rawType = parts[0] ?? "unknown";
 
   switch (rawType) {
     case "models":
@@ -348,9 +779,8 @@ function resolveEntityType(filePath: string): string {
 }
 
 function fallbackMetaFromPath(filePath: string) {
-  const parts = filePath.split("/");
-  const dataIndex = parts.indexOf("data");
-  const rawType = dataIndex === -1 ? "unknown" : parts[dataIndex + 1];
+  const parts = getDataPathParts(filePath) ?? [];
+  const rawType = parts[0] ?? "unknown";
 
   let model: string | null = null;
   let entityId: string | null = null;
@@ -358,38 +788,48 @@ function fallbackMetaFromPath(filePath: string) {
   let endpoint: string | null = null;
 
   if (rawType === "models") {
-    const org = parts[dataIndex + 2];
-    const slug = parts[dataIndex + 3];
+    const org = parts[1];
+    const slug = parts[2];
     if (org && slug) {
       model = `${org}/${slug}`;
       entityId = model;
       orgId = org;
     }
   } else if (rawType === "benchmarks") {
-    entityId = parts[dataIndex + 2] ?? null;
+    entityId = parts[1] ?? null;
     model = entityId;
   } else if (rawType === "organisations") {
-    entityId = parts[dataIndex + 2] ?? null;
+    entityId = parts[1] ?? null;
     model = entityId;
     orgId = entityId;
   } else if (rawType === "api_providers") {
-    entityId = parts[dataIndex + 2] ?? null;
+    entityId = parts[1] ?? null;
     model = entityId;
     orgId = entityId;
   } else if (rawType === "families") {
-    entityId = parts[dataIndex + 2] ?? null;
+    entityId = parts[1] ?? null;
     model = entityId;
     orgId = entityId?.split("/")[0] ?? null;
+  } else if (rawType === "aliases") {
+    entityId = parts[1] ?? null;
+    model = entityId;
+  } else if (rawType === "subscription_plans") {
+    entityId = parts[1] ?? null;
+    model = entityId;
   } else if (rawType === "pricing") {
-    const org = parts[dataIndex + 2];
-    const endpointPart = parts[dataIndex + 3];
-    const slug = parts[dataIndex + 4];
-    if (org && slug) {
-      model = `${org}/${slug}`;
-      entityId = model;
-      orgId = org;
+    const apiProviderId = parts[1];
+    const apiModelId = parts[2];
+    const capabilityId = parts[3];
+    if (apiModelId) {
+      model = apiModelId;
+      entityId = apiModelId;
+      orgId = apiModelId.split("/")[0] ?? null;
+    } else if (apiProviderId) {
+      model = apiProviderId;
+      entityId = apiProviderId;
+      orgId = apiProviderId;
     }
-    endpoint = endpointPart ?? null;
+    endpoint = capabilityId ?? null;
   }
 
   if (!entityId) {
@@ -410,6 +850,7 @@ function extractMeta(filePath: string, data: any, oldPath?: string): Meta {
   const fallback = fallbackMetaFromPath(pathForType);
 
   const modelId = data?.model_id ?? null;
+  const apiModelId = data?.api_model_id ?? null;
   const familyId = data?.family_id ?? null;
   const familyName = data?.family_name ?? null;
   const planId = data?.plan_id ?? null;
@@ -419,12 +860,13 @@ function extractMeta(filePath: string, data: any, oldPath?: string): Meta {
   const organisationId = data?.organisation_id ?? null;
   const organisationName = data?.name ?? null;
   const apiProviderId = data?.api_provider_id ?? data?.provider_slug ?? null;
-  const endpoint = data?.endpoint ?? fallback.endpoint ?? null;
+  const endpoint = data?.endpoint ?? data?.capability_id ?? fallback.endpoint ?? null;
   const pricingKey = data?.key ?? null;
 
   const entityId =
     pricingKey ??
     modelId ??
+    apiModelId ??
     familyId ??
     planId ??
     benchmarkId ??
@@ -437,6 +879,7 @@ function extractMeta(filePath: string, data: any, oldPath?: string): Meta {
 
   const model =
     modelId ??
+    apiModelId ??
     familyName ??
     familyId ??
     planName ??
@@ -449,18 +892,23 @@ function extractMeta(filePath: string, data: any, oldPath?: string): Meta {
     fallback.model ??
     entityId;
 
+  const orgCandidates = [
+    organisationId,
+    apiModelId ? apiModelId.split("/")[0] ?? null : null,
+    apiProviderId,
+    fallback.orgId,
+    planId ? organisationId ?? fallback.orgId ?? null : null,
+    aliasSlug ? aliasSlug.split("/")[0] ?? null : null,
+    familyId ? familyId.split("/")[0] ?? null : null,
+    modelId ? modelId.split("/")[0] ?? null : null,
+  ];
   const orgId =
-    organisationId ??
-    apiProviderId ??
-    fallback.orgId ??
-    (planId ? organisationId ?? fallback.orgId ?? null : null) ??
-    (aliasSlug ? aliasSlug.split("/")[0] ?? null : null) ??
-    (familyId ? familyId.split("/")[0] ?? null : null) ??
-    (modelId ? modelId.split("/")[0] ?? null : null);
+    orgCandidates.find((value): value is string => typeof value === "string" && value.length > 0) ??
+    null;
 
   const provider =
     entityType === "pricing"
-      ? modelId
+      ? modelId || apiModelId
         ? "model"
         : apiProviderId
         ? "api-provider"
@@ -484,7 +932,7 @@ function calcPercentChange(before: any, after: any): number | undefined {
   return ((after - before) / before) * 100;
 }
 
-type HistoryEntry = {
+export type HistoryEntry = {
   id: string;
   timestamp: string;
   provider: string;
@@ -502,12 +950,18 @@ type HistoryEntry = {
   file: string;
 };
 
-type HistoryMeta = {
+export type HistoryMeta = {
   base: string;
   head: string;
   generatedAt: string;
   commitCount: number;
   lastSha: string;
+};
+
+export type HistoryBuildResult = {
+  commits: string[];
+  entries: HistoryEntry[];
+  meta: HistoryMeta;
 };
 
 function buildEntry(
@@ -521,7 +975,7 @@ function buildEntry(
   after: any
 ): HistoryEntry {
   return {
-    id: `${commit}:${file}:${field || "entity"}`,
+    id: `${commit}:${file}:${meta.entityType}:${meta.entityId}:${meta.model}:${field || "entity"}`,
     timestamp,
     provider: meta.provider,
     model: meta.model,
@@ -539,6 +993,127 @@ function buildEntry(
   };
 }
 
+function shouldTrackEntityAction(meta: Meta): boolean {
+  return meta.entityType === "model";
+}
+
+function shouldTrackDiff(meta: Meta, diff: DiffItem): boolean {
+  if (diff.field === "description") return meta.entityType === "model";
+  if (diff.field === "status") return meta.entityType === "model";
+  if (diff.field === "deprecation_date") return meta.entityType === "model";
+  if (diff.field === "retirement_date") return meta.entityType === "model";
+  if (diff.field.startsWith("benchmarks.")) return meta.entityType === "model";
+  if (diff.field.startsWith("links.")) return meta.entityType === "model";
+  if (diff.field.startsWith("pricing.")) return meta.entityType === "pricing";
+  return false;
+}
+
+function isProviderModelListingDiff(meta: Meta, filePath: string, diff: DiffItem): boolean {
+  if (meta.entityType !== "api-provider") return false;
+  if (!normalizeRepoPath(filePath).endsWith("/models.json")) return false;
+  if (diff.kind !== "provider-model-listing") return false;
+
+  const added = diff.before == null && diff.after != null;
+  const removed = diff.before != null && diff.after == null;
+  return added || removed;
+}
+
+function isProviderModelStatusDiff(meta: Meta, filePath: string, diff: DiffItem): boolean {
+  if (meta.entityType !== "api-provider") return false;
+  if (!normalizeRepoPath(filePath).endsWith("/models.json")) return false;
+  return diff.kind === "provider-model-status";
+}
+
+function toProviderModelListingEntry(
+  commit: string,
+  file: string,
+  timestamp: string,
+  meta: Meta,
+  diff: DiffItem
+): HistoryEntry | null {
+  if (!isProviderModelListingDiff(meta, file, diff)) return null;
+
+  const modelId = String(diff.modelId ?? diff.after ?? diff.before ?? "").trim();
+  const providerId = String(meta.entityId ?? meta.orgId ?? "").trim();
+  if (!modelId || !providerId) return null;
+
+  const listingMeta: Meta = {
+    provider: "api-provider",
+    model: modelId,
+    endpoint: null,
+    entityType: "api-provider",
+    entityId: providerId,
+    orgId: providerId,
+  };
+
+  const action: ChangeAction = diff.after == null ? "removed" : "added";
+
+  return buildEntry(
+    commit,
+    file,
+    timestamp,
+    listingMeta,
+    action,
+    "",
+    action === "added" ? null : "Listed",
+    action === "added" ? "Listed" : null
+  );
+}
+
+function toProviderModelStatusEntry(
+  commit: string,
+  file: string,
+  timestamp: string,
+  meta: Meta,
+  diff: DiffItem
+): HistoryEntry | null {
+  if (!isProviderModelStatusDiff(meta, file, diff)) return null;
+
+  const modelId = String(diff.modelId ?? "").trim();
+  const providerId = String(meta.entityId ?? meta.orgId ?? "").trim();
+  if (!modelId || !providerId) return null;
+
+  const statusMeta: Meta = {
+    provider: "api-provider",
+    model: modelId,
+    endpoint: null,
+    entityType: "api-provider",
+    entityId: providerId,
+    orgId: providerId,
+  };
+
+  return buildEntry(
+    commit,
+    file,
+    timestamp,
+    statusMeta,
+    "changed",
+    "status",
+    diff.before ?? null,
+    diff.after ?? null
+  );
+}
+
+function getEntityActionValues(
+  meta: Meta,
+  action: "added" | "removed",
+  beforeData: any,
+  afterData: any
+) {
+  if (meta.entityType === "model") {
+    const beforeStatus = beforeData?.status ?? null;
+    const afterStatus = afterData?.status ?? null;
+
+    return action === "added"
+      ? { before: null, after: afterStatus }
+      : { before: beforeStatus, after: null };
+  }
+
+  return action === "added"
+    ? { before: null, after: meta.entityId }
+    : { before: meta.entityId, after: null };
+}
+
 function processCommit(commit: string): HistoryEntry[] {
   const changedFiles = getChangedFiles(commit);
   if (changedFiles.length === 0) return [];
@@ -546,11 +1121,24 @@ function processCommit(commit: string): HistoryEntry[] {
   const parent = getParentCommit(commit);
   const timestamp = getCommitDate(commit);
   const entries: HistoryEntry[] = [];
+  const refs: string[] = [];
 
   for (const change of changedFiles) {
     const beforePath = change.oldPath ?? change.path;
-    const beforeContent = parent && change.status !== "A" ? getFileContent(parent, beforePath) : null;
-    const afterContent = change.status !== "D" ? getFileContent(commit, change.path) : null;
+    if (parent && change.status !== "A") refs.push(`${parent}:${beforePath}`);
+    if (change.status !== "D") refs.push(`${commit}:${change.path}`);
+  }
+
+  const contentByRef = getBlobContents(refs);
+
+  for (const change of changedFiles) {
+    const beforePath = change.oldPath ?? change.path;
+    const beforeRef = parent ? `${parent}:${beforePath}` : null;
+    const afterRef = `${commit}:${change.path}`;
+    const beforeContent =
+      beforeRef && change.status !== "A" ? contentByRef.get(beforeRef) ?? null : null;
+    const afterContent =
+      change.status !== "D" ? contentByRef.get(afterRef) ?? null : null;
 
     const beforeData = parseJson(beforeContent);
     const afterData = parseJson(afterContent);
@@ -558,6 +1146,23 @@ function processCommit(commit: string): HistoryEntry[] {
     if (change.status === "R") {
       const metaBefore = extractMeta(beforePath, beforeData, change.oldPath);
       const metaAfter = extractMeta(change.path, afterData, change.oldPath);
+
+      if (!shouldTrackEntityAction(metaBefore) && !shouldTrackEntityAction(metaAfter)) {
+        continue;
+      }
+
+      const removedValues = getEntityActionValues(
+        metaBefore,
+        "removed",
+        beforeData,
+        null
+      );
+      const addedValues = getEntityActionValues(
+        metaAfter,
+        "added",
+        null,
+        afterData
+      );
 
       entries.push(
         buildEntry(
@@ -567,8 +1172,8 @@ function processCommit(commit: string): HistoryEntry[] {
           metaBefore,
           "removed",
           "",
-          metaBefore.entityId,
-          null
+          removedValues.before,
+          removedValues.after
         )
       );
       entries.push(
@@ -579,8 +1184,8 @@ function processCommit(commit: string): HistoryEntry[] {
           metaAfter,
           "added",
           "",
-          null,
-          metaAfter.entityId
+          addedValues.before,
+          addedValues.after
         )
       );
       continue;
@@ -589,21 +1194,65 @@ function processCommit(commit: string): HistoryEntry[] {
     const meta = extractMeta(change.path, afterData ?? beforeData, change.oldPath);
 
     if (change.status === "A") {
+      if (!shouldTrackEntityAction(meta)) continue;
+      const actionValues = getEntityActionValues(meta, "added", null, afterData);
       entries.push(
-        buildEntry(commit, change.path, timestamp, meta, "added", "", null, meta.entityId)
+        buildEntry(
+          commit,
+          change.path,
+          timestamp,
+          meta,
+          "added",
+          "",
+          actionValues.before,
+          actionValues.after
+        )
       );
       continue;
     }
 
     if (change.status === "D") {
+      if (!shouldTrackEntityAction(meta)) continue;
+      const actionValues = getEntityActionValues(meta, "removed", beforeData, null);
       entries.push(
-        buildEntry(commit, change.path, timestamp, meta, "removed", "", meta.entityId, null)
+        buildEntry(
+          commit,
+          change.path,
+          timestamp,
+          meta,
+          "removed",
+          "",
+          actionValues.before,
+          actionValues.after
+        )
       );
       continue;
     }
 
     const diffs = diffValues(beforeData, afterData);
+    const providerListingEntries =
+      meta.entityType === "api-provider"
+        ? diffs
+            .map((diff) => toProviderModelListingEntry(commit, change.path, timestamp, meta, diff))
+            .filter((entry): entry is HistoryEntry => entry != null)
+        : [];
+    const providerStatusEntries =
+      meta.entityType === "api-provider"
+        ? diffs
+            .map((diff) => toProviderModelStatusEntry(commit, change.path, timestamp, meta, diff))
+            .filter((entry): entry is HistoryEntry => entry != null)
+        : [];
+
+    if (providerListingEntries.length > 0) {
+      entries.push(...providerListingEntries);
+    }
+    if (providerStatusEntries.length > 0) {
+      entries.push(...providerStatusEntries);
+    }
+
     const filteredDiffs = diffs.filter((diff) => {
+      if (isProviderModelListingDiff(meta, change.path, diff)) return false;
+      if (isProviderModelStatusDiff(meta, change.path, diff)) return false;
       if (meta.entityType === "benchmark" && diff.field === "total_models")
         return false;
       if (meta.entityType === "model" && diff.field === "model_id") return false;
@@ -612,14 +1261,12 @@ function processCommit(commit: string): HistoryEntry[] {
         (diff.field === "model_id" || diff.field === "key")
       )
         return false;
-      if (meta.entityType === "model" && diff.field.startsWith("links"))
-        return false;
       if (
         (meta.entityType === "organisation" || meta.entityType === "api-provider") &&
         diff.field.startsWith("models")
       )
         return false;
-      return true;
+      return shouldTrackDiff(meta, diff);
     });
 
     if (filteredDiffs.length === 0) {
@@ -645,10 +1292,48 @@ function processCommit(commit: string): HistoryEntry[] {
   return entries;
 }
 
-function listCommitsInRange(base: string, head: string): string[] {
-  const out = sh(`git rev-list --reverse ${base}..${head}`).trim();
+export function listCommitsInRange(base: string, head: string): string[] {
+  const safeBase = assertSafeGitRef(base, "base ref");
+  const safeHead = assertSafeGitRef(head, "head ref");
+  const out = git(["rev-list", "--reverse", `${safeBase}..${safeHead}`]).trim();
   if (!out) return [];
   return out.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+
+export function getParentCommitSha(commit: string): string | null {
+  return getParentCommit(commit);
+}
+
+export function buildHistoryForCommits(
+  commits: string[],
+  base: string,
+  head: string
+): HistoryBuildResult {
+  const entries: HistoryEntry[] = [];
+  for (const commit of commits) entries.push(...processCommit(commit));
+  entries.sort(compareEntries);
+
+  return {
+    commits,
+    entries,
+    meta: {
+      base,
+      head,
+      generatedAt: new Date().toISOString(),
+      commitCount: commits.length,
+      lastSha: head,
+    },
+  };
+}
+
+export function buildHistoryForRange(base: string, head: string): HistoryBuildResult {
+  const commits = listCommitsInRange(base, head);
+  return buildHistoryForCommits(commits, base, head);
+}
+
+export function buildHistoryForSingleCommit(commit: string): HistoryBuildResult {
+  const base = getParentCommit(commit) ?? commit;
+  return buildHistoryForCommits([commit], base, commit);
 }
 
 function writeHistory(
@@ -672,6 +1357,10 @@ function writeHistory(
 }
 
 function compareEntries(a: HistoryEntry, b: HistoryEntry): number {
+  const timeA = new Date(a.timestamp).getTime();
+  const timeB = new Date(b.timestamp).getTime();
+  if (timeA !== timeB) return timeB - timeA;
+
   const orgA = (a.orgId ?? "").toLowerCase();
   const orgB = (b.orgId ?? "").toLowerCase();
   if (orgA !== orgB) return orgA.localeCompare(orgB);
@@ -679,10 +1368,6 @@ function compareEntries(a: HistoryEntry, b: HistoryEntry): number {
   const nameA = (a.model ?? "").toLowerCase();
   const nameB = (b.model ?? "").toLowerCase();
   if (nameA !== nameB) return nameA.localeCompare(nameB);
-
-  const timeA = new Date(a.timestamp).getTime();
-  const timeB = new Date(b.timestamp).getTime();
-  if (timeA !== timeB) return timeB - timeA;
 
   const actionWeight: Record<ChangeAction, number> = {
     added: 0,
@@ -728,33 +1413,39 @@ function readExistingHistory(): { entries: HistoryEntry[]; meta?: HistoryMeta } 
 }
 
 function main() {
-  const a = process.argv[2];
-  const b = process.argv[3];
+  const args = process.argv.slice(2);
+  const shouldSyncDb = args.includes("--sync-db");
+  const positional = args.filter((arg) => !arg.startsWith("--"));
+  const a = positional[0];
+  const b = positional[1];
 
   if (!a) {
-    console.error("Usage: tsx scripts/update-monitor-history.ts <commit> OR <base> <head>");
+    console.error(
+      "Usage: tsx scripts/update-monitor-history.ts <commit> OR <base> <head> [--sync-db]"
+    );
     process.exit(1);
   }
 
-  const commits = b ? listCommitsInRange(a, b) : [a];
+  const result = b ? buildHistoryForRange(a, b) : buildHistoryForSingleCommit(a);
+  const commits = result.commits;
 
   if (commits.length === 0) {
     console.log("No relevant commits found.");
     return;
   }
 
-  const entries: HistoryEntry[] = [];
-  for (const commit of commits) entries.push(...processCommit(commit));
+  const entries = result.entries;
 
   if (entries.length === 0) {
     console.log("No relevant changes found.");
     return;
   }
 
-  const head = b ?? a;
-  const base = b ? a : getParentCommit(a) ?? a;
   const existingHistory = readExistingHistory();
-  const existingEntries = existingHistory.entries;
+  const regeneratedCommits = new Set(commits);
+  const existingEntries = existingHistory.entries.filter(
+    (entry) => !regeneratedCommits.has(entry.commit)
+  );
   const existingIds = new Set(existingEntries.map((entry) => entry.id));
   const newEntries = entries.filter((entry) => !existingIds.has(entry.id));
 
@@ -763,20 +1454,39 @@ function main() {
     return;
   }
 
-  newEntries.sort(compareEntries);
-  const meta = {
-    base,
-    head,
-    generatedAt: new Date().toISOString(),
-    commitCount: commits.length,
-    lastSha: head,
-  };
+  writeHistory(newEntries, existingEntries, result.meta);
 
-  writeHistory(newEntries, existingEntries, meta);
+  if (shouldSyncDb) {
+    execSync(
+      "pnpm --filter @ai-stats/web exec tsx scripts/sync-monitor-history-to-supabase.ts",
+      {
+        stdio: "inherit",
+      }
+    );
+  }
 
   console.log(
     `Updated monitor history for ${commits.length} commit(s). Wrote ${newEntries.length} entries.`
   );
 }
 
-main();
+function isMainModule(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  return path.resolve(entry) === path.resolve(fileURLToPath(import.meta.url));
+}
+
+export const testingExports = {
+  assertSafeGitRef,
+  diffBenchmarks,
+  diffModelList,
+  shouldTrackDiff,
+  isProviderModelListingDiff,
+  toProviderModelListingEntry,
+  isProviderModelStatusDiff,
+  toProviderModelStatusEntry,
+};
+
+if (isMainModule()) {
+  main();
+}

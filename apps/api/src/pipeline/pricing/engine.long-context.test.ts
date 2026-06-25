@@ -119,6 +119,94 @@ describe("computeBillSummary long context thresholds", () => {
 		expect(byDim.get("cached_write_text_tokens")?.unit_price_usd).toBe("0.000002500");
 	});
 
+	it("prices Anthropic split cache write TTL meters separately", () => {
+		const splitCard: PriceCard = {
+			...card,
+			rules: [
+				...card.rules.filter((rule) => rule.meter !== "cached_write_text_tokens"),
+				{
+					pricing_plan: "standard",
+					meter: "cached_write_text_tokens_5m",
+					unit: "token",
+					unit_size: 1,
+					price_per_unit: "0.00000375",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					pricing_plan: "standard",
+					meter: "cached_write_text_tokens_1h",
+					unit: "token",
+					unit_size: 1,
+					price_per_unit: "0.000006",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = computeBillSummary(
+			{
+				input_text_tokens: 10,
+				output_text_tokens: 5,
+				cache_creation_input_tokens: 248,
+				cache_creation: {
+					ephemeral_5m_input_tokens: 148,
+					ephemeral_1h_input_tokens: 100,
+				},
+			},
+			splitCard,
+		);
+
+		const byDim = new Map(result.lines.map((line) => [line.dimension, line]));
+		expect(byDim.get("cached_write_text_tokens")).toBeUndefined();
+		expect(byDim.get("cached_write_text_tokens_5m")?.quantity).toBe(148);
+		expect(byDim.get("cached_write_text_tokens_5m")?.unit_price_usd).toBe("0.000003750");
+		expect(byDim.get("cached_write_text_tokens_1h")?.quantity).toBe(100);
+		expect(byDim.get("cached_write_text_tokens_1h")?.unit_price_usd).toBe("0.000006000");
+	});
+
+	it("falls back aggregate Anthropic cache writes to the default 5 minute TTL split meter", () => {
+		const splitCard: PriceCard = {
+			...card,
+			rules: [
+				{
+					pricing_plan: "standard",
+					meter: "cached_write_text_tokens_5m",
+					unit: "token",
+					unit_size: 1,
+					price_per_unit: "0.00000375",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					pricing_plan: "standard",
+					meter: "cached_write_text_tokens_1h",
+					unit: "token",
+					unit_size: 1,
+					price_per_unit: "0.000006",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = computeBillSummary(
+			{
+				cache_creation_input_tokens: 248,
+			},
+			splitCard,
+		);
+
+		const byDim = new Map(result.lines.map((line) => [line.dimension, line]));
+		expect(byDim.get("cached_write_text_tokens_5m")?.quantity).toBe(248);
+		expect(byDim.get("cached_write_text_tokens_1h")).toBeUndefined();
+	});
+
 	it("de-duplicates cached-read tokens when input_text_tokens mirrors canonical input", () => {
 		const xaiCard: PriceCard = {
 			provider: "x-ai",
@@ -243,6 +331,67 @@ describe("computeBillSummary long context thresholds", () => {
 		expect(byDim.get("cached_read_text_tokens")?.quantity).toBe(64);
 		expect(byDim.get("output_text_tokens")?.quantity).toBe(9);
 		expect(result.cost_usd_str).toBe("0.000184800");
+	});
+
+	it("prices China-lab prompt cache hit aliases as cached reads", () => {
+		const compatibleCard: PriceCard = {
+			provider: "deepseek",
+			model: "deepseek-chat",
+			endpoint: "chat.completions",
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: null,
+			rules: [
+				{
+					pricing_plan: "standard",
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "1",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					pricing_plan: "standard",
+					meter: "cached_read_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "0.1",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					pricing_plan: "standard",
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "2",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+
+		const result = computeBillSummary(
+			{
+				prompt_tokens: 100,
+				completion_tokens: 5,
+				total_tokens: 105,
+				prompt_cache_hit_tokens: 42,
+			},
+			compatibleCard,
+			{},
+			"standard",
+		);
+
+		const byDim = new Map(result.lines.map((line) => [line.dimension, line]));
+		expect(byDim.get("input_text_tokens")?.quantity).toBe(100);
+		expect(byDim.get("cached_read_text_tokens")?.quantity).toBe(42);
+		expect(byDim.get("output_text_tokens")?.quantity).toBe(5);
 	});
 
 	it("does not subtract cached reads again when input_text_tokens is already uncached", () => {

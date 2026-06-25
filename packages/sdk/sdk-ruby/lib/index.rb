@@ -326,12 +326,6 @@ module AIStatsSdk
       end
     end
 
-    def list_team_models(options = {})
-      with_lifecycle_and_telemetry(endpoint: "models.team", payload: options, check_lifecycle: false) do
-        AiStats::Gen::Operations.listTeamModels(@raw_client, query: options)
-      end
-    end
-
     def list_providers(options = {})
       with_lifecycle_and_telemetry(endpoint: "providers", payload: options, check_lifecycle: false) do
         AiStats::Gen::Operations.listProviders(@raw_client, query: options)
@@ -546,7 +540,7 @@ module AIStatsSdk
     end
 
     def fetch_model_lifecycle(model_id)
-      response = AiStats::Gen::Operations.listDataModels(
+      response = AiStats::Gen::Operations.listModels(
         @raw_client,
         query: { "model_id" => model_id, "limit" => "1" }
       )

@@ -145,8 +145,14 @@ export default function ModelInProducts({
 						const rawUsd =
 							(plan as any).usd_price ??
 							(plan as any)["usd-price"];
-						const priceBadge = formatUsd(rawUsd);
 						const frequency = plan.frequency || "mo";
+						const normalizedFrequency = String(frequency).toLowerCase();
+						const priceBadge =
+							normalizedFrequency === "usage"
+								? "Usage-based"
+								: normalizedFrequency === "custom"
+								? "Custom pricing"
+								: formatUsd(rawUsd);
 
 						const rateLimit: string | null =
 							thisModelEntry?.rate_limit ?? null;
@@ -185,7 +191,10 @@ export default function ModelInProducts({
 											</span>
 											{priceBadge && (
 												<span className="text-[11px] font-semibold px-2 py-1 rounded-md border bg-muted/50 ml-2">
-													{priceBadge} / {frequency}
+													{normalizedFrequency === "usage" ||
+													normalizedFrequency === "custom"
+														? priceBadge
+														: `${priceBadge} / ${frequency}`}
 												</span>
 											)}
 										</div>
@@ -331,4 +340,3 @@ export default function ModelInProducts({
 		</>
 	);
 }
-

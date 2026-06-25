@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { applyHiddenFilter } from "@/lib/fetchers/models/visibility";
 import { cacheLife, cacheTag } from "next/cache";
 
@@ -16,7 +16,7 @@ export type ResolveCanonicalModelIdResult = {
 	source: ResolveModelIdSource;
 };
 
-type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+type SupabaseClient = ReturnType<typeof createAdminClient>;
 
 function isMissingRelationError(error: unknown): boolean {
 	const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
@@ -85,22 +85,6 @@ async function apiModelExists(
 	return normalizeId(data?.api_model_id) === id;
 }
 
-async function getMappedApiModelIdForInternalModel(
-	supabase: SupabaseClient,
-	internalModelId: string,
-): Promise<string | null> {
-	const id = normalizeId(internalModelId);
-	if (!id) return null;
-	const { data, error } = await supabase
-		.from("data_api_provider_models")
-		.select("api_model_id")
-		.eq("model_id", id)
-		.not("api_model_id", "is", null)
-		.limit(1);
-	if (error) return null;
-	return normalizeId(data?.[0]?.api_model_id);
-}
-
 async function getMappedInternalModelIdsForApiModel(
 	supabase: SupabaseClient,
 	apiModelId: string,
@@ -163,7 +147,7 @@ async function resolveCanonicalModelIdUncached(
 		};
 	}
 
-	const supabase = await createClient();
+	const supabase = createAdminClient();
 	const buildResult = async (
 		canonicalModelId: string,
 		source: ResolveModelIdSource,
@@ -279,6 +263,8 @@ async function resolveCanonicalModelIdCached(
 	cacheTag("data:model_aliases");
 	cacheTag("data:data_api_provider_models");
 	cacheTag("data:data_api_models");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:model-canonical");
 	cacheTag(`model:canonical:${requestedModelId}`);
 
 	return resolveCanonicalModelIdUncached(requestedModelId, includeHidden);

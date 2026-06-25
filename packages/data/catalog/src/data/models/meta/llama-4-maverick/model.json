@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 119
+      "rank": 120
     },
     {
       "benchmark_id": "livecodebench",
@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 52
+      "rank": 53
     },
     {
       "benchmark_id": "math",
@@ -63,7 +63,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 7
+      "rank": 8
     },
     {
       "benchmark_id": "mbpp",
@@ -95,7 +95,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 49
+      "rank": 51
     },
     {
       "benchmark_id": "mmmu",
@@ -103,7 +103,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
-      "rank": 45
+      "rank": 46
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -111,7 +111,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
-      "rank": 69
+      "rank": 73
     },
     {
       "benchmark_id": "tydiqa",
@@ -127,7 +127,7 @@
       "is_self_reported": false,
       "other_info": "Confab 28.2%; non-response 16.9%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 52
+      "rank": 15
     },
     {
       "benchmark_id": "elimination-game",
@@ -135,7 +135,7 @@
       "is_self_reported": false,
       "other_info": "sigma 0.142; games 1146; avg points 0.474",
       "source_link": "https://github.com/lechmazur/elimination_game",
-      "rank": 38
+      "rank": 35
     },
     {
       "benchmark_id": "nyt-connections",
@@ -143,7 +143,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 75
+      "rank": 74
     }
   ]
 }

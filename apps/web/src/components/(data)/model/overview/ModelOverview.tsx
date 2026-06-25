@@ -6,25 +6,13 @@ import Modalities from "./Modalities";
 import OtherInfo from "./OtherInfo";
 import ModelLinks, { hasModelLinks } from "./ModelLinks";
 import ModelStatusBanner from "./ModelStatusBanner";
-import { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 
 export interface ModelOverviewProps {
 	model: ModelOverviewPage;
 }
 
 export default function ModelOverview({ model }: ModelOverviewProps) {
-	// Helper: format date as dd MMM yyyy
-	const formatDate = (dateStr?: string) => {
-		if (!dateStr) return "-";
-		const date = new Date(dateStr);
-		if (isNaN(date.getTime())) return "-";
-		return date.toLocaleDateString("en-GB", {
-			day: "2-digit",
-			month: "short",
-			year: "numeric",
-		});
-	};
-
 	// Modalities logic: always show Text, Image, Audio, Video
 	const parseTypes = (types: any) => {
 		const normalizeType = (raw: unknown): string => {
@@ -68,8 +56,6 @@ export default function ModelOverview({ model }: ModelOverviewProps) {
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
 
-	console.log("Model Status:", model.status);
-
 	return (
 		<div className="w-full mx-auto space-y-4">
 			{/* Status banner */}
@@ -89,7 +75,6 @@ export default function ModelOverview({ model }: ModelOverviewProps) {
 					released={model.release_date ?? undefined}
 					deprecated={model.deprecation_date ?? undefined}
 					retired={model.retirement_date ?? undefined}
-					formatDate={formatDate}
 				/>
 				<Performance details={model.model_details} />
 			</div>

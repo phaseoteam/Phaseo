@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 20
+      "rank": 21
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -182,7 +182,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 42
+      "rank": 43
     },
     {
       "benchmark_id": "lvbench",
@@ -238,7 +238,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 41
+      "rank": 43
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -270,7 +270,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 38
+      "rank": 41
     },
     {
       "benchmark_id": "mmmuval",
@@ -350,7 +350,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 10
+      "rank": 13
     },
     {
       "benchmark_id": "realworldqa",
@@ -406,7 +406,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": null,
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "writingbench",

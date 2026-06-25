@@ -42,7 +42,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> CancelVideoAsync(
+	public static Task<Dictionary<string, object>?> CancelVideoAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -51,10 +51,10 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/videos/" + (path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/cancel";
-		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
-	public static Task<object?> CancelVideoAliasAsync(
+	public static Task<Dictionary<string, object>?> CancelVideoAliasAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -63,7 +63,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/video/generations/" + (path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/cancel";
-		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> CreateAnthropicMessageAsync(
@@ -618,6 +618,54 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> ListBatchesAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/batches";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListBatchesAliasAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/batch";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListBatchModelsAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/batches/models";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<Dictionary<string, object>?> ListBatchModelsAliasAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/batch/models";
+		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> ListBatchRequestsAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
@@ -796,6 +844,18 @@ public static class Operations
 	{
 		var resolvedPath = "/workspaces";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Task<object?> OpenAsyncJobWebSocketAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		var resolvedPath = "/async/" + (path != null && path.ContainsKey("kind") ? path["kind"] : "") + "/" + (path != null && path.ContainsKey("id") ? path["id"] : "") + "/ws";
+		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
 
 	public static Task<object?> OpenResponsesWebSocketAsync(

@@ -31,6 +31,7 @@ const EXPECTED_PLATFORM_NAMES = [
     "Crusoe",
     "DeepInfra",
     "DeepSeek",
+    "DigitalOcean",
     "ElevenLabs",
     "Fireworks",
     "Friendli",
@@ -170,8 +171,23 @@ function endpointMatches(actual: string, expected: string): boolean {
     const normalizedActual = actual.trim();
     const normalizedExpected = expected.trim();
 
-    if (normalizedExpected.startsWith("https://generativelanguage.googleapis.com/")) {
-        return normalizedActual.startsWith(normalizedExpected);
+    try {
+        const actualUrl = new URL(normalizedActual);
+        const expectedUrl = new URL(normalizedExpected);
+        const expectedPathPattern =
+            "^" +
+            expectedUrl.pathname
+                .replace(/%7B[^/]+%7D/gi, "[^/]+")
+                .replace(/\{[^/]+\}/g, "[^/]+") +
+            "$";
+        return (
+            actualUrl.origin === expectedUrl.origin &&
+            new RegExp(expectedPathPattern).test(actualUrl.pathname)
+        );
+    } catch {
+        if (normalizedExpected.startsWith("https://generativelanguage.googleapis.com/")) {
+            return normalizedActual.startsWith(normalizedExpected);
+        }
     }
 
     return normalizedActual === normalizedExpected;

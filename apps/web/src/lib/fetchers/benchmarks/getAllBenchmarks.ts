@@ -1,5 +1,6 @@
 // lib/fetchers/benchmarks/getAllBenchmarks.ts
 import { cacheLife, cacheTag } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface BenchmarkCard {
     benchmark_id: string;
@@ -7,13 +8,11 @@ export interface BenchmarkCard {
     total_models: number;
 }
 
-import { createClient } from '@/utils/supabase/client';
-
 /**
  * Fetch all benchmarks exclusively from the database `data_benchmarks` table.
  */
 export async function getAllBenchmarks(sorted = false): Promise<BenchmarkCard[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Base query
     let query = supabase.from("data_benchmarks").select("id, name, total_models");
@@ -49,6 +48,8 @@ export async function getAllBenchmarksCached(sorted = false): Promise<BenchmarkC
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:benchmarks");
     cacheTag("data:benchmarks");
     cacheTag("data:benchmarks:list");
 

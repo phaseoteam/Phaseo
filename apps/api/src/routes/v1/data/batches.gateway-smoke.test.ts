@@ -14,6 +14,8 @@ const state = vi.hoisted(() => ({
 	fileMeta: new Map<string, Record<string, unknown>>(),
 	webhookEvents: [] as Array<Record<string, unknown>>,
 	finalizeCalls: [] as Array<Record<string, unknown>>,
+	loadPriceCardCalls: [] as Array<Record<string, unknown>>,
+	reservationCalls: [] as Array<Record<string, unknown>>,
 	fetchCalls: [] as Array<{
 		url: string;
 		method: string;
@@ -27,6 +29,8 @@ function resetState() {
 	state.fileMeta.clear();
 	state.webhookEvents = [];
 	state.finalizeCalls = [];
+	state.loadPriceCardCalls = [];
+	state.reservationCalls = [];
 	state.fetchCalls = [];
 }
 
@@ -63,7 +67,69 @@ vi.mock("@providers/keys", () => ({
 	resolveProviderKey: vi.fn(() => ({ key: "test-openai-key" })),
 }));
 
+vi.mock("@pipeline/pricing/loader", () => ({
+	loadPriceCard: vi.fn(async (provider: string, model: string, endpoint: string) => {
+		state.loadPriceCardCalls.push({ provider, model, endpoint });
+		if (endpoint !== "text.generate") return null;
+		return {
+			provider,
+			model,
+			endpoint,
+			effective_from: null,
+			effective_to: null,
+			currency: "USD",
+			version: "test",
+			rules: [
+				{
+					id: "input",
+					pricing_plan: "batch",
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1,
+					price_per_unit: "0.000001",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+				{
+					id: "output",
+					pricing_plan: "batch",
+					meter: "output_text_tokens",
+					unit: "token",
+					unit_size: 1,
+					price_per_unit: "0.000002",
+					currency: "USD",
+					match: [],
+					priority: 100,
+				},
+			],
+		};
+	}),
+}));
+
+vi.mock("@core/wallet-reservations", () => ({
+	reserveWalletCredits: vi.fn(async (args: Record<string, unknown>) => {
+		state.reservationCalls.push(args);
+		return {
+			status: "held",
+			applied: true,
+			alreadyApplied: false,
+			amountNanos: args.amountNanos,
+			beforeBalanceNanos: null,
+			afterBalanceNanos: null,
+			beforeReservedNanos: null,
+			afterReservedNanos: null,
+		};
+	}),
+	releaseWalletReservation: vi.fn(async () => ({
+		status: "released",
+		applied: true,
+		alreadyApplied: false,
+	})),
+}));
+
 vi.mock("@core/async-notifications", () => ({
+	buildAsyncWebSocketUrl: vi.fn((_baseUrl: string, kind: string, id: string) => `wss://example.com/v1/async/${kind}/${id}/ws`),
 	dispatchAsyncWebhookEventInBackground: vi.fn((payload: Record<string, unknown>) => {
 		state.webhookEvents.push(payload);
 	}),
@@ -170,6 +236,13 @@ describe("mounted batch gateway smoke flows", () => {
 					});
 				}
 
+				if (url === "https://api.openai.example/v1/files/file_input_123/content" && method === "GET") {
+					return new Response('{"custom_id":"req_1","body":{"model":"gpt-5-mini","input":"hello"}}\n', {
+						status: 200,
+						headers: { "Content-Type": "application/jsonl" },
+					});
+				}
+
 				if (url === "https://api.openai.example/v1/batches" && method === "POST") {
 					return jsonResponse({
 						id: "batch_123",
@@ -267,6 +340,21 @@ describe("mounted batch gateway smoke flows", () => {
 			session_id: "session_smoke_success",
 			pricing_lines: [],
 		});
+		expect(state.loadPriceCardCalls).toEqual([
+			expect.objectContaining({
+				provider: "openai",
+				model: "gpt-5-mini",
+				endpoint: "text.generate",
+			}),
+		]);
+		expect(state.reservationCalls).toEqual([
+			expect.objectContaining({
+				workspaceId: "ws_batch_smoke",
+				reservationId: expect.stringContaining("batch_hold:"),
+				holdRefId: expect.any(String),
+				amountNanos: expect.any(Number),
+			}),
+		]);
 
 		const retrieveResponse = await app.request("https://example.com/v1/batches/batch_123", {
 			method: "GET",
@@ -349,6 +437,7 @@ describe("mounted batch gateway smoke flows", () => {
 		]);
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
+			"GET https://api.openai.example/v1/files/file_input_123/content",
 			"POST https://api.openai.example/v1/batches",
 			"GET https://api.openai.example/v1/batches/batch_123",
 			"GET https://api.openai.example/v1/files/file_output_123",
@@ -378,6 +467,13 @@ describe("mounted batch gateway smoke flows", () => {
 						filename: "batch-fail-input.jsonl",
 						status: "uploaded",
 						bytes: 21,
+					});
+				}
+
+				if (url === "https://api.openai.example/v1/files/file_input_fail_123/content" && method === "GET") {
+					return new Response('{"custom_id":"req_fail_1","body":{"model":"gpt-5-mini","input":"fail"}}\n', {
+						status: 200,
+						headers: { "Content-Type": "application/jsonl" },
 					});
 				}
 
@@ -472,6 +568,21 @@ describe("mounted batch gateway smoke flows", () => {
 			session_id: "session_smoke_fail",
 			pricing_lines: [],
 		});
+		expect(state.loadPriceCardCalls).toEqual([
+			expect.objectContaining({
+				provider: "openai",
+				model: "gpt-5-mini",
+				endpoint: "text.generate",
+			}),
+		]);
+		expect(state.reservationCalls).toEqual([
+			expect.objectContaining({
+				workspaceId: "ws_batch_smoke",
+				reservationId: expect.stringContaining("batch_hold:"),
+				holdRefId: expect.any(String),
+				amountNanos: expect.any(Number),
+			}),
+		]);
 
 		const retrieveResponse = await app.request("https://example.com/v1/batches/batch_fail_123", {
 			method: "GET",
@@ -547,6 +658,7 @@ describe("mounted batch gateway smoke flows", () => {
 		]);
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
+			"GET https://api.openai.example/v1/files/file_input_fail_123/content",
 			"POST https://api.openai.example/v1/batches",
 			"GET https://api.openai.example/v1/batches/batch_fail_123",
 			"GET https://api.openai.example/v1/files/file_error_fail_123",

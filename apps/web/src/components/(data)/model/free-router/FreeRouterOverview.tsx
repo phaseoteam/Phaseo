@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getFreeRouterOverview } from "@/lib/fetchers/models/getFreeRouterOverview";
+import { fetchFrontendFreeRouterOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { FREE_ROUTER_MODEL_ID } from "@/lib/models/freeRouter";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -81,7 +81,7 @@ function SummaryMetric({
 }
 
 export default async function FreeRouterOverview() {
-	const overview = await getFreeRouterOverview();
+	const overview = await fetchFrontendFreeRouterOverview();
 
 	return (
 		<div className="space-y-8">

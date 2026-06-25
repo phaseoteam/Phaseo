@@ -309,6 +309,30 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.listBatches(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batches"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatchesAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batch"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatchModels(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batches/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.listBatchModelsAlias(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/batch/models"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.listBatchRequests(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/batches/#{path["batch_id"]}/requests"
@@ -396,6 +420,12 @@ module AiStats
       def self.listWorkspaces(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/workspaces"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.openAsyncJobWebSocket(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        resolved_path = "/async/#{path["kind"]}/#{path["id"]}/ws"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

@@ -1,6 +1,6 @@
 import AIStats, { type AIStatsOptions, type ResponsesRequest, type ResponsesResponse } from "@ai-stats/sdk";
-import { AgentGatewayError } from "../errors";
-import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types";
+import { AgentGatewayError } from "../errors.js";
+import type { AgentMessage, AgentModelClient, AgentModelRequest, AgentToolCall } from "../types.js";
 
 export type GatewayAgentClientOptions = {
 	client?: AIStats;

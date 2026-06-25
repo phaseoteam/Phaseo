@@ -2,6 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+	compareByReleaseDateDesc,
+	groupModelsByReleaseMonth,
+	getDefaultFavoriteModelIds,
+	MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
+	normalizeFavoriteModelId,
+} from "@/components/(chat)/playgroundConfig";
+import {
 	ModelSelector,
 	ModelSelectorContent,
 	ModelSelectorEmpty,
@@ -22,7 +29,7 @@ import {
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { cn } from "@/lib/utils";
-import { Plus, X } from "lucide-react";
+import { CircleCheck, Plus, Star, X } from "lucide-react";
 
 type ModelOption = {
 	modelId: string;
@@ -47,7 +54,6 @@ type RoomModelSelectorProps = {
 	onOpenModelSettingsForModel?: (modelId: string) => void;
 };
 
-const MAX_PROVIDER_LOGOS = 8;
 const NEW_MODEL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 function normalizeSearchText(value: string): string {
@@ -172,16 +178,17 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 	const map = new Map<string, ModelOption>();
 
 	for (const model of models) {
-		const existing = map.get(model.modelId);
-		const orgId = getOrgId(model.modelId);
+		const selectorModelId = model.selectorModelId;
+		const existing = map.get(selectorModelId);
+		const orgId = model.organisationId?.trim() || getOrgId(selectorModelId);
 		const orgName =
 			model.organisationName ?? model.providerName ?? formatOrgLabel(orgId);
-		const label = model.modelName ?? formatModelLabel(model.modelId);
+		const label = model.modelName ?? formatModelLabel(selectorModelId);
 		const releaseDate = model.releaseDate ?? model.announcementDate ?? null;
 
 		if (!existing) {
-			map.set(model.modelId, {
-				modelId: model.modelId,
+			map.set(selectorModelId, {
+				modelId: selectorModelId,
 				orgId,
 				orgName,
 				label,
@@ -204,7 +211,10 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 			if (!existing.releaseDate && releaseDate) {
 				existing.releaseDate = releaseDate;
 			}
-			if (existing.label === formatModelLabel(existing.modelId) && model.modelName) {
+			if (
+				existing.label === formatModelLabel(existing.modelId) &&
+				model.modelName
+			) {
 				existing.label = model.modelName;
 			}
 			if (
@@ -223,40 +233,21 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 			: ("inactive" as const),
 	}));
 
-	const featured: ModelOption[] = [];
-	const grouped = new Map<string, ModelOption[]>();
-	const comingSoon = new Map<string, ModelOption[]>();
+	const active: ModelOption[] = [];
+	const comingSoon: ModelOption[] = [];
 	for (const option of options) {
 		if (option.gatewayStatus === "inactive") {
-			const list = comingSoon.get(option.orgId) ?? [];
-			list.push(option);
-			comingSoon.set(option.orgId, list);
+			comingSoon.push(option);
 		} else {
-			const list = grouped.get(option.orgId) ?? [];
-			list.push(option);
-			grouped.set(option.orgId, list);
+			active.push(option);
 		}
 	}
-	for (const list of grouped.values()) {
-		list.sort((a, b) => a.label.localeCompare(b.label));
-	}
-	for (const list of comingSoon.values()) {
-		list.sort((a, b) => a.label.localeCompare(b.label));
-	}
-
-	const sortGroupsByOrgName = (groups: Map<string, ModelOption[]>) =>
-		new Map(
-			Array.from(groups.entries()).sort(([, aList], [, bList]) => {
-				const aName = aList[0]?.orgName ?? "";
-				const bName = bList[0]?.orgName ?? "";
-				return aName.localeCompare(bName);
-			}),
-		);
+	active.sort(compareByReleaseDateDesc);
+	comingSoon.sort(compareByReleaseDateDesc);
 
 	return {
-		featured,
-		grouped: sortGroupsByOrgName(grouped),
-		comingSoon: sortGroupsByOrgName(comingSoon),
+		active,
+		comingSoon,
 	};
 }
 
@@ -292,10 +283,51 @@ export function RoomModelSelector({
 		free: false,
 		new: false,
 	});
+	const [favoriteModelIdSet, setFavoriteModelIdSet] = useState<Set<string>>(
+		() => new Set(getDefaultFavoriteModelIds()),
+	);
 
 	useEffect(() => {
 		setNowMs(Date.now());
 	}, []);
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+		const availableFavoriteIds = new Set(
+			[...modelOptions.active, ...modelOptions.comingSoon].map((option) =>
+				normalizeFavoriteModelId(option.modelId),
+			),
+		);
+		const raw = window.localStorage.getItem(
+			MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
+		);
+		if (!raw) {
+			setFavoriteModelIdSet(
+				new Set(
+					getDefaultFavoriteModelIds().filter((id) =>
+						availableFavoriteIds.has(id),
+					),
+				),
+			);
+			return;
+		}
+		try {
+			const parsed = JSON.parse(raw);
+			const next = Array.isArray(parsed)
+				? parsed
+						.map((value) => normalizeFavoriteModelId(String(value)))
+						.filter((id) => availableFavoriteIds.has(id))
+				: [];
+			setFavoriteModelIdSet(new Set(next));
+		} catch {
+			setFavoriteModelIdSet(
+				new Set(
+					getDefaultFavoriteModelIds().filter((id) =>
+						availableFavoriteIds.has(id),
+					),
+				),
+			);
+		}
+	}, [modelOptions.active, modelOptions.comingSoon]);
 
 	const toggleQuickFilter = (key: "free" | "new") => {
 		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -325,98 +357,57 @@ export function RoomModelSelector({
 	);
 	const selectedModelLabelById = useMemo(() => {
 		const labelById = new Map<string, string>();
-		for (const option of modelOptions.featured) {
+		for (const option of modelOptions.active) {
 			labelById.set(option.modelId, option.label);
 		}
-		for (const list of modelOptions.grouped.values()) {
-			for (const option of list) {
-				labelById.set(option.modelId, option.label);
-			}
-		}
-		for (const list of modelOptions.comingSoon.values()) {
-			for (const option of list) {
-				labelById.set(option.modelId, option.label);
-			}
+		for (const option of modelOptions.comingSoon) {
+			labelById.set(option.modelId, option.label);
 		}
 		return labelById;
-	}, [modelOptions.comingSoon, modelOptions.featured, modelOptions.grouped]);
+	}, [modelOptions.active, modelOptions.comingSoon]);
 	const selectedModelOrgIdById = useMemo(() => {
 		const orgIdById = new Map<string, string>();
-		for (const option of modelOptions.featured) {
+		for (const option of modelOptions.active) {
 			orgIdById.set(option.modelId, option.orgId);
 		}
-		for (const list of modelOptions.grouped.values()) {
-			for (const option of list) {
-				orgIdById.set(option.modelId, option.orgId);
-			}
-		}
-		for (const list of modelOptions.comingSoon.values()) {
-			for (const option of list) {
-				orgIdById.set(option.modelId, option.orgId);
-			}
+		for (const option of modelOptions.comingSoon) {
+			orgIdById.set(option.modelId, option.orgId);
 		}
 		return orgIdById;
-	}, [modelOptions.comingSoon, modelOptions.featured, modelOptions.grouped]);
+	}, [modelOptions.active, modelOptions.comingSoon]);
 
-	const renderProviderLogos = (option: ModelOption) => {
-		const providerNameById = new Map(
-			option.providerIds.map((providerId, index) => [
-				providerId,
-				option.providerNames[index] ?? formatOrgLabel(providerId),
-			]),
-		);
-		const providers = [...option.providerIds].sort((a, b) => {
-			const aActive = Boolean(option.providerAvailability?.[a]);
-			const bActive = Boolean(option.providerAvailability?.[b]);
-			if (aActive !== bActive) return aActive ? -1 : 1;
-			const aName = providerNameById.get(a) ?? a;
-			const bName = providerNameById.get(b) ?? b;
-			return aName.localeCompare(bName);
+	const toggleFavoriteModel = (modelId: string) => {
+		setFavoriteModelIdSet((prev) => {
+			const normalizedId = normalizeFavoriteModelId(modelId);
+			const next = new Set(prev);
+			if (next.has(normalizedId)) {
+				next.delete(normalizedId);
+			} else {
+				next.add(normalizedId);
+			}
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					MODEL_SELECTOR_FAVORITES_STORAGE_KEY,
+					JSON.stringify(Array.from(next)),
+				);
+			}
+			return next;
 		});
-		const visible = providers.slice(0, MAX_PROVIDER_LOGOS);
-		const hiddenCount = Math.max(0, providers.length - visible.length);
-		return (
-			<div className="flex items-center gap-2 text-xs text-muted-foreground">
-				<div className="flex items-center">
-					{visible.map((providerId) => (
-						<Logo
-							key={providerId}
-							id={providerId}
-							alt={providerId}
-							width={18}
-							height={18}
-							className={cn(
-								"shrink-0",
-								option.providerAvailability?.[providerId]
-									? null
-									: "grayscale opacity-60",
-							)}
-						/>
-					))}
-				</div>
-				{hiddenCount > 0 ? <span className="pl-2">+{hiddenCount}</span> : null}
-			</div>
-		);
 	};
 
 	const renderModelRow = (option: ModelOption, withComingSoonBadge = false) => (
-		<div className="flex min-w-0 flex-1 items-center gap-2">
-			<div className="flex min-w-0 flex-1 items-center gap-2">
+		<div className="flex min-w-0 flex-1 items-center gap-1.5">
+			<div className="flex min-w-0 flex-1 items-center gap-1.5">
 				<span className="truncate text-sm font-medium">
-					{option.label.split(":")[0]}
+					{option.orgName}: {option.label.split(":")[0]}
 				</span>
 				{option.modelId.includes(":") ? (
 					<Badge {...getModelBadgeProps(option.modelId.split(":")[1])}>
 						{option.modelId.split(":")[1].replace(/^free$/, "Free")}
 					</Badge>
 				) : null}
-				{isNewModel(option.releaseDate, nowMs) ? (
-					<Badge {...getModelBadgeProps("new")}>New</Badge>
-				) : null}
 				{selectedModelIds.includes(option.modelId) ? (
-					<Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-						Selected
-					</Badge>
+					<CircleCheck className="h-4 w-4 shrink-0 text-foreground/70" />
 				) : null}
 				{withComingSoonBadge ? (
 					<Badge
@@ -427,7 +418,40 @@ export function RoomModelSelector({
 					</Badge>
 				) : null}
 			</div>
-			{renderProviderLogos(option)}
+			<div className="flex shrink-0 items-center">
+				<button
+					type="button"
+					className={cn(
+						"inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors",
+						favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId))
+							? "text-amber-500 hover:bg-amber-500/10"
+							: "text-muted-foreground hover:bg-muted hover:text-foreground",
+					)}
+					onMouseDown={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+					}}
+					onClick={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+						toggleFavoriteModel(option.modelId);
+					}}
+					aria-label={
+						favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId))
+							? `Remove ${option.label} from favorites`
+							: `Add ${option.label} to favorites`
+					}
+				>
+					<Star
+						className="h-4 w-4"
+						fill={
+							favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId))
+								? "currentColor"
+								: "none"
+						}
+					/>
+				</button>
+			</div>
 		</div>
 	);
 
@@ -476,45 +500,52 @@ export function RoomModelSelector({
 		);
 	};
 
-	const groupedEntries = useMemo(
-		() => Array.from(modelOptions.grouped.entries()),
-		[modelOptions.grouped],
-	);
-	const comingSoonEntries = useMemo(
-		() => Array.from(modelOptions.comingSoon.entries()),
-		[modelOptions.comingSoon],
-	);
-	const filteredFeatured = useMemo(
-		() => modelOptions.featured.filter(optionMatchesQuickFilters),
-		[modelOptions.featured, optionMatchesQuickFilters],
-	);
-	const filteredGroupedEntries = useMemo(
-		() =>
-			groupedEntries
-				.map(([orgId, options]) => [
-					orgId,
-					options.filter(optionMatchesQuickFilters),
-				] as const)
-				.filter(([, options]) => options.length > 0),
-		[groupedEntries, optionMatchesQuickFilters],
+	const filteredActive = useMemo(
+		() => modelOptions.active.filter(optionMatchesQuickFilters),
+		[modelOptions.active, optionMatchesQuickFilters],
 	);
 	const filteredComingSoonEntries = useMemo(
+		() => modelOptions.comingSoon.filter(optionMatchesQuickFilters),
+		[modelOptions.comingSoon, optionMatchesQuickFilters],
+	);
+	const favoriteModelIds = useMemo(
+		() => Array.from(favoriteModelIdSet),
+		[favoriteModelIdSet],
+	);
+	const favoriteActiveOptions = useMemo(
+		() => {
+			const byId = new Map(
+				filteredActive.map((option) => [
+					normalizeFavoriteModelId(option.modelId),
+					option,
+				]),
+			);
+			return favoriteModelIds
+				.map((favoriteModelId) => byId.get(favoriteModelId))
+				.filter((option): option is ModelOption => Boolean(option));
+		},
+		[filteredActive, favoriteModelIds],
+	);
+	const groupedActiveOptions = useMemo(
 		() =>
-			comingSoonEntries
-				.map(([orgId, options]) => [
-					orgId,
-					options.filter(optionMatchesQuickFilters),
-				] as const)
-				.filter(([, options]) => options.length > 0),
-		[comingSoonEntries, optionMatchesQuickFilters],
+			groupModelsByReleaseMonth(
+				filteredActive.filter(
+					(option) =>
+						!favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId)),
+				),
+			),
+		[filteredActive, favoriteModelIdSet],
+	);
+	const groupedComingSoonOptions = useMemo(
+		() => groupModelsByReleaseMonth(filteredComingSoonEntries),
+		[filteredComingSoonEntries],
 	);
 	const allModelOptions = useMemo(
 		() => [
-			...filteredFeatured,
-			...filteredGroupedEntries.flatMap(([, options]) => options),
-			...filteredComingSoonEntries.flatMap(([, options]) => options),
+			...filteredActive,
+			...filteredComingSoonEntries,
 		],
-		[filteredComingSoonEntries, filteredFeatured, filteredGroupedEntries],
+		[filteredActive, filteredComingSoonEntries],
 	);
 	const normalizedSearchValue = useMemo(
 		() => normalizeSearchText(searchValue),
@@ -534,15 +565,11 @@ export function RoomModelSelector({
 				if (a.option.gatewayStatus !== b.option.gatewayStatus) {
 					return a.option.gatewayStatus === "active" ? -1 : 1;
 				}
-				return a.option.label.localeCompare(b.option.label);
+				return compareByReleaseDateDesc(a.option, b.option);
 			});
 	}, [allModelOptions, hasSearchValue, normalizedSearchValue]);
 	const comingSoonCount = useMemo(
-		() =>
-			filteredComingSoonEntries.reduce(
-				(total, [, list]) => total + list.length,
-				0,
-			),
+		() => filteredComingSoonEntries.length,
 		[filteredComingSoonEntries],
 	);
 	const handleOpenChange = (nextOpen: boolean) => {
@@ -648,7 +675,7 @@ export function RoomModelSelector({
 										}}
 										keywords={buildSearchKeywords(option)}
 										className={cn(
-											"flex items-center gap-3",
+											"flex min-h-8 items-center gap-2 py-1",
 											option.gatewayStatus === "inactive" && "opacity-60",
 											selectedModelIds.includes(option.modelId) &&
 												"bg-foreground/5",
@@ -657,8 +684,8 @@ export function RoomModelSelector({
 										<Logo
 											id={option.orgId}
 											alt={option.orgName}
-											width={18}
-											height={18}
+											width={16}
+											height={16}
 											className="shrink-0"
 										/>
 										{renderModelRow(option, option.gatewayStatus === "inactive")}
@@ -666,13 +693,46 @@ export function RoomModelSelector({
 								))}
 							</ModelSelectorGroup>
 						) : null}
-						{!hasSearchValue && filteredFeatured.length > 0 ? (
-							<>
+						{!hasSearchValue && favoriteActiveOptions.length > 0 ? (
+							<ModelSelectorGroup
+								heading="Favourites"
+								className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
+							>
+								{favoriteActiveOptions.map((option) => (
+									<ModelSelectorItem
+										key={option.modelId}
+										value={option.modelId}
+										onSelect={() => {
+											onSelectModel(option.modelId);
+											setOpen(false);
+										}}
+										keywords={buildSearchKeywords(option)}
+										className={cn(
+											"flex min-h-8 items-center gap-2 py-1",
+											selectedModelIds.includes(option.modelId) &&
+												"bg-foreground/5",
+										)}
+									>
+										<Logo
+											id={option.orgId}
+											alt={option.orgName}
+											width={16}
+											height={16}
+											className="shrink-0"
+										/>
+										{renderModelRow(option)}
+									</ModelSelectorItem>
+								))}
+							</ModelSelectorGroup>
+						) : null}
+						{!hasSearchValue &&
+							groupedActiveOptions.map((group, index) => (
 								<ModelSelectorGroup
-									heading="Featured"
+									key={`active-${group.heading}-${index}`}
+									heading={group.heading}
 									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 								>
-									{filteredFeatured.map((option) => (
+									{group.items.map((option) => (
 										<ModelSelectorItem
 											key={option.modelId}
 											value={option.modelId}
@@ -682,7 +742,7 @@ export function RoomModelSelector({
 											}}
 											keywords={buildSearchKeywords(option)}
 											className={cn(
-												"flex items-center gap-3",
+												"flex min-h-8 items-center gap-2 py-1",
 												selectedModelIds.includes(option.modelId) &&
 													"bg-foreground/5",
 											)}
@@ -690,91 +750,52 @@ export function RoomModelSelector({
 											<Logo
 												id={option.orgId}
 												alt={option.orgName}
-												width={18}
-												height={18}
+												width={16}
+												height={16}
 												className="shrink-0"
 											/>
 											{renderModelRow(option)}
 										</ModelSelectorItem>
 									))}
 								</ModelSelectorGroup>
-								<ModelSelectorSeparator />
-							</>
-						) : null}
-
-						{!hasSearchValue &&
-							filteredGroupedEntries.map(([orgId, options]) => {
-							const orgLabel = options[0]?.orgName ?? formatOrgLabel(orgId);
-							return (
-								<ModelSelectorGroup key={orgId} heading={orgLabel} className="pb-2">
-									{options.map((option) => (
-										<ModelSelectorItem
-											key={option.modelId}
-											value={option.modelId}
-											onSelect={() => {
-												onSelectModel(option.modelId);
-												setOpen(false);
-											}}
-											keywords={buildSearchKeywords(option)}
-											className={cn(
-												"flex items-center gap-3",
-												selectedModelIds.includes(option.modelId) &&
-													"bg-foreground/5",
-											)}
-										>
-											<Logo
-												id={option.orgId}
-												alt={option.orgName}
-												width={18}
-												height={18}
-												className="shrink-0"
-											/>
-											{renderModelRow(option)}
-										</ModelSelectorItem>
-									))}
-								</ModelSelectorGroup>
-							);
-							})}
+							))}
 
 						{!hasSearchValue && comingSoonCount > 0 ? (
 							<>
 								<ModelSelectorSeparator />
-								{filteredComingSoonEntries.map(([orgId, options]) => {
-									const orgLabel = options[0]?.orgName ?? formatOrgLabel(orgId);
-									return (
-										<ModelSelectorGroup
-											key={`coming-soon-${orgId}`}
-											heading={`${orgLabel} - Coming Soon`}
-											className="pb-2"
-										>
-											{options.map((option) => (
-												<ModelSelectorItem
-													key={option.modelId}
-													value={option.modelId}
-													onSelect={() => {
-														onSelectModel(option.modelId);
-														setOpen(false);
-													}}
-													keywords={buildSearchKeywords(option)}
-													className={cn(
-														"flex items-center gap-3 opacity-60",
-														selectedModelIds.includes(option.modelId) &&
-															"bg-foreground/5",
-													)}
-												>
-													<Logo
-														id={option.orgId}
-														alt={option.orgName}
-														width={18}
-														height={18}
-														className="shrink-0"
-													/>
-													{renderModelRow(option, true)}
-												</ModelSelectorItem>
-											))}
-										</ModelSelectorGroup>
-									);
-								})}
+								{groupedComingSoonOptions.map((group, index) => (
+									<ModelSelectorGroup
+										key={`coming-soon-${group.heading}-${index}`}
+										heading={`Coming soon · ${group.heading}`}
+										className="pb-2"
+									>
+										{group.items.map((option) => (
+											<ModelSelectorItem
+												key={option.modelId}
+												value={option.modelId}
+												onSelect={() => {
+													onSelectModel(option.modelId);
+													setOpen(false);
+												}}
+												keywords={buildSearchKeywords(option)}
+												className={cn(
+													"flex min-h-8 items-center gap-2 py-1 opacity-60",
+													selectedModelIds.includes(option.modelId) &&
+														"bg-foreground/5",
+												)}
+											>
+												<Logo
+													id={option.orgId}
+													alt={option.orgName}
+													width={16}
+													height={16}
+													className="shrink-0"
+												/>
+												{renderModelRow(option, true)}
+											</ModelSelectorItem>
+										))}
+									</ModelSelectorGroup>
+								))}
 							</>
 						) : null}
 					</ModelSelectorList>

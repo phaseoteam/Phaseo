@@ -1,6 +1,5 @@
-import { getFamilyModelsCached } from "@/lib/fetchers/models/getFamilyModels";
+import { fetchFrontendFamily } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelFamilyButtonClient from "./ModelFamilyButtonClient";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
 
 export default async function ModelFamilyButtonServer({
 	familyId,
@@ -9,14 +8,15 @@ export default async function ModelFamilyButtonServer({
 }) {
 	if (!familyId) return null;
 
+	let family;
 	try {
-		const includeHidden = await resolveIncludeHidden();
-		const family = await getFamilyModelsCached(familyId, includeHidden);
-		if (!family) return null;
-		return <ModelFamilyButtonClient family={family} />;
-	} catch (err) {
+		family = await fetchFrontendFamily(familyId);
+	} catch {
 		// Don't crash the page for fetch errors; silently render nothing
 		// In future we could log to telemetry
 		return null;
 	}
+
+	if (!family) return null;
+	return <ModelFamilyButtonClient family={family} />;
 }

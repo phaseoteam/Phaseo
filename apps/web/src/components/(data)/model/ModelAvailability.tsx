@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ModelAvailabilityItem } from "@/lib/fetchers/models/getModelAvailability";
-import { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
+import type { ModelAvailabilityItem } from "@/lib/fetchers/models/getModelAvailability";
+import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { Logo } from "@/components/Logo";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import RotatingPricing from "./RotatingPricing";
-import { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 
 function SectionEmpty({
 	title,

@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import * as fs from "node:fs";
 import { createAgent } from "../agent";
+import { createAgentDevtools } from "../devtools";
 import { AgentGatewayError } from "../errors";
 
 describe("Agent SDK runtime loop", () => {
@@ -607,6 +610,67 @@ describe("Agent SDK runtime loop", () => {
 				nativeResponseId: "resp_native_1",
 			},
 		]);
+	});
+
+	it("captures agent runs in devtools-compatible JSONL", async () => {
+		const directory = `.ai-stats-agent-devtools-test-${randomUUID()}`;
+		const client = {
+			generate: vi.fn(async () => ({
+				message: {
+					role: "assistant" as const,
+					content: "Done",
+				},
+				requestId: "req_agent_devtools_1",
+				nativeResponseId: "resp_agent_devtools_1",
+				provider: "openai",
+				model: "openai/gpt-5.4",
+			})),
+		};
+
+		try {
+			const agent = createAgent({
+				id: "devtools-agent",
+				model: "ai-stats/free",
+			});
+
+			await agent.run({
+				input: "Capture this run",
+				client,
+				devtools: createAgentDevtools({
+					directory,
+				}),
+			});
+
+			const lines = fs
+				.readFileSync(`${directory}/generations.jsonl`, "utf-8")
+				.trim()
+				.split("\n");
+			expect(lines).toHaveLength(1);
+			const entry = JSON.parse(lines[0]);
+			expect(entry).toMatchObject({
+				type: "agent.run",
+				request: {
+					agent_id: "devtools-agent",
+					input: "Capture this run",
+					model: "ai-stats/free",
+				},
+				metadata: {
+					sdk: "typescript",
+					stream: false,
+					agent_id: "devtools-agent",
+					run_status: "completed",
+					request_id: "req_agent_devtools_1",
+					native_response_id: "resp_agent_devtools_1",
+					provider: "openai",
+					model: "openai/gpt-5.4",
+				},
+			});
+			expect(entry.response.run.status).toBe("completed");
+		} finally {
+			if (fs.existsSync(directory)) {
+				fs.rmSync(directory, { recursive: true, force: true });
+			}
+		}
 	});
 
 	it("uses preset and run-level overrides on the initial run path", async () => {

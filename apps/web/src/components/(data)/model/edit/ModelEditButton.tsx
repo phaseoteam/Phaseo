@@ -1,7 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
 interface ModelEditButtonProps {
 	modelId: string;
@@ -37,21 +37,12 @@ export default async function ModelEditButton({
 	modelId,
 	tab,
 }: ModelEditButtonProps) {
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-	let isAdmin = false;
-	if (user) {
-		const { data } = await supabase
-			.from("users")
-			.select("role")
-			.eq("user_id", user.id)
-			.single();
-		isAdmin = data?.role === "admin";
-	}
+	const authStatus = await fetchInternalAuthStatus().catch(() => ({
+		isAdmin: false,
+		signedIn: false,
+	}));
 
-	if (!isAdmin) {
+	if (!authStatus.isAdmin) {
 		return null;
 	}
 

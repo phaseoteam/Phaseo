@@ -33,11 +33,11 @@ describe("handleSuccessAudit web fetch observability", () => {
 				stream: false,
 				body: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "function", function: { name: "gateway_web_fetch" } }],
+					tools: [{ type: "function", function: { name: "ai_stats_web_fetch" } }],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "gateway:web_fetch" }],
+					tools: [{ type: "ai-stats:web_fetch" }],
 				},
 				webFetchObservability: {
 					requestCount: 1,

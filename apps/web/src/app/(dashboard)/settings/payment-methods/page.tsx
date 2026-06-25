@@ -1,8 +1,4 @@
-import type Stripe from "stripe";
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
-import { getStripe } from "@/lib/stripe";
 import {
   Card,
   CardHeader,
@@ -14,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { StripePortalButton } from "./StripePortalButton";
 import { PaymentMethodsManager } from "./PaymentMethodsManager";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
-import { getUserObfuscationPreference } from "@/lib/fetchers/account/getUserObfuscationPreference";
+import { fetchSettingsPaymentMethodsInitialData } from "@/lib/fetchers/internal/fetchSettingsPaymentMethodsInitialData";
 
 export const metadata = {
 	title: "Payment Methods - Settings",
@@ -37,72 +33,8 @@ export default function Page() {
 }
 
 async function PaymentMethodsContent() {
-  const supabase = await createClient();
-  const { data: authData } = await supabase.auth.getUser();
-  const obfuscateInfo = await getUserObfuscationPreference(authData.user?.id ?? null);
-  const workspaceId = await getWorkspaceIdFromCookie();
-  const stripe = getStripe();
-
-  let customerId: string | null = null;
-  let customer: Stripe.Customer | null = null;
-  let paymentMethods: Stripe.PaymentMethod[] = [];
-  let defaultPaymentMethodId: string | null = null;
-
-  if (workspaceId) {
-    try {
-      const { data, error } = await supabase
-        .from("wallets")
-        .select("stripe_customer_id")
-        .eq("workspace_id", workspaceId)
-        .maybeSingle();
-      if (error) {
-        console.log("[WARN] wallets fetch (payment methods):", String(error));
-      } else {
-        customerId = data?.stripe_customer_id ?? null;
-      }
-    } catch (err) {
-      console.log("[ERROR] wallets fetch (payment methods):", String(err));
-    }
-  }
-
-  if (customerId) {
-    try {
-      const customerResp = await stripe.customers.retrieve(customerId);
-      if ("deleted" in customerResp && customerResp.deleted) {
-        customer = null;
-        defaultPaymentMethodId = null;
-      } else {
-        customer = customerResp as Stripe.Customer;
-        defaultPaymentMethodId = (customer.invoice_settings?.default_payment_method ?? null) as string | null;
-      }
-
-      const list = await stripe.paymentMethods.list({
-        customer: customerId,
-        type: "card",
-      });
-      paymentMethods = list.data ?? [];
-    } catch (err) {
-      console.log("[ERROR] stripe payment methods fetch:", String(err));
-      paymentMethods = [];
-    }
-  }
-
-  const initialData = {
-    customer: {
-      id: customerId ?? "",
-      email: customer?.email ?? null,
-    },
-    defaultPaymentMethodId,
-    paymentMethods: (paymentMethods ?? []).map((pm) => ({
-      id: pm.id,
-      brand: pm.card?.brand ?? null,
-      last4: pm.card?.last4 ?? null,
-      expMonth: pm.card?.exp_month ?? null,
-      expYear: pm.card?.exp_year ?? null,
-      funding: pm.card?.funding ?? null,
-      created: pm.created ?? null,
-    })),
-  };
+  const { customerId, initialData, obfuscateInfo } =
+    await fetchSettingsPaymentMethodsInitialData();
 
   return (
     <div

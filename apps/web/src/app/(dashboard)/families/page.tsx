@@ -4,10 +4,8 @@ import { Suspense } from "react";
 import { Logo } from "@/components/Logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-	getAllFamiliesCached,
-	type FamilyCard,
-} from "@/lib/fetchers/families/getAllFamilies";
+import type { FamilyCard } from "@/lib/fetchers/families/getAllFamilies";
+import { fetchFrontendFamilies } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export const metadata: Metadata = {
 	title: "AI Model Families - Track Related AI Model Releases",
@@ -26,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 async function FamiliesSection() {
-	const families = (await getAllFamiliesCached()) as FamilyCard[];
+	const families = (await fetchFrontendFamilies()) as FamilyCard[];
 
 	return (
 		<div className="space-y-6">

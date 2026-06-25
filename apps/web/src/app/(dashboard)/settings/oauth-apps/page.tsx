@@ -1,7 +1,5 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import CreateOAuthAppDialog from "@/components/(gateway)/settings/oauth-apps/CreateOAuthAppDialog";
 import OAuthAppsPanel from "@/components/(gateway)/settings/oauth-apps/OAuthAppsPanel";
 import { Button } from "@/components/ui/button";
@@ -15,14 +13,48 @@ import {
 import { UserRoundX } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
+import {
+	THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE,
+	isThirdPartyOAuthEnabled,
+} from "@/lib/oauth/thirdPartyOAuth";
+import { fetchSettingsOAuthAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsOAuthAppsInitialData";
 
 export const metadata = {
 	title: "OAuth Apps - Settings",
 	description:
-		"Manage your OAuth applications for third-party integrations, configure callback URLs and scopes, and control credentials used by external clients.",
+		"OAuth applications for third-party integrations are coming soon while the first-party AI Stats CLI OAuth beta is tested.",
 };
 
 export default function OAuthAppsPage() {
+	const thirdPartyOAuthEnabled = isThirdPartyOAuthEnabled();
+
+	if (!thirdPartyOAuthEnabled) {
+		return (
+			<div className="space-y-6">
+				<SettingsPageHeader
+					title="OAuth Apps"
+					meta={
+						<span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+							COMING SOON
+						</span>
+					}
+					description={THIRD_PARTY_OAUTH_COMING_SOON_MESSAGE}
+				/>
+				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
+					<EmptyHeader>
+						<EmptyMedia variant="icon">
+							<UserRoundX className="h-5 w-5" />
+						</EmptyMedia>
+						<EmptyTitle>OAuth apps are coming soon</EmptyTitle>
+						<EmptyDescription>
+							User-created OAuth clients are disabled while we test the first-party CLI OAuth flow.
+						</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-6">
 			<div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">
@@ -66,14 +98,9 @@ export default function OAuthAppsPage() {
 }
 
 async function OAuthAppsContent() {
-	const supabase = await createClient();
+	const initialData = await fetchSettingsOAuthAppsInitialData();
 
-	// Get current user
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	if (!user) {
+	if (!initialData.signedIn) {
 		return (
 			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -88,14 +115,6 @@ async function OAuthAppsContent() {
 			</Empty>
 		);
 	}
-
-	const initialTeamId = (await getWorkspaceIdFromCookie()) ?? null;
-
-	const { data: oauthApps } = await supabase
-		.from("oauth_apps_with_stats")
-		.select("*")
-		.eq("workspace_id", initialTeamId)
-		.order("created_at", { ascending: false });
 
 	return (
 		<div className="space-y-6">
@@ -119,13 +138,13 @@ async function OAuthAppsContent() {
 							</Button>
 						</Link>
 						<CreateOAuthAppDialog
-							currentTeamId={initialTeamId}
+							currentTeamId={initialData.initialTeamId}
 						/>
 					</>
 				}
 			/>
 			<OAuthAppsPanel
-				oauthApps={oauthApps ?? []}
+				oauthApps={initialData.oauthApps}
 			/>
 		</div>
 	);

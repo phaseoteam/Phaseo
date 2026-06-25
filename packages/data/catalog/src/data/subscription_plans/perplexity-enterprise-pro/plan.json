@@ -1,0 +1,66 @@
+{
+  "plan_id": "perplexity-enterprise-pro",
+  "name": "Perplexity Enterprise Pro",
+  "organisation_id": "perplexity",
+  "description": "Perplexity plan for teams and companies with admin controls and enterprise data protections.",
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 40,
+      "link": "https://www.perplexity.ai/enterprise",
+      "other_info": "Per seat per month"
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 400,
+      "link": "https://www.perplexity.ai/enterprise",
+      "other_info": "$400 per seat per year"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Admin Controls",
+      "feature_value": "Team management and admin controls",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Data Privacy",
+      "feature_value": "Enterprise data protections",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Enterprise Search",
+      "feature_value": "Internal knowledge and web search",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "openai/gpt-5.2",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": "Advanced model option"
+    },
+    {
+      "model_id": "anthropic/claude-sonnet-4.5",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": "Advanced model option"
+    },
+    {
+      "model_id": "google/gemini-3.1-pro-preview",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": "Advanced model option"
+    },
+    {
+      "model_id": "x-ai/grok-4.1-fast",
+      "model_info": "Grok 4.1",
+      "rate_limit": null,
+      "other_info": "Advanced model option"
+    }
+  ]
+}

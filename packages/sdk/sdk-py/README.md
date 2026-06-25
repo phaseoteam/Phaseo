@@ -60,8 +60,9 @@ for chunk in client.stream_text(
 - `client.get_health()`
 - `client.models.get_deprecation_info(model_id)`
 - `client.models.validate(model_id)`
+- `client.batches.list_models()` for batch-capable models and supported batch parameter metadata
 
-Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
+Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 
 Use `provider_availability_reason` with `availability="all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability="all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
 
@@ -78,6 +79,32 @@ models = client.get_models({
 ## Async job websocket helpers
 
 Batch and video operations can expose a websocket lifecycle stream at `/v1/async/{kind}/{id}/ws`.
+Create responses include the job id, polling URL, optional websocket URL, and sanitized webhook delivery state.
+
+```python
+import os
+
+batch = client.batches.create({
+    "endpoint": "/v1/responses",
+    "input_file_id": "file_123",
+    "completion_window": "24h",
+    "webhook": {
+        "url": "https://example.com/ai-stats/webhooks",
+        "secret": os.environ["AI_STATS_WEBHOOK_SECRET"],
+        "events": ["batch.progress", "batch.completed", "batch.failed"],
+    },
+})
+
+video = client.videos.create({
+    "model": "google/veo-3",
+    "prompt": "orbital reveal",
+    "webhook": {
+        "url": "https://example.com/ai-stats/webhooks",
+        "secret": os.environ["AI_STATS_WEBHOOK_SECRET"],
+        "events": ["video.progress", "video.completed", "video.failed"],
+    },
+})
+```
 
 ```python
 batch_socket_url = client.batches.websocket_url("batch_123", interval_ms=1500)

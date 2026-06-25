@@ -3,8 +3,6 @@ import SettingsSidebar from "@/components/(gateway)/settings/Sidebar";
 import SettingsTopTabsServer from "@/components/(gateway)/settings/SettingsTopTabsServer";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import {
 	Sidebar,
 	SidebarInset,
@@ -12,6 +10,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Suspense } from "react";
 import NoFooterStyle from "@/components/layout/NoFooterStyle";
+import { fetchSettingsLayoutInitialData } from "@/lib/fetchers/internal/fetchSettingsLayoutInitialData";
 
 export const metadata = {
 	title: "Settings",
@@ -26,9 +25,8 @@ export default async function SettingsLayout({
 }: {
 	children: React.ReactNode;
 }) {
-	const supabase = await createClient();
-	const { data: authData } = await supabase.auth.getUser();
-	if (!authData.user) {
+	const initialData = await fetchSettingsLayoutInitialData();
+	if (!initialData.signedIn) {
 		const headerStore = await headers();
 		const requestedPath =
 			headerStore.get("x-invoke-path") ??
@@ -38,28 +36,6 @@ export default async function SettingsLayout({
 			? requestedPath
 			: "/settings";
 		redirect(`/sign-in?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
-	}
-	const userId = authData.user?.id ?? null;
-	const workspaceId = await getWorkspaceIdFromCookie();
-	let showBroadcast = false;
-	let isEnterpriseInvoiceMode = false;
-	if (userId && workspaceId) {
-		const { data: membership } = await supabase
-			.from("workspace_members")
-			.select("role")
-			.eq("workspace_id", workspaceId)
-			.eq("user_id", userId)
-			.maybeSingle();
-		showBroadcast = (membership?.role ?? "").toLowerCase() === "admin";
-
-		const { data: teamRow } = await supabase
-			.from("workspaces")
-			.select("tier,billing_mode")
-			.eq("id", workspaceId)
-			.maybeSingle();
-		const tier = String(teamRow?.tier ?? "").toLowerCase();
-		const billingMode = String(teamRow?.billing_mode ?? "wallet").toLowerCase();
-		isEnterpriseInvoiceMode = tier === "enterprise" && billingMode === "invoice";
 	}
 
 	return (
@@ -72,14 +48,14 @@ export default async function SettingsLayout({
 					// Keep desktop sidebar fixed under sticky chrome (notice + header).
 					className="top-[calc(var(--site-header-height,4rem)+var(--site-notice-height,0px))] bottom-0 h-auto bg-white dark:bg-zinc-950"
 				>
-					<SettingsSidebar showBroadcast={showBroadcast} />
+					<SettingsSidebar showBroadcast={initialData.showBroadcast} />
 				</Sidebar>
 				<SidebarInset className="bg-white dark:bg-zinc-950 flex flex-1 min-h-0 flex-col">
 					<div className="container mx-auto flex w-full flex-col gap-3 px-2 py-4">
 						<div className="shrink-0">
 							<div className="mt-2.5">
 								<SettingsTopTabsServer
-									isEnterpriseInvoiceMode={isEnterpriseInvoiceMode}
+									isEnterpriseInvoiceMode={initialData.isEnterpriseInvoiceMode}
 								/>
 							</div>
 						</div>

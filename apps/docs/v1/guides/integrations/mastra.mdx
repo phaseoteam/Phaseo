@@ -1,0 +1,43 @@
+---
+title: "Mastra"
+description: "Use AI Stats models inside Mastra agents and workflows."
+---
+
+Mastra works with AI SDK providers, so the shortest path is to create an OpenAI-compatible provider that points at AI Stats.
+
+## Install
+
+```bash
+npm install @mastra/core @ai-sdk/openai ai
+```
+
+## Configure an agent
+
+```ts
+import { Agent } from "@mastra/core/agent";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const aiStats = createOpenAI({
+	apiKey: process.env.AI_STATS_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+	compatibility: "compatible",
+});
+
+export const agent = new Agent({
+	name: "support-agent",
+	instructions: "Answer in two short paragraphs.",
+	model: aiStats("openai/gpt-5-nano"),
+});
+```
+
+## Notes
+
+- Use the base URL only, not `/chat/completions` or `/responses`.
+- Mastra agent behavior depends on the AI SDK provider path. Test tools and streaming before production.
+- Use AI Stats routing controls at the request level or through presets when you need provider preferences.
+
+## Related
+
+- [AI SDK](./ai-sdk.mdx)
+- [Presets](../presets.mdx)
+- [Tool Calling](../tool-calling.mdx)

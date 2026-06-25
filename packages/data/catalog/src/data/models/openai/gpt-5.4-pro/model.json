@@ -49,7 +49,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 24
+      "rank": 30
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 36
+      "rank": 38
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 2
+      "rank": 4
     },
     {
       "benchmark_id": "frontier-math",

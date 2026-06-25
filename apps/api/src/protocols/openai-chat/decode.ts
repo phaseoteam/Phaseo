@@ -23,7 +23,7 @@ import {
 	normalizeOpenAIToolChoice,
 	normalizeProviderGeoPreferences,
 	normalizeResponseFormat,
-	resolveServiceTierFromSpeedAndTier,
+	resolveTextServiceTier,
 	normalizeProviderCacheOptions,
 } from "../shared/text-normalizers";
 
@@ -160,10 +160,8 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		stop: reqAny.stop,
 		streamOptions: req.stream_options,
 		background: (req as any).background,
-		speed: typeof (req as any).speed === "string" ? (req as any).speed : undefined,
-		serviceTier: resolveServiceTierFromSpeedAndTier({
+		serviceTier: resolveTextServiceTier({
 			service_tier: (req as any).service_tier,
-			speed: (req as any).speed,
 		}),
 		geo: normalizeProviderGeoPreferences(req as any),
 		promptCacheKey: (req as any).prompt_cache_key,
@@ -212,5 +210,4 @@ function decodeToolCall(tc: any): IRToolCall {
 		arguments: tc.function?.arguments || tc.arguments || "{}",
 	};
 }
-
 

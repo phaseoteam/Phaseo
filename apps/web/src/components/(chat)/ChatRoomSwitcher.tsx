@@ -47,7 +47,7 @@ function isRoomActive(pathname: string, route: string): boolean {
 }
 
 export function ChatRoomSwitcher() {
-	const pathname = usePathname();
+	const pathname = usePathname() ?? "/chat";
 	const { state: sidebarState, isMobile } = useSidebar();
 	const activeRoom =
 		CHAT_ROOMS.find((room) => isRoomActive(pathname, room.route)) ??

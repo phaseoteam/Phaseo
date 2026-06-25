@@ -47,7 +47,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://qwenlm.github.io/blog/qwen2.5/",
-      "rank": 129
+      "rank": 135
     },
     {
       "benchmark_id": "lmarena-text",
@@ -63,7 +63,7 @@
       "is_self_reported": false,
       "other_info": "Confab 32.2%; non-response 6.0%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 43
+      "rank": 22
     }
   ]
 }

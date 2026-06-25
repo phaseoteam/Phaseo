@@ -27,12 +27,12 @@ export function irToOpenAIChat(
 		if (msg.role === "system") {
 			messages.push({
 				role: "system",
-				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+				content: mapSystemLikeContentToOpenAI(msg.content),
 			});
 		} else if (msg.role === "developer") {
 			messages.push({
 				role: "developer",
-				content: msg.content.map((c) => (c.type === "text" ? c.text : "")).join(""),
+				content: mapSystemLikeContentToOpenAI(msg.content),
 			});
 		} else if (msg.role === "user") {
 			messages.push({
@@ -173,7 +173,6 @@ export function irToOpenAIChat(
 	if (ir.seed !== undefined) request.seed = ir.seed;
 	if (ir.background !== undefined) request.background = ir.background;
 	if (ir.serviceTier !== undefined) request.service_tier = ir.serviceTier;
-	if (ir.speed !== undefined) request.speed = ir.speed;
 	if (ir.promptCacheKey !== undefined) request.prompt_cache_key = ir.promptCacheKey;
 	if (ir.promptCacheRetention !== undefined) request.prompt_cache_retention = ir.promptCacheRetention;
 	if (ir.safetyIdentifier !== undefined) request.safety_identifier = ir.safetyIdentifier;
@@ -197,6 +196,14 @@ export function irToOpenAIChat(
 				: {}),
 		};
 	}
+	const rawRequest = ir.rawRequest && typeof ir.rawRequest === "object" && !Array.isArray(ir.rawRequest)
+		? ir.rawRequest as Record<string, any>
+		: {};
+	if (rawRequest.quality !== undefined) request.quality = rawRequest.quality;
+	if (rawRequest.background !== undefined) request.background = rawRequest.background;
+	if (rawRequest.output_format !== undefined) request.output_format = rawRequest.output_format;
+	if (rawRequest.output_compression !== undefined) request.output_compression = rawRequest.output_compression;
+	if (rawRequest.moderation !== undefined) request.moderation = rawRequest.moderation;
 	if (ir.userId !== undefined) request.user = ir.userId;
 	if (ir.webSearchOptions !== undefined) request.web_search_options = ir.webSearchOptions;
 
@@ -227,14 +234,35 @@ function toOpenAIChatTool(tool: IRTool): any {
 /**
  * Map IR content to OpenAI Chat content
  */
+function hasCacheControl(content: IRContentPart[]): boolean {
+	return content.some((part) => part.type === "text" && part.cacheControl);
+}
+
+function mapTextPartToOpenAI(part: Extract<IRContentPart, { type: "text" }>, type = "text"): any {
+	return {
+		type,
+		text: part.text,
+		...(part.cacheControl ? { cache_control: part.cacheControl } : {}),
+	};
+}
+
+function mapSystemLikeContentToOpenAI(content: IRContentPart[]): any {
+	if (!hasCacheControl(content)) {
+		return content.map((c) => (c.type === "text" ? c.text : "")).join("");
+	}
+	return content
+		.filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text")
+		.map((part) => mapTextPartToOpenAI(part));
+}
+
 function mapIRContentToOpenAI(content: IRContentPart[]): any {
-	if (content.length === 1 && content[0].type === "text") {
+	if (content.length === 1 && content[0].type === "text" && !content[0].cacheControl) {
 		return content[0].text;
 	}
 
 	return content.map((part) => {
 		if (part.type === "text") {
-			return { type: "text", text: part.text };
+			return mapTextPartToOpenAI(part);
 		}
 
 		if (part.type === "image") {
@@ -505,6 +533,10 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 	const inputDetails = usage.input_tokens_details ?? usage.prompt_tokens_details;
 	const outputDetails = usage.output_tokens_details ?? usage.completion_tokens_details;
 	const cachedInputTokens = inputDetails?.cached_tokens;
+	const cachedWriteTokens =
+		inputDetails?.cache_creation_input_tokens ??
+		inputDetails?.cache_creation_tokens ??
+		outputDetails?.cached_tokens;
 	const reasoningTokens = usage.reasoning_tokens ?? outputDetails?.reasoning_tokens;
 	const cachedReadTokensAreSubsetOfInput = typeof cachedInputTokens === "number" ? true : undefined;
 	const inputTokens = usage.prompt_tokens ?? usage.input_tokens ?? usage.input_text_tokens ?? 0;
@@ -524,16 +556,48 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 		typeof serverToolUseRaw?.web_search_requests === "number"
 			? serverToolUseRaw.web_search_requests
 			: undefined;
+	const webSearchResults =
+		typeof serverToolUseRaw?.web_search_results === "number"
+			? serverToolUseRaw.web_search_results
+			: undefined;
+	const webSearchExtraResults =
+		typeof serverToolUseRaw?.web_search_extra_results === "number"
+			? serverToolUseRaw.web_search_extra_results
+			: undefined;
 	const webFetchRequests =
 		typeof serverToolUseRaw?.web_fetch_requests === "number"
 			? serverToolUseRaw.web_fetch_requests
 			: undefined;
+	const advisorRequests =
+		typeof serverToolUseRaw?.advisor_requests === "number"
+			? serverToolUseRaw.advisor_requests
+			: undefined;
+	const imageGenerationRequests =
+		typeof serverToolUseRaw?.image_generation_requests === "number"
+			? serverToolUseRaw.image_generation_requests
+			: undefined;
+	const applyPatchRequests =
+		typeof serverToolUseRaw?.apply_patch_requests === "number"
+			? serverToolUseRaw.apply_patch_requests
+			: undefined;
 	const serverToolUse =
-		datetimeRequests != null || webSearchRequests != null || webFetchRequests != null
+		datetimeRequests != null ||
+		webSearchRequests != null ||
+		webSearchResults != null ||
+		webSearchExtraResults != null ||
+		webFetchRequests != null ||
+		advisorRequests != null ||
+		imageGenerationRequests != null ||
+		applyPatchRequests != null
 			? {
 				...(datetimeRequests != null ? { datetime_requests: datetimeRequests } : {}),
 				...(webSearchRequests != null ? { web_search_requests: webSearchRequests } : {}),
+				...(webSearchResults != null ? { web_search_results: webSearchResults } : {}),
+				...(webSearchExtraResults != null ? { web_search_extra_results: webSearchExtraResults } : {}),
 				...(webFetchRequests != null ? { web_fetch_requests: webFetchRequests } : {}),
+				...(advisorRequests != null ? { advisor_requests: advisorRequests } : {}),
+				...(imageGenerationRequests != null ? { image_generation_requests: imageGenerationRequests } : {}),
+				...(applyPatchRequests != null ? { apply_patch_requests: applyPatchRequests } : {}),
 			}
 			: undefined;
 
@@ -551,7 +615,7 @@ function normalizeChatUsage(usage: any): IRChatResponse["usage"] {
 			outputImageTokens: outputDetails?.output_images,
 			outputAudioTokens: outputDetails?.output_audio,
 			outputVideoTokens: outputDetails?.output_videos,
-			cachedWriteTokens: outputDetails?.cached_tokens,
+			cachedWriteTokens,
 			...(serverToolUse ? { serverToolUse } : {}),
 		},
 	};
@@ -576,7 +640,6 @@ function mapFinishReason(reason: string | undefined): any {
 			return "stop";
 	}
 }
-
 
 
 

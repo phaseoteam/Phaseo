@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 30
+      "rank": 31
     },
     {
       "benchmark_id": "mmbench",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://arxiv.org/pdf/2412.10302",
-      "rank": 115
+      "rank": 116
     },
     {
       "benchmark_id": "mmstar",

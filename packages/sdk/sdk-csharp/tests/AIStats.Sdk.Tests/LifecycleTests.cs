@@ -14,7 +14,7 @@ public class LifecycleTests
         var warnings = new List<string>();
         var handler = new StubHttpHandler((request) =>
         {
-            if (request.RequestUri?.AbsolutePath == "/data/models")
+            if (request.RequestUri?.AbsolutePath == "/gateway/models")
             {
                 return Json(HttpStatusCode.OK, """
                 {
@@ -62,7 +62,7 @@ public class LifecycleTests
 
         Assert.Contains("provider/new-model", ex.Message);
         Assert.Empty(warnings);
-        Assert.Equal(1, handler.Count("/data/models"));
+        Assert.Equal(1, handler.Count("/gateway/models"));
         Assert.Equal(0, handler.Count("/responses"));
     }
 
@@ -71,7 +71,7 @@ public class LifecycleTests
     {
         var handler = new StubHttpHandler((request) =>
         {
-            if (request.RequestUri?.AbsolutePath == "/data/models")
+            if (request.RequestUri?.AbsolutePath == "/gateway/models")
             {
                 return Json(HttpStatusCode.OK, """
                 {

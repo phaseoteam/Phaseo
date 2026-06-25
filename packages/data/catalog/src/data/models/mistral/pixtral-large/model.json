@@ -2,7 +2,7 @@
   "model_id": "mistral/pixtral-large",
   "organisation_id": "mistral",
   "name": "Pixtral Large",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Pixtral Large is a multimodal model from Mistral that can work across text and visual inputs. It targets higher-capability workloads where depth, quality, or scale matter more than raw speed.",
   "announced_date": "2024-11-18T00:00:00",
@@ -76,7 +76,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/pixtral-large/",
-      "rank": 11
+      "rank": 12
     },
     {
       "benchmark_id": "mm-mt-bench",
@@ -92,7 +92,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mistral.ai/news/pixtral-large/",
-      "rank": 84
+      "rank": 85
     },
     {
       "benchmark_id": "vqav2",

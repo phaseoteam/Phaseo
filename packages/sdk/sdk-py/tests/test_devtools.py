@@ -305,9 +305,6 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
     monkeypatch.setattr(ops, "listModels", lambda _client, query=None, **_kwargs: {
         "models": [{"model_id": "openai/gpt-5-mini"}],
     })
-    monkeypatch.setattr(ops, "listTeamModels", lambda _client, query=None, **_kwargs: {
-        "models": [{"model_id": "openai/gpt-5-mini"}],
-    })
     monkeypatch.setattr(ops, "listProviders", lambda _client, query=None, **_kwargs: {
         "providers": [{"provider_id": "openai", "name": "OpenAI"}],
     })
@@ -323,7 +320,7 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
         "data": [{"date": "2026-05-01", "endpoint_id": "responses", "requests": 12}],
     })
     monkeypatch.setattr(ops, "listEndpoints", lambda _client, **_kwargs: {
-        "data": [{"id": "responses", "path": "/responses"}],
+        "data": [{"endpoint_id": "responses", "path": "/responses"}],
     })
     monkeypatch.setattr(ops, "listOrganisations", lambda _client, query=None, **_kwargs: {
         "total": 1,
@@ -386,7 +383,6 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
     )
 
     client.get_models({"limit": "2"})
-    client.list_team_models({"limit": "2", "endpoints": "responses"})
     client.list_providers({"limit": "2"})
     client.get_credits({"team_id": "team_123"})
     client.get_activity({"days": "30"})
@@ -414,7 +410,6 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
     types = [row["type"] for row in rows]
     assert types == [
         "models.list",
-        "models.team",
         "providers",
         "credits",
         "activity",
@@ -438,8 +433,8 @@ def test_devtools_records_control_plane_entries(tmp_path, monkeypatch):
     ]
     assert rows[0]["request"] == {"limit": "2"}
     assert rows[5]["response"]["data"][0]["endpoint_id"] == "responses"
-    assert rows[9]["response"]["pricing"]["currency"] == "USD"
-    assert rows[14]["response"]["data"]["deleted"] is True
-    assert rows[19]["response"]["data"]["deleted"] is True
-    assert rows[20]["response"]["data"]["id"] == "key_123"
-    assert rows[21]["response"]["status"] == "ok"
+    assert rows[8]["response"]["pricing"]["currency"] == "USD"
+    assert rows[13]["response"]["data"]["deleted"] is True
+    assert rows[18]["response"]["data"]["deleted"] is True
+    assert rows[19]["response"]["data"]["id"] == "key_123"
+    assert rows[20]["response"]["status"] == "ok"

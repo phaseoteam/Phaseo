@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "mmmu",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/QVQ-72B-Preview",
-      "rank": 64
+      "rank": 65
     },
     {
       "benchmark_id": "olympiadbench",

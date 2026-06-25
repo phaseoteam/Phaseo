@@ -1,0 +1,86 @@
+---
+title: "Apply Patch"
+description: "Let Responses models return validated patch operations."
+---
+
+Use `ai-stats:apply_patch` when a Responses workflow should return file changes as structured patch operations. AI Stats validates the operation and returns it to your client; it does not mutate your filesystem or repository.
+
+<Note>
+`ai-stats:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## Request
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "ai-stats:apply_patch" }
+    ]
+  }'
+```
+
+## Operation Shape
+
+When the model calls the tool, it sends an operation object:
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+Supported operation types:
+
+| Type | Required fields |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## Tool Result
+
+AI Stats returns the validated operation to the model loop:
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+Your application remains responsible for applying the patch, showing it to a user, rejecting it, or asking the model for a revised operation.
+
+## Usage And Pricing
+
+AI Stats records:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+Pricing cards can bill this with the `server_tool_apply_patch_requests` meter.
+
+## Related
+
+- [Server Tools](./index)
+- [Responses API](../../api-reference/endpoint/responses)

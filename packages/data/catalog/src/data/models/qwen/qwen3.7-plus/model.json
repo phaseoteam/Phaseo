@@ -1,0 +1,28 @@
+{
+  "model_id": "qwen/qwen3.7-plus",
+  "organisation_id": "qwen",
+  "name": "Qwen 3.7 Plus",
+  "status": "Available",
+  "previous_model_id": "qwen/qwen3.7-plus-2026-05-26",
+  "description": "Qwen 3.7 Plus is the stable Qwen 3.7 Plus release for multimodal reasoning, coding, tool use, and productivity workflows. It accepts text, image, and video input, produces text output, and supports cache, function calling, prefix completion, structured outputs, and web search.",
+  "announced_date": "2026-06-01T00:00:00",
+  "release_date": "2026-06-01T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video",
+  "output_types": "text",
+  "api_model_id": "qwen/qwen3.7-plus",
+  "links": [],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 1000000
+    },
+    {
+      "name": "output_context_length",
+      "value": 65536
+    }
+  ],
+  "benchmarks": []
+}

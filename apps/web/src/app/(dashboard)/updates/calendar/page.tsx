@@ -1,9 +1,7 @@
 import ModelCalendar from "@/components/(data)/models/ModelCalendar/ModelCalendar";
 import ModelCalendarRouteSwitch from "@/components/updates/ModelCalendarRouteSwitch";
-import {
-	getRecentModelUpdatesSplit,
-	type ModelEvent,
-} from "@/lib/fetchers/updates/getModelUpdates";
+import type { ModelEvent } from "@/lib/fetchers/updates/getModelUpdates";
+import { fetchFrontendModelUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
@@ -26,7 +24,7 @@ const UPCOMING_LIMIT = 64;
 
 export default async function Page() {
 	const { past: pastEvents, future: upcomingEvents } =
-		await getRecentModelUpdatesSplit({
+		await fetchFrontendModelUpdates({
 			includeAllPast: true,
 			upcomingLimit: UPCOMING_LIMIT,
 		});

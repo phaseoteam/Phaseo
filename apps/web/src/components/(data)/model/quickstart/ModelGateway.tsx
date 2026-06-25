@@ -37,6 +37,9 @@ export default function ModelGateway({ metadata }: ModelGatewayProps) {
 						acceptedModelIdentifiersByEndpoint={
 							metadata.acceptedModelIdentifiersByEndpoint
 						}
+						supportedParametersByEndpoint={
+							metadata.supportedParametersByEndpoint
+						}
 					endpoint={endpoint}
 					supportedEndpoints={supportedEndpoints}
 				/>

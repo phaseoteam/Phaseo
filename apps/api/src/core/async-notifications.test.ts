@@ -3,8 +3,10 @@ import { clearRuntime, configureRuntime } from "@/runtime/env";
 
 import {
 	buildAsyncNotificationData,
+	buildPublicAsyncWebhook,
 	parseAsyncWebhookConfig,
 	resolveAsyncNotificationKind,
+	toAsyncLifecycleStatus,
 } from "./async-notifications";
 import type { AsyncOperationRecord } from "./async-operations";
 
@@ -14,13 +16,96 @@ describe("parseAsyncWebhookConfig", () => {
 			parseAsyncWebhookConfig("batch", {
 				url: "https://example.com/hooks/async",
 				secret: " whsec_test ",
-				events: ["completed", "batch.failed", "job.cancelled", "ignored"],
+				events: ["completed", "batch.failed", "job.cancelled", "expired", "ignored"],
 			}),
 		).toEqual({
 			url: "https://example.com/hooks/async",
 			secret: "whsec_test",
-			events: ["job.completed", "batch.failed", "job.cancelled"],
+			events: ["job.completed", "batch.failed", "job.cancelled", "job.expired"],
 		});
+	});
+
+	it("canonicalizes canceled webhook subscriptions to cancelled", () => {
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://example.com/hooks/video",
+				events: ["canceled", "job.canceled", "video.canceled"],
+			}),
+		).toEqual({
+			url: "https://example.com/hooks/video",
+			secret: null,
+			events: ["job.cancelled", "video.cancelled"],
+		});
+
+		expect(
+			parseAsyncWebhookConfig("batch", {
+				url: "https://example.com/hooks/batch",
+				events: ["batch.canceled"],
+			}),
+		).toEqual({
+			url: "https://example.com/hooks/batch",
+			secret: null,
+			events: ["batch.cancelled"],
+		});
+	});
+
+	it("accepts progress webhook subscriptions for generic and matching async kinds", () => {
+		expect(
+			parseAsyncWebhookConfig("batch", {
+				url: "https://example.com/hooks/batch",
+				events: ["progress", "job.progress", "batch.progress", "video.progress"],
+			}),
+		).toEqual({
+			url: "https://example.com/hooks/batch",
+			secret: null,
+			events: ["job.progress", "batch.progress"],
+		});
+
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://example.com/hooks/video",
+				events: ["progress", "video.progress", "batch.progress"],
+			}),
+		).toEqual({
+			url: "https://example.com/hooks/video",
+			secret: null,
+			events: ["job.progress", "video.progress"],
+		});
+	});
+
+	it("rejects cross-kind specific webhook subscriptions", () => {
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://example.com/hooks/video",
+				events: ["batch.completed", "job.failed", "video.expired"],
+			}),
+		).toEqual({
+			url: "https://example.com/hooks/video",
+			secret: null,
+			events: ["job.failed", "video.expired"],
+		});
+
+		expect(
+			parseAsyncWebhookConfig("batch", {
+				url: "https://example.com/hooks/batch",
+				events: ["video.completed"],
+			}),
+		).toBeNull();
+	});
+
+	it("rejects webhook configs when every supplied event is invalid", () => {
+		expect(
+			parseAsyncWebhookConfig("batch", {
+				url: "https://example.com/hooks/batch",
+				events: ["ignored", "video.completed"],
+			}),
+		).toBeNull();
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://example.com/hooks/video",
+				events: "video.completed",
+			}),
+		).toBeNull();
 	});
 
 	it("allows localhost http callbacks for development", () => {
@@ -31,7 +116,14 @@ describe("parseAsyncWebhookConfig", () => {
 		).toEqual({
 			url: "http://localhost:4010/webhooks/video",
 			secret: null,
-			events: ["job.completed", "job.failed", "job.cancelled"],
+			events: ["job.completed", "job.failed", "job.cancelled", "job.expired"],
+		});
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "http://[::1]:4010/webhooks/video",
+			}),
+		).toMatchObject({
+			url: "http://[::1]:4010/webhooks/video",
 		});
 	});
 
@@ -61,6 +153,48 @@ describe("parseAsyncWebhookConfig", () => {
 			}),
 		).toBeNull();
 	});
+
+	it("rejects literal private or loopback webhook targets over HTTPS", () => {
+		for (const url of [
+			"https://localhost/hooks/video",
+			"https://127.0.0.1/hooks/video",
+			"https://10.0.0.5/hooks/video",
+			"https://172.16.0.5/hooks/video",
+			"https://172.31.255.255/hooks/video",
+			"https://192.168.1.10/hooks/video",
+			"https://169.254.10.20/hooks/video",
+			"https://0.0.0.0/hooks/video",
+			"https://[::1]/hooks/video",
+			"https://[::]/hooks/video",
+			"https://[fe80::1]/hooks/video",
+			"https://[fc00::1]/hooks/video",
+			"https://[fd00::1]/hooks/video",
+			"https://[::ffff:10.0.0.1]/hooks/video",
+		]) {
+			expect(parseAsyncWebhookConfig("video", { url })).toBeNull();
+		}
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://172.32.0.5/hooks/video",
+			}),
+		).toMatchObject({
+			url: "https://172.32.0.5/hooks/video",
+		});
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://[2607:f8b0:4004:800::2004]/hooks/video",
+			}),
+		).toMatchObject({
+			url: "https://[2607:f8b0:4004:800::2004]/hooks/video",
+		});
+		expect(
+			parseAsyncWebhookConfig("video", {
+				url: "https://[::ffff:8.8.8.8]/hooks/video",
+			}),
+		).toMatchObject({
+			url: "https://[::ffff:808:808]/hooks/video",
+		});
+	});
 });
 
 describe("resolveAsyncNotificationKind", () => {
@@ -69,6 +203,69 @@ describe("resolveAsyncNotificationKind", () => {
 		expect(resolveAsyncNotificationKind("batch")).toBe("batch");
 		expect(resolveAsyncNotificationKind("music")).toBeNull();
 		expect(resolveAsyncNotificationKind("")).toBeNull();
+	});
+});
+
+describe("buildPublicAsyncWebhook", () => {
+	it("returns only recent attempts while preserving full delivery totals", () => {
+		const attempts = Array.from({ length: 12 }, (_, index) => {
+			const attempt = index + 1;
+			return {
+				id: `video.completed:${attempt}`,
+				delivery_key: "video.completed",
+				event_type: "video.completed",
+				status: attempt === 12 ? "delivered" : "scheduled_retry",
+				attempt_number: attempt,
+				max_attempts: 12,
+				tried_at: `2026-05-03T10:${String(attempt).padStart(2, "0")}:00.000Z`,
+				delivered_at: attempt === 12 ? "2026-05-03T10:12:01.000Z" : null,
+				next_retry_at: attempt === 12 ? null : `2026-05-03T10:${String(attempt + 1).padStart(2, "0")}:00.000Z`,
+				response_status: attempt === 12 ? 200 : 503,
+				error_message: attempt === 12 ? null : "Webhook returned HTTP 503",
+			};
+		});
+
+		expect(
+			buildPublicAsyncWebhook("video", {
+				webhook: {
+					url: "https://example.com/hooks/video",
+					events: ["video.completed"],
+				},
+				webhookDeliveries: {
+					"video.completed": "2026-05-03T10:12:01.000Z",
+				},
+				webhookAttempts: attempts,
+			}),
+		).toMatchObject({
+			url: "https://example.com/hooks/video",
+			delivery: {
+				total_attempts: 12,
+				delivered_events: 1,
+				last_attempt_status: "delivered",
+				last_response_status: 200,
+			},
+			attempts: [
+				{ id: "video.completed:3" },
+				{ id: "video.completed:4" },
+				{ id: "video.completed:5" },
+				{ id: "video.completed:6" },
+				{ id: "video.completed:7" },
+				{ id: "video.completed:8" },
+				{ id: "video.completed:9" },
+				{ id: "video.completed:10" },
+				{ id: "video.completed:11" },
+				{ id: "video.completed:12" },
+			],
+		});
+	});
+});
+
+describe("toAsyncLifecycleStatus", () => {
+	it("normalizes provider casing and cancellation spelling variants", () => {
+		expect(toAsyncLifecycleStatus("IN_PROGRESS")).toBe("running");
+		expect(toAsyncLifecycleStatus("canceled")).toBe("cancelled");
+		expect(toAsyncLifecycleStatus("cancelled")).toBe("cancelled");
+		expect(toAsyncLifecycleStatus("expired")).toBe("expired");
 	});
 });
 
@@ -121,6 +318,7 @@ describe("buildAsyncNotificationData", () => {
 				lastWebhookProgressAt: "2026-05-03T10:04:45.000Z",
 				lastWebhookDispatchedAt: "2026-05-03T10:05:12.000Z",
 				reservationId: "video_hold:req_video_123",
+				reservedNanos: 150000000,
 				reservationStatus: "captured",
 				finalizedAt: "2026-05-03T10:05:00.000Z",
 				lastPolledAt: "2026-05-03T10:04:30.000Z",
@@ -157,6 +355,7 @@ describe("buildAsyncNotificationData", () => {
 			model: "google/veo-3.1-lite-generate-preview",
 			polling_url: "https://api.phaseo.app/v1/videos/video_123",
 			websocket_url: "wss://api.phaseo.app/v1/async/video/video_123/ws",
+			cancel_url: null,
 			content_url: "https://api.phaseo.app/v1/videos/video_123/content",
 			duration_seconds: 5,
 			duration_ms: 12000,
@@ -191,12 +390,169 @@ describe("buildAsyncNotificationData", () => {
 				state: "settled",
 				billable: true,
 				total_nanos: 150000000,
+				estimated_nanos: 150000000,
+				reserved_nanos: 150000000,
+				reservation_id: "video_hold:req_video_123",
+				reservation_status: "captured",
 				charge_reason: "captured",
 				charged: true,
 				billed_at: "2026-05-03T10:05:00.000Z",
 			},
 			created_at: "2026-05-03T10:00:00.000Z",
 			updated_at: "2026-05-03T10:05:00.000Z",
+		});
+	});
+
+	it("builds in-progress video billing from reserved hold metadata", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_video_hold",
+			kind: "video",
+			internalId: "video_hold_123",
+			requestId: "req_video_hold_123",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "vid_native_123",
+			model: "openai/sora-2",
+			status: "in_progress",
+			meta: {
+				provider: "openai",
+				model: "openai/sora-2",
+				seconds: 4,
+				reservationId: "video_hold:req_video_hold_123",
+				reservedNanos: 225000000,
+				reservationStatus: "held",
+				pricedUsage: {
+					pricing: {
+						total_nanos: 225000000,
+						total_usd_str: "0.225000000",
+					},
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:01:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+			progress: 40,
+		});
+
+		expect(payload).toMatchObject({
+			id: "video_hold_123",
+			status: "processing",
+			lifecycle_status: "running",
+			cancel_url: "https://api.phaseo.app/v1/videos/video_hold_123/cancel",
+			reservation_id: "video_hold:req_video_hold_123",
+			reservation_status: "held",
+			billing: {
+				currency: "usd",
+				estimated_provider_cost: "0.23",
+				estimated_user_cost: "0.23",
+				settled_provider_cost: null,
+				settled_user_cost: null,
+				state: "estimated",
+				billable: false,
+				total_nanos: null,
+				estimated_nanos: 225000000,
+				reserved_nanos: 225000000,
+				reservation_id: "video_hold:req_video_hold_123",
+				reservation_status: "held",
+				charge_reason: null,
+				charged: null,
+			},
+		});
+	});
+
+	it("builds completed video capture failures as pending billing", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_video_capture_failed",
+			kind: "video",
+			internalId: "video_capture_failed",
+			requestId: "req_video_capture_failed",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "vid_capture_failed",
+			model: "openai/sora-2",
+			status: "completed",
+			meta: {
+				provider: "openai",
+				model: "openai/sora-2",
+				seconds: 4,
+				reservationId: "video_hold:req_video_capture_failed",
+				reservedNanos: 225000000,
+				reservationStatus: "capture_failed",
+				billingReason: "capture_failed",
+				charged: false,
+				pricedUsage: {
+					pricing: {
+						total_nanos: 225000000,
+					},
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:05:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+
+		expect(payload).toMatchObject({
+			id: "video_capture_failed",
+			status: "completed",
+			lifecycle_status: "completed",
+			billing: {
+				state: "pending",
+				billable: false,
+				total_nanos: null,
+				estimated_nanos: 225000000,
+				reserved_nanos: 225000000,
+				reservation_status: "capture_failed",
+				charge_reason: "capture_failed",
+				charged: false,
+			},
+		});
+	});
+
+	it("omits video cancel urls for active unsupported providers in async payloads", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_video_unsupported",
+			kind: "video",
+			internalId: "video_unsupported_123",
+			requestId: "req_video_unsupported_123",
+			sessionId: null,
+			appId: null,
+			provider: "google-ai-studio",
+			nativeId: "operation_unsupported_123",
+			model: "google/veo-3",
+			status: "in_progress",
+			meta: {
+				provider: "google-ai-studio",
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:01:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+			progress: 25,
+		});
+
+		expect(payload).toMatchObject({
+			id: "video_unsupported_123",
+			status: "processing",
+			lifecycle_status: "running",
+			provider: "google-ai-studio",
+			polling_url: "https://api.phaseo.app/v1/videos/video_unsupported_123",
+			cancel_url: null,
 		});
 	});
 
@@ -269,6 +625,8 @@ describe("buildAsyncNotificationData", () => {
 				lastWebhookProgress: 60,
 				lastWebhookProgressAt: "2026-05-03T10:01:30.000Z",
 				lastWebhookDispatchedAt: "2026-05-03T10:01:40.000Z",
+				lastPolledAt: "2026-05-03T10:01:45.000Z",
+				polledStatus: "in_progress",
 				finalizedAt: "2026-05-03T10:01:50.000Z",
 				requestCounts: {
 					total: 12,
@@ -353,6 +711,8 @@ describe("buildAsyncNotificationData", () => {
 			last_webhook_progress: 60,
 			last_webhook_progress_at: "2026-05-03T10:01:30.000Z",
 			last_webhook_dispatched_at: "2026-05-03T10:01:40.000Z",
+			last_polled_at: "2026-05-03T10:01:45.000Z",
+			polled_status: "in_progress",
 			finalized_at: "2026-05-03T10:01:50.000Z",
 			request_counts: {
 				total: 12,
@@ -371,6 +731,128 @@ describe("buildAsyncNotificationData", () => {
 			},
 			created_at: "2026-05-03T10:00:00.000Z",
 			updated_at: "2026-05-03T10:01:00.000Z",
+		});
+	});
+
+	it("omits batch cancel urls for active unsupported providers in async payloads", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_custom_batch",
+			kind: "batch",
+			internalId: "batch_custom_123",
+			requestId: "req_custom_batch_123",
+			sessionId: null,
+			appId: null,
+			provider: "custom-provider",
+			nativeId: "native_custom_batch_123",
+			model: "custom/model",
+			status: "in_progress",
+			meta: {
+				provider: "custom-provider",
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:01:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+
+		expect(payload).toMatchObject({
+			id: "batch_custom_123",
+			status: "in_progress",
+			lifecycle_status: "running",
+			provider: "custom-provider",
+			polling_url: "https://api.phaseo.app/v1/batches/batch_custom_123",
+			cancel_url: null,
+		});
+	});
+
+	it("includes progress on batch progress webhook payloads", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_batch_progress",
+			kind: "batch",
+			internalId: "batch_progress_123",
+			requestId: "req_batch_progress_123",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "batch_progress_123",
+			model: "openai/gpt-5-mini",
+			status: "in_progress",
+			meta: {
+				provider: "openai",
+				requestCounts: {
+					total: 10,
+					completed: 4,
+					failed: 1,
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:01:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+			progress: 50,
+		});
+
+		expect(payload).toMatchObject({
+			id: "batch_progress_123",
+			object: "batch",
+			status: "in_progress",
+			lifecycle_status: "running",
+			progress: 50,
+			request_counts: {
+				total: 10,
+				completed: 4,
+				failed: 1,
+			},
+		});
+	});
+
+	it("derives batch progress from stored request counts when no progress argument is supplied", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_batch_stored_progress",
+			kind: "batch",
+			internalId: "batch_stored_progress_123",
+			requestId: "req_batch_stored_progress_123",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "batch_stored_progress_123",
+			model: "openai/gpt-5-mini",
+			status: "in_progress",
+			meta: {
+				provider: "openai",
+				requestCounts: {
+					total: 20,
+					completed: 7,
+					failed: 1,
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:01:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+
+		expect(payload).toMatchObject({
+			id: "batch_stored_progress_123",
+			status: "in_progress",
+			progress: 40,
+			request_counts: {
+				total: 20,
+				completed: 7,
+				failed: 1,
+			},
 		});
 	});
 
@@ -452,6 +934,59 @@ describe("buildAsyncNotificationData", () => {
 		});
 	});
 
+	it("builds completed batch release failures as pending billing", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_batch_release_failed",
+			kind: "batch",
+			internalId: "batch_release_failed",
+			requestId: "req_batch_release_failed",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "batch_release_failed",
+			model: "openai/gpt-5-mini",
+			status: "completed",
+			meta: {
+				provider: "openai",
+				reservationId: "batch_hold:req_batch_release_failed",
+				reservedNanos: 300000000,
+				reservationStatus: "release_failed",
+				billingReason: "release_failed",
+				charged: false,
+				estimatedUsage: {
+					requests: 1,
+					pricing: {
+						total_nanos: 300000000,
+					},
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:05:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+
+		expect(payload).toMatchObject({
+			id: "batch_release_failed",
+			status: "completed",
+			lifecycle_status: "completed",
+			billing: {
+				state: "pending",
+				billable: false,
+				total_nanos: null,
+				estimated_nanos: 300000000,
+				reserved_nanos: 300000000,
+				reservation_status: "release_failed",
+				charge_reason: "release_failed",
+				charged: false,
+			},
+		});
+	});
+
 	it("derives batch pricing_lines from settled totals when explicit lines are absent", async () => {
 		const record: AsyncOperationRecord = {
 			workspaceId: "team_123",
@@ -497,6 +1032,66 @@ describe("buildAsyncNotificationData", () => {
 					total_usd_str: "0.330000000",
 				},
 			],
+		});
+	});
+
+	it("falls back to settled batch pricing_lines when priced usage lines are empty", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_123",
+			kind: "batch",
+			internalId: "batch_empty_lines",
+			requestId: "req_empty_lines",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "batch_empty_lines",
+			model: "openai/gpt-image-1.5",
+			status: "completed",
+			meta: {
+				provider: "openai",
+				endpoint: "/v1/images/generations",
+				costNanos: 500000000,
+				costUsd: 0.5,
+				pricedUsage: {
+					requests: 1,
+					output_image: 2,
+					pricing: {
+						total_nanos: 500000000,
+						lines: [],
+					},
+				},
+				requestCounts: {
+					total: 1,
+					completed: 1,
+					failed: 0,
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:05:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+		expect(payload).toMatchObject({
+			id: "batch_empty_lines",
+			pricing_lines: [
+				{
+					dimension: "batch_requests",
+					pricing_plan: "batch",
+					service_tier: "batch",
+					endpoint: "/v1/images/generations",
+					units: 1,
+					total_nanos: 500000000,
+					total_usd_str: "0.500000000",
+				},
+			],
+			billing: {
+				state: "settled",
+				total_nanos: 500000000,
+			},
 		});
 	});
 
@@ -709,6 +1304,106 @@ describe("buildAsyncNotificationData", () => {
 				totalProviders: 2,
 				candidateCount: 1,
 				droppedUnsupportedEndpoint: 1,
+			},
+		});
+	});
+
+	it("preserves expired batch status and lifecycle in async payloads", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_batch_expired",
+			kind: "batch",
+			internalId: "batch_expired_123",
+			requestId: "req_batch_expired_123",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "batch_native_expired_123",
+			model: "openai/gpt-5-mini",
+			status: "expired",
+			meta: {
+				provider: "openai",
+				status: "expired",
+				reservationId: "batch_hold:req_batch_expired_123",
+				reservedNanos: 125000000,
+				reservationStatus: "released_expired",
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:05:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+
+		expect(payload).toMatchObject({
+			id: "batch_expired_123",
+			object: "batch",
+			status: "expired",
+			lifecycle_status: "expired",
+			native_id: "batch_native_expired_123",
+			billing: {
+				state: "void",
+				settled_provider_cost: "0.00",
+				settled_user_cost: "0.00",
+				reservation_id: "batch_hold:req_batch_expired_123",
+				reservation_status: "released_expired",
+			},
+		});
+	});
+
+	it("includes truncated batch hold estimation metadata in async payload billing", async () => {
+		const record: AsyncOperationRecord = {
+			workspaceId: "team_batch_large",
+			kind: "batch",
+			internalId: "batch_large_123",
+			requestId: "req_batch_large_123",
+			sessionId: null,
+			appId: null,
+			provider: "openai",
+			nativeId: "batch_native_large_123",
+			model: "openai/gpt-5-mini",
+			status: "in_progress",
+			meta: {
+				provider: "openai",
+				status: "in_progress",
+				reservationId: "batch_hold:req_batch_large_123",
+				reservedNanos: 6_150_123_000_000,
+				reservationStatus: "held",
+				estimatedUsage: {
+					requests: 50_001,
+					estimated: true,
+					estimation_truncated: true,
+					estimation_sample_size: 50_000,
+					estimation_total_rows: 50_001,
+					pricing: {
+						total_nanos: 6_150_123_000_000,
+						total_usd_str: "6150.123000000",
+					},
+				},
+			},
+			billedAt: null,
+			createdAt: "2026-05-03T10:00:00.000Z",
+			updatedAt: "2026-05-03T10:01:00.000Z",
+		};
+
+		const payload = await buildAsyncNotificationData({
+			baseUrl: "https://api.phaseo.app",
+			record,
+		});
+
+		expect(payload).toMatchObject({
+			id: "batch_large_123",
+			status: "in_progress",
+			lifecycle_status: "running",
+			billing: {
+				state: "estimated",
+				estimated_nanos: 6_150_123_000_000,
+				reserved_nanos: 6_150_123_000_000,
+				estimation_truncated: true,
+				estimation_sample_size: 50_000,
+				estimation_total_rows: 50_001,
 			},
 		});
 	});

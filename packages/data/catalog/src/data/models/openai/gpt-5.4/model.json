@@ -49,7 +49,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 23
+      "rank": 29
     },
     {
       "benchmark_id": "financeagent-v1.1",
@@ -73,7 +73,7 @@
       "is_self_reported": true,
       "other_info": "Public",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 7
+      "rank": 11
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -89,7 +89,7 @@
       "is_self_reported": true,
       "other_info": "Verified",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 6
+      "rank": 8
     },
     {
       "benchmark_id": "mmmu-pro",
@@ -113,7 +113,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -121,7 +121,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 9
+      "rank": 14
     },
     {
       "benchmark_id": "toolathlon",
@@ -145,7 +145,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 9
+      "rank": 10
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -153,7 +153,7 @@
       "is_self_reported": true,
       "other_info": "Without tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 44
+      "rank": 47
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -161,7 +161,7 @@
       "is_self_reported": true,
       "other_info": "With tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 11
+      "rank": 13
     },
     {
       "benchmark_id": "frontier-math",
@@ -265,13 +265,13 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-4/",
-      "rank": 15
+      "rank": 6
     },
     {
       "benchmark_id": "deepswe",
       "score": 56,
       "is_self_reported": false,
-      "other_info": "mini-swe-agent; effort xhigh; 56% +/-5%; avg cost $4.38; avg time 27m; out tok 71k",
+      "other_info": "mini-swe-agent; effort xhigh; 56% +/-2%; avg cost $4.38; avg time 27m; out tok 71k",
       "source_link": "https://deepswe.datacurve.ai/",
       "rank": 3
     },
@@ -321,7 +321,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; 940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 58
+      "rank": 57
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -329,7 +329,7 @@
       "is_self_reported": false,
       "other_info": "xHigh reasoning; Top-1 accuracy 90.9%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 2
+      "rank": 29
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -337,7 +337,7 @@
       "is_self_reported": false,
       "other_info": "High reasoning; Top-1 accuracy 88.5%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 4
+      "rank": 27
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -345,7 +345,7 @@
       "is_self_reported": false,
       "other_info": "Medium reasoning; Top-1 accuracy 88.3%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 6
+      "rank": 25
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -353,7 +353,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; Top-1 accuracy 44.0%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 27
+      "rank": 4
     }
   ]
 }

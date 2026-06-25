@@ -260,6 +260,26 @@ pub fn listBatchCapabilities<T: Transport>(client: &Client<T>, path: &HashMap<St
 	client.request("GET", &resolved_path, body)
 }
 
+pub fn listBatches<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchesAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchModels<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batches/models");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn listBatchModelsAlias<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = String::from("/batch/models");
+	client.request("GET", &resolved_path, body)
+}
+
 pub fn listBatchRequests<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/batches/{}/requests", path.get("batch_id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
@@ -332,6 +352,11 @@ pub fn listWebhookEndpoints<T: Transport>(client: &Client<T>, path: &HashMap<Str
 
 pub fn listWorkspaces<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/workspaces");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn openAsyncJobWebSocket<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/async/{}/{}/ws", path.get("kind").cloned().unwrap_or_default(), path.get("id").cloned().unwrap_or_default());
 	client.request("GET", &resolved_path, body)
 }
 

@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 45
+      "rank": 46
     },
     {
       "benchmark_id": "browsecomp-zh",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "gpqa",
@@ -70,7 +70,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 76
+      "rank": 77
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 93
+      "rank": 99
     },
     {
       "benchmark_id": "livecodebench",
@@ -94,7 +94,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 40
+      "rank": 41
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 27
+      "rank": 29
     },
     {
       "benchmark_id": "mmlu-redux",
@@ -126,7 +126,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 25
+      "rank": 26
     },
     {
       "benchmark_id": "swe-bench",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from deepseek-v3.1",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V3.1",
-      "rank": 64
+      "rank": 68
     },
     {
       "benchmark_id": "terminal-bench",

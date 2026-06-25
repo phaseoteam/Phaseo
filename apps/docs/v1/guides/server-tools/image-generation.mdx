@@ -1,0 +1,91 @@
+---
+title: "Image Generation"
+description: "Let models create images through an AI Stats server tool."
+---
+
+Use `ai-stats:image_generation` when the model should be able to create an image while it is answering. AI Stats exposes a managed tool to the model, executes the image request server-side, and feeds the image result back into the model loop.
+
+## Request
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "ai-stats:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## Parameters
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `model` | string | Optional image-capable model ID. Defaults to `openai/gpt-image-2` when neither the tool nor tool call provides a model. |
+| `quality` | string | Optional provider quality hint, such as `low`, `medium`, or `high`. |
+| `size` | string | Optional image size hint. |
+| `aspect_ratio` | string | Optional aspect ratio, such as `1:1`, `16:9`, or `9:16`. |
+| `background` | string | Optional background mode hint. |
+| `output_format` | string | Optional output format, such as `png`, `jpeg`, or `webp`. |
+| `output_compression` | integer | Optional provider compression hint. |
+| `moderation` | string | Optional provider moderation hint. |
+
+The model supplies the final `prompt` when it calls the tool. Tool-level parameters provide defaults and constraints for that call.
+
+The tool call may also send `description` instead of `prompt`. AI Stats treats `description` as a prompt alias for compatibility with model-generated image descriptions.
+
+## Tool Result
+
+The result is returned to the model as JSON:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+Some providers return base64 image data instead:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## Usage And Pricing
+
+Image generation usage is included in the parent response usage when the image model reports token usage. AI Stats also records:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+Pricing cards can bill this with the `server_tool_image_generation_requests` meter. The underlying image model usage can still be billed through its normal model pricing.
+
+## Related
+
+- [Server Tools](./index)
+- [Tool Calling](../tool-calling)

@@ -83,6 +83,89 @@ type ProviderModalitiesRow = {
     effective_to: string | null;
 };
 
+function getProviderSnapshotMergeKey(provider: GatewayProviderSnapshot): string {
+    const providerId = String(provider.providerId ?? "").trim().toLowerCase();
+    const providerModelSlug = String(provider.providerModelSlug ?? "").trim().toLowerCase();
+    const apiModelId = String(provider.apiModelId ?? "").trim().toLowerCase();
+    return `${providerId}::${providerModelSlug || apiModelId || "*"}`;
+}
+
+function mergeGatewayContextVariants(
+    base: GatewayContextData,
+    variants: GatewayContextData[],
+): GatewayContextData {
+    if (!variants.length) return base;
+
+    const mergedProviders = [...(Array.isArray(base.providers) ? base.providers : [])];
+    const providerIndex = new Map<string, number>();
+    for (let index = 0; index < mergedProviders.length; index += 1) {
+        providerIndex.set(getProviderSnapshotMergeKey(mergedProviders[index]), index);
+    }
+
+    for (const variant of variants) {
+        for (const provider of Array.isArray(variant.providers) ? variant.providers : []) {
+            const key = getProviderSnapshotMergeKey(provider);
+            const existingIndex = providerIndex.get(key);
+            if (existingIndex === undefined) {
+                providerIndex.set(key, mergedProviders.length);
+                mergedProviders.push(provider);
+                continue;
+            }
+
+            const existing = mergedProviders[existingIndex];
+            mergedProviders[existingIndex] = {
+                ...existing,
+                ...provider,
+                supportsEndpoint:
+                    Boolean(existing.supportsEndpoint) ||
+                    Boolean(provider.supportsEndpoint),
+                inputModalities:
+                    existing.inputModalities?.length
+                        ? existing.inputModalities
+                        : provider.inputModalities,
+                outputModalities:
+                    existing.outputModalities?.length
+                        ? existing.outputModalities
+                        : provider.outputModalities,
+                capabilityParams:
+                    existing.capabilityParams &&
+                    Object.keys(existing.capabilityParams).length > 0
+                        ? existing.capabilityParams
+                        : provider.capabilityParams,
+                maxInputTokens:
+                    existing.maxInputTokens ?? provider.maxInputTokens ?? null,
+                maxOutputTokens:
+                    existing.maxOutputTokens ?? provider.maxOutputTokens ?? null,
+            };
+        }
+    }
+
+    return {
+        ...base,
+        providers: mergedProviders,
+        pricing: Object.assign(
+            {},
+            base.pricing ?? {},
+            ...variants.map((variant) => variant.pricing ?? {}),
+        ),
+    };
+}
+
+function getTextContextCapabilitiesToLoad(
+    capabilityCandidates: string[],
+): string[] | null {
+    if (!capabilityCandidates.includes("text.generate")) return null;
+    const requestedSurface = capabilityCandidates.find(
+        candidate =>
+            candidate === "responses" ||
+            candidate === "chat.completions" ||
+            candidate === "messages",
+    );
+    return requestedSurface
+        ? ["text.generate", requestedSurface]
+        : ["text.generate"];
+}
+
 async function backfillProviderModalities(args: {
     parsed: GatewayContextData;
     requestedModel: string;
@@ -299,7 +382,7 @@ async function fetchTestingProviderSnapshots(args: {
         .select(
             "provider_api_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
         )
-        .eq("capability_id", args.endpoint)
+        .in("capability_id", getContextCapabilityCandidates(args.endpoint, args.model))
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES_WITH_TESTING])
         .in("provider_api_model_id", providerModelIds);
     if (capabilityError) return [];
@@ -542,16 +625,52 @@ export async function fetchGatewayContext(args: {
             args.endpoint,
             args.model,
         );
+        const textContextCapabilities = getTextContextCapabilitiesToLoad(
+            contextCapabilityCandidates,
+        );
         let contextCapability = contextCapabilityCandidates[0] ?? args.endpoint;
-        let parsed = await fetchParsedContextMeasured(args.model, contextCapability);
+        let parsed: GatewayContextData;
 
-        if ((parsed.providers ?? []).length === 0 && contextCapabilityCandidates.length > 1) {
-            for (const candidateCapability of contextCapabilityCandidates.slice(1)) {
-                const fallbackParsed = await fetchParsedContextMeasured(args.model, candidateCapability);
-                if ((fallbackParsed.providers ?? []).length > 0) {
-                    parsed = fallbackParsed;
-                    contextCapability = candidateCapability;
-                    break;
+        if (textContextCapabilities) {
+            const variants = await Promise.all(
+                textContextCapabilities.map(async (candidateCapability) => ({
+                    candidateCapability,
+                    parsed: await fetchParsedContextMeasured(
+                        args.model,
+                        candidateCapability,
+                    ),
+                })),
+            );
+            const nonEmptyVariants = variants.filter(
+                (variant) => (variant.parsed.providers ?? []).length > 0,
+            );
+            const preferredVariant =
+                nonEmptyVariants[0] ?? variants[0] ?? null;
+            if (!preferredVariant) {
+                throw new Error("gateway_context_rpc_empty");
+            }
+            contextCapability = preferredVariant.candidateCapability;
+            parsed =
+                nonEmptyVariants.length > 1
+                    ? mergeGatewayContextVariants(
+                        preferredVariant.parsed,
+                        nonEmptyVariants
+                            .filter((variant) => variant !== preferredVariant)
+                            .map((variant) => variant.parsed),
+                    )
+                    : preferredVariant.parsed;
+        } else {
+            contextCapability = contextCapabilityCandidates[0] ?? args.endpoint;
+            parsed = await fetchParsedContextMeasured(args.model, contextCapability);
+
+            if ((parsed.providers ?? []).length === 0 && contextCapabilityCandidates.length > 1) {
+                for (const candidateCapability of contextCapabilityCandidates.slice(1)) {
+                    const fallbackParsed = await fetchParsedContextMeasured(args.model, candidateCapability);
+                    if ((fallbackParsed.providers ?? []).length > 0) {
+                        parsed = fallbackParsed;
+                        contextCapability = candidateCapability;
+                        break;
+                    }
                 }
             }
         }

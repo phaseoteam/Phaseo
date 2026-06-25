@@ -51,7 +51,7 @@ class VideoTest < Minitest::Test
     calls = []
     client.raw_client.define_singleton_method(:request) do |method:, path:, query: nil, headers: nil, body: nil|
       calls << [method, path, query, headers, body]
-      if method == "GET" && path == "/data/models"
+      if method == "GET" && path == "/gateway/models"
         next({
           "models" => [
             {
@@ -140,7 +140,7 @@ class VideoTest < Minitest::Test
     assert_equal "video_456", list["data"][1]["id"]
     assert_equal "wss://api.phaseo.app/v1/async/video/video_123/ws?interval_ms=900", client.video_websocket_url("video_123", interval_ms: 900)
     assert_equal [
-      ["GET", "/data/models", { "model_id" => "google/veo-3", "limit" => "1" }, nil, nil],
+      ["GET", "/gateway/models", { "model_id" => "google/veo-3", "limit" => "1" }, nil, nil],
       ["POST", "/videos", nil, nil, { model: "google/veo-3", prompt: "orbiting camera shot" }],
       ["GET", "/videos/video_123", nil, nil, nil],
       ["POST", "/videos/video_123/cancel", nil, nil, nil],

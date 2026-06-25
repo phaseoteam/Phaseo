@@ -166,6 +166,57 @@ type ApiKeyWithValueResponse struct {
 	Data map[string]interface{} `json:"data"`
 }
 
+type AsyncJobWebSocketClientEvent struct {
+	Type string `json:"type"`
+}
+
+type AsyncJobWebSocketServerEvent struct {
+	Data *interface{} `json:"data,omitempty"`
+	Type string `json:"type"`
+}
+
+type AsyncJobWebSocketUpgradeRequiredResponse struct {
+	Error *map[string]interface{} `json:"error,omitempty"`
+}
+
+type AsyncWebhookDeliveryAttempt struct {
+	AttemptNumber *int `json:"attempt_number,omitempty"`
+	DeliveredAt *string `json:"delivered_at,omitempty"`
+	DeliveryKey *string `json:"delivery_key,omitempty"`
+	ErrorMessage *string `json:"error_message,omitempty"`
+	EventType *string `json:"event_type,omitempty"`
+	Id *string `json:"id,omitempty"`
+	MaxAttempts *int `json:"max_attempts,omitempty"`
+	NextRetryAt *string `json:"next_retry_at,omitempty"`
+	ResponseBodyPreview *string `json:"response_body_preview,omitempty"`
+	ResponseStatus *int `json:"response_status,omitempty"`
+	Status *string `json:"status,omitempty"`
+	TriedAt *string `json:"tried_at,omitempty"`
+}
+
+type AsyncWebhookDeliverySummary struct {
+	DeliveredEventTypes *[]string `json:"delivered_event_types,omitempty"`
+	DeliveredEvents *int `json:"delivered_events,omitempty"`
+	LastAttemptAt *string `json:"last_attempt_at,omitempty"`
+	LastAttemptStatus *string `json:"last_attempt_status,omitempty"`
+	LastDeliveredAt *string `json:"last_delivered_at,omitempty"`
+	LastErrorMessage *string `json:"last_error_message,omitempty"`
+	LastFailureAt *string `json:"last_failure_at,omitempty"`
+	LastResponseStatus *int `json:"last_response_status,omitempty"`
+	NextRetryAt *string `json:"next_retry_at,omitempty"`
+	PendingRetries *int `json:"pending_retries,omitempty"`
+	TotalAttempts *int `json:"total_attempts,omitempty"`
+}
+
+type AsyncWebhookPublicState struct {
+	Attempts *[]map[string]interface{} `json:"attempts,omitempty"`
+	Delivery *map[string]interface{} `json:"delivery,omitempty"`
+	EndpointId *string `json:"endpoint_id,omitempty"`
+	Events *[]string `json:"events,omitempty"`
+	HasSecret *bool `json:"has_secret,omitempty"`
+	Url *string `json:"url,omitempty"`
+}
+
 type AudioContentPart struct {
 	InputAudio map[string]interface{} `json:"input_audio"`
 	Type string `json:"type"`
@@ -210,9 +261,23 @@ type BatchBillingSummary struct {
 	Charged *bool `json:"charged,omitempty"`
 	CostNanos *int `json:"cost_nanos,omitempty"`
 	CostUsd *float64 `json:"cost_usd,omitempty"`
+	Currency *string `json:"currency,omitempty"`
+	EstimatedNanos *int `json:"estimated_nanos,omitempty"`
+	EstimatedProviderCost *string `json:"estimated_provider_cost,omitempty"`
+	EstimatedUserCost *string `json:"estimated_user_cost,omitempty"`
+	EstimationSampleSize *int `json:"estimation_sample_size,omitempty"`
+	EstimationTotalRows *int `json:"estimation_total_rows,omitempty"`
+	EstimationTruncated *bool `json:"estimation_truncated,omitempty"`
 	FinalizedAt *string `json:"finalized_at,omitempty"`
 	PricingBreakdown *map[string]interface{} `json:"pricing_breakdown,omitempty"`
 	Reason *string `json:"reason,omitempty"`
+	ReservationId *string `json:"reservation_id,omitempty"`
+	ReservationStatus *string `json:"reservation_status,omitempty"`
+	ReservedNanos *int `json:"reserved_nanos,omitempty"`
+	SettledProviderCost *string `json:"settled_provider_cost,omitempty"`
+	SettledUserCost *string `json:"settled_user_cost,omitempty"`
+	State *string `json:"state,omitempty"`
+	TotalNanos *int `json:"total_nanos,omitempty"`
 }
 
 type BatchInlineRequest struct {
@@ -220,6 +285,41 @@ type BatchInlineRequest struct {
 	CustomId *string `json:"custom_id,omitempty"`
 	Method *string `json:"method,omitempty"`
 	Url *string `json:"url,omitempty"`
+}
+
+type BatchListResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	FirstId *string `json:"first_id,omitempty"`
+	HasMore *bool `json:"has_more,omitempty"`
+	LastId *string `json:"last_id,omitempty"`
+	Object *string `json:"object,omitempty"`
+}
+
+type BatchModelCapability struct {
+	InputTypes *[]string `json:"input_types,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Name *string `json:"name,omitempty"`
+	OutputTypes *[]string `json:"output_types,omitempty"`
+	Pricing *map[string]interface{} `json:"pricing,omitempty"`
+	Providers *[]map[string]interface{} `json:"providers,omitempty"`
+	Status *string `json:"status,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type BatchModelProviderCapability struct {
+	Id *string `json:"id,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type BatchModelsResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Object *string `json:"object,omitempty"`
 }
 
 type BatchProviderCapability struct {
@@ -276,6 +376,7 @@ type BatchRequestRow struct {
 
 type BatchResponse struct {
 	Billing *map[string]interface{} `json:"billing,omitempty"`
+	CancelUrl *string `json:"cancel_url,omitempty"`
 	CancelledAt *int `json:"cancelled_at,omitempty"`
 	CancellingAt *int `json:"cancelling_at,omitempty"`
 	CompletedAt *int `json:"completed_at,omitempty"`
@@ -287,20 +388,30 @@ type BatchResponse struct {
 	ExpiredAt *int `json:"expired_at,omitempty"`
 	ExpiresAt *int `json:"expires_at,omitempty"`
 	FailedAt *int `json:"failed_at,omitempty"`
+	FinalizedAt *string `json:"finalized_at,omitempty"`
 	FinalizingAt *int `json:"finalizing_at,omitempty"`
 	Id *string `json:"id,omitempty"`
 	InProgressAt *int `json:"in_progress_at,omitempty"`
 	InputFileId *string `json:"input_file_id,omitempty"`
+	LastWebhookDispatchedAt *string `json:"last_webhook_dispatched_at,omitempty"`
+	LastWebhookProgress *float64 `json:"last_webhook_progress,omitempty"`
+	LastWebhookProgressAt *string `json:"last_webhook_progress_at,omitempty"`
+	LifecycleStatus *string `json:"lifecycle_status,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	NativeBatchId *string `json:"native_batch_id,omitempty"`
+	NextWebhookRetryAt *string `json:"next_webhook_retry_at,omitempty"`
 	Object *string `json:"object,omitempty"`
 	OutputFileId *string `json:"output_file_id,omitempty"`
+	PollingUrl *string `json:"polling_url,omitempty"`
 	PricingLines *[]map[string]interface{} `json:"pricing_lines,omitempty"`
+	Progress *int `json:"progress,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 	RequestCounts *map[string]interface{} `json:"request_counts,omitempty"`
 	RequestId *string `json:"request_id,omitempty"`
 	SessionId *string `json:"session_id,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Webhook *map[string]interface{} `json:"webhook,omitempty"`
+	WebsocketUrl *string `json:"websocket_url,omitempty"`
 }
 
 type BenchmarkId string
@@ -359,6 +470,7 @@ const (
 	BenchmarkIdArtificialAnalysis BenchmarkId = "artificial-analysis"
 	BenchmarkIdAttaq BenchmarkId = "attaq"
 	BenchmarkIdAutologi BenchmarkId = "autologi"
+	BenchmarkIdAutomationbench BenchmarkId = "automationbench"
 	BenchmarkIdBabe BenchmarkId = "babe"
 	BenchmarkIdBabyvision BenchmarkId = "babyvision"
 	BenchmarkIdBalrogAi BenchmarkId = "balrog-ai"
@@ -377,9 +489,11 @@ const (
 	BenchmarkIdBigcodebench BenchmarkId = "bigcodebench"
 	BenchmarkIdBiobench BenchmarkId = "biobench"
 	BenchmarkIdBiolpBench BenchmarkId = "biolp-bench"
+	BenchmarkIdBiomysterybench BenchmarkId = "biomysterybench"
 	BenchmarkIdBirdSqlDev BenchmarkId = "bird-sql-(dev)"
 	BenchmarkIdBixbench BenchmarkId = "bixbench"
 	BenchmarkIdBlink BenchmarkId = "blink"
+	BenchmarkIdBlueprintBench2 BenchmarkId = "blueprint-bench-2"
 	BenchmarkIdBoolq BenchmarkId = "boolq"
 	BenchmarkIdBrowsecomp BenchmarkId = "browsecomp"
 	BenchmarkIdBrowsecompLong128k BenchmarkId = "browsecomp-long-128k"
@@ -477,6 +591,7 @@ const (
 	BenchmarkIdErqa BenchmarkId = "erqa"
 	BenchmarkIdEvalplus BenchmarkId = "evalplus"
 	BenchmarkIdExpertSwe BenchmarkId = "expert-swe"
+	BenchmarkIdExploitbenchCap BenchmarkId = "exploitbench-cap"
 	BenchmarkIdEyepacsAccuracy BenchmarkId = "eyepacs-accuracy"
 	BenchmarkIdFacts BenchmarkId = "facts"
 	BenchmarkIdFactsBenchmarkSuite BenchmarkId = "facts-benchmark-suite"
@@ -500,6 +615,7 @@ const (
 	BenchmarkIdFltevalPass8 BenchmarkId = "flteval-pass-8"
 	BenchmarkIdFrames BenchmarkId = "frames"
 	BenchmarkIdFrontierMath BenchmarkId = "frontier-math"
+	BenchmarkIdFrontiercodeDiamond BenchmarkId = "frontiercode-diamond"
 	BenchmarkIdFrontiermath BenchmarkId = "frontiermath"
 	BenchmarkIdFrontiersciOlympiad BenchmarkId = "frontiersci-olympiad"
 	BenchmarkIdFrontiersciResearch BenchmarkId = "frontiersci-research"
@@ -508,6 +624,7 @@ const (
 	BenchmarkIdFullstackbenchZh BenchmarkId = "fullstackbench-zh"
 	BenchmarkIdFunctionalmath BenchmarkId = "functionalmath"
 	BenchmarkIdGalileoAgent BenchmarkId = "galileo-agent"
+	BenchmarkIdGdpPdf BenchmarkId = "gdp-pdf"
 	BenchmarkIdGdpvalAa BenchmarkId = "gdpval-aa"
 	BenchmarkIdGdpvalMm BenchmarkId = "gdpval-mm"
 	BenchmarkIdGenebench BenchmarkId = "genebench"
@@ -579,6 +696,7 @@ const (
 	BenchmarkIdIvebenchOverallVsRunwayAleph BenchmarkId = "ivebench-overall-vs-runway-aleph"
 	BenchmarkIdKorbench BenchmarkId = "korbench"
 	BenchmarkIdLbppV2 BenchmarkId = "lbpp-(v2)"
+	BenchmarkIdLegalAgentBenchmark BenchmarkId = "legal-agent-benchmark"
 	BenchmarkIdLingoqa BenchmarkId = "lingoqa"
 	BenchmarkIdLisanbench BenchmarkId = "lisanbench"
 	BenchmarkIdLivebench BenchmarkId = "livebench"
@@ -1308,17 +1426,14 @@ const (
 	KnownModelIdAionLabsAionRpLlama318b KnownModelId = "aion-labs/aion-rp-llama-3.1-8b"
 	KnownModelIdAllenaiMolmo28b KnownModelId = "allenai/molmo-2-8b"
 	KnownModelIdAllenaiOlmo3132b KnownModelId = "allenai/olmo-3.1-32b"
-	KnownModelIdAnthropicClaude35Haiku KnownModelId = "anthropic/claude-3.5-haiku"
-	KnownModelIdAnthropicClaude37Sonnet KnownModelId = "anthropic/claude-3.7-sonnet"
+	KnownModelIdAnthropicClaudeFable5 KnownModelId = "anthropic/claude-fable-5"
 	KnownModelIdAnthropicClaudeHaiku45 KnownModelId = "anthropic/claude-haiku-4.5"
-	KnownModelIdAnthropicClaudeOpus4 KnownModelId = "anthropic/claude-opus-4"
 	KnownModelIdAnthropicClaudeOpus41 KnownModelId = "anthropic/claude-opus-4.1"
 	KnownModelIdAnthropicClaudeOpus45 KnownModelId = "anthropic/claude-opus-4.5"
 	KnownModelIdAnthropicClaudeOpus46 KnownModelId = "anthropic/claude-opus-4.6"
 	KnownModelIdAnthropicClaudeOpus47 KnownModelId = "anthropic/claude-opus-4.7"
 	KnownModelIdAnthropicClaudeOpus47Fast KnownModelId = "anthropic/claude-opus-4.7-fast"
 	KnownModelIdAnthropicClaudeOpus48 KnownModelId = "anthropic/claude-opus-4.8"
-	KnownModelIdAnthropicClaudeSonnet4 KnownModelId = "anthropic/claude-sonnet-4"
 	KnownModelIdAnthropicClaudeSonnet45 KnownModelId = "anthropic/claude-sonnet-4.5"
 	KnownModelIdAnthropicClaudeSonnet46 KnownModelId = "anthropic/claude-sonnet-4.6"
 	KnownModelIdArceeAiTrinityLarge KnownModelId = "arcee-ai/trinity-large"
@@ -1330,7 +1445,7 @@ const (
 	KnownModelIdBaiduErnie45Vl28bA3b KnownModelId = "baidu/ernie-4.5-vl-28b-a3b"
 	KnownModelIdBaiduErnie45Vl28bA3bThinking KnownModelId = "baidu/ernie-4.5-vl-28b-a3b-thinking"
 	KnownModelIdBaiduErnie45Vl424bA47b KnownModelId = "baidu/ernie-4.5-vl-424b-a47b"
-	KnownModelIdBlackForestLabsFlux1Dev KnownModelId = "black-forest-labs/flux-1-dev"
+	KnownModelIdBlackForestLabsFlux1Schnell KnownModelId = "black-forest-labs/flux-1-schnell"
 	KnownModelIdBytedanceSeed16 KnownModelId = "bytedance/seed-1.6"
 	KnownModelIdBytedanceSeed16250915 KnownModelId = "bytedance/seed-1.6-250915"
 	KnownModelIdBytedanceSeed16Flash KnownModelId = "bytedance/seed-1.6-flash"
@@ -1345,10 +1460,9 @@ const (
 	KnownModelIdBytedanceSeedTranslation KnownModelId = "bytedance/seed-translation"
 	KnownModelIdBytedanceSeedance20 KnownModelId = "bytedance/seedance-2.0"
 	KnownModelIdBytedanceSeedance20Fast KnownModelId = "bytedance/seedance-2.0-fast"
-	KnownModelIdCrofaiGreg KnownModelId = "crofai/greg"
-	KnownModelIdCrofaiGreg1 KnownModelId = "crofai/greg-1"
 	KnownModelIdCrofaiGreg1Mini KnownModelId = "crofai/greg-1-mini"
-	KnownModelIdCrofaiGreg1Super KnownModelId = "crofai/greg-1-super"
+	KnownModelIdCrofaiGreg2Super KnownModelId = "crofai/greg-2-super"
+	KnownModelIdCrofaiGreg2Ultra KnownModelId = "crofai/greg-2-ultra"
 	KnownModelIdCrofaiGregRp KnownModelId = "crofai/greg-rp"
 	KnownModelIdDeepseekDeepseekOcr KnownModelId = "deepseek/deepseek-ocr"
 	KnownModelIdDeepseekDeepseekOcr2 KnownModelId = "deepseek/deepseek-ocr-2"
@@ -1369,16 +1483,14 @@ const (
 	KnownModelIdDeepseekDeepseekV4Flash KnownModelId = "deepseek/deepseek-v4-flash"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
 	KnownModelIdDeepseekDeepseekV4ProLightning KnownModelId = "deepseek/deepseek-v4-pro-lightning"
-	KnownModelIdDeepseekDeepseekV4ProPrecision KnownModelId = "deepseek/deepseek-v4-pro-precision"
 	KnownModelIdEssentialAiRnj1 KnownModelId = "essential-ai/rnj-1"
-	KnownModelIdGoogleGemini20FlashLite KnownModelId = "google/gemini-2.0-flash-lite"
 	KnownModelIdGoogleGemini25Flash KnownModelId = "google/gemini-2.5-flash"
 	KnownModelIdGoogleGemini25FlashLite KnownModelId = "google/gemini-2.5-flash-lite"
 	KnownModelIdGoogleGemini25FlashLitePreview20250617 KnownModelId = "google/gemini-2.5-flash-lite-preview-2025-06-17"
 	KnownModelIdGoogleGemini25FlashLitePreview20250925 KnownModelId = "google/gemini-2.5-flash-lite-preview-2025-09-25"
+	KnownModelIdGoogleGemini25Pro KnownModelId = "google/gemini-2.5-pro"
 	KnownModelIdGoogleGemini3FlashPreview KnownModelId = "google/gemini-3-flash-preview"
 	KnownModelIdGoogleGemini3ProImage KnownModelId = "google/gemini-3-pro-image"
-	KnownModelIdGoogleGemini3ProImagePreview KnownModelId = "google/gemini-3-pro-image-preview"
 	KnownModelIdGoogleGemini31FlashImage KnownModelId = "google/gemini-3.1-flash-image"
 	KnownModelIdGoogleGemini31FlashImagePreview KnownModelId = "google/gemini-3.1-flash-image-preview"
 	KnownModelIdGoogleGemini31FlashLite KnownModelId = "google/gemini-3.1-flash-lite"
@@ -1391,14 +1503,8 @@ const (
 	KnownModelIdGoogleGeminiEmbedding2 KnownModelId = "google/gemini-embedding-2"
 	KnownModelIdGoogleGeminiEmbedding2Preview KnownModelId = "google/gemini-embedding-2-preview"
 	KnownModelIdGoogleGeminiRoboticsEr16Preview KnownModelId = "google/gemini-robotics-er-1.6-preview"
-	KnownModelIdGoogleGemma312bFree KnownModelId = "google/gemma-3-12b:free"
-	KnownModelIdGoogleGemma31bFree KnownModelId = "google/gemma-3-1b:free"
 	KnownModelIdGoogleGemma327b KnownModelId = "google/gemma-3-27b"
-	KnownModelIdGoogleGemma327bFree KnownModelId = "google/gemma-3-27b:free"
-	KnownModelIdGoogleGemma34bFree KnownModelId = "google/gemma-3-4b:free"
-	KnownModelIdGoogleGemma3nE2bFree KnownModelId = "google/gemma-3n-e2b:free"
 	KnownModelIdGoogleGemma3nE4b KnownModelId = "google/gemma-3n-e4b"
-	KnownModelIdGoogleGemma3nE4bFree KnownModelId = "google/gemma-3n-e4b:free"
 	KnownModelIdGoogleGemma426bA4b KnownModelId = "google/gemma-4-26b-a4b"
 	KnownModelIdGoogleGemma426bA4bFree KnownModelId = "google/gemma-4-26b-a4b:free"
 	KnownModelIdGoogleGemma431b KnownModelId = "google/gemma-4-31b"
@@ -1423,7 +1529,7 @@ const (
 	KnownModelIdKwaipilotKatCoderProV1 KnownModelId = "kwaipilot/kat-coder-pro-v1"
 	KnownModelIdKwaipilotKatCoderProV2 KnownModelId = "kwaipilot/kat-coder-pro-v2"
 	KnownModelIdLiquidAiLfm224bA2b KnownModelId = "liquid-ai/lfm-2-24b-a2b"
-	KnownModelIdMeituanLongcatFlashCat KnownModelId = "meituan/longcat-flash-cat"
+	KnownModelIdMeituanLongcat20Preview KnownModelId = "meituan/longcat-2.0-preview"
 	KnownModelIdMetaLlama370b KnownModelId = "meta/llama-3-70b"
 	KnownModelIdMetaLlama38b KnownModelId = "meta/llama-3-8b"
 	KnownModelIdMetaLlama38bLite KnownModelId = "meta/llama-3-8b-lite"
@@ -1449,6 +1555,7 @@ const (
 	KnownModelIdMinimaxMinimaxM25 KnownModelId = "minimax/minimax-m2.5"
 	KnownModelIdMinimaxMinimaxM25Highspeed KnownModelId = "minimax/minimax-m2.5-highspeed"
 	KnownModelIdMinimaxMinimaxM27 KnownModelId = "minimax/minimax-m2.7"
+	KnownModelIdMinimaxMinimaxM3 KnownModelId = "minimax/minimax-m3"
 	KnownModelIdMinimaxMusic26 KnownModelId = "minimax/music-2.6"
 	KnownModelIdMinimaxMusic26Free KnownModelId = "minimax/music-2.6-free"
 	KnownModelIdMistralCodestralEmbed KnownModelId = "mistral/codestral-embed"
@@ -1483,7 +1590,7 @@ const (
 	KnownModelIdMoonshotaiKimiK25 KnownModelId = "moonshotai/kimi-k2.5"
 	KnownModelIdMoonshotaiKimiK25Lightning KnownModelId = "moonshotai/kimi-k2.5-lightning"
 	KnownModelIdMoonshotaiKimiK26 KnownModelId = "moonshotai/kimi-k2.6"
-	KnownModelIdMoonshotaiKimiK26Precision KnownModelId = "moonshotai/kimi-k2.6-precision"
+	KnownModelIdMoonshotaiKimiK27Code KnownModelId = "moonshotai/kimi-k2.7-code"
 	KnownModelIdMoonshotaiMoonshotV1128k KnownModelId = "moonshotai/moonshot-v1-128k"
 	KnownModelIdMoonshotaiMoonshotV1128kVisionPreview KnownModelId = "moonshotai/moonshot-v1-128k-vision-preview"
 	KnownModelIdMoonshotaiMoonshotV132k KnownModelId = "moonshotai/moonshot-v1-32k"
@@ -1493,20 +1600,22 @@ const (
 	KnownModelIdMorphMorphV3Fast KnownModelId = "morph/morph-v3-fast"
 	KnownModelIdMorphMorphV3Large KnownModelId = "morph/morph-v3-large"
 	KnownModelIdNexAgiDeepseekV31NexN1 KnownModelId = "nex-agi/deepseek-v3.1-nex-n1"
+	KnownModelIdNexAgiNexN2Pro KnownModelId = "nex-agi/nex-n2-pro"
 	KnownModelIdNousHermes3Llama31405b KnownModelId = "nous/hermes-3-llama-3.1-405b"
 	KnownModelIdNousresearchHermes3Llama31405b KnownModelId = "nousresearch/hermes-3-llama-3.1-405b"
 	KnownModelIdNousresearchHermes3Llama3170b KnownModelId = "nousresearch/hermes-3-llama-3.1-70b"
 	KnownModelIdNousresearchHermes4405b KnownModelId = "nousresearch/hermes-4-405b"
 	KnownModelIdNousresearchHermes470b KnownModelId = "nousresearch/hermes-4-70b"
+	KnownModelIdNvidiaCosmos3SuperReasoner KnownModelId = "nvidia/cosmos3-super-reasoner"
 	KnownModelIdNvidiaLlama31Nemotron70bInstruct KnownModelId = "nvidia/llama-3.1-nemotron-70b-instruct"
 	KnownModelIdNvidiaLlama31NemotronUltra253b KnownModelId = "nvidia/llama-3.1-nemotron-ultra-253b"
 	KnownModelIdNvidiaLlama33NemotronSuper49bV15 KnownModelId = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
 	KnownModelIdNvidiaNemotron3Nano30bA3b KnownModelId = "nvidia/nemotron-3-nano-30b-a3b"
 	KnownModelIdNvidiaNemotron3NanoOmni30bA3bReasoning KnownModelId = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
 	KnownModelIdNvidiaNemotron3Super120bA12b KnownModelId = "nvidia/nemotron-3-super-120b-a12b"
+	KnownModelIdNvidiaNemotron3Ultra550bA55b KnownModelId = "nvidia/nemotron-3-ultra-550b-a55b"
 	KnownModelIdNvidiaNvidiaNemotron3Nano30bA3b KnownModelId = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
 	KnownModelIdNvidiaNvidiaNemotronNano12bV2Vl KnownModelId = "nvidia/nvidia-nemotron-nano-12b-v2-vl"
-	KnownModelIdNvidiaNvidiaNemotronNano9bV2 KnownModelId = "nvidia/nvidia-nemotron-nano-9b-v2"
 	KnownModelIdOpenaiBabbage002 KnownModelId = "openai/babbage-002"
 	KnownModelIdOpenaiChatLatest KnownModelId = "openai/chat-latest"
 	KnownModelIdOpenaiChatgpt4o KnownModelId = "openai/chatgpt-4o"
@@ -1574,9 +1683,7 @@ const (
 	KnownModelIdOpenaiTextEmbedding3Small KnownModelId = "openai/text-embedding-3-small"
 	KnownModelIdOpenaiTextEmbeddingAda002 KnownModelId = "openai/text-embedding-ada-002"
 	KnownModelIdOpenaiWhisper1 KnownModelId = "openai/whisper-1"
-	KnownModelIdPoolsideLagunaM1 KnownModelId = "poolside/laguna-m.1"
 	KnownModelIdPoolsideLagunaM1Free KnownModelId = "poolside/laguna-m.1:free"
-	KnownModelIdPoolsideLagunaXs2 KnownModelId = "poolside/laguna-xs.2"
 	KnownModelIdPoolsideLagunaXs2Free KnownModelId = "poolside/laguna-xs.2:free"
 	KnownModelIdPrimeintellectIntellect3 KnownModelId = "primeintellect/intellect-3"
 	KnownModelIdQwenQvqMax KnownModelId = "qwen/qvq-max"
@@ -1634,6 +1741,7 @@ const (
 	KnownModelIdQwenQwen3CoderNext KnownModelId = "qwen/qwen3-coder-next"
 	KnownModelIdQwenQwen3CoderPlus20250722 KnownModelId = "qwen/qwen3-coder-plus-2025-07-22"
 	KnownModelIdQwenQwen3CoderPlus20250923 KnownModelId = "qwen/qwen3-coder-plus-2025-09-23"
+	KnownModelIdQwenQwen3Embedding8b KnownModelId = "qwen/qwen3-embedding-8b"
 	KnownModelIdQwenQwen3Max KnownModelId = "qwen/qwen3-max"
 	KnownModelIdQwenQwen3Max20250923 KnownModelId = "qwen/qwen3-max-2025-09-23"
 	KnownModelIdQwenQwen3Max20260123 KnownModelId = "qwen/qwen3-max-2026-01-23"
@@ -1659,15 +1767,12 @@ const (
 	KnownModelIdQwenQwen3VlFlash20260122 KnownModelId = "qwen/qwen3-vl-flash-2026-01-22"
 	KnownModelIdQwenQwen3VlPlus20250923 KnownModelId = "qwen/qwen3-vl-plus-2025-09-23"
 	KnownModelIdQwenQwen3VlPlus20251219 KnownModelId = "qwen/qwen3-vl-plus-2025-12-19"
-	KnownModelIdQwenQwen3508b KnownModelId = "qwen/qwen3.5-0.8b"
 	KnownModelIdQwenQwen35122bA10b KnownModelId = "qwen/qwen3.5-122b-a10b"
 	KnownModelIdQwenQwen3527b KnownModelId = "qwen/qwen3.5-27b"
-	KnownModelIdQwenQwen352b KnownModelId = "qwen/qwen3.5-2b"
 	KnownModelIdQwenQwen3535bA3b KnownModelId = "qwen/qwen3.5-35b-a3b"
 	KnownModelIdQwenQwen35397bA17b KnownModelId = "qwen/qwen3.5-397b-a17b"
 	KnownModelIdQwenQwen354b KnownModelId = "qwen/qwen3.5-4b"
 	KnownModelIdQwenQwen359b KnownModelId = "qwen/qwen3.5-9b"
-	KnownModelIdQwenQwen359bChat KnownModelId = "qwen/qwen3.5-9b-chat"
 	KnownModelIdQwenQwen35Flash KnownModelId = "qwen/qwen3.5-flash"
 	KnownModelIdQwenQwen35LivetranslateFlashRealtime20260519 KnownModelId = "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19"
 	KnownModelIdQwenQwen35Plus KnownModelId = "qwen/qwen3.5-plus"
@@ -1678,12 +1783,15 @@ const (
 	KnownModelIdQwenQwen36Plus2 KnownModelId = "qwen/qwen3.6-plus"
 	KnownModelIdQwenQwen37Max KnownModelId = "qwen/qwen3.7-max"
 	KnownModelIdQwenQwen37Max20260517 KnownModelId = "qwen/qwen3.7-max-2026-05-17"
+	KnownModelIdQwenQwen37Plus KnownModelId = "qwen/qwen3.7-plus"
+	KnownModelIdQwenQwen37Plus20260526 KnownModelId = "qwen/qwen3.7-plus-2026-05-26"
 	KnownModelIdQwenQwq32b KnownModelId = "qwen/qwq-32b"
 	KnownModelIdQwenQwqPlus KnownModelId = "qwen/qwq-plus"
 	KnownModelIdQwenTextEmbeddingV3 KnownModelId = "qwen/text-embedding-v3"
 	KnownModelIdQwenTextEmbeddingV4 KnownModelId = "qwen/text-embedding-v4"
 	KnownModelIdQwenWan27T2v KnownModelId = "qwen/wan2.7-t2v"
 	KnownModelIdStepfunStep35Flash KnownModelId = "stepfun/step-3.5-flash"
+	KnownModelIdStepfunStep37Flash KnownModelId = "stepfun/step-3.7-flash"
 	KnownModelIdTencentHunyuanA13bInstruct KnownModelId = "tencent/hunyuan-a13b-instruct"
 	KnownModelIdTencentHy3Preview KnownModelId = "tencent/hy3-preview"
 	KnownModelIdVeniceVeniceUncensored KnownModelId = "venice/venice-uncensored"
@@ -1716,8 +1824,6 @@ const (
 	KnownModelIdVoyageVoyageMultilingual2 KnownModelId = "voyage/voyage-multilingual-2"
 	KnownModelIdVoyageVoyageMultimodal3 KnownModelId = "voyage/voyage-multimodal-3"
 	KnownModelIdVoyageVoyageMultimodal35 KnownModelId = "voyage/voyage-multimodal-3.5"
-	KnownModelIdXAiGrok2Vision KnownModelId = "x-ai/grok-2-vision"
-	KnownModelIdXAiGrok3Mini KnownModelId = "x-ai/grok-3-mini"
 	KnownModelIdXAiGrok420Beta0309 KnownModelId = "x-ai/grok-4.20-beta-0309"
 	KnownModelIdXAiGrok420MultiAgentBeta0309 KnownModelId = "x-ai/grok-4.20-multi-agent-beta-0309"
 	KnownModelIdXAiGrok43 KnownModelId = "x-ai/grok-4.3"
@@ -1733,7 +1839,6 @@ const (
 	KnownModelIdXiaomiMimoV2TtsFree KnownModelId = "xiaomi/mimo-v2-tts:free"
 	KnownModelIdXiaomiMimoV25 KnownModelId = "xiaomi/mimo-v2.5"
 	KnownModelIdXiaomiMimoV25Pro KnownModelId = "xiaomi/mimo-v2.5-pro"
-	KnownModelIdXiaomiMimoV25ProPrecision KnownModelId = "xiaomi/mimo-v2.5-pro-precision"
 	KnownModelIdXiaomiMimoV25TtsFree KnownModelId = "xiaomi/mimo-v2.5-tts:free"
 	KnownModelIdZAiGlm432b KnownModelId = "z-ai/glm-4-32b"
 	KnownModelIdZAiGlm47FlashFree KnownModelId = "z-ai/glm-4-7-flash:free"
@@ -1751,7 +1856,7 @@ const (
 	KnownModelIdZAiGlm5Code KnownModelId = "z-ai/glm-5-code"
 	KnownModelIdZAiGlm5Turbo KnownModelId = "z-ai/glm-5-turbo"
 	KnownModelIdZAiGlm51 KnownModelId = "z-ai/glm-5.1"
-	KnownModelIdZAiGlm51Precision KnownModelId = "z-ai/glm-5.1-precision"
+	KnownModelIdZAiGlm52 KnownModelId = "z-ai/glm-5.2"
 	KnownModelIdZAiGlm5vTurbo KnownModelId = "z-ai/glm-5v-turbo"
 	KnownModelIdZaiOrgGlm45Air KnownModelId = "zai-org/glm-4.5-air"
 	KnownModelIdZaiGlm5 KnownModelId = "zai/glm-5"
@@ -1834,7 +1939,9 @@ type Model struct {
 	RetirementDate *string `json:"retirement_date,omitempty"`
 	Status *string `json:"status,omitempty"`
 	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
 	TopProvider *map[string]interface{} `json:"top_provider,omitempty"`
 	TopProviderId *string `json:"top_provider_id,omitempty"`
 }
@@ -1868,8 +1975,11 @@ type ModelProviderAvailability struct {
 	IsActiveGateway bool `json:"is_active_gateway"`
 	ModelRoutingStatus string `json:"model_routing_status"`
 	Params []string `json:"params"`
+	ParamsDetail *map[string]interface{} `json:"params_detail,omitempty"`
 	ProviderRoutingStatus string `json:"provider_routing_status"`
 	ProviderStatus string `json:"provider_status"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 }
 
 type ModelsPrivacyScopeNotImplementedResponse struct {
@@ -1978,6 +2088,7 @@ const (
 	OrganisationIdDeepseek OrganisationId = "deepseek"
 	OrganisationIdElevenLabs OrganisationId = "eleven-labs"
 	OrganisationIdEssentialAi OrganisationId = "essential-ai"
+	OrganisationIdGithub OrganisationId = "github"
 	OrganisationIdGoogle OrganisationId = "google"
 	OrganisationIdIbm OrganisationId = "ibm"
 	OrganisationIdInception OrganisationId = "inception"
@@ -1992,10 +2103,12 @@ const (
 	OrganisationIdMistral OrganisationId = "mistral"
 	OrganisationIdMoonshotai OrganisationId = "moonshotai"
 	OrganisationIdNaverHyperclova OrganisationId = "naver-hyperclova"
+	OrganisationIdNexAgi OrganisationId = "nex-agi"
 	OrganisationIdNous OrganisationId = "nous"
 	OrganisationIdNvidia OrganisationId = "nvidia"
 	OrganisationIdOpenai OrganisationId = "openai"
 	OrganisationIdPerplexity OrganisationId = "perplexity"
+	OrganisationIdPoe OrganisationId = "poe"
 	OrganisationIdPrimeIntellect OrganisationId = "prime-intellect"
 	OrganisationIdQwen OrganisationId = "qwen"
 	OrganisationIdRelace OrganisationId = "relace"
@@ -2005,6 +2118,7 @@ const (
 	OrganisationIdUpstage OrganisationId = "upstage"
 	OrganisationIdVercel OrganisationId = "vercel"
 	OrganisationIdVoyage OrganisationId = "voyage"
+	OrganisationIdWindsurf OrganisationId = "windsurf"
 	OrganisationIdXAi OrganisationId = "x-ai"
 	OrganisationIdXiaomi OrganisationId = "xiaomi"
 	OrganisationIdZAi OrganisationId = "z-ai"
@@ -2237,6 +2351,9 @@ type ServerToolUsage struct {
 	WebSearchRequests *int `json:"web_search_requests,omitempty"`
 }
 
+type SupportedParameterDetails struct {
+}
+
 type TextContentPart struct {
 	Text string `json:"text"`
 	Type string `json:"type"`
@@ -2268,6 +2385,24 @@ type Usage struct {
 	PromptTokens *int `json:"prompt_tokens,omitempty"`
 	ServerToolUse *map[string]interface{} `json:"server_tool_use,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
+type VideoBillingSummary struct {
+	Billable *bool `json:"billable,omitempty"`
+	BilledAt *string `json:"billed_at,omitempty"`
+	ChargeReason *string `json:"charge_reason,omitempty"`
+	Charged *bool `json:"charged,omitempty"`
+	Currency *string `json:"currency,omitempty"`
+	EstimatedNanos *int `json:"estimated_nanos,omitempty"`
+	EstimatedProviderCost *string `json:"estimated_provider_cost,omitempty"`
+	EstimatedUserCost *string `json:"estimated_user_cost,omitempty"`
+	ReservationId *string `json:"reservation_id,omitempty"`
+	ReservationStatus *string `json:"reservation_status,omitempty"`
+	ReservedNanos *int `json:"reserved_nanos,omitempty"`
+	SettledProviderCost *string `json:"settled_provider_cost,omitempty"`
+	SettledUserCost *string `json:"settled_user_cost,omitempty"`
+	State *string `json:"state,omitempty"`
+	TotalNanos *int `json:"total_nanos,omitempty"`
 }
 
 type VideoContentPart struct {
@@ -2307,6 +2442,7 @@ type VideoGenerationResponse struct {
 	Asset *map[string]interface{} `json:"asset,omitempty"`
 	Audio *bool `json:"audio,omitempty"`
 	Billing *map[string]interface{} `json:"billing,omitempty"`
+	CancelUrl *string `json:"cancel_url,omitempty"`
 	CompletedAt *interface{} `json:"completed_at,omitempty"`
 	ContentUrl *string `json:"content_url,omitempty"`
 	CreatedAt interface{} `json:"created_at,omitempty"`
@@ -2315,7 +2451,13 @@ type VideoGenerationResponse struct {
 	ExpiresAt *int `json:"expires_at,omitempty"`
 	GenerationId *string `json:"generation_id,omitempty"`
 	Id *string `json:"id,omitempty"`
+	LastWebhookDispatchedAt *string `json:"last_webhook_dispatched_at,omitempty"`
+	LastWebhookProgress *float64 `json:"last_webhook_progress,omitempty"`
+	LastWebhookProgressAt *string `json:"last_webhook_progress_at,omitempty"`
+	LifecycleStatus *string `json:"lifecycle_status,omitempty"`
 	Model *string `json:"model,omitempty"`
+	NativeVideoId *string `json:"native_video_id,omitempty"`
+	NextWebhookRetryAt *string `json:"next_webhook_retry_at,omitempty"`
 	Object *string `json:"object,omitempty"`
 	OutputAccess *string `json:"output_access,omitempty"`
 	Outputs *[]map[string]interface{} `json:"outputs,omitempty"`
@@ -2331,6 +2473,8 @@ type VideoGenerationResponse struct {
 	StartedAt *interface{} `json:"started_at,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+	Webhook *map[string]interface{} `json:"webhook,omitempty"`
+	WebsocketUrl *string `json:"websocket_url,omitempty"`
 }
 
 type VideoInputReference struct {
@@ -2338,6 +2482,41 @@ type VideoInputReference struct {
 	ReferenceType *string `json:"reference_type,omitempty"`
 	Role *string `json:"role,omitempty"`
 	Type string `json:"type"`
+}
+
+type VideoListResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	FirstId *string `json:"first_id,omitempty"`
+	HasMore *bool `json:"has_more,omitempty"`
+	LastId *string `json:"last_id,omitempty"`
+	Object *string `json:"object,omitempty"`
+}
+
+type VideoModelCapability struct {
+	InputTypes *[]string `json:"input_types,omitempty"`
+	Model *string `json:"model,omitempty"`
+	Name *string `json:"name,omitempty"`
+	OutputTypes *[]string `json:"output_types,omitempty"`
+	Pricing *map[string]interface{} `json:"pricing,omitempty"`
+	Providers *[]map[string]interface{} `json:"providers,omitempty"`
+	Status *string `json:"status,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type VideoModelProviderCapability struct {
+	Id *string `json:"id,omitempty"`
+	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
+	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
+	SupportedParams *[]string `json:"supported_params,omitempty"`
+	SupportedParamsDetail *map[string]interface{} `json:"supported_params_detail,omitempty"`
+}
+
+type VideoModelsResponse struct {
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Object *string `json:"object,omitempty"`
 }
 
 type VideoOutput struct {

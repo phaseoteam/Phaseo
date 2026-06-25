@@ -8,6 +8,9 @@ The `params` JSONB field in `data_api_provider_model_capabilities` defines what 
 
 ## Structure
 
+`params` can be stored in either legacy array form or structured object form. New async/media
+capabilities should use structured object form so model APIs can return allowed values.
+
 ```json
 {
   "temperature": {},              // Supported (empty object = supported with no special config)
@@ -23,6 +26,21 @@ The `params` JSONB field in `data_api_provider_model_capabilities` defines what 
   }
   // Parameters not listed are NOT supported
 }
+```
+
+Legacy array form is still accepted by importers and validators:
+
+```json
+["temperature", "top_p", "max_tokens"]
+```
+
+or:
+
+```json
+[
+  { "param_id": "temperature", "provider_min": 0, "provider_max": 2 },
+  { "param_id": "top_p" }
+]
 ```
 
 ---
@@ -70,6 +88,21 @@ The `params` JSONB field in `data_api_provider_model_capabilities` defines what 
 - `seed` - Deterministic generation
 - `logit_bias` - Token bias
 - `web_search_options` - Web search (Cohere)
+
+### Async Media Parameters
+
+These should be stored as structured values whenever a provider exposes finite supported
+options. The API returns this structure as `supported_parameters_detail`.
+
+- `resolution` - Supported output sizes/resolutions for video or image generation.
+- `size` - Provider-native size alias when distinct from `resolution`.
+- `seconds` - Supported output durations for video generation.
+- `duration_seconds` - Provider-native duration alias when distinct from `seconds`.
+- `quality` - Supported quality tiers.
+- `audio` - Whether audio generation is supported.
+- `input_reference` / `first_frame_image` - Image-to-video reference support.
+- `voice` - Supported voice code or voice ID values for speech/voice APIs.
+- `format` - Supported media output formats.
 
 ---
 
@@ -212,6 +245,41 @@ If `types` is omitted, all types are assumed supported.
   "tools": {},
   "tool_choice": {},
   "verbosity": {}
+}
+```
+
+### Video Generation Model
+```json
+{
+  "prompt": {},
+  "resolution": {
+    "type": "string",
+    "values": ["768p", "1080p"],
+    "default": "768p"
+  },
+  "seconds": {
+    "type": "integer",
+    "values": [6, 10]
+  },
+  "quality": {
+    "type": "string",
+    "values": ["standard", "pro"]
+  }
+}
+```
+
+### Voice Model
+```json
+{
+  "input": {},
+  "voice": {
+    "type": "string",
+    "values": ["alloy", "ash", "coral", "echo", "sage"]
+  },
+  "format": {
+    "type": "string",
+    "values": ["mp3", "wav", "opus"]
+  }
 }
 ```
 

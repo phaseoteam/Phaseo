@@ -1,6 +1,5 @@
 import Link from "next/link";
-import getDbStats from "@/lib/fetchers/landing/dbStats";
-import { getPublicMonthlyTokenTotal } from "@/lib/fetchers/rankings/getRankingsData";
+import { fetchFrontendLandingStats } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 function roundDisplayValue(raw: number, bucket: number) {
 	if (bucket <= 0) return raw;
@@ -28,10 +27,7 @@ function formatCompact(value: number) {
 }
 
 export default async function DatabaseStats() {
-	const [data, monthlyTokenTotal] = await Promise.all([
-		getDbStats(),
-		getPublicMonthlyTokenTotal(),
-	]);
+	const { db: data, monthlyTokenTotal } = await fetchFrontendLandingStats();
 
 	const stats = [
 		{

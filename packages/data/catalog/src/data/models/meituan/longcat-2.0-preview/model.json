@@ -1,0 +1,23 @@
+{
+  "model_id": "meituan/longcat-2.0-preview",
+  "organisation_id": "meituan",
+  "name": "LongCat 2.0 Preview",
+  "status": "Available",
+  "previous_model_id": "meituan/longcat-flash-cat",
+  "description": "LongCat 2.0 Preview is Meituan's beta LongCat generation model, introduced as the successor to the legacy LongCat Flash models. Access is limited during the preview while Meituan expands beta capacity.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": [
+    "text"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "meituan/longcat-2.0-preview",
+  "links": [],
+  "details": [],
+  "benchmarks": []
+}

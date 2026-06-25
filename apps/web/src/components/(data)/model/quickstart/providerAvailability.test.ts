@@ -36,6 +36,7 @@ function makeMetadata(providers: GatewayProviderModel[]): ModelGatewayMetadata {
 		acceptedModelIdentifiers: ["anthropic/claude-3-haiku"],
 		primaryModelIdentifierByEndpoint: {},
 		acceptedModelIdentifiersByEndpoint: {},
+		supportedParametersByEndpoint: {},
 		providers,
 		activeProviders: providers.filter((provider) => provider.availability_status === "active"),
 		comingSoonProviders: providers.filter((provider) => provider.availability_status === "coming_soon"),

@@ -1,0 +1,88 @@
+---
+title: "Anthropic: Claude Opus 4.1 to 4.8"
+description: "The concrete migration steps to move deprecated Claude Opus 4.1 traffic onto Claude Opus 4.8."
+---
+
+# Anthropic: Claude Opus 4.1 to 4.8
+
+Use this guide when you are moving from `anthropic/claude-opus-4.1` to `anthropic/claude-opus-4.8`.
+
+Anthropic deprecated Claude Opus 4.1 on June 5, 2026 and scheduled retirement for August 5, 2026. Their migration guidance for Opus 4.1 is cumulative: first apply the Claude Opus 4.7 request-shape changes, then review the Claude Opus 4.8 behavior changes.
+
+## What changed
+
+- the target model becomes `claude-opus-4-8`
+- Opus 4.7 and later reject non-default sampling params like `temperature`, `top_p`, and `top_k`
+- Opus 4.7 and later reject manual extended-thinking budgets; use adaptive thinking instead
+- Opus 4.8 defaults `output_config.effort` to `high`
+- Opus 4.8 adds mid-conversation system messages
+- Opus 4.8 raises the baseline context/output ceilings to 1M context and 128K max output on the Claude API, Claude Platform on AWS, Amazon Bedrock, and Vertex AI
+
+## What to change in your integration
+
+### 1. Update the model ID
+
+Move from:
+
+- `anthropic/claude-opus-4.1`
+
+to:
+
+- `anthropic/claude-opus-4.8`
+
+### 2. Remove non-default sampling parameters
+
+If your Opus 4.1 requests still set any of these, remove them before rollout:
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+On Opus 4.7 and later, non-default values for those fields return `400`.
+
+### 3. Replace manual thinking budgets with adaptive thinking
+
+If you send legacy thinking payloads such as:
+
+- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+
+move to:
+
+- `thinking: { "type": "adaptive" }`
+- `output_config.effort = "high"` as the baseline
+
+### 4. Rebaseline effort and long-context expectations
+
+Opus 4.8 defaults effort to `high`, and it supports a much larger context window than Opus 4.1 on Anthropic-operated API surfaces. Re-test:
+
+- latency budgets
+- token usage
+- prompt caching behavior
+- long-document and long-agent traces
+
+If you run on Microsoft Foundry, do not assume the 1M context window there at launch; Anthropic documents a 200K context window for Foundry on Opus 4.8.
+
+### 5. Re-check instruction updates in long conversations
+
+Opus 4.8 supports mid-conversation system messages. If your agent loop currently rewrites the full system prompt every turn, you may be able to simplify that flow and preserve more cache hits.
+
+## What to test
+
+- requests that still send `temperature`, `top_p`, or `top_k`
+- thinking-enabled routes that previously relied on `budget_tokens`
+- long-horizon agent and tool workflows
+- schema-sensitive outputs at explicit `effort` levels
+- token-cost and latency deltas on your highest-volume Opus 4.1 prompt classes
+
+## Safe rollout
+
+1. Remove sampling params and legacy thinking budgets before switching traffic.
+2. Shadow Opus 4.8 on production-like prompts and tool flows.
+3. Canary with a fallback path still available during the overlap window before August 5, 2026.
+4. Promote only after latency, cost, and task-completion deltas are within target.
+
+## Sources
+
+- [Anthropic model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic migration guide](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [What's new in Claude Opus 4.8](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

@@ -40,7 +40,7 @@
       "is_self_reported": true,
       "other_info": "EM; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 5
     },
     {
       "benchmark_id": "gsm8k",
@@ -48,7 +48,7 @@
       "is_self_reported": true,
       "other_info": "Hugging Face evaluation result",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 12
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -56,7 +56,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 16
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -64,7 +64,7 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 53
     },
     {
       "benchmark_id": "terminal-bench-2.0",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": "Acc; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 12
     },
     {
       "benchmark_id": "swe-bench-pro",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": "Resolved; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 18
     },
     {
       "benchmark_id": "swe-bench",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": "SWE Verified; resolved; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 7
     },
     {
       "benchmark_id": "claw-eval",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": "General; Hugging Face evaluation result",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 9
     },
     {
       "benchmark_id": "claw-eval",
@@ -104,7 +104,7 @@
       "is_self_reported": true,
       "other_info": "Multi Turn; Hugging Face evaluation result",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 2
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -112,7 +112,7 @@
       "is_self_reported": true,
       "other_info": "Elo; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 12
     },
     {
       "benchmark_id": "scale-mcp-atlas",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": "MCPAtlas Public; Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 7
     },
     {
       "benchmark_id": "toolathlon",
@@ -128,15 +128,15 @@
       "is_self_reported": true,
       "other_info": "Pass@1; DeepSeek-V4-Pro Max",
       "source_link": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-      "rank": null
+      "rank": 5
     },
     {
       "benchmark_id": "deepswe",
       "score": 8,
       "is_self_reported": false,
-      "other_info": "mini-swe-agent; 8% +/-2%; avg cost $4.22; avg time 37m; out tok 50k",
+      "other_info": "mini-swe-agent; 8% +/-3%; avg cost $4.22; avg time 37m; out tok 50k",
       "source_link": "https://deepswe.datacurve.ai/",
-      "rank": 14
+      "rank": 15
     },
     {
       "benchmark_id": "livebench",
@@ -144,7 +144,7 @@
       "is_self_reported": false,
       "other_info": "2026-01-08 release",
       "source_link": "https://livebench.ai/#/",
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "creative-story-writing",

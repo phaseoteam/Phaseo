@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 34
+      "rank": 35
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 113
+      "rank": 114
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 34
+      "rank": 35
     },
     {
       "benchmark_id": "lvbench",
@@ -230,7 +230,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 65
+      "rank": 67
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 49
+      "rank": 53
     },
     {
       "benchmark_id": "mmmu-(val)",
@@ -342,7 +342,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 25
+      "rank": 28
     },
     {
       "benchmark_id": "polymath",
@@ -398,7 +398,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 21
+      "rank": 22
     },
     {
       "benchmark_id": "video-mmmu",
@@ -406,7 +406,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-8b-thinking (score=0.3400; benches=50)",
       "source_link": null,
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "writingbench",

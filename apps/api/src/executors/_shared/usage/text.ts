@@ -44,15 +44,35 @@ export function normalizeTextUsageForPricing(
 	const cachedReadTokens = pickFirstNumber(usageRaw, [
 		"cached_read_text_tokens",
 		"cache_read_input_tokens",
+		"cached_tokens",
+		"prompt_cache_hit_tokens",
 		"cachedInputTokens",
 		"cachedContentTokenCount",
 	]) ?? cachedReadTokensFromOpenAICompatDetails;
 	const cachedWriteTokens = pickFirstNumber(usageRaw, [
 		"cached_write_text_tokens",
 		"cache_creation_input_tokens",
+		"input_tokens_details.cache_creation_input_tokens",
+		"prompt_tokens_details.cache_creation_input_tokens",
+		"input_tokens_details.cache_creation_tokens",
+		"prompt_tokens_details.cache_creation_tokens",
 		"_ext.cachedWriteTokens",
 		"output_tokens_details.cached_tokens",
 		"completion_tokens_details.cached_tokens",
+	]);
+	const cachedWrite5mTokens = pickFirstNumber(usageRaw, [
+		"cached_write_text_tokens_5m",
+		"_ext.cachedWriteTokens5m",
+		"cache_creation.ephemeral_5m_input_tokens",
+		"cache_creation_5m_input_tokens",
+		"cache_creation_ephemeral_5m_input_tokens",
+	]);
+	const cachedWrite1hTokens = pickFirstNumber(usageRaw, [
+		"cached_write_text_tokens_1h",
+		"_ext.cachedWriteTokens1h",
+		"cache_creation.ephemeral_1h_input_tokens",
+		"cache_creation_1h_input_tokens",
+		"cache_creation_ephemeral_1h_input_tokens",
 	]);
 	const reasoningTokens = pickFirstNumber(usageRaw, [
 		"reasoning_tokens",
@@ -123,6 +143,14 @@ export function normalizeTextUsageForPricing(
 
 	if (typeof cachedReadTokens === "number") meters.cached_read_text_tokens = cachedReadTokens;
 	if (typeof cachedWriteTokens === "number") meters.cached_write_text_tokens = cachedWriteTokens;
+	if (typeof cachedWrite5mTokens === "number") meters.cached_write_text_tokens_5m = cachedWrite5mTokens;
+	if (typeof cachedWrite1hTokens === "number") meters.cached_write_text_tokens_1h = cachedWrite1hTokens;
+	if (
+		typeof cachedWriteTokens !== "number" &&
+		(typeof cachedWrite5mTokens === "number" || typeof cachedWrite1hTokens === "number")
+	) {
+		meters.cached_write_text_tokens = (cachedWrite5mTokens ?? 0) + (cachedWrite1hTokens ?? 0);
+	}
 	if (typeof reasoningTokens === "number") meters.reasoning_tokens = reasoningTokens;
 	if (typeof inputImageTokens === "number") meters.input_image_tokens = inputImageTokens;
 	if (typeof inputAudioTokens === "number") meters.input_audio_tokens = inputAudioTokens;

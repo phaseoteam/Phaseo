@@ -1,0 +1,35 @@
+{
+  "key": "cohere:cohere/north-mini-code-1-0:free:text.generate",
+  "api_provider_id": "cohere",
+  "provider_slug": "cohere",
+  "api_model_id": "cohere/north-mini-code-1-0:free",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Free until rate limits are reached.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-09T00:00:00Z",
+      "effective_to": null
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "free",
+      "note": "Free until rate limits are reached.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-09T00:00:00Z",
+      "effective_to": null
+    }
+  ]
+}

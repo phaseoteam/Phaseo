@@ -1,10 +1,11 @@
 import Link from "next/link";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
+import type { FamilyModelItem } from "@/lib/fetchers/models/getFamilyModels";
 import {
-	getFamilyModelsCached,
-	type FamilyModelItem,
-} from "@/lib/fetchers/models/getFamilyModels";
-import getModelOverviewHeader from "@/lib/fetchers/models/getModelOverviewHeader";
+	fetchFrontendFamily,
+	fetchFrontendModelHeader,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
 import {
 	Card,
 	CardContent,
@@ -134,9 +135,9 @@ export default async function Page({
 	}
 	const modelId = canonicalModelId;
 
-	let header: Awaited<ReturnType<typeof getModelOverviewHeader>> | null = null;
+	let header: ModelOverviewHeader | null = null;
 	try {
-		header = await getModelOverviewHeader(modelId, includeHidden);
+		header = await fetchFrontendModelHeader(modelId, includeHidden);
 	} catch (error) {
 		console.warn("[family] failed to load model header", { modelId, error });
 		return (
@@ -162,7 +163,7 @@ export default async function Page({
 	}
 	const familyId = header.family_id ?? null;
 	const family = familyId
-		? await getFamilyModelsCached(familyId, includeHidden)
+		? await fetchFrontendFamily(familyId)
 		: null;
 
 	const members = family?.models ?? [];

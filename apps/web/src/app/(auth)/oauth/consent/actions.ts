@@ -1,5 +1,6 @@
 "use server";
 
+import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
 import { createClient } from "@/utils/supabase/server";
 
 /**
@@ -14,6 +15,8 @@ interface ApproveAuthorizationInput {
 	authorization_id?: string;
 	client_id?: string;
 	workspace_id: string;
+	workspace_ids?: string[];
+	primary_workspace_id?: string;
 	scopes?: string[];
 	redirect_uri?: string;
 	state?: string;
@@ -103,124 +106,123 @@ export async function approveAuthorizationAction(
 			scopes = ["openid", "email", "gateway:access"];
 		}
 
-		// Verify user is a member of the selected team
-		const { data: membership, error: membershipError } = await supabase
+		const selectedWorkspaceIds = Array.from(
+			new Set(
+				[
+					...(Array.isArray(input.workspace_ids) ? input.workspace_ids : []),
+					input.primary_workspace_id,
+					input.workspace_id,
+				]
+					.map((workspaceId) => String(workspaceId ?? "").trim())
+					.filter(Boolean),
+			),
+		);
+		const primaryWorkspaceId =
+			String(input.primary_workspace_id ?? input.workspace_id ?? "").trim() ||
+			selectedWorkspaceIds[0] ||
+			"";
+		if (!primaryWorkspaceId || selectedWorkspaceIds.length === 0) {
+			return { error: "Select at least one team to authorize" };
+		}
+		if (!selectedWorkspaceIds.includes(primaryWorkspaceId)) {
+			return { error: "The active team must also be selected for authorization" };
+		}
+
+		const isBuiltInFirstPartyClient = resolvedClientId === "aistats_cli";
+
+		// Verify user is a member of every selected team
+		const { data: memberships, error: membershipError } = await supabase
 			.from("workspace_members")
 			.select("workspace_id")
-			.eq("workspace_id", input.workspace_id)
 			.eq("user_id", user.id)
-			.single();
+			.in("workspace_id", selectedWorkspaceIds);
 
-		if (membershipError || !membership) {
+		const grantedWorkspaceIds = new Set(
+			(memberships ?? [])
+				.map((membership: { workspace_id?: unknown }) =>
+					String(membership.workspace_id ?? "").trim()
+				)
+				.filter(Boolean)
+		);
+
+		if (
+			membershipError ||
+			!selectedWorkspaceIds.every((workspaceId) => grantedWorkspaceIds.has(workspaceId))
+		) {
 			return {
-				error: "You don't have permission to authorize for this team",
+				error: "You don't have permission to authorize for one or more selected teams",
 			};
 		}
 
-		// Verify OAuth app exists and is active
-		const { data: oauthApp, error: appError } = await supabase
-			.from("oauth_app_metadata")
-			.select("id, status")
-			.eq("client_id", resolvedClientId)
-			.eq("status", "active")
-			.single();
+		if (!isBuiltInFirstPartyClient) {
+			// Verify OAuth app exists and is active
+			const { data: oauthApp, error: appError } = await supabase
+				.from("oauth_app_metadata")
+				.select("id, status")
+				.eq("client_id", resolvedClientId)
+				.eq("status", "active")
+				.single();
 
-		if (appError || !oauthApp) {
-			return { error: "OAuth application not found or inactive" };
-		}
-
-		// Check if authorization already exists
-		const { data: existingAuth } = await supabase
-			.from("oauth_authorizations")
-			.select("id, revoked_at")
-			.eq("user_id", user.id)
-			.eq("client_id", resolvedClientId)
-			.eq("workspace_id", input.workspace_id)
-			.maybeSingle();
-
-		if (existingAuth) {
-			// If previously revoked, update it to active
-			if (existingAuth.revoked_at) {
-				await supabase
-					.from("oauth_authorizations")
-					.update({
-						scopes,
-						revoked_at: null,
-					})
-					.eq("id", existingAuth.id);
-			} else {
-				// Already authorized, just update scopes
-				await supabase
-					.from("oauth_authorizations")
-					.update({
-						scopes,
-					})
-					.eq("id", existingAuth.id);
-			}
-		} else {
-			// Create new authorization record
-			const { error: authError } = await supabase
-				.from("oauth_authorizations")
-				.insert({
-					user_id: user.id,
-					client_id: resolvedClientId,
-					workspace_id: input.workspace_id,
-					scopes,
-				});
-
-			if (authError) {
-				return {
-					error: `Failed to create authorization: ${authError.message}`,
-				};
+			if (appError || !oauthApp) {
+				return { error: "OAuth application not found or inactive" };
 			}
 		}
 
-		if (input.authorization_id) {
-			const { data: redirectData, error: approveError } =
-				await oauthClient.approveAuthorization(input.authorization_id, {
-					skipBrowserRedirect: true,
-				});
-
-			if (approveError || !redirectData?.redirect_url) {
-				return {
-					error:
-						approveError?.message ||
-						"Failed to finalize OAuth authorization",
-				};
-			}
-
-			return {
-				data: {
-					redirect_url: redirectData.redirect_url,
-					authorization_id: input.authorization_id,
-				},
-			};
-		}
-
-		if (!input.redirect_uri) {
+		const resolvedRedirectUri = input.redirect_uri?.trim() || null;
+		if (!resolvedRedirectUri) {
 			return {
 				error:
 					"Missing authorization_id. Please restart the OAuth flow from the client application.",
 			};
 		}
 
-		// Legacy fallback for older direct consent links.
-		const redirectUrl = new URL(input.redirect_uri);
-		redirectUrl.searchParams.set("error", "invalid_request");
-		redirectUrl.searchParams.set(
-			"error_description",
-			"Missing authorization_id. Please restart the OAuth flow."
-		);
-		if (input.state) {
-			redirectUrl.searchParams.set("state", input.state);
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+		if (!session?.access_token) {
+			return { error: "Unauthorized" };
 		}
+
+		const response = await fetch(`${apiBaseUrl()}/oauth/authorize/approve`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				Authorization: `Bearer ${session.access_token}`,
+			},
+			body: JSON.stringify({
+				client_id: resolvedClientId,
+				workspace_id: primaryWorkspaceId,
+				primary_workspace_id: primaryWorkspaceId,
+				workspace_ids: selectedWorkspaceIds,
+				scopes,
+				redirect_uri: resolvedRedirectUri,
+				state: input.state,
+				code_challenge: input.code_challenge,
+				code_challenge_method: input.code_challenge_method,
+			}),
+			cache: "no-store",
+		});
+		const payload = await response.json().catch(() => null);
+		if (!response.ok || !payload?.redirect_url) {
+			return {
+				error: String(
+					payload?.error_description ??
+						payload?.message ??
+						"Failed to finalize OAuth authorization"
+				),
+			};
+		}
+
 		return {
 			data: {
-				redirect_url: redirectUrl.toString(),
+				redirect_url: payload.redirect_url,
 			},
 		};
 	} catch (error: any) {
-		console.error("Error approving authorization:", error);
+		console.error("oauth_consent_approve_authorization_failed", {
+			operation: "approveAuthorizationAction",
+			error,
+		});
 		return { error: error.message || "Failed to approve authorization" };
 	}
 }
@@ -284,7 +286,10 @@ export async function denyAuthorizationAction(input: {
 			},
 		};
 	} catch (error: any) {
-		console.error("Error denying authorization:", error);
+		console.error("oauth_consent_deny_authorization_failed", {
+			operation: "denyAuthorizationAction",
+			error,
+		});
 		return { error: error.message || "Failed to deny authorization" };
 	}
 }
@@ -326,7 +331,10 @@ export async function revokeAuthorizationAction(
 
 		return { data: {} };
 	} catch (error: any) {
-		console.error("Error revoking authorization:", error);
+		console.error("oauth_consent_revoke_authorization_failed", {
+			operation: "revokeAuthorizationAction",
+			error,
+		});
 		return { error: error.message || "Failed to revoke authorization" };
 	}
 }

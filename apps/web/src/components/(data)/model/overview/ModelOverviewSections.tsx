@@ -25,18 +25,19 @@ import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks, {
 	hasModelLinks,
 } from "@/components/(data)/model/overview/ModelLinks";
-import { getModelOverviewCached, type ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import {
-	getModelPerformanceActivitySnapshotCached,
-	getModelPerformanceMetricsCached,
-} from "@/lib/fetchers/models/getModelPerformance";
-import { getModelTokenTrajectoryCached } from "@/lib/fetchers/models/getModelTokenTrajectory";
-import { getModelGatewayMetadataCached } from "@/lib/fetchers/models/getModelGatewayMetadata";
-import { getModelBenchmarkHighlights } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
-import { getModelPendingApiReleaseState } from "@/lib/fetchers/models/getModelPendingApiReleaseState";
-import { getModelAppsCached } from "@/lib/fetchers/models/getModelApps";
-import { getOrganisationModelsCached } from "@/lib/fetchers/organisations/getOrganisation";
+	fetchFrontendModelActivitySnapshot,
+	fetchFrontendModelApps,
+	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelGatewayMetadata,
+	fetchFrontendModelOverview,
+	fetchFrontendModelPendingApiReleaseState,
+	fetchFrontendModelPerformance,
+	fetchFrontendModelPricing,
+	fetchFrontendModelTokenTrajectory,
+	fetchFrontendOrganisationModels,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -55,6 +56,7 @@ import {
 } from "@/components/ui/empty";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
+import { formatModelLifecycleDate } from "@/lib/dates/modelLifecycleDates";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 
@@ -136,17 +138,6 @@ function parseTypes(types: unknown): string[] {
 	return [];
 }
 
-function formatDate(dateStr?: string | null): string {
-	if (!dateStr) return "-";
-	const date = new Date(dateStr);
-	if (Number.isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString("en-GB", {
-		day: "2-digit",
-		month: "short",
-		year: "numeric",
-	});
-}
-
 function isProviderModelActiveNow(
 	providerModel: {
 		is_active_gateway: boolean;
@@ -225,11 +216,13 @@ export async function ModelPerformanceSection({
 }: ModelSectionSharedProps & { surface?: ModelSectionSurface }) {
 	const [performanceMetrics, tokenTrajectory, pendingApiRelease] =
 		await Promise.all([
-		getModelPerformanceMetricsCached(modelId, includeHidden, 24).catch(() => null),
+		fetchFrontendModelPerformance(modelId, 24).catch(() => null),
 		surface === "page"
-			? getModelTokenTrajectoryCached(modelId, includeHidden).catch(() => null)
+			? fetchFrontendModelTokenTrajectory(modelId).catch(() => null)
 			: Promise.resolve(null),
-		getModelPendingApiReleaseState(modelId, includeHidden).catch(() => null),
+		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden).catch(
+			() => null,
+		),
 	]);
 	const shouldShowPendingApiBanner =
 		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
@@ -279,10 +272,7 @@ export async function ModelAppsSection({
 	modelId,
 	includeHidden,
 }: ModelSectionSharedProps) {
-	const modelApps = await getModelAppsCached(
-		modelId,
-		includeHidden,
-	).catch(() => []);
+	const modelApps = await fetchFrontendModelApps(modelId).catch(() => []);
 
 	return (
 		<Section id="apps">
@@ -338,10 +328,7 @@ export async function ModelActivitySection({
 	modelId,
 	includeHidden,
 }: ModelSectionSharedProps) {
-	const activitySnapshot = await getModelPerformanceActivitySnapshotCached(
-		modelId,
-		includeHidden,
-	).catch(() => null);
+	const activitySnapshot = await fetchFrontendModelActivitySnapshot(modelId).catch(() => null);
 
 	const usageSummary = activitySnapshot?.summary ?? null;
 	const providerWithTelemetry =
@@ -415,10 +402,7 @@ export async function ModelQuickstartSection({
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
-	const gatewayMetadata = await getModelGatewayMetadataCached(
-		modelId,
-		includeHidden,
-	).catch(() => null);
+	const gatewayMetadata = await fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 
 	const quickstartEndpoint =
 		gatewayMetadata?.activeProviders.find((p) => p.endpoint)?.endpoint ??
@@ -457,6 +441,9 @@ export async function ModelQuickstartSection({
 					acceptedModelIdentifiersByEndpoint={
 						gatewayMetadata.acceptedModelIdentifiersByEndpoint
 					}
+					supportedParametersByEndpoint={
+						gatewayMetadata.supportedParametersByEndpoint
+					}
 					endpoint={quickstartEndpoint}
 					supportedEndpoints={supportedEndpoints}
 					showHeader={surface !== "overview"}
@@ -477,11 +464,10 @@ export async function ModelBenchmarksSection({
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
 	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
-		getModelBenchmarkHighlights(
-			modelId,
-			includeHidden,
-		).catch(() => []),
-		getModelPendingApiReleaseState(modelId, includeHidden).catch(() => null),
+		fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
+		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden).catch(
+			() => null,
+		),
 	]);
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
@@ -530,7 +516,7 @@ export async function ModelLineageSection({
 	includeHidden,
 	model,
 }: ModelSectionSharedProps & { model?: ModelOverviewPage | null }) {
-	const overview = model ?? (await getModelOverviewCached(modelId, includeHidden));
+	const overview = model ?? (await fetchFrontendModelOverview(modelId));
 
 	return (
 		<Section id="family">
@@ -667,7 +653,6 @@ export async function ModelAboutSection({
 				released={model.release_date ?? undefined}
 				deprecated={model.deprecation_date ?? undefined}
 				retired={model.retirement_date ?? undefined}
-				formatDate={formatDate}
 				showHeading={false}
 			/>
 			<OtherInfo details={model.model_details ?? undefined} showHeading={false} />
@@ -694,9 +679,8 @@ export async function ModelCreatorModelsSection({
 	model,
 }: ModelSectionSharedProps & { model: ModelOverviewPage }) {
 	const creatorName = model.organisation?.name ?? "this creator";
-	const creatorModels = await getOrganisationModelsCached(
+	const creatorModels = await fetchFrontendOrganisationModels(
 		model.organisation_id,
-		includeHidden,
 	).catch(() => []);
 	const otherModels = creatorModels
 		.filter((creatorModel) => creatorModel.model_id !== modelId)
@@ -747,7 +731,7 @@ export async function ModelCreatorModelsSection({
 										</div>
 										<div className="mt-3">
 											<p className="text-xs text-muted-foreground">
-												{formatDate(creatorModel.primary_date)}
+												{formatModelLifecycleDate(creatorModel.primary_date)}
 											</p>
 										</div>
 									</Link>
@@ -915,10 +899,7 @@ async function ModelQuickstartOverviewGate({
 }: ModelSectionSharedProps & {
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
-	const providerPricing = await getModelPricingCached(
-		modelId,
-		includeHidden,
-	).catch(() => null);
+	const providerPricing = await fetchFrontendModelPricing(modelId).catch(() => null);
 	const hasApiProviders = (providerPricing ?? []).some(
 		(provider) =>
 			provider.pricing_rules.length > 0 &&

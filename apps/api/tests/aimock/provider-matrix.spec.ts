@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { readSseFrames } from "../helpers/sse";
 import {
     AIMOCK_CHAT_PROVIDERS,
@@ -31,6 +31,12 @@ import {
     startAimock,
     stopAimock,
 } from "./harness";
+
+const saveVideoJobMetaMock = vi.fn(async () => undefined);
+
+vi.mock("@core/video-jobs", () => ({
+    saveVideoJobMeta: (...args: unknown[]) => saveVideoJobMetaMock(...args),
+}));
 
 function assertLastRequestTestId(testId: string) {
     const entry = getAimock().getLastRequest();

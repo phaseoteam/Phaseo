@@ -35,18 +35,10 @@ Use the same `service_tier` field when you call any supported synchronous text A
 - [Responses API reference](../api-reference/endpoint/responses.mdx)
 - [Shared parameter reference](../api-reference/parameters.mdx)
 
-The routing behavior is the same conceptually on each surface: `Standard` is the default, `Priority` and `Flex` are opt-in request modes, and `Batch` uses the Batch API instead of `service_tier`.
+The accepted `service_tier` values are `standard`, `priority`, `flex`, and `batch`. `Standard` is the default behavior when `service_tier` is omitted. `Priority` and `Flex` are opt-in request modes, and `Batch` is handled by the Batch API rather than synchronous text requests.
 
 <Note>
-Anthropic is the main exception to the literal request values. Anthropic's own Messages API documents `service_tier: "auto"` and `service_tier: "standard_only"` rather than `priority` and `flex`.
-
-On AI Stats Gateway, Anthropic-compatible requests still participate in the same high-level tiering model, but upstream Anthropic controls are mapped to Anthropic-native values when the request is sent to Anthropic.
-</Note>
-
-<Note type="warning">
-If you are using an official Anthropic SDK against ` /v1/messages ` with a custom base URL, prefer Anthropic-native values such as `auto` and `standard_only`.
-
-Gateway-normalized values like `priority` and `flex` are safest on raw HTTP requests and on the gateway-native/OpenAI-style surfaces (`/v1/responses` and `/v1/chat/completions`).
+AI Stats maps the normalized gateway values to provider-native controls internally. For example, an Anthropic route may receive Anthropic-native tier fields upstream, but the client-facing request still uses the gateway values listed here.
 </Note>
 
 ## Standard
@@ -81,11 +73,11 @@ Use `Priority` when you want the provider's premium or higher-priority offer.
   "messages": [
     { "role": "user", "content": "Summarise this incident report." }
   ],
-  "service_tier": "auto"
+  "service_tier": "priority"
 }
 ```
 
-This matches Anthropic's documented request shape for Priority Tier eligibility on the Messages API.
+AI Stats maps this to the appropriate provider-native control when routing to Anthropic.
 
 ## Flex
 
@@ -123,21 +115,18 @@ Use `Flex` when the provider exposes a lower-cost service tier and you are willi
 }
 ```
 
-Anthropic SDK users should not assume `flex` is a native Anthropic Messages value. For normalized cross-provider tiering, prefer `/v1/responses` or `/v1/chat/completions`.
-
 ## Batch
 
-`Batch` is not selected with `service_tier`.
+`batch` is a recognized tier value for batch execution, but synchronous text APIs reject `service_tier: "batch"` with a validation error that points to the Batch API.
 
-Use the Batch API or batch job workflow instead, because batch pricing applies to deferred batch execution rather than normal synchronous requests.
+Use the Batch API or batch job workflow because batch pricing applies to deferred batch execution rather than normal synchronous requests.
 
 ## Notes
 
 - Tier support is provider-specific and model-specific.
 - Pricing cards on model pages show the tier-specific rates when we have data for them.
 - Some providers expose specialized upstream offers that AI Stats maps into a unified tiered experience in the catalog.
-- Anthropic's native request values are `auto` and `standard_only`. Other gateway surfaces may use normalized values such as `priority`, `standard`, or `flex`, depending on the API surface and provider routing behavior.
-- Official Anthropic SDKs may enforce Anthropic-native `service_tier` values before the request is sent. Raw HTTP requests to the gateway are more permissive.
+- Client-facing `service_tier` values are normalized across supported text surfaces; provider-native names are handled inside the gateway.
 
 ## Related pages
 

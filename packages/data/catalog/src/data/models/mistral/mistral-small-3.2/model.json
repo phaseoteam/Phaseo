@@ -8,7 +8,7 @@
   "announced_date": "2025-06-20T00:00:00",
   "release_date": "2025-06-20T00:00:00",
   "deprecation_date": "2026-04-30T00:00:00",
-  "retirement_date": null,
+  "retirement_date": "2026-07-31T00:00:00",
   "license": "Apache 2.0",
   "input_types": "text,image",
   "output_types": "text",
@@ -88,7 +88,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot CoT",
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 192
+      "rank": 193
     },
     {
       "benchmark_id": "gpqa-diamond",
@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 133
+      "rank": 139
     },
     {
       "benchmark_id": "humaneval",
@@ -120,7 +120,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "mmlu",
@@ -136,7 +136,7 @@
       "is_self_reported": true,
       "other_info": "5 Shot CoT",
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 113
+      "rank": 116
     },
     {
       "benchmark_id": "mmmu",
@@ -144,7 +144,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 86
+      "rank": 87
     },
     {
       "benchmark_id": "simpleqa",
@@ -152,7 +152,7 @@
       "is_self_reported": true,
       "other_info": "TotalAcc",
       "source_link": "https://huggingface.co/mistralai/Mistral-Small-3.2-24B-Instruct-2506",
-      "rank": 76
+      "rank": 77
     }
   ]
 }

@@ -23,38 +23,46 @@ import {
     Trophy,
 } from "lucide-react";
 import {
-    getRankings,
-    getPerformanceData,
-    getMarketShareTimeseries,
-    getTimeseriesData,
-    getModelNamesByIds,
-    getProviderNamesByIds,
-    getProviderMetaByIds,
-    getModelLeaderboardMetaByIds,
-    getMarketShare,
-    getTopApps,
-    getOrganisationLogoIdsByNames,
-    getAppImageUrlsByIds,
-} from "@/lib/fetchers/rankings/getRankingsData";
+    fetchFrontendAppImageUrls,
+    fetchFrontendMarketShare,
+    fetchFrontendMarketShareTimeseries,
+    fetchFrontendModelNamesByIds,
+    fetchFrontendModelLeaderboardMetaByIds,
+    fetchFrontendModelRankings,
+    fetchFrontendOrganisationLogoIdsByNames,
+    fetchFrontendProviderMetaByIds,
+    fetchFrontendProviderNamesByIds,
+    fetchFrontendRankingPerformance,
+    fetchFrontendRankingsIndexability,
+    fetchFrontendRankingTimeseries,
+    fetchFrontendTopApps,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
-export const metadata: Metadata = buildMetadata({
-	title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
-	description:
-		"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
-	path: "/rankings",
-	keywords: [
-		"AI model rankings",
-		"LLM rankings",
-		"model latency",
-		"model throughput",
-		"AI usage statistics",
-	],
-	openGraph: {
-		title: "AI Model Rankings: Live Usage Statistics",
+export async function generateMetadata(): Promise<Metadata> {
+	const indexability = await fetchFrontendRankingsIndexability();
+
+	return buildMetadata({
+		title: "AI Model Rankings: Usage, Cost, Latency & Throughput",
 		description:
-			"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
-	},
-});
+			"Track live AI model rankings using AI Stats gateway data, with cost, latency, throughput and provider breakdowns.",
+		path: "/rankings",
+		keywords: [
+			"AI model rankings",
+			"LLM rankings",
+			"model latency",
+			"model throughput",
+			"AI usage statistics",
+		],
+		openGraph: {
+			title: "AI Model Rankings: Live Usage Statistics",
+			description:
+				"Compare AI models by usage, cost, latency, and throughput with live gateway data and provider breakdowns.",
+		},
+		robots: indexability.shouldIndex
+			? { index: true, follow: true }
+			: { index: false, follow: true },
+	});
+}
 
 export default async function RankingsPage() {
     return (
@@ -145,7 +153,7 @@ export default async function RankingsPage() {
 // Server components for data fetching
 
 async function PerformanceScatterServer() {
-    const dayRes = await getPerformanceData(24);
+    const dayRes = await fetchFrontendRankingPerformance(24);
     const modelIds = Array.from(
         new Set(dayRes.data.map((row) => row.model_id).filter(Boolean))
     );
@@ -153,9 +161,9 @@ async function PerformanceScatterServer() {
         new Set(dayRes.data.map((row) => row.provider).filter(Boolean))
     );
     const [modelNameMap, modelMetaMap, providerMetaMap] = await Promise.all([
-        getModelNamesByIds(modelIds),
-        getModelLeaderboardMetaByIds(modelIds),
-        getProviderMetaByIds(providerIds),
+        fetchFrontendModelNamesByIds(modelIds),
+        fetchFrontendModelLeaderboardMetaByIds(modelIds),
+        fetchFrontendProviderMetaByIds(providerIds),
     ]);
 
     const dataWithMeta = dayRes.data.map((row) => ({
@@ -182,8 +190,8 @@ async function PerformanceScatterServer() {
 
 async function MarketShareOrganizationServer() {
     const [timeseriesResult, leaderboardResult] = await Promise.all([
-        getMarketShareTimeseries("organization", "year", "week", 8),
-        getMarketShare("organization", "year"),
+        fetchFrontendMarketShareTimeseries("organization", "year", "week", 8),
+        fetchFrontendMarketShare("organization", "year"),
     ]);
 
     const organisationNames = Array.from(
@@ -193,7 +201,7 @@ async function MarketShareOrganizationServer() {
                 .filter((name) => name && name.toLowerCase() !== "unknown")
         )
     );
-    const logoMap = await getOrganisationLogoIdsByNames(organisationNames);
+    const logoMap = await fetchFrontendOrganisationLogoIdsByNames(organisationNames);
 
     const chartData = (timeseriesResult.data ?? []).filter(
         (row) => row.name && row.name.toLowerCase() !== "unknown"
@@ -240,8 +248,8 @@ async function MarketShareOrganizationServer() {
 
 async function MarketShareProviderServer() {
     const [timeseriesResult, leaderboardResult] = await Promise.all([
-        getMarketShareTimeseries("provider", "year", "week", 8),
-        getMarketShare("provider", "year"),
+        fetchFrontendMarketShareTimeseries("provider", "year", "week", 8),
+        fetchFrontendMarketShare("provider", "year"),
     ]);
 
     const providerIds = Array.from(
@@ -256,7 +264,7 @@ async function MarketShareProviderServer() {
                 )
         )
     );
-    const providerNameMap = await getProviderNamesByIds(providerIds);
+    const providerNameMap = await fetchFrontendProviderNamesByIds(providerIds);
 
     const chartData = (timeseriesResult.data ?? [])
         .filter((row) => row.name && row.name.toLowerCase() !== "unknown")
@@ -309,7 +317,7 @@ async function MarketShareProviderServer() {
 }
 
 async function UsageStackedBarServer() {
-    const result = await getTimeseriesData("year", "week", 8);
+    const result = await fetchFrontendRankingTimeseries("year", "week", 8);
     console.log("[UsageStackedBarServer] Data received:", {
         count: result.data.length,
         sample: result.data.slice(0, 3),
@@ -321,15 +329,15 @@ async function UsageStackedBarServer() {
                 .filter((id) => id && id.toLowerCase() !== "other" && id.toLowerCase() !== "unknown")
         )
     );
-    const nameMap = await getModelNamesByIds(modelIds);
+    const nameMap = await fetchFrontendModelNamesByIds(modelIds);
     return <UsageStackedBar data={result.data} metric="tokens" nameMap={nameMap} />;
 }
 
 async function ModelLeaderboardServer() {
     const [weekRes, todayRes, monthRes] = await Promise.all([
-        getRankings("week", "tokens", 200),
-        getRankings("today", "tokens", 50),
-        getRankings("month", "tokens", 50),
+        fetchFrontendModelRankings("week", "tokens", 200),
+        fetchFrontendModelRankings("today", "tokens", 50),
+        fetchFrontendModelRankings("month", "tokens", 50),
     ]);
 
     const filterRankings = (rows: typeof weekRes.rankings) =>
@@ -353,7 +361,7 @@ async function ModelLeaderboardServer() {
         )
     );
 
-    const metaMap = await getModelLeaderboardMetaByIds(allModelIds);
+    const metaMap = await fetchFrontendModelLeaderboardMetaByIds(allModelIds);
 
     const buildEntries = (rows: typeof weekRes.rankings) =>
         rows.map((row) => {
@@ -423,7 +431,7 @@ async function ModelLeaderboardServer() {
 }
 
 async function PerformanceLeaderboardServer() {
-    const perfRes = await getPerformanceData(24);
+    const perfRes = await fetchFrontendRankingPerformance(24);
     const filtered = perfRes.data.filter((row) => {
         const throughput = Number(row.median_throughput ?? 0);
         return (
@@ -440,9 +448,9 @@ async function PerformanceLeaderboardServer() {
         new Set(filtered.map((row) => row.provider).filter(Boolean))
     );
     const [modelNameMap, modelMetaMap, providerMetaMap] = await Promise.all([
-        getModelNamesByIds(modelIds),
-        getModelLeaderboardMetaByIds(modelIds),
-        getProviderMetaByIds(providerIds),
+        fetchFrontendModelNamesByIds(modelIds),
+        fetchFrontendModelLeaderboardMetaByIds(modelIds),
+        fetchFrontendProviderMetaByIds(providerIds),
     ]);
 
     const entries = filtered
@@ -463,9 +471,9 @@ async function PerformanceLeaderboardServer() {
 
 async function AppsUsageServer() {
     const [weekRes, todayRes, monthRes] = await Promise.all([
-        getTopApps("week", 200),
-        getTopApps("today", 100),
-        getTopApps("month", 200),
+        fetchFrontendTopApps("week", 200),
+        fetchFrontendTopApps("today", 100),
+        fetchFrontendTopApps("month", 200),
     ]);
 
     const normalize = (rows: typeof weekRes.data) =>
@@ -485,7 +493,7 @@ async function AppsUsageServer() {
                 .filter(Boolean)
         )
     );
-    const appImages = await getAppImageUrlsByIds(appIds);
+    const appImages = await fetchFrontendAppImageUrls(appIds);
     const withImages = (rows: typeof weekApps) =>
         rows.map((row) => ({
             ...row,

@@ -150,15 +150,19 @@ export default function UsageLogsToolbar({
 	preset,
 	customFrom,
 	customTo,
+	showRefresh = true,
+	showLivePreset = true,
 }: {
 	view: UsageLogsViewKey;
 	preset: UsageRangePreset;
 	customFrom?: string | null;
 	customTo?: string | null;
+	showRefresh?: boolean;
+	showLivePreset?: boolean;
 }) {
 	const router = useRouter();
-	const pathname = usePathname();
-	const searchParams = useSearchParams();
+	const pathname = usePathname() ?? "/settings/usage/logs";
+	const searchParams = useSearchParams() ?? new URLSearchParams();
 	const [isRefreshing, startRefreshing] = React.useTransition();
 	const [isRevalidating, setIsRevalidating] = React.useState(false);
 	const [pendingTargetQuery, setPendingTargetQuery] = React.useState<string | null>(
@@ -368,6 +372,7 @@ export default function UsageLogsToolbar({
 	}, [runRefresh]);
 
 	React.useEffect(() => {
+		if (!showLivePreset) return;
 		if (effectivePreset !== "live") return;
 		const interval = window.setInterval(() => {
 			setSecondsUntilRefresh((current) => {
@@ -382,7 +387,7 @@ export default function UsageLogsToolbar({
 			});
 		}, 1_000);
 		return () => window.clearInterval(interval);
-	}, [effectivePreset, isRefreshing, isRevalidating, runRefresh]);
+	}, [effectivePreset, isRefreshing, isRevalidating, runRefresh, showLivePreset]);
 
 	const rollingOptions: Array<{ preset: UsageRangePreset; badge: string }> = [
 		{ preset: "past_15m", badge: "15m" },
@@ -409,21 +414,23 @@ export default function UsageLogsToolbar({
 	return (
 		<div className="flex flex-wrap items-center justify-end gap-1.5">
 			<div className="flex items-center justify-end gap-1.5">
-				<Button
-					type="button"
-					variant="outline"
-					size="icon"
-					onClick={() => void handleRefresh()}
-					disabled={isRefreshing || isRevalidating || isPending}
-					aria-label="Refresh current view"
-				>
-					<RefreshCw
-						className={cn(
-							"h-3 w-3",
-							(isRefreshing || isRevalidating || isPending) && "animate-spin",
-						)}
-					/>
-				</Button>
+				{showRefresh ? (
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						onClick={() => void handleRefresh()}
+						disabled={isRefreshing || isRevalidating || isPending}
+						aria-label="Refresh current view"
+					>
+						<RefreshCw
+							className={cn(
+								"h-3 w-3",
+								(isRefreshing || isRevalidating || isPending) && "animate-spin",
+							)}
+						/>
+					</Button>
+				) : null}
 
 				<Popover
 					open={popoverOpen}
@@ -482,10 +489,10 @@ export default function UsageLogsToolbar({
 										rangeInputRef.current?.blur();
 									}
 								}}
-								aria-label="Usage log time range"
+								aria-label="Usage time range"
 								placeholder="YYYY-MM-DD HH:mm -> YYYY-MM-DD HH:mm"
 								className={cn(
-									"h-9 rounded-full border-zinc-200 bg-white pl-9 pr-10 text-[13px] font-medium shadow-none",
+									"h-9 rounded-xl border-zinc-200 bg-white pl-9 pr-10 text-[13px] font-medium shadow-none",
 									effectivePreset === "live" &&
 										"border-emerald-300 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50/60",
 								)}
@@ -496,7 +503,7 @@ export default function UsageLogsToolbar({
 										type="button"
 										variant="ghost"
 										size="icon"
-										className="h-7 w-7 rounded-full text-muted-foreground"
+										className="h-7 w-7 rounded-lg text-muted-foreground"
 										aria-label="Open range presets"
 										onMouseDown={(event) => event.preventDefault()}
 									>
@@ -608,13 +615,15 @@ export default function UsageLogsToolbar({
 										onClick={() => setShowCustomRange(true)}
 									/>
 
-									<RangeOptionButton
-										badge="live"
-										label="Live"
-										live
-										active={effectivePreset === "live"}
-										onClick={() => selectPreset("live")}
-									/>
+									{showLivePreset ? (
+										<RangeOptionButton
+											badge="live"
+											label="Live"
+											live
+											active={effectivePreset === "live"}
+											onClick={() => selectPreset("live")}
+										/>
+									) : null}
 								</div>
 							</div>
 						)}

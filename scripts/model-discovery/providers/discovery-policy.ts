@@ -131,9 +131,8 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformId: "cloudflare",
         platformName: "Cloudflare",
         providerIds: ["cloudflare"],
-        modelsEndpoint: null,
-        active: false,
-        reason: "No API models endpoint mapped yet.",
+        modelsEndpoint: "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/models/search",
+        active: true,
     },
     {
         platformId: "cohere",
@@ -170,6 +169,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformName: "DeepSeek",
         providerIds: ["deepseek"],
         modelsEndpoint: "https://api.deepseek.com/models",
+        active: true,
+    },
+    {
+        platformId: "digitalocean",
+        platformName: "DigitalOcean",
+        providerIds: ["digitalocean"],
+        modelsEndpoint: "https://inference.do-ai.run/v1/models",
         active: true,
     },
     {
@@ -405,7 +411,7 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformId: "together",
         platformName: "Together",
         providerIds: ["together"],
-        modelsEndpoint: "https://api.together.xyz/v1/models",
+        modelsEndpoint: "https://api.together.ai/v1/models",
         active: true,
     },
     {

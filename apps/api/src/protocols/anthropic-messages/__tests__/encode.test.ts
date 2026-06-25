@@ -254,6 +254,13 @@ describe("encodeAnthropicMessagesResponse", () => {
 				_ext: {
 					serverToolUse: {
 						datetime_requests: 1,
+						web_search_requests: 2,
+						web_search_results: 14,
+						web_search_extra_results: 4,
+						web_fetch_requests: 1,
+						advisor_requests: 1,
+						image_generation_requests: 1,
+						apply_patch_requests: 1,
 					},
 				},
 			},
@@ -262,6 +269,13 @@ describe("encodeAnthropicMessagesResponse", () => {
 		const response = encodeAnthropicMessagesResponse(ir);
 		expect(response.usage.server_tool_use).toEqual({
 			datetime_requests: 1,
+			web_search_requests: 2,
+			web_search_results: 14,
+			web_search_extra_results: 4,
+			web_fetch_requests: 1,
+			advisor_requests: 1,
+			image_generation_requests: 1,
+			apply_patch_requests: 1,
 		});
 	});
 
@@ -359,14 +373,14 @@ describe("encodeAnthropicMessagesResponse", () => {
 
 		expect(response.content).toHaveLength(2);
 		expect(response.content[0]).toEqual({
-			type: "text",
-			text: "Final answer",
-			citations: null,
-		});
-		expect(response.content[1]).toEqual({
 			type: "thinking",
 			thinking: "Thinking...",
 			signature: "",
+		});
+		expect(response.content[1]).toEqual({
+			type: "text",
+			text: "Final answer",
+			citations: null,
 		});
 	});
 
@@ -586,6 +600,59 @@ describe("encodeAnthropicMessagesResponse", () => {
 				url: "https://example.com/generated.png",
 			},
 		});
+	});
+
+	it("should preserve Anthropic advisor provider blocks", () => {
+		const ir: IRChatResponse = {
+			id: "req-advisor",
+			nativeId: "msg_advisor",
+			model: "claude-sonnet-4.6",
+			choices: [
+				{
+					index: 0,
+					message: {
+						role: "assistant",
+						content: [
+							{
+								type: "provider_block",
+								block: {
+									type: "server_tool_use",
+									id: "srvu_123",
+									name: "advisor",
+									input: {},
+								},
+							},
+							{
+								type: "provider_block",
+								block: {
+									type: "advisor_tool_result",
+									tool_use_id: "srvu_123",
+									content: [{ type: "text", text: "Use the smaller patch." }],
+								},
+							},
+							{ type: "text", text: "Done." },
+						],
+					},
+					finishReason: "stop",
+				},
+			],
+		};
+
+		const response = encodeAnthropicMessagesResponse(ir);
+		expect(response.content).toEqual([
+			{
+				type: "server_tool_use",
+				id: "srvu_123",
+				name: "advisor",
+				input: {},
+			},
+			{
+				type: "advisor_tool_result",
+				tool_use_id: "srvu_123",
+				content: [{ type: "text", text: "Use the smaller patch." }],
+			},
+			{ type: "text", text: "Done.", citations: null },
+		]);
 	});
 });
 

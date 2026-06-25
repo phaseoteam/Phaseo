@@ -1,23 +1,57 @@
 import fs from "node:fs";
 import path from "node:path";
 
-function resolveDataRoot(): string {
-	const cwd = /* turbopackIgnore: true */ process.cwd();
-	const candidates = [
-		path.join(cwd, "..", "..", "packages", "data", "catalog", "src", "data"),
-		path.join(cwd, "packages", "data", "catalog", "src", "data"),
-		path.join(cwd, "src", "data"),
-		path.join(cwd, "apps", "web", "src", "data"),
-	];
-	for (const candidate of candidates) {
-		if (fs.existsSync(candidate)) return candidate;
+function resolveRepoRoot(): string {
+	const configured = process.env.REPO_ROOT?.trim();
+	if (configured) {
+		const repoRoot = path.resolve(configured);
+		const packageJsonPath = path.join(repoRoot, "package.json");
+		const pnpmWorkspacePath = path.join(repoRoot, "pnpm-workspace.yaml");
+		if (!fs.existsSync(packageJsonPath) || !fs.existsSync(pnpmWorkspacePath)) {
+			throw new Error(
+				`Invalid REPO_ROOT: ${repoRoot}. Expected workspace markers package.json and pnpm-workspace.yaml.`,
+			);
+		}
+		return repoRoot;
 	}
-	return candidates[0];
+
+	let current = process.cwd();
+	while (true) {
+		const packageJsonPath = path.join(current, "package.json");
+		const pnpmWorkspacePath = path.join(current, "pnpm-workspace.yaml");
+		if (fs.existsSync(packageJsonPath) && fs.existsSync(pnpmWorkspacePath)) {
+			return current;
+		}
+
+		const parent = path.dirname(current);
+		if (parent === current) break;
+		current = parent;
+	}
+
+	throw new Error(
+		"Unable to resolve repository root for apiModelConflicts.ts. Missing workspace markers package.json and pnpm-workspace.yaml.",
+	);
 }
 
-const DATA_ROOT = resolveDataRoot();
-const API_PROVIDERS_ROOT = path.join(DATA_ROOT, "api_providers");
-const PRICING_ROOT = path.join(DATA_ROOT, "pricing");
+const REPO_ROOT = resolveRepoRoot();
+const API_PROVIDERS_ROOT = path.join(
+	REPO_ROOT,
+	"packages",
+	"data",
+	"catalog",
+	"src",
+	"data",
+	"api_providers",
+);
+const PRICING_ROOT = path.join(
+	REPO_ROOT,
+	"packages",
+	"data",
+	"catalog",
+	"src",
+	"data",
+	"pricing",
+);
 
 const MODEL_ALIAS_STOPWORDS = new Set([
 	"instruct",

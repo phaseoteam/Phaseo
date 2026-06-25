@@ -11,18 +11,31 @@ import { deriveCachePricingContext } from "../pricing/cache-context";
 import { getBaseModel } from "../execute/utils";
 import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 
-function normalizeRequestedServiceTier(body: any, usage: any): string {
-    const tierRaw =
-        (typeof body?.service_tier === "string" ? body.service_tier : undefined) ??
-        (typeof body?.serviceTier === "string" ? body.serviceTier : undefined) ??
-        (typeof usage?.service_tier === "string" ? usage.service_tier : undefined) ??
-        (typeof usage?.serviceTier === "string" ? usage.serviceTier : undefined);
-    return typeof tierRaw === "string" ? tierRaw.trim().toLowerCase() : "";
+function normalizeObservedServiceTier(usage: any): string {
+    const observedValues = [usage?.service_tier, usage?.serviceTier];
+    for (const value of observedValues) {
+        if (typeof value !== "string") continue;
+        const raw = value.trim().toLowerCase();
+        if (!raw) continue;
+        if (raw === "default") return "standard";
+        const normalized = normalizeTextServiceTier(raw);
+        if (normalized) return normalized;
+    }
+    return "";
+}
+
+function normalizeRequestedServiceTier(body: any): string {
+    return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
+}
+
+function resolvePricingServiceTier(body: any, usage: any): string {
+    return normalizeObservedServiceTier(usage) || normalizeRequestedServiceTier(body);
 }
 
 function derivePricingPlan(body: any, usage: any): string {
-    const tier = normalizeRequestedServiceTier(body, usage);
+    const tier = resolvePricingServiceTier(body, usage);
 
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
@@ -38,7 +51,7 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         pricing_plan: pricingPlan,
     };
 
-    const serviceTier = normalizeRequestedServiceTier(body, usage);
+    const serviceTier = resolvePricingServiceTier(body, usage);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;
@@ -64,16 +77,19 @@ export async function loadProviderPricing(
                     : result.provider;
 
         let card = ctx.pricing?.[pricingKey] ?? null;
+        if (!card && pricingKey !== result.provider && apiModelId) {
+            card = await loadPriceCard(
+                result.provider,
+                apiModelId,
+                ctx.capability,
+            );
+        }
         if (!card && pricingKey !== result.provider) {
             card = ctx.pricing?.[result.provider] ?? null;
         }
 
         if (!card) {
-            card = await loadPriceCard(
-                result.provider,
-                apiModelId ?? getBaseModel(ctx.model),
-                ctx.capability,
-            );
+            card = await loadPriceCard(result.provider, getBaseModel(ctx.model), ctx.capability);
         }
 
         return card;

@@ -36,7 +36,7 @@ const suggestions = [
 		icon: BookOpen,
 	},
 	{
-		href: "/providers",
+		href: "/api-providers",
 		label: "Explore providers",
 		description:
 			"Browse supported providers and see where coverage is available today.",

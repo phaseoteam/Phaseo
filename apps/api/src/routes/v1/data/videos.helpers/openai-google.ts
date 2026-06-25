@@ -139,7 +139,8 @@ export async function proxyOpenAIVideoRequest(
 ) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const config = resolveOpenAICompatConfig(providerId);
-	let key = bindings[config.apiKeyEnv ?? "OPENAI_API_KEY"];
+	const envKeys = Array.isArray(config.apiKeyEnv) ? config.apiKeyEnv : [config.apiKeyEnv ?? "OPENAI_API_KEY"];
+	let key = envKeys.map((envKey) => bindings[envKey]).find((value) => typeof value === "string" && value.length > 0);
 	const videoMeta = options?.videoMeta;
 	if (videoMeta?.keySource === "byok" && videoMeta.byokKeyId) {
 		const byok = await loadByokKey({
@@ -224,6 +225,18 @@ export async function fetchOpenAIVideoStatus(
 	videoMeta: VideoJobMeta | null,
 ): Promise<Response> {
 	return proxyOpenAIVideoRequest(req, auth, providerId, `/videos/${encodeURIComponent(id)}`, "GET", {
+		videoMeta,
+	});
+}
+
+export async function cancelOpenAIVideo(
+	req: Request,
+	auth: VideoRouteAuth,
+	providerId: string,
+	id: string,
+	videoMeta: VideoJobMeta | null,
+): Promise<Response> {
+	return proxyOpenAIVideoRequest(req, auth, providerId, `/videos/${encodeURIComponent(id)}/cancel`, "POST", {
 		videoMeta,
 	});
 }

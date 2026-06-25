@@ -4,6 +4,7 @@
 // How: Captures routing snapshots for analytics and debugging.
 
 import type { Endpoint } from "@core/types";
+import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import type {
     CapabilityRoutingStatus,
     ProviderCandidate,
@@ -11,6 +12,13 @@ import type {
     RoutingStatus,
 } from "../before/types";
 import type { PriceCard } from "../pricing/types";
+import { providerSupportsParam } from "../before/paramCapabilities";
+import {
+    isTierDedicatedOffer,
+    isTierSiblingModel,
+    normalizeRequestedPlan,
+    supportsRequestedTier,
+} from "../before/serviceTierRouting";
 import {
     normalizeCapabilityStatus as normalizeSharedCapabilityStatus,
     normalizeProviderStatus as normalizeSharedProviderStatus,
@@ -289,7 +297,9 @@ function shouldApplyStickyRoutingBoost(
     }
 
     const meterPrices = extractMeterPrices(candidate.pricingCard ?? null);
-    const cachedReadPrice = meterPrices.get("cached_read_text_tokens");
+    const cachedReadPrice =
+        meterPrices.get("implicit_cached_input_text_tokens") ??
+        meterPrices.get("cached_read_text_tokens");
     const inputPrice = meterPrices.get("input_text_tokens");
 
     // If both prices are present, only boost when cache reads are cheaper than standard input.
@@ -308,7 +318,7 @@ export type RoutedCandidate = {
 };
 
 export type RoutingFilterStageDiagnostics = {
-    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "offer_scope_gate" | "residency_gate" | "health_breaker";
+    stage: "hints.only" | "hints.ignore" | "status_gate" | "provider_routing_status_gate" | "model_routing_status_gate" | "capability_status_gate" | "service_tier_support_gate" | "offer_scope_gate" | "residency_gate" | "health_breaker";
     beforeCount: number;
     afterCount: number;
     droppedProviders: Array<{
@@ -409,10 +419,24 @@ function hasGlobalOfferSibling(
 }
 
 function normalizeRequestedServiceTier(body: any): string | null {
-	const speed = String(body?.speed ?? "").trim().toLowerCase();
-	if (speed === "fast") return "priority";
-	const tier = String(body?.service_tier ?? body?.serviceTier ?? "").trim().toLowerCase();
-	return tier || null;
+	return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
+}
+
+function candidateSupportsRequestedServiceTier(
+    candidate: ProviderCandidate,
+    requestedTier: string | null,
+): boolean {
+    const requestedPlan = normalizeRequestedPlan(requestedTier);
+    if (!requestedPlan) return true;
+    if (!supportsRequestedTier(candidate, requestedPlan)) return false;
+    if (requestedPlan === "standard") return true;
+    if (providerSupportsParam(candidate, "service_tier", { assumeSupportedOnMissingConfig: false })) {
+        return true;
+    }
+    return (
+        isTierDedicatedOffer(candidate, requestedPlan) ||
+        isTierSiblingModel(candidate, requestedPlan)
+    );
 }
 
 function hasSpecializedTierSibling(args: {
@@ -751,6 +775,17 @@ export async function routeProviders(
         return "capability_status_" + capabilityStatus;
     });
 
+    const beforeServiceTierSupportGate = poolCandidates;
+    if (requestedServiceTier) {
+        poolCandidates = poolCandidates.filter((candidate) =>
+            testingMode ||
+            candidateSupportsRequestedServiceTier(candidate, requestedServiceTier)
+        );
+        pushStage("service_tier_support_gate", beforeServiceTierSupportGate, poolCandidates, (candidate) =>
+            `service_tier_${requestedServiceTier}_unsupported`
+        );
+    }
+
     const beforeOfferScopeGate = poolCandidates;
     poolCandidates = poolCandidates.filter((candidate) => {
         if (testingMode) return true;
@@ -1045,4 +1080,3 @@ export async function routeProviders(
         diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(routableScored)),
     };
 }
-

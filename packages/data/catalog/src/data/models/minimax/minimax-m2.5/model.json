@@ -40,7 +40,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m25",
-      "rank": 16
+      "rank": 17
     },
     {
       "benchmark_id": "gdpval-mm",
@@ -72,7 +72,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m25",
-      "rank": 13
+      "rank": 19
     },
     {
       "benchmark_id": "swe-bench",
@@ -80,7 +80,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.minimax.io/news/minimax-m25",
-      "rank": 7
+      "rank": 10
     },
     {
       "benchmark_id": "vibe-pro",
@@ -96,7 +96,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 62
+      "rank": 61
     }
   ]
 }

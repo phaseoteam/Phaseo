@@ -2,7 +2,7 @@
   "model_id": "xiaomi/mimo-v2-omni",
   "organisation_id": "xiaomi",
   "name": "MiMo V2 Omni",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "MiMo V2 Omni is Xiaomi's legacy omni-modal model that natively processes image, video, and audio inputs within a unified architecture. Xiaomi has marked the alias deprecated and states it will route to MiMo V2.5 pricing and behavior starting June 1, 2026.",
   "announced_date": "2026-03-18T00:00:00",
@@ -31,7 +31,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
-      "rank": 5
+      "rank": 12
     },
     {
       "benchmark_id": "gdpval-aa",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
-      "rank": 13
+      "rank": 18
     },
     {
       "benchmark_id": "mm-browsercomp",
@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/mimo-v2-omni",
-      "rank": 26
+      "rank": 30
     }
   ]
 }

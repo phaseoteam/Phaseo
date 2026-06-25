@@ -1,15 +1,14 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
-import { getAllModelsCached } from "@/lib/fetchers/models/getAllModels";
-import { getAllAPIProvidersCached } from "@/lib/fetchers/api-providers/getAllAPIProviders";
-import { getWorkspaceIdFromCookie } from "@/utils/workspaceCookie";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import PresetForm from "@/components/(gateway)/settings/presets/PresetForm";
-import { resolveIncludeHidden } from "@/lib/fetchers/models/visibility";
+import {
+	fetchFrontendAPIProviders,
+	fetchFrontendModels,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchSettingsPresetsInitialData } from "@/lib/fetchers/internal/fetchSettingsPresetsInitialData";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 
 export const metadata = {
@@ -59,25 +58,18 @@ export default function NewPresetPage() {
 }
 
 async function NewPresetContent() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
-	const initialTeamId = await getWorkspaceIdFromCookie();
-
-	const [models, providers] = await Promise.all([
-		getAllModelsCached(await resolveIncludeHidden()),
-		getAllAPIProvidersCached(),
+	const [initialData, models, providers] = await Promise.all([
+		fetchSettingsPresetsInitialData(),
+		fetchFrontendModels(),
+		fetchFrontendAPIProviders(),
 	]);
 
 	return (
 		<PresetForm
 			models={models}
 			providers={providers}
-			currentUserId={user?.id}
-			currentTeamId={initialTeamId}
+			currentUserId={initialData.currentUserId}
+			currentTeamId={initialData.initialTeamId}
 		/>
 	);
 }

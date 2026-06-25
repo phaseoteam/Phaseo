@@ -1,6 +1,8 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { createClient } from "@/utils/supabase/client";
+import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { normalizeQuantizationScheme } from "@/lib/quantization";
+import { extractSupportedParameters } from "@/lib/fetchers/models/table-view/helpers";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface GatewayProviderDetails {
     api_provider_id: string;
@@ -92,6 +94,18 @@ export interface GatewayProviderModel {
 	provider?: GatewayProviderDetails | null;
 }
 
+export interface GatewaySupportedParameter {
+	param_id: string;
+	provider_count_supported: number;
+	provider_count_total: number;
+	support_level: "all_providers" | "some_providers";
+	providers: Array<{
+		api_provider_id: string;
+		api_provider_name: string;
+		supported: boolean;
+	}>;
+}
+
 export interface ModelGatewayMetadata {
     modelId: string;
     aliases: string[];
@@ -100,6 +114,7 @@ export interface ModelGatewayMetadata {
     acceptedModelIdentifiers: string[];
     primaryModelIdentifierByEndpoint: Record<string, string>;
     acceptedModelIdentifiersByEndpoint: Record<string, string[]>;
+	supportedParametersByEndpoint: Record<string, GatewaySupportedParameter[]>;
     providers: GatewayProviderModel[];
     activeProviders: GatewayProviderModel[];
     comingSoonProviders: GatewayProviderModel[];
@@ -112,6 +127,13 @@ const normalizeIdentifier = (value: string | null | undefined): string | null =>
     const normalized = value?.trim();
     return normalized ? normalized : null;
 };
+
+const normalizeQuickstartEndpointValue = (value: string | null | undefined): string =>
+	String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/^\//, "")
+		.replace(/\//g, ".");
 
 const dedupeIdentifiers = (values: Array<string | null | undefined>): string[] =>
     Array.from(
@@ -269,7 +291,7 @@ export default async function getModelGatewayMetadata(
     modelId: string,
     includeHidden: boolean
 ): Promise<ModelGatewayMetadata> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: modelRow, error: modelError } = await supabase
         .from("data_models")
@@ -456,6 +478,19 @@ export default async function getModelGatewayMetadata(
 	}
 
 	const providers: GatewayProviderModel[] = [];
+	const parameterSupportByEndpoint = new Map<
+		string,
+		{
+			providers: Map<
+				string,
+				{
+					api_provider_id: string;
+					api_provider_name: string;
+				}
+			>;
+			parameters: Map<string, Set<string>>;
+		}
+	>();
 	const now = new Date();
 	for (const cap of caps ?? []) {
 		const pm = providerModelMap.get(cap.provider_api_model_id);
@@ -467,6 +502,51 @@ export default async function getModelGatewayMetadata(
 		);
 		const modelRoutingStatus = normalizeStatusValue(pm.routing_status ?? null);
 		const capabilityStatus = normalizeStatusValue(cap.status ?? null);
+		const availabilityStatus = resolveAvailabilityStatus({
+			isActiveGateway: Boolean(pm.is_active_gateway),
+			providerStatus,
+			providerRoutingStatus,
+			modelRoutingStatus,
+			capabilityStatus,
+			effectiveFrom: pm.effective_from,
+			effectiveTo: pm.effective_to,
+			now,
+		});
+
+		if (availabilityStatus === "active" && pm.provider_api_model_id) {
+			const providerId = String(providerDetails?.api_provider_id ?? pm.provider_id);
+			const providerName = String(
+				providerDetails?.api_provider_name ?? providerId
+			);
+			const routeKeys =
+				capabilityToEndpoints[String(cap.capability_id)]?.map((endpointPath) =>
+					normalizeQuickstartEndpointValue(endpointPath),
+				) ?? [normalizeQuickstartEndpointValue(String(cap.capability_id))];
+
+			for (const endpointKey of routeKeys.filter(Boolean)) {
+				const endpointBucket =
+					parameterSupportByEndpoint.get(endpointKey) ??
+					{
+						providers: new Map(),
+						parameters: new Map<string, Set<string>>(),
+					};
+
+				endpointBucket.providers.set(providerId, {
+					api_provider_id: providerId,
+					api_provider_name: providerName,
+				});
+
+				for (const paramId of extractSupportedParameters(cap.params)) {
+					const supportedProviders =
+						endpointBucket.parameters.get(paramId) ?? new Set<string>();
+					supportedProviders.add(providerId);
+					endpointBucket.parameters.set(paramId, supportedProviders);
+				}
+
+				parameterSupportByEndpoint.set(endpointKey, endpointBucket);
+			}
+		}
+
 		providers.push({
 			id: pm.provider_api_model_id,
 			api_provider_id: pm.provider_id,
@@ -478,16 +558,7 @@ export default async function getModelGatewayMetadata(
 			model_id: pm.api_model_id,
 			endpoint: cap.capability_id,
 			is_active_gateway: pm.is_active_gateway,
-			availability_status: resolveAvailabilityStatus({
-				isActiveGateway: Boolean(pm.is_active_gateway),
-				providerStatus,
-				providerRoutingStatus,
-				modelRoutingStatus,
-				capabilityStatus,
-				effectiveFrom: pm.effective_from,
-				effectiveTo: pm.effective_to,
-				now,
-			}),
+			availability_status: availabilityStatus,
 			availability_reason: resolveAvailabilityReason({
 				isActiveGateway: Boolean(pm.is_active_gateway),
 				providerStatus,
@@ -517,6 +588,52 @@ export default async function getModelGatewayMetadata(
             provider: providerDetails,
         });
     }
+
+	const supportedParametersByEndpoint = Object.fromEntries(
+		Array.from(parameterSupportByEndpoint.entries()).map(
+			([endpoint, { providers, parameters }]) => {
+				const orderedProviders = Array.from(providers.values()).sort((a, b) =>
+					a.api_provider_name.localeCompare(b.api_provider_name),
+				);
+				const providerCountTotal = orderedProviders.length;
+				const rows = Array.from(parameters.entries())
+					.map(([paramId, supportedProviders]) => {
+						const providerRows = orderedProviders
+							.map((provider) => ({
+								...provider,
+								supported: supportedProviders.has(provider.api_provider_id),
+							}))
+							.sort((a, b) => {
+								if (a.supported !== b.supported) {
+									return a.supported ? -1 : 1;
+								}
+								return a.api_provider_name.localeCompare(
+									b.api_provider_name,
+								);
+							});
+
+						return {
+							param_id: paramId,
+							provider_count_supported: supportedProviders.size,
+							provider_count_total: providerCountTotal,
+							support_level:
+								supportedProviders.size === providerCountTotal
+									? ("all_providers" as const)
+									: ("some_providers" as const),
+							providers: providerRows,
+						};
+					})
+					.sort((a, b) => {
+						if (a.provider_count_supported !== b.provider_count_supported) {
+							return b.provider_count_supported - a.provider_count_supported;
+						}
+						return a.param_id.localeCompare(b.param_id);
+					});
+
+				return [endpoint, rows];
+			},
+		),
+	);
 
     // console.log("[fetch] Fetching aliases for model", modelId);
 
@@ -634,6 +751,7 @@ export default async function getModelGatewayMetadata(
         acceptedModelIdentifiers: normalizedAcceptedModelIdentifiers,
         primaryModelIdentifierByEndpoint,
         acceptedModelIdentifiersByEndpoint,
+		supportedParametersByEndpoint,
         providers,
         activeProviders,
         comingSoonProviders,
@@ -655,11 +773,13 @@ export async function getModelGatewayMetadataCached(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:models");
     cacheTag(`data:models:${modelId}`);
     cacheTag(`model:api:${modelId}`);
     cacheTag("data:data_api_provider_models");
     cacheTag("data:model_aliases");
+    cacheTag("frontend:model-gateway-metadata");
 
     console.log("[fetch] HIT DB for model gateway metadata", modelId);
     return getModelGatewayMetadata(modelId, includeHidden);

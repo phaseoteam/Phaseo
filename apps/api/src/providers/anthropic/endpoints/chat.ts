@@ -10,6 +10,7 @@ import { getBindings } from "@/runtime/env";
 import { computeBill } from "@pipeline/pricing/engine";
 import { resolveProviderKey, type ResolvedKey } from "../../keys";
 import { upstreamTestHeaders } from "../../shared/testing";
+import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 
 const BASE_URL = "https://api.anthropic.com";
 
@@ -92,10 +93,10 @@ export function mapAnthropicToGatewayChat(json: any, requestId?: string): any {
             finish_reason,
             reasoning: false, // Anthropic doesn't separate reasoning
         }],
-        usage: {
-            input_text_tokens: json.usage?.input_tokens || 0,
-            output_text_tokens: json.usage?.output_tokens || 0,
-            total_tokens: (json.usage?.input_tokens || 0) + (json.usage?.output_tokens || 0),
+        usage: normalizeTextUsageForPricing(json.usage) ?? {
+            input_tokens: 0,
+            output_tokens: 0,
+            total_tokens: 0,
         },
     };
 }

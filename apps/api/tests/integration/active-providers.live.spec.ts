@@ -635,7 +635,7 @@ async function fetchTextGenerateModelsByProvider(targetProviders: string[]): Pro
     let total = Number.POSITIVE_INFINITY;
 
     while (offset < total && unresolved.size > 0) {
-        const url = new URL(resolveGatewayUrl("/gateway/models"));
+        const url = new URL(resolveGatewayUrl("/models"));
         url.searchParams.set("limit", String(limit));
         url.searchParams.set("offset", String(offset));
 
@@ -896,7 +896,7 @@ describeLive("Live Active Providers low-cost smoke", () => {
         try {
             discovered = await fetchTextGenerateModelsByProvider(discoveryProviders);
         } catch (err) {
-            console.warn(`[live-discovery] /v1/gateway/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
+            console.warn(`[live-discovery] /v1/models failed, falling back to Supabase: ${String((err as any)?.message ?? err)}`);
             discovered = await fetchTextGenerateModelsByProviderFromSupabase(discoveryProviders);
         }
         const unresolvedProviders = discoveryProviders.filter((providerId) => {

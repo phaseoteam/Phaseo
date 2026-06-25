@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpen, Github, MessageSquare } from "lucide-react";
+import { ArrowRight, BookOpen, MessageSquare } from "lucide-react";
+import { GitHubBrandIcon } from "@/components/icons/SocialBrandIcons";
 import { Button } from "@/components/ui/button";
 
 const CODE_SNIPPET = `POST /v1/responses
@@ -21,7 +22,7 @@ const ACTIONS = [
 		title: "View the repository",
 		body: "Inspect the open-source gateway, SDKs, and roadmap directly.",
 		href: "https://github.com/AI-Stats/AI-Stats",
-		icon: Github,
+		icon: GitHubBrandIcon,
 	},
 	{
 		title: "Try Chat first",

@@ -8,6 +8,7 @@ import type { Env } from "@/runtime/types";
 
 import { rootRouter } from "@/routes/root";
 import { authRouter } from "@/routes/auth";
+import { oauthRouter } from "@/routes/oauth";
 import { v1Router } from "@/routes/v1";
 import { internalRouter } from "@/routes/internal";
 import { handleScheduledEvent } from "@/scheduled";
@@ -16,6 +17,7 @@ const app = new Hono<Env>();
 
 app.route("/", rootRouter);
 app.route("/auth", authRouter);
+app.route("/oauth", oauthRouter);
 app.route("/v1", v1Router);
 app.route("/internal", internalRouter);
 
@@ -23,7 +25,6 @@ export default {
 	fetch: app.fetch,
 	scheduled: handleScheduledEvent,
 };
-
 
 
 

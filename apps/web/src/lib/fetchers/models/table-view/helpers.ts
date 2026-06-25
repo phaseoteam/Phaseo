@@ -105,24 +105,62 @@ const IGNORED_PARAMETER_KEYS = new Set<string>([
     "$schema",
     "$id",
     "strict",
+    "param_id",
+    "provider_min",
+    "provider_max",
+    "provider_default",
+    "notes",
+    "capability_id",
+    "status",
 ]);
 
-function collectParamKeys(value: unknown, keys: string[] = []): string[] {
+function collectSupportedParameterIds(
+    value: unknown,
+    parameters: Set<string>
+): void {
     if (Array.isArray(value)) {
         for (const item of value) {
-            collectParamKeys(item, keys);
+            collectSupportedParameterIds(item, parameters);
         }
-        return keys;
+        return;
     }
 
-    if (value && typeof value === "object") {
-        for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
-            keys.push(String(key));
-            collectParamKeys(val, keys);
-        }
+    if (!value || typeof value !== "object") {
+        return;
     }
 
-    return keys;
+    const record = value as Record<string, unknown>;
+    const directParamId =
+        typeof record.param_id === "string"
+            ? normalizeSupportedParameterKey(record.param_id)
+            : null;
+
+    if (directParamId) {
+        parameters.add(directParamId);
+        return;
+    }
+
+    const properties = record.properties;
+    if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+        for (const [key, nested] of Object.entries(
+            properties as Record<string, unknown>
+        )) {
+            const propertyKey = normalizeSupportedParameterKey(key);
+            if (propertyKey) {
+                parameters.add(propertyKey);
+            }
+            collectSupportedParameterIds(nested, parameters);
+        }
+        return;
+    }
+
+    for (const [key, nested] of Object.entries(record)) {
+        const normalizedKey = normalizeSupportedParameterKey(key);
+        if (normalizedKey) {
+            parameters.add(normalizedKey);
+        }
+        collectSupportedParameterIds(nested, parameters);
+    }
 }
 
 function normalizeSupportedParameterKey(raw: string): string | null {
@@ -144,14 +182,8 @@ function normalizeSupportedParameterKey(raw: string): string | null {
 }
 
 export const extractSupportedParameters = (params: unknown): string[] => {
-    const keys = collectParamKeys(params);
     const normalized = new Set<string>();
-
-    for (const key of keys) {
-        const param = normalizeSupportedParameterKey(key);
-        if (param) normalized.add(param);
-    }
-
+    collectSupportedParameterIds(params, normalized);
     return Array.from(normalized).sort((a, b) => a.localeCompare(b));
 };
 

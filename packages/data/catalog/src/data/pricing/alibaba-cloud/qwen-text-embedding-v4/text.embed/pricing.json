@@ -1,0 +1,20 @@
+{
+  "key": "alibaba-cloud:qwen/text-embedding-v4:text.embed",
+  "api_provider_id": "alibaba-cloud",
+  "provider_slug": "alibaba-cloud",
+  "api_model_id": "qwen/text-embedding-v4",
+  "capability_id": "text.embed",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.07,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100
+    }
+  ]
+}

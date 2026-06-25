@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 193
+      "rank": 194
     },
     {
       "benchmark_id": "livecodebench",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 60
+      "rank": 61
     },
     {
       "benchmark_id": "mmmlu",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 26
+      "rank": 27
     },
     {
       "benchmark_id": "simpleqa",
@@ -54,7 +54,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from mistral-large-latest (score=0.3650; benches=5)",
       "source_link": "https://mistral.ai/news/mistral-3",
-      "rank": 68
+      "rank": 69
     }
   ]
 }

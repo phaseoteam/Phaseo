@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
 
 interface RotatingPricingProps {
 	prices?: {
@@ -13,43 +12,38 @@ interface RotatingPricingProps {
 }
 
 export default function RotatingPricing({ prices }: RotatingPricingProps) {
-	console.log("RotatingPricing prices:", prices);
+	const [currentIndex, setCurrentIndex] = useState(0);
+	const priceCount = prices?.length ?? 0;
+
+	useEffect(() => {
+		if (priceCount <= 1) return;
+
+		const interval = setInterval(() => {
+			setCurrentIndex((prev) => (prev + 1) % priceCount);
+		}, 5000);
+
+		return () => clearInterval(interval);
+	}, [priceCount]);
 
 	if (!prices || prices.length === 0) {
 		return null;
 	}
 
-	const [currentIndex, setCurrentIndex] = useState(0);
-
-	useEffect(() => {
-		console.log("useEffect running, prices.length:", prices.length);
-		if (prices.length > 1) {
-			console.log("Setting interval for rotation");
-			const interval = setInterval(() => {
-				setCurrentIndex((prev) => {
-					const next = (prev + 1) % prices.length;
-					console.log("Rotating to index:", next);
-					return next;
-				});
-			}, 5000); // Rotate every 5 seconds
-
-			return () => {
-				console.log("Clearing interval");
-				clearInterval(interval);
-			};
-		} else {
-			console.log("Not rotating, only one price");
-		}
-	}, [prices.length]);
-
-	const currentPrice = prices[currentIndex];
-	console.log("Current price index:", currentIndex, "price:", currentPrice);
+	const currentPrice = prices[currentIndex] ?? prices[0];
 
 	const formatPrice = (
 		price: number,
 		currency: string,
 		frequency: string
 	) => {
+		const normalizedFrequency = frequency.toLowerCase();
+		if (normalizedFrequency === "usage") {
+			return "Usage-based";
+		}
+		if (normalizedFrequency === "custom") {
+			return "Custom pricing";
+		}
+
 		const formatter = new Intl.NumberFormat("en-US", {
 			style: "currency",
 			currency: currency,
@@ -58,11 +52,11 @@ export default function RotatingPricing({ prices }: RotatingPricingProps) {
 		});
 
 		const period =
-			frequency === "monthly"
+			normalizedFrequency === "monthly"
 				? "/mo"
-				: frequency === "yearly"
+				: normalizedFrequency === "yearly"
 				? "/yr"
-				: frequency === "daily"
+				: normalizedFrequency === "daily"
 				? "/day"
 				: "";
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { getLatestModelUpdateCards } from "@/lib/fetchers/updates/getLatestModelUpdates";
+import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export function ExperimentalUpdatesSectionFallback() {
 	return (
@@ -20,7 +20,7 @@ export function ExperimentalUpdatesSectionFallback() {
 }
 
 export default async function ExperimentalUpdatesSection() {
-	const updates = await getLatestModelUpdateCards(3, false);
+	const updates = await fetchFrontendModelUpdateCards(3, false);
 
 	return (
 		<section className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">

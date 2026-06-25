@@ -4,7 +4,7 @@ export const POOLSIDE_OPENAI_COMPAT_CONFIGS = {
 	poolside: {
 		providerId: "poolside",
 		baseUrl: "https://inference.poolside.ai",
-		pathPrefix: "/v1",
+		pathPrefix: "/openai/v1",
 		apiKeyEnv: "POOLSIDE_API_KEY",
 		baseUrlEnv: "POOLSIDE_BASE_URL",
 		supportsResponses: false,

@@ -1,0 +1,66 @@
+---
+title: "Anthropic SDK"
+description: "Use Anthropic-compatible clients with AI Stats."
+---
+
+Use the Anthropic-compatible API when your app, agent, or coding tool expects Claude-style `/v1/messages` requests.
+
+## TypeScript
+
+```bash
+npm install @anthropic-ai/sdk
+```
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+	apiKey: process.env.AI_STATS_API_KEY,
+	baseURL: "https://api.phaseo.app",
+});
+
+const message = await client.messages.create({
+	model: "anthropic/claude-sonnet-4.5",
+	max_tokens: 512,
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+
+console.log(message.content);
+```
+
+## Python
+
+```bash
+pip install anthropic
+```
+
+```python
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ["AI_STATS_API_KEY"],
+    base_url="https://api.phaseo.app",
+)
+
+message = client.messages.create(
+    model="anthropic/claude-sonnet-4.5",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(message.content)
+```
+
+## Notes
+
+- Use the root host `https://api.phaseo.app`; Anthropic clients append `/v1/messages`.
+- Use [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) for endpoint details.
+- Native Anthropic tool shapes can work where AI Stats supports them, but cross-provider server tools should use AI Stats tool names.
+- If a workflow depends on streamed tool loops, test it before production rollout because Anthropic-compatible clients are stricter about tool event ordering.
+
+## Related
+
+- [Claude Code](./claude-code.mdx)
+- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
+- [Tool Calling](../tool-calling.mdx)

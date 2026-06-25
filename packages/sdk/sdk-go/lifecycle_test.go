@@ -18,7 +18,7 @@ func TestInactiveModelBlocksRequest(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/data/models":
+		case "/gateway/models":
 			atomic.AddInt32(&dataModelsCalls, 1)
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
@@ -60,7 +60,7 @@ func TestInactiveModelBlocksRequest(t *testing.T) {
 		t.Fatalf("expected replacement model in inactive-model error, got %q", err.Error())
 	}
 	if atomic.LoadInt32(&dataModelsCalls) != 1 {
-		t.Fatalf("expected 1 /data/models lookup due to cache, got %d", dataModelsCalls)
+		t.Fatalf("expected 1 /gateway/models lookup due to cache, got %d", dataModelsCalls)
 	}
 	if atomic.LoadInt32(&responsesCalls) != 0 {
 		t.Fatalf("expected 0 /responses calls when lifecycle blocks request, got %d", responsesCalls)
@@ -72,7 +72,7 @@ func TestRetiredModelBlocksRequestWithoutWarningsAsErrors(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/data/models":
+		case "/gateway/models":
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"models": []map[string]any{
 					{

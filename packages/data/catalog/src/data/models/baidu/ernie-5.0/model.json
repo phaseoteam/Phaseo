@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": "GPQA Diamond",
       "source_link": "https://www.baidu.com/",
-      "rank": 29
+      "rank": 30
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.baidu.com/",
-      "rank": 45
+      "rank": 48
     },
     {
       "benchmark_id": "mmlu-pro",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.baidu.com/",
-      "rank": 6
+      "rank": 7
     },
     {
       "benchmark_id": "simpleqa",
@@ -62,7 +62,7 @@
       "is_self_reported": false,
       "other_info": "940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 72
+      "rank": 71
     },
     {
       "benchmark_id": "thematic-generalisation",
@@ -70,7 +70,7 @@
       "is_self_reported": false,
       "other_info": "Top-1 accuracy 65.3%; cases 703",
       "source_link": "https://github.com/lechmazur/generalization",
-      "rank": 24
+      "rank": 7
     }
   ]
 }

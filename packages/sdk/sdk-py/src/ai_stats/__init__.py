@@ -15,6 +15,7 @@ from gen import models
 from gen import operations as ops
 from ai_stats_devtools import TelemetryRecorder, create_ai_stats_devtools
 from .model_ids import MODEL_IDS, ModelIds
+from .webhooks import compute_async_webhook_signature, verify_async_webhook_signature
 
 DEFAULT_BASE_URL = "https://api.phaseo.app/v1"
 DEFAULT_USER_AGENT = "ai-stats-python"
@@ -111,6 +112,12 @@ class _BatchesResource:
 
     def create(self, params: models.BatchRequest | dict[str, Any]) -> dict[str, Any]:
         return self._parent.create_batch(params)
+
+    def list(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self._parent.list_batches(params)
+
+    def list_models(self) -> dict[str, Any]:
+        return self._parent.list_batch_models()
 
     def retrieve(self, batch_id: str) -> dict[str, Any]:
         return self._parent.get_batch(batch_id)
@@ -426,7 +433,7 @@ class AIStats:
         try:
             payload = self.request(
                 "GET",
-                "/data/models",
+                "/models",
                 query={"model_id": model_id, "limit": 1},
             )
         except Exception:
@@ -919,6 +926,30 @@ class AIStats:
             )
             raise
 
+    def list_batches(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        query = dict(params or {})
+        started = time.time()
+        try:
+            response = self.request("GET", "/batches", query=query or None)
+            self._capture_success(
+                endpoint="batches.list",
+                request=query,
+                response=response,
+                started_at=started,
+            )
+            return response
+        except Exception as exc:
+            self._capture_error(
+                endpoint="batches.list",
+                request=query,
+                error=exc,
+                started_at=started,
+            )
+            raise
+
+    def list_batch_models(self) -> dict[str, Any]:
+        return self.request("GET", "/batches/models")
+
     def get_batch(self, batch_id: str) -> dict[str, Any]:
         request = {"batch_id": batch_id}
         started = time.time()
@@ -985,14 +1016,6 @@ class AIStats:
             endpoint="models.list",
             request=request,
             call=lambda: ops.listModels(self._client, query=request),
-        )
-
-    def list_team_models(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        request = params or {}
-        return self._run_traced(
-            endpoint="models.team",
-            request=request,
-            call=lambda: ops.listTeamModels(self._client, query=request),
         )
 
     def list_endpoints(self) -> dict[str, Any]:
@@ -1207,19 +1230,19 @@ class AIStats:
         )
 
     def list_provisioning_keys(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        return ops.listProvisioningKeys(self._client, query=params or {})
+        return self.list_api_keys(params)
 
     def create_provisioning_key(self, body: dict[str, Any]) -> dict[str, Any]:
-        return ops.createProvisioningKey(self._client, body=body)
+        return self.create_api_key(body)
 
     def get_provisioning_key(self, key_id: str) -> dict[str, Any]:
-        return ops.getProvisioningKey(self._client, path={"id": key_id})
+        return self.get_api_key(key_id)
 
     def update_provisioning_key(self, key_id: str, body: dict[str, Any]) -> dict[str, Any]:
-        return ops.updateProvisioningKey(self._client, path={"id": key_id}, body=body)
+        return self.update_api_key(key_id, body)
 
     def delete_provisioning_key(self, key_id: str) -> dict[str, Any]:
-        return ops.deleteProvisioningKey(self._client, path={"id": key_id})
+        return self.delete_api_key(key_id)
 
 
 def _extract_model_id_from_payload(payload: dict[str, Any] | None) -> Optional[str]:

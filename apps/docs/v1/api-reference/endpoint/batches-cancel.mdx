@@ -1,0 +1,14 @@
+---
+title: "Cancel batch (Beta)"
+badge: "Beta"
+openapi: "POST /batches/{batch_id}/cancel"
+description: "Cancel a pending or processing batch job and release any held reservation when the provider confirms cancellation."
+---
+
+Cancels a gateway-owned batch job.
+
+Use the AI Stats `id` returned by create, list, or status responses. `native_batch_id` is provider correlation metadata and should not be used in this endpoint unless it is identical to the gateway id.
+
+OpenAI batches can be cancelled while they are still active. Completed, failed, cancelled, or expired batches are already terminal and are not sent to the provider again.
+
+When cancellation succeeds, AI Stats refreshes and persists the terminal state, emits configured async webhook events, and releases held reservation amounts for voided work.

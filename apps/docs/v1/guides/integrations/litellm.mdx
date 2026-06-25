@@ -1,0 +1,55 @@
+---
+title: "LiteLLM"
+description: "Use AI Stats behind LiteLLM or route LiteLLM calls through AI Stats."
+---
+
+Use LiteLLM when you already rely on its proxy, budgets, or local router, but want AI Stats model coverage, analytics, and server tools behind it.
+
+## Direct Python call
+
+```bash
+pip install litellm
+```
+
+```python
+import os
+from litellm import completion
+
+response = completion(
+    model="openai/openai/gpt-5-nano",
+    api_key=os.environ["AI_STATS_API_KEY"],
+    api_base="https://api.phaseo.app/v1",
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(response.choices[0].message.content)
+```
+
+LiteLLM commonly uses the `openai/` provider prefix for OpenAI-compatible endpoints. The AI Stats model id remains `openai/gpt-5-nano`, so the LiteLLM model string may look like `openai/openai/gpt-5-nano`.
+
+## Proxy config
+
+Use a model alias if you do not want application code to include the LiteLLM provider prefix:
+
+```yaml
+model_list:
+  - model_name: ai-stats-gpt-5-nano
+    litellm_params:
+      model: openai/openai/gpt-5-nano
+      api_key: os.environ/AI_STATS_API_KEY
+      api_base: https://api.phaseo.app/v1
+```
+
+Then call the LiteLLM proxy with `model: "ai-stats-gpt-5-nano"`.
+
+## Notes
+
+- Prefer LiteLLM aliases for production so model naming stays readable.
+- If you use AI Stats server tools, test the exact LiteLLM route because some proxy layers normalize or drop unknown tool types.
+- For pricing, decide whether your system of record is LiteLLM, AI Stats, or both.
+
+## Related
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [Server Tools](../server-tools/index.mdx)
+- [Pricing](../../api-reference/endpoint/pricing-calculate.mdx)

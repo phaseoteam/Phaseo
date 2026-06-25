@@ -134,7 +134,7 @@ describe("handleSuccessAudit search observability", () => {
 					type: "url_citation",
 					title: "AI Stats Docs",
 					url: "https://example.com/docs",
-					text: expect.stringMatching(/^\[redacted \d+ chars\]$/),
+					text: "Useful source text",
 				},
 			],
 			nativeSearches: [
@@ -173,13 +173,13 @@ describe("handleSuccessAudit search observability", () => {
 					tools: [
 						{
 							type: "function",
-							function: { name: "gateway_web_search" },
+							function: { name: "ai_stats_web_search" },
 						},
 					],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "gateway:web_search" }],
+					tools: [{ type: "ai-stats:web_search" }],
 				},
 				searchObservability: {
 					usedNativeWebSearch: false,
@@ -284,7 +284,7 @@ describe("handleSuccessAudit search observability", () => {
 					type: "managed_web_search_result",
 					title: "AI Stats Docs",
 					url: "https://example.com/docs",
-					text: expect.stringMatching(/^\[redacted \d+ chars\]$/),
+					text: "Managed highlight",
 				},
 			],
 			nativeSearches: [],
@@ -408,7 +408,7 @@ describe("handleSuccessAudit search observability", () => {
 					type: "grounding_support",
 					title: "AI Stats Docs",
 					url: "https://example.com/docs",
-					text: expect.stringMatching(/^\[redacted \d+ chars\]$/),
+					text: "Grounded answer segment",
 				},
 			],
 			nativeSearches: [

@@ -1,12 +1,12 @@
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
 import SubscriptionPlanOverview from "@/components/(data)/subscription-plans/SubscriptionPlanOverview";
-import { getSubscriptionPlanCached } from "@/lib/fetchers/subscription-plans/getSubscriptionPlan";
+import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 
 async function fetchPlan(baseId: string) {
 	try {
-		return await getSubscriptionPlanCached(baseId, false);
+		return await fetchFrontendSubscriptionPlan(baseId);
 	} catch (error) {
 		console.warn("[seo] failed to load subscription plan metadata", {
 			baseId,
@@ -53,7 +53,12 @@ export async function generateMetadata(props: {
 				: primaryPrice.frequency === "yearly"
 				? "per year"
 				: primaryPrice.frequency;
-		priceSnippet = `Typical pricing from ${primaryPrice.currency} ${primaryPrice.price} ${frequency}.`;
+		priceSnippet =
+			primaryPrice.frequency === "usage"
+				? "Typical pricing is usage-based."
+				: primaryPrice.frequency === "custom"
+				? "Typical pricing is custom; contact sales."
+				: `Typical pricing from ${primaryPrice.currency} ${primaryPrice.price} ${frequency}.`;
 	}
 
 	const descriptionParts = [
@@ -90,7 +95,7 @@ export default async function Page({
 }) {
 	const { planId } = await params;
 
-	const plan = await getSubscriptionPlanCached(planId, false);
+	const plan = await fetchFrontendSubscriptionPlan(planId);
 
 	if (!plan) {
 		return (

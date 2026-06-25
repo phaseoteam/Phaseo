@@ -23,7 +23,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
-      "rank": 31
+      "rank": 35
     },
     {
       "benchmark_id": "swe-lancer",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-5-1-codex-max/",
-      "rank": 28
+      "rank": 32
     }
   ]
 }

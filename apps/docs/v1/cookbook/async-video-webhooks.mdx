@@ -17,7 +17,7 @@ curl https://api.phaseo.app/v1/videos \
     "prompt": "A cinematic sunrise over a mountain lake",
     "webhook": {
       "url": "https://example.com/api/video-webhook",
-      "events": ["video.completed", "video.failed"],
+      "events": ["video.completed", "video.failed", "video.cancelled", "video.expired"],
       "secret": "whsec_your_signing_secret"
     }
   }'
@@ -35,7 +35,7 @@ const response = await fetch("https://api.phaseo.app/v1/videos", {
     prompt: "A cinematic sunrise over a mountain lake",
     webhook: {
       url: "https://example.com/api/video-webhook",
-      events: ["video.completed", "video.failed"],
+      events: ["video.completed", "video.failed", "video.cancelled", "video.expired"],
       secret: "whsec_your_signing_secret",
     },
   }),
@@ -59,7 +59,7 @@ response = requests.post(
         "prompt": "A cinematic sunrise over a mountain lake",
         "webhook": {
             "url": "https://example.com/api/video-webhook",
-            "events": ["video.completed", "video.failed"],
+            "events": ["video.completed", "video.failed", "video.cancelled", "video.expired"],
             "secret": "whsec_your_signing_secret",
         },
     },
@@ -84,7 +84,7 @@ func main() {
     "prompt": "A cinematic sunrise over a mountain lake",
     "webhook": {
       "url": "https://example.com/api/video-webhook",
-      "events": ["video.completed", "video.failed"],
+      "events": ["video.completed", "video.failed", "video.cancelled", "video.expired"],
       "secret": "whsec_your_signing_secret"
     }
   }`)
@@ -116,7 +116,7 @@ var content = new StringContent("""
   "prompt": "A cinematic sunrise over a mountain lake",
   "webhook": {
     "url": "https://example.com/api/video-webhook",
-    "events": ["video.completed", "video.failed"],
+    "events": ["video.completed", "video.failed", "video.cancelled", "video.expired"],
     "secret": "whsec_your_signing_secret"
   }
 }
@@ -141,7 +141,7 @@ curl_setopt_array($ch, [
         'prompt' => 'A cinematic sunrise over a mountain lake',
         'webhook' => [
             'url' => 'https://example.com/api/video-webhook',
-            'events' => ['video.completed', 'video.failed'],
+            'events' => ['video.completed', 'video.failed', 'video.cancelled', 'video.expired'],
             'secret' => 'whsec_your_signing_secret',
         ],
     ]),
@@ -167,7 +167,7 @@ request.body = {
   prompt: 'A cinematic sunrise over a mountain lake',
   webhook: {
     url: 'https://example.com/api/video-webhook',
-    events: ['video.completed', 'video.failed'],
+    events: ['video.completed', 'video.failed', 'video.cancelled', 'video.expired'],
     secret: 'whsec_your_signing_secret'
   }
 }.to_json
@@ -283,6 +283,8 @@ puts response.body
 
 Use polling for your own control loop even if you also enable webhooks. That gives you a direct way to recover if a webhook destination is temporarily unavailable.
 
+Persist and poll with the gateway-owned video `id`. `native_video_id`, when present, is provider-native correlation metadata; do not use it for AI Stats polling, websocket, cancellation, or content URLs.
+
 ## 3. Consume webhook deliveries
 
 The current async webhook payloads are normalized around:
@@ -298,6 +300,65 @@ Design your webhook consumer to:
 1. verify the signature
 2. treat deliveries as retryable and idempotent
 3. fetch the latest job status if the webhook payload and local state disagree
+
+When you configure `webhook.secret`, AI Stats signs each delivery with:
+
+- `x-ai-stats-timestamp`: Unix timestamp in seconds
+- `x-ai-stats-signature`: hex HMAC-SHA256 of `${timestamp}.${rawBody}` using your webhook secret
+- `x-ai-stats-event-id`: stable event id for this job/event
+- `x-ai-stats-event-type`: event type such as `video.completed`
+- `x-ai-stats-delivery-key`: idempotency key, including progress bucket when applicable
+- `x-ai-stats-attempt` and `x-ai-stats-max-attempts`: retry attempt metadata
+
+Verify the signature against the exact raw request body before parsing JSON:
+
+<CodeGroup>
+```typescript TypeScript
+import { verifyAsyncWebhookSignature } from "@ai-stats/sdk";
+
+export async function POST(request: Request) {
+  const rawBody = await request.text();
+  const ok = verifyAsyncWebhookSignature({
+    secret: process.env.AI_STATS_WEBHOOK_SECRET!,
+    body: rawBody,
+    headers: request.headers,
+  });
+
+  if (!ok) {
+    return new Response("invalid signature", { status: 401 });
+  }
+
+  const event = JSON.parse(rawBody);
+  // Persist event.id or the x-ai-stats-delivery-key header before side effects.
+  return Response.json({ received: true });
+}
+```
+
+```python Python
+from ai_stats import verify_async_webhook_signature
+
+
+async def handle_video_webhook(request):
+    raw_body = await request.body()
+    ok = verify_async_webhook_signature(
+        secret="whsec_your_signing_secret",
+        body=raw_body,
+        headers=request.headers,
+    )
+    if not ok:
+        return {"status": 401, "body": "invalid signature"}
+
+    event = await request.json()
+    # Persist event["id"] or the x-ai-stats-delivery-key header before side effects.
+    return {"received": True}
+```
+</CodeGroup>
+
+Store `x-ai-stats-delivery-key` or the payload `id` before side effects. Return any 2xx status only after your durable state has been updated; non-2xx responses are retried with the same event id and an incremented attempt number.
+
+Webhook subscriptions accept generic `job.*` events or matching `video.*` events. If you omit `events`, AI Stats subscribes the webhook to terminal `job.completed`, `job.failed`, `job.cancelled`, and `job.expired` notifications. If you provide `events`, at least one event must be valid for video jobs; all-invalid or cross-kind-only lists such as `["batch.completed"]` are rejected instead of being broadened silently.
+
+Webhook callback URLs must use HTTPS. Literal private, loopback, link-local, and wildcard hosts are rejected; `http://localhost`, `http://127.0.0.1`, and `http://[::1]` are accepted only for local development callbacks.
 
 ## 4. Read the final output
 
@@ -321,5 +382,6 @@ These signals should live together in your internal async-job dashboard so opera
 ## Related guides
 
 - [Quickstart](../quickstart)
+- [API Reference: Video Models](../api-reference/endpoint/video-models)
 - [API Reference: Video Generation](../api-reference/endpoint/video-generation)
 - [API Reference: Video Status](../api-reference/endpoint/video-status)

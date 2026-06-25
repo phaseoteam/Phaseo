@@ -14,7 +14,7 @@ export interface Organisation {
 export interface OrganisationLinks {
     organisation_link_id: string;
     organisation_id: string;
-    platform: 'website' | 'x' | 'github' | 'linkedin' | 'discord' | 'facebook' | 'instagram' | 'youtube' | 'tiktok' | 'threads' | 'reddit';
+    platform: 'website' | 'x' | 'github' | 'hugging_face' | 'linkedin' | 'discord' | 'facebook' | 'instagram' | 'youtube' | 'tiktok' | 'threads' | 'reddit';
     url: string;
     created_at: string;
     updated_at: string;
@@ -23,7 +23,7 @@ export interface OrganisationLinks {
 
 // Old JSON types
 export interface SocialLink {
-    platform: 'x' | 'github' | 'instagram' | 'youtube' | 'linkedin' | 'reddit' | 'tiktok' | 'threads' | 'discord';
+    platform: 'x' | 'github' | 'hugging_face' | 'instagram' | 'youtube' | 'linkedin' | 'reddit' | 'tiktok' | 'threads' | 'discord' | 'website';
     url: string;
 }
 
@@ -161,6 +161,10 @@ export interface Model {
     training_tokens: number | string | null;
     benchmark_results: BenchmarkResult[] | null;
     prices: Price[] | null;
+    page_notice?: {
+        tone: "info" | "warning" | "critical";
+        markdown: string;
+    } | null;
 }
 
 export interface ExtendedModel {
@@ -198,6 +202,10 @@ export interface ExtendedModel {
         }
     > | null;
     prices: Price[] | null;
+    page_notice?: {
+        tone: "info" | "warning" | "critical";
+        markdown: string;
+    } | null;
     provider: Provider;
     // Optional structured model details (from supabase `model_details`)
     model_details?: { detail_name: string; detail_value: string | number | null }[] | null;

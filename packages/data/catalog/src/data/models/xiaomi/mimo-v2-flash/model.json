@@ -2,13 +2,13 @@
   "model_id": "xiaomi/mimo-v2-flash",
   "organisation_id": "xiaomi",
   "name": "MiMo V2 Flash",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
   "description": "MiMo V2 Flash is an open-source foundation language model developed by Xiaomi. It is a Mixture-of-Experts model with 309B total parameters and 15B active parameters, adopting hybrid attention architecture.",
   "announced_date": "2025-12-16T00:00:00",
   "release_date": "2025-12-16T00:00:00",
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-06-12T00:00:00",
+  "retirement_date": "2026-06-18T00:00:00",
   "license": "MIT",
   "input_types": "text",
   "output_types": "text",
@@ -38,7 +38,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 31
+      "rank": 32
     },
     {
       "benchmark_id": "gpqa",
@@ -46,7 +46,7 @@
       "is_self_reported": true,
       "other_info": "GPQA Diamond",
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 38
+      "rank": 39
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 68
+      "rank": 73
     },
     {
       "benchmark_id": "livecodebench-v6",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 18
+      "rank": 20
     },
     {
       "benchmark_id": "mrcr",
@@ -102,7 +102,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 12
+      "rank": 13
     },
     {
       "benchmark_id": "swe-bench",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 36
+      "rank": 40
     },
     {
       "benchmark_id": "tau-bench",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://mimo.xiaomi.com/blog/mimo-v2-flash",
-      "rank": 43
+      "rank": 47
     }
   ]
 }

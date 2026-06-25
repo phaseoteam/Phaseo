@@ -1,7 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import LatencyComparisonClient from "./LatencyComparisonClient";
+import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 
 export const metadata: Metadata = {
 	title: "Latency Comparison - Compare Gateway vs OpenAI Response Times",
@@ -14,24 +14,12 @@ export const metadata: Metadata = {
 };
 
 export default async function LatencyComparisonPage() {
-	const supabase = await createClient();
-
-	const {
-		data: { user },
-		error: authError,
-	} = await supabase.auth.getUser();
-
-	if (authError || !user) {
+	const authStatus = await fetchInternalAuthStatus();
+	if (!authStatus.signedIn) {
 		redirect("/sign-in");
 	}
 
-	const { data: userData } = await supabase
-		.from("users")
-		.select("role")
-		.eq("user_id", user.id)
-		.single();
-
-	if (userData?.role !== "admin") {
+	if (!authStatus.isAdmin) {
 		redirect("/");
 	}
 

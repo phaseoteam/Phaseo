@@ -30,7 +30,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-9B",
-      "rank": 8
+      "rank": 9
     },
     {
       "benchmark_id": "c-eval",
@@ -62,7 +62,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-9B",
-      "rank": 54
+      "rank": 55
     },
     {
       "benchmark_id": "hmmt-2025",
@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-9B",
-      "rank": 14
+      "rank": 16
     },
     {
       "benchmark_id": "if-eval",
@@ -110,7 +110,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-9B",
-      "rank": 29
+      "rank": 30
     },
     {
       "benchmark_id": "longbench-v2",
@@ -134,7 +134,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-9B",
-      "rank": 36
+      "rank": 38
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -158,7 +158,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://huggingface.co/Qwen/Qwen3.5-9B",
-      "rank": 42
+      "rank": 44
     },
     {
       "benchmark_id": "multi-challenge",

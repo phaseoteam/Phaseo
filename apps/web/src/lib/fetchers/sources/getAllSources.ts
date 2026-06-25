@@ -1,5 +1,6 @@
 // lib/fetchers/sources/getAllSources.ts
 import { cacheLife, cacheTag } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 export interface SourceCard {
     api_provider_id: string;
@@ -7,10 +8,8 @@ export interface SourceCard {
     country_code: string;
 }
 
-import { createClient } from '@/utils/supabase/client';
-
 export async function getAllSources(): Promise<SourceCard[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
         .from('data_api_providers')
@@ -36,7 +35,9 @@ export async function getAllSourcesCached(): Promise<SourceCard[]> {
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
     cacheTag("data:sources");
+    cacheTag("frontend:sources");
 
     console.log("[fetch] HIT DB for sources");
     return getAllSources();

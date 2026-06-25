@@ -2,11 +2,11 @@
   "model_id": "openai/gpt-4-32k-0613",
   "organisation_id": "openai",
   "name": "GPT 4 32K 0613",
-  "status": null,
+  "status": "Available",
   "previous_model_id": null,
   "description": "GPT 4 32K 0613 is OpenAI's high-quality speech-to-text model built on GPT-4o audio capabilities. It's priced per token (input and output), making it suitable for workflows that benefit from token-level billing transparency.",
   "announced_date": null,
-  "release_date": null,
+  "release_date": "2023-06-13T00:00:00",
   "deprecation_date": null,
   "retirement_date": null,
   "license": "Proprietary",
@@ -39,7 +39,7 @@
       "is_self_reported": true,
       "other_info": "inferred high-confidence family alias from gpt-4-0613 (score=0.4899; benches=12)",
       "source_link": "https://openai.com/index/hello-gpt-4o/",
-      "rank": 211
+      "rank": 212
     },
     {
       "benchmark_id": "hellaswag",

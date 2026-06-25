@@ -35,7 +35,14 @@ export const LANGUAGE_GROUP_META: Record<
 
 export const LANGUAGE_OPTIONS: LanguageOption[] = [
 	{ value: "curl", label: "cURL", group: "raw", placement: "direct", icon: TerminalSquare, disabled: false },
-	{ value: "ai-sdk", label: "AI SDK", group: "ai-stats-client", placement: "direct", icon: Bot, disabled: false },
+	{
+		value: "ai-sdk",
+		label: "Vercel AI SDK",
+		group: "ai-stats-client",
+		placement: "direct",
+		icon: Bot,
+		disabled: false,
+	},
 	{ value: "node-fetch", label: "Node.js fetch", group: "raw", disabled: false },
 	{ value: "python-requests", label: "Python requests", group: "raw", disabled: false },
 	{ value: "typescript-sdk", label: "TypeScript SDK", group: "ai-stats-client", disabled: false },

@@ -1,6 +1,6 @@
 // lib/fetchers/api-providers/getAPIProviderHeader.ts
-import { createClient } from "@/utils/supabase/client";
 import { cacheLife, cacheTag } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { isAPIProviderHidden } from "./visibility";
 
 export interface APIProviderHeader {
@@ -16,7 +16,7 @@ export async function fetchAPIProviderHeader(
         return null;
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
         .from("data_api_providers")
@@ -51,6 +51,8 @@ export default async function getAPIProviderHeader(
     "use cache";
 
     cacheLife("days");
+    cacheTag("public-model-catalogue");
+    cacheTag("frontend:api-providers");
     cacheTag("data:api_providers");
     cacheTag(`data:api_providers:${apiProviderId}`);
     cacheTag(`api_provider:header:${apiProviderId}`);

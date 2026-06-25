@@ -5,6 +5,7 @@
 import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import type { GatewayCompletionsResponse, GatewayCompletionsChoice, GatewayUsage } from "@core/types";
 import { ChatCompletionsSchema, type ChatCompletionsRequest } from "@core/schemas";
+import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
 import { buildAdapterPayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
 import type { ResolvedKey } from "../../keys";
@@ -297,13 +298,11 @@ function mapFinishReasonFromJson(
 
 function normalizeUsage(usage: any | null | undefined): GatewayUsage | undefined {
     if (!usage) return undefined;
-    const input = usage.input_tokens ?? 0;
-    const output = usage.output_tokens ?? 0;
-    const total = usage.total_tokens ?? (input + output);
+    const tokens = resolveCanonicalTokenUsage(usage);
     const normalized: GatewayUsage = {
-        input_tokens: input,
-        output_tokens: output,
-        total_tokens: total,
+        input_tokens: tokens.inputTokens,
+        output_tokens: tokens.outputTokens,
+        total_tokens: tokens.totalTokens,
     };
     if (usage.input_tokens_details) {
         normalized.input_tokens_details = {

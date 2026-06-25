@@ -28,7 +28,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 12
+      "rank": 17
     },
     {
       "benchmark_id": "swe-bench",
@@ -36,7 +36,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 8
+      "rank": 11
     },
     {
       "benchmark_id": "swe-lancer",
@@ -52,7 +52,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 10
+      "rank": 11
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -60,7 +60,7 @@
       "is_self_reported": true,
       "other_info": "No Tools",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 54
+      "rank": 59
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -68,7 +68,7 @@
       "is_self_reported": true,
       "other_info": "With Search + Python",
       "source_link": "https://openai.com/index/introducing-gpt-5-2/",
-      "rank": 28
+      "rank": 30
     },
     {
       "benchmark_id": "mmmlu",
@@ -244,7 +244,7 @@
       "is_self_reported": false,
       "other_info": "No reasoning; 940 puzzles",
       "source_link": "https://github.com/lechmazur/nyt-connections",
-      "rank": 64
+      "rank": 63
     }
   ]
 }

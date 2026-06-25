@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAppUsageOverTime } from "@/lib/fetchers/apps/getAppUsageOverTime";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
@@ -22,7 +21,7 @@ export default async function AppUsageStats({
 	appId: string;
 	range?: RangeKey;
 }) {
-	const rows = await getAppUsageOverTime(appId, range);
+	const rows = await fetchFrontendAppUsage(appId, range);
 
 	// Calculate current period stats
 	let currentRequests = 0;

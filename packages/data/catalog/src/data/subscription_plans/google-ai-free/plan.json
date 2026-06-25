@@ -46,13 +46,7 @@
     },
     {
       "model_id": "google/gemini-3.1-pro-preview",
-      "model_info": "Pro",
-      "rate_limit": "Basic Access (Daily limits may change frequently)",
-      "other_info": null
-    },
-    {
-      "model_id": "google/gemini-3.1-pro-preview",
-      "model_info": "Thinking",
+      "model_info": "Pro / Thinking",
       "rate_limit": "Basic Access (Daily limits may change frequently)",
       "other_info": null
     }

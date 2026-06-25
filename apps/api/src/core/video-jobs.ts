@@ -46,6 +46,8 @@ export type VideoJobMeta = {
 	charged?: boolean | null;
 	billingReason?: string | null;
 	finalizedAt?: string | null;
+	progress?: number | null;
+	progressSource?: "provider" | "estimated" | "none" | null;
 	lastPolledAt?: string | null;
 	polledStatus?: string | null;
 	lastReconciledAt?: string | null;
@@ -155,6 +157,13 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.billing_reason === "string") out.billingReason = source.billing_reason;
 	if (typeof source.finalizedAt === "string") out.finalizedAt = source.finalizedAt;
 	if (typeof source.finalized_at === "string") out.finalizedAt = source.finalized_at;
+	if (typeof source.progress === "number") out.progress = source.progress;
+	if (source.progressSource === "provider" || source.progressSource === "estimated" || source.progressSource === "none") {
+		out.progressSource = source.progressSource;
+	}
+	if (source.progress_source === "provider" || source.progress_source === "estimated" || source.progress_source === "none") {
+		out.progressSource = source.progress_source;
+	}
 	if (typeof source.lastPolledAt === "string") out.lastPolledAt = source.lastPolledAt;
 	if (typeof source.last_polled_at === "string") out.lastPolledAt = source.last_polled_at;
 	if (typeof source.polledStatus === "string") out.polledStatus = source.polledStatus;
@@ -174,8 +183,11 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 		out.pricingBreakdown = source.pricing_breakdown as Record<string, unknown>;
 	}
 	if (typeof source.reservationId === "string") out.reservationId = source.reservationId;
+	if (typeof source.reservation_id === "string") out.reservationId = source.reservation_id;
 	if (typeof source.reservedNanos === "number") out.reservedNanos = source.reservedNanos;
+	if (typeof source.reserved_nanos === "number") out.reservedNanos = source.reserved_nanos;
 	if (typeof source.reservationStatus === "string") out.reservationStatus = source.reservationStatus;
+	if (typeof source.reservation_status === "string") out.reservationStatus = source.reservation_status;
 	if (source.keySource === "gateway" || source.keySource === "byok") out.keySource = source.keySource;
 	if (typeof source.byokKeyId === "string") out.byokKeyId = source.byokKeyId;
 	if (source.webhookDeliveries && typeof source.webhookDeliveries === "object" && !Array.isArray(source.webhookDeliveries)) {
@@ -336,7 +348,10 @@ export async function listPendingVideoJobs(limit = 100): Promise<VideoJobRecord[
 				status === "processing" ||
 				status === "running" ||
 				status === "completed" ||
-				status === "failed"
+				status === "failed" ||
+				status === "cancelled" ||
+				status === "canceled" ||
+				status === "expired"
 			);
 		});
 }

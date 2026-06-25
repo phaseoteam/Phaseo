@@ -11,6 +11,7 @@ process.env.NEXT_FONT_IGNORE_FAILED_DOWNLOADS ||= "true";
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
   cacheComponents: true,
   env: {
     NEXT_PUBLIC_DEPLOY_TIME:
@@ -42,16 +43,24 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
-      },
-    ];
+    return {
+      beforeFiles: [
+        {
+          source: "/.well-known/agent-skills/index.json",
+          destination: "/.well-known/agent-skills",
+        },
+      ],
+      afterFiles: [
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://eu-assets.i.posthog.com/static/:path*",
+        },
+        {
+          source: "/ingest/:path*",
+          destination: "https://eu.i.posthog.com/:path*",
+        },
+      ],
+    };
   },
 };
 

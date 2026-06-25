@@ -23,6 +23,14 @@ import type { Endpoint } from "@core/types";
 import type { ProviderExecuteArgs } from "@providers/types";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import type { ProviderExecutor } from "@executors/types";
+import { saveVideoJobMeta } from "@core/video-jobs";
+import { isInsufficientVideoReservationStatus, reserveVideoGenerationCredits } from "@core/video-reservations";
+import { releaseWalletReservation } from "@core/wallet-reservations";
+import {
+	buildVideoPricingRequestOptions,
+	resolveVideoSeconds,
+	resolveVideoSize,
+} from "@core/video-request-options";
 import { isOpenAICompatProvider } from "@providers/openai-compatible/config";
 import * as openaiImages from "@providers/openai/endpoints/images";
 import * as openaiImagesEdits from "@providers/openai/endpoints/images-edits";
@@ -84,6 +92,9 @@ function normalizeUsage(raw: any, fallbackRequests: boolean = true): IRUsage | u
 		source.input_tokens ??
 		source.input_text_tokens ??
 		source.prompt_tokens ??
+		source.promptTokens ??
+		source.prompt_token_count ??
+		source.total_input_tokens ??
 		source.embedding_tokens ??
 		0,
 	);
@@ -92,9 +103,17 @@ function normalizeUsage(raw: any, fallbackRequests: boolean = true): IRUsage | u
 		source.output_tokens ??
 		source.output_text_tokens ??
 		source.completion_tokens ??
+		source.completionTokens ??
+		source.completion_token_count ??
+		source.total_output_tokens ??
 		0,
 	);
-	const totalTokens = Number(source.totalTokens ?? source.total_tokens ?? inputTokens + outputTokens);
+	const totalTokens = Number(
+		source.totalTokens ??
+		source.total_tokens ??
+		source.totalTokenCount ??
+		inputTokens + outputTokens,
+	);
 
 	const usage: any = {
 		...source,
@@ -121,6 +140,19 @@ function withDefinedValues<T extends Record<string, any>>(value: T): Partial<T> 
 	return Object.fromEntries(
 		Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
 	) as Partial<T>;
+}
+
+function jsonErrorResponse(status: number, type: string, message: string, details?: Record<string, unknown>): Response {
+	return new Response(
+		JSON.stringify({
+			error: {
+				type,
+				message,
+				...(details ?? {}),
+			},
+		}),
+		{ status, headers: { "Content-Type": "application/json" } },
+	);
 }
 
 function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"], providerModel: string): any {
@@ -211,6 +243,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 		case "video.generation": {
 			const request = ir as IRVideoGenerationRequest;
 			const raw = (request.rawRequest ?? {}) as Record<string, any>;
+			const canonicalSize = request.size ?? raw.size;
+			const canonicalResolution = canonicalSize ? undefined : (request.resolution ?? raw.resolution);
 			const inputReferences = Array.isArray(raw.input_references)
 				? raw.input_references
 				: Array.isArray(raw.inputReferences)
@@ -226,9 +260,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				model: providerModel,
 				prompt: request.prompt,
 				duration: request.duration ?? request.durationSeconds ?? request.seconds,
-				size: request.size ?? raw.size,
-				resolution: request.resolution ?? raw.resolution,
-				aspect_ratio: request.aspectRatio,
+				size: canonicalSize,
+				resolution: canonicalResolution,
+				aspect_ratio: canonicalSize ? undefined : request.aspectRatio,
 				compression_quality: request.compressionQuality,
 				negative_prompt: request.negativePrompt,
 				sample_count: request.sampleCount,
@@ -369,11 +403,15 @@ async function adapterResultToIR(
 			const statusRaw = String(payload?.status ?? "").toLowerCase();
 			const status: IRVideoGenerationResponse["status"] = statusRaw === "completed" || statusRaw === "succeeded"
 				? "completed"
-				: statusRaw === "failed" || statusRaw === "error" || statusRaw === "cancelled" || statusRaw === "canceled"
-					? "failed"
-					: statusRaw === "processing" || statusRaw === "in_progress" || statusRaw === "running"
-						? "in_progress"
-						: "queued";
+				: statusRaw === "cancelled" || statusRaw === "canceled"
+					? "cancelled"
+					: statusRaw === "expired"
+						? "expired"
+						: statusRaw === "failed" || statusRaw === "error"
+							? "failed"
+							: statusRaw === "processing" || statusRaw === "in_progress" || statusRaw === "running"
+								? "in_progress"
+								: "queued";
 			return {
 				id: requestId,
 				nativeId: payload?.id ?? payload?.nativeResponseId ?? undefined,
@@ -500,6 +538,21 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	const providerModel = args.providerModelSlug || (args.ir as any).model;
+	const isVideoGeneration = args.endpoint === "video.generation";
+	const videoIr = isVideoGeneration ? (args.ir as IRVideoGenerationRequest) : null;
+	const videoSeconds = videoIr ? resolveVideoSeconds({
+		seconds: videoIr.seconds,
+		duration_seconds: videoIr.durationSeconds,
+		duration: videoIr.duration,
+		video_params: ((videoIr.rawRequest ?? {}) as Record<string, any>).video_params,
+	}) : undefined;
+	const videoSize = videoIr ? resolveVideoSize({
+		size: videoIr.size,
+		resolution: videoIr.resolution,
+		input_resolution: ((videoIr.rawRequest ?? {}) as Record<string, any>).input_resolution,
+		video_params: ((videoIr.rawRequest ?? {}) as Record<string, any>).video_params,
+	}) : undefined;
+	const videoQuality = videoIr?.quality ?? null;
 	const body = irToAdapterBody(args.endpoint, args.ir, providerModel);
 	const mappedRequest = (() => {
 		if (!(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)) return undefined;
@@ -509,6 +562,101 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			return undefined;
 		}
 	})();
+
+	let reservationId: string | null = null;
+	let reservationStatus: string | null = null;
+	let reservedNanos: number | null = null;
+	let reservationGateError: { status: number; type: string; message: string } | null = null;
+	if (isVideoGeneration) {
+		try {
+			const reserved = await reserveVideoGenerationCredits({
+				workspaceId: args.workspaceId,
+				videoId: args.requestId,
+				providerId: args.providerId,
+				model: providerModel,
+				seconds: videoSeconds ?? null,
+				pricingCard: args.pricingCard,
+				requestOptions: buildVideoPricingRequestOptions({
+					size: videoSize,
+					resolution: videoIr?.resolution,
+					quality: videoQuality,
+					seconds: videoSeconds,
+				}),
+				isByok: Array.isArray(args.byokMeta) && args.byokMeta.length > 0,
+			});
+			reservationId = reserved.reservationId;
+			reservationStatus = reserved.status;
+			reservedNanos = reserved.amountNanos;
+			if (reserved.status === "skip_missing_seconds_or_pricing") {
+				reservationGateError = {
+					status: 400,
+					type: "missing_billing_dimensions",
+					message: "Video duration seconds and pricing must be resolvable before submission.",
+				};
+			}
+			if (reserved.amountNanos > 0 && !reserved.held && !isInsufficientVideoReservationStatus(reserved.status)) {
+				reservationGateError = {
+					status: 503,
+					type: "reservation_not_held",
+					message: `Unable to secure wallet reservation before provider submission (status=${reserved.status}).`,
+				};
+			}
+		} catch (reserveErr) {
+			console.error("adapter_video_reservation_failed_pre_submit", {
+				error: reserveErr,
+				workspaceId: args.workspaceId,
+				requestId: args.requestId,
+				providerId: args.providerId,
+			});
+			reservationGateError = {
+				status: 503,
+				type: "reservation_unavailable",
+				message: "Unable to reserve credits for video generation.",
+			};
+		}
+	}
+
+	const releaseVideoReservationOnFailure = async () => {
+		if (!reservationId) return;
+		try {
+			await releaseWalletReservation({
+				workspaceId: args.workspaceId,
+				reservationId,
+				releaseRefId: args.requestId,
+			});
+		} catch (releaseErr) {
+			console.error("adapter_video_reservation_release_failed", {
+				error: releaseErr,
+				workspaceId: args.workspaceId,
+				requestId: args.requestId,
+				providerId: args.providerId,
+				reservationId,
+			});
+		}
+	};
+
+	if (isInsufficientVideoReservationStatus(reservationStatus)) {
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null },
+			upstream: jsonErrorResponse(402, "insufficient_funds", "Insufficient available credits for video reservation hold."),
+			mappedRequest,
+		};
+	}
+	if (reservationGateError) {
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null },
+			upstream: jsonErrorResponse(
+				reservationGateError.status,
+				reservationGateError.type,
+				reservationGateError.message,
+			),
+			mappedRequest,
+		};
+	}
 
 	const providerArgs: ProviderExecuteArgs = {
 		endpoint: args.endpoint,
@@ -535,7 +683,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		stream: false,
 	};
 
-	const adapterResult = await executeProviderEndpoint(args.endpoint, args.providerId, providerArgs);
+	let adapterResult: Awaited<ReturnType<typeof executeProviderEndpoint>>;
+	try {
+		adapterResult = await executeProviderEndpoint(args.endpoint, args.providerId, providerArgs);
+	} catch (error) {
+		if (isVideoGeneration) await releaseVideoReservationOnFailure();
+		throw error;
+	}
 	const keySource = adapterResult.keySource ?? "gateway";
 	const byokKeyId = adapterResult.byokKeyId ?? null;
 
@@ -553,6 +707,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	}
 
 	if (!adapterResult.upstream.ok) {
+		if (isVideoGeneration) await releaseVideoReservationOnFailure();
 		return {
 			kind: "completed",
 			ir: undefined,
@@ -571,6 +726,77 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		upstream: adapterResult.upstream,
 	};
 	const ir = await adapterResultToIR(args.endpoint, args, irReadyPayload, adapterResult.bill?.usage);
+	if (isVideoGeneration) {
+		const videoResponse = ir as IRVideoGenerationResponse;
+		if (!videoResponse.nativeId) {
+			await releaseVideoReservationOnFailure();
+			return {
+				kind: "completed",
+				ir: undefined,
+				bill: adapterResult.bill,
+				upstream: jsonErrorResponse(
+					502,
+					"invalid_upstream_response",
+					"Video create response did not include a native video id.",
+				),
+				keySource,
+				byokKeyId,
+				mappedRequest,
+				rawResponse: normalized,
+			};
+		}
+		try {
+			await saveVideoJobMeta(args.workspaceId, args.requestId, {
+				provider: args.providerId,
+				providerTaskId: String(videoResponse.nativeId),
+				requestId: args.requestId,
+				sessionId: args.meta.sessionId ?? null,
+				appId: args.meta.appId ?? null,
+				model: providerModel,
+				seconds: videoSeconds ?? null,
+				resolution: videoSize ?? null,
+				quality: videoQuality,
+				outputAccess: videoIr?.outputAccess ?? "both",
+				webhook: videoIr?.webhook as Record<string, unknown> | null,
+				reservationId,
+				reservedNanos,
+				reservationStatus,
+				keySource,
+				byokKeyId,
+				createdAt: Date.now(),
+			}, String(videoResponse.nativeId), videoResponse.status);
+		} catch (error) {
+			console.error("adapter_video_job_meta_store_failed", {
+				error,
+				workspaceId: args.workspaceId,
+				videoId: args.requestId,
+				nativeId: videoResponse.nativeId,
+				providerId: args.providerId,
+				reservationId,
+				reservationStatus,
+				note: "reservation_retained_for_manual_reconciliation",
+			});
+			return {
+				kind: "completed",
+				ir: undefined,
+				bill: adapterResult.bill,
+				upstream: jsonErrorResponse(
+					502,
+					"async_job_persistence_failed",
+					"Video job was created upstream, but AI Stats could not persist gateway ownership metadata.",
+					{
+						native_video_id: String(videoResponse.nativeId),
+						reservation_id: reservationId,
+						reservation_status: reservationStatus,
+					},
+				),
+				keySource,
+				byokKeyId,
+				mappedRequest,
+				rawResponse: normalized,
+			};
+		}
+	}
 
 	const generationMs =
 		numberOrUndefined(args.meta.upstreamStartMs != null ? Date.now() - args.meta.upstreamStartMs : undefined) ??

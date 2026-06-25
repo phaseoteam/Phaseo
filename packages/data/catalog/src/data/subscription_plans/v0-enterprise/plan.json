@@ -1,0 +1,48 @@
+{
+  "plan_id": "v0-enterprise",
+  "name": "v0 Enterprise",
+  "organisation_id": "vercel",
+  "description": "Custom v0 enterprise plan for larger organizations.",
+  "pricing_options": [
+    {
+      "frequency": "custom",
+      "usd_price": 0,
+      "link": "https://v0.dev/pricing",
+      "other_info": "Custom pricing; contact Vercel sales"
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Pricing",
+      "feature_value": "Custom",
+      "feature_description": "The current subscription-plan importer requires numeric prices, so this is represented as 0 with explicit custom-pricing metadata.",
+      "other_info": null
+    },
+    {
+      "feature_name": "Enterprise Controls",
+      "feature_value": "Included",
+      "feature_description": "Enterprise access, support, and organization controls.",
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "vercel/v0-1.5-sm",
+      "model_info": "v0 model family",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": null
+    },
+    {
+      "model_id": "vercel/v0-1.5-md",
+      "model_info": "v0 model family",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": null
+    },
+    {
+      "model_id": "vercel/v0-1.5-lg",
+      "model_info": "v0 model family",
+      "rate_limit": "Custom enterprise usage",
+      "other_info": null
+    }
+  ]
+}

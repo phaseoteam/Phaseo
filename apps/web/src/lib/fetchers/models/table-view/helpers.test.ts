@@ -1,4 +1,4 @@
-import { toUsdPerMillion } from "./helpers";
+import { extractSupportedParameters, toUsdPerMillion } from "./helpers";
 
 describe("toUsdPerMillion", () => {
 	test("normalizes prices when unit_size is 1,000,000", () => {
@@ -14,5 +14,41 @@ describe("toUsdPerMillion", () => {
 		expect(toUsdPerMillion(undefined, 1_000_000)).toBe(0);
 		expect(toUsdPerMillion(1, 0)).toBe(0);
 		expect(toUsdPerMillion("abc", 1_000_000)).toBe(0);
+	});
+});
+
+describe("extractSupportedParameters", () => {
+	test("uses param_id rows instead of surfacing parameter metadata keys", () => {
+		expect(
+			extractSupportedParameters([
+				{
+					param_id: "temperature",
+					provider_min: 0,
+					provider_max: 2,
+					provider_default: 1,
+					notes: "Sampling temperature",
+				},
+				{
+					param_id: "response_format",
+					provider_default: null,
+					notes: null,
+				},
+			]),
+		).toEqual(["response_format", "temperature"]);
+	});
+
+	test("falls back to schema property names when params are object-shaped", () => {
+		expect(
+			extractSupportedParameters({
+				type: "object",
+				properties: {
+					top_p: { type: "number" },
+					tools: {
+						type: "array",
+						items: { type: "object" },
+					},
+				},
+			}),
+		).toEqual(["tools", "top_p"]);
 	});
 });

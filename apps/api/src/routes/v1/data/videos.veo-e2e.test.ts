@@ -64,9 +64,56 @@ function jsonResponse(body: unknown, status = 200) {
 	});
 }
 
+function videoPricingRows() {
+	const now = "2026-06-10T00:00:00.000Z";
+	return [
+		{
+			rule_id: "test-veo-lite-720p",
+			model_key: "google-vertex:google/veo-3.1-lite-generate-preview:video.generate",
+			capability_id: "video.generate",
+			pricing_plan: "standard",
+			meter: "output_video_seconds",
+			unit: "second",
+			unit_size: 1,
+			price_per_unit: "0.03",
+			currency: "USD",
+			note: null,
+			match: [
+				{ path: "video_params.resolution", op: "eq", value: "720p" },
+			],
+			priority: 100,
+			effective_from: null,
+			effective_to: null,
+			updated_at: now,
+		},
+	];
+}
+
 function buildSupabaseAdminMock() {
 	return {
 		from(table: string) {
+			if (table === "data_api_pricing_rules") {
+				return {
+					select() {
+						let orderCalls = 0;
+						const builder = {
+							eq() {
+								return builder;
+							},
+							or() {
+								return builder;
+							},
+							order() {
+								orderCalls += 1;
+								return orderCalls >= 2
+									? Promise.resolve({ data: videoPricingRows(), error: null })
+									: builder;
+							},
+						};
+						return builder;
+					},
+				};
+			}
 			if (table !== "gateway_requests") {
 				throw new Error(`Unexpected table: ${table}`);
 			}
@@ -418,9 +465,9 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(submitResult.ir?.nativeId).toBeTruthy();
 		expect(state.reserveCalls).toHaveLength(1);
 		expect(state.reserveCalls[0]).toMatchObject({
-			reservationId: `video_hold:req_${requestId}`,
+			reservationId: `video_hold:${requestId}`,
 			amountNanos: 150_000_000,
-			holdRefId: `req_${requestId}`,
+			holdRefId: requestId,
 		});
 
 		const storedAfterSubmit = getStoredJob("ws_video_e2e", requestId);
@@ -429,7 +476,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 			seconds: 5,
 			resolution: "720p",
 			audio: false,
-			reservationId: `video_hold:req_${requestId}`,
+			reservationId: `video_hold:${requestId}`,
 			reservedNanos: 150_000_000,
 			reservationStatus: "held",
 		});
@@ -520,7 +567,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(submitResult.ir?.status).toBe("queued");
 		expect(state.reserveCalls).toHaveLength(1);
 		expect(state.reserveCalls[0]).toMatchObject({
-			reservationId: `video_hold:req_${requestId}`,
+			reservationId: `video_hold:${requestId}`,
 			amountNanos: 150_000_000,
 		});
 

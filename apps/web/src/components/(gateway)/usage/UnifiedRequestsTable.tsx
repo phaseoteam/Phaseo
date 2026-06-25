@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	Table,
 	TableBody,
@@ -56,7 +57,12 @@ import {
 } from "@/lib/gateway/usage/timeFormatting";
 import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
-import { buildUsageDisplay, extractUsageMeters, formatUsageNumber } from "./usageMeters";
+import {
+	buildUsageDisplay,
+	buildUsageFromNormalizedRequestFields,
+	extractUsageMeters,
+	formatUsageNumber,
+} from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import {
 	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
@@ -75,6 +81,7 @@ interface UnifiedRequestsTableProps {
 	initialRows: RequestRow[];
 	initialTotal: number;
 	initialTotalPages: number;
+	detailBasePath?: string;
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
 	>;
@@ -130,8 +137,12 @@ export default function UnifiedRequestsTable({
 	initialRows,
 	initialTotal,
 	initialTotalPages,
+	detailBasePath,
 	onExportRef,
 }: UnifiedRequestsTableProps) {
+	const router = useRouter();
+	const pathname = usePathname() ?? "";
+	const searchParams = useSearchParams();
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -193,6 +204,15 @@ export default function UnifiedRequestsTable({
 		Map<string, ProviderMetadataEntry>
 	>(new Map(providerMetadata));
 	const [dialogOpen, setDialogOpen] = useState(false);
+	const prefetchRequestDetail = useCallback(
+		(requestId: string | null | undefined) => {
+			if (!detailBasePath || !requestId) return;
+			const query = searchParams?.toString();
+			const href = `${detailBasePath}/${encodeURIComponent(requestId)}${query ? `?${query}` : ""}`;
+			router.prefetch(href);
+		},
+		[detailBasePath, router, searchParams],
+	);
 
 	// Build cache key from filters
 	const getCacheKey = useCallback(() => {
@@ -403,18 +423,49 @@ export default function UnifiedRequestsTable({
 		setPage(1);
 	};
 
+	useEffect(() => {
+		if (!detailBasePath) return;
+		for (const row of data.slice(0, 12)) {
+			prefetchRequestDetail(row.request_id);
+		}
+	}, [data, detailBasePath, prefetchRequestDetail]);
+
 	const handleRowClick = useCallback((request: RequestRow) => {
+		if (detailBasePath) {
+			const query = searchParams?.toString();
+			router.push(
+				`${detailBasePath}/${encodeURIComponent(request.request_id)}${query ? `?${query}` : ""}`,
+			);
+			return;
+		}
 		setSelectedRequest(request);
 		setSelectedAppName(request.app_title ?? null);
 		setDialogOpen(true);
-	}, []);
+	}, [detailBasePath, router, searchParams]);
+
+	const handleDialogOpenChange = useCallback(
+		(nextOpen: boolean) => {
+			if (
+				!nextOpen &&
+				detailBasePath &&
+				pathname.startsWith(detailBasePath + "/")
+			) {
+				const query = searchParams?.toString();
+				router.push(`${detailBasePath}${query ? `?${query}` : ""}`);
+				return;
+			}
+			setDialogOpen(nextOpen);
+		},
+		[detailBasePath, pathname, router, searchParams],
+	);
 
 	const handleExport = React.useCallback(
 		(format: "csv" | "pdf") => {
 			const exportData = data.map((row) => {
-				const usageMeters = extractUsageMeters(row.usage);
-				const inputTokens = usageMeters.find((m) => m.key === "input_text_tokens")?.value ?? 0;
-				const outputTokens = usageMeters.find((m) => m.key === "output_text_tokens")?.value ?? 0;
+				const usage = buildUsageFromNormalizedRequestFields(row.usage, row);
+				const usageMeters = extractUsageMeters(usage);
+				const inputTokens = usageMeters.find((m) => m.key === "input_tokens")?.value ?? 0;
+				const outputTokens = usageMeters.find((m) => m.key === "output_tokens")?.value ?? 0;
 				const usageSummary = usageMeters.length
 					? usageMeters.map((m) => `${m.label}: ${formatUsageNumber(m.value)}`).join(" | ")
 					: "-";
@@ -506,7 +557,9 @@ export default function UnifiedRequestsTable({
 			{data.length > 0 ? (
 				<div className="space-y-3 md:hidden">
 					{data.map((row, index) => {
-						const usageDisplay = buildUsageDisplay(row.usage);
+						const usageDisplay = buildUsageDisplay(
+							buildUsageFromNormalizedRequestFields(row.usage, row),
+						);
 						const errorSummary = row.success ? null : formatErrorListSummary(row);
 						const requestedModelId = getRequestedModelId(row);
 						const routedModelId = getRoutedModelId(row);
@@ -558,7 +611,9 @@ export default function UnifiedRequestsTable({
 									"w-full rounded-lg border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40",
 									loading && "opacity-50",
 								)}
-                                                                onClick={() => void handleRowClick(row)}
+								onMouseEnter={() => prefetchRequestDetail(row.request_id)}
+								onFocus={() => prefetchRequestDetail(row.request_id)}
+								onClick={() => void handleRowClick(row)}
 							>
 								<div className="flex items-start justify-between gap-3">
 									<div className="min-w-0">
@@ -993,7 +1048,9 @@ export default function UnifiedRequestsTable({
 
 								{/* Show cached data with optional loading overlay */}
 								{data.map((row, index) => {
-									const usageDisplay = buildUsageDisplay(row.usage);
+									const usageDisplay = buildUsageDisplay(
+										buildUsageFromNormalizedRequestFields(row.usage, row),
+									);
 									const errorSummary = row.success ? null : formatErrorListSummary(row);
 									const requestedModelId = getRequestedModelId(row);
 									const routedModelId = getRoutedModelId(row);
@@ -1045,7 +1102,9 @@ export default function UnifiedRequestsTable({
 												loading && "opacity-50",
 												"cursor-pointer hover:bg-muted/40",
 											)}
-                                                                                onClick={() => void handleRowClick(row)}
+											onMouseEnter={() => prefetchRequestDetail(row.request_id)}
+											onFocus={() => prefetchRequestDetail(row.request_id)}
+											onClick={() => void handleRowClick(row)}
 										>
 											<TableCell className="py-2 font-mono text-xs">
 												<HoverCard>
@@ -1554,22 +1613,21 @@ export default function UnifiedRequestsTable({
 			) : null}
 
 			{/* Detail Dialog */}
-                        <RequestDetailDialog
-                                open={dialogOpen}
-                                onOpenChange={setDialogOpen}
-                                request={selectedRequest}
-                                modelMetadata={resolvedModelMetadata}
-                                providerNames={resolvedProviderNames}
-                                providerMetadata={resolvedProviderMetadata}
-                                providerName={
-                                        selectedRequest?.provider
-                                                ? resolvedProviderNames.get(
-                                                          selectedRequest.provider,
-                                                  ) || selectedRequest.provider
-                                                : null
-                                }
-                                appName={selectedAppName}
-                        />
+			<RequestDetailDialog
+				open={dialogOpen}
+				onOpenChange={handleDialogOpenChange}
+				request={selectedRequest}
+				modelMetadata={resolvedModelMetadata}
+				providerNames={resolvedProviderNames}
+				providerMetadata={resolvedProviderMetadata}
+				providerName={
+					selectedRequest?.provider
+						? resolvedProviderNames.get(selectedRequest.provider) ||
+							selectedRequest.provider
+						: null
+				}
+				appName={selectedAppName}
+			/>
 		</div>
 	);
 }

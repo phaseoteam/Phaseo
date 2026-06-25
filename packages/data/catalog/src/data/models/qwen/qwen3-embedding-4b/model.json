@@ -86,7 +86,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 43
+      "rank": 44
     },
     {
       "benchmark_id": "creative-writing-v3",
@@ -118,7 +118,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 143
+      "rank": 144
     },
     {
       "benchmark_id": "hallusion-bench",
@@ -174,7 +174,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 48
+      "rank": 49
     },
     {
       "benchmark_id": "lvbench",
@@ -230,7 +230,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 99
+      "rank": 102
     },
     {
       "benchmark_id": "mmlu-prox",
@@ -262,7 +262,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 73
+      "rank": 77
     },
     {
       "benchmark_id": "mmmu-(val)",
@@ -342,7 +342,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 36
+      "rank": 39
     },
     {
       "benchmark_id": "polymath",
@@ -390,7 +390,7 @@
       "is_self_reported": true,
       "other_info": "inferred family alias from qwen3-vl-4b-thinking (score=0.3850; benches=48)",
       "source_link": null,
-      "rank": 35
+      "rank": 36
     },
     {
       "benchmark_id": "writingbench",

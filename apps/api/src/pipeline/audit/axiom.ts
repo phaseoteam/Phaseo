@@ -246,8 +246,13 @@ export function buildAxiomEvent(a: AxiomArgs) {
     const costOutputAudio = lineNanosByDim.get("output_audio_tokens") ?? 0;
     const costInputVideo = lineNanosByDim.get("input_video_tokens") ?? 0;
     const costOutputVideo = (lineNanosByDim.get("output_video_tokens") ?? 0) + (lineNanosByDim.get("output_video_seconds") ?? 0);
-    const costCachedRead = lineNanosByDim.get("cached_read_text_tokens") ?? 0;
-    const costCachedWrite = lineNanosByDim.get("cached_write_text_tokens") ?? 0;
+    const costCachedRead =
+        (lineNanosByDim.get("implicit_cached_input_text_tokens") ?? 0) +
+        (lineNanosByDim.get("cached_read_text_tokens") ?? 0);
+    const costCachedWrite =
+        (lineNanosByDim.get("cached_write_text_tokens") ?? 0) +
+        (lineNanosByDim.get("cached_write_text_tokens_5m") ?? 0) +
+        (lineNanosByDim.get("cached_write_text_tokens_1h") ?? 0);
     const costInputTotal =
         costInputText +
         costInputAggregate +

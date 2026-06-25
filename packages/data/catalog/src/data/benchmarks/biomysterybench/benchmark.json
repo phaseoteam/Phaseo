@@ -1,0 +1,9 @@
+{
+  "benchmark_id": "biomysterybench",
+  "benchmark_name": "BioMysteryBench",
+  "category": "biology",
+  "ascending_order": null,
+  "type": "percentage",
+  "link": null,
+  "total_models": 1
+}

@@ -96,7 +96,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://openai.com/index/gpt-4-1/",
-      "rank": 127
+      "rank": 133
     },
     {
       "benchmark_id": "graphwalks-bfs-lt-128k",
@@ -120,7 +120,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://livebench.ai/#/",
-      "rank": 39
+      "rank": 53
     },
     {
       "benchmark_id": "lmarena-text",

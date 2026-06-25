@@ -20,7 +20,7 @@
   "features": [],
   "models": [
     {
-      "model_id": "x-ai/grok-3",
+      "model_id": "x-ai/grok-4.1-fast",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

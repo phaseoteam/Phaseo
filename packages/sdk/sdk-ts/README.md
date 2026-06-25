@@ -49,6 +49,7 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
 - `client.calculatePricing(...)` for `/pricing/calculate` usage estimation
 - `client.listProviders(...)`, `client.getCredits(...)`, `client.getActivity(...)`, and `client.getAnalytics(...)` for provider discovery and management-key usage surfaces
+- `client.providers.derankStatus(providerId, ...)` for provider derank health checks
 - `client.listApiKeys(...)` for management-key `/keys` discovery
 - `client.createApiKey(...)`, `client.updateApiKey(id, ...)`, and `client.deleteApiKey(id)` for management-key API-key lifecycle changes
 - `client.getApiKey(id)` for management-key `/keys/{id}` lookup
@@ -57,8 +58,11 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.getHealth()`
 - `client.models.getDeprecationInfo(modelId)`
 - `client.models.validate(modelId)`
+- `client.ocr.create(...)`, `client.rerank.create(...)`, and `client.music.create(...)` for OCR, rerank, and music generation
+- `client.dataModels.list(...)` for `/data/models`
+- `client.responses.websocketUrl(...)` for Responses websocket connection URLs
 
-Model discovery supports the public `/gateway/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
+Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 
 Use `provider_availability_reason` with `availability: "all"` when you want rollout-state entries such as `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused`, or `soft_blocked`. Use `capability_status` with `availability: "all"` when you want non-routable endpoint mappings such as `coming_soon` or `internal_testing`.
 
@@ -75,6 +79,30 @@ const models = await client.models.list({
 ## Async job websocket helpers
 
 Batch and video operations can expose a websocket lifecycle stream at `/v1/async/{kind}/{id}/ws`.
+Create responses include the job id, polling URL, optional websocket URL, and sanitized webhook delivery state.
+
+```ts
+const batch = await client.batches.create({
+  endpoint: "/v1/responses",
+  input_file_id: "file_123",
+  completion_window: "24h",
+  webhook: {
+    url: "https://example.com/ai-stats/webhooks",
+    secret: process.env.AI_STATS_WEBHOOK_SECRET,
+    events: ["batch.progress", "batch.completed", "batch.failed"],
+  },
+});
+
+const video = await client.videos.create({
+  model: "google/veo-3",
+  prompt: "orbital reveal",
+  webhook: {
+    url: "https://example.com/ai-stats/webhooks",
+    secret: process.env.AI_STATS_WEBHOOK_SECRET,
+    events: ["video.progress", "video.completed", "video.failed"],
+  },
+});
+```
 
 ```ts
 const batchSocketUrl = client.batches.websocketUrl("batch_123", {

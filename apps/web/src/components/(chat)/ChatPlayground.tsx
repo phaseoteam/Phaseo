@@ -20,13 +20,16 @@ import type {
 } from "@/lib/indexeddb/chats";
 import { deleteChat, getAllChats, upsertChat } from "@/lib/indexeddb/chats";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
-import { FEATURED_MODEL_IDS } from "@/components/(chat)/playgroundConfig";
+import { compareByReleaseDateDesc } from "@/components/(chat)/playgroundConfig";
 import {
 	ChatConversation,
 	type ChatSendPayload,
 } from "@/components/(chat)/ChatConversation";
 import { ChatHeader } from "@/components/(chat)/ChatHeader";
 import { ModelSettingsDialog } from "@/components/(chat)/ModelSettingsDialog";
+import {
+	type ChatRequestErrorDetails,
+} from "@/components/(chat)/ChatRequestErrorNotice";
 import { ChatSearchDialog } from "@/components/(chat)/ChatSearchDialog";
 import { ChatRenameDialog } from "@/components/(chat)/ChatRenameDialog";
 import { ChatDeleteDialog } from "@/components/(chat)/ChatDeleteDialog";
@@ -94,37 +97,36 @@ type ChatUser = {
 	avatarUrl: string | null;
 };
 
-const canonicalizeModelKey = (value: string) =>
-	value
-		.toLowerCase()
-		.replace(/[._]+/g, "-")
-		.replace(/[^a-z0-9/-]+/g, "-")
-		.replace(/-+/g, "-")
-		.replace(/\/+/g, "/")
-		.replace(/-\//g, "/")
-		.replace(/\/-/g, "/")
-		.replace(/^\/|\/$/g, "")
-		.replace(/^-+|-+$/g, "");
-
-const DATE_SUFFIX_RE = /-\d{4}-\d{2}-\d{2}$/;
-
-const stripModelDateSuffix = (value: string) =>
-	value.replace(DATE_SUFFIX_RE, "");
-
-const isFeaturedModelId = (modelId: string) => {
-	const canonicalModelId = canonicalizeModelKey(
-		stripModelDateSuffix(modelId)
-	);
-	return FEATURED_MODEL_IDS.some((featuredModelId) => {
-		const canonicalFeaturedId = canonicalizeModelKey(
-			stripModelDateSuffix(featuredModelId)
-		);
-		return canonicalModelId === canonicalFeaturedId;
-	});
+type ChatErrorPayload = Error & {
+	code?: string;
+	status?: number;
+	requestId?: string;
+	description?: string;
+	details?: Array<{
+		message: string;
+		path?: string[];
+		keyword?: string;
+	}>;
+	routingDiagnostics?: Record<string, unknown> | null;
+	rawPayload?: Record<string, unknown> | null;
 };
 
 const resolveGatewayModelOrgId = (model: GatewaySupportedModel) =>
 	model.organisationId?.trim() || getOrgId(model.modelId);
+
+function pickPreferredApiModelId(
+	current: string | null,
+	candidate: string,
+	selectorModelId: string,
+) {
+	if (!current) return candidate;
+	if (current === selectorModelId) return current;
+	if (candidate === selectorModelId) return candidate;
+	if (candidate.length !== current.length) {
+		return candidate.length < current.length ? candidate : current;
+	}
+	return candidate.localeCompare(current) < 0 ? candidate : current;
+}
 
 function ChatPlaygroundContent({
 	models,
@@ -135,7 +137,9 @@ function ChatPlaygroundContent({
 	const [threads, setThreads] = useState<ChatThread[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
-	const [, setError] = useState<string | null>(null);
+	const [error, setError] = useState<string | null>(null);
+	const [requestError, setRequestError] =
+		useState<ChatRequestErrorDetails | null>(null);
 	const [baseUrl, setBaseUrl] = useState(BASE_URL);
 	const [authUser, setAuthUser] = useState<ChatUser | null>(null);
 	const [userRole, setUserRole] = useState<string | null>(null);
@@ -176,18 +180,80 @@ function ChatPlaygroundContent({
 			),
 		[models],
 	);
-	const defaultModelId = selectableModels[0]?.modelId ?? "";
+	const selectorModelIdByRawModelId = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const model of selectableModels) {
+			const selectorModelId = model.selectorModelId;
+			map.set(model.modelId, selectorModelId);
+			map.set(selectorModelId, selectorModelId);
+		}
+		return map;
+	}, [selectableModels]);
+	const preferredRequestModelIdBySelectorModelId = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const model of selectableModels) {
+			const selectorModelId = model.selectorModelId;
+			const current = map.get(selectorModelId) ?? null;
+			map.set(
+				selectorModelId,
+				pickPreferredApiModelId(current, model.modelId, selectorModelId),
+			);
+		}
+		return map;
+	}, [selectableModels]);
+	const requestModelIdBySelectorModelIdByProviderId = useMemo(() => {
+		const map = new Map<string, Map<string, string>>();
+		for (const model of selectableModels) {
+			const selectorModelId = model.selectorModelId;
+			const providerMap =
+				map.get(selectorModelId) ?? new Map<string, string>();
+			const current = providerMap.get(model.providerId) ?? null;
+			providerMap.set(
+				model.providerId,
+				pickPreferredApiModelId(current, model.modelId, selectorModelId),
+			);
+			map.set(selectorModelId, providerMap);
+		}
+		return map;
+	}, [selectableModels]);
+	const availableProviderIdsByModelId = useMemo(() => {
+		const providerIdsByModelId = new Map<string, string[]>();
+		for (const model of selectableModels) {
+			if (!model.isAvailable) continue;
+			const selectorModelId = model.selectorModelId;
+			const existing = providerIdsByModelId.get(selectorModelId) ?? [];
+			if (!existing.includes(model.providerId)) {
+				existing.push(model.providerId);
+				providerIdsByModelId.set(selectorModelId, existing);
+			}
+		}
+		return providerIdsByModelId;
+	}, [selectableModels]);
+	const defaultModelId = selectableModels[0]?.selectorModelId ?? "";
 	const [lastModelId, setLastModelId] = useState(defaultModelId);
 	const queryModelId = (modelParam ?? "").trim();
 	const queryPrompt = promptParam ?? "";
 	const selectableModelIdSet = useMemo(
-		() => new Set(selectableModels.map((model) => model.modelId)),
-		[selectableModels],
+		() =>
+			new Set(
+				selectableModels.map(
+					(model) =>
+						selectorModelIdByRawModelId.get(model.modelId) ?? model.modelId,
+				),
+			),
+		[selectableModels, selectorModelIdByRawModelId],
+	);
+	const resolvedQueryModelId = useMemo(
+		() => selectorModelIdByRawModelId.get(queryModelId) ?? queryModelId,
+		[queryModelId, selectorModelIdByRawModelId],
 	);
 	const queryModelIsValid = useMemo(() => {
-		if (!queryModelId) return false;
-		return selectableModelIdSet.has(queryModelId);
-	}, [queryModelId, selectableModelIdSet]);
+		if (!resolvedQueryModelId) return false;
+		return selectableModelIdSet.has(resolvedQueryModelId);
+	}, [resolvedQueryModelId, selectableModelIdSet]);
+	const [pendingQueryModelId, setPendingQueryModelId] = useState<
+		string | null
+	>(null);
 	const [personalization, setPersonalization] =
 		useState<PersonalizationSettings>({
 			name: "",
@@ -200,13 +266,14 @@ function ChatPlaygroundContent({
 		const map = new Map<string, ModelOption>();
 
 		for (const model of selectableModels) {
-			const existing = map.get(model.modelId);
+			const selectorModelId = model.selectorModelId;
+			const existing = map.get(selectorModelId);
 			const orgId = resolveGatewayModelOrgId(model);
 			const orgName =
 				model.organisationName ??
 				model.providerName ??
 				formatOrgLabel(orgId);
-			const label = model.modelName ?? formatModelLabel(model.modelId);
+			const label = model.modelName ?? formatModelLabel(selectorModelId);
 			const releaseDate =
 				model.releaseDate ?? model.announcementDate ?? null;
 			const rowCapabilityEndpoints = capabilityIdsToUnifiedEndpoints(
@@ -214,15 +281,15 @@ function ChatPlaygroundContent({
 			);
 
 			if (!existing) {
-				map.set(model.modelId, {
-					modelId: model.modelId,
+				map.set(selectorModelId, {
+					modelId: selectorModelId,
 					orgId,
 					orgName,
 					label,
 					capabilityEndpoints:
 						rowCapabilityEndpoints.length > 0
 							? rowCapabilityEndpoints
-							: [inferModelCapabilityEndpoint(model.modelId)],
+							: [inferModelCapabilityEndpoint(selectorModelId)],
 					providerIds: [model.providerId],
 					providerNames: [
 						model.providerName ?? formatOrgLabel(model.providerId),
@@ -282,55 +349,21 @@ function ChatPlaygroundContent({
 				? ("active" as const)
 				: ("inactive" as const),
 		}));
-		const featured: ModelOption[] = [];
-		const grouped = new Map<string, ModelOption[]>();
-		const comingSoon = new Map<string, ModelOption[]>();
+		const active: ModelOption[] = [];
+		const comingSoon: ModelOption[] = [];
 		for (const option of options) {
-			const isFeatured = isFeaturedModelId(option.modelId);
-			if (isFeatured && option.gatewayStatus === "active") {
-				featured.push(option);
-			}
 			if (option.gatewayStatus === "inactive") {
-				const list = comingSoon.get(option.orgId) ?? [];
-				list.push(option);
-				comingSoon.set(option.orgId, list);
+				comingSoon.push(option);
 			} else {
-				const list = grouped.get(option.orgId) ?? [];
-				list.push(option);
-				grouped.set(option.orgId, list);
+				active.push(option);
 			}
 		}
-
-		for (const list of grouped.values()) {
-			list.sort((a, b) => a.label.localeCompare(b.label));
-		}
-
-		for (const list of comingSoon.values()) {
-			list.sort((a, b) => a.label.localeCompare(b.label));
-		}
-
-		featured.sort((a, b) => {
-			const orgCompare = a.orgName.localeCompare(b.orgName);
-			if (orgCompare !== 0) return orgCompare;
-			return a.label.localeCompare(b.label);
-		});
-
-		const sortGroupsByOrgName = (source: Map<string, ModelOption[]>) => {
-			const entries = Array.from(source.entries());
-			entries.sort(([, aList], [, bList]) => {
-				const aName =
-					aList[0]?.orgName ?? formatOrgLabel(aList[0]?.orgId ?? "");
-				const bName =
-					bList[0]?.orgName ?? formatOrgLabel(bList[0]?.orgId ?? "");
-				return aName.localeCompare(bName);
-			});
-			return new Map(entries);
-		};
+		active.sort(compareByReleaseDateDesc);
+		comingSoon.sort(compareByReleaseDateDesc);
 
 		return {
-			featured,
-			grouped: sortGroupsByOrgName(grouped),
-			comingSoon: sortGroupsByOrgName(comingSoon),
+			active,
+			comingSoon,
 		};
 	}, [selectableModels]);
 	const modelCapabilitiesById = useMemo(() => {
@@ -346,18 +379,11 @@ function ChatPlaygroundContent({
 			}
 			capabilityById[modelId] = Array.from(next);
 		};
-		for (const option of modelOptions.featured) {
+		for (const option of modelOptions.active) {
 			setForModel(option.modelId, option.capabilityEndpoints);
 		}
-		for (const list of modelOptions.grouped.values()) {
-			for (const option of list) {
-				setForModel(option.modelId, option.capabilityEndpoints);
-			}
-		}
-		for (const list of modelOptions.comingSoon.values()) {
-			for (const option of list) {
-				setForModel(option.modelId, option.capabilityEndpoints);
-			}
+		for (const option of modelOptions.comingSoon) {
+			setForModel(option.modelId, option.capabilityEndpoints);
 		}
 		for (const modelId of Object.keys(capabilityById)) {
 			if (capabilityById[modelId].length === 0) {
@@ -367,7 +393,7 @@ function ChatPlaygroundContent({
 			}
 		}
 		return capabilityById;
-	}, [modelOptions.comingSoon, modelOptions.featured, modelOptions.grouped]);
+	}, [modelOptions.active, modelOptions.comingSoon]);
 
 	const providerOptions = useMemo(() => {
 		const map = new Map<string, string>();
@@ -383,6 +409,106 @@ function ChatPlaygroundContent({
 			.map(([id, name]) => ({ id, name }))
 			.sort((a, b) => a.name.localeCompare(b.name));
 	}, [models]);
+	const providerNameById = useMemo(
+		() =>
+			new Map(providerOptions.map((provider) => [provider.id, provider.name])),
+		[providerOptions],
+	);
+	const getSupportedProviderIdsForModel = useCallback(
+		(modelId: string) =>
+			availableProviderIdsByModelId.get(
+				selectorModelIdByRawModelId.get(modelId) ?? modelId,
+			) ?? [],
+		[availableProviderIdsByModelId, selectorModelIdByRawModelId],
+	);
+	const availableModelIdSet = useMemo(
+		() =>
+			new Set(selectableModels.map((model) => model.selectorModelId)),
+		[selectableModels],
+	);
+	const successorModelIdByPreviousModelId = useMemo(() => {
+		const latestByPreviousModelId = new Map<
+			string,
+			{ modelId: string; timestamp: number }
+		>();
+		for (const model of selectableModels) {
+			if (!model.isAvailable || !model.previousModelId) continue;
+			const selectorModelId = model.selectorModelId;
+			const parsed = Date.parse(
+				model.releaseDate ?? model.announcementDate ?? "",
+			);
+			const timestamp = Number.isFinite(parsed) ? parsed : 0;
+			const existing = latestByPreviousModelId.get(model.previousModelId);
+			if (!existing || timestamp >= existing.timestamp) {
+				latestByPreviousModelId.set(model.previousModelId, {
+					modelId: selectorModelId,
+					timestamp,
+				});
+			}
+		}
+		return new Map(
+			Array.from(latestByPreviousModelId.entries()).map(
+				([previousModelId, entry]) => [previousModelId, entry.modelId],
+			),
+		);
+	}, [selectableModels]);
+	const isProviderSupportedForModel = useCallback(
+		(modelId: string, providerId: string | null | undefined) => {
+			if (!providerId || providerId === "auto") return true;
+			return getSupportedProviderIdsForModel(modelId).includes(providerId);
+		},
+		[getSupportedProviderIdsForModel],
+	);
+	const resolveRequestModelIdForProvider = useCallback(
+		(modelId: string, providerId: string | null | undefined) => {
+			const selectorModelId =
+				selectorModelIdByRawModelId.get(modelId) ?? modelId;
+			if (providerId && providerId !== "auto") {
+				const providerMap =
+					requestModelIdBySelectorModelIdByProviderId.get(selectorModelId);
+				const providerSpecificModelId = providerMap?.get(providerId) ?? null;
+				if (providerSpecificModelId) {
+					return providerSpecificModelId;
+				}
+			}
+			return (
+				preferredRequestModelIdBySelectorModelId.get(selectorModelId) ??
+				selectorModelId
+			);
+		},
+		[
+			preferredRequestModelIdBySelectorModelId,
+			requestModelIdBySelectorModelIdByProviderId,
+			selectorModelIdByRawModelId,
+		],
+	);
+	const resolveReplacementModelId = useCallback(
+		(
+			modelId: string,
+			options?: { allowDefaultFallback?: boolean },
+		): { modelId: string | null; reason: "available" | "successor" | "fallback" | "missing" } => {
+			const canonicalModelId =
+				selectorModelIdByRawModelId.get(modelId) ?? modelId;
+			if (availableModelIdSet.has(canonicalModelId)) {
+				return { modelId: canonicalModelId, reason: "available" };
+			}
+			const successorModelId =
+				successorModelIdByPreviousModelId.get(canonicalModelId) ?? null;
+			if (successorModelId && availableModelIdSet.has(successorModelId)) {
+				return { modelId: successorModelId, reason: "successor" };
+			}
+			if (options?.allowDefaultFallback && defaultModelId) {
+				return { modelId: defaultModelId, reason: "fallback" };
+			}
+			return { modelId: null, reason: "missing" };
+		},
+		[
+			availableModelIdSet,
+			defaultModelId,
+			selectorModelIdByRawModelId,
+			successorModelIdByPreviousModelId,
+		],
+	);
 
 	const isAuthenticated = Boolean(authUser);
 	const isAdmin = userRole === "admin";
@@ -442,7 +568,7 @@ function ChatPlaygroundContent({
 	const modelDisplayNameById = useMemo(() => {
 		const map: Record<string, string> = {};
 		for (const model of models) {
-			const modelId = model.modelId.trim();
+			const modelId = model.selectorModelId.trim();
 			if (!modelId || map[modelId]) continue;
 			const fallbackLabel = formatModelLabel(modelId);
 			map[modelId] = model.modelName?.trim() || fallbackLabel;
@@ -453,7 +579,7 @@ function ChatPlaygroundContent({
 	const modelOrgIdById = useMemo(() => {
 		const map: Record<string, string> = {};
 		for (const model of models) {
-			const modelId = model.modelId.trim();
+			const modelId = model.selectorModelId.trim();
 			if (!modelId || map[modelId]) continue;
 			map[modelId] = resolveGatewayModelOrgId(model);
 		}
@@ -463,12 +589,15 @@ function ChatPlaygroundContent({
 	const modelLinkById = useMemo(() => {
 		const map: Record<string, string> = {};
 		for (const model of models) {
-			const modelId = model.modelId.trim();
-			if (!modelId || map[modelId]) continue;
+			const selectorModelId = model.selectorModelId.trim();
+			if (!selectorModelId || map[selectorModelId]) continue;
 			const orgId = resolveGatewayModelOrgId(model);
-			const href = getModelDetailsHref(orgId, modelId);
+			const routeModelId =
+				model.internalModelId?.trim() ||
+				selectorModelId.replace(/:free$/i, "");
+			const href = getModelDetailsHref(orgId, routeModelId);
 			if (!href) continue;
-			map[modelId] = href;
+			map[selectorModelId] = href;
 		}
 		return map;
 	}, [models]);
@@ -492,7 +621,7 @@ function ChatPlaygroundContent({
 			const fromModelId = AUDIO_INPUT_MODEL_HINTS.some((hint) =>
 				normalizedModelId.includes(hint),
 			);
-			supportById[model.modelId] = fromCapabilities || fromModelId;
+			supportById[model.selectorModelId] = fromCapabilities || fromModelId;
 		}
 		return supportById;
 	}, [selectableModels]);
@@ -657,11 +786,14 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
+			const resolvedStoredModelId = storedModel
+				? (selectorModelIdByRawModelId.get(storedModel) ?? storedModel)
+				: null;
 			const resolvedModel =
-				(queryModelIsValid && queryModelId) ||
-				(storedModel &&
-					models.some((model) => model.modelId === storedModel) &&
-					storedModel) ||
+				(queryModelIsValid && resolvedQueryModelId) ||
+				(resolvedStoredModelId &&
+					selectableModelIdSet.has(resolvedStoredModelId) &&
+					resolvedStoredModelId) ||
 				defaultModelId;
 			if (!mounted) return;
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
@@ -691,9 +823,10 @@ function ChatPlaygroundContent({
 	}, [
 		defaultModelId,
 		ensureInitialThread,
-		models,
-		queryModelId,
+		resolvedQueryModelId,
 		queryModelIsValid,
+		selectableModelIdSet,
+		selectorModelIdByRawModelId,
 	]);
 
 	useEffect(() => {
@@ -706,7 +839,6 @@ function ChatPlaygroundContent({
 			);
 		}
 	}, [activeThread?.modelId]);
-
 	useEffect(() => {
 		setGroupingNowMs(Date.now());
 	}, []);
@@ -983,6 +1115,7 @@ function ChatPlaygroundContent({
 			content: string,
 			usage?: Record<string, unknown> | null,
 			meta?: Record<string, unknown> | null,
+			providerId?: string | null,
 		) => {
 			return applyMessageUpdate(thread, messageId, (message) => {
 				const variants = ensureVariants(message).map(
@@ -999,12 +1132,18 @@ function ChatPlaygroundContent({
 				const activeIndex = variantIndex;
 				const activeVariant = variants[activeIndex];
 				const orgId = getOrgId(message.modelId ?? thread.modelId);
+				const resolvedProviderId =
+					providerId && providerId !== "auto"
+						? providerId
+						: message.providerId ?? thread.settings.providerId;
 				return {
 					...message,
 					modelId: message.modelId ?? thread.modelId,
-					providerId:
-						message.providerId ?? thread.settings.providerId,
+					providerId: resolvedProviderId,
 					providerName:
+						(resolvedProviderId
+							? providerNameById.get(resolvedProviderId)
+							: null) ??
 						message.providerName ??
 						orgNameById[orgId] ??
 						formatOrgLabel(orgId),
@@ -1016,7 +1155,7 @@ function ChatPlaygroundContent({
 				};
 			});
 		},
-		[applyMessageUpdate, orgNameById],
+		[applyMessageUpdate, orgNameById, providerNameById],
 	);
 
 	const handleSaveSettings = useCallback(() => {
@@ -1041,7 +1180,7 @@ function ChatPlaygroundContent({
 				role: string;
 				content: string;
 			}>;
-			const effectiveModelId = requestModelId ?? thread.modelId;
+			const selectedModelId = requestModelId ?? thread.modelId;
 			const compareMeta = compareGroupId
 				? { compare_group_id: compareGroupId }
 				: null;
@@ -1077,13 +1216,27 @@ function ChatPlaygroundContent({
 				sendPayload?.content.trim() ||
 				"";
 			const endpoint: UnifiedChatEndpoint = "responses";
+			const effectiveModelSettings = getEffectiveModelSettings(
+				thread,
+				selectedModelId,
+			);
+			const effectiveProviderId = isProviderSupportedForModel(
+				selectedModelId,
+				effectiveModelSettings.providerId,
+			)
+				? effectiveModelSettings.providerId
+				: "auto";
+			const requestExecutionModelId = resolveRequestModelIdForProvider(
+				selectedModelId,
+				effectiveProviderId,
+			);
 			const wantsImageModalities =
 				endpoint === "responses" &&
-				(thread.settings.imageOutputEnabled ||
-					shouldRequestImageModalities(effectiveModelId));
+				(effectiveModelSettings.imageOutputEnabled ||
+					shouldRequestImageModalities(selectedModelId));
 			const streamEnabled =
 				endpoint === "responses" &&
-				Boolean(thread.settings.stream) &&
+				Boolean(effectiveModelSettings.stream) &&
 				!wantsImageModalities;
 			const input = payloadMessages
 				.filter((message) => message.content.trim().length > 0)
@@ -1150,10 +1303,11 @@ function ChatPlaygroundContent({
 					};
 				});
 			const requestBody: Record<string, unknown> = {
-				model: effectiveModelId,
+				model: requestExecutionModelId,
 			};
 			if (endpoint === "responses") {
 				requestBody.input = input;
+				requestBody.meta = true;
 				requestBody.stream = streamEnabled;
 				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
@@ -1162,7 +1316,7 @@ function ChatPlaygroundContent({
 				if (
 					isUnified &&
 					(sendPayload?.apiServerToolsEnabled ??
-						thread.settings.apiServerToolsEnabled)
+						effectiveModelSettings.apiServerToolsEnabled)
 				) {
 					tools.push({ type: "gateway:datetime" });
 				}
@@ -1171,22 +1325,20 @@ function ChatPlaygroundContent({
 				}
 			}
 
-			if (
-				thread.settings.providerId &&
-				thread.settings.providerId !== "auto"
-			) {
+			if (effectiveProviderId && effectiveProviderId !== "auto") {
 				requestBody.provider = {
-					only: [thread.settings.providerId],
+					only: [effectiveProviderId],
 				};
 			}
-			if (endpoint === "responses" && thread.settings.reasoningEnabled) {
+			if (endpoint === "responses" && effectiveModelSettings.reasoningEnabled) {
 				requestBody.reasoning = {
-					effort: thread.settings.reasoningEffort ?? "medium",
+					effort: effectiveModelSettings.reasoningEffort ?? "medium",
 					summary: "auto",
 				};
 			}
 
 			setError(null);
+			setRequestError(null);
 			if (manageSendingState) {
 				setIsSending(true);
 			}
@@ -1195,12 +1347,57 @@ function ChatPlaygroundContent({
 			let firstTokenAt: number | null = null;
 			let finalUsage: Record<string, unknown> | null = null;
 			let finalMeta: Record<string, unknown> | null = null;
+			let finalProviderId: string | null =
+				effectiveProviderId && effectiveProviderId !== "auto"
+					? effectiveProviderId
+					: null;
 			let latestThread = thread;
 			const assistantId = targetAssistantId ?? generateId();
 			let streamingMessageId = assistantId;
 			let variantIndex = 0;
 			let assistantContent = "";
 			let placeholderReady = false;
+
+			const resolveMetaProviderId = (
+				meta: Record<string, unknown> | null | undefined,
+			): string | null => {
+				if (!meta) return null;
+				if (
+					typeof meta.provider === "string" &&
+					meta.provider.trim().length > 0
+				) {
+					return meta.provider.trim();
+				}
+				const routing =
+					meta.routing &&
+					typeof meta.routing === "object" &&
+					!Array.isArray(meta.routing)
+						? (meta.routing as Record<string, unknown>)
+						: null;
+				if (
+					routing &&
+					typeof routing.selected_provider === "string" &&
+					routing.selected_provider.trim().length > 0
+				) {
+					return routing.selected_provider.trim();
+				}
+				return null;
+			};
+
+			const resolvePayloadProviderId = (payload: any): string | null => {
+				for (const candidate of [
+					payload?.provider,
+					payload?.response?.provider,
+				]) {
+					if (typeof candidate === "string" && candidate.trim().length > 0) {
+						return candidate.trim();
+					}
+				}
+				return (
+					resolveMetaProviderId(payload?.meta ?? null) ??
+					resolveMetaProviderId(payload?.response?.meta ?? null)
+				);
+			};
 
 			if (!streamEnabled) {
 				if (targetAssistantId) {
@@ -1218,18 +1415,19 @@ function ChatPlaygroundContent({
 					latestThread = result.nextThread;
 					variantIndex = result.variantIndex;
 					assistantContent = initialVariant.content;
+					streamingMessageId = targetAssistantId;
 					placeholderReady = true;
 					await updateThreadState(latestThread, false);
 				} else {
-					const orgId = getOrgId(effectiveModelId);
+					const orgId = getOrgId(selectedModelId);
 					const createdAt = nowIso();
 					const assistantMessage: ChatMessage = {
 						id: assistantId,
 						role: "assistant",
 						content: "Generating...",
 						createdAt,
-						modelId: effectiveModelId,
-						providerId: thread.settings.providerId,
+						modelId: selectedModelId,
+						providerId: effectiveProviderId,
 						providerName:
 							orgNameById[orgId] ?? formatOrgLabel(orgId),
 						variants: [
@@ -1274,11 +1472,20 @@ function ChatPlaygroundContent({
 
 			const mergeMeta = (
 				clientMeta: Record<string, unknown>,
-			): Record<string, unknown> => ({
-				...(compareMeta ?? {}),
-				...(finalMeta ?? {}),
-				client: clientMeta,
-			});
+			): Record<string, unknown> => {
+				const providerId =
+					finalProviderId ??
+					resolveMetaProviderId(finalMeta) ??
+					(effectiveProviderId && effectiveProviderId !== "auto"
+						? effectiveProviderId
+						: null);
+				return {
+					...(compareMeta ?? {}),
+					...(finalMeta ?? {}),
+					...(providerId ? { provider: providerId } : {}),
+					client: clientMeta,
+				};
+			};
 
 			try {
 				const response = await fetch("/api/chat/text", {
@@ -1305,14 +1512,33 @@ function ChatPlaygroundContent({
 						response.headers.get("content-type") ?? "";
 					let errorMessage = `Request failed (${response.status}).`;
 					let errorCode: string | undefined;
+					let errorRequestId: string | undefined;
+					let errorDescription: string | undefined;
+					let errorDetails:
+						| Array<{
+								message: string;
+								path?: string[];
+								keyword?: string;
+						  }>
+						| undefined;
+					let routingDiagnostics:
+						| Record<string, unknown>
+						| null
+						| undefined;
+					let rawPayload: Record<string, unknown> | undefined;
 					if (contentType.includes("application/json")) {
 						try {
 							const payload = (await response.json()) as
 								| Record<string, unknown>
 								| null;
 							if (payload) {
+								rawPayload = payload;
 								if (typeof payload.message === "string") {
 									errorMessage = payload.message;
+								} else if (
+									typeof payload.description === "string"
+								) {
+									errorMessage = payload.description;
 								} else if (
 									typeof payload.error === "string"
 								) {
@@ -1320,6 +1546,89 @@ function ChatPlaygroundContent({
 								}
 								if (typeof payload.error === "string") {
 									errorCode = payload.error;
+								}
+								if (
+									typeof payload.request_id === "string"
+								) {
+									errorRequestId = payload.request_id;
+								}
+								if (
+									typeof payload.description === "string"
+								) {
+									errorDescription = payload.description;
+								}
+								if (Array.isArray(payload.details)) {
+									errorDetails = payload.details.flatMap((detail) => {
+											if (
+												!detail ||
+												typeof detail !== "object"
+											) {
+												return [];
+											}
+											const message =
+												typeof (
+													detail as {
+														message?: unknown;
+													}
+												).message === "string"
+													? String(
+															(detail as {
+																message: string;
+															}).message,
+														)
+													: null;
+											if (!message) return [];
+											return [{
+												message,
+												path: Array.isArray(
+													(detail as {
+														path?: unknown;
+													}).path,
+												)
+													? (
+															detail as {
+																path: unknown[];
+															}
+														).path
+															.map((entry) =>
+																typeof entry ===
+																"string"
+																	? entry
+																	: null,
+															)
+															.filter(
+																(
+																	entry,
+																): entry is string =>
+																	Boolean(entry),
+															)
+													: undefined,
+												keyword:
+													typeof (
+														detail as {
+															keyword?: unknown;
+														}
+													).keyword === "string"
+														? String(
+																(detail as {
+																	keyword: string;
+																}).keyword,
+															)
+														: undefined,
+											}];
+										});
+								}
+								if (
+									payload.routing_diagnostics &&
+									typeof payload.routing_diagnostics ===
+										"object" &&
+									!Array.isArray(payload.routing_diagnostics)
+								) {
+									routingDiagnostics =
+										payload.routing_diagnostics as Record<
+											string,
+											unknown
+										>;
 								}
 							}
 						} catch {
@@ -1329,10 +1638,14 @@ function ChatPlaygroundContent({
 						const text = await response.text();
 						if (text) errorMessage = text;
 					}
-					const requestError = new Error(errorMessage) as Error & {
-						code?: string;
-					};
+					const requestError = new Error(errorMessage) as ChatErrorPayload;
 					if (errorCode) requestError.code = errorCode;
+					requestError.status = response.status;
+					requestError.requestId = errorRequestId;
+					requestError.description = errorDescription;
+					requestError.details = errorDetails;
+					requestError.routingDiagnostics = routingDiagnostics ?? null;
+					requestError.rawPayload = rawPayload;
 					throw requestError;
 				}
 
@@ -1359,6 +1672,8 @@ function ChatPlaygroundContent({
 							data?.response?.output?.usage ??
 							null;
 						finalMeta = data?.meta ?? data?.response?.meta ?? null;
+						finalProviderId =
+							resolvePayloadProviderId(data) ?? finalProviderId;
 						const clientMeta = buildClientMeta(performance.now());
 						const mergedMeta = mergeMeta(clientMeta);
 						const reasoningText =
@@ -1392,6 +1707,7 @@ function ChatPlaygroundContent({
 								assistantContent,
 								finalUsage,
 								mergedMeta,
+								finalProviderId,
 							);
 							await updateThreadState(latestThread, !temporaryMode);
 							return;
@@ -1413,6 +1729,7 @@ function ChatPlaygroundContent({
 							assistantContent,
 							finalUsage,
 							mergeMeta(buildClientMeta(performance.now())),
+							finalProviderId,
 						);
 						await updateThreadState(latestThread, !temporaryMode);
 						return;
@@ -1439,14 +1756,14 @@ function ChatPlaygroundContent({
 					streamingMessageId = targetAssistantId;
 					await updateThreadState(latestThread, false);
 				} else {
-					const orgId = getOrgId(effectiveModelId);
+					const orgId = getOrgId(selectedModelId);
 					const assistantMessage: ChatMessage = {
 						id: assistantId,
 						role: "assistant",
 						content: "",
 						createdAt: nowIso(),
-						modelId: effectiveModelId,
-						providerId: thread.settings.providerId,
+						modelId: selectedModelId,
+						providerId: effectiveProviderId,
 						providerName:
 							orgNameById[orgId] ?? formatOrgLabel(orgId),
 						variants: [
@@ -1501,6 +1818,7 @@ function ChatPlaygroundContent({
 								assistantContent,
 								undefined,
 								meta,
+								finalProviderId,
 							);
 							await updateThreadState(latestThread, false);
 						});
@@ -1556,6 +1874,9 @@ function ChatPlaygroundContent({
 										parsed?.response?.meta ??
 										null;
 								}
+								finalProviderId =
+									resolvePayloadProviderId(parsed) ??
+									finalProviderId;
 								let responseText = "";
 								let delta = "";
 								let reasoningDelta = "";
@@ -1810,6 +2131,7 @@ function ChatPlaygroundContent({
 					assistantContent,
 					finalUsage,
 					mergedMeta,
+					finalProviderId,
 				);
 
 				await updateThreadState(latestThread, !temporaryMode);
@@ -1818,23 +2140,44 @@ function ChatPlaygroundContent({
 					err instanceof Error
 						? err.message
 						: "Failed to send message.";
+				const structuredError = err as ChatErrorPayload;
 				const errorCode =
-					typeof (err as { code?: unknown })?.code === "string"
-						? (err as { code: string }).code
+					typeof structuredError?.code === "string"
+						? structuredError.code
 						: "";
-				const isGatewayUnavailable =
-					errorCode === "gateway_unreachable";
 				setError(message);
-				const isGatewayError =
-					message.includes('"description":"all_candidates_failed"') ||
-					message.includes('"errorCode":"upstream_error"') ||
-					message.includes("all_candidates_failed");
-				const errorContent = isGatewayError
-					? "All Providers Failed"
-					: isGatewayUnavailable
-						? message
-						: "Internal Server Error";
+				const nextRequestError: ChatRequestErrorDetails = {
+					status:
+						typeof structuredError?.status === "number"
+							? structuredError.status
+							: null,
+					message,
+					errorCode: errorCode || null,
+					requestId:
+						typeof structuredError?.requestId === "string"
+							? structuredError.requestId
+							: null,
+					description:
+						typeof structuredError?.description === "string"
+							? structuredError.description
+							: null,
+					details: Array.isArray(structuredError?.details)
+						? structuredError.details
+						: [],
+					routingDiagnostics:
+						structuredError?.routingDiagnostics ?? null,
+					rawPayload: structuredError?.rawPayload ?? null,
+					modelId: selectedModelId,
+					providerId: effectiveProviderId ?? null,
+					endpoint,
+					timestamp: nowIso(),
+				};
+				setRequestError(nextRequestError);
 				if (latestThread) {
+					const errorMeta = {
+						...(compareMeta ?? {}),
+						chat_request_error: nextRequestError,
+					};
 					const existingMessage = latestThread.messages.find(
 						(m) => m.id === streamingMessageId
 					);
@@ -1843,31 +2186,31 @@ function ChatPlaygroundContent({
 							latestThread,
 							streamingMessageId,
 							variantIndex,
-							errorContent,
+							message,
 							undefined,
-							compareMeta ?? undefined,
+							errorMeta,
 						);
 					} else {
-						const orgId = getOrgId(effectiveModelId);
+						const orgId = getOrgId(selectedModelId);
 						const errorMessage: ChatMessage = {
 							id: generateId(),
 							role: "assistant",
-							content: errorContent,
+							content: message,
 							createdAt: nowIso(),
-							modelId: effectiveModelId,
+							modelId: selectedModelId,
 							providerId: latestThread.settings.providerId,
 							providerName:
 								orgNameById[orgId] ?? formatOrgLabel(orgId),
 							variants: [
 								{
 									id: generateId(),
-									content: errorContent,
+									content: message,
 									createdAt: nowIso(),
-									meta: compareMeta ?? undefined,
+									meta: errorMeta,
 								},
 							],
 							activeVariantIndex: 0,
-							meta: compareMeta ?? undefined,
+							meta: errorMeta,
 						};
 						latestThread = {
 							...latestThread,
@@ -1890,6 +2233,7 @@ function ChatPlaygroundContent({
 			shouldDebug,
 			appendAssistantVariant,
 			getPrimaryCapabilityForModel,
+			resolveRequestModelIdForProvider,
 			orgNameById,
 			temporaryMode,
 			updateAssistantVariant,
@@ -1910,6 +2254,196 @@ function ChatPlaygroundContent({
 		},
 		[],
 	);
+	const normalizeThreadForAvailableModels = useCallback(
+		(thread: ChatThread): { thread: ChatThread; changed: boolean } => {
+			if (!thread.modelId) return { thread, changed: false };
+
+			let changed = false;
+			const notices: string[] = [];
+			const currentOverrides = thread.settings.modelOverridesById ?? {};
+			const nextOverrides: Record<string, Partial<ChatModelSettings>> = {};
+			let nextModelId = thread.modelId;
+			let nextSystemPrompt = thread.settings.systemPrompt;
+
+			const primaryResolution = resolveReplacementModelId(thread.modelId, {
+				allowDefaultFallback: true,
+			});
+			if (
+				primaryResolution.modelId &&
+				primaryResolution.modelId !== thread.modelId
+			) {
+				const previousDisplayName =
+					currentOverrides[thread.modelId]?.displayName ?? "";
+				const nextDisplayName =
+					currentOverrides[primaryResolution.modelId]?.displayName ?? "";
+				const previousDefaultPrompt = buildDefaultSystemPrompt(
+					thread.modelId,
+					previousDisplayName,
+				);
+				if (
+					(thread.settings.systemPrompt ?? "").trim() ===
+					previousDefaultPrompt.trim()
+				) {
+					nextSystemPrompt = buildDefaultSystemPrompt(
+						primaryResolution.modelId,
+						nextDisplayName,
+					);
+				}
+				nextModelId = primaryResolution.modelId;
+				changed = true;
+				notices.push(
+					primaryResolution.reason === "successor"
+						? `Primary model \`${thread.modelId}\` is no longer available. Switched to its latest available successor \`${primaryResolution.modelId}\`.`
+						: `Primary model \`${thread.modelId}\` is no longer available. Switched to fallback model \`${primaryResolution.modelId}\`.`,
+				);
+			}
+
+			const nextCompareModelIds: string[] = [];
+			for (const compareModelId of thread.settings.compareModelIds ?? []) {
+				if (!compareModelId || compareModelId === nextModelId) continue;
+				const compareResolution = resolveReplacementModelId(compareModelId);
+				if (!compareResolution.modelId) {
+					changed = true;
+					notices.push(
+						`Removed compare model \`${compareModelId}\` because it is no longer available.`,
+					);
+					continue;
+				}
+				if (compareResolution.modelId !== compareModelId) {
+					changed = true;
+					notices.push(
+						`Compare model \`${compareModelId}\` is no longer available. Switched to successor \`${compareResolution.modelId}\`.`,
+					);
+				}
+				if (
+					compareResolution.modelId !== nextModelId &&
+					!nextCompareModelIds.includes(compareResolution.modelId)
+				) {
+					nextCompareModelIds.push(compareResolution.modelId);
+				}
+			}
+
+			const selectedModelIds = new Set<string>([
+				nextModelId,
+				...nextCompareModelIds,
+			]);
+			for (const [modelId, override] of Object.entries(currentOverrides)) {
+				if (!selectedModelIds.has(modelId)) {
+					changed = true;
+					continue;
+				}
+				const nextOverride = { ...override };
+				if (!isProviderSupportedForModel(modelId, nextOverride.providerId)) {
+					nextOverride.providerId = "auto";
+					changed = true;
+					notices.push(
+						`Provider lock \`${override.providerId}\` for \`${modelId}\` is no longer available. Reset to \`Auto (Gateway)\`.`,
+					);
+				}
+				nextOverrides[modelId] = nextOverride;
+			}
+
+			const primaryOverride = nextOverrides[nextModelId];
+			const primaryProviderId =
+				primaryOverride?.providerId ?? thread.settings.providerId;
+			let nextProviderId = thread.settings.providerId;
+			if (!isProviderSupportedForModel(nextModelId, primaryProviderId)) {
+				if (primaryOverride?.providerId !== undefined) {
+					nextOverrides[nextModelId] = {
+						...primaryOverride,
+						providerId: "auto",
+					};
+				} else {
+					nextProviderId = "auto";
+				}
+				changed = true;
+				notices.push(
+					`Provider lock \`${primaryProviderId}\` for \`${nextModelId}\` is no longer available. Reset to \`Auto (Gateway)\`.`,
+				);
+			}
+
+			const nextThread: ChatThread = {
+				...thread,
+				modelId: nextModelId,
+				settings: {
+					...thread.settings,
+					systemPrompt: nextSystemPrompt,
+					providerId: nextProviderId,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: ensureModelOverridesForIds(
+						{
+							...thread.settings,
+							systemPrompt: nextSystemPrompt,
+							providerId: nextProviderId,
+							compareModelIds: nextCompareModelIds,
+							compareMode: nextCompareModelIds.length > 0,
+							modelOverridesById: nextOverrides,
+						},
+						[nextModelId, ...nextCompareModelIds],
+					),
+				},
+				updatedAt: changed ? nowIso() : thread.updatedAt,
+			};
+
+			if (notices.length > 0) {
+				const noticeKey = notices.join("||");
+				const hasNotice = nextThread.messages.some(
+					(message) =>
+						(message.meta as { chat_state_notice_key?: string } | null)
+							?.chat_state_notice_key === noticeKey,
+				);
+				if (!hasNotice) {
+					changed = true;
+					nextThread.messages = [
+						...nextThread.messages,
+						{
+							id: generateId(),
+							role: "assistant",
+							content: [
+								"Updated this chat to match current model availability:",
+								...notices.map((notice) => `- ${notice}`),
+							].join("\n"),
+							createdAt: nowIso(),
+							modelId: nextThread.modelId,
+							meta: {
+								chat_state_notice_key: noticeKey,
+								chat_state_notice_type: "availability_migration",
+							},
+						},
+					];
+					nextThread.updatedAt = nowIso();
+				}
+			}
+
+			return { thread: nextThread, changed };
+		},
+		[
+			isProviderSupportedForModel,
+			resolveReplacementModelId,
+		],
+	);
+	useEffect(() => {
+		if (!threads.length || !selectableModels.length) return;
+		let cancelled = false;
+		(async () => {
+			const normalizedThreads = threads.map((thread) =>
+				normalizeThreadForAvailableModels(thread),
+			);
+			const changedThreads = normalizedThreads
+				.filter((result) => result.changed)
+				.map((result) => result.thread);
+			if (!changedThreads.length) return;
+			await Promise.all(
+				changedThreads.map((thread) => upsertChat(thread, "text")),
+			);
+			if (cancelled) return;
+			setThreads(normalizedThreads.map((result) => result.thread));
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [normalizeThreadForAvailableModels, selectableModels.length, threads]);
 
 	const handleSend = useCallback(
 		async (payload: ChatSendPayload) => {
@@ -2337,6 +2871,7 @@ function ChatPlaygroundContent({
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
 			if (!activeThread) return;
+			setPendingQueryModelId(null);
 			const requiredCapability = getPrimaryCapabilityForModel(modelId);
 			const currentModelDisplayName =
 				activeThread.settings.modelOverridesById?.[
@@ -2384,6 +2919,27 @@ function ChatPlaygroundContent({
 				},
 				updatedAt: nowIso(),
 			};
+			const effectiveProviderId =
+				getEffectiveModelSettings(nextThread, modelId).providerId;
+			if (!isProviderSupportedForModel(modelId, effectiveProviderId)) {
+				const currentOverrides =
+					nextThread.settings.modelOverridesById ?? {};
+				const existingModelOverrides = currentOverrides[modelId] ?? {};
+				nextThread.settings = {
+					...nextThread.settings,
+					providerId:
+						existingModelOverrides.providerId === undefined
+							? "auto"
+							: nextThread.settings.providerId,
+					modelOverridesById: {
+						...currentOverrides,
+						[modelId]: {
+							...existingModelOverrides,
+							providerId: "auto",
+						},
+					},
+				};
+			}
 			setLastModelId(modelId);
 			if (typeof window !== "undefined") {
 				window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
@@ -2393,6 +2949,7 @@ function ChatPlaygroundContent({
 		[
 			activeThread,
 			getPrimaryCapabilityForModel,
+			isProviderSupportedForModel,
 			isModelSelectableForContext,
 			composerRequiresAudioInput,
 			temporaryMode,
@@ -2520,10 +3077,64 @@ function ChatPlaygroundContent({
 	);
 
 	useEffect(() => {
-		if (!queryModelIsValid || !queryModelId || !activeThread) return;
-		if (activeThread.modelId === queryModelId) return;
-		updateActiveModel(queryModelId);
-	}, [activeThread, queryModelId, queryModelIsValid, updateActiveModel]);
+		setPendingQueryModelId(queryModelIsValid ? resolvedQueryModelId : null);
+	}, [queryModelIsValid, resolvedQueryModelId]);
+	useEffect(() => {
+		if (!queryModelIsValid || !resolvedQueryModelId || !activeThread) return;
+		if (!pendingQueryModelId) return;
+		if (activeThread.modelId !== pendingQueryModelId) {
+			updateActiveModel(pendingQueryModelId);
+		}
+		setPendingQueryModelId(null);
+	}, [
+		activeThread,
+		pendingQueryModelId,
+		queryModelIsValid,
+		resolvedQueryModelId,
+		updateActiveModel,
+	]);
+	useEffect(() => {
+		if (!activeThread?.modelId) return;
+		const effectiveSettings = getEffectiveModelSettings(
+			activeThread,
+			activeThread.modelId,
+		);
+		if (
+			isProviderSupportedForModel(
+				activeThread.modelId,
+				effectiveSettings.providerId,
+			)
+		) {
+			return;
+		}
+		const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+		const existingModelOverrides =
+			currentOverrides[activeThread.modelId] ?? {};
+		const nextThread: ChatThread = {
+			...activeThread,
+			settings: {
+				...activeThread.settings,
+				providerId:
+					existingModelOverrides.providerId === undefined
+						? "auto"
+						: activeThread.settings.providerId,
+				modelOverridesById: {
+					...currentOverrides,
+					[activeThread.modelId]: {
+						...existingModelOverrides,
+						providerId: "auto",
+					},
+				},
+			},
+			updatedAt: nowIso(),
+		};
+		void updateThreadState(nextThread, !temporaryMode);
+	}, [
+		activeThread,
+		isProviderSupportedForModel,
+		temporaryMode,
+		updateThreadState,
+	]);
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
 		const compareIds = activeThread.settings.compareModelIds ?? [];
@@ -2674,7 +3285,10 @@ function ChatPlaygroundContent({
 	const selectedModelDisplayNameById = useMemo(() => {
 		const labels: Record<string, string> = {};
 		for (const modelId of selectedModelIds) {
-			const model = models.find((entry) => entry.modelId === modelId);
+			const model = models.find(
+				(entry) =>
+					entry.selectorModelId === modelId || entry.modelId === modelId,
+			);
 			const defaultLabel = model?.modelName ?? formatModelLabel(modelId);
 			const overrideLabel =
 				activeThread?.settings.modelOverridesById?.[modelId]?.displayName?.trim();
@@ -2700,30 +3314,35 @@ function ChatPlaygroundContent({
 				{ id: string; label: string; orgId: string; orgName: string }
 			>();
 			for (const model of selectableModels) {
-				const modelCapabilities = getModelCapabilities(model.modelId);
+				const selectorModelId = model.selectorModelId;
+				const modelCapabilities = getModelCapabilities(selectorModelId);
 				if (
 					requiredCapability &&
 					!modelCapabilities.includes(requiredCapability)
 				) {
 					continue;
 				}
-				if (requiresAudioInput && !supportsModelAudioInput(model.modelId)) {
+				if (
+					requiresAudioInput &&
+					!supportsModelAudioInput(selectorModelId)
+				) {
 					continue;
 				}
-				if (byId.has(model.modelId)) continue;
+				if (byId.has(selectorModelId)) continue;
 				const orgId = resolveGatewayModelOrgId(model);
 				const orgName =
 					model.organisationName ??
 					model.providerName ??
 					formatOrgLabel(orgId);
 				// Keep selector labels canonical; nicknames are display-only in chat UI.
-				const baseLabel = model.modelName || formatModelLabel(model.modelId);
+				const baseLabel =
+					model.modelName || formatModelLabel(selectorModelId);
 				const isDisabled =
 					activeThread?.settings.modelOverridesById?.[
-						model.modelId
+						selectorModelId
 					]?.enabled === false;
-				byId.set(model.modelId, {
-					id: model.modelId,
+				byId.set(selectorModelId, {
+					id: selectorModelId,
 					label: isDisabled ? `${baseLabel} (Off)` : baseLabel,
 					orgId,
 					orgName,
@@ -2963,6 +3582,10 @@ function ChatPlaygroundContent({
 		temporaryMode,
 		updateThreadState,
 	]);
+	const handleDismissRequestError = useCallback(() => {
+		setRequestError(null);
+		setError(null);
+	}, []);
 
 	return (
 		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
@@ -3071,6 +3694,8 @@ function ChatPlaygroundContent({
 					onAudioAttachmentRequirementChange={(requiresAudioInput) =>
 						setComposerRequiresAudioInput(requiresAudioInput)
 					}
+					requestError={requestError}
+					onDismissRequestError={handleDismissRequestError}
 				/>
 			</SidebarInset>
 			<ModelSettingsDialog
@@ -3095,9 +3720,7 @@ function ChatPlaygroundContent({
 				providerOptions={providerOptions}
 				supportedProvidersForModel={
 					modelSettingsModelId
-						? models
-								.filter((m) => m.modelId === modelSettingsModelId)
-								.map((m) => m.providerId)
+						? getSupportedProviderIdsForModel(modelSettingsModelId)
 						: undefined
 				}
 				temperatureValue={temperatureValue}

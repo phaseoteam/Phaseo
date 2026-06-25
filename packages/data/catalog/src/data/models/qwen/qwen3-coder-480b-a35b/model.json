@@ -43,7 +43,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold, 500 Turns",
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 48
+      "rank": 52
     },
     {
       "benchmark_id": "swe-bench",
@@ -51,7 +51,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold, 100 Turns",
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 62
+      "rank": 66
     },
     {
       "benchmark_id": "swe-bench-live",
@@ -67,7 +67,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GwfRwACbEAIWJny?format=jpg&name=small",
-      "rank": 23
+      "rank": 24
     },
     {
       "benchmark_id": "tau-bench-airline",

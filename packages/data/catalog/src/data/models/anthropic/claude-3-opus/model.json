@@ -61,7 +61,7 @@
       "is_self_reported": true,
       "other_info": null,
       "source_link": "https://www.anthropic.com/news/claude-3-family",
-      "rank": 126
+      "rank": 132
     },
     {
       "benchmark_id": "lisanbench",
@@ -69,7 +69,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://pbs.twimg.com/media/GsNuq8rW8AArAE8?format=png&name=4096x4096",
-      "rank": 11
+      "rank": 14
     },
     {
       "benchmark_id": "lmarena-text",
@@ -85,7 +85,7 @@
       "is_self_reported": false,
       "other_info": null,
       "source_link": "https://simple-bench.com/index.html",
-      "rank": 26
+      "rank": 36
     },
     {
       "benchmark_id": "confabulations",
@@ -93,7 +93,7 @@
       "is_self_reported": false,
       "other_info": "Confab 28.2%; non-response 17.2%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 53
+      "rank": 14
     }
   ]
 }

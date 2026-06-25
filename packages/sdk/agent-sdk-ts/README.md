@@ -83,6 +83,24 @@ const result = await agent.run({
 console.log(result.output);
 ```
 
+## Devtools
+
+Agent runs can write to the same `.ai-stats-devtools` session format used by `@ai-stats/sdk`.
+
+```ts
+import { createAgentDevtools } from "@ai-stats/agent-sdk";
+
+const result = await agent.run({
+  input: "Summarize this ticket.",
+  client,
+  devtools: createAgentDevtools({
+    directory: ".ai-stats-devtools",
+  }),
+});
+```
+
+You can also enable capture process-wide with `AI_STATS_DEVTOOLS=true` and optionally set `AI_STATS_DEVTOOLS_DIR`.
+
 ## Core concepts
 
 ### Agent definition

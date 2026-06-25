@@ -65,7 +65,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 89
+      "rank": 94
     },
     {
       "benchmark_id": "mmmlu",
@@ -81,7 +81,7 @@
       "is_self_reported": true,
       "other_info": "inferred modality/version alias from gemini-3.1-flash-lite-preview",
       "source_link": "https://deepmind.google/models/model-cards/gemini-3-1-flash-lite/",
-      "rank": 22
+      "rank": 23
     },
     {
       "benchmark_id": "mrcr-v2-(8-needle)",

@@ -2,7 +2,7 @@
   "model_id": "mistral/devstral-small-1.1",
   "organisation_id": "mistral",
   "name": "Devstral Small 1.1",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Devstral Small 1.1 is a coding model from Mistral for code generation, edits, and software tasks. It is a smaller-footprint option suited to tighter latency or deployment budgets.",
   "announced_date": "2025-07-10T00:00:00",
@@ -44,7 +44,7 @@
       "is_self_reported": true,
       "other_info": "OpenHands Scaffold",
       "source_link": "https://huggingface.co/mistralai/Devstral-Small-2507",
-      "rank": 98
+      "rank": 101
     }
   ]
 }

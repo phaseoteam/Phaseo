@@ -66,6 +66,8 @@
 								"pages": [
 									"v1/guides/routing-and-fallbacks",
 									"v1/guides/service-tiers",
+									"v1/guides/prompt-caching",
+									"v1/guides/provider-statuses",
 									"v1/guides/presets",
 									"v1/guides/multimodality",
 									{
@@ -73,6 +75,19 @@
 										"expanded": false,
 										"pages": [
 											"v1/guides/tool-calling",
+											{
+												"group": "Server Tools",
+												"expanded": false,
+												"pages": [
+													"v1/guides/server-tools/index",
+													"v1/guides/server-tools/datetime",
+													"v1/guides/server-tools/web-search",
+													"v1/guides/server-tools/web-fetch",
+													"v1/guides/server-tools/advisor",
+													"v1/guides/server-tools/image-generation",
+													"v1/guides/server-tools/apply-patch"
+												]
+											},
 											"v1/guides/tool-calling-patterns",
 											"v1/guides/tool-calling-safety",
 											"v1/guides/structured-outputs",
@@ -113,7 +128,19 @@
 								"pages": [
 									"v1/guides/integrations/index",
 									"v1/guides/integrations/docs-mcp",
+									"v1/guides/integrations/aistats-cli",
+									"v1/guides/integrations/openai-sdk",
+									"v1/guides/integrations/anthropic-sdk",
 									"v1/guides/integrations/ai-sdk",
+									"v1/guides/integrations/langchain",
+									"v1/guides/integrations/llamaindex",
+									"v1/guides/integrations/litellm",
+									"v1/guides/integrations/pydanticai",
+									"v1/guides/integrations/mastra",
+									"v1/guides/integrations/tanstack-ai",
+									"v1/guides/integrations/effect-ai",
+									"v1/guides/integrations/observability",
+									"v1/guides/integrations/coding-assistants",
 									"v1/guides/integrations/claude-code",
 									"v1/guides/integrations/codex",
 									"v1/guides/integrations/opencode"
@@ -189,6 +216,7 @@
 										"expanded": false,
 										"pages": [
 											"v1/model-migrations/index",
+											"v1/model-migrations/anthropic-claude-opus-4-1-to-4-8",
 											"v1/model-migrations/anthropic-claude-opus-4-6-to-4-7",
 											"v1/model-migrations/anthropic-claude-opus-4-5-to-4-6",
 											"v1/model-migrations/anthropic-claude-sonnet-4-5-to-4-6",
@@ -349,7 +377,10 @@
 										"expanded": false,
 										"pages": [
 											"v1/api-reference/endpoint/batches",
-											"v1/api-reference/endpoint/batches-status"
+											"v1/api-reference/endpoint/batches-list",
+											"v1/api-reference/endpoint/batches-models",
+											"v1/api-reference/endpoint/batches-status",
+											"v1/api-reference/endpoint/batches-cancel"
 										]
 									},
 									{
@@ -379,8 +410,7 @@
 										"group": "Models",
 										"expanded": false,
 										"pages": [
-											"v1/api-reference/endpoint/models",
-											"v1/api-reference/endpoint/models-team"
+											"v1/api-reference/endpoint/models"
 										]
 									},
 									{
@@ -1154,9 +1184,7 @@
 							{
 								"group": "Latest updates",
 								"pages": [
-									"v1/changelog",
-									"v1/sdk-changelog",
-									"v1/data-changelog"
+									"v1/changelog"
 								]
 							}
 						]
@@ -1215,6 +1243,14 @@
 		{
 			"source": "/v1/:slug*.mdx",
 			"destination": "/v1/:slug*"
+		},
+		{
+			"source": "/v1/sdk-changelog",
+			"destination": "/v1/changelog"
+		},
+		{
+			"source": "/v1/data-changelog",
+			"destination": "/v1/changelog"
 		}
 	],
 	"contextual": {

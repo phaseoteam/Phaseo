@@ -178,5 +178,20 @@
     "effective_from": null,
     "effective_to": null,
     "capabilities": []
+  },
+  {
+    "api_model_id": "cohere/north-mini-code-1-0:free",
+    "provider_api_model_id": "cohere:cohere/north-mini-code-1-0:free",
+    "provider_model_slug": "north-mini-code-1-0",
+    "internal_model_id": "cohere/north-mini-code-1-0",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 256000,
+    "max_output_tokens": 64000,
+    "effective_from": null,
+    "effective_to": null,
+    "capabilities": []
   }
 ]

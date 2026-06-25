@@ -71,7 +71,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 40
+      "rank": 41
     },
     {
       "benchmark_id": "humanitys-last-exam",
@@ -79,7 +79,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 79
+      "rank": 84
     },
     {
       "benchmark_id": "livecodebench-v5",
@@ -127,7 +127,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 70
+      "rank": 74
     },
     {
       "benchmark_id": "vibe-eval",
@@ -143,7 +143,7 @@
       "is_self_reported": true,
       "other_info": "inferred alias from gemini-2.5-pro",
       "source_link": "https://deepmind.google/models/gemini/pro/",
-      "rank": 5
+      "rank": 6
     },
     {
       "benchmark_id": "confabulations",
@@ -151,7 +151,7 @@
       "is_self_reported": false,
       "other_info": "2025-03-25; Confab 4.0%; non-response 17.6%",
       "source_link": "https://github.com/lechmazur/confabulations",
-      "rank": 4
+      "rank": 58
     }
   ]
 }
