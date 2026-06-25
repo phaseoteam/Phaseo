@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import ModelPageNotice from "./ModelPageNotice";
+import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { resolveModelDescription } from "@/lib/models/modelDescription";
 import {
 	FREE_ROUTER_DESCRIPTION,
@@ -116,6 +117,8 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
+				<ModelStatusBanner status={header.status} className="mb-6" />
+
 				{modelPageNotice ? (
 					<div className="mb-6">
 						<ModelPageNotice notice={modelPageNotice} />

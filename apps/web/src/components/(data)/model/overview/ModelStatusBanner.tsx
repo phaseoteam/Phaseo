@@ -1,127 +1,92 @@
-import { AlertTriangle, Info, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, XCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface ModelStatusBannerProps {
-	status:
-		| "Rumoured"
-		| "Announced"
-		| "Withheld"
-		| "Available"
-		| "Deprecated"
-		| "Retired"
-		| null;
+	status?: string | null;
+	className?: string;
 }
 
-const RUMOURED_DISCORD_LINK = "https://discord.gg/zDw73wamdX";
+type StatusBannerContent = {
+	title: string;
+	description: string;
+	icon: typeof Info;
+	className: string;
+	descriptionClassName: string;
+	iconClassName?: string;
+};
 
-export default function ModelStatusBanner({ status }: ModelStatusBannerProps) {
-	if (status === "Rumoured") {
-		return (
-			<div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-				<div className="flex">
-					<div className="py-1">
-						<AlertTriangle className="h-6 w-6 text-yellow-500 mr-4" />
-					</div>
-					<div>
-						<p className="font-bold">Rumoured Model</p>
-						<p className="text-sm">
-							This model is rumoured to be coming soon. Any data
-							here is subject to change until the release is
-							confirmed. Join our{" "}
-							<a
-								href={RUMOURED_DISCORD_LINK}
-								target="_blank"
-								rel="noreferrer"
-								className="text-blue-600 underline"
-							>
-								Discord
-							</a>{" "}
-							to be notified of new models and updates.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
+const STATUS_BANNERS: Record<string, StatusBannerContent> = {
+	Rumoured: {
+		title: "Rumoured model",
+		description:
+			"This model is rumoured and has not been confirmed by the model creator. Pricing, availability, provider support, technical limits, and benchmark data may be incomplete or change without notice.",
+		icon: AlertTriangle,
+		className:
+			"border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50",
+		descriptionClassName: "text-amber-900/90 dark:text-amber-100/90",
+		iconClassName: "text-amber-700 dark:text-amber-300",
+	},
+	Announced: {
+		title: "Announced model",
+		description:
+			"This model has been announced but is not generally available yet. Pricing, routing availability, technical details, and benchmark data may change as release plans are finalized.",
+		icon: Info,
+		className:
+			"border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/20 dark:text-sky-50",
+		descriptionClassName: "text-sky-900/90 dark:text-sky-100/90",
+		iconClassName: "text-sky-700 dark:text-sky-300",
+	},
+	Withheld: {
+		title: "Withheld model",
+		description:
+			"This model was announced with preliminary details but is currently withheld and may never become publicly accessible. Information on this page is provisional and can change at any time.",
+		icon: AlertCircle,
+		className:
+			"border-violet-200 bg-violet-50 text-violet-950 dark:border-violet-900/60 dark:bg-violet-950/20 dark:text-violet-50",
+		descriptionClassName: "text-violet-900/90 dark:text-violet-100/90",
+		iconClassName: "text-violet-700 dark:text-violet-300",
+	},
+	Deprecated: {
+		title: "Deprecated model",
+		description:
+			"This model has been marked deprecated and may be retired soon. If you use it in production, plan a migration to a newer supported model.",
+		icon: AlertTriangle,
+		className:
+			"border-orange-200 bg-orange-50 text-orange-950 dark:border-orange-900/60 dark:bg-orange-950/20 dark:text-orange-50",
+		descriptionClassName: "text-orange-900/90 dark:text-orange-100/90",
+		iconClassName: "text-orange-700 dark:text-orange-300",
+	},
+	Retired: {
+		title: "Retired model",
+		description:
+			"This model has reached end of life and is no longer available for new usage. This page is kept for historical reference.",
+		icon: XCircle,
+		className:
+			"border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-50",
+		descriptionClassName: "text-red-900/90 dark:text-red-100/90",
+		iconClassName: "text-red-700 dark:text-red-300",
+	},
+};
 
-	if (status === "Announced") {
-		return (
-			<div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
-				<div className="flex">
-					<div className="py-1">
-						<Info className="h-6 w-6 text-blue-500 mr-4" />
-					</div>
-					<div>
-						<p className="font-bold">Announced Model</p>
-						<p className="text-sm">
-							This model has been announced, but not released. We
-							await the full release to make more information
-							available.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
+export default function ModelStatusBanner({
+	status,
+	className,
+}: ModelStatusBannerProps) {
+	if (!status) return null;
 
-	if (status === "Withheld") {
-		return (
-			<div className="bg-violet-100 border border-violet-400 text-violet-700 px-4 py-3 rounded mb-4">
-				<div className="flex">
-					<div className="py-1">
-						<Info className="h-6 w-6 text-violet-500 mr-4" />
-					</div>
-					<div>
-						<p className="font-bold">Withheld Model</p>
-						<p className="text-sm">
-							This model was announced with preliminary details but is
-							currently withheld and may never be released publicly.
-							Information may change at any time.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
+	const content = STATUS_BANNERS[status];
+	if (!content) return null;
 
-	if (status === "Deprecated") {
-		return (
-			<div className="bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded mb-4">
-				<div className="flex">
-					<div className="py-1">
-						<AlertTriangle className="h-6 w-6 text-orange-500 mr-4" />
-					</div>
-					<div>
-						<p className="font-bold">Deprecated Model</p>
-						<p className="text-sm">
-							This model has been marked deprecated. It is likely
-							to be retired soon. You should look to move off this
-							model and onto a newer model if you are using it.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
+	const Icon = content.icon;
 
-	if (status === "Retired") {
-		return (
-			<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-				<div className="flex">
-					<div className="py-1">
-						<XCircle className="h-6 w-6 text-red-500 mr-4" />
-					</div>
-					<div>
-						<p className="font-bold">Retired Model</p>
-						<p className="text-sm">
-							This model has reached end of life, and can no
-							longer be used. This page will likely receive no
-							updates from now on.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
-
-	return null;
+	return (
+		<Alert className={cn(content.className, className)}>
+			<Icon className={cn("h-4 w-4", content.iconClassName)} />
+			<AlertTitle>{content.title}</AlertTitle>
+			<AlertDescription className={content.descriptionClassName}>
+				{content.description}
+			</AlertDescription>
+		</Alert>
+	);
 }
