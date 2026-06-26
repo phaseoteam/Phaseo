@@ -58,10 +58,25 @@ describe("textNormalizePolicy", () => {
 			"high",
 			"xhigh",
 		]);
+		expect(fallbackReasoningEfforts("openai", "gpt-5.6-sol")).toEqual([
+			"none",
+			"low",
+			"medium",
+			"high",
+			"xhigh",
+			"max",
+		]);
+		expect(fallbackReasoningEfforts("openai", "gpt-5.6-terra")).toEqual([
+			"none",
+			"low",
+			"medium",
+			"high",
+			"xhigh",
+		]);
 	});
 
 	it("validates reasoning effort enum values", () => {
 		expect(isReasoningEffort("medium")).toBe(true);
-		expect(isReasoningEffort("max")).toBe(false);
+		expect(isReasoningEffort("max")).toBe(true);
 	});
 });

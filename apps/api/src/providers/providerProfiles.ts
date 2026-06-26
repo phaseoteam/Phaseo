@@ -18,7 +18,8 @@ export type TextReasoningEffort =
 	| "low"
 	| "medium"
 	| "high"
-	| "xhigh";
+	| "xhigh"
+	| "max";
 
 export type ProviderProfile = {
 	id: string;
@@ -43,6 +44,12 @@ export type ProviderProfile = {
 
 function openAIReasoningFallback(model: string): TextReasoningEffort[] {
 	const m = model.toLowerCase();
+	if (m.includes("gpt-5.6-sol")) {
+		return ["none", "low", "medium", "high", "xhigh", "max"];
+	}
+	if (m.includes("gpt-5.6")) {
+		return ["none", "low", "medium", "high", "xhigh"];
+	}
 	if (m.includes("gpt-5.1-codex-max")) {
 		return ["none", "minimal", "low", "medium", "high", "xhigh"];
 	}
