@@ -474,7 +474,7 @@ Sets the OpenAI-compatible prompt cache retention policy on supported OpenAI-rou
 | Example | `24h` |
 | Use for | OpenAI prompt cache retention |
 
-Use this when you want to pass OpenAI cache-retention options without nesting them under provider-specific options. The provider-specific alias `provider_options.openai.prompt_cache_retention` remains accepted.
+Use this when you want to pass OpenAI cache-retention options without nesting them under provider-specific options. The provider-specific alias `provider_options.openai.prompt_cache_retention` remains accepted. When both are present, the top-level `prompt_cache_retention` value takes precedence.
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
