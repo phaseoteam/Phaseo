@@ -114,6 +114,9 @@ public sealed class AnthropicMessage
 
 public sealed class AnthropicMessagesRequest
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -134,6 +137,9 @@ public sealed class AnthropicMessagesRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -974,6 +980,9 @@ public sealed class ChatChoice
 
 public sealed class ChatCompletionsRequest
 {
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -1024,6 +1033,9 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -2701,6 +2713,9 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("background")]
 	public bool? Background { get; set; }
 
+	[JsonPropertyName("cache_control")]
+	public Dictionary<string, object>? CacheControl { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -2742,6 +2757,9 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
+
+	[JsonPropertyName("prompt_cache_retention")]
+	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
