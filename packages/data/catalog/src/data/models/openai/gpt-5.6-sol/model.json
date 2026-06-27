@@ -26,6 +26,10 @@
       "value": "Limited preview in the API and Codex for select trusted partners; broader availability planned in the coming weeks."
     },
     {
+      "name": "prompt_caching",
+      "value": "Supports explicit cache breakpoints and a 30-minute minimum cache life during preview."
+    },
+    {
       "name": "reasoning_effort",
       "value": "Supports the new max reasoning effort during preview."
     },
