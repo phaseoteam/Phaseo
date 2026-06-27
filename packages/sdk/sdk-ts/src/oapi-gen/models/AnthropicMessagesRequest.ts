@@ -1,4 +1,10 @@
 export interface AnthropicMessagesRequest {
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -39,6 +45,7 @@ export interface AnthropicMessagesRequest {
     [key: string]: unknown;
   };
   model: string;
+  prompt_cache_retention?: string;
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

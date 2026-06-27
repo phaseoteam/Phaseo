@@ -1,4 +1,10 @@
 export interface ChatCompletionsRequest {
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -99,6 +105,7 @@ export interface ChatCompletionsRequest {
   parallel_tool_calls?: boolean;
   presence_penalty?: number;
   prompt_cache_key?: string | null;
+  prompt_cache_retention?: string;
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

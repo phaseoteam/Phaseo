@@ -45,6 +45,9 @@ Parameter support still varies by endpoint, model, and provider. The model quick
 | [`reasoning_tokens`](#reasoning_tokens) | `integer` | Reasoning-specific token limit or accounting field. |
 | [`include_reasoning`](#include_reasoning) | `boolean` | Returning reasoning content or summaries where supported. |
 | [`service_tier`](#service_tier) | `string` | Choosing a supported request tier such as `priority` or `flex`. |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | Keeping cache-aware routing sticky for related requests. |
+| [`cache_control`](#cache_control) | `object` | Applying provider-neutral prompt cache hints or breakpoints. |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | Setting OpenAI-compatible prompt cache retention. |
 | [`provider`](#provider) | `object` | Influencing routing and provider selection. |
 | [`provider_options`](#provider_options) | `object` | Passing provider-native settings through the gateway. |
 | [`meta`](#meta) / [`usage`](#usage) | `boolean` | Returning extra metadata or usage accounting in the response. |
@@ -433,6 +436,46 @@ Notes:
 - `Batch` is a separate API flow, not a service-tier value.
 - Support varies by endpoint and provider.
 
+<span id="prompt_cache_key"></span>
+<h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
+
+Provides a stable cache affinity key for prompt-cache-aware routing.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` |
+| Use for | Sticky routing for related cached prompts |
+
+Use this when a series of requests share stable prompt prefixes and should prefer the same upstream provider or region when possible. AI Stats can also derive cache affinity from request context, but an explicit key is better for long-running conversations, agent sessions, and repeated workflows.
+
+<span id="cache_control"></span>
+<h3 id="parameter-cache_control"><code>cache_control</code></h3>
+
+Applies a provider-neutral prompt cache policy on supported text request surfaces.
+
+| Field | Value |
+| --- | --- |
+| Type | `object` |
+| Common fields | `type`, `ttl`, `scope` |
+| Use for | Automatic prompt caching and explicit cache breakpoints |
+
+Use top-level `cache_control` on Chat Completions, Responses, and Anthropic Messages requests when you want the same cache hint to travel through the gateway's common schema. You can also place `cache_control` on supported content blocks when you need explicit cache breakpoints.
+
+Typical TTL values are `5m` and `1h`, depending on provider and model support. Provider-specific aliases such as `provider_options.anthropic.cache_control` and `provider_options.google.cache_control` remain accepted for native integrations.
+
+<span id="prompt_cache_retention"></span>
+<h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
+
+Sets the OpenAI-compatible prompt cache retention policy on supported OpenAI-routed requests.
+
+| Field | Value |
+| --- | --- |
+| Type | `string` |
+| Example | `24h` |
+| Use for | OpenAI prompt cache retention |
+
+Use this when you want to pass OpenAI cache-retention options without nesting them under provider-specific options. The provider-specific alias `provider_options.openai.prompt_cache_retention` remains accepted.
+
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
 
@@ -478,7 +521,7 @@ Examples include:
 - `google.cache_control`
 - `google.cached_content`
 
-Use this when you need a provider-native feature but still want the rest of the request to stay on the gateway's common schema.
+Use this when you need a provider-native feature but still want the rest of the request to stay on the gateway's common schema. Prefer top-level `cache_control` for common cache hints and top-level `prompt_cache_retention` for OpenAI-compatible retention.
 
 For provider prompt caching examples across Chat Completions, Responses, and Anthropic Messages, see [Prompt Caching](../guides/prompt-caching.mdx).
 

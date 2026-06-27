@@ -3177,6 +3177,7 @@ components:
                 - type
             prompt_cache_retention:
               type: string
+              description: OpenAI prompt cache retention policy, such as `24h`.
         anthropic:
           type: object
           properties:
@@ -3704,6 +3705,15 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+        prompt_cache_retention:
+          type: string
+          description: OpenAI-compatible prompt cache retention policy, such as `24h`.
+        cache_control:
+          allOf:
+            - $ref: '#/components/schemas/CacheControl'
+          description: >-
+            Provider-neutral prompt cache control hint for automatic caching or
+            cache breakpoints.
         safety_identifier:
           type: string
           nullable: true
@@ -4244,6 +4254,15 @@ components:
           type: array
           items:
             type: string
+        prompt_cache_retention:
+          type: string
+          description: OpenAI-compatible prompt cache retention policy, such as `24h`.
+        cache_control:
+          allOf:
+            - $ref: '#/components/schemas/CacheControl'
+          description: >-
+            Provider-neutral prompt cache control hint for automatic caching or
+            cache breakpoints.
         provider_options:
           $ref: '#/components/schemas/ProviderOptions'
         usage:
@@ -4432,6 +4451,15 @@ components:
         prompt_cache_key:
           type: string
           nullable: true
+        prompt_cache_retention:
+          type: string
+          description: OpenAI-compatible prompt cache retention policy, such as `24h`.
+        cache_control:
+          allOf:
+            - $ref: '#/components/schemas/CacheControl'
+          description: >-
+            Provider-neutral prompt cache control hint for automatic caching or
+            cache breakpoints.
         safety_identifier:
           type: string
           nullable: true
