@@ -24,7 +24,8 @@ export function mapAnthropicEffortToIr(
 ): IRReasoning["effort"] | undefined {
 	if (typeof effort !== "string") return undefined;
 	const normalized = effort.toLowerCase();
-	if (normalized === "max" || normalized === "xhigh") return "xhigh";
+	if (normalized === "max") return "max";
+	if (normalized === "xhigh") return "xhigh";
 	if (
 		normalized === "none" ||
 		normalized === "minimal" ||
@@ -36,5 +37,4 @@ export function mapAnthropicEffortToIr(
 	}
 	return undefined;
 }
-
 

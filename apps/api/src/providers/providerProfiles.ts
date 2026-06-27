@@ -101,7 +101,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			normalize: {
 				maxTemperature: 1,
 				defaultMaxTokensWhenMissing: 4096,
-				reasoningEffortFallback: ["low", "medium", "high", "xhigh"],
+				reasoningEffortFallback: ["low", "medium", "high", "xhigh", "max"],
 			},
 		},
 	},
