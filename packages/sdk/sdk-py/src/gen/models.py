@@ -925,7 +925,7 @@ class RealtimeNotImplementedResponse(TypedDict):
 	error: Dict[str, Any]
 
 class ReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
+	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	summary: NotRequired[Literal["auto", "concise", "detailed"]]

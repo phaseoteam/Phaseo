@@ -1176,7 +1176,7 @@ export type CreateAnthropicMessageParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -2167,7 +2167,7 @@ export type CreateChatCompletionParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -3287,7 +3287,7 @@ export type CreateResponseParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";

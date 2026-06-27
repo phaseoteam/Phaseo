@@ -4069,6 +4069,7 @@ components:
             - medium
             - high
             - xhigh
+            - max
           default: medium
         summary:
           type: string
