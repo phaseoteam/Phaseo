@@ -18,6 +18,10 @@
     {
       "platform": "announcement",
       "url": "https://openai.com/index/previewing-gpt-5-6-sol/"
+    },
+    {
+      "platform": "paper",
+      "url": "https://deploymentsafety.openai.com/gpt-5-6-preview"
     }
   ],
   "details": [
