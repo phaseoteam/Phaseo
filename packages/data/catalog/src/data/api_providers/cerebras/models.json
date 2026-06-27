@@ -205,6 +205,27 @@
     ]
   },
   {
+    "api_model_id": "openai/gpt-5.6-sol",
+    "provider_api_model_id": "cerebras:openai/gpt-5.6-sol",
+    "provider_model_slug": "gpt-5.6-sol",
+    "internal_model_id": "openai/gpt-5.6-sol",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": null,
+    "max_output_tokens": null,
+    "effective_from": "2026-07-01T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "coming_soon",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "qwen/qwen3-235b-a22b-2507",
     "provider_api_model_id": "cerebras:qwen/qwen3-235b-a22b-2507",
     "provider_model_slug": "qwen-3-235b-a22b-instruct-2507",

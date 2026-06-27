@@ -241,6 +241,8 @@ export const ResponsesSchema = z.object({
     truncation: z.enum(["auto", "disabled"]).optional(),
     user: z.string().optional(),
     prompt_cache_key: z.string().nullable().optional(),
+    prompt_cache_retention: z.string().optional(),
+    cache_control: CacheControlSchema.optional(),
     safety_identifier: z.string().nullable().optional(),
     modalities: z.array(z.string()).optional(),
     image_config: ImageConfigSchema,
@@ -715,6 +717,8 @@ export const ChatCompletionsSchema = z.object({
 
     service_tier: ServiceTierSchema.optional(),
     prompt_cache_key: z.string().nullable().optional(),
+    prompt_cache_retention: z.string().optional(),
+    cache_control: CacheControlSchema.optional(),
     provider_options: ResponsesProviderOptionsSchema.optional(),
     safety_identifier: z.string().nullable().optional(),
     provider: ProviderRoutingSchema,
@@ -838,6 +842,8 @@ export const AnthropicMessagesSchema = z.object({
     web_search_options: z.record(z.string(), z.any()).optional(),
     webSearchOptions: z.record(z.string(), z.any()).optional(),
     plugins: z.array(z.any()).optional(),
+    prompt_cache_retention: z.string().optional(),
+    cache_control: CacheControlSchema.optional(),
     provider_options: ResponsesProviderOptionsSchema.optional(),
     usage: z.boolean().optional(),
     // Gateway-only flags (not forwarded upstream)

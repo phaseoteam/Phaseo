@@ -86,6 +86,8 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -99,6 +101,8 @@ class AnthropicMessagesRequest
 	public $metadata;
 	/** @var string */
 	public $model;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -706,6 +710,8 @@ class ChatChoice
 class ChatCompletionsRequest
 {
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -739,6 +745,8 @@ class ChatCompletionsRequest
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -1964,6 +1972,8 @@ class ResponsesRequest
 	/** @var bool|null */
 	public $background;
 	/** @var array<string, mixed>|null */
+	public $cache_control;
+	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -1991,6 +2001,8 @@ class ResponsesRequest
 	public $previous_response_id;
 	/** @var string|null */
 	public $prompt_cache_key;
+	/** @var string|null */
+	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
