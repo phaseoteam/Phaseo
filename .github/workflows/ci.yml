@@ -38,29 +38,11 @@ jobs:
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
-            - name: Run data checks in parallel
-              shell: bash
-              run: |
-                  set -euo pipefail
+            - name: Test model-discovery GitHub issue sync helpers
+              run: pnpm exec tsx scripts/model-discovery/github-issues.test.ts
 
-                  pnpm exec tsx scripts/model-discovery/github-issues.test.ts &
-                  issues_pid=$!
-
-                  pnpm run validate:data &
-                  data_pid=$!
-
-                  pnpm run validate:pricing &
-                  pricing_pid=$!
-
-                  pnpm run validate:gateway &
-                  gateway_pid=$!
-
-                  status=0
-                  wait "$issues_pid" || status=1
-                  wait "$data_pid" || status=1
-                  wait "$pricing_pid" || status=1
-                  wait "$gateway_pid" || status=1
-                  exit "$status"
+            - name: Validate data files
+              run: pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway
 
     check-paths:
         name: Check for data changes
@@ -164,21 +146,10 @@ jobs:
             - name: Web lint & typecheck
               if: matrix.app == 'web'
               continue-on-error: true
-              working-directory: apps/web
-              shell: bash
               run: |
-                  set -euo pipefail
-
-                  pnpm run lint &
-                  lint_pid=$!
-
-                  pnpm run typecheck &
-                  typecheck_pid=$!
-
-                  status=0
-                  wait "$lint_pid" || status=1
-                  wait "$typecheck_pid" || status=1
-                  exit "$status"
+                  cd apps/web
+                  pnpm run lint
+                  pnpm run typecheck
 
     api-aimock:
         name: API AIMock matrix
