@@ -1,65 +1,108 @@
-"use client"
-
-import * as React from "react"
-import * as AccordionPrimitive from "@radix-ui/react-accordion"
-import { ChevronDown } from "lucide-react"
+import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 
 import { cn } from "@/lib/utils"
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
-const Accordion = AccordionPrimitive.Root
+function normalizeAccordionValue(value: string | string[] | undefined) {
+  if (value === undefined) return undefined
+  return Array.isArray(value) ? value : [value]
+}
 
-const AccordionItem = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <AccordionPrimitive.Item
-    ref={ref}
-    className={cn("border-b", className)}
-    {...props}
-  />
-))
-AccordionItem.displayName = "AccordionItem"
+function Accordion({
+  className,
+  type = "single",
+  defaultValue,
+  value,
+  onValueChange,
+  collapsible,
+  ...props
+}: Omit<
+  AccordionPrimitive.Root.Props,
+  "defaultValue" | "multiple" | "onValueChange" | "value"
+> & {
+  type?: "single" | "multiple"
+  collapsible?: boolean
+  defaultValue?: any
+  value?: any
+  onValueChange?: (value: any) => void
+}) {
+  const multiple = type === "multiple"
+  void collapsible
 
-const AccordionTrigger = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
-  <AccordionPrimitive.Header className="flex">
-    <AccordionPrimitive.Trigger
-      ref={ref}
-      className={cn(
-        "flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all underline decoration-transparent hover:decoration-current transition-colors duration-200 text-left [&[data-state=open]>svg]:rotate-180",
-        className
-      )}
+  return (
+    <AccordionPrimitive.Root
+      data-slot="accordion"
+      className={cn("flex w-full flex-col", className)}
+      defaultValue={normalizeAccordionValue(defaultValue)}
+      value={normalizeAccordionValue(value)}
+      multiple={multiple}
+      onValueChange={(nextValue) => {
+        onValueChange?.(multiple ? nextValue : (nextValue[0] ?? ""))
+      }}
+      {...props}
+    />
+  )
+}
+
+function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
+  return (
+    <AccordionPrimitive.Item
+      data-slot="accordion-item"
+      className={cn("not-last:border-b", className)}
+      {...props}
+    />
+  )
+}
+
+function AccordionTrigger({
+  className,
+  children,
+  ...props
+}: AccordionPrimitive.Trigger.Props) {
+  return (
+    <AccordionPrimitive.Header className="flex">
+      <AccordionPrimitive.Trigger
+        data-slot="accordion-trigger"
+        className={cn(
+          "group/accordion-trigger relative flex flex-1 items-start justify-between rounded-lg border border-oklch(0.922 0 0) border-transparent py-2.5 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-oklch(0.708 0 0) focus-visible:ring-3 focus-visible:ring-oklch(0.708 0 0)/50 focus-visible:after:border-oklch(0.708 0 0) aria-disabled:pointer-events-none aria-disabled:opacity-50 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-4 **:data-[slot=accordion-trigger-icon]:text-oklch(0.556 0 0) dark:border-oklch(1 0 0 / 10%) dark:focus-visible:border-oklch(0.556 0 0) dark:focus-visible:ring-oklch(0.556 0 0)/50 dark:focus-visible:after:border-oklch(0.556 0 0) dark:**:data-[slot=accordion-trigger-icon]:text-oklch(0.708 0 0)",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <ChevronDownIcon data-slot="accordion-trigger-icon" className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
+        <ChevronUpIcon data-slot="accordion-trigger-icon" className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
+      </AccordionPrimitive.Trigger>
+    </AccordionPrimitive.Header>
+  )
+}
+
+function AccordionContent({
+  className,
+  children,
+  disableAnimation,
+  ...props
+}: AccordionPrimitive.Panel.Props & {
+  disableAnimation?: boolean
+}) {
+  void disableAnimation
+
+  return (
+    <AccordionPrimitive.Panel
+      data-slot="accordion-content"
+      className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
       {...props}
     >
-      {children}
-      <ChevronDown className="h-4 w-4 shrink-0 text-zinc-500 transition-transform duration-200 dark:text-zinc-400" />
-    </AccordionPrimitive.Trigger>
-  </AccordionPrimitive.Header>
-))
-AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName
-
-const AccordionContent = React.forwardRef<
-  React.ElementRef<typeof AccordionPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content> & {
-    disableAnimation?: boolean
-  }
->(({ className, children, disableAnimation = false, ...props }, ref) => (
-  <AccordionPrimitive.Content
-    ref={ref}
-    className={cn(
-      "overflow-hidden text-sm",
-      disableAnimation
-        ? "data-[state=closed]:animate-none data-[state=open]:animate-none"
-        : "data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
-    )}
-    {...props}
-  >
-    <div className={cn("pb-4 pt-0", className)}>{children}</div>
-  </AccordionPrimitive.Content>
-))
-AccordionContent.displayName = AccordionPrimitive.Content.displayName
+      <div
+        className={cn(
+          "h-(--accordion-panel-height) pt-0 pb-2.5 data-ending-style:h-0 data-starting-style:h-0 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-oklch(0.145 0 0) [&_p:not(:last-child)]:mb-4 dark:[&_a]:hover:text-oklch(0.985 0 0)",
+          className
+        )}
+      >
+        {children}
+      </div>
+    </AccordionPrimitive.Panel>
+  )
+}
 
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent }
-

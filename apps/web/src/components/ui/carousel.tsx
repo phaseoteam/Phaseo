@@ -4,10 +4,10 @@ import * as React from "react"
 import useEmblaCarousel, {
   type UseEmblaCarouselType,
 } from "embla-carousel-react"
-import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 type CarouselApi = UseEmblaCarouselType[1]
 type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
@@ -51,8 +51,6 @@ function Carousel({
   children,
   ...props
 }: React.ComponentProps<"div"> & CarouselProps) {
-  const WHEEL_SCROLL_DELTA_THRESHOLD = 180
-  const WHEEL_SCROLL_COOLDOWN_MS = 160
   const [carouselRef, api] = useEmblaCarousel(
     {
       ...opts,
@@ -62,18 +60,12 @@ function Carousel({
   )
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
-  const wheelDeltaAccumulatorRef = React.useRef(0)
-  const lastWheelScrollAtRef = React.useRef(0)
+
   const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) return
     setCanScrollPrev(api.canScrollPrev())
     setCanScrollNext(api.canScrollNext())
   }, [])
-  const onSelectRef = React.useRef(onSelect)
-
-  React.useEffect(() => {
-    onSelectRef.current = onSelect
-  }, [onSelect])
 
   const scrollPrev = React.useCallback(() => {
     api?.scrollPrev()
@@ -96,45 +88,6 @@ function Carousel({
     [scrollPrev, scrollNext]
   )
 
-  const handleWheel = React.useCallback(
-    (event: React.WheelEvent<HTMLDivElement>) => {
-      if (orientation !== "horizontal" || !api) return
-
-      const isHorizontalGesture =
-        event.shiftKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)
-      if (!isHorizontalGesture) return
-
-      const rawDelta =
-        event.shiftKey && Math.abs(event.deltaX) < 1
-          ? event.deltaY
-          : event.deltaX
-      if (Math.abs(rawDelta) < 1) return
-
-      event.preventDefault()
-      wheelDeltaAccumulatorRef.current += rawDelta
-
-      const now = Date.now()
-      if (now - lastWheelScrollAtRef.current < WHEEL_SCROLL_COOLDOWN_MS) {
-        return
-      }
-
-      const accumulatedDelta = wheelDeltaAccumulatorRef.current
-      if (Math.abs(accumulatedDelta) < WHEEL_SCROLL_DELTA_THRESHOLD) {
-        return
-      }
-
-      if (accumulatedDelta > 0) {
-        scrollNext()
-      } else {
-        scrollPrev()
-      }
-
-      wheelDeltaAccumulatorRef.current = 0
-      lastWheelScrollAtRef.current = now
-    },
-    [api, orientation, scrollNext, scrollPrev]
-  )
-
   React.useEffect(() => {
     if (!api || !setApi) return
     setApi(api)
@@ -142,16 +95,14 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
-    const handleSelect = () => onSelectRef.current(api)
-    handleSelect()
-    api.on("reInit", handleSelect)
-    api.on("select", handleSelect)
+    onSelect(api)
+    api.on("reInit", onSelect)
+    api.on("select", onSelect)
 
     return () => {
-      api?.off("select", handleSelect)
-      api?.off("reInit", handleSelect)
+      api?.off("select", onSelect)
     }
-  }, [api])
+  }, [api, onSelect])
 
   return (
     <CarouselContext.Provider
@@ -169,7 +120,6 @@ function Carousel({
     >
       <div
         onKeyDownCapture={handleKeyDown}
-        onWheelCapture={handleWheel}
         className={cn("relative", className)}
         role="region"
         aria-roledescription="carousel"
@@ -224,7 +174,7 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
 function CarouselPrevious({
   className,
   variant = "outline",
-  size = "icon",
+  size = "icon-sm",
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { orientation, scrollPrev, canScrollPrev } = useCarousel()
@@ -235,9 +185,9 @@ function CarouselPrevious({
       variant={variant}
       size={size}
       className={cn(
-        "absolute size-8 rounded-full",
+        "absolute touch-manipulation rounded-full",
         orientation === "horizontal"
-          ? "top-1/2 -left-12 -translate-y-1/2"
+          ? "inset-y-0 -left-12 my-auto"
           : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
@@ -245,7 +195,7 @@ function CarouselPrevious({
       onClick={scrollPrev}
       {...props}
     >
-      <ArrowLeft />
+      <ChevronLeftIcon />
       <span className="sr-only">Previous slide</span>
     </Button>
   )
@@ -254,7 +204,7 @@ function CarouselPrevious({
 function CarouselNext({
   className,
   variant = "outline",
-  size = "icon",
+  size = "icon-sm",
   ...props
 }: React.ComponentProps<typeof Button>) {
   const { orientation, scrollNext, canScrollNext } = useCarousel()
@@ -265,9 +215,9 @@ function CarouselNext({
       variant={variant}
       size={size}
       className={cn(
-        "absolute size-8 rounded-full",
+        "absolute touch-manipulation rounded-full",
         orientation === "horizontal"
-          ? "top-1/2 -right-12 -translate-y-1/2"
+          ? "inset-y-0 -right-12 my-auto"
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",
         className
       )}
@@ -275,7 +225,7 @@ function CarouselNext({
       onClick={scrollNext}
       {...props}
     >
-      <ArrowRight />
+      <ChevronRightIcon />
       <span className="sr-only">Next slide</span>
     </Button>
   )
@@ -288,4 +238,5 @@ export {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
+  useCarousel,
 }

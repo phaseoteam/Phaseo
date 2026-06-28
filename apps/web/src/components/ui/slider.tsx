@@ -1,7 +1,4 @@
-"use client"
-
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
+import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 
 import { cn } from "@/lib/utils"
 
@@ -9,53 +6,62 @@ function Slider({
   className,
   defaultValue,
   value,
+  onValueChange,
+  onValueCommit,
+  onValueCommitted,
   min = 0,
   max = 100,
   ...props
-}: React.ComponentProps<typeof SliderPrimitive.Root>) {
-  const _values = React.useMemo(
-    () =>
-      Array.isArray(value)
-        ? value
-        : Array.isArray(defaultValue)
-          ? defaultValue
-          : [min, max],
-    [value, defaultValue, min, max]
-  )
+}: Omit<
+  SliderPrimitive.Root.Props<readonly number[]>,
+  "defaultValue" | "onValueChange" | "onValueCommitted" | "value"
+> & {
+  defaultValue?: readonly number[]
+  value?: readonly number[]
+  onValueChange?: (value: readonly number[]) => void
+  onValueCommit?: (value: readonly number[]) => void
+  onValueCommitted?: (value: readonly number[]) => void
+}) {
+  const _values = Array.isArray(value)
+    ? value
+    : Array.isArray(defaultValue)
+      ? defaultValue
+      : [min, max]
 
   return (
     <SliderPrimitive.Root
+      className={cn("data-horizontal:w-full data-vertical:h-full", className)}
       data-slot="slider"
       defaultValue={defaultValue}
       value={value}
       min={min}
       max={max}
-      className={cn(
-        "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50 data-[orientation=vertical]:h-full data-[orientation=vertical]:min-h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col",
-        className
-      )}
+      thumbAlignment="edge"
+      onValueChange={(nextValue) => onValueChange?.(nextValue)}
+      onValueCommitted={(nextValue) => {
+        onValueCommitted?.(nextValue)
+        onValueCommit?.(nextValue)
+      }}
       {...props}
     >
-      <SliderPrimitive.Track
-        data-slot="slider-track"
-        className={cn(
-          "bg-zinc-100 relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5 dark:bg-zinc-800"
-        )}
-      >
-        <SliderPrimitive.Range
-          data-slot="slider-range"
-          className={cn(
-            "bg-zinc-900 absolute data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full dark:bg-zinc-50"
-          )}
-        />
-      </SliderPrimitive.Track>
-      {Array.from({ length: _values.length }, (_, index) => (
-        <SliderPrimitive.Thumb
-          data-slot="slider-thumb"
-          key={index}
-          className="border-zinc-900 bg-white ring-zinc-950/50 block size-4 shrink-0 rounded-full border border-zinc-200 shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 dark:border-zinc-50 dark:bg-zinc-950 dark:ring-zinc-300/50 dark:border-zinc-800"
-        />
-      ))}
+      <SliderPrimitive.Control className="relative flex w-full touch-none items-center select-none data-disabled:opacity-50 data-vertical:h-full data-vertical:min-h-40 data-vertical:w-auto data-vertical:flex-col">
+        <SliderPrimitive.Track
+          data-slot="slider-track"
+          className="relative grow overflow-hidden rounded-full bg-oklch(0.97 0 0) select-none data-horizontal:h-1 data-horizontal:w-full data-vertical:h-full data-vertical:w-1 dark:bg-oklch(0.269 0 0)"
+        >
+          <SliderPrimitive.Indicator
+            data-slot="slider-range"
+            className="bg-oklch(0.205 0 0) select-none data-horizontal:h-full data-vertical:w-full dark:bg-oklch(0.922 0 0)"
+          />
+        </SliderPrimitive.Track>
+        {Array.from({ length: _values.length }, (_, index) => (
+          <SliderPrimitive.Thumb
+            data-slot="slider-thumb"
+            key={index}
+            className="relative block size-3 shrink-0 rounded-full border border-oklch(0.922 0 0) border-oklch(0.708 0 0) bg-white ring-oklch(0.708 0 0)/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50 dark:border-oklch(1 0 0 / 10%) dark:border-oklch(0.556 0 0) dark:ring-oklch(0.556 0 0)/50"
+          />
+        ))}
+      </SliderPrimitive.Control>
     </SliderPrimitive.Root>
   )
 }

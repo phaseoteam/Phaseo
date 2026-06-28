@@ -5,9 +5,7 @@ function Kbd({ className, ...props }: React.ComponentProps<"kbd">) {
     <kbd
       data-slot="kbd"
       className={cn(
-        "bg-zinc-100 text-zinc-500 pointer-events-none inline-flex h-5 w-fit min-w-5 select-none items-center justify-center gap-1 rounded-sm px-1 font-sans text-xs font-medium dark:bg-zinc-800 dark:text-zinc-400",
-        "[&_svg:not([class*='size-'])]:size-3",
-        "[[data-slot=tooltip-content]_&]:bg-white/20 [[data-slot=tooltip-content]_&]:text-white dark:[[data-slot=tooltip-content]_&]:bg-white/10 dark:[[data-slot=tooltip-content]_&]:bg-zinc-950/20 dark:[[data-slot=tooltip-content]_&]:text-zinc-950 dark:dark:[[data-slot=tooltip-content]_&]:bg-zinc-950/10",
+        "pointer-events-none inline-flex h-5 w-fit min-w-5 items-center justify-center gap-1 rounded-sm bg-oklch(0.97 0 0) px-1 font-sans text-xs font-medium text-oklch(0.556 0 0) select-none in-data-[slot=tooltip-content]:bg-oklch(1 0 0)/20 in-data-[slot=tooltip-content]:text-oklch(1 0 0) dark:in-data-[slot=tooltip-content]:bg-oklch(1 0 0)/10 [&_svg:not([class*='size-'])]:size-3 dark:bg-oklch(0.269 0 0) dark:text-oklch(0.708 0 0) dark:in-data-[slot=tooltip-content]:bg-oklch(0.145 0 0)/20 dark:in-data-[slot=tooltip-content]:text-oklch(0.145 0 0) dark:dark:in-data-[slot=tooltip-content]:bg-oklch(0.145 0 0)/10",
         className
       )}
       {...props}
