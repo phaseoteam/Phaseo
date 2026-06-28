@@ -150,17 +150,25 @@ jobs:
               continue-on-error: true
               run: pnpm run docs:links
 
-            - if: matrix.app == 'web'
-              parallel:
-                  - name: Web lint
-                    continue-on-error: true
-                    working-directory: apps/web
-                    run: pnpm run lint
+            - name: Web lint
+              if: matrix.app == 'web'
+              id: web-lint
+              continue-on-error: true
+              working-directory: apps/web
+              run: pnpm run lint
+              background: true
 
-                  - name: Web typecheck
-                    continue-on-error: true
-                    working-directory: apps/web
-                    run: pnpm run typecheck
+            - name: Web typecheck
+              if: matrix.app == 'web'
+              id: web-typecheck
+              continue-on-error: true
+              working-directory: apps/web
+              run: pnpm run typecheck
+              background: true
+
+            - name: Wait for web checks
+              if: matrix.app == 'web'
+              wait: [web-lint, web-typecheck]
 
     api-aimock:
         name: API AIMock matrix
