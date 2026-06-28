@@ -147,6 +147,8 @@ function buildStatusLabel(status: string | null | undefined): string | null {
 		case "limited_access":
 		case "limited-access":
 			return "a limited-access";
+		case "superseded":
+			return "a superseded";
 		case "withheld":
 			return "a withheld";
 		case "rumoured":

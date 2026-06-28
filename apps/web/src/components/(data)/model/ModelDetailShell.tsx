@@ -43,6 +43,7 @@ function getVisibleTabKeys(modelStatus?: string | null): string[] {
 	const isLimitedAvailabilityModel =
 		modelStatus === "Announced" ||
 		modelStatus === "Limited Access" ||
+		modelStatus === "Superseded" ||
 		modelStatus === "Withheld";
 	if (isLimitedAvailabilityModel) {
 		return ["overview"];

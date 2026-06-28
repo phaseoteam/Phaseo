@@ -84,6 +84,7 @@ const STATUS_OPTIONS = [
 	"Rumoured",
 	"Announced",
 	"Limited Access",
+	"Superseded",
 	"Withheld",
 	"Available",
 	"Deprecated",

@@ -930,8 +930,12 @@ export default function ModelOverviewSections({
 	const modelStatus = model?.status ?? null;
 	const isWithheldModel = modelStatus === "Withheld";
 	const isLimitedAccessModel = modelStatus === "Limited Access";
+	const isSupersededModel = modelStatus === "Superseded";
 	const isLimitedAvailabilityModel =
-		modelStatus === "Announced" || isWithheldModel || isLimitedAccessModel;
+		modelStatus === "Announced" ||
+		isWithheldModel ||
+		isLimitedAccessModel ||
+		isSupersededModel;
 
 	return (
 		<div className="space-y-10">
@@ -942,6 +946,8 @@ export default function ModelOverviewSections({
 						<AlertTitle>
 							{isLimitedAccessModel
 								? "Limited Access Model"
+								: isSupersededModel
+									? "Superseded Model"
 								: isWithheldModel
 									? "Withheld Model"
 									: "Announced Model"}
@@ -949,6 +955,8 @@ export default function ModelOverviewSections({
 						<AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
 							{isLimitedAccessModel
 								? "This model is known to exist, but access is limited to selected customers, trusted partners, or private preview programs. It is not generally available through public routes."
+								: isSupersededModel
+									? "This model was announced or previewed, but did not receive a public release before a newer model or replacement became available. Information on this page is retained for historical context."
 								: isWithheldModel
 									? "This model was announced with preliminary details but is currently withheld and may never become publicly accessible. Information on this page is provisional and can change at any moment."
 									: "This model has been announced and is expected to become more broadly available. Information on this page can change as the provider updates release plans, routing availability, and technical details."}
