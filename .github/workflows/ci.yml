@@ -38,18 +38,29 @@ jobs:
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
-            - parallel:
-                  - name: Test model-discovery GitHub issue sync helpers
-                    run: pnpm exec tsx scripts/model-discovery/github-issues.test.ts
+            - name: Run data checks in parallel
+              shell: bash
+              run: |
+                  set -euo pipefail
 
-                  - name: Validate data files
-                    run: pnpm run validate:data
+                  pnpm exec tsx scripts/model-discovery/github-issues.test.ts &
+                  issues_pid=$!
 
-                  - name: Validate pricing data
-                    run: pnpm run validate:pricing
+                  pnpm run validate:data &
+                  data_pid=$!
 
-                  - name: Validate gateway data
-                    run: pnpm run validate:gateway
+                  pnpm run validate:pricing &
+                  pricing_pid=$!
+
+                  pnpm run validate:gateway &
+                  gateway_pid=$!
+
+                  status=0
+                  wait "$issues_pid" || status=1
+                  wait "$data_pid" || status=1
+                  wait "$pricing_pid" || status=1
+                  wait "$gateway_pid" || status=1
+                  exit "$status"
 
     check-paths:
         name: Check for data changes
@@ -150,25 +161,24 @@ jobs:
               continue-on-error: true
               run: pnpm run docs:links
 
-            - name: Web lint
+            - name: Web lint & typecheck
               if: matrix.app == 'web'
-              id: web-lint
               continue-on-error: true
               working-directory: apps/web
-              run: pnpm run lint
-              background: true
+              shell: bash
+              run: |
+                  set -euo pipefail
 
-            - name: Web typecheck
-              if: matrix.app == 'web'
-              id: web-typecheck
-              continue-on-error: true
-              working-directory: apps/web
-              run: pnpm run typecheck
-              background: true
+                  pnpm run lint &
+                  lint_pid=$!
 
-            - name: Wait for web checks
-              if: matrix.app == 'web'
-              wait: [web-lint, web-typecheck]
+                  pnpm run typecheck &
+                  typecheck_pid=$!
+
+                  status=0
+                  wait "$lint_pid" || status=1
+                  wait "$typecheck_pid" || status=1
+                  exit "$status"
 
     api-aimock:
         name: API AIMock matrix
