@@ -2,19 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
 import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
-import { Square } from "lucide-react";
+import { ArrowDown, Square } from "lucide-react";
 import {
 	REASONING_OPTIONS,
 	extensionForAudioMimeType,
 	extractClipboardFiles,
 	getRandomPlaceholder,
 	getSupportedRecordingMimeType,
-	sanitizeAttachmentMediaUrl,
 } from "./chatConversationHelpers";
 
 export type ChatSendPayload = {
@@ -101,7 +100,6 @@ export function ChatConversation({
 	const [editingValue, setEditingValue] = useState("");
 	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-	const scrollAreaRef = useRef<HTMLDivElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
@@ -130,22 +128,8 @@ export function ChatConversation({
 		[attachments],
 	);
 
-	const latestMessageContent =
-		activeThread?.messages[activeThread.messages.length - 1]?.content ?? "";
 	const lastMessageId =
 		activeThread?.messages[activeThread.messages.length - 1]?.id ?? null;
-
-	useEffect(() => {
-		const root = scrollAreaRef.current;
-		if (!root) return;
-		const viewport = root.querySelector(
-			"[data-radix-scroll-area-viewport]",
-		) as HTMLDivElement | null;
-		if (!viewport) return;
-		requestAnimationFrame(() => {
-			viewport.scrollTop = viewport.scrollHeight;
-		});
-	}, [activeThread?.id, activeThread?.messages.length, latestMessageContent]);
 
 	useEffect(() => {
 		const textarea = textareaRef.current;
@@ -450,57 +434,73 @@ export function ChatConversation({
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<ScrollArea className="flex-1 overscroll-contain" ref={scrollAreaRef}>
-				<div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
-					{isRecording ? (
-						<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
-							<div className="flex items-center gap-3">
-								<button
-									type="button"
-									onClick={toggleRecording}
-									disabled={isStartingRecording}
-									aria-label="Stop recording"
-									className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-								>
-									<span className="pointer-events-none absolute inset-0 rounded-full bg-destructive/10 animate-pulse" />
-									<span className="pointer-events-none relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-destructive/20">
-										<Square className="h-4 w-4 fill-current" />
-									</span>
-								</button>
-								<div className="min-w-0">
-									<p className="text-sm font-medium">Listening...</p>
-									<p className="text-xs text-muted-foreground">
-										Speak now, then stop to attach the clip.
-									</p>
+			<MessageScroller.Provider
+				autoScroll
+				defaultScrollPosition="end"
+				scrollEdgeThreshold={48}
+				scrollMargin={24}
+			>
+				<MessageScroller.Root className="relative flex min-h-0 flex-1 overflow-hidden overscroll-contain">
+					<MessageScroller.Viewport className="h-full w-full overflow-y-auto overscroll-contain">
+						<MessageScroller.Content className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
+							{isRecording ? (
+								<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
+									<div className="flex items-center gap-3">
+										<button
+											type="button"
+											onClick={toggleRecording}
+											disabled={isStartingRecording}
+											aria-label="Stop recording"
+											className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-destructive/30 bg-destructive/10 text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+										>
+											<span className="pointer-events-none absolute inset-0 rounded-full bg-destructive/10 animate-pulse" />
+											<span className="pointer-events-none relative inline-flex h-9 w-9 items-center justify-center rounded-full bg-destructive/20">
+												<Square className="h-4 w-4 fill-current" />
+											</span>
+										</button>
+										<div className="min-w-0">
+											<p className="text-sm font-medium">Listening...</p>
+											<p className="text-xs text-muted-foreground">
+												Speak now, then stop to attach the clip.
+											</p>
+										</div>
+									</div>
 								</div>
-							</div>
-						</div>
-					) : null}
-					<ChatConversationMessages
-						activeThread={activeThread}
-						isSending={isSending}
-						lastMessageId={lastMessageId}
-						editingId={editingId}
-						editingValue={editingValue}
-						metadataOpenId={metadataOpenId}
-						onMetadataOpenIdChange={setMetadataOpenId}
-						onEditingIdChange={setEditingId}
-						onEditingValueChange={setEditingValue}
-						orgNameById={orgNameById}
-						modelDisplayNameById={modelDisplayNameById}
-						modelOrgIdById={modelOrgIdById}
-						modelLinkById={modelLinkById}
-						accentColor={accentColor}
-						onEditMessage={onEditMessage}
-						onRetryAssistant={onRetryAssistant}
-						onBranchAssistant={onBranchAssistant}
-						onSelectVariant={onSelectVariant}
-						onCopy={handleCopy}
-						requestError={requestError}
-						onDismissRequestError={onDismissRequestError}
-					/>
-				</div>
-			</ScrollArea>
+							) : null}
+							<ChatConversationMessages
+								activeThread={activeThread}
+								isSending={isSending}
+								lastMessageId={lastMessageId}
+								editingId={editingId}
+								editingValue={editingValue}
+								metadataOpenId={metadataOpenId}
+								onMetadataOpenIdChange={setMetadataOpenId}
+								onEditingIdChange={setEditingId}
+								onEditingValueChange={setEditingValue}
+								orgNameById={orgNameById}
+								modelDisplayNameById={modelDisplayNameById}
+								modelOrgIdById={modelOrgIdById}
+								modelLinkById={modelLinkById}
+								accentColor={accentColor}
+								onEditMessage={onEditMessage}
+								onRetryAssistant={onRetryAssistant}
+								onBranchAssistant={onBranchAssistant}
+								onSelectVariant={onSelectVariant}
+								onCopy={handleCopy}
+								requestError={requestError}
+								onDismissRequestError={onDismissRequestError}
+							/>
+						</MessageScroller.Content>
+					</MessageScroller.Viewport>
+					<MessageScroller.Button
+						aria-label="Scroll to latest message"
+						className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"
+						direction="end"
+					>
+						<ArrowDown className="h-4 w-4" />
+					</MessageScroller.Button>
+				</MessageScroller.Root>
+			</MessageScroller.Provider>
 			<ChatConversationComposer
 				sendGateType={sendGateType}
 				isSending={isSending}

@@ -67,6 +67,7 @@
 		"@radix-ui/react-use-controllable-state": "^1.2.2",
 		"@react-three/drei": "^10.7.6",
 		"@react-three/fiber": "^9.6.1",
+		"@shadcn/react": "0.1.0",
 		"@statsig/js-client": "^3.33.2",
 		"@statsig/react-bindings": "^3.33.2",
 		"@statsig/session-replay": "^3.33.2",

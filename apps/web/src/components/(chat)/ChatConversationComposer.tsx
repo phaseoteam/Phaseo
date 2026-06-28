@@ -7,6 +7,7 @@ import {
 	type RefObject,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
 	Brain,
 	Check,
@@ -21,6 +22,16 @@ import {
 } from "lucide-react";
 import type { ChatSettings } from "@/lib/indexeddb/chats";
 import { Logo } from "@/components/Logo";
+import {
+	Attachment,
+	AttachmentAction,
+	AttachmentActions,
+	AttachmentContent,
+	AttachmentDescription,
+	AttachmentGroup,
+	AttachmentMedia,
+	AttachmentTitle,
+} from "@/components/ui/attachment";
 import { Button } from "@/components/ui/button";
 import {
 	Popover,
@@ -140,6 +151,27 @@ const EVALUATION_PROMPTS = [
 ];
 
 const PROMPT_SCROLL_COPIES = [0, 1, 2];
+
+function formatAttachmentSize(size: number) {
+	if (!Number.isFinite(size) || size <= 0) return "0 B";
+
+	const units = ["B", "KB", "MB", "GB"];
+	let value = size;
+	let unitIndex = 0;
+
+	while (value >= 1024 && unitIndex < units.length - 1) {
+		value /= 1024;
+		unitIndex += 1;
+	}
+
+	const formatted =
+		unitIndex === 0 || value >= 10 ? Math.round(value) : value.toFixed(1);
+	return `${formatted} ${units[unitIndex]}`;
+}
+
+function getAttachmentDescription(file: File) {
+	return [file.type || "File", formatAttachmentSize(file.size)].join(" - ");
+}
 
 interface ChatConversationComposerProps {
 	sendGateType: SendGateType;
@@ -363,27 +395,52 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						className="min-h-[56px] resize-none border-0 !bg-transparent px-1 py-2 shadow-none focus-visible:ring-0 dark:!bg-transparent"
 					/>
 					{attachments.length > 0 ? (
-						<div className="flex flex-wrap gap-1 pb-1">
-							{attachments.map((file, index) => (
-								<button
-									key={`${file.name}-${file.size}-${index}`}
-									type="button"
-									className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
-									onClick={() => onRemoveAttachment(index)}
-								>
-									{attachmentPreviewUrls[index] ? (
-										<span
-											aria-hidden="true"
-											className="h-5 w-5 rounded bg-muted-foreground/20 shrink-0"
-										/>
-									) : null}
-									<span className="max-w-[180px] truncate">
-										{file.name}
-									</span>
-									<X className="h-3 w-3" />
-								</button>
-							))}
-						</div>
+						<AttachmentGroup className="pb-1">
+							{attachments.map((file, index) => {
+								const previewUrl = attachmentPreviewUrls[index];
+								const isImagePreview = Boolean(previewUrl);
+
+								return (
+									<Attachment
+										key={`${file.name}-${file.size}-${index}`}
+										size="sm"
+										state="done"
+										className="max-w-[260px]"
+									>
+										<AttachmentMedia
+											variant={isImagePreview ? "image" : "icon"}
+										>
+											{previewUrl ? (
+												<Image
+													src={previewUrl}
+													alt=""
+													width={32}
+													height={32}
+													unoptimized
+													className="h-full w-full object-cover"
+												/>
+											) : (
+												<Paperclip className="h-4 w-4" />
+											)}
+										</AttachmentMedia>
+										<AttachmentContent>
+											<AttachmentTitle>{file.name}</AttachmentTitle>
+											<AttachmentDescription>
+												{getAttachmentDescription(file)}
+											</AttachmentDescription>
+										</AttachmentContent>
+										<AttachmentActions>
+											<AttachmentAction
+												aria-label={`Remove ${file.name}`}
+												onClick={() => onRemoveAttachment(index)}
+											>
+												<X className="h-3.5 w-3.5" />
+											</AttachmentAction>
+										</AttachmentActions>
+									</Attachment>
+								);
+							})}
+						</AttachmentGroup>
 					) : null}
 					<div className="flex items-center justify-between pt-2">
 						<div className="flex items-center gap-2">
@@ -411,12 +468,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										)}
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>
-									{selectedModelCount > 1
-										? selectedModelsHint ??
-										  `${selectedModelCount} models selected`
-										: selectedModelId || "Select model"}
-								</TooltipContent>
+									<TooltipContent>
+										{selectedModelCount > 1
+											? selectedModelsHint ??
+												`${selectedModelCount} models selected`
+											: selectedModelId || "Select model"}
+									</TooltipContent>
 							</Tooltip>
 							<Tooltip>
 								<TooltipTrigger asChild>

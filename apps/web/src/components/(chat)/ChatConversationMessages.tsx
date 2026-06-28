@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { MessageScroller } from "@shadcn/react/message-scroller";
 import { Streamdown } from "streamdown";
 import { Logo } from "@/components/Logo";
 import {
@@ -10,6 +11,7 @@ import {
 	ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
 import { Shimmer } from "@/components/ai-elements/shimmer";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import {
 	ChatRequestErrorNotice,
@@ -41,6 +43,12 @@ import {
 	MediaPlayerVolume,
 	MediaPlayerVolumeIndicator,
 } from "@/components/ui/media-player";
+import {
+	Message,
+	MessageContent,
+	MessageFooter,
+	MessageHeader,
+} from "@/components/ui/message";
 import {
 	Tooltip,
 	TooltipContent,
@@ -392,60 +400,71 @@ export function ChatConversationMessages({
 					? { backgroundColor: accentColor }
 					: undefined;
 
-			return (
-				<div
-					key={message.id}
-					className={cn(
-						"flex flex-col",
-						isUser ? "items-end" : "items-start",
-					)}
-				>
-					{!isUser && displayModelId && (
-						<div className="mb-2 flex flex-col gap-0.5 text-xs text-muted-foreground">
-							{hasModelLink ? (
-								<Link
-									href={modelLink}
-									className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
-								>
-									<Logo
-										id={orgId}
-										alt={orgName}
-										width={18}
-										height={18}
-										className="shrink-0 rounded-none"
-									/>
-									<span className="truncate">{modelLabel}</span>
-								</Link>
-							) : (
-								<span className="inline-flex items-center gap-2">
-									<Logo
-										id={orgId}
-										alt={orgName}
-										width={18}
-										height={18}
-										className="shrink-0 rounded-none"
-									/>
-									<span className="truncate">{modelLabel}</span>
-								</span>
-							)}
-							{responseProviderLabel ? (
-								<span className="pl-6 text-[11px] text-muted-foreground/80">
-									via {responseProviderLabel}
-								</span>
-							) : null}
-						</div>
-					)}
-					<div
-						className={cn(
-							"max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-							isUser
-								? hasAccent
-									? "text-background"
-									: "bg-foreground text-background"
-								: "border border-border bg-muted text-foreground",
-						)}
-						style={userBubbleStyle}
+				return (
+					<MessageScroller.Item
+						key={message.id}
+						messageId={message.id}
+						scrollAnchor={isUser}
 					>
+						<Message align={isUser ? "end" : "start"}>
+							<MessageContent
+								className={cn(isUser ? "items-end" : "items-start")}
+							>
+								{!isUser && displayModelId && (
+									<MessageHeader className="mb-0 flex-col items-start gap-0.5 px-0 text-xs text-muted-foreground">
+										{hasModelLink ? (
+											<Link
+												href={modelLink}
+												className="inline-flex items-center gap-2 transition-colors hover:text-foreground"
+											>
+												<Logo
+													id={orgId}
+													alt={orgName}
+													width={18}
+													height={18}
+													className="shrink-0 rounded-none"
+												/>
+												<span className="truncate">
+													{modelLabel}
+												</span>
+											</Link>
+										) : (
+											<span className="inline-flex items-center gap-2">
+												<Logo
+													id={orgId}
+													alt={orgName}
+													width={18}
+													height={18}
+													className="shrink-0 rounded-none"
+												/>
+												<span className="truncate">
+													{modelLabel}
+												</span>
+											</span>
+										)}
+										{responseProviderLabel ? (
+											<span className="pl-6 text-[11px] text-muted-foreground/80">
+												via {responseProviderLabel}
+											</span>
+										) : null}
+									</MessageHeader>
+								)}
+								<Bubble
+									align={isUser ? "end" : "start"}
+									variant="ghost"
+									className="max-w-[85%]"
+								>
+									<BubbleContent
+										className={cn(
+											"rounded-2xl px-4 py-3 text-sm leading-relaxed",
+											isUser
+												? hasAccent
+													? "text-background"
+													: "bg-foreground text-background"
+												: "border border-border bg-muted text-foreground",
+										)}
+										style={userBubbleStyle}
+									>
 						{isUser ? (
 							isEditing ? (
 								<div className="grid gap-3">
@@ -715,9 +734,10 @@ export function ChatConversationMessages({
 								) : null}
 							</div>
 						)}
-					</div>
-					{isUser ? (
-						<div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+									</BubbleContent>
+								</Bubble>
+								{isUser ? (
+									<MessageFooter className="mt-0 flex items-center gap-2 px-0 text-xs text-muted-foreground">
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Button
@@ -758,9 +778,9 @@ export function ChatConversationMessages({
 								</TooltipTrigger>
 								<TooltipContent side="top">Edit</TooltipContent>
 							</Tooltip>
-						</div>
-					) : (
-						<div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+									</MessageFooter>
+								) : (
+									<MessageFooter className="mt-0 flex flex-wrap items-center gap-2 px-0 text-xs text-muted-foreground">
 							{isPendingAssistant ? null : (
 								<>
 									<Tooltip>
@@ -959,10 +979,12 @@ export function ChatConversationMessages({
 									</Button>
 								</div>
 							) : null}
-						</div>
-					)}
-				</div>
-			);
+									</MessageFooter>
+								)}
+							</MessageContent>
+						</Message>
+					</MessageScroller.Item>
+				);
 		});
 	}, [
 		activeThread,
