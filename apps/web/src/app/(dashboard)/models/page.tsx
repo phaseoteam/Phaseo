@@ -8,6 +8,7 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	getCatalogPricingSummariesCached,
+	type CatalogPricingSummary,
 	type CatalogPricingSummaryByModelId,
 } from "@/lib/fetchers/models/getCatalogPricingSummaries";
 import type { Metadata } from "next";
@@ -877,6 +878,26 @@ function resolveModelWeeklyMetrics(
 	);
 }
 
+function resolveCatalogPricingSummary(
+	modelId: string,
+	signals: GatewaySignals | undefined,
+	catalogPricingSummaries: CatalogPricingSummaryByModelId,
+): CatalogPricingSummary | undefined {
+	const candidates = [
+		modelId,
+		...Array.from(signals?.apiModelIds ?? []),
+	]
+		.map((value) => String(value ?? "").trim())
+		.filter(Boolean);
+
+	for (const candidate of candidates) {
+		const summary = catalogPricingSummaries[candidate];
+		if (summary) return summary;
+	}
+
+	return undefined;
+}
+
 function withGatewayMetadata(
 	baseModels: ModelCard[],
 	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
@@ -896,6 +917,11 @@ function withGatewayMetadata(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
 			weeklyMetricsByKey,
+		);
+		const catalogPricing = resolveCatalogPricingSummary(
+			modelId,
+			signals,
+			catalogPricingSummaries,
 		);
 		const providerCount = signals?.providerIds.size ?? 0;
 		const activeProviderCount = signals?.activeProviderIds.size ?? 0;
@@ -1001,23 +1027,46 @@ function withGatewayMetadata(
 			supported_parameters: Array.from(
 				signals?.supportedParameters ?? [],
 			).sort(),
-			lowest_input_price: signals?.lowestInputPrice ?? null,
-			lowest_output_price: signals?.lowestOutputPrice ?? null,
-			lowest_standard_input_price: signals?.lowestStandardInputPrice ?? null,
-			lowest_standard_output_price: signals?.lowestStandardOutputPrice ?? null,
+			lowest_input_price:
+				signals?.lowestInputPrice ?? catalogPricing?.lowestInputPrice ?? null,
+			lowest_output_price:
+				signals?.lowestOutputPrice ?? catalogPricing?.lowestOutputPrice ?? null,
+			lowest_standard_input_price:
+				signals?.lowestStandardInputPrice ??
+				catalogPricing?.lowestStandardInputPrice ??
+				null,
+			lowest_standard_output_price:
+				signals?.lowestStandardOutputPrice ??
+				catalogPricing?.lowestStandardOutputPrice ??
+				null,
 			lowest_standard_input_price_label:
-				signals?.lowestStandardInputPriceLabel ?? null,
+				signals?.lowestStandardInputPriceLabel ??
+				catalogPricing?.lowestStandardInputPriceLabel ??
+				null,
 			lowest_standard_input_price_unit:
-				signals?.lowestStandardInputPriceUnit ?? null,
+				signals?.lowestStandardInputPriceUnit ??
+				catalogPricing?.lowestStandardInputPriceUnit ??
+				null,
 			lowest_standard_output_price_label:
-				signals?.lowestStandardOutputPriceLabel ?? null,
+				signals?.lowestStandardOutputPriceLabel ??
+				catalogPricing?.lowestStandardOutputPriceLabel ??
+				null,
 			lowest_standard_output_price_unit:
-				signals?.lowestStandardOutputPriceUnit ?? null,
-			lowest_from_price: signals?.lowestFromPrice ?? null,
-			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
-			pricing_detail_rows: mergePricingDetailRows(
-				(signals?.pricingDetailRows ?? []).slice(0, 12),
-			).slice(0, 6),
+				signals?.lowestStandardOutputPriceUnit ??
+				catalogPricing?.lowestStandardOutputPriceUnit ??
+				null,
+			lowest_from_price:
+				signals?.lowestFromPrice ?? catalogPricing?.lowestFromPrice ?? null,
+			lowest_from_price_unit:
+				signals?.lowestFromPriceUnit ?? catalogPricing?.lowestFromPriceUnit ?? null,
+			pricing_detail_rows: (() => {
+				const gatewayRows = mergePricingDetailRows(
+					(signals?.pricingDetailRows ?? []).slice(0, 12),
+				).slice(0, 6);
+				return gatewayRows.length > 0
+					? gatewayRows
+					: (catalogPricing?.pricingDetailRows ?? []);
+			})(),
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
 			throughput_week: weeklyMetrics.throughputWeek,
 			latency_week: weeklyMetrics.latencyWeek,
