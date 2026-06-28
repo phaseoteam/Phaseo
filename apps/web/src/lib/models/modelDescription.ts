@@ -136,20 +136,24 @@ function truncateAtWordBoundary(value: string, maxLength: number): string {
 }
 
 function buildStatusLabel(status: string | null | undefined): string | null {
-	switch ((status ?? "").trim().toLowerCase()) {
-		case "announced":
-			return "an announced";
-		case "deprecated":
-			return "a deprecated";
-		case "retired":
-			return "a retired";
-		case "withheld":
-			return "a withheld";
-		case "rumoured":
-			return "a rumoured";
-		default:
-			return "an";
-	}
+    switch ((status ?? "").trim().toLowerCase()) {
+        case "announced":
+            return "an announced";
+        case "deprecated":
+            return "a deprecated";
+        case "retired":
+            return "a retired";
+        case "limited access":
+        case "limited_access":
+        case "limited-access":
+            return "a limited-access";
+        case "withheld":
+            return "a withheld";
+        case "rumoured":
+            return "a rumoured";
+        default:
+            return "an";
+    }
 }
 
 function buildModalitySentence(model: ModelDescriptionSource): string | null {

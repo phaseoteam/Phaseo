@@ -76,6 +76,8 @@ const ACTIVE_PROVIDER_STATUS_SET = new Set([
 	"deranked_lvl3",
 ]);
 
+const UPCOMING_CATALOG_STATUS_SET = new Set(["announced"]);
+
 function getModelYear(model: ModelsPageModel): string {
 	if (Number.isFinite(model.primary_timestamp)) {
 		const year = new Date(Number(model.primary_timestamp)).getUTCFullYear();
@@ -88,6 +90,13 @@ function getModelYear(model: ModelsPageModel): string {
 		}
 	}
 	return "";
+}
+
+function getCatalogOnlyGatewayStatus(
+	model: ModelCard,
+): NonNullable<ModelsPageModel["gateway_status"]> {
+	const status = String(model.status ?? "").trim().toLowerCase();
+	return UPCOMING_CATALOG_STATUS_SET.has(status) ? "coming_soon" : "not_listed";
 }
 
 function normalizeModalityKey(value: string): string {
@@ -1069,7 +1078,7 @@ function withGatewayMetadata(
 				primary_date: model.primary_date ?? null,
 				primary_timestamp: model.primary_timestamp ?? null,
 				primary_group_key: model.primary_group_key ?? null,
-				gateway_status: "not_listed" as const,
+				gateway_status: getCatalogOnlyGatewayStatus(model),
 				gateway_provider_count: 0,
 				gateway_active_provider_count: 0,
 				gateway_endpoints: [],

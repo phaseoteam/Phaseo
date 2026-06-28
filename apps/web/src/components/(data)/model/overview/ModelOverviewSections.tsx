@@ -929,8 +929,11 @@ export default function ModelOverviewSections({
 	const hasInternalModelData = Boolean(model);
 	const modelStatus = model?.status ?? null;
 	const isWithheldModel = modelStatus === "Withheld";
+	const isLimitedAccessModel = modelStatus === "Limited Access";
 	const isLimitedAvailabilityModel =
-		modelStatus === "Announced" || isWithheldModel;
+		modelStatus === "Announced" ||
+		isWithheldModel ||
+		isLimitedAccessModel;
 
 	return (
 		<div className="space-y-10">
@@ -939,12 +942,18 @@ export default function ModelOverviewSections({
 					<Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
 						<AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
 						<AlertTitle>
-							{isWithheldModel ? "Withheld Model" : "Announced Model"}
+							{isLimitedAccessModel
+								? "Limited Access Model"
+								: isWithheldModel
+									? "Withheld Model"
+									: "Announced Model"}
 						</AlertTitle>
 						<AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
-							{isWithheldModel
-								? "This model was announced with preliminary details but is currently withheld and may never become publicly accessible. Information on this page is provisional and can change at any moment."
-								: "This model has been announced and may never become generally accessible. Information on this page can change at any moment as the provider updates release plans, routing availability, and technical details."}
+							{isLimitedAccessModel
+								? "This model is known to exist, but access is limited to selected customers, trusted partners, or private preview programs. It is not generally available through public routes."
+								: isWithheldModel
+									? "This model was announced with preliminary details but is currently withheld and may never become publicly accessible. Information on this page is provisional and can change at any moment."
+									: "This model has been announced and is expected to become more broadly available. Information on this page can change as the provider updates release plans, routing availability, and technical details."}
 						</AlertDescription>
 						</Alert>
 					</Section>
@@ -997,4 +1006,3 @@ export default function ModelOverviewSections({
 		</div>
 	);
 }
-

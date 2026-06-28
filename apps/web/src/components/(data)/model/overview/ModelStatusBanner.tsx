@@ -4,6 +4,7 @@ interface ModelStatusBannerProps {
 	status:
 		| "Rumoured"
 		| "Announced"
+		| "Limited Access"
 		| "Withheld"
 		| "Available"
 		| "Deprecated"
@@ -76,6 +77,26 @@ export default function ModelStatusBanner({ status }: ModelStatusBannerProps) {
 							This model was announced with preliminary details but is
 							currently withheld and may never be released publicly.
 							Information may change at any time.
+						</p>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
+	if (status === "Limited Access") {
+		return (
+			<div className="bg-fuchsia-100 border border-fuchsia-400 text-fuchsia-700 px-4 py-3 rounded mb-4">
+				<div className="flex">
+					<div className="py-1">
+						<Info className="h-6 w-6 text-fuchsia-500 mr-4" />
+					</div>
+					<div>
+						<p className="font-bold">Limited Access Model</p>
+						<p className="text-sm">
+							This model is known to exist, but access is limited to
+							selected customers, trusted partners, or private preview
+							programs. It is not generally available through public routes.
 						</p>
 					</div>
 				</div>

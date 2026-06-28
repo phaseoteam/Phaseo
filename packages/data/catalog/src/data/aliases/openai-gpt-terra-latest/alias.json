@@ -1,0 +1,8 @@
+{
+  "alias_slug": "openai/gpt-terra-latest",
+  "resolved_api_model_id": "openai/gpt-5.6-terra",
+  "resolved_model_id": "openai/gpt-5.6-terra",
+  "channel": "preview",
+  "is_enabled": true,
+  "notes": "Preview alias for the latest OpenAI Terra-tier GPT model."
+}
