@@ -152,7 +152,7 @@ function formatPriceAmount(value: number): string {
 
 function formatDetailValue(price: number, unit: string): string {
     const amount = formatPriceAmount(price);
-    if (unit === "1M tokens") return `${amount} /M tokens`;
+    if (unit === "1M tokens") return `${amount} / 1M tokens`;
     return `${amount} / ${unit}`;
 }
 
@@ -247,6 +247,7 @@ async function fetchPricingRuleRows(): Promise<PricingRuleRow[]> {
             .select(
                 "model_key, pricing_plan, meter, note, unit, unit_size, price_per_unit, effective_from, effective_to",
             )
+            .order("rule_id", { ascending: true })
             .range(from, to);
         if (error) throw error;
 
