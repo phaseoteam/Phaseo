@@ -8,7 +8,6 @@ import {
 	CircleQuestionMark,
 	ShieldAlert,
 	KeyRound,
-	Replace,
 } from "lucide-react";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import type { OrganisationOverview as OrganisationPage } from "@/lib/fetchers/organisations/getOrganisation";
@@ -83,9 +82,6 @@ export default function ModelsDisplay({
 	const limitedAccess: DisplayModel[] = models.filter(
 		(m: DisplayModel) => m.status === "Limited Access"
 	);
-	const superseded: DisplayModel[] = models.filter(
-		(m: DisplayModel) => m.status === "Superseded"
-	);
 	const withheld: DisplayModel[] = models.filter(
 		(m: DisplayModel) => m.status === "Withheld"
 	);
@@ -103,7 +99,6 @@ export default function ModelsDisplay({
 				"Available",
 				"Announced",
 				"Limited Access",
-				"Superseded",
 				"Withheld",
 				"Deprecated",
 				"Retired",
@@ -150,14 +145,6 @@ export default function ModelsDisplay({
 				<Badge className="bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-300 dark:border-fuchsia-800 dark:hover:bg-fuchsia-900 dark:hover:text-fuchsia-200 dark:hover:border-fuchsia-700">
 					<KeyRound size={14} className="mr-1" />
 					Limited Access
-				</Badge>
-			);
-		}
-		if (status === "Superseded") {
-			return (
-				<Badge className="bg-slate-100 text-slate-800 border border-slate-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-900 dark:hover:text-slate-200 dark:hover:border-slate-700">
-					<Replace size={14} className="mr-1" />
-					Superseded
 				</Badge>
 			);
 		}
@@ -237,7 +224,6 @@ export default function ModelsDisplay({
 			{showStatusHeadings && renderSection("Available", available)}
 			{showStatusHeadings && renderSection("Announced", announced)}
 			{showStatusHeadings && renderSection("Limited Access", limitedAccess)}
-			{showStatusHeadings && renderSection("Superseded", superseded)}
 			{showStatusHeadings && renderSection("Withheld", withheld)}
 			{showStatusHeadings && renderSection("Deprecated", deprecated)}
 			{showStatusHeadings && renderSection("Retired", retired)}

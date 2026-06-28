@@ -276,7 +276,6 @@ type ModelStatus =
     | "Rumoured"
     | "Announced"
     | "Limited Access"
-    | "Superseded"
     | "Withheld"
     | "Available"
     | "Deprecated"

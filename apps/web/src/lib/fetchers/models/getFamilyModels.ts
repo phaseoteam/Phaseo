@@ -5,7 +5,6 @@ export type FamilyModelStatus =
     | "Rumoured"
     | "Announced"
     | "Limited Access"
-    | "Superseded"
     | "Withheld"
     | "Available"
     | "Deprecated"

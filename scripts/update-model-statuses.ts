@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-type ModelStatus = "Rumoured" | "Announced" | "Limited Access" | "Superseded" | "Withheld" | "Available" | "Deprecated" | "Retired" | null;
+type ModelStatus = "Rumoured" | "Announced" | "Limited Access" | "Withheld" | "Available" | "Deprecated" | "Retired" | null;
 
 type ModelDates = {
     announced_date?: unknown;
@@ -21,7 +21,6 @@ const STATUS_ORDER: Record<Exclude<ModelStatus, null>, number> = {
     Announced: 1,
     "Limited Access": 1.4,
     Withheld: 1.5,
-    Superseded: 1.6,
     Available: 2,
     Deprecated: 3,
     Retired: 4,
@@ -54,7 +53,6 @@ function normalizeStatus(value: unknown): ModelStatus {
     return (trimmed === "Rumoured" ||
         trimmed === "Announced" ||
         trimmed === "Limited Access" ||
-        trimmed === "Superseded" ||
         trimmed === "Withheld" ||
         trimmed === "Available" ||
         trimmed === "Deprecated" ||
@@ -90,7 +88,7 @@ function deriveStatusFromDates(dates: ModelDates, now: Date): DerivedStatus | nu
 function pickStatus(current: ModelStatus, derived: DerivedStatus | null): ModelStatus {
     if (!derived) return current;
     if (
-        (current === "Withheld" || current === "Limited Access" || current === "Superseded") &&
+        (current === "Withheld" || current === "Limited Access") &&
         (derived.status === "Announced" || derived.status === "Available")
     ) {
         return current;

@@ -2,7 +2,6 @@ export const MODEL_STATUS_OPTIONS = [
   "Rumoured",
   "Announced",
   "Limited Access",
-  "Superseded",
   "Withheld",
   "Released",
   "Deprecated",
@@ -31,12 +30,6 @@ export function normalizeModelStatus(value: string | null | undefined): ModelSta
     normalized === "private_preview" ||
     normalized === "restricted"
   ) return "Limited Access"
-  if (
-    normalized === "superseded" ||
-    normalized === "replaced" ||
-    normalized === "withdrawn before release" ||
-    normalized === "withdrawn_before_release"
-  ) return "Superseded"
   if (normalized === "withheld") return "Withheld"
   if (normalized === "deprecated") return "Deprecated"
   if (normalized === "retired") return "Retired"

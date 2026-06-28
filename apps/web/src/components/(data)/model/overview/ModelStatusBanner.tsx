@@ -5,7 +5,6 @@ interface ModelStatusBannerProps {
 		| "Rumoured"
 		| "Announced"
 		| "Limited Access"
-		| "Superseded"
 		| "Withheld"
 		| "Available"
 		| "Deprecated"
@@ -78,26 +77,6 @@ export default function ModelStatusBanner({ status }: ModelStatusBannerProps) {
 							This model was announced with preliminary details but is
 							currently withheld and may never be released publicly.
 							Information may change at any time.
-						</p>
-					</div>
-				</div>
-			</div>
-		);
-	}
-
-	if (status === "Superseded") {
-		return (
-			<div className="bg-slate-100 border border-slate-400 text-slate-700 px-4 py-3 rounded mb-4">
-				<div className="flex">
-					<div className="py-1">
-						<Info className="h-6 w-6 text-slate-500 mr-4" />
-					</div>
-					<div>
-						<p className="font-bold">Superseded Model</p>
-						<p className="text-sm">
-							This model was announced or previewed, but did not receive a
-							public release before a newer model or replacement became
-							available.
 						</p>
 					</div>
 				</div>
