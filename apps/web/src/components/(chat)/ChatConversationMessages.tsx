@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Fragment,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type RefObject,
+} from "react";
 import Link from "next/link";
 import { MessageScroller } from "@shadcn/react/message-scroller";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Streamdown } from "streamdown";
 import { Logo } from "@/components/Logo";
 import {
@@ -18,10 +27,9 @@ import {
 	type ChatRequestErrorDetails,
 } from "@/components/(chat)/ChatRequestErrorNotice";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+	AssistantMessageFooter,
+	UserMessageFooter,
+} from "@/components/(chat)/ChatMessageFooters";
 import { Textarea } from "@/components/ui/textarea";
 import {
 	MediaPlayer,
@@ -46,29 +54,29 @@ import {
 import {
 	Message,
 	MessageContent,
-	MessageFooter,
 	MessageHeader,
 } from "@/components/ui/message";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 import {
-	ChevronLeft,
-	ChevronRight,
-	Check,
-	Copy,
-	GitBranch,
-	Info,
-	MessageSquare,
-	Pencil,
-	RotateCcw,
+	Brain,
+	Cpu,
+	Paperclip,
 	Save,
+	Search,
+	Settings2,
 	X,
 } from "lucide-react";
+import {
+	ChatMessageMarkers,
+	formatReasoningEffort,
+	getComparableModelSet,
+	getRequestContextMarker,
+	type ChatMessageMarker,
+} from "@/components/(chat)/ChatMessageMarkers";
+import { ChatMessagesEmptyState } from "@/components/(chat)/ChatMessagesEmptyState";
+import { ChatVirtualMessageList } from "@/components/(chat)/ChatVirtualMessageList";
+import { markChatUserMessageRendered } from "@/components/(chat)/playground/chat-performance";
 import {
 	buildModelLink,
 	ensureVariants,
@@ -85,14 +93,10 @@ import {
 } from "./chatConversationHelpers";
 
 const ATTACHMENT_PLACEHOLDER_PATTERN = /^\[(Attachment|Attachments)\]/i;
-
-function formatMetric(
-	value: number | string | null | undefined,
-	suffix?: string,
-) {
-	if (value === null || value === undefined || value === "") return "-";
-	return suffix ? `${value}${suffix}` : `${value}`;
-}
+const VIRTUALIZE_AFTER_MESSAGES = 80;
+const VIRTUAL_MESSAGE_OVERSCAN = 16;
+const ESTIMATED_MESSAGE_HEIGHT = 220;
+const EMPTY_MESSAGES: ChatThread["messages"] = [];
 
 type ChatConversationMessagesProps = {
 	activeThread: ChatThread | null;
@@ -116,6 +120,7 @@ type ChatConversationMessagesProps = {
 	onCopy: (text: string) => boolean | Promise<boolean>;
 	requestError?: ChatRequestErrorDetails | null;
 	onDismissRequestError?: () => void;
+	scrollViewportRef: RefObject<HTMLDivElement | null>;
 };
 
 export function ChatConversationMessages({
@@ -140,6 +145,7 @@ export function ChatConversationMessages({
 	onCopy,
 	requestError = null,
 	onDismissRequestError,
+	scrollViewportRef,
 }: ChatConversationMessagesProps) {
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
 	const [dismissedErrorMessageIds, setDismissedErrorMessageIds] = useState<
@@ -248,28 +254,47 @@ export function ChatConversationMessages({
 				: metadataMessage?.providerId?.trim() || null;
 	const metadataProviderLabel =
 		metadataMessage?.providerName?.trim() || metadataProviderId || null;
+	const messages = activeThread?.messages ?? EMPTY_MESSAGES;
+	useEffect(() => {
+		const latestUserMessage = messages
+			.slice()
+			.reverse()
+			.find((message) => message.role === "user");
+		if (latestUserMessage) {
+			markChatUserMessageRendered(latestUserMessage.id);
+		}
+	}, [messages]);
+
+	const shouldVirtualizeMessages =
+		messages.length > VIRTUALIZE_AFTER_MESSAGES;
+	// TanStack Virtual exposes imperative measurement APIs; keep them local to this list.
+	// eslint-disable-next-line react-hooks/incompatible-library
+	const messageVirtualizer = useVirtualizer({
+		count: messages.length,
+		enabled: shouldVirtualizeMessages,
+		estimateSize: () => ESTIMATED_MESSAGE_HEIGHT,
+		getItemKey: (index) => messages[index]?.id ?? index,
+		getScrollElement: () => scrollViewportRef.current,
+		overscan: VIRTUAL_MESSAGE_OVERSCAN,
+	});
+	const virtualItems = messageVirtualizer.getVirtualItems();
+	const measureVirtualMessage = useCallback(
+		(node: HTMLDivElement | null) => {
+			if (!node) return;
+			messageVirtualizer.measureElement(node);
+		},
+		[messageVirtualizer],
+	);
 
 	const messagesContent = useMemo(() => {
-		if (!activeThread?.messages.length) {
-			return (
-				<div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-6 py-12 text-center">
-					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-						<MessageSquare className="h-6 w-6 text-foreground" />
-					</div>
-					<div>
-						<p className="text-base font-semibold">
-							Start a new conversation
-						</p>
-						<p className="text-sm text-muted-foreground">
-							Pick a model, write your prompt, and run a request
-							through the gateway.
-						</p>
-					</div>
-				</div>
-			);
+		if (!activeThread || !messages.length) {
+			return <ChatMessagesEmptyState />;
 		}
 
-		return activeThread.messages.map((message) => {
+		const renderMessage = (
+			message: ChatThread["messages"][number],
+			messageIndex: number,
+		) => {
 			const isUser = message.role === "user";
 			const userCopyKey = `user:${message.id}`;
 			const assistantCopyKey = `assistant:${message.id}`;
@@ -285,6 +310,95 @@ export function ChatConversationMessages({
 				(activeVariant?.meta as Record<string, unknown> | null) ??
 				(message.meta as Record<string, unknown> | null) ??
 				null;
+			const requestContext = isUser
+				? getRequestContextMarker(message.meta)
+				: null;
+			const previousUserRequestContext = isUser
+				? getRequestContextMarker(
+						activeThread.messages
+							.slice(0, messageIndex)
+							.reverse()
+							.find((item) => item.role === "user")?.meta,
+					)
+				: null;
+			const requestContextMarkers: ChatMessageMarker[] = [];
+			if (requestContext) {
+				const currentModelSet = getComparableModelSet(requestContext);
+				const previousModelSet = previousUserRequestContext
+					? getComparableModelSet(previousUserRequestContext)
+					: "";
+				if (currentModelSet && currentModelSet !== previousModelSet) {
+					const labels = [
+						requestContext.modelId
+							? (modelDisplayNameById[requestContext.modelId] ??
+								formatModelLabel(requestContext.modelId))
+							: null,
+						...requestContext.compareModelIds.map(
+							(modelId) =>
+								modelDisplayNameById[modelId] ??
+								formatModelLabel(modelId),
+						),
+					].filter((value): value is string => Boolean(value));
+					requestContextMarkers.push({
+						id: "model",
+						icon: Cpu,
+						label:
+							labels.length > 1
+								? `Comparing ${labels.join(", ")}`
+								: `Switched to ${labels[0] ?? "selected model"}`,
+					});
+				}
+				const previousReasoning =
+					previousUserRequestContext?.reasoningEnabled
+						? previousUserRequestContext.reasoningEffort
+						: "off";
+				const currentReasoning = requestContext.reasoningEnabled
+					? requestContext.reasoningEffort
+					: "off";
+				if (currentReasoning !== previousReasoning) {
+					requestContextMarkers.push({
+						id: "reasoning",
+						icon: Brain,
+						label: requestContext.reasoningEnabled
+							? `Reasoning set to ${formatReasoningEffort(requestContext.reasoningEffort)}`
+							: "Reasoning disabled",
+					});
+				}
+				if (
+					requestContext.webSearchEnabled !==
+					Boolean(previousUserRequestContext?.webSearchEnabled)
+				) {
+					requestContextMarkers.push({
+						id: "web",
+						icon: Search,
+						label: requestContext.webSearchEnabled
+							? "Web search enabled"
+							: "Web search disabled",
+					});
+				}
+				if (
+					requestContext.apiServerToolsEnabled !==
+					Boolean(previousUserRequestContext?.apiServerToolsEnabled)
+				) {
+					requestContextMarkers.push({
+						id: "tools",
+						icon: Settings2,
+						label: requestContext.apiServerToolsEnabled
+							? "API tools enabled"
+							: "API tools disabled",
+					});
+				}
+				if (requestContext.attachmentsCount > 0) {
+					requestContextMarkers.push({
+						id: "attachments",
+						icon: Paperclip,
+						label:
+							requestContext.attachmentsCount === 1
+								? "Added 1 attachment"
+								: `Added ${requestContext.attachmentsCount} attachments`,
+					});
+				}
+			}
 			let messageRequestError: ChatRequestErrorDetails | null = null;
 			if (!isUser) {
 				if (
@@ -359,6 +473,34 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
+			const previousAssistantModelId =
+				activeThread.messages
+					.slice(0, messageIndex)
+					.reverse()
+					.find((item) => item.role !== "user" && item.modelId?.trim())
+					?.modelId?.trim() ?? null;
+			const precedingUserRequestContext =
+				!isUser && messageIndex > 0
+					? getRequestContextMarker(
+							activeThread.messages[messageIndex - 1]?.role === "user"
+								? activeThread.messages[messageIndex - 1]?.meta
+								: undefined,
+						)
+					: null;
+			const precedingUserModelSet = precedingUserRequestContext
+				? new Set([
+						precedingUserRequestContext.modelId,
+						...precedingUserRequestContext.compareModelIds,
+					])
+				: null;
+			const showModelMarker =
+				!isUser &&
+				Boolean(displayModelId) &&
+				previousAssistantModelId !== displayModelId &&
+				!precedingUserModelSet?.has(displayModelId);
+			const modelMarkerLabel = previousAssistantModelId
+				? `Switched to ${modelLabel}`
+				: `Using ${modelLabel}`;
 			const routingSelectedProvider =
 				(activeMeta?.routing as any)?.selected_provider;
 			let responseProviderId = message.providerId?.trim() || null;
@@ -401,12 +543,32 @@ export function ChatConversationMessages({
 					: undefined;
 
 				return (
-					<MessageScroller.Item
-						key={message.id}
-						messageId={message.id}
-						scrollAnchor={isUser}
-					>
-						<Message align={isUser ? "end" : "start"}>
+					<Fragment key={message.id}>
+						<ChatMessageMarkers
+							markers={requestContextMarkers}
+							messageId={message.id}
+						/>
+						{showModelMarker ? (
+							<ChatMessageMarkers
+								markers={[
+									{
+										id: "assistant-model",
+										icon: Cpu,
+										label: modelMarkerLabel,
+									},
+								]}
+								messageId={message.id}
+							/>
+						) : null}
+						<MessageScroller.Item
+							messageId={message.id}
+							scrollAnchor={isUser}
+						>
+						<Message
+							align={isUser ? "end" : "start"}
+							data-chat-message-id={message.id}
+							data-chat-message-role={message.role}
+						>
 							<MessageContent
 								className={cn(isUser ? "items-end" : "items-start")}
 							>
@@ -602,8 +764,11 @@ export function ChatConversationMessages({
 							)
 						) : isSending && (!content || content === "Generating...") ? (
 							<div className="flex min-h-7 items-center">
-								<Shimmer className="text-sm text-muted-foreground">
-									Generating...
+								<Shimmer
+									className="text-sm text-muted-foreground"
+									duration={1.4}
+								>
+									{`Generating with ${modelLabel}...`}
 								</Shimmer>
 							</div>
 						) : (
@@ -737,257 +902,80 @@ export function ChatConversationMessages({
 									</BubbleContent>
 								</Bubble>
 								{isUser ? (
-									<MessageFooter className="mt-0 flex items-center gap-2 px-0 text-xs text-muted-foreground">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="ghost"
-										className="h-7 w-7"
-										onClick={() => {
+									<UserMessageFooter
+										copied={userCopied}
+										onCopy={() => {
 											void handleCopyForMessage(
 												userCopyKey,
 												message.content,
 											);
 										}}
-									>
-										{userCopied ? (
-											<Check className="h-3.5 w-3.5" />
-										) : (
-											<Copy className="h-3.5 w-3.5" />
-										)}
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">
-									{userCopied ? "Copied" : "Copy"}
-								</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										size="icon"
-										variant="ghost"
-										className="h-7 w-7"
-										onClick={() => {
+										onEdit={() => {
 											onEditingIdChange(message.id);
 											onEditingValueChange(message.content);
 										}}
-									>
-										<Pencil className="h-3.5 w-3.5" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent side="top">Edit</TooltipContent>
-							</Tooltip>
-									</MessageFooter>
+									/>
 								) : (
-									<MessageFooter className="mt-0 flex flex-wrap items-center gap-2 px-0 text-xs text-muted-foreground">
-							{isPendingAssistant ? null : (
-								<>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												size="icon"
-												variant="ghost"
-												className="h-7 w-7"
-												onClick={() => {
-													void handleCopyForMessage(
-														assistantCopyKey,
-														content,
-													);
-												}}
-											>
-												{assistantCopied ? (
-													<Check className="h-3.5 w-3.5" />
-												) : (
-													<Copy className="h-3.5 w-3.5" />
-												)}
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent side="top">
-											{assistantCopied
-												? "Copied"
-												: "Copy"}
-										</TooltipContent>
-									</Tooltip>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												size="icon"
-												variant="ghost"
-												className="h-7 w-7"
-												onClick={() =>
-													onRetryAssistant(message.id)
-												}
-											>
-												<RotateCcw className="h-3.5 w-3.5" />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent side="top">
-											Retry
-										</TooltipContent>
-									</Tooltip>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<Button
-												size="icon"
-												variant="ghost"
-												className="h-7 w-7"
-												onClick={() =>
-													onBranchAssistant(
-														message.id,
-													)
-												}
-											>
-												<GitBranch className="h-3.5 w-3.5" />
-											</Button>
-										</TooltipTrigger>
-										<TooltipContent side="top">
-											Branch
-										</TooltipContent>
-									</Tooltip>
-									<Popover
-										open={metadataOpenId === message.id}
-										onOpenChange={(open) =>
+									<AssistantMessageFooter
+										activeVariantIndex={activeVariantIndex}
+										assistantCopied={assistantCopied}
+										costLabel={costLabel}
+										generationSeconds={generationSeconds}
+										isPendingAssistant={isPendingAssistant}
+										latencyDisplay={latencyDisplay}
+										metadataOpen={metadataOpenId === message.id}
+										metadataProviderLabel={metadataProviderLabel}
+										onBranch={() => onBranchAssistant(message.id)}
+										onCopy={() => {
+											void handleCopyForMessage(
+												assistantCopyKey,
+												content,
+											);
+										}}
+										onMetadataOpenChange={(open) =>
 											onMetadataOpenIdChange(
 												open ? message.id : null,
 											)
 										}
-									>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<PopoverTrigger asChild>
-													<Button
-														size="icon"
-														variant="ghost"
-														className="h-7 w-7"
-													>
-														<Info className="h-3.5 w-3.5" />
-													</Button>
-												</PopoverTrigger>
-											</TooltipTrigger>
-											<TooltipContent side="top">
-												Metadata
-											</TooltipContent>
-										</Tooltip>
-										<PopoverContent
-											align="start"
-											className="w-72"
-										>
-											<div className="grid gap-3 text-sm">
-												<div className="grid gap-1.5">
-													<div className="flex items-center justify-between">
-														<span className="text-muted-foreground">
-															Provider
-														</span>
-														<span className="truncate pl-3 text-right">
-															{metadataProviderLabel ?? "-"}
-														</span>
-													</div>
-													<div className="flex items-center justify-between">
-														<span className="text-muted-foreground">
-															Total tokens
-														</span>
-														<span>
-															{formatMetric(totalTokens)}
-														</span>
-													</div>
-													<div className="flex items-center justify-between">
-														<span className="text-muted-foreground">
-															Latency
-														</span>
-														<span>
-															{formatMetric(
-																latencyDisplay,
-																" ms",
-															)}
-														</span>
-													</div>
-													<div className="flex items-center justify-between">
-														<span className="text-muted-foreground">
-															Generation
-														</span>
-														<span>
-															{formatMetric(
-																generationSeconds,
-																" s",
-															)}
-														</span>
-													</div>
-													<div className="flex items-center justify-between">
-														<span className="text-muted-foreground">
-															Throughput
-														</span>
-														<span>
-															{formatMetric(
-																throughputDisplay,
-																" tps",
-															)}
-														</span>
-													</div>
-													<div className="flex items-center justify-between">
-														<span className="text-muted-foreground">
-															Total cost
-														</span>
-														<span>
-															{costLabel ?? "-"}
-														</span>
-													</div>
-												</div>
-											</div>
-										</PopoverContent>
-									</Popover>
-								</>
-							)}
-							{!isPendingAssistant && variants.length > 1 ? (
-								<div className="ml-auto flex items-center gap-2">
-									<Button
-										size="icon"
-										variant="ghost"
-										onClick={() =>
-											onSelectVariant(
-												message.id,
-												Math.max(
-													0,
-													activeVariantIndex - 1,
-												),
-											)
+										onRetry={() => onRetryAssistant(message.id)}
+										onSelectVariant={(variantIndex) =>
+											onSelectVariant(message.id, variantIndex)
 										}
-										disabled={activeVariantIndex <= 0}
-									>
-										<ChevronLeft className="h-4 w-4" />
-									</Button>
-									<span className="text-xs text-muted-foreground">
-										{activeVariantIndex + 1}/{variants.length}
-									</span>
-									<Button
-										size="icon"
-										variant="ghost"
-										onClick={() =>
-											onSelectVariant(
-												message.id,
-												Math.min(
-													variants.length - 1,
-													activeVariantIndex + 1,
-												),
-											)
-										}
-										disabled={
-											activeVariantIndex >= variants.length - 1
-										}
-									>
-										<ChevronRight className="h-4 w-4" />
-									</Button>
-								</div>
-							) : null}
-									</MessageFooter>
+										throughputDisplay={throughputDisplay}
+										totalTokens={totalTokens}
+										variantCount={variants.length}
+									/>
 								)}
 							</MessageContent>
 						</Message>
-					</MessageScroller.Item>
+						</MessageScroller.Item>
+					</Fragment>
 				);
-		});
+		};
+
+		if (shouldVirtualizeMessages) {
+			return (
+				<ChatVirtualMessageList
+					estimatedMessageHeight={ESTIMATED_MESSAGE_HEIGHT}
+					measureVirtualMessage={measureVirtualMessage}
+					messages={messages}
+					renderMessage={renderMessage}
+					totalSize={messageVirtualizer.getTotalSize()}
+					virtualItems={virtualItems}
+				/>
+			);
+		}
+
+		return messages.map((message, messageIndex) =>
+			renderMessage(message, messageIndex),
+		);
 	}, [
 		activeThread,
+		messages,
+		shouldVirtualizeMessages,
+		messageVirtualizer,
+		virtualItems,
+		measureVirtualMessage,
 		isSending,
 		lastMessageId,
 		editingId,
@@ -998,7 +986,6 @@ export function ChatConversationMessages({
 		modelOrgIdById,
 		modelLinkById,
 		accentColor,
-		onCopy,
 		requestError,
 		onDismissRequestError,
 		dismissedErrorMessageIds,
@@ -1015,6 +1002,7 @@ export function ChatConversationMessages({
 		throughputDisplay,
 		costLabel,
 		totalTokens,
+		metadataProviderLabel,
 		onMetadataOpenIdChange,
 	]);
 

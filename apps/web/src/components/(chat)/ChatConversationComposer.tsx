@@ -1,8 +1,11 @@
 "use client";
 
 import {
+	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
+	useState,
 	type ChangeEvent,
 	type RefObject,
 } from "react";
@@ -14,10 +17,14 @@ import {
 	Clock3,
 	Cpu,
 	Info,
+	Image as ImageIcon,
 	Mic,
 	Paperclip,
 	SendHorizontal,
 	Square,
+	type LucideIcon,
+	Search,
+	Settings2,
 	X,
 } from "lucide-react";
 import type { ChatSettings } from "@/lib/indexeddb/chats";
@@ -56,6 +63,15 @@ type SendGateType = "auth" | null;
 type ReasoningOption = {
 	value: NonNullable<ChatSettings["reasoningEffort"]>;
 	label: string;
+};
+
+type SlashCommand = {
+	id: string;
+	label: string;
+	description: string;
+	keywords: string[];
+	icon: LucideIcon;
+	disabled?: boolean;
 };
 
 const EVALUATION_PROMPTS = [
@@ -152,6 +168,11 @@ const EVALUATION_PROMPTS = [
 
 const PROMPT_SCROLL_COPIES = [0, 1, 2];
 
+function normalizeSlashQuery(value: string) {
+	if (!value.startsWith("/")) return null;
+	return value.slice(1).trim().toLowerCase();
+}
+
 function formatAttachmentSize(size: number) {
 	if (!Number.isFinite(size) || size <= 0) return "0 B";
 
@@ -226,6 +247,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		fileInputRef,
 		audioInputRef,
 		isUnified,
+		webSearchEnabled,
+		onWebSearchEnabledChange,
 		apiServerToolsEnabled,
 		onApiServerToolsEnabledChange,
 		showEvaluationPrompts,
@@ -252,6 +275,196 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		onFileSelect,
 	} = props;
 	const promptScrollAreaRef = useRef<HTMLDivElement | null>(null);
+	const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
+	const slashQuery = normalizeSlashQuery(composer);
+	const slashMenuOpen = slashQuery !== null;
+	const hasComposerContent =
+		composer.trim().length > 0 || attachments.length > 0;
+	const composerExpanded = hasComposerContent || slashMenuOpen;
+
+	const clearSlashCommand = useCallback(() => {
+		if (slashMenuOpen) {
+			onComposerChange("");
+		}
+		requestAnimationFrame(() => {
+			document
+				.querySelector<HTMLTextAreaElement>(
+					"[data-chat-composer-input='true']",
+				)
+				?.focus();
+		});
+	}, [onComposerChange, slashMenuOpen]);
+
+	const slashCommands = useMemo<SlashCommand[]>(() => {
+		const commands: SlashCommand[] = [
+			{
+				id: "model",
+				label: "Switch model",
+				description:
+					selectedModelCount > 1
+						? selectedModelsHint ?? `${selectedModelCount} models selected`
+						: selectedModelId || selectedModelLabel,
+				keywords: ["model", "models", "provider", "swap"],
+				icon: Cpu,
+			},
+			{
+				id: "attach",
+				label: "Add attachment",
+				description: "Upload files, photos, video, or documents.",
+				keywords: ["attach", "attachment", "file", "upload"],
+				icon: Paperclip,
+				disabled: !isUnified,
+			},
+			{
+				id: "photo-video",
+				label: "Add photo or video",
+				description: "Attach visual media to the next message.",
+				keywords: ["photo", "image", "picture", "video", "media"],
+				icon: ImageIcon,
+				disabled: !isUnified,
+			},
+			{
+				id: "audio",
+				label: recordingSupported ? "Record audio" : "Add audio file",
+				description: recordingSupported
+					? "Capture a voice clip and attach it."
+					: "Upload an audio file from this device.",
+				keywords: ["audio", "voice", "record", "mic", "microphone"],
+				icon: Mic,
+				disabled: isStartingRecording,
+			},
+			{
+				id: "web",
+				label: webSearchEnabled ? "Disable web search" : "Enable web search",
+				description: "Toggle grounded web search for this request.",
+				keywords: ["web", "search", "grounding", "browse"],
+				icon: Search,
+				disabled: !isUnified || !onWebSearchEnabledChange,
+			},
+			{
+				id: "tools",
+				label: apiServerToolsEnabled
+					? "Disable API tools"
+					: "Enable API tools",
+				description: "Let the model inspect AI Stats API context.",
+				keywords: ["tools", "api", "server", "context"],
+				icon: Settings2,
+				disabled: !isUnified || !onApiServerToolsEnabledChange,
+			},
+		];
+
+		for (const option of reasoningOptions) {
+			commands.push({
+				id: `reasoning-${option.value}`,
+				label: `Reasoning: ${option.label}`,
+				description:
+					reasoningSelection === option.value
+						? "Currently selected."
+						: "Apply this reasoning effort to the next request.",
+				keywords: ["reasoning", "think", "effort", option.value, option.label],
+				icon: Brain,
+			});
+		}
+
+		return commands;
+	}, [
+		apiServerToolsEnabled,
+		isStartingRecording,
+		isUnified,
+		onApiServerToolsEnabledChange,
+		onWebSearchEnabledChange,
+		reasoningOptions,
+		reasoningSelection,
+		recordingSupported,
+		selectedModelCount,
+		selectedModelId,
+		selectedModelLabel,
+		selectedModelsHint,
+		webSearchEnabled,
+	]);
+
+	const filteredSlashCommands = useMemo(() => {
+		if (slashQuery === null) return [];
+		if (!slashQuery) return slashCommands;
+
+		const terms = slashQuery.split(/\s+/).filter(Boolean);
+		return slashCommands.filter((command) => {
+			const haystack = [
+				command.id,
+				command.label,
+				command.description,
+				...command.keywords,
+			]
+				.join(" ")
+				.toLowerCase();
+			return terms.every((term) => haystack.includes(term));
+		});
+	}, [slashCommands, slashQuery]);
+
+	const activeSlashIndex = Math.min(
+		slashSelectedIndex,
+		Math.max(filteredSlashCommands.length - 1, 0),
+	);
+
+	const runSlashCommand = useCallback((command: SlashCommand) => {
+		if (command.disabled) return;
+		if (command.id === "model") {
+			onOpenModelPicker();
+			clearSlashCommand();
+			return;
+		}
+		if (
+			command.id === "attach" ||
+			command.id === "photo-video"
+		) {
+			document
+				.querySelector<HTMLInputElement>(
+					"[data-chat-file-input='true']",
+				)
+				?.click();
+			clearSlashCommand();
+			return;
+		}
+		if (command.id === "audio") {
+			onToggleRecording();
+			clearSlashCommand();
+			return;
+		}
+		if (command.id === "web") {
+			if (!isUnified) {
+				return;
+			}
+			onWebSearchEnabledChange?.(!webSearchEnabled);
+			clearSlashCommand();
+			return;
+		}
+		if (command.id === "tools") {
+			if (!isUnified) {
+				return;
+			}
+			onApiServerToolsEnabledChange?.(!apiServerToolsEnabled);
+			clearSlashCommand();
+			return;
+		}
+		if (command.id.startsWith("reasoning-")) {
+			const value = command.id.replace(
+				"reasoning-",
+				"",
+			) as NonNullable<ChatSettings["reasoningEffort"]>;
+			onReasoningSelection(value);
+			clearSlashCommand();
+		}
+	}, [
+		apiServerToolsEnabled,
+		clearSlashCommand,
+		isUnified,
+		onApiServerToolsEnabledChange,
+		onOpenModelPicker,
+		onReasoningSelection,
+		onToggleRecording,
+		onWebSearchEnabledChange,
+		webSearchEnabled,
+	]);
 
 	useEffect(() => {
 		const root = promptScrollAreaRef.current;
@@ -364,9 +577,17 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						<ScrollBar className="hidden" orientation="horizontal" />
 					</ScrollArea>
 				) : null}
-				<div className="rounded-2xl border border-border bg-card px-3 py-2 shadow-sm">
+				<div
+					className={cn(
+						"rounded-2xl border border-border bg-card shadow-sm",
+						composerExpanded
+							? "flex flex-col px-3 py-2"
+							: "flex items-center gap-1 px-2 py-1",
+					)}
+				>
 					<input
 						ref={fileInputRef}
+						data-chat-file-input="true"
 						type="file"
 						className="hidden"
 						multiple
@@ -380,19 +601,121 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						multiple
 						onChange={onFileSelect}
 					/>
+					{slashMenuOpen ? (
+						<div
+							className="mb-2 w-full overflow-hidden rounded-xl border border-border bg-background shadow-sm"
+							role="listbox"
+							aria-label="Chat commands"
+						>
+							<div className="flex items-center justify-between border-b border-border px-3 py-2">
+								<span className="text-xs font-medium text-muted-foreground">
+									Commands
+								</span>
+								<span className="text-xs text-muted-foreground">
+									Enter to apply
+								</span>
+							</div>
+							<div className="max-h-64 overflow-y-auto p-1">
+								{filteredSlashCommands.length ? (
+									filteredSlashCommands.map((command, index) => {
+										const Icon = command.icon;
+										const selected = activeSlashIndex === index;
+
+										return (
+											<button
+												key={command.id}
+												type="button"
+												role="option"
+												aria-selected={selected}
+												disabled={command.disabled}
+												className={cn(
+													"flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+													selected
+														? "bg-muted text-foreground"
+														: "text-foreground hover:bg-muted/70",
+												)}
+												onMouseEnter={() =>
+													setSlashSelectedIndex(index)
+												}
+												onMouseDown={(event) => {
+													event.preventDefault();
+												}}
+												onClick={() => runSlashCommand(command)}
+											>
+												<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground">
+													<Icon className="h-4 w-4" />
+												</span>
+												<span className="min-w-0 flex-1">
+													<span className="block truncate font-medium">
+														{command.label}
+													</span>
+													<span className="block truncate text-xs text-muted-foreground">
+														{command.description}
+													</span>
+												</span>
+											</button>
+										);
+									})
+								) : (
+									<div className="px-3 py-6 text-center text-sm text-muted-foreground">
+										No commands found
+									</div>
+								)}
+							</div>
+						</div>
+					) : null}
 					<Textarea
 						ref={textareaRef}
+						data-chat-composer-input="true"
 						value={composer}
 						onChange={(event) => onComposerChange(event.target.value)}
 						onKeyDown={(event) => {
+							if (slashMenuOpen) {
+								if (event.key === "ArrowDown") {
+									event.preventDefault();
+									setSlashSelectedIndex((current) =>
+										Math.min(
+											current + 1,
+											Math.max(filteredSlashCommands.length - 1, 0),
+										),
+									);
+									return;
+								}
+								if (event.key === "ArrowUp") {
+									event.preventDefault();
+									setSlashSelectedIndex((current) =>
+										Math.max(current - 1, 0),
+									);
+									return;
+								}
+								if (event.key === "Escape") {
+									event.preventDefault();
+									onComposerChange("");
+									return;
+								}
+								if (event.key === "Enter" && !event.shiftKey) {
+									event.preventDefault();
+									const command =
+										filteredSlashCommands[activeSlashIndex];
+									if (command) {
+										runSlashCommand(command);
+									}
+									return;
+								}
+							}
 							if (event.key === "Enter" && !event.shiftKey) {
 								event.preventDefault();
 								onSubmit();
 							}
 						}}
-						rows={2}
+						rows={composerExpanded ? 2 : 1}
 						placeholder={placeholder}
-						className="min-h-[56px] resize-none border-0 !bg-transparent px-1 py-2 shadow-none focus-visible:ring-0 dark:!bg-transparent"
+						className={cn(
+							"resize-none border-0 !bg-transparent shadow-none focus-visible:ring-0 dark:!bg-transparent",
+							composerExpanded
+								? "min-h-[56px] px-1 py-2"
+								: "order-2 min-h-9 flex-1 px-2 py-2",
+						)}
 					/>
 					{attachments.length > 0 ? (
 						<AttachmentGroup className="pb-1">
@@ -442,8 +765,19 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							})}
 						</AttachmentGroup>
 					) : null}
-					<div className="flex items-center justify-between pt-2">
-						<div className="flex items-center gap-2">
+					<div
+						className={cn(
+							composerExpanded
+								? "flex items-center justify-between pt-2"
+								: "contents",
+						)}
+					>
+						<div
+							className={cn(
+								"flex items-center gap-1",
+								composerExpanded ? "sm:gap-2" : "order-1",
+							)}
+						>
 							<Tooltip>
 								<TooltipTrigger asChild>
 									<Button
@@ -607,12 +941,20 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								</PopoverContent>
 							</Popover>
 						</div>
-						<div className="flex items-center gap-2">
+						<div
+							className={cn(
+								"flex items-center gap-2",
+								composerExpanded ? "" : "order-3",
+							)}
+						>
 							<Button
 								size="icon"
+								aria-label="Send message"
+								data-chat-send-button="true"
 								onClick={onSubmit}
 								disabled={
 									isSending ||
+									slashMenuOpen ||
 									(!composer.trim() && attachments.length === 0)
 								}
 							>

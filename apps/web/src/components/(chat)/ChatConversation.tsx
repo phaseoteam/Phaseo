@@ -15,12 +15,14 @@ import {
 	getRandomPlaceholder,
 	getSupportedRecordingMimeType,
 } from "./chatConversationHelpers";
+import { startChatSendPerformanceRun } from "@/components/(chat)/playground/chat-performance";
 
 export type ChatSendPayload = {
 	content: string;
 	attachments: File[];
 	webSearchEnabled: boolean;
 	apiServerToolsEnabled: boolean;
+	performanceRunId?: string | null;
 };
 
 type ChatConversationProps = {
@@ -100,10 +102,18 @@ export function ChatConversation({
 	const [editingValue, setEditingValue] = useState("");
 	const [metadataOpenId, setMetadataOpenId] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+	const scrollViewportRef = useRef<HTMLDivElement | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
-	const [recordingSupported, setRecordingSupported] = useState(false);
+	const [recordingSupported] = useState(() => {
+		return (
+			typeof navigator !== "undefined" &&
+			typeof window !== "undefined" &&
+			typeof MediaRecorder !== "undefined" &&
+			typeof navigator.mediaDevices?.getUserMedia === "function"
+		);
+	});
 	const [isRecording, setIsRecording] = useState(false);
 	const [isStartingRecording, setIsStartingRecording] = useState(false);
 	const [reasoningPickerOpen, setReasoningPickerOpen] = useState(false);
@@ -115,7 +125,7 @@ export function ChatConversation({
 
 	const placeholder = useMemo(() => {
 		return getRandomPlaceholder();
-	}, [activeThread?.id]);
+	}, []);
 	const reasoningSelection: NonNullable<ChatSettings["reasoningEffort"]> =
 		reasoningEffort ?? "medium";
 	const attachmentPreviewUrls = useMemo(
@@ -132,35 +142,13 @@ export function ChatConversation({
 		activeThread?.messages[activeThread.messages.length - 1]?.id ?? null;
 
 	useEffect(() => {
-		const textarea = textareaRef.current;
-		if (!textarea) return;
-		requestAnimationFrame(() => {
-			textarea.focus();
-		});
-	}, [activeThread?.id]);
-
-	useEffect(() => {
 		const raf = requestAnimationFrame(() => {
 			setComposer("");
 			setAttachments([]);
+			textareaRef.current?.focus();
 		});
 		return () => cancelAnimationFrame(raf);
 	}, [activeThread?.id]);
-
-	useEffect(() => {
-		const supported =
-			typeof navigator !== "undefined" &&
-			typeof window !== "undefined" &&
-			typeof MediaRecorder !== "undefined" &&
-			typeof navigator.mediaDevices?.getUserMedia === "function";
-		setRecordingSupported(supported);
-	}, []);
-
-	useEffect(() => {
-		if (isAuthenticated && sendGateType === "auth") {
-			setSendGateType(null);
-		}
-	}, [isAuthenticated, sendGateType]);
 
 	useEffect(() => {
 		const requiresAudioInput = attachments.some((attachment) =>
@@ -402,11 +390,16 @@ export function ChatConversation({
 			return;
 		}
 		setSendGateType(null);
+		const performanceRunId = startChatSendPerformanceRun({
+			contentLength: text.length,
+			attachmentCount: attachments.length,
+		});
 		onSend({
 			content: text,
 			attachments,
 			webSearchEnabled: isUnified ? webSearchEnabled : false,
 			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
+			performanceRunId,
 		});
 		setComposer("");
 		setAttachments([]);
@@ -430,7 +423,15 @@ export function ChatConversation({
 			return;
 		}
 		void startRecording();
-	}, [isRecording, isStartingRecording, startRecording, stopRecording]);
+	}, [
+		isRecording,
+		isStartingRecording,
+		recordingSupported,
+		startRecording,
+		stopRecording,
+	]);
+	const effectiveSendGateType =
+		isAuthenticated && sendGateType === "auth" ? null : sendGateType;
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -441,7 +442,10 @@ export function ChatConversation({
 				scrollMargin={24}
 			>
 				<MessageScroller.Root className="relative flex min-h-0 flex-1 overflow-hidden overscroll-contain">
-					<MessageScroller.Viewport className="h-full w-full overflow-y-auto overscroll-contain">
+					<MessageScroller.Viewport
+						ref={scrollViewportRef}
+						className="h-full w-full overflow-y-auto overscroll-contain"
+					>
 						<MessageScroller.Content className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
 							{isRecording ? (
 								<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
@@ -489,6 +493,7 @@ export function ChatConversation({
 								onCopy={handleCopy}
 								requestError={requestError}
 								onDismissRequestError={onDismissRequestError}
+								scrollViewportRef={scrollViewportRef}
 							/>
 						</MessageScroller.Content>
 					</MessageScroller.Viewport>
@@ -502,7 +507,7 @@ export function ChatConversation({
 				</MessageScroller.Root>
 			</MessageScroller.Provider>
 			<ChatConversationComposer
-				sendGateType={sendGateType}
+				sendGateType={effectiveSendGateType}
 				isSending={isSending}
 				composer={composer}
 				attachments={attachments}

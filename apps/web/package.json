@@ -24,6 +24,7 @@
 		"db:reconcile-api-model-links": "tsx scripts/importer/reconcile-api-model-links.ts",
 		"db-progress": "cd ../../packages/data/catalog/src/data && python -X utf8 progressCalc.py",
 		"oauth:e2e:playwright": "tsx scripts/oauth-e2e-playwright.ts",
+		"perf:chat-send": "CHAT_PERF_E2E=1 playwright test tests/e2e/chat-performance.spec.ts --project=chromium --reporter=list",
 		"resend:provision:onboarding": "tsx scripts/resend/provision-onboarding-automations.ts",
 		"resend:incident:outreach": "tsx scripts/resend/send-incident-outreach.ts",
 		"test:live:playground-text": "tsx scripts/live-playground-text-smoke.ts",
