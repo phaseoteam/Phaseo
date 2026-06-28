@@ -143,6 +143,10 @@ function buildStatusLabel(status: string | null | undefined): string | null {
 			return "a deprecated";
 		case "retired":
 			return "a retired";
+		case "limited access":
+		case "limited_access":
+		case "limited-access":
+			return "a limited-access";
 		case "withheld":
 			return "a withheld";
 		case "rumoured":

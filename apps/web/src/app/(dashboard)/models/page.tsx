@@ -76,7 +76,7 @@ const ACTIVE_PROVIDER_STATUS_SET = new Set([
 	"deranked_lvl3",
 ]);
 
-const UPCOMING_CATALOG_STATUS_SET = new Set(["announced", "withheld"]);
+const UPCOMING_CATALOG_STATUS_SET = new Set(["announced"]);
 
 function getModelYear(model: ModelsPageModel): string {
 	if (Number.isFinite(model.primary_timestamp)) {

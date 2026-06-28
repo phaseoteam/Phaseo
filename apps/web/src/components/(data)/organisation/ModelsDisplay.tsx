@@ -7,6 +7,7 @@ import {
 	Archive,
 	CircleQuestionMark,
 	ShieldAlert,
+	KeyRound,
 } from "lucide-react";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
 import type { OrganisationOverview as OrganisationPage } from "@/lib/fetchers/organisations/getOrganisation";
@@ -78,6 +79,9 @@ export default function ModelsDisplay({
 	const announced: DisplayModel[] = models.filter(
 		(m: DisplayModel) => m.status === "Announced"
 	);
+	const limitedAccess: DisplayModel[] = models.filter(
+		(m: DisplayModel) => m.status === "Limited Access"
+	);
 	const withheld: DisplayModel[] = models.filter(
 		(m: DisplayModel) => m.status === "Withheld"
 	);
@@ -94,6 +98,7 @@ export default function ModelsDisplay({
 				"Rumoured",
 				"Available",
 				"Announced",
+				"Limited Access",
 				"Withheld",
 				"Deprecated",
 				"Retired",
@@ -132,6 +137,14 @@ export default function ModelsDisplay({
 				<Badge className="bg-violet-100 text-violet-800 border border-violet-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 dark:hover:bg-violet-900 dark:hover:text-violet-200 dark:hover:border-violet-700">
 					<ShieldAlert size={14} className="mr-1" />
 					Withheld
+				</Badge>
+			);
+		}
+		if (status === "Limited Access") {
+			return (
+				<Badge className="bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-300 dark:border-fuchsia-800 dark:hover:bg-fuchsia-900 dark:hover:text-fuchsia-200 dark:hover:border-fuchsia-700">
+					<KeyRound size={14} className="mr-1" />
+					Limited Access
 				</Badge>
 			);
 		}
@@ -210,6 +223,7 @@ export default function ModelsDisplay({
 			{showStatusHeadings && renderSection("Rumoured", rumoured)}
 			{showStatusHeadings && renderSection("Available", available)}
 			{showStatusHeadings && renderSection("Announced", announced)}
+			{showStatusHeadings && renderSection("Limited Access", limitedAccess)}
 			{showStatusHeadings && renderSection("Withheld", withheld)}
 			{showStatusHeadings && renderSection("Deprecated", deprecated)}
 			{showStatusHeadings && renderSection("Retired", retired)}

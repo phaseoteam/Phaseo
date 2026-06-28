@@ -272,7 +272,15 @@ export default async function getModel(
     return model;
 }
 
-type ModelStatus = "Rumoured" | "Announced" | "Withheld" | "Available" | "Deprecated" | "Retired" | null;
+type ModelStatus =
+    | "Rumoured"
+    | "Announced"
+    | "Limited Access"
+    | "Withheld"
+    | "Available"
+    | "Deprecated"
+    | "Retired"
+    | null;
 
 export interface ModelOverviewPage {
     model_id: string;

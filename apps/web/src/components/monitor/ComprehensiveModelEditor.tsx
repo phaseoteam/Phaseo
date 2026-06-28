@@ -80,7 +80,15 @@ const MODALITY_OPTIONS = [
 	"audio_music",
 ];
 
-const STATUS_OPTIONS = ["Rumoured", "Announced", "Withheld", "Available", "Deprecated", "Retired"];
+const STATUS_OPTIONS = [
+	"Rumoured",
+	"Announced",
+	"Limited Access",
+	"Withheld",
+	"Available",
+	"Deprecated",
+	"Retired",
+];
 
 const DETAIL_OPTIONS = [
 	"input_context_length",
@@ -1729,4 +1737,3 @@ export function ComprehensiveModelEditor({
 		</>
 	);
 }
-
