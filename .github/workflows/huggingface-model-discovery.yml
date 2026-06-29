@@ -70,7 +70,7 @@ jobs:
 
             - name: Save Hugging Face discovery state cache
               if: always()
-              uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
                   key: ${{ steps.hf-model-discovery-state-cache.outputs.cache-primary-key }}
