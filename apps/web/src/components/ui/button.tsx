@@ -48,6 +48,7 @@ function Button({
   size = "default",
   asChild,
   children,
+  nativeButton,
   ...props
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & {
@@ -57,6 +58,7 @@ function Button({
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      nativeButton={asChild ? false : nativeButton}
       render={renderAsChild(asChild, children)}
       {...props}
     >
