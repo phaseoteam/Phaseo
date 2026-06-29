@@ -470,16 +470,19 @@ export function ChatHeader({
 		}
 		if (!activeThread?.modelId) {
 			onUpdateModel(modelId);
+			onModelPickerOpenChange(false);
 			return;
 		}
 		if (activeThread.modelId === modelId) {
 			if (selectedModelIds.length > 0) {
 				onRemoveModel?.(modelId);
 			}
+			onModelPickerOpenChange(false);
 			return;
 		}
 		if (!onCompareModelIdsChange) {
 			onUpdateModel(modelId);
+			onModelPickerOpenChange(false);
 			return;
 		}
 		const nextSet = new Set(compareModelIdSet);
@@ -489,6 +492,7 @@ export function ChatHeader({
 			nextSet.add(modelId);
 		}
 		onCompareModelIdsChange(Array.from(nextSet));
+		onModelPickerOpenChange(false);
 	};
 	const handleModelPickerDialogOpenChange = (open: boolean) => {
 		onModelPickerOpenChange(open);
@@ -902,6 +906,7 @@ export function ChatHeader({
 						<Button
 							variant="ghost"
 							size="sm"
+							aria-label="Add model"
 							className={cn(
 								"h-8 gap-1.5",
 								selectedModelIds.length === 0 ? "px-2 text-xs" : "w-8 px-0",

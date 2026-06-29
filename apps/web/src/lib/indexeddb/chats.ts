@@ -75,7 +75,7 @@ export type ChatThread = {
 };
 
 const DB_NAME = "ai-stats-chat";
-const DB_VERSION = 2;
+const DB_VERSION = 4;
 const LEGACY_TEXT_STORE_NAME = "chats";
 const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
     text: LEGACY_TEXT_STORE_NAME,
