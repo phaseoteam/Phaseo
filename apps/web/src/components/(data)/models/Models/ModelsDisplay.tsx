@@ -572,19 +572,13 @@ function getEndpointIcon(endpoint: string): LucideIcon {
 function FilterLogo({
 	value,
 	label,
-	checked,
 }: {
 	value: string;
 	label: string;
-	checked: boolean;
 }) {
 	return (
 		<span
-			className={cn(
-				"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5 transition-colors",
-				checked &&
-					"border-primary/50 bg-primary/10 shadow-xs ring-2 ring-primary/15",
-			)}
+			className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5"
 		>
 			<Logo
 				id={value}
@@ -1827,8 +1821,8 @@ export default function ModelsDisplay({
 							setSelectedProviders(toggleInList(selectedProviders, value))
 						}
 						labelForValue={(value) => value}
-						renderStart={({ value, label, checked }) => (
-							<FilterLogo value={value} label={label} checked={checked} />
+						renderStart={({ value, label }) => (
+							<FilterLogo value={value} label={label} />
 						)}
 						collapsedLimit={5}
 					/>
@@ -1869,8 +1863,8 @@ export default function ModelsDisplay({
 							setSelectedCreators(toggleInList(selectedCreators, value))
 						}
 						labelForValue={(value) => value}
-						renderStart={({ value, label, checked }) => (
-							<FilterLogo value={value} label={label} checked={checked} />
+						renderStart={({ value, label }) => (
+							<FilterLogo value={value} label={label} />
 						)}
 						collapsedLimit={5}
 					/>
