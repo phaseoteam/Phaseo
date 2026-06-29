@@ -33,7 +33,9 @@ import {
 	FileText,
 	Headphones,
 	Music4,
+	RotateCcw,
 	Route,
+	SearchX,
 	Sparkles,
 	Speech,
 	Type as TypeIcon,
@@ -183,6 +185,49 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"audio_music",
 ] as const;
 const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
+const ENDPOINT_DISPLAY_ORDER = [
+	"responses",
+	"chat/completions",
+	"messages",
+	"completions",
+	"embeddings",
+	"text/rerank",
+	"rerank",
+	"moderations",
+	"image/generate",
+	"image/edit",
+	"images/generations",
+	"images/edits",
+	"audio/speech",
+	"audio/transcription",
+	"audio/transcriptions",
+	"audio/translations",
+	"video/generations",
+] as const;
+
+const ENDPOINT_LABELS: Record<string, string> = {
+	responses: "Responses",
+	"chat/completions": "Chat Completions",
+	messages: "Messages",
+	completions: "Completions",
+	embeddings: "Embeddings",
+	"text/rerank": "Rerank",
+	rerank: "Rerank",
+	moderations: "Moderations",
+	"image/generate": "Image Generation",
+	"image/edit": "Image Editing",
+	"images/generations": "Image Generation",
+	"images/edits": "Image Editing",
+	"audio/speech": "Text to Speech",
+	"audio/transcription": "Transcription",
+	"audio/transcriptions": "Transcription",
+	"audio/translations": "Translation",
+	"video/generations": "Video Generation",
+};
+
+const endpointOrder = new Map(
+	ENDPOINT_DISPLAY_ORDER.map((value, index) => [value, index] as const),
+);
 
 function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
@@ -422,6 +467,50 @@ function formatRegionLabel(value: string): string {
 	return normalized ? normalized.toUpperCase() : value;
 }
 
+function normalizeEndpointValue(value: string): string {
+	return String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[._-]+/g, "/")
+		.replace(/\/+/g, "/");
+}
+
+function formatEndpointLabel(value: string): string {
+	const normalized = normalizeEndpointValue(value);
+	if (ENDPOINT_LABELS[normalized]) return ENDPOINT_LABELS[normalized];
+	return normalized
+		.split(/[._/-]+/g)
+		.filter(Boolean)
+		.map((word) => {
+			if (word === "api") return "API";
+			if (word === "tts") return "TTS";
+			if (word === "stt") return "STT";
+			return word.charAt(0).toUpperCase() + word.slice(1);
+		})
+		.join(" ");
+}
+
+function getEndpointSortRank(value: string): number {
+	const normalized = normalizeEndpointValue(value);
+	const directRank = endpointOrder.get(
+		normalized as (typeof ENDPOINT_DISPLAY_ORDER)[number],
+	);
+	if (directRank !== undefined) return directRank;
+	if (normalized.includes("response")) return 0;
+	if (normalized.includes("chat")) return 1;
+	if (normalized.includes("message")) return 2;
+	if (normalized.includes("completion")) return 3;
+	if (normalized.includes("embedding")) return 4;
+	if (normalized.includes("rerank")) return 5;
+	if (normalized.includes("moderation")) return 6;
+	if (normalized.includes("image")) return 7;
+	if (normalized.includes("speech")) return 8;
+	if (normalized.includes("transcription")) return 9;
+	if (normalized.includes("translation")) return 10;
+	if (normalized.includes("video")) return 11;
+	return 99;
+}
+
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
@@ -454,6 +543,32 @@ function getModalityIcon(modality: string): LucideIcon {
 	return CircleDot;
 }
 
+function getEndpointIcon(endpoint: string): LucideIcon {
+	const normalized = normalizeEndpointValue(endpoint);
+	if (normalized.includes("embedding")) return Database;
+	if (normalized.includes("rerank")) return ArrowUpDown;
+	if (normalized.includes("moderation")) return BadgeAlert;
+	if (normalized.includes("image")) return ImageIcon;
+	if (normalized.includes("video")) return Video;
+	if (normalized.includes("speech")) return Speech;
+	if (
+		normalized.includes("audio") ||
+		normalized.includes("transcription") ||
+		normalized.includes("translation")
+	) {
+		return Headphones;
+	}
+	if (
+		normalized.includes("chat") ||
+		normalized.includes("message") ||
+		normalized.includes("response") ||
+		normalized.includes("completion")
+	) {
+		return TypeIcon;
+	}
+	return Route;
+}
+
 function FilterLogo({
 	value,
 	label,
@@ -467,7 +582,8 @@ function FilterLogo({
 		<span
 			className={cn(
 				"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5 transition-colors",
-				checked && "border-primary/30 bg-primary/10",
+				checked &&
+					"border-primary/50 bg-primary/10 shadow-xs ring-2 ring-primary/15",
 			)}
 		>
 			<Logo
@@ -478,6 +594,43 @@ function FilterLogo({
 				className="h-3.5 w-3.5 object-contain"
 			/>
 		</span>
+	);
+}
+
+function ModelsEmptyState({
+	hasActiveQuery,
+	onReset,
+}: {
+	hasActiveQuery: boolean;
+	onReset: () => void;
+}) {
+	return (
+		<div className="flex min-h-[22rem] items-center justify-center rounded-lg border border-dashed border-border/80 bg-muted/15 px-6 py-12 text-center">
+			<div className="flex max-w-sm flex-col items-center">
+				<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+					<SearchX className="h-5 w-5" />
+				</span>
+				<h2 className="mt-4 text-lg font-semibold tracking-tight">
+					No matching models
+				</h2>
+				<p className="mt-1 text-sm text-muted-foreground">
+					{hasActiveQuery
+						? "Try broadening your filters or clearing the search query."
+						: "There are no models available for this view yet."}
+				</p>
+				{hasActiveQuery ? (
+					<Button
+						type="button"
+						size="sm"
+						className="mt-5 gap-2"
+						onClick={onReset}
+					>
+						<RotateCcw className="h-3.5 w-3.5" />
+						Reset filters and search
+					</Button>
+				) : null}
+			</div>
+		</div>
 	);
 }
 
@@ -1310,6 +1463,11 @@ export default function ModelsDisplay({
 		setSelectedYears([]);
 	};
 
+	const resetResultsView = () => {
+		setSearch(null);
+		resetFilters();
+	};
+
 	const buildHref = (path: string, options?: { toTable?: boolean }) => {
 		const params = new URLSearchParams(searchParams?.toString() ?? "");
 		if (options?.toTable) {
@@ -1349,7 +1507,19 @@ export default function ModelsDisplay({
 			count: dynamicSidebarCounts.statusCounts.not_active,
 		},
 	];
-	const endpointOptions = dynamicSidebarCounts.endpointOptions;
+	const endpointOptions = useMemo(
+		() =>
+			[...dynamicSidebarCounts.endpointOptions].sort((a, b) => {
+				const aRank = getEndpointSortRank(a.value);
+				const bRank = getEndpointSortRank(b.value);
+				if (aRank !== bRank) return aRank - bRank;
+				if (a.count !== b.count) return b.count - a.count;
+				return formatEndpointLabel(a.value).localeCompare(
+					formatEndpointLabel(b.value),
+				);
+			}),
+		[dynamicSidebarCounts.endpointOptions],
+	);
 	const inputModalityOptions = filterOutFileModality(
 		dynamicSidebarCounts.inputModalityOptions,
 	);
@@ -1384,6 +1554,8 @@ export default function ModelsDisplay({
 	const shownCountWithSearchLabel = search
 		? `${shownCountLabel} for "${search}"`
 		: shownCountLabel;
+	const hasActiveResultsQuery =
+		activeFilterCount > 0 || Boolean(String(search ?? "").trim());
 
 	const filterButton = (compact = false) => (
 		<Button
@@ -1738,7 +1910,9 @@ export default function ModelsDisplay({
 						onToggle={(value) =>
 							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
 						}
-						labelForValue={(value) => value}
+						labelForValue={formatEndpointLabel}
+						iconForValue={getEndpointIcon}
+						collapsedLimit={8}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1886,10 +2060,17 @@ export default function ModelsDisplay({
 				</div>
 
 				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
-					<ModelsGrid
-						filteredModels={filteredModels}
-						showOrganisationPrefix
-					/>
+					{filteredModels.length > 0 ? (
+						<ModelsGrid
+							filteredModels={filteredModels}
+							showOrganisationPrefix
+						/>
+					) : (
+						<ModelsEmptyState
+							hasActiveQuery={hasActiveResultsQuery}
+							onReset={resetResultsView}
+						/>
+					)}
 				</div>
 			</section>
 
