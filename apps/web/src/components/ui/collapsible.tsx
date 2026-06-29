@@ -15,13 +15,23 @@ function CollapsibleTrigger({
 }: CollapsiblePrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <CollapsiblePrimitive.Trigger
+        data-slot="collapsible-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <CollapsiblePrimitive.Trigger
       data-slot="collapsible-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </CollapsiblePrimitive.Trigger>
   )
 }

@@ -48,13 +48,23 @@ function TooltipTrigger({
 }: TooltipPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <TooltipPrimitive.Trigger
+        data-slot="tooltip-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <TooltipPrimitive.Trigger
       data-slot="tooltip-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </TooltipPrimitive.Trigger>
   )
 }

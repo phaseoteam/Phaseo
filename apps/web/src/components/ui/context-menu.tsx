@@ -25,6 +25,17 @@ function ContextMenuTrigger({
 }: ContextMenuPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <ContextMenuPrimitive.Trigger
+        data-slot="context-menu-trigger"
+        render={renderAsChild(asChild, children)}
+        className={cn("select-none", className)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <ContextMenuPrimitive.Trigger
       data-slot="context-menu-trigger"
@@ -32,7 +43,7 @@ function ContextMenuTrigger({
       className={cn("select-none", className)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </ContextMenuPrimitive.Trigger>
   )
 }
@@ -106,19 +117,34 @@ function ContextMenuItem({
   variant?: "default" | "destructive"
   asChild?: boolean
 }) {
+  const itemClassName = cn(
+    "group/context-menu-item relative flex min-h-7 cursor-default items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 focus:*:[svg]:text-accent-foreground data-[variant=destructive]:*:[svg]:text-destructive",
+    className
+  )
+
+  if (asChild) {
+    return (
+      <ContextMenuPrimitive.Item
+        data-slot="context-menu-item"
+        data-inset={inset}
+        data-variant={variant}
+        render={renderAsChild(asChild, children)}
+        className={itemClassName}
+        {...props}
+      />
+    )
+  }
+
   return (
     <ContextMenuPrimitive.Item
       data-slot="context-menu-item"
       data-inset={inset}
       data-variant={variant}
       render={renderAsChild(asChild, children)}
-      className={cn(
-        "group/context-menu-item relative flex min-h-7 cursor-default items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 focus:*:[svg]:text-accent-foreground data-[variant=destructive]:*:[svg]:text-destructive",
-        className
-      )}
+      className={itemClassName}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </ContextMenuPrimitive.Item>
   )
 }

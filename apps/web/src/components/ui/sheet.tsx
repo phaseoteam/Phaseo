@@ -19,13 +19,23 @@ function SheetTrigger({
 }: SheetPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <SheetPrimitive.Trigger
+        data-slot="sheet-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <SheetPrimitive.Trigger
       data-slot="sheet-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </SheetPrimitive.Trigger>
   )
 }
@@ -37,13 +47,23 @@ function SheetClose({
 }: SheetPrimitive.Close.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <SheetPrimitive.Close
+        data-slot="sheet-close"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <SheetPrimitive.Close
       data-slot="sheet-close"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </SheetPrimitive.Close>
   )
 }

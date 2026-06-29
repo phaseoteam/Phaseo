@@ -17,13 +17,23 @@ function PopoverTrigger({
 }: PopoverPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <PopoverPrimitive.Trigger
+        data-slot="popover-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <PopoverPrimitive.Trigger
       data-slot="popover-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </PopoverPrimitive.Trigger>
   )
 }

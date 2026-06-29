@@ -25,13 +25,23 @@ function HoverCardTrigger({
 }: PreviewCardPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <PreviewCardPrimitive.Trigger
+        data-slot="hover-card-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <PreviewCardPrimitive.Trigger
       data-slot="hover-card-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </PreviewCardPrimitive.Trigger>
   )
 }

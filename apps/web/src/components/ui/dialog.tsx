@@ -19,13 +19,23 @@ function DialogTrigger({
 }: DialogPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <DialogPrimitive.Trigger
+        data-slot="dialog-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <DialogPrimitive.Trigger
       data-slot="dialog-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </DialogPrimitive.Trigger>
   )
 }
@@ -41,13 +51,23 @@ function DialogClose({
 }: DialogPrimitive.Close.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <DialogPrimitive.Close
+        data-slot="dialog-close"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <DialogPrimitive.Close
       data-slot="dialog-close"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </DialogPrimitive.Close>
   )
 }

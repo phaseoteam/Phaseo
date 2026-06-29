@@ -18,13 +18,23 @@ function AlertDialogTrigger({
 }: AlertDialogPrimitive.Trigger.Props & {
   asChild?: boolean
 }) {
+  if (asChild) {
+    return (
+      <AlertDialogPrimitive.Trigger
+        data-slot="alert-dialog-trigger"
+        render={renderAsChild(asChild, children)}
+        {...props}
+      />
+    )
+  }
+
   return (
     <AlertDialogPrimitive.Trigger
       data-slot="alert-dialog-trigger"
       render={renderAsChild(asChild, children)}
       {...props}
     >
-      {asChild ? null : children}
+      {children}
     </AlertDialogPrimitive.Trigger>
   )
 }

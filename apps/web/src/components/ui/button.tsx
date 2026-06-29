@@ -51,16 +51,20 @@ function Button({
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
+  const sharedProps = {
+    "data-slot": "button",
+    className: cn(buttonVariants({ variant, size, className })),
+    nativeButton: asChild ? false : nativeButton,
+    render: renderAsChild(asChild, children),
+    ...props,
+  }
+
+  if (asChild) {
+    return <ButtonPrimitive {...sharedProps} />
+  }
+
   return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      nativeButton={asChild ? false : nativeButton}
-      render={renderAsChild(asChild, children)}
-      {...props}
-    >
-      {asChild ? null : children}
-    </ButtonPrimitive>
+    <ButtonPrimitive {...sharedProps}>{children}</ButtonPrimitive>
   )
 }
 
