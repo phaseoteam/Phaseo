@@ -3,6 +3,7 @@
 import {
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
@@ -275,6 +276,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		onFileSelect,
 	} = props;
 	const promptScrollAreaRef = useRef<HTMLDivElement | null>(null);
+	const composerSurfaceRef = useRef<HTMLDivElement | null>(null);
+	const composerResizeAnimationRef = useRef<Animation | null>(null);
+	const previousComposerHeightRef = useRef<number | null>(null);
 	const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
 	const slashQuery = normalizeSlashQuery(composer);
 	const slashMenuOpen = slashQuery !== null;
@@ -514,6 +518,50 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		};
 	}, [showEvaluationPrompts]);
 
+	useLayoutEffect(() => {
+		const node = composerSurfaceRef.current;
+		if (!node) return;
+
+		const nextHeight = node.getBoundingClientRect().height;
+		const previousHeight = previousComposerHeightRef.current;
+		previousComposerHeightRef.current = nextHeight;
+
+		if (
+			previousHeight === null ||
+			Math.abs(previousHeight - nextHeight) < 1 ||
+			window.matchMedia("(prefers-reduced-motion: reduce)").matches
+		) {
+			return;
+		}
+
+		composerResizeAnimationRef.current?.cancel();
+		const animation = node.animate(
+			[
+				{ height: `${previousHeight}px`, overflow: "hidden" },
+				{ height: `${nextHeight}px`, overflow: "hidden" },
+			],
+			{
+				duration: 180,
+				easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+			},
+		);
+		composerResizeAnimationRef.current = animation;
+
+		const clearAnimation = () => {
+			if (composerResizeAnimationRef.current === animation) {
+				composerResizeAnimationRef.current = null;
+			}
+		};
+
+		animation.addEventListener("finish", clearAnimation, { once: true });
+		animation.addEventListener("cancel", clearAnimation, { once: true });
+
+		return () => {
+			animation.removeEventListener("finish", clearAnimation);
+			animation.removeEventListener("cancel", clearAnimation);
+		};
+	}, [attachments.length, composerExpanded, sendGateType, slashMenuOpen]);
+
 	return (
 		<div className="border-t border-border bg-background px-4 py-4 md:px-8">
 			<div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
@@ -578,8 +626,10 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					</ScrollArea>
 				) : null}
 				<div
+					ref={composerSurfaceRef}
+					data-chat-composer-surface="true"
 					className={cn(
-						"rounded-2xl border border-border bg-card shadow-sm",
+						"overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-[background-color,border-color,box-shadow,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
 						composerExpanded
 							? "flex flex-col px-3 py-2"
 							: "flex flex-col gap-1 px-2 py-1 sm:flex-row sm:items-center",
@@ -711,7 +761,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						rows={composerExpanded ? 2 : 1}
 						placeholder={placeholder}
 						className={cn(
-							"resize-none border-0 !bg-transparent shadow-none focus-visible:ring-0 dark:!bg-transparent",
+							"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
 							composerExpanded
 								? "min-h-[56px] px-1 py-2"
 								: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
