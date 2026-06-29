@@ -1449,7 +1449,11 @@ export default function ModelsDisplay({
 					<span className="truncate">{SORT_TRIGGER_LABELS[selectedSort]}</span>
 				</span>
 			</SelectTrigger>
-			<SelectContent align="end">
+			<SelectContent
+				align="start"
+				alignItemWithTrigger={false}
+				className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+			>
 				{MODELS_SORT_OPTIONS.map((option) => (
 					<SelectItem key={option} value={option}>
 						{SORT_OPTION_LABELS[option]}
