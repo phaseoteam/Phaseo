@@ -104,11 +104,11 @@ ${colorConfig
       itemConfig.color
     return color ? `  --color-${key}: ${color};` : null
   })
-  .join("")}
+  .join("\n")}
 }
 `
           )
-          .join(""),
+          .join("\n"),
       }}
     />
   )
@@ -191,7 +191,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        "grid min-w-32 items-start gap-1.5 rounded-lg border border-oklch(0.922 0 0) border-oklch(0.922 0 0)/50 bg-oklch(1 0 0) px-2.5 py-1.5 text-xs shadow-xl dark:border-oklch(1 0 0 / 10%) dark:border-oklch(1 0 0 / 10%)/50 dark:bg-oklch(0.145 0 0)",
+        "grid min-w-32 items-start gap-1.5 rounded-xl bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg ring-1 ring-foreground/5 dark:ring-foreground/10",
         className
       )}
     >
@@ -208,7 +208,7 @@ function ChartTooltipContent({
               <div
                 key={index}
                 className={cn(
-                  "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-oklch(0.556 0 0) dark:[&>svg]:text-oklch(0.708 0 0)",
+                  "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center"
                 )}
               >
@@ -248,12 +248,12 @@ function ChartTooltipContent({
                     >
                       <div className="grid gap-1.5">
                         {nestLabel ? tooltipLabel : null}
-                        <span className="text-oklch(0.556 0 0) dark:text-oklch(0.708 0 0)">
+                        <span className="text-muted-foreground">
                           {itemConfig?.label ?? item.name}
                         </span>
                       </div>
                       {item.value != null && (
-                        <span className="font-mono font-medium text-oklch(0.145 0 0) tabular-nums dark:text-oklch(0.985 0 0)">
+                        <span className="font-mono font-medium text-foreground tabular-nums">
                           {typeof item.value === "number"
                             ? item.value.toLocaleString()
                             : String(item.value)}
@@ -306,7 +306,7 @@ function ChartLegendContent({
             <div
               key={index}
               className={cn(
-                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-oklch(0.556 0 0) dark:[&>svg]:text-oklch(0.708 0 0)"
+                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground"
               )}
             >
               {itemConfig?.icon && !hideIcon ? (

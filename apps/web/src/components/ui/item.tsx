@@ -35,17 +35,17 @@ function ItemSeparator({
 }
 
 const itemVariants = cva(
-  "group/item flex w-full flex-wrap items-center rounded-lg border border-oklch(0.922 0 0) text-sm transition-colors duration-100 outline-none focus-visible:border-oklch(0.708 0 0) focus-visible:ring-[3px] focus-visible:ring-oklch(0.708 0 0)/50 [a]:transition-colors [a]:hover:bg-oklch(0.97 0 0) dark:border-oklch(1 0 0 / 10%) dark:focus-visible:border-oklch(0.556 0 0) dark:focus-visible:ring-oklch(0.556 0 0)/50 dark:[a]:hover:bg-oklch(0.269 0 0)",
+  "group/item flex w-full flex-wrap items-center rounded-2xl border text-sm transition-colors duration-100 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [a]:transition-colors [a]:hover:bg-muted",
   {
     variants: {
       variant: {
         default: "border-transparent",
-        outline: "border-oklch(0.922 0 0) dark:border-oklch(1 0 0 / 10%)",
-        muted: "border-transparent bg-oklch(0.97 0 0)/50 dark:bg-oklch(0.269 0 0)/50",
+        outline: "border-border",
+        muted: "border-transparent bg-muted/50",
       },
       size: {
-        default: "gap-2.5 px-3 py-2.5",
-        sm: "gap-2.5 px-3 py-2.5",
+        default: "gap-3.5 px-4 py-3.5",
+        sm: "gap-3.5 px-3.5 py-3",
         xs: "gap-2 px-2.5 py-2 in-data-[slot=dropdown-menu-content]:p-0",
       },
     },
@@ -88,7 +88,7 @@ const itemMediaVariants = cva(
         default: "bg-transparent",
         icon: "[&_svg:not([class*='size-'])]:size-4",
         image:
-          "size-10 overflow-hidden rounded-sm group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 [&_img]:size-full [&_img]:object-cover",
+          "size-10 overflow-hidden rounded-xl group-data-[size=sm]/item:size-8 group-data-[size=xs]/item:size-6 group-data-[size=xs]/item:rounded-lg [&_img]:size-full [&_img]:object-cover",
       },
     },
     defaultVariants: {
@@ -117,7 +117,7 @@ function ItemContent({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="item-content"
       className={cn(
-        "flex flex-1 flex-col gap-1 group-data-[size=xs]/item:gap-0 [&+[data-slot=item-content]]:flex-none",
+        "flex flex-1 flex-col gap-1 group-data-[size=xs]/item:gap-0.5 [&+[data-slot=item-content]]:flex-none",
         className
       )}
       {...props}
@@ -143,7 +143,7 @@ function ItemDescription({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="item-description"
       className={cn(
-        "line-clamp-2 text-left text-sm leading-normal font-normal text-oklch(0.556 0 0) group-data-[size=xs]/item:text-xs [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-oklch(0.205 0 0) dark:text-oklch(0.708 0 0) dark:[&>a:hover]:text-oklch(0.922 0 0)",
+        "line-clamp-2 text-left text-sm font-normal text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary",
         className
       )}
       {...props}

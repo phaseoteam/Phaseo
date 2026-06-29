@@ -20,39 +20,54 @@ const ToggleGroupContext = React.createContext<
   orientation: "horizontal",
 })
 
+type ToggleGroupBaseProps = Omit<
+  ToggleGroupPrimitive.Props,
+  "value" | "defaultValue" | "onValueChange" | "multiple"
+> &
+  VariantProps<typeof toggleVariants> & {
+    spacing?: number
+    orientation?: "horizontal" | "vertical"
+  }
+
+type ToggleGroupSingleProps = ToggleGroupBaseProps & {
+  type?: "single"
+  multiple?: false
+  value?: string
+  defaultValue?: string
+  onValueChange?: (value: string) => void
+}
+
+type ToggleGroupMultipleProps = ToggleGroupBaseProps & {
+  type?: "multiple"
+  multiple?: true
+  value?: readonly string[]
+  defaultValue?: readonly string[]
+  onValueChange?: (value: string[]) => void
+}
+
 function ToggleGroup({
   className,
   variant,
   size,
   spacing = 2,
   orientation = "horizontal",
-  type = "single",
+  type,
+  multiple,
   value,
   defaultValue,
   onValueChange,
   children,
   ...props
-}: Omit<
-  ToggleGroupPrimitive.Props,
-  "defaultValue" | "multiple" | "onValueChange" | "value"
-> &
-  VariantProps<typeof toggleVariants> & {
-    spacing?: number
-    orientation?: "horizontal" | "vertical"
-    type?: "single" | "multiple"
-    value?: string | string[]
-    defaultValue?: string | string[]
-    onValueChange?: (value: any) => void
-  }) {
-  const multiple = type === "multiple"
-  const normalizedValue =
-    value === undefined ? undefined : Array.isArray(value) ? value : [value]
-  const normalizedDefaultValue =
-    defaultValue === undefined
-      ? undefined
-      : Array.isArray(defaultValue)
-        ? defaultValue
-        : [defaultValue]
+}: ToggleGroupSingleProps | ToggleGroupMultipleProps) {
+  const isMultiple = multiple ?? type === "multiple"
+  const resolvedValue =
+    typeof value === "string" ? (value ? [value] : []) : value
+  const resolvedDefaultValue =
+    typeof defaultValue === "string"
+      ? defaultValue
+        ? [defaultValue]
+        : []
+      : defaultValue
 
   return (
     <ToggleGroupPrimitive
@@ -61,15 +76,23 @@ function ToggleGroup({
       data-size={size}
       data-spacing={spacing}
       data-orientation={orientation}
-      multiple={multiple}
-      value={normalizedValue}
-      defaultValue={normalizedDefaultValue}
+      multiple={isMultiple}
+      value={resolvedValue}
+      defaultValue={resolvedDefaultValue}
       onValueChange={(nextValue) => {
-        onValueChange?.(multiple ? nextValue : (nextValue[0] ?? ""))
+        if (isMultiple) {
+          ;(onValueChange as ((value: string[]) => void) | undefined)?.([
+            ...nextValue,
+          ])
+          return
+        }
+        ;(onValueChange as ((value: string) => void) | undefined)?.(
+          nextValue[0] ?? ""
+        )
       }}
       style={{ "--gap": spacing } as React.CSSProperties}
       className={cn(
-        "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-vertical:flex-col data-vertical:items-stretch",
+        "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] data-[spacing=0]:data-[variant=outline]:rounded-2xl data-vertical:flex-col data-vertical:items-stretch",
         className
       )}
       {...props}
@@ -99,7 +122,7 @@ function ToggleGroupItem({
       data-size={context.size || size}
       data-spacing={context.spacing}
       className={cn(
-        "shrink-0 group-data-[spacing=0]/toggle-group:rounded-none group-data-[spacing=0]/toggle-group:px-2 focus:z-10 focus-visible:z-10 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-end]:pr-1.5 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-start]:pl-1.5 group-data-horizontal/toggle-group:data-[spacing=0]:first:rounded-l-lg group-data-vertical/toggle-group:data-[spacing=0]:first:rounded-t-lg group-data-horizontal/toggle-group:data-[spacing=0]:last:rounded-r-lg group-data-vertical/toggle-group:data-[spacing=0]:last:rounded-b-lg group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:border-l-0 group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:border-t-0 group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-l group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-t",
+        "shrink-0 group-data-[spacing=0]/toggle-group:rounded-none group-data-[spacing=0]/toggle-group:px-2 group-data-[spacing=0]/toggle-group:shadow-none focus:z-10 focus-visible:z-10 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-end]:pr-1.5 group-data-[spacing=0]/toggle-group:has-data-[icon=inline-start]:pl-1.5 group-data-horizontal/toggle-group:data-[spacing=0]:first:rounded-l-2xl group-data-vertical/toggle-group:data-[spacing=0]:first:rounded-t-2xl group-data-horizontal/toggle-group:data-[spacing=0]:last:rounded-r-2xl group-data-vertical/toggle-group:data-[spacing=0]:last:rounded-b-2xl data-[state=on]:bg-muted group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:border-l-0 group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:border-t-0 group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-l group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-t",
         toggleVariants({
           variant: context.variant || variant,
           size: context.size || size,

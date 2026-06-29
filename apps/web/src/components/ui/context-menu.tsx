@@ -60,7 +60,7 @@ function ContextMenuContent({
       >
         <ContextMenuPrimitive.Popup
           data-slot="context-menu-content"
-          className={cn("z-50 max-h-(--available-height) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-oklch(1 0 0) p-1 text-oklch(0.145 0 0) shadow-md ring-1 ring-oklch(0.145 0 0)/10 duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 dark:bg-oklch(0.205 0 0) dark:text-oklch(0.985 0 0) dark:ring-oklch(0.985 0 0)/10", className )}
+          className={cn("z-50 max-h-(--available-height) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-2xl bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/5 duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
         />
       </ContextMenuPrimitive.Positioner>
@@ -86,7 +86,7 @@ function ContextMenuLabel({
       data-slot="context-menu-label"
       data-inset={inset}
       className={cn(
-        "px-1.5 py-1 text-xs font-medium text-oklch(0.556 0 0) data-inset:pl-7 dark:text-oklch(0.708 0 0)",
+        "px-2 py-1 text-xs text-muted-foreground data-inset:pl-7",
         className
       )}
       {...props}
@@ -113,7 +113,7 @@ function ContextMenuItem({
       data-variant={variant}
       render={renderAsChild(asChild, children)}
       className={cn(
-        "group/context-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) data-inset:pl-7 data-[variant=destructive]:text-oklch(0.577 0.245 27.325) data-[variant=destructive]:focus:bg-oklch(0.577 0.245 27.325)/10 data-[variant=destructive]:focus:text-oklch(0.577 0.245 27.325) dark:data-[variant=destructive]:focus:bg-oklch(0.577 0.245 27.325)/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 focus:*:[svg]:text-oklch(0.205 0 0) data-[variant=destructive]:*:[svg]:text-oklch(0.577 0.245 27.325) dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0) dark:data-[variant=destructive]:text-oklch(0.704 0.191 22.216) dark:data-[variant=destructive]:focus:bg-oklch(0.704 0.191 22.216)/10 dark:data-[variant=destructive]:focus:text-oklch(0.704 0.191 22.216) dark:dark:data-[variant=destructive]:focus:bg-oklch(0.704 0.191 22.216)/20 dark:focus:*:[svg]:text-oklch(0.985 0 0) dark:data-[variant=destructive]:*:[svg]:text-oklch(0.704 0.191 22.216)",
+        "group/context-menu-item relative flex min-h-7 cursor-default items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 focus:*:[svg]:text-accent-foreground data-[variant=destructive]:*:[svg]:text-destructive",
         className
       )}
       {...props}
@@ -142,7 +142,7 @@ function ContextMenuSubTrigger({
       data-slot="context-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) data-inset:pl-7 data-open:bg-oklch(0.97 0 0) data-open:text-oklch(0.205 0 0) [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0) dark:data-open:bg-oklch(0.269 0 0) dark:data-open:text-oklch(0.985 0 0)",
+        "flex min-h-7 cursor-default items-center rounded-xl px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -180,7 +180,7 @@ function ContextMenuCheckboxItem({
       data-slot="context-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0)",
+        "relative flex min-h-7 cursor-default items-center gap-2 rounded-xl py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       checked={checked}
@@ -221,7 +221,7 @@ function ContextMenuRadioItem({
       data-slot="context-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-oklch(0.97 0 0) focus:text-oklch(0.205 0 0) data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 dark:focus:bg-oklch(0.269 0 0) dark:focus:text-oklch(0.985 0 0)",
+        "relative flex min-h-7 cursor-default items-center gap-2 rounded-xl py-1.5 pr-8 pl-2 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -244,7 +244,7 @@ function ContextMenuSeparator({
   return (
     <ContextMenuPrimitive.Separator
       data-slot="context-menu-separator"
-      className={cn("-mx-1 my-1 h-px bg-oklch(0.922 0 0) dark:bg-oklch(1 0 0 / 10%)", className)}
+      className={cn("-mx-1 my-1 h-px bg-border/50", className)}
       {...props}
     />
   )
@@ -258,7 +258,7 @@ function ContextMenuShortcut({
     <span
       data-slot="context-menu-shortcut"
       className={cn(
-        "ml-auto text-xs tracking-widest text-oklch(0.556 0 0) group-focus/context-menu-item:text-oklch(0.205 0 0) dark:text-oklch(0.708 0 0) dark:group-focus/context-menu-item:text-oklch(0.985 0 0)",
+        "ml-auto text-xs tracking-widest text-muted-foreground group-focus/context-menu-item:text-accent-foreground",
         className
       )}
       {...props}
