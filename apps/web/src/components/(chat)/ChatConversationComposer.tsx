@@ -582,7 +582,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						"rounded-2xl border border-border bg-card shadow-sm",
 						composerExpanded
 							? "flex flex-col px-3 py-2"
-							: "flex items-center gap-1 px-2 py-1",
+							: "flex flex-col gap-1 px-2 py-1 sm:flex-row sm:items-center",
 					)}
 				>
 					<input
@@ -714,7 +714,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							"resize-none border-0 !bg-transparent shadow-none focus-visible:ring-0 dark:!bg-transparent",
 							composerExpanded
 								? "min-h-[56px] px-1 py-2"
-								: "order-2 min-h-9 flex-1 px-2 py-2",
+								: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
 						)}
 					/>
 					{attachments.length > 0 ? (
@@ -769,7 +769,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						className={cn(
 							composerExpanded
 								? "flex items-center justify-between pt-2"
-								: "contents",
+								: "order-2 flex w-full items-center justify-between sm:contents",
 						)}
 					>
 						<div
