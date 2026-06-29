@@ -1115,6 +1115,8 @@ class GatewayModelsResponse
 {
 	/** @var string */
 	public $availability_mode;
+	/** @var string|null */
+	public $collection;
 	/** @var int */
 	public $limit;
 	/** @var array */
@@ -1441,6 +1443,8 @@ class Model
 	public $input_types;
 	/** @var ModelLifecycle|null */
 	public $lifecycle;
+	/** @var array<string, mixed>|null */
+	public $links;
 	/** @var string|null */
 	public $model_id;
 	/** @var string|null */
@@ -1493,6 +1497,84 @@ class ModelAvailability
 	public $status;
 }
 
+class ModelEndpointCapability
+{
+	/** @var string|null */
+	public $availability_reason;
+	/** @var string|null */
+	public $availability_status;
+	/** @var string */
+	public $capability_id;
+	/** @var string|null */
+	public $capability_status;
+	/** @var string */
+	public $collection;
+	/** @var string|null */
+	public $effective_from;
+	/** @var string|null */
+	public $effective_to;
+	/** @var string */
+	public $endpoint;
+	/** @var string */
+	public $id;
+	/** @var array */
+	public $input_modalities;
+	/** @var bool|null */
+	public $is_active_gateway;
+	/** @var string|null */
+	public $model_routing_status;
+	/** @var array */
+	public $output_modalities;
+	/** @var array|null */
+	public $params;
+	/** @var array<string, mixed>|null */
+	public $params_detail;
+	/** @var array<string, mixed>|null */
+	public $pricing;
+	/** @var array<string, mixed>|null */
+	public $pricing_detail;
+	/** @var string */
+	public $provider_id;
+	/** @var string|null */
+	public $provider_model_slug;
+	/** @var string|null */
+	public $provider_name;
+	/** @var string|null */
+	public $provider_routing_status;
+	/** @var string|null */
+	public $provider_status;
+	/** @var string */
+	public $public_path;
+	/** @var array */
+	public $supported_parameters;
+	/** @var array<string, mixed>|null */
+	public $supported_parameters_detail;
+}
+
+class ModelEndpointsResponse
+{
+	/** @var array<string, mixed>|null */
+	public $architecture;
+	/** @var string */
+	public $availability_mode;
+	/** @var string */
+	public $canonical_slug;
+	/** @var int|null */
+	public $created;
+	/** @var string|null */
+	public $description;
+	/** @var array */
+	public $endpoints;
+	/** @var string */
+	public $id;
+	/** @var string */
+	public $model_id;
+	/** @var string|null */
+	public $name;
+	/** @var bool */
+	public $ok;
+}
+
 class ModelId { }
 
 class ModelLifecycle
@@ -1527,14 +1609,20 @@ class ModelProviderAvailability
 	public $effective_to;
 	/** @var array */
 	public $endpoints;
+	/** @var array|null */
+	public $input_modalities;
 	/** @var bool */
 	public $is_active_gateway;
 	/** @var string */
 	public $model_routing_status;
+	/** @var array|null */
+	public $output_modalities;
 	/** @var array */
 	public $params;
 	/** @var array<string, mixed>|null */
 	public $params_detail;
+	/** @var string|null */
+	public $provider_model_slug;
 	/** @var string */
 	public $provider_routing_status;
 	/** @var string */

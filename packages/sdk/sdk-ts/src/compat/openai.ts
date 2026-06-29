@@ -18,6 +18,8 @@ import type {
   ModerationsRequest,
   ModerationsResponse,
   FileResponse,
+  BatchListResponse,
+  BatchModelsResponse,
   BatchRequest,
   BatchResponse
 } from "../oapi-gen/models/index.js";
@@ -95,9 +97,11 @@ export class OpenAI {
   };
 
   public readonly batches: {
+    list(params?: Record<string, unknown>): Promise<BatchListResponse>;
     create(params: BatchRequest): Promise<BatchResponse>;
     retrieve(batchId: string): Promise<BatchResponse>;
     cancel(batchId: string): Promise<BatchResponse>;
+    listModels(params?: Record<string, unknown>): Promise<BatchModelsResponse>;
   };
 
   constructor(config: OpenAIConfig) {
@@ -158,9 +162,11 @@ export class OpenAI {
 
     // Batches
     this.batches = {
+      list: (params) => this.aiStats.listBatches(params),
       create: (params) => this.aiStats.createBatch(params),
       retrieve: (batchId) => this.aiStats.getBatch(batchId),
-      cancel: (batchId) => this.aiStats.cancelBatch(batchId)
+      cancel: (batchId) => this.aiStats.cancelBatch(batchId),
+      listModels: (params) => this.aiStats.listBatchModels(params)
     };
   }
 

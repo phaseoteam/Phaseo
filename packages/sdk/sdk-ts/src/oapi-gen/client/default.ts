@@ -7026,12 +7026,20 @@ export type ListEndpointsParams = {
 };
 
 /**
- * Lists currently exposed gateway endpoint IDs and sample models.
+ * Lists gateway endpoint IDs with catalogue-backed metadata and sample models.
  */
 export async function listEndpoints(
   client: Client,
   args: ListEndpointsParams = {},
 ): Promise<{
+  data?: {
+    capability_id?: string;
+    collection?: string;
+    id?: string;
+    model_count?: number;
+    provider_count?: number;
+    public_path?: string;
+  }[];
   endpoints?: string[];
   ok?: boolean;
   sample_models?: string[];
@@ -7039,6 +7047,14 @@ export async function listEndpoints(
   const { path, query, headers, body } = args;
   const resolvedPath = "/endpoints";
   return client.request<{
+    data?: {
+      capability_id?: string;
+      collection?: string;
+      id?: string;
+      model_count?: number;
+      provider_count?: number;
+      public_path?: string;
+    }[];
     endpoints?: string[];
     ok?: boolean;
     sample_models?: string[];
@@ -7076,7 +7092,7 @@ export async function listFiles(
   });
 }
 
-export type ListModelsParams = {
+export type ListLegacyGatewayModelsParams = {
   path?: Record<string, never>;
   query?: {
     availability?: "active" | "all";
@@ -7201,11 +7217,22 @@ export type ListModelsParams = {
 /**
  * Returns shared non-hidden gateway models. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
  */
-export async function listModels(
+export async function listLegacyGatewayModels(
   client: Client,
-  args: ListModelsParams = {},
+  args: ListLegacyGatewayModelsParams = {},
 ): Promise<{
   availability_mode: "active" | "all";
+  collection?:
+    | "text"
+    | "images"
+    | "videos"
+    | "audio"
+    | "embeddings"
+    | "rerank"
+    | "ocr"
+    | "music"
+    | "batches"
+    | null;
   limit: number;
   models: {
     aliases?: string[];
@@ -7235,6 +7262,9 @@ export async function listModels(
       replacement_model_id?: string | null;
       retirement_date?: string | null;
       status?: "active" | "deprecated" | "retired" | null;
+    };
+    links?: {
+      endpoints?: string;
     };
     model_id?: string;
     name?: string | null;
@@ -7297,6 +7327,7 @@ export async function listModels(
       effective_from?: string | null;
       effective_to?: string | null;
       endpoints: string[];
+      input_modalities?: string[];
       is_active_gateway: boolean;
       model_routing_status:
         | "active"
@@ -7304,12 +7335,14 @@ export async function listModels(
         | "deranked_lvl2"
         | "deranked_lvl3"
         | "disabled";
+      output_modalities?: string[];
       params: string[];
       params_detail?: {
         [key: string]: {
           [key: string]: unknown;
         };
       };
+      provider_model_slug?: string | null;
       provider_routing_status:
         | "active"
         | "deranked_lvl1"
@@ -7365,6 +7398,17 @@ export async function listModels(
   const resolvedPath = "/gateway/models";
   return client.request<{
     availability_mode: "active" | "all";
+    collection?:
+      | "text"
+      | "images"
+      | "videos"
+      | "audio"
+      | "embeddings"
+      | "rerank"
+      | "ocr"
+      | "music"
+      | "batches"
+      | null;
     limit: number;
     models: {
       aliases?: string[];
@@ -7394,6 +7438,9 @@ export async function listModels(
         replacement_model_id?: string | null;
         retirement_date?: string | null;
         status?: "active" | "deprecated" | "retired" | null;
+      };
+      links?: {
+        endpoints?: string;
       };
       model_id?: string;
       name?: string | null;
@@ -7456,6 +7503,7 @@ export async function listModels(
         effective_from?: string | null;
         effective_to?: string | null;
         endpoints: string[];
+        input_modalities?: string[];
         is_active_gateway: boolean;
         model_routing_status:
           | "active"
@@ -7463,12 +7511,940 @@ export async function listModels(
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
+        output_modalities?: string[];
         params: string[];
         params_detail?: {
           [key: string]: {
             [key: string]: unknown;
           };
         };
+        provider_model_slug?: string | null;
+        provider_routing_status:
+          | "active"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled";
+        provider_status:
+          | "active"
+          | "beta"
+          | "alpha"
+          | "not_ready"
+          | "gated"
+          | "access_limited"
+          | "region_limited"
+          | "project_limited"
+          | "paused"
+          | "soft_blocked";
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      release_date?: string | null;
+      retirement_date?: string | null;
+      status?: string | null;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      top_provider?: {
+        context_length?: number | null;
+        is_moderated?: boolean;
+        max_completion_tokens?: number | null;
+      };
+      top_provider_id?: string | null;
+    }[];
+    offset: number;
+    ok: boolean;
+    privacy_scope: "shared" | "team";
+    total: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListModelCollectionParams = {
+  path?: {
+    collection:
+      | "text"
+      | "images"
+      | "videos"
+      | "audio"
+      | "embeddings"
+      | "rerank"
+      | "ocr"
+      | "music"
+      | "batches";
+  };
+  query?: {
+    availability?: "active" | "all";
+    limit?: number;
+    offset?: number;
+    params?: string[];
+    provider?: string[];
+    supported_parameters?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns a modality-specific projection of the shared model catalogue. Collections use the same model response shape as /models and include links to per-model endpoint capability records.
+ */
+export async function listModelCollection(
+  client: Client,
+  args: ListModelCollectionParams = {},
+): Promise<{
+  availability_mode: "active" | "all";
+  collection?:
+    | "text"
+    | "images"
+    | "videos"
+    | "audio"
+    | "embeddings"
+    | "rerank"
+    | "ocr"
+    | "music"
+    | "batches"
+    | null;
+  limit: number;
+  models: {
+    aliases?: string[];
+    architecture?: {
+      input_modalities?: string[];
+      instruct_type?: string | null;
+      modality?: string;
+      output_modalities?: string[];
+      tokenizer?: string | null;
+    };
+    availability?: {
+      active_provider_count: number;
+      inactive_provider_count: number;
+      provider_count: number;
+      status: "active" | "coming_soon" | "inactive" | "not_listed";
+    };
+    canonical_slug?: string;
+    created?: number | null;
+    deprecation_date?: string | null;
+    description?: string;
+    endpoints?: string[];
+    id?: string;
+    input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
+    links?: {
+      endpoints?: string;
+    };
+    model_id?: string;
+    name?: string | null;
+    organisation_colour?: string | null;
+    organisation_id?: string | null;
+    organisation_name?: string | null;
+    output_types?: string[];
+    per_request_limits?: {
+      [key: string]: unknown;
+    } | null;
+    pricing?: {
+      completion?: string | null;
+      image?: string | null;
+      input_cache_read?: string | null;
+      input_cache_write?: string | null;
+      prompt?: string | null;
+      request?: string | null;
+      web_search?: string | null;
+    };
+    pricing_detail?: {
+      meters?: {
+        [key: string]: unknown;
+      };
+      pricing_plan?: string;
+    };
+    providers?: {
+      api_provider_id: string;
+      api_provider_name?: string | null;
+      availability_reason:
+        | "active"
+        | "preview_only"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "internal_testing"
+        | "scheduled"
+        | "coming_soon"
+        | "provider_disabled"
+        | "model_disabled"
+        | "capability_disabled"
+        | "provider_not_ready"
+        | "provider_inactive"
+        | "inactive"
+        | "retired";
+      availability_status: "active" | "coming_soon" | "inactive";
+      capability_status:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
+      effective_from?: string | null;
+      effective_to?: string | null;
+      endpoints: string[];
+      input_modalities?: string[];
+      is_active_gateway: boolean;
+      model_routing_status:
+        | "active"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled";
+      output_modalities?: string[];
+      params: string[];
+      params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      provider_model_slug?: string | null;
+      provider_routing_status:
+        | "active"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled";
+      provider_status:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    release_date?: string | null;
+    retirement_date?: string | null;
+    status?: string | null;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    top_provider?: {
+      context_length?: number | null;
+      is_moderated?: boolean;
+      max_completion_tokens?: number | null;
+    };
+    top_provider_id?: string | null;
+  }[];
+  offset: number;
+  ok: boolean;
+  privacy_scope: "shared" | "team";
+  total: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/models/${encodeURIComponent(String(path?.collection))}`;
+  return client.request<{
+    availability_mode: "active" | "all";
+    collection?:
+      | "text"
+      | "images"
+      | "videos"
+      | "audio"
+      | "embeddings"
+      | "rerank"
+      | "ocr"
+      | "music"
+      | "batches"
+      | null;
+    limit: number;
+    models: {
+      aliases?: string[];
+      architecture?: {
+        input_modalities?: string[];
+        instruct_type?: string | null;
+        modality?: string;
+        output_modalities?: string[];
+        tokenizer?: string | null;
+      };
+      availability?: {
+        active_provider_count: number;
+        inactive_provider_count: number;
+        provider_count: number;
+        status: "active" | "coming_soon" | "inactive" | "not_listed";
+      };
+      canonical_slug?: string;
+      created?: number | null;
+      deprecation_date?: string | null;
+      description?: string;
+      endpoints?: string[];
+      id?: string;
+      input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
+      links?: {
+        endpoints?: string;
+      };
+      model_id?: string;
+      name?: string | null;
+      organisation_colour?: string | null;
+      organisation_id?: string | null;
+      organisation_name?: string | null;
+      output_types?: string[];
+      per_request_limits?: {
+        [key: string]: unknown;
+      } | null;
+      pricing?: {
+        completion?: string | null;
+        image?: string | null;
+        input_cache_read?: string | null;
+        input_cache_write?: string | null;
+        prompt?: string | null;
+        request?: string | null;
+        web_search?: string | null;
+      };
+      pricing_detail?: {
+        meters?: {
+          [key: string]: unknown;
+        };
+        pricing_plan?: string;
+      };
+      providers?: {
+        api_provider_id: string;
+        api_provider_name?: string | null;
+        availability_reason:
+          | "active"
+          | "preview_only"
+          | "gated"
+          | "access_limited"
+          | "region_limited"
+          | "project_limited"
+          | "paused"
+          | "soft_blocked"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "internal_testing"
+          | "scheduled"
+          | "coming_soon"
+          | "provider_disabled"
+          | "model_disabled"
+          | "capability_disabled"
+          | "provider_not_ready"
+          | "provider_inactive"
+          | "inactive"
+          | "retired";
+        availability_status: "active" | "coming_soon" | "inactive";
+        capability_status:
+          | "active"
+          | "coming_soon"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled"
+          | "internal_testing";
+        effective_from?: string | null;
+        effective_to?: string | null;
+        endpoints: string[];
+        input_modalities?: string[];
+        is_active_gateway: boolean;
+        model_routing_status:
+          | "active"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled";
+        output_modalities?: string[];
+        params: string[];
+        params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        provider_model_slug?: string | null;
+        provider_routing_status:
+          | "active"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled";
+        provider_status:
+          | "active"
+          | "beta"
+          | "alpha"
+          | "not_ready"
+          | "gated"
+          | "access_limited"
+          | "region_limited"
+          | "project_limited"
+          | "paused"
+          | "soft_blocked";
+        supported_parameters?: string[];
+        supported_parameters_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+      }[];
+      release_date?: string | null;
+      retirement_date?: string | null;
+      status?: string | null;
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      supported_params?: string[];
+      supported_params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      top_provider?: {
+        context_length?: number | null;
+        is_moderated?: boolean;
+        max_completion_tokens?: number | null;
+      };
+      top_provider_id?: string | null;
+    }[];
+    offset: number;
+    ok: boolean;
+    privacy_scope: "shared" | "team";
+    total: number;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListModelEndpointsParams = {
+  path?: {
+    author: string;
+    slug: string;
+  };
+  query?: {
+    availability?: "active" | "all";
+    params?: string[];
+    provider?: string[];
+    supported_parameters?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns provider-specific endpoint capability rows for a single model, including public paths, modalities, supported parameters, availability, routing state, and pricing summary.
+ */
+export async function listModelEndpoints(
+  client: Client,
+  args: ListModelEndpointsParams = {},
+): Promise<{
+  architecture?: {
+    [key: string]: unknown;
+  };
+  availability_mode: "active" | "all";
+  canonical_slug: string;
+  created?: number | null;
+  description?: string;
+  endpoints: {
+    availability_reason?: string;
+    availability_status?: string;
+    capability_id: string;
+    capability_status?: string;
+    collection:
+      | "text"
+      | "images"
+      | "videos"
+      | "audio"
+      | "embeddings"
+      | "rerank"
+      | "ocr"
+      | "music"
+      | "batches";
+    effective_from?: string | null;
+    effective_to?: string | null;
+    endpoint: string;
+    id: string;
+    input_modalities: string[];
+    is_active_gateway?: boolean;
+    model_routing_status?: string;
+    output_modalities: string[];
+    params?: string[];
+    params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    pricing?: {
+      [key: string]: unknown;
+    };
+    pricing_detail?: {
+      [key: string]: unknown;
+    };
+    provider_id: string;
+    provider_model_slug?: string | null;
+    provider_name?: string | null;
+    provider_routing_status?: string;
+    provider_status?: string;
+    public_path: string;
+    supported_parameters: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+  }[];
+  id: string;
+  model_id: string;
+  name?: string | null;
+  ok: boolean;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = `/models/${encodeURIComponent(String(path?.author))}/${encodeURIComponent(String(path?.slug))}/endpoints`;
+  return client.request<{
+    architecture?: {
+      [key: string]: unknown;
+    };
+    availability_mode: "active" | "all";
+    canonical_slug: string;
+    created?: number | null;
+    description?: string;
+    endpoints: {
+      availability_reason?: string;
+      availability_status?: string;
+      capability_id: string;
+      capability_status?: string;
+      collection:
+        | "text"
+        | "images"
+        | "videos"
+        | "audio"
+        | "embeddings"
+        | "rerank"
+        | "ocr"
+        | "music"
+        | "batches";
+      effective_from?: string | null;
+      effective_to?: string | null;
+      endpoint: string;
+      id: string;
+      input_modalities: string[];
+      is_active_gateway?: boolean;
+      model_routing_status?: string;
+      output_modalities: string[];
+      params?: string[];
+      params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      pricing?: {
+        [key: string]: unknown;
+      };
+      pricing_detail?: {
+        [key: string]: unknown;
+      };
+      provider_id: string;
+      provider_model_slug?: string | null;
+      provider_name?: string | null;
+      provider_routing_status?: string;
+      provider_status?: string;
+      public_path: string;
+      supported_parameters: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    id: string;
+    model_id: string;
+    name?: string | null;
+    ok: boolean;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type ListModelsParams = {
+  path?: Record<string, never>;
+  query?: {
+    availability?: "active" | "all";
+    endpoints?: string[];
+    input_modalities?: string[];
+    input_types?: string[];
+    limit?: number;
+    offset?: number;
+    output_modalities?: string[];
+    output_types?: string[];
+    params?: string[];
+    provider?: string[];
+    status?: string[];
+    supported_parameters?: string[];
+  };
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns the shared gateway model catalogue across all supported modalities. Use query filters to narrow by endpoint, modality, provider, lifecycle status, availability, or supported parameter.
+ */
+export async function listModels(
+  client: Client,
+  args: ListModelsParams = {},
+): Promise<{
+  availability_mode: "active" | "all";
+  collection?:
+    | "text"
+    | "images"
+    | "videos"
+    | "audio"
+    | "embeddings"
+    | "rerank"
+    | "ocr"
+    | "music"
+    | "batches"
+    | null;
+  limit: number;
+  models: {
+    aliases?: string[];
+    architecture?: {
+      input_modalities?: string[];
+      instruct_type?: string | null;
+      modality?: string;
+      output_modalities?: string[];
+      tokenizer?: string | null;
+    };
+    availability?: {
+      active_provider_count: number;
+      inactive_provider_count: number;
+      provider_count: number;
+      status: "active" | "coming_soon" | "inactive" | "not_listed";
+    };
+    canonical_slug?: string;
+    created?: number | null;
+    deprecation_date?: string | null;
+    description?: string;
+    endpoints?: string[];
+    id?: string;
+    input_types?: string[];
+    lifecycle?: {
+      deprecation_date?: string | null;
+      message?: string | null;
+      replacement_model_id?: string | null;
+      retirement_date?: string | null;
+      status?: "active" | "deprecated" | "retired" | null;
+    };
+    links?: {
+      endpoints?: string;
+    };
+    model_id?: string;
+    name?: string | null;
+    organisation_colour?: string | null;
+    organisation_id?: string | null;
+    organisation_name?: string | null;
+    output_types?: string[];
+    per_request_limits?: {
+      [key: string]: unknown;
+    } | null;
+    pricing?: {
+      completion?: string | null;
+      image?: string | null;
+      input_cache_read?: string | null;
+      input_cache_write?: string | null;
+      prompt?: string | null;
+      request?: string | null;
+      web_search?: string | null;
+    };
+    pricing_detail?: {
+      meters?: {
+        [key: string]: unknown;
+      };
+      pricing_plan?: string;
+    };
+    providers?: {
+      api_provider_id: string;
+      api_provider_name?: string | null;
+      availability_reason:
+        | "active"
+        | "preview_only"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "internal_testing"
+        | "scheduled"
+        | "coming_soon"
+        | "provider_disabled"
+        | "model_disabled"
+        | "capability_disabled"
+        | "provider_not_ready"
+        | "provider_inactive"
+        | "inactive"
+        | "retired";
+      availability_status: "active" | "coming_soon" | "inactive";
+      capability_status:
+        | "active"
+        | "coming_soon"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled"
+        | "internal_testing";
+      effective_from?: string | null;
+      effective_to?: string | null;
+      endpoints: string[];
+      input_modalities?: string[];
+      is_active_gateway: boolean;
+      model_routing_status:
+        | "active"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled";
+      output_modalities?: string[];
+      params: string[];
+      params_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+      provider_model_slug?: string | null;
+      provider_routing_status:
+        | "active"
+        | "deranked_lvl1"
+        | "deranked_lvl2"
+        | "deranked_lvl3"
+        | "disabled";
+      provider_status:
+        | "active"
+        | "beta"
+        | "alpha"
+        | "not_ready"
+        | "gated"
+        | "access_limited"
+        | "region_limited"
+        | "project_limited"
+        | "paused"
+        | "soft_blocked";
+      supported_parameters?: string[];
+      supported_parameters_detail?: {
+        [key: string]: {
+          [key: string]: unknown;
+        };
+      };
+    }[];
+    release_date?: string | null;
+    retirement_date?: string | null;
+    status?: string | null;
+    supported_parameters?: string[];
+    supported_parameters_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    supported_params?: string[];
+    supported_params_detail?: {
+      [key: string]: {
+        [key: string]: unknown;
+      };
+    };
+    top_provider?: {
+      context_length?: number | null;
+      is_moderated?: boolean;
+      max_completion_tokens?: number | null;
+    };
+    top_provider_id?: string | null;
+  }[];
+  offset: number;
+  ok: boolean;
+  privacy_scope: "shared" | "team";
+  total: number;
+}> {
+  const { path, query, headers, body } = args;
+  const resolvedPath = "/models";
+  return client.request<{
+    availability_mode: "active" | "all";
+    collection?:
+      | "text"
+      | "images"
+      | "videos"
+      | "audio"
+      | "embeddings"
+      | "rerank"
+      | "ocr"
+      | "music"
+      | "batches"
+      | null;
+    limit: number;
+    models: {
+      aliases?: string[];
+      architecture?: {
+        input_modalities?: string[];
+        instruct_type?: string | null;
+        modality?: string;
+        output_modalities?: string[];
+        tokenizer?: string | null;
+      };
+      availability?: {
+        active_provider_count: number;
+        inactive_provider_count: number;
+        provider_count: number;
+        status: "active" | "coming_soon" | "inactive" | "not_listed";
+      };
+      canonical_slug?: string;
+      created?: number | null;
+      deprecation_date?: string | null;
+      description?: string;
+      endpoints?: string[];
+      id?: string;
+      input_types?: string[];
+      lifecycle?: {
+        deprecation_date?: string | null;
+        message?: string | null;
+        replacement_model_id?: string | null;
+        retirement_date?: string | null;
+        status?: "active" | "deprecated" | "retired" | null;
+      };
+      links?: {
+        endpoints?: string;
+      };
+      model_id?: string;
+      name?: string | null;
+      organisation_colour?: string | null;
+      organisation_id?: string | null;
+      organisation_name?: string | null;
+      output_types?: string[];
+      per_request_limits?: {
+        [key: string]: unknown;
+      } | null;
+      pricing?: {
+        completion?: string | null;
+        image?: string | null;
+        input_cache_read?: string | null;
+        input_cache_write?: string | null;
+        prompt?: string | null;
+        request?: string | null;
+        web_search?: string | null;
+      };
+      pricing_detail?: {
+        meters?: {
+          [key: string]: unknown;
+        };
+        pricing_plan?: string;
+      };
+      providers?: {
+        api_provider_id: string;
+        api_provider_name?: string | null;
+        availability_reason:
+          | "active"
+          | "preview_only"
+          | "gated"
+          | "access_limited"
+          | "region_limited"
+          | "project_limited"
+          | "paused"
+          | "soft_blocked"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "internal_testing"
+          | "scheduled"
+          | "coming_soon"
+          | "provider_disabled"
+          | "model_disabled"
+          | "capability_disabled"
+          | "provider_not_ready"
+          | "provider_inactive"
+          | "inactive"
+          | "retired";
+        availability_status: "active" | "coming_soon" | "inactive";
+        capability_status:
+          | "active"
+          | "coming_soon"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled"
+          | "internal_testing";
+        effective_from?: string | null;
+        effective_to?: string | null;
+        endpoints: string[];
+        input_modalities?: string[];
+        is_active_gateway: boolean;
+        model_routing_status:
+          | "active"
+          | "deranked_lvl1"
+          | "deranked_lvl2"
+          | "deranked_lvl3"
+          | "disabled";
+        output_modalities?: string[];
+        params: string[];
+        params_detail?: {
+          [key: string]: {
+            [key: string]: unknown;
+          };
+        };
+        provider_model_slug?: string | null;
         provider_routing_status:
           | "active"
           | "deranked_lvl1"
@@ -7797,6 +8773,17 @@ export async function listTeamModels(
   args: ListTeamModelsParams = {},
 ): Promise<{
   availability_mode: "active" | "all";
+  collection?:
+    | "text"
+    | "images"
+    | "videos"
+    | "audio"
+    | "embeddings"
+    | "rerank"
+    | "ocr"
+    | "music"
+    | "batches"
+    | null;
   limit: number;
   models: {
     aliases?: string[];
@@ -7826,6 +8813,9 @@ export async function listTeamModels(
       replacement_model_id?: string | null;
       retirement_date?: string | null;
       status?: "active" | "deprecated" | "retired" | null;
+    };
+    links?: {
+      endpoints?: string;
     };
     model_id?: string;
     name?: string | null;
@@ -7888,6 +8878,7 @@ export async function listTeamModels(
       effective_from?: string | null;
       effective_to?: string | null;
       endpoints: string[];
+      input_modalities?: string[];
       is_active_gateway: boolean;
       model_routing_status:
         | "active"
@@ -7895,12 +8886,14 @@ export async function listTeamModels(
         | "deranked_lvl2"
         | "deranked_lvl3"
         | "disabled";
+      output_modalities?: string[];
       params: string[];
       params_detail?: {
         [key: string]: {
           [key: string]: unknown;
         };
       };
+      provider_model_slug?: string | null;
       provider_routing_status:
         | "active"
         | "deranked_lvl1"
@@ -7956,6 +8949,17 @@ export async function listTeamModels(
   const resolvedPath = "/gateway/models/me";
   return client.request<{
     availability_mode: "active" | "all";
+    collection?:
+      | "text"
+      | "images"
+      | "videos"
+      | "audio"
+      | "embeddings"
+      | "rerank"
+      | "ocr"
+      | "music"
+      | "batches"
+      | null;
     limit: number;
     models: {
       aliases?: string[];
@@ -7985,6 +8989,9 @@ export async function listTeamModels(
         replacement_model_id?: string | null;
         retirement_date?: string | null;
         status?: "active" | "deprecated" | "retired" | null;
+      };
+      links?: {
+        endpoints?: string;
       };
       model_id?: string;
       name?: string | null;
@@ -8047,6 +9054,7 @@ export async function listTeamModels(
         effective_from?: string | null;
         effective_to?: string | null;
         endpoints: string[];
+        input_modalities?: string[];
         is_active_gateway: boolean;
         model_routing_status:
           | "active"
@@ -8054,12 +9062,14 @@ export async function listTeamModels(
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
+        output_modalities?: string[];
         params: string[];
         params_detail?: {
           [key: string]: {
             [key: string]: unknown;
           };
         };
+        provider_model_slug?: string | null;
         provider_routing_status:
           | "active"
           | "deranked_lvl1"

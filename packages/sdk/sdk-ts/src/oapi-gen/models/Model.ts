@@ -27,6 +27,9 @@ export interface Model {
     retirement_date?: string | null;
     status?: "active" | "deprecated" | "retired" | null;
   };
+  links?: {
+    endpoints?: string;
+  };
   model_id?: string;
   name?: string | null;
   organisation_colour?: string | null;
@@ -88,6 +91,7 @@ export interface Model {
     effective_from?: string | null;
     effective_to?: string | null;
     endpoints: string[];
+    input_modalities?: string[];
     is_active_gateway: boolean;
     model_routing_status:
       | "active"
@@ -95,12 +99,14 @@ export interface Model {
       | "deranked_lvl2"
       | "deranked_lvl3"
       | "disabled";
+    output_modalities?: string[];
     params: string[];
     params_detail?: {
       [key: string]: {
         [key: string]: unknown;
       };
     };
+    provider_model_slug?: string | null;
     provider_routing_status:
       | "active"
       | "deranked_lvl1"

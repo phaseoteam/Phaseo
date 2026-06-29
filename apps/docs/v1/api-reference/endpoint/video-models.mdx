@@ -19,7 +19,7 @@ Each item includes capability metadata such as:
 - `providers`, each with provider-level supported parameter detail
 - `pricing`
 
-`supported_parameters` is the OpenRouter-compatible alias for `supported_params`. `supported_params_detail` and `supported_parameters_detail` are aliases for the same structured metadata. New clients should prefer `supported_parameters` and `supported_parameters_detail`; existing clients can continue reading `supported_params` and `supported_params_detail`.
+`supported_parameters` is an alias for `supported_params`. `supported_params_detail` and `supported_parameters_detail` are aliases for the same structured metadata. New clients should prefer `supported_parameters` and `supported_parameters_detail`; existing clients can continue reading `supported_params` and `supported_params_detail`.
 
 These detail maps expose structured constraints such as allowed durations, resolutions, qualities, aspect ratios, voice or audio options when relevant, and provider-specific parameter support when that metadata is available.
 

@@ -624,6 +624,7 @@ public final class Models {
 
 	public static class GatewayModelsResponse {
 		public Object availability_mode;
+		public Object collection;
 		public Integer limit;
 		public java.util.List<Object> models;
 		public Integer offset;
@@ -813,6 +814,7 @@ public final class Models {
 		public String id;
 		public java.util.List<String> input_types;
 		public Models.ModelLifecycle lifecycle;
+		public Object links;
 		public String model_id;
 		public String name;
 		public String organisation_colour;
@@ -841,6 +843,47 @@ public final class Models {
 		public Object status;
 	}
 
+	public static class ModelEndpointCapability {
+		public String availability_reason;
+		public String availability_status;
+		public String capability_id;
+		public String capability_status;
+		public Object collection;
+		public String effective_from;
+		public String effective_to;
+		public String endpoint;
+		public String id;
+		public java.util.List<String> input_modalities;
+		public Boolean is_active_gateway;
+		public String model_routing_status;
+		public java.util.List<String> output_modalities;
+		public java.util.List<String> params;
+		public Object params_detail;
+		public Object pricing;
+		public Object pricing_detail;
+		public String provider_id;
+		public String provider_model_slug;
+		public String provider_name;
+		public String provider_routing_status;
+		public String provider_status;
+		public String public_path;
+		public java.util.List<String> supported_parameters;
+		public Object supported_parameters_detail;
+	}
+
+	public static class ModelEndpointsResponse {
+		public Object architecture;
+		public Object availability_mode;
+		public String canonical_slug;
+		public Integer created;
+		public String description;
+		public java.util.List<Object> endpoints;
+		public String id;
+		public String model_id;
+		public String name;
+		public Boolean ok;
+	}
+
 	public static class ModelId {
 	}
 
@@ -861,10 +904,13 @@ public final class Models {
 		public String effective_from;
 		public String effective_to;
 		public java.util.List<String> endpoints;
+		public java.util.List<String> input_modalities;
 		public Boolean is_active_gateway;
 		public Object model_routing_status;
+		public java.util.List<String> output_modalities;
 		public java.util.List<String> params;
 		public Object params_detail;
+		public String provider_model_slug;
 		public Object provider_routing_status;
 		public Object provider_status;
 		public java.util.List<String> supported_parameters;

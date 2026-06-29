@@ -620,6 +620,7 @@ pub struct GatewayDatetimeToolDefinition {
 
 pub struct GatewayModelsResponse {
 	pub availability_mode: String,
+	pub collection: Option<Option<String>>,
 	pub limit: i64,
 	pub models: Vec<HashMap<String, String>>,
 	pub offset: i64,
@@ -807,6 +808,7 @@ pub struct Model {
 	pub id: Option<String>,
 	pub input_types: Option<Vec<String>>,
 	pub lifecycle: Option<ModelLifecycle>,
+	pub links: Option<HashMap<String, String>>,
 	pub model_id: Option<String>,
 	pub name: Option<Option<String>>,
 	pub organisation_colour: Option<Option<String>>,
@@ -835,6 +837,47 @@ pub struct ModelAvailability {
 	pub status: String,
 }
 
+pub struct ModelEndpointCapability {
+	pub availability_reason: Option<String>,
+	pub availability_status: Option<String>,
+	pub capability_id: String,
+	pub capability_status: Option<String>,
+	pub collection: String,
+	pub effective_from: Option<Option<String>>,
+	pub effective_to: Option<Option<String>>,
+	pub endpoint: String,
+	pub id: String,
+	pub input_modalities: Vec<String>,
+	pub is_active_gateway: Option<bool>,
+	pub model_routing_status: Option<String>,
+	pub output_modalities: Vec<String>,
+	pub params: Option<Vec<String>>,
+	pub params_detail: Option<HashMap<String, String>>,
+	pub pricing: Option<HashMap<String, String>>,
+	pub pricing_detail: Option<HashMap<String, String>>,
+	pub provider_id: String,
+	pub provider_model_slug: Option<Option<String>>,
+	pub provider_name: Option<Option<String>>,
+	pub provider_routing_status: Option<String>,
+	pub provider_status: Option<String>,
+	pub public_path: String,
+	pub supported_parameters: Vec<String>,
+	pub supported_parameters_detail: Option<HashMap<String, String>>,
+}
+
+pub struct ModelEndpointsResponse {
+	pub architecture: Option<HashMap<String, String>>,
+	pub availability_mode: String,
+	pub canonical_slug: String,
+	pub created: Option<Option<i64>>,
+	pub description: Option<String>,
+	pub endpoints: Vec<HashMap<String, String>>,
+	pub id: String,
+	pub model_id: String,
+	pub name: Option<Option<String>>,
+	pub ok: bool,
+}
+
 pub type ModelId = JsonValue;
 
 pub struct ModelLifecycle {
@@ -854,10 +897,13 @@ pub struct ModelProviderAvailability {
 	pub effective_from: Option<Option<String>>,
 	pub effective_to: Option<Option<String>>,
 	pub endpoints: Vec<String>,
+	pub input_modalities: Option<Vec<String>>,
 	pub is_active_gateway: bool,
 	pub model_routing_status: String,
+	pub output_modalities: Option<Vec<String>>,
 	pub params: Vec<String>,
 	pub params_detail: Option<HashMap<String, String>>,
+	pub provider_model_slug: Option<Option<String>>,
 	pub provider_routing_status: String,
 	pub provider_status: String,
 	pub supported_parameters: Option<Vec<String>>,

@@ -276,8 +276,23 @@ public final class Operations {
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Object listModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+	public static Object listLegacyGatewayModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/gateway/models";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listModelCollection(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/models/" + (path != null && path.containsKey("collection") ? path.get("collection") : "");
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listModelEndpoints(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/models/" + (path != null && path.containsKey("author") ? path.get("author") : "") + "/" + (path != null && path.containsKey("slug") ? path.get("slug") : "") + "/endpoints";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object listModels(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/models";
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

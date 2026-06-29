@@ -34,6 +34,6 @@ class ModelsTest < Minitest::Test
     assert_equal "all", response["availability_mode"]
     assert_equal "coming_soon", response["models"][0]["providers"][0]["availability_status"]
     assert_equal "scheduled", response["models"][0]["providers"][0]["availability_reason"]
-    assert_equal [["GET", "/gateway/models", {"availability" => "all"}, nil, nil]], calls
+    assert_equal [["GET", "/models", {"availability" => "all"}, nil, nil]], calls
   end
 end

@@ -19,7 +19,7 @@ paths:
       x-beta: true
       tags:
         - Gateway
-      operationId: listModels
+      operationId: listLegacyGatewayModels
       summary: List gateway models
       description: >-
         Returns shared non-hidden gateway models. Defaults to currently publicly
@@ -372,6 +372,322 @@ paths:
                 $ref: '#/components/schemas/InvalidRequestResponse'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /models:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listModels
+      summary: List gateway models
+      description: >-
+        Returns the shared gateway model catalogue across all supported
+        modalities. Use query filters to narrow by endpoint, modality, provider,
+        lifecycle status, availability, or supported parameter.
+      parameters:
+        - name: endpoints
+          in: query
+          description: Filter by endpoint or capability id.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: input_modalities
+          in: query
+          description: Alias for input_types.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: output_modalities
+          in: query
+          description: Alias for output_types.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: supported_parameters
+          in: query
+          description: Alias for params.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: input_types
+          in: query
+          description: Filter by input modality.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: output_types
+          in: query
+          description: Filter by output modality.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: params
+          in: query
+          description: Filter by supported parameter names or aliases.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider
+          in: query
+          description: Filter by provider id.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          description: Filter by model lifecycle status.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
+        - name: limit
+          in: query
+          description: Limit the number of results.
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          description: Offset for pagination.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 5000
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayModelsResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /models/{collection}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listModelCollection
+      summary: List models by collection
+      description: >-
+        Returns a modality-specific projection of the shared model catalogue.
+        Collections use the same model response shape as /models and include
+        links to per-model endpoint capability records.
+      parameters:
+        - name: collection
+          in: path
+          required: true
+          description: Model collection to list.
+          schema:
+            type: string
+            enum:
+              - text
+              - images
+              - videos
+              - audio
+              - embeddings
+              - rerank
+              - ocr
+              - music
+              - batches
+        - name: supported_parameters
+          in: query
+          description: Alias for params.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: params
+          in: query
+          description: Filter by supported parameter names or aliases.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider
+          in: query
+          description: Filter by provider id.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: availability
+          in: query
+          description: >-
+            Availability filter. active returns publicly routable models only;
+            all includes non-routable availability records.
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 250
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+            maximum: 5000
+      responses:
+        '200':
+          description: Collection model list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayModelsResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Unknown collection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /models/{author}/{slug}/endpoints:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: listModelEndpoints
+      summary: List model endpoint capabilities
+      description: >-
+        Returns provider-specific endpoint capability rows for a single model,
+        including public paths, modalities, supported parameters, availability,
+        routing state, and pricing summary.
+      parameters:
+        - name: author
+          in: path
+          required: true
+          description: Model author or organisation slug.
+          schema:
+            type: string
+        - name: slug
+          in: path
+          required: true
+          description: Model slug.
+          schema:
+            type: string
+        - name: supported_parameters
+          in: query
+          description: Alias for params.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: params
+          in: query
+          description: Filter endpoint rows by supported parameter names or aliases.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: provider
+          in: query
+          description: Filter by provider id.
+          schema:
+            type: array
+            items:
+              type: string
+        - name: availability
+          in: query
+          schema:
+            type: string
+            enum:
+              - active
+              - all
+            default: active
+      responses:
+        '200':
+          description: Model endpoint capability rows
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelEndpointsResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidRequestResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Model not found
           content:
             application/json:
               schema:
@@ -3001,7 +3317,9 @@ paths:
         - Gateway
       operationId: listEndpoints
       summary: List endpoints
-      description: Lists currently exposed gateway endpoint IDs and sample models.
+      description: >-
+        Lists gateway endpoint IDs with catalogue-backed metadata and sample
+        models.
       responses:
         '200':
           description: Endpoint metadata
@@ -3016,6 +3334,23 @@ paths:
                     type: array
                     items:
                       type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        capability_id:
+                          type: string
+                        public_path:
+                          type: string
+                        collection:
+                          type: string
+                        model_count:
+                          type: integer
+                        provider_count:
+                          type: integer
                   sample_models:
                     type: array
                     items:
@@ -3222,6 +3557,12 @@ components:
           type: string
         model_id:
           type: string
+        links:
+          type: object
+          properties:
+            endpoints:
+              type: string
+              description: URL path for this model's provider endpoint capability records.
         name:
           type: string
           nullable: true
@@ -3421,6 +3762,9 @@ components:
         api_provider_name:
           type: string
           nullable: true
+        provider_model_slug:
+          type: string
+          nullable: true
         is_active_gateway:
           type: boolean
         availability_status:
@@ -3502,13 +3846,21 @@ components:
           type: array
           items:
             type: string
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
         params:
           type: array
           items:
             type: string
         supported_parameters:
           type: array
-          description: OpenRouter-compatible alias for params.
+          description: Alias for params.
           items:
             type: string
         params_detail:
@@ -5799,7 +6151,7 @@ components:
             type: string
         supported_parameters:
           type: array
-          description: OpenRouter-compatible alias for supported_params.
+          description: Alias for supported_params.
           items:
             type: string
         supported_params_detail:
@@ -5829,7 +6181,7 @@ components:
             type: string
         supported_parameters:
           type: array
-          description: OpenRouter-compatible alias for supported_params.
+          description: Alias for supported_params.
           items:
             type: string
         supported_params_detail:
@@ -5864,7 +6216,7 @@ components:
             type: string
         supported_parameters:
           type: array
-          description: OpenRouter-compatible alias for supported_params.
+          description: Alias for supported_params.
           items:
             type: string
         supported_params_detail:
@@ -5894,7 +6246,7 @@ components:
             type: string
         supported_parameters:
           type: array
-          description: OpenRouter-compatible alias for supported_params.
+          description: Alias for supported_params.
           items:
             type: string
         supported_params_detail:
@@ -7783,6 +8135,140 @@ components:
           items:
             $ref: '#/components/schemas/WorkspaceActivityEntry'
       additionalProperties: false
+    ModelEndpointCapability:
+      type: object
+      required:
+        - id
+        - endpoint
+        - capability_id
+        - public_path
+        - collection
+        - provider_id
+        - input_modalities
+        - output_modalities
+        - supported_parameters
+      properties:
+        id:
+          type: string
+          example: openai:responses
+        endpoint:
+          type: string
+          example: responses
+        capability_id:
+          type: string
+          example: responses
+        public_path:
+          type: string
+          example: /v1/responses
+        collection:
+          type: string
+          enum:
+            - text
+            - images
+            - videos
+            - audio
+            - embeddings
+            - rerank
+            - ocr
+            - music
+            - batches
+        provider_id:
+          type: string
+          example: openai
+        provider_name:
+          type: string
+          nullable: true
+        provider_model_slug:
+          type: string
+          nullable: true
+        input_modalities:
+          type: array
+          items:
+            type: string
+        output_modalities:
+          type: array
+          items:
+            type: string
+        is_active_gateway:
+          type: boolean
+        availability_status:
+          type: string
+        availability_reason:
+          type: string
+        provider_status:
+          type: string
+        provider_routing_status:
+          type: string
+        model_routing_status:
+          type: string
+        capability_status:
+          type: string
+        effective_from:
+          type: string
+          nullable: true
+        effective_to:
+          type: string
+          nullable: true
+        params:
+          type: array
+          items:
+            type: string
+        params_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        supported_parameters:
+          type: array
+          items:
+            type: string
+        supported_parameters_detail:
+          $ref: '#/components/schemas/SupportedParameterDetails'
+        pricing:
+          type: object
+          additionalProperties: true
+        pricing_detail:
+          type: object
+          additionalProperties: true
+    ModelEndpointsResponse:
+      type: object
+      required:
+        - ok
+        - id
+        - model_id
+        - canonical_slug
+        - availability_mode
+        - endpoints
+      properties:
+        ok:
+          type: boolean
+          example: true
+        id:
+          type: string
+          example: openai/gpt-5-mini
+        model_id:
+          type: string
+          example: openai/gpt-5-mini
+        canonical_slug:
+          type: string
+          example: openai/gpt-5-mini
+        name:
+          type: string
+          nullable: true
+        description:
+          type: string
+        created:
+          type: integer
+          nullable: true
+        architecture:
+          type: object
+          additionalProperties: true
+        availability_mode:
+          type: string
+          enum:
+            - active
+            - all
+        endpoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelEndpointCapability'
     GatewayModelsResponse:
       type: object
       required:
@@ -7809,6 +8295,19 @@ components:
             - active
             - all
           example: active
+        collection:
+          type: string
+          nullable: true
+          enum:
+            - text
+            - images
+            - videos
+            - audio
+            - embeddings
+            - rerank
+            - ocr
+            - music
+            - batches
         limit:
           type: integer
           minimum: 1

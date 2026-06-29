@@ -53,13 +53,13 @@
 		"test": "pnpm test:unit",
 		"pack:dry": "npm pack --dry-run"
 	},
-	"dependencies": {},
 	"devDependencies": {
 		"@types/node": "^25.6.0",
 		"rimraf": "^6.0.0",
 		"ts-node": "^10.9.2",
 		"tsx": "^4.7.0",
-		"typescript": "^6.0.3"
+		"typescript": "^6.0.3",
+		"vitest": "4.1.7"
 	},
 	"repository": {
 		"type": "git",
