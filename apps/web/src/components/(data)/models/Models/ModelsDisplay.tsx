@@ -8,10 +8,12 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	type ReactNode,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import {
 	Search,
@@ -452,12 +454,40 @@ function getModalityIcon(modality: string): LucideIcon {
 	return CircleDot;
 }
 
+function FilterLogo({
+	value,
+	label,
+	checked,
+}: {
+	value: string;
+	label: string;
+	checked: boolean;
+}) {
+	return (
+		<span
+			className={cn(
+				"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5 transition-colors",
+				checked && "border-primary/30 bg-primary/10",
+			)}
+		>
+			<Logo
+				id={value}
+				alt={`${label} logo`}
+				width={14}
+				height={14}
+				className="h-3.5 w-3.5 object-contain"
+			/>
+		</span>
+	);
+}
+
 function FilterCheckboxList({
 	options,
 	selected,
 	onToggle,
 	labelForValue,
 	iconForValue,
+	renderStart,
 	toneForValue,
 	collapsedLimit,
 }: {
@@ -466,6 +496,11 @@ function FilterCheckboxList({
 	onToggle: (value: string) => void;
 	labelForValue?: (value: string) => string;
 	iconForValue?: (value: string) => LucideIcon;
+	renderStart?: (options: {
+		value: string;
+		label: string;
+		checked: boolean;
+	}) => ReactNode;
 	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
@@ -490,6 +525,11 @@ function FilterCheckboxList({
 						? labelForValue(option.value)
 						: toTitleCase(option.value);
 					const Icon = iconForValue?.(option.value);
+					const start = renderStart?.({
+						value: option.value,
+						label,
+						checked,
+					});
 					const tone = toneForValue?.(option.value);
 
 					return (
@@ -506,7 +546,7 @@ function FilterCheckboxList({
 							aria-pressed={checked}
 						>
 							<span className="flex items-center gap-2 min-w-0">
-								{Icon ? (
+								{start ?? (Icon ? (
 									tone ? (
 										<span
 											className={cn(
@@ -525,7 +565,7 @@ function FilterCheckboxList({
 											)}
 										/>
 									)
-								) : null}
+								) : null)}
 								<span className="text-sm truncate">{label}</span>
 							</span>
 							<span
@@ -1615,6 +1655,9 @@ export default function ModelsDisplay({
 							setSelectedProviders(toggleInList(selectedProviders, value))
 						}
 						labelForValue={(value) => value}
+						renderStart={({ value, label, checked }) => (
+							<FilterLogo value={value} label={label} checked={checked} />
+						)}
 						collapsedLimit={5}
 					/>
 				</AccordionContent>
@@ -1654,6 +1697,9 @@ export default function ModelsDisplay({
 							setSelectedCreators(toggleInList(selectedCreators, value))
 						}
 						labelForValue={(value) => value}
+						renderStart={({ value, label, checked }) => (
+							<FilterLogo value={value} label={label} checked={checked} />
+						)}
 						collapsedLimit={5}
 					/>
 				</AccordionContent>
