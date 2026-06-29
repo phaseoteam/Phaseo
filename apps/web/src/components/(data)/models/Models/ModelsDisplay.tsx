@@ -34,7 +34,6 @@ import {
 	Route,
 	Sparkles,
 	Speech,
-	Text as TextIcon,
 	Type as TypeIcon,
 	ImageIcon,
 	Video,
@@ -67,7 +66,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import {
 	Sheet,
@@ -440,7 +438,7 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TextIcon;
+	if (normalized.includes("text")) return TypeIcon;
 	return CircleDot;
 }
 
@@ -635,7 +633,11 @@ function OutputModalityButtonRow({
 				className={cn(
 					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
 					checked
-						? cn("bg-muted text-foreground hover:bg-muted", tone.badgeClassName)
+						? cn(
+							"bg-muted text-foreground hover:bg-muted",
+							tone.badgeClassName,
+							"border-transparent hover:border-transparent",
+						)
 						: "text-muted-foreground hover:text-foreground",
 				)}
 			>
@@ -1407,8 +1409,16 @@ export default function ModelsDisplay({
 				setSort(nextSort === "newest" ? null : nextSort);
 			}}
 		>
-			<SelectTrigger className={triggerClassName}>
-				<SelectValue placeholder="Sort by" />
+			<SelectTrigger
+				className={cn(
+					"border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25",
+					triggerClassName,
+				)}
+			>
+				<span className="flex min-w-0 items-center gap-1.5">
+					<span className="text-muted-foreground">Sort:</span>
+					<span className="truncate">{SORT_OPTION_LABELS[selectedSort]}</span>
+				</span>
 			</SelectTrigger>
 			<SelectContent align="end">
 				{MODELS_SORT_OPTIONS.map((option) => (
@@ -1763,12 +1773,11 @@ export default function ModelsDisplay({
 
 							<div className="ml-auto flex shrink-0 items-center gap-2 2xl:ml-0 2xl:justify-self-end">
 								<div className="hidden 2xl:flex items-center gap-2">
-									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap" aria-hidden="true">
 										<ArrowUpDown className="h-3.5 w-3.5" />
-										Sort
 									</span>
 									{sortSelect(
-										"h-8 w-[170px] rounded-md bg-background text-sm xl:w-[200px]",
+										"h-8 w-[210px] rounded-md bg-background text-sm xl:w-[230px]",
 									)}
 								</div>
 								{showPrimaryHeader ? viewSwitcher : null}
@@ -1793,11 +1802,10 @@ export default function ModelsDisplay({
 								</Button>
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground" aria-hidden="true">
 									<ArrowUpDown className="h-3.5 w-3.5" />
-									Sort
 								</span>
-								{sortSelect("h-8 w-[170px] rounded-md bg-background text-sm sm:w-[200px]")}
+								{sortSelect("h-8 w-[210px] rounded-md bg-background text-sm sm:w-[230px]")}
 							</div>
 						</div>
 					</div>
