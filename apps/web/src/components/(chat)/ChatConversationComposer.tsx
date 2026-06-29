@@ -276,9 +276,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		onFileSelect,
 	} = props;
 	const promptScrollAreaRef = useRef<HTMLDivElement | null>(null);
-	const composerSurfaceRef = useRef<HTMLDivElement | null>(null);
-	const composerResizeAnimationRef = useRef<Animation | null>(null);
-	const previousComposerHeightRef = useRef<number | null>(null);
+	const composerLeftControlsRef = useRef<HTMLDivElement | null>(null);
+	const composerSendControlsRef = useRef<HTMLDivElement | null>(null);
+	const composerLayoutAnimationsRef = useRef<Animation[]>([]);
+	const previousComposerLayoutRectsRef = useRef<Map<string, DOMRect>>(
+		new Map(),
+	);
 	const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
 	const slashQuery = normalizeSlashQuery(composer);
 	const slashMenuOpen = slashQuery !== null;
@@ -519,46 +522,61 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	}, [showEvaluationPrompts]);
 
 	useLayoutEffect(() => {
-		const node = composerSurfaceRef.current;
-		if (!node) return;
+		const animatedElements = [
+			["input", textareaRef.current],
+			["left-controls", composerLeftControlsRef.current],
+			["send-controls", composerSendControlsRef.current],
+		] as const;
+		const nextRects = new Map<string, DOMRect>();
 
-		const nextHeight = node.getBoundingClientRect().height;
-		const previousHeight = previousComposerHeightRef.current;
-		previousComposerHeightRef.current = nextHeight;
+		for (const [key, element] of animatedElements) {
+			if (element) {
+				nextRects.set(key, element.getBoundingClientRect());
+			}
+		}
+
+		const previousRects = previousComposerLayoutRectsRef.current;
+		previousComposerLayoutRectsRef.current = nextRects;
 
 		if (
-			previousHeight === null ||
-			Math.abs(previousHeight - nextHeight) < 1 ||
+			previousRects.size === 0 ||
 			window.matchMedia("(prefers-reduced-motion: reduce)").matches
 		) {
 			return;
 		}
 
-		composerResizeAnimationRef.current?.cancel();
-		const animation = node.animate(
-			[
-				{ height: `${previousHeight}px`, overflow: "hidden" },
-				{ height: `${nextHeight}px`, overflow: "hidden" },
-			],
-			{
-				duration: 180,
-				easing: "cubic-bezier(0.23, 1, 0.32, 1)",
-			},
-		);
-		composerResizeAnimationRef.current = animation;
+		for (const animation of composerLayoutAnimationsRef.current) {
+			animation.cancel();
+		}
+		composerLayoutAnimationsRef.current = [];
 
-		const clearAnimation = () => {
-			if (composerResizeAnimationRef.current === animation) {
-				composerResizeAnimationRef.current = null;
-			}
-		};
+		for (const [key, element] of animatedElements) {
+			const previousRect = previousRects.get(key);
+			const nextRect = nextRects.get(key);
+			if (!element || !previousRect || !nextRect) continue;
 
-		animation.addEventListener("finish", clearAnimation, { once: true });
-		animation.addEventListener("cancel", clearAnimation, { once: true });
+			const deltaX = previousRect.left - nextRect.left;
+			const deltaY = previousRect.top - nextRect.top;
+			if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) continue;
+
+			const animation = element.animate(
+				[
+					{ transform: `translate(${deltaX}px, ${deltaY}px)` },
+					{ transform: "translate(0, 0)" },
+				],
+				{
+					duration: 180,
+					easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+				},
+			);
+			composerLayoutAnimationsRef.current.push(animation);
+		}
 
 		return () => {
-			animation.removeEventListener("finish", clearAnimation);
-			animation.removeEventListener("cancel", clearAnimation);
+			for (const animation of composerLayoutAnimationsRef.current) {
+				animation.cancel();
+			}
+			composerLayoutAnimationsRef.current = [];
 		};
 	}, [attachments.length, composerExpanded, sendGateType, slashMenuOpen]);
 
@@ -626,10 +644,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					</ScrollArea>
 				) : null}
 				<div
-					ref={composerSurfaceRef}
 					data-chat-composer-surface="true"
 					className={cn(
-						"overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-[background-color,border-color,box-shadow,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+						"rounded-2xl border border-border bg-card shadow-sm transition-colors duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
 						composerExpanded
 							? "flex flex-col px-3 py-2"
 							: "flex flex-col gap-1 px-2 py-1 sm:flex-row sm:items-center",
@@ -758,10 +775,10 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								onSubmit();
 							}
 						}}
-						rows={composerExpanded ? 2 : 1}
+						rows={1}
 						placeholder={placeholder}
 						className={cn(
-							"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
+							"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
 							composerExpanded
 								? "min-h-[56px] px-1 py-2"
 								: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
@@ -823,8 +840,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						)}
 					>
 						<div
+							ref={composerLeftControlsRef}
 							className={cn(
-								"flex items-center gap-1",
+								"flex items-center gap-1 will-change-transform",
 								composerExpanded ? "sm:gap-2" : "order-1",
 							)}
 						>
@@ -992,8 +1010,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							</Popover>
 						</div>
 						<div
+							ref={composerSendControlsRef}
 							className={cn(
-								"flex items-center gap-2",
+								"flex items-center gap-2 will-change-transform",
 								composerExpanded ? "" : "order-3",
 							)}
 						>
