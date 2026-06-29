@@ -14,7 +14,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
 	Brain,
-	Check,
 	Clock3,
 	Cpu,
 	Info,
@@ -22,7 +21,6 @@ import {
 	Mic,
 	Paperclip,
 	SendHorizontal,
-	Square,
 	type LucideIcon,
 	Search,
 	Settings2,
@@ -41,11 +39,6 @@ import {
 	AttachmentTitle,
 } from "@/components/ui/attachment";
 import { Button } from "@/components/ui/button";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import {
 	ScrollArea,
 	ScrollBar,
@@ -168,6 +161,7 @@ const EVALUATION_PROMPTS = [
 ];
 
 const PROMPT_SCROLL_COPIES = [0, 1, 2];
+const COMPOSER_LAYOUT_ANIMATION_MS = 220;
 
 function normalizeSlashQuery(value: string) {
 	if (!value.startsWith("/")) return null;
@@ -253,9 +247,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		apiServerToolsEnabled,
 		onApiServerToolsEnabledChange,
 		showEvaluationPrompts,
-		reasoningEnabled,
-		reasoningPickerOpen,
-		onReasoningPickerOpenChange,
 		reasoningSelection,
 		reasoningOptions,
 		onReasoningSelection,
@@ -288,6 +279,19 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	const hasComposerContent =
 		composer.trim().length > 0 || attachments.length > 0;
 	const composerExpanded = hasComposerContent || slashMenuOpen;
+
+	useEffect(() => {
+		setSlashSelectedIndex(0);
+	}, [slashQuery]);
+
+	const openSlashCommandMenu = useCallback(() => {
+		if (!slashMenuOpen) {
+			onComposerChange("/");
+		}
+		requestAnimationFrame(() => {
+			textareaRef.current?.focus();
+		});
+	}, [onComposerChange, slashMenuOpen, textareaRef]);
 
 	const clearSlashCommand = useCallback(() => {
 		if (slashMenuOpen) {
@@ -565,7 +569,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					{ transform: "translate(0, 0)" },
 				],
 				{
-					duration: 180,
+					duration: COMPOSER_LAYOUT_ANIMATION_MS,
 					easing: "cubic-bezier(0.23, 1, 0.32, 1)",
 				},
 			);
@@ -670,16 +674,16 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					/>
 					{slashMenuOpen ? (
 						<div
-							className="mb-2 w-full overflow-hidden rounded-xl border border-border bg-background shadow-sm"
+							className="mb-2 w-full overflow-hidden rounded-xl border border-border bg-background/96 shadow-lg shadow-foreground/5"
 							role="listbox"
 							aria-label="Chat commands"
 						>
 							<div className="flex items-center justify-between border-b border-border px-3 py-2">
 								<span className="text-xs font-medium text-muted-foreground">
-									Commands
+									/ Commands
 								</span>
 								<span className="text-xs text-muted-foreground">
-									Enter to apply
+									Arrow keys + Enter
 								</span>
 							</div>
 							<div className="max-h-64 overflow-y-auto p-1">
@@ -778,7 +782,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						rows={1}
 						placeholder={placeholder}
 						className={cn(
-							"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
+							"resize-none border-0 !bg-transparent shadow-none transition-[min-height,padding] duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] will-change-transform focus-visible:ring-0 motion-reduce:transition-none dark:!bg-transparent",
 							composerExpanded
 								? "min-h-[56px] px-1 py-2"
 								: "order-1 min-h-9 w-full px-2 py-2 sm:order-2 sm:flex-1",
@@ -850,6 +854,20 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								<TooltipTrigger asChild>
 									<Button
 										variant="ghost"
+										size="icon"
+										className="h-8 w-8"
+										onClick={openSlashCommandMenu}
+										aria-label="Open command menu"
+									>
+										<span className="text-lg leading-none">/</span>
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Open commands</TooltipContent>
+							</Tooltip>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="ghost"
 										onClick={onOpenModelPicker}
 										className="h-8 px-2 gap-1.5"
 									>
@@ -877,137 +895,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											: selectedModelId || "Select model"}
 									</TooltipContent>
 							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										variant="ghost"
-										size="icon"
-										className="h-8 w-8"
-										disabled={!isUnified}
-										onClick={() => fileInputRef.current?.click()}
-									>
-										<Paperclip className="h-4 w-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									{isUnified ? "Add files" : "Not available in this room"}
-								</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										variant="ghost"
-										size="icon"
-										disabled={isStartingRecording}
-										className={cn(
-											"h-8 w-8",
-											isRecording
-												? "bg-primary/12 text-primary hover:bg-primary/20 hover:text-primary"
-												: "",
-										)}
-										onClick={onToggleRecording}
-										aria-label={
-											isRecording ? "Stop recording" : "Record audio"
-										}
-									>
-										{isRecording ? (
-											<Square className="h-3.5 w-3.5 fill-current" />
-										) : (
-											<Mic className="h-4 w-4" />
-										)}
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									{isRecording
-										? "Stop recording and attach audio"
-										: recordingSupported
-											? "Record and attach audio"
-											: "Recording unavailable in this browser context, click to add audio file"}
-								</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<Button
-										variant="ghost"
-										size="icon"
-										disabled={!isUnified}
-										className={cn(
-											"h-8 w-8",
-											apiServerToolsEnabled && isUnified
-												? "bg-muted text-foreground"
-												: "",
-										)}
-										onClick={() => {
-											if (!isUnified) return;
-											const next = !apiServerToolsEnabled;
-											onApiServerToolsEnabledChange?.(next);
-										}}
-									>
-										<Clock3 className="h-4 w-4" />
-									</Button>
-								</TooltipTrigger>
-								<TooltipContent>
-									{isUnified
-										? apiServerToolsEnabled
-											? "Disable API server tools"
-											: "Enable API server tools"
-										: "Not available in this room"}
-								</TooltipContent>
-							</Tooltip>
-							<Popover
-								open={reasoningPickerOpen}
-								onOpenChange={onReasoningPickerOpenChange}
-							>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<PopoverTrigger asChild>
-											<Button
-												variant="ghost"
-												size="icon"
-												className={cn(
-													"h-8 w-8",
-													reasoningEnabled
-														? "bg-muted text-foreground"
-														: "",
-												)}
-											>
-												<Brain className="h-4 w-4" />
-											</Button>
-										</PopoverTrigger>
-									</TooltipTrigger>
-									<TooltipContent>
-										Reasoning:{" "}
-										{reasoningOptions.find(
-											(option) => option.value === reasoningSelection,
-										)?.label ?? "Medium"}
-									</TooltipContent>
-								</Tooltip>
-								<PopoverContent align="start" className="w-40 p-1">
-									<div className="grid gap-0.5">
-										{reasoningOptions.map((option) => (
-											<Button
-												key={option.value}
-												type="button"
-												variant="ghost"
-												className="h-8 w-full justify-between px-2 text-sm"
-												onClick={() => onReasoningSelection(option.value)}
-											>
-												<span className="flex-1 text-left">
-													{option.label}
-												</span>
-												<Check
-													className={cn(
-														"ml-2 h-3.5 w-3.5 shrink-0",
-														reasoningSelection === option.value
-															? "opacity-100"
-															: "opacity-0",
-													)}
-												/>
-											</Button>
-										))}
-									</div>
-								</PopoverContent>
-							</Popover>
 						</div>
 						<div
 							ref={composerSendControlsRef}
