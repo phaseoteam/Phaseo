@@ -524,7 +524,9 @@ begin
                   'price_per_unit', r.price_per_unit,
                   'currency', r.currency,
                   'match', r.match,
-                  'priority', r.priority
+                  'priority', r.priority,
+                  'billing_timestamp_basis', coalesce(r.billing_timestamp_basis, 'request_start'),
+                  'time_windows', coalesce(r.time_windows, '[]'::jsonb)
                 )
                 order by r.priority desc, coalesce(r.effective_from, now() at time zone 'utc') desc
               ) as items,

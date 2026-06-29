@@ -15,7 +15,24 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00Z"
+      "effective_from": "2026-04-24T00:00:00Z",
+      "billing_timestamp_basis": "request_start",
+      "time_windows": [
+        {
+          "label": "peak",
+          "timezone": "UTC",
+          "start_time": "01:00",
+          "end_time": "04:00",
+          "price_per_unit": 0.28
+        },
+        {
+          "label": "peak",
+          "timezone": "UTC",
+          "start_time": "06:00",
+          "end_time": "10:00",
+          "price_per_unit": 0.28
+        }
+      ]
     },
     {
       "meter": "cached_read_text_tokens",
@@ -27,7 +44,24 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00Z"
+      "effective_from": "2026-04-24T00:00:00Z",
+      "billing_timestamp_basis": "request_start",
+      "time_windows": [
+        {
+          "label": "peak",
+          "timezone": "UTC",
+          "start_time": "01:00",
+          "end_time": "04:00",
+          "price_per_unit": 0.0056
+        },
+        {
+          "label": "peak",
+          "timezone": "UTC",
+          "start_time": "06:00",
+          "end_time": "10:00",
+          "price_per_unit": 0.0056
+        }
+      ]
     },
     {
       "meter": "output_text_tokens",
@@ -39,7 +73,24 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-24T00:00:00Z"
+      "effective_from": "2026-04-24T00:00:00Z",
+      "billing_timestamp_basis": "request_start",
+      "time_windows": [
+        {
+          "label": "peak",
+          "timezone": "UTC",
+          "start_time": "01:00",
+          "end_time": "04:00",
+          "price_per_unit": 0.56
+        },
+        {
+          "label": "peak",
+          "timezone": "UTC",
+          "start_time": "06:00",
+          "end_time": "10:00",
+          "price_per_unit": 0.56
+        }
+      ]
     }
   ]
 }

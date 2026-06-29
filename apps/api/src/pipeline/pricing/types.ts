@@ -15,6 +15,21 @@ export type PriceBand = {
     conditions: unknown[]; // your JSONB array
 };
 
+export type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+export type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: string | number | null;
+    priority?: number | null;
+};
+
 export type PricingDimensionKey =
     | "input_tokens"
     | "input_characters"
@@ -81,6 +96,8 @@ export type PriceRule = {
     currency: string;             // USD
     match: Condition[];           // DB: match[]
     priority: number;             // higher wins
+    billing_timestamp_basis?: PricingTimestampBasis;
+    time_windows?: PricingTimeWindow[];
 
     /** Optional metadata from DB row (id) */
     id?: string;
@@ -108,6 +125,13 @@ export type PricingBreakdownLine = {
     rule_priority: number;
     rule_id?: string;
     line_nanos?: number;
+    billing_timestamp_basis?: PricingTimestampBasis;
+    pricing_time_window?: {
+        label: string;
+        timezone: "UTC";
+        start_time: string;
+        end_time: string;
+    } | null;
 };
 
 export type PricingResult = {

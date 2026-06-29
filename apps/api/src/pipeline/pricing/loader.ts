@@ -52,7 +52,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
         const supabase = getSupabaseAdmin();
         const { data, error } = await supabase
             .from("data_api_pricing_rules")
-            .select("rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, match, priority, effective_from, effective_to, updated_at")
+            .select("rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, match, priority, effective_from, effective_to, billing_timestamp_basis, time_windows, updated_at")
             .eq("model_key", modelKey)
             .eq("capability_id", endpoint)
             .or([
@@ -82,6 +82,8 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             currency: r.currency ?? "USD",
             match: Array.isArray(r.match) ? r.match : [],
             priority: Number(r.priority ?? 100),
+            billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
+            time_windows: Array.isArray(r.time_windows) ? r.time_windows : [],
         }));
 
         const version = new Date(

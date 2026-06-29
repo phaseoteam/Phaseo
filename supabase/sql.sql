@@ -80,6 +80,8 @@ CREATE TABLE public.data_api_pricing_rules (
   priority integer NOT NULL DEFAULT 100,
   effective_from timestamp with time zone,
   effective_to timestamp with time zone,
+  billing_timestamp_basis text NOT NULL DEFAULT 'request_start'::text,
+  time_windows jsonb NOT NULL DEFAULT '[]'::jsonb,
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT data_api_pricing_rules_pkey PRIMARY KEY (rule_id)
 );

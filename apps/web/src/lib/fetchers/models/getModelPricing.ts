@@ -17,6 +17,15 @@ export interface PricingRule {
     priority: number;
     effective_from: string;     // timestamptz
     effective_to: string | null;
+    billing_timestamp_basis?: "request_start" | "provider_accept" | "completion" | "unknown";
+    time_windows?: Array<{
+        label: string;
+        timezone: "UTC";
+        start_time: string;
+        end_time: string;
+        price_per_unit?: number | string | null;
+        priority?: number | null;
+    }>;
 }
 
 function extractModelIdFromModelKey(modelKey: string): string {
@@ -601,6 +610,8 @@ export default async function getModelPricing(
         priority: Number(x.priority ?? 100),
         effective_from: x.effective_from,
         effective_to: x.effective_to ?? null,
+        billing_timestamp_basis: x.billing_timestamp_basis ?? "request_start",
+        time_windows: Array.isArray(x.time_windows) ? x.time_windows : [],
     });
 
     const nowMs = Date.now();
@@ -609,7 +620,7 @@ export default async function getModelPricing(
         const { data: r, error: prErr } = await supabase
             .from("data_api_pricing_rules")
             .select(
-                "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match"
+                "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows"
             )
             .in("model_key", modelKeys)
             .or(activeWindowClause)
@@ -648,7 +659,7 @@ export default async function getModelPricing(
             const { data: fallbackRows, error: fallbackError } = await supabase
                 .from("data_api_pricing_rules")
                 .select(
-                    "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match"
+                    "rule_id, model_key, pricing_plan, meter, unit, unit_size, price_per_unit, currency, note, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows"
                 )
                 .like("model_key", `${prefix}%`)
                 .or(activeWindowClause)

@@ -191,6 +191,8 @@ function digestRule(r: any) {
         effective_from: normalizeTimestamp(r.effective_from),
         effective_to: normalizeTimestamp(r.effective_to),
         conditions: deepSortObjectKeys(r.match ?? []),
+        billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
+        time_windows: deepSortObjectKeys(r.time_windows ?? []),
     };
     return createHash("md5").update(JSON.stringify(payload)).digest("hex");
 }
@@ -217,7 +219,24 @@ type PricingJSON = {
         priority?: number;
         effective_from?: string | null;
         effective_to?: string | null;
+        billing_timestamp_basis?: PricingTimestampBasis;
+        time_windows?: PricingTimeWindow[];
     }>;
+};
+
+type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: number | string | null;
+    priority?: number | null;
 };
 
 type PricingMatch = {
@@ -248,6 +267,8 @@ type PricingRuleRow = {
     priority: number;
     effective_from: string | null;
     effective_to: string | null;
+    billing_timestamp_basis: PricingTimestampBasis;
+    time_windows: PricingTimeWindow[];
 };
 
 export async function loadPricing(
@@ -344,6 +365,8 @@ export async function loadPricing(
                         priority: prio,
                         effective_from: normalizeTimestamp(r.effective_from),
                         effective_to: normalizeTimestamp(r.effective_to),
+                        billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
+                        time_windows: Array.isArray(r.time_windows) ? r.time_windows : [],
                     });
                 }
 

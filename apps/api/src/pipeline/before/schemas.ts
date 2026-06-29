@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import type { PriceCard } from "../pricing";
-import type { PriceRule, PricingDimensionKey } from "../pricing/types";
+import type { PriceRule, PricingDimensionKey, PricingTimestampBasis } from "../pricing/types";
 import type {
     GateCheck,
     ByokKeyMeta,
@@ -84,6 +84,18 @@ const priceRuleSchema = z
         currency: z.string().default("USD"),
         match: z.array(z.any()).optional().default([]),
         priority: z.coerce.number().optional().default(100),
+        billing_timestamp_basis: z
+            .enum(["request_start", "provider_accept", "completion", "unknown"])
+            .optional()
+            .default("request_start"),
+        time_windows: z.array(z.object({
+            label: z.string(),
+            timezone: z.literal("UTC"),
+            start_time: z.string(),
+            end_time: z.string(),
+            price_per_unit: z.union([z.string(), z.number()]).nullable().optional(),
+            priority: z.coerce.number().nullable().optional(),
+        })).optional().default([]),
         id: z.string().optional(),
     })
     .transform<PriceRule>((rule) => ({
@@ -95,6 +107,8 @@ const priceRuleSchema = z
         currency: rule.currency,
         match: rule.match,
         priority: rule.priority,
+        billing_timestamp_basis: rule.billing_timestamp_basis as PricingTimestampBasis,
+        time_windows: rule.time_windows,
         id: rule.id,
     }));
 
