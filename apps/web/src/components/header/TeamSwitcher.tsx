@@ -450,7 +450,7 @@ export default function TeamSwitcher({
 					>
 						<div className="flex items-center justify-between w-full">
 							<div className="flex items-center gap-2">
-								<LifeBuoy className="h-4 w-4 text-primary" />
+								<LifeBuoy className="h-4 w-4" />
 								<span>Support</span>
 							</div>
 							<span
