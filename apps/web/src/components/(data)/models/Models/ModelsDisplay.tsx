@@ -1762,37 +1762,41 @@ export default function ModelsDisplay({
 					</div>
 
 					<div className="hidden md:block">
-						<div className="hidden xl:grid xl:grid-cols-[auto_minmax(22rem,32rem)_auto] xl:items-center xl:gap-4">
-							<div className="min-w-0 shrink-0 xl:flex xl:h-8 xl:items-center">
-								{showPrimaryHeader ? (
-									<h1 className="font-bold text-xl leading-8">Models</h1>
-								) : null}
+						<div className="hidden lg:block">
+							<div className="flex items-center justify-between gap-4">
+								<div className="min-w-0 shrink-0 flex h-8 items-center">
+									{showPrimaryHeader ? (
+										<h1 className="font-bold text-xl leading-8">Models</h1>
+									) : null}
+								</div>
+
+								<div className="relative w-full max-w-[28rem]">
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+									<Input
+										placeholder="Search"
+										value={search}
+										onChange={(e) =>
+											setSearch(e.target.value || null, {
+												limitUrlUpdates: debounce(250),
+											})
+										}
+										className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+										style={{ minWidth: 0 }}
+									/>
+								</div>
 							</div>
 
-							<div className="relative min-w-0 xl:w-full">
-								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-								<Input
-									placeholder="Search"
-									value={search}
-									onChange={(e) =>
-										setSearch(e.target.value || null, {
-											limitUrlUpdates: debounce(250),
-										})
-									}
-									className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
-									style={{ minWidth: 0 }}
-								/>
-							</div>
-
-							<div className="flex shrink-0 items-center justify-end gap-2">
+							<div className="mt-2 flex items-center justify-between gap-4">
 								{sortSelect(
 									"h-8 w-[190px] rounded-md bg-background text-sm 2xl:w-[210px]",
 								)}
-								{showPrimaryHeader ? viewSwitcher : null}
+								<div className="flex shrink-0 items-center justify-end gap-2">
+									{showPrimaryHeader ? viewSwitcher : null}
+								</div>
 							</div>
 						</div>
 
-						<div className="xl:hidden">
+						<div className="lg:hidden">
 							<div className="flex h-8 items-center">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
