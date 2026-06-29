@@ -212,6 +212,14 @@ export function checkPricingEntrySafety(p: any): string[] {
                                 );
                             }
                         }
+                        if (window?.priority !== undefined && window?.priority !== null) {
+                            const priority = parseNumericValue(window.priority);
+                            if (priority === undefined || !Number.isInteger(priority)) {
+                                errs.push(
+                                    `pricing: time window ${index} invalid priority for ${api_provider_id ?? '?'}:${model_id ?? '?'}:${endpoint ?? '?'}:${meter}`
+                                );
+                            }
+                        }
                     }
                 }
             }

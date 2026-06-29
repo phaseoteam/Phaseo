@@ -220,7 +220,15 @@ async function handlePricingCalculate(req: Request) {
 
     try {
         const body = await req.json();
-        const { provider, model, endpoint, usage, request_started_at } = body;
+        const {
+            provider,
+            model,
+            endpoint,
+            usage,
+            request_started_at,
+            provider_accepted_at,
+            completed_at,
+        } = body;
 
         if (!provider || !model || !endpoint || !usage) {
             return json(
@@ -242,10 +250,15 @@ async function handlePricingCalculate(req: Request) {
         }
 
         // Calculate pricing
+        const pricingOptions: Record<string, unknown> = {};
+        if (request_started_at != null) pricingOptions.request_started_at = request_started_at;
+        if (provider_accepted_at != null) pricingOptions.provider_accepted_at = provider_accepted_at;
+        if (completed_at != null) pricingOptions.completed_at = completed_at;
+
         const result = computeBillSummary(
             usage,
             card,
-            request_started_at ? { request_started_at } : {},
+            pricingOptions,
             "standard",
         );
 

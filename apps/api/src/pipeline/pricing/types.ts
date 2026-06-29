@@ -26,7 +26,7 @@ export type PricingTimeWindow = {
     timezone: "UTC";
     start_time: string;
     end_time: string;
-    price_per_unit?: string | number | null;
+    price_per_unit?: string | null;
     priority?: number | null;
 };
 
@@ -126,6 +126,7 @@ export type PricingBreakdownLine = {
     rule_id?: string;
     line_nanos?: number;
     billing_timestamp_basis?: PricingTimestampBasis;
+    billing_timestamp_basis_configured?: PricingTimestampBasis;
     pricing_time_window?: {
         label: string;
         timezone: "UTC";

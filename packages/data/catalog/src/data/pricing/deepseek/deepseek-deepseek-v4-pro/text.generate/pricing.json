@@ -90,27 +90,10 @@
       "price_per_unit": 0.435,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.87 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-31T15:59:00Z",
-      "billing_timestamp_basis": "request_start",
-      "time_windows": [
-        {
-          "label": "peak",
-          "timezone": "UTC",
-          "start_time": "01:00",
-          "end_time": "04:00",
-          "price_per_unit": 0.87
-        },
-        {
-          "label": "peak",
-          "timezone": "UTC",
-          "start_time": "06:00",
-          "end_time": "10:00",
-          "price_per_unit": 0.87
-        }
-      ]
+      "effective_from": "2026-05-31T15:59:00Z"
     },
     {
       "meter": "cached_read_text_tokens",
@@ -119,27 +102,10 @@
       "price_per_unit": 0.003625,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $0.00725 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-31T15:59:00Z",
-      "billing_timestamp_basis": "request_start",
-      "time_windows": [
-        {
-          "label": "peak",
-          "timezone": "UTC",
-          "start_time": "01:00",
-          "end_time": "04:00",
-          "price_per_unit": 0.00725
-        },
-        {
-          "label": "peak",
-          "timezone": "UTC",
-          "start_time": "06:00",
-          "end_time": "10:00",
-          "price_per_unit": 0.00725
-        }
-      ]
+      "effective_from": "2026-05-31T15:59:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -148,27 +114,10 @@
       "price_per_unit": 0.87,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": null,
+      "note": "Pending DeepSeek peak pricing announced 2026-06-29: UTC windows 01:00-04:00 and 06:00-10:00 will price this meter at $1.74 per 1M tokens once the provider effective date is known.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-05-31T15:59:00Z",
-      "billing_timestamp_basis": "request_start",
-      "time_windows": [
-        {
-          "label": "peak",
-          "timezone": "UTC",
-          "start_time": "01:00",
-          "end_time": "04:00",
-          "price_per_unit": 1.74
-        },
-        {
-          "label": "peak",
-          "timezone": "UTC",
-          "start_time": "06:00",
-          "end_time": "10:00",
-          "price_per_unit": 1.74
-        }
-      ]
+      "effective_from": "2026-05-31T15:59:00Z"
     }
   ]
 }

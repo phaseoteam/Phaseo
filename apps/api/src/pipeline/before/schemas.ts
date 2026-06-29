@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import type { PriceCard } from "../pricing";
-import type { PriceRule, PricingDimensionKey, PricingTimestampBasis } from "../pricing/types";
+import type { PriceRule, PricingDimensionKey, PricingTimestampBasis, PricingTimeWindow } from "../pricing/types";
 import type {
     GateCheck,
     ByokKeyMeta,
@@ -74,6 +74,10 @@ const gateCheckSchema = z
         };
     });
 
+const utcMinuteTimeSchema = z
+    .string()
+    .regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, "Expected HH:mm");
+
 const priceRuleSchema = z
     .object({
         pricing_plan: z.string(),
@@ -91,9 +95,10 @@ const priceRuleSchema = z
         time_windows: z.array(z.object({
             label: z.string(),
             timezone: z.literal("UTC"),
-            start_time: z.string(),
-            end_time: z.string(),
-            price_per_unit: z.union([z.string(), z.number()]).nullable().optional(),
+            start_time: utcMinuteTimeSchema,
+            end_time: utcMinuteTimeSchema,
+            price_per_unit: z.union([z.string(), z.number()]).nullable().optional()
+                .transform((value) => value == null ? value : String(value)),
             priority: z.coerce.number().nullable().optional(),
         })).optional().default([]),
         id: z.string().optional(),
@@ -108,7 +113,13 @@ const priceRuleSchema = z
         match: rule.match,
         priority: rule.priority,
         billing_timestamp_basis: rule.billing_timestamp_basis as PricingTimestampBasis,
-        time_windows: rule.time_windows,
+        time_windows: rule.time_windows.map((window) => ({
+            ...window,
+            price_per_unit:
+                window.price_per_unit === undefined || window.price_per_unit === null
+                    ? window.price_per_unit
+                    : String(window.price_per_unit),
+        } as PricingTimeWindow)),
         id: rule.id,
     }));
 

@@ -2,6 +2,38 @@ alter table if exists public.data_api_pricing_rules
   add column if not exists billing_timestamp_basis text not null default 'request_start',
   add column if not exists time_windows jsonb not null default '[]'::jsonb;
 
+create or replace function public.gateway_validate_pricing_time_windows(value jsonb)
+returns boolean
+language sql
+immutable
+as $$
+  select
+    jsonb_typeof(value) = 'array'
+    and not exists (
+      select 1
+      from jsonb_array_elements(value) as item(window)
+      where
+        jsonb_typeof(item.window) is distinct from 'object'
+        or jsonb_typeof(item.window->'label') is distinct from 'string'
+        or btrim(item.window->>'label') = ''
+        or item.window->>'timezone' is distinct from 'UTC'
+        or coalesce(item.window->>'start_time', '') !~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'
+        or coalesce(item.window->>'end_time', '') !~ '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$'
+        or item.window->>'start_time' = item.window->>'end_time'
+        or (
+          item.window ? 'price_per_unit'
+          and jsonb_typeof(item.window->'price_per_unit') not in ('string', 'number', 'null')
+        )
+        or (
+          item.window ? 'priority'
+          and (
+            jsonb_typeof(item.window->'priority') is distinct from 'number'
+            or ((item.window->>'priority')::numeric % 1) <> 0
+          )
+        )
+    );
+$$;
+
 do $$
 begin
   if not exists (
@@ -22,6 +54,16 @@ begin
     alter table public.data_api_pricing_rules
       add constraint data_api_pricing_rules_time_windows_array_check
       check (jsonb_typeof(time_windows) = 'array');
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'data_api_pricing_rules_time_windows_shape_check'
+  ) then
+    alter table public.data_api_pricing_rules
+      add constraint data_api_pricing_rules_time_windows_shape_check
+      check (public.gateway_validate_pricing_time_windows(time_windows));
   end if;
 end $$;
 

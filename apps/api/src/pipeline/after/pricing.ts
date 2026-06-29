@@ -64,13 +64,22 @@ function attachBillingTimestamps(
     options: Record<string, unknown>,
     meta?: PipelineContext["meta"] | null,
 ): Record<string, unknown> {
-    if (!meta) return options;
+    const completedAtMs = meta?.completedAtMs ?? Date.now();
+    if (!meta) {
+        return {
+            ...options,
+            completed_at: completedAtMs,
+            completedAtMs,
+        };
+    }
     return {
         ...options,
         request_started_at: meta.startedAtMs,
         startedAtMs: meta.startedAtMs,
         provider_accepted_at: meta.upstreamStartMs,
         upstreamStartMs: meta.upstreamStartMs,
+        completed_at: completedAtMs,
+        completedAtMs,
     };
 }
 

@@ -3,7 +3,7 @@
 // How: Exposes helpers used by before/execute/after orchestration.
 
 import { getSupabaseAdmin } from "@/runtime/env";
-import type { PriceCard, PriceRule } from "./types";
+import type { PriceCard, PriceRule, PricingTimeWindow } from "./types";
 
 const PRICING_L1_TTL_MS = 60_000;
 const PRICING_L1_NEGATIVE_TTL_MS = 15_000;
@@ -69,6 +69,20 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             return null;
         }
 
+        const normalizeTimeWindows = (value: unknown): PricingTimeWindow[] => {
+            if (!Array.isArray(value)) return [];
+            return value.map((rawWindow) => {
+                const window = rawWindow && typeof rawWindow === "object" ? rawWindow as Record<string, any> : {};
+                return {
+                    ...window,
+                    price_per_unit:
+                        window.price_per_unit === undefined || window.price_per_unit === null
+                            ? window.price_per_unit
+                            : String(window.price_per_unit),
+                } as PricingTimeWindow;
+            });
+        };
+
         const rules: PriceRule[] = (data as any[]).map((r) => ({
             id: String(r.rule_id),
             pricing_plan: r.pricing_plan ?? "standard",
@@ -83,7 +97,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             match: Array.isArray(r.match) ? r.match : [],
             priority: Number(r.priority ?? 100),
             billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
-            time_windows: Array.isArray(r.time_windows) ? r.time_windows : [],
+            time_windows: normalizeTimeWindows(r.time_windows),
         }));
 
         const version = new Date(

@@ -435,13 +435,19 @@ function normalizeTimestampMs(value: unknown): number | null {
     return null;
 }
 
-function resolvePricingTimestampMs(
+type ResolvedPricingTimestamp = {
+    timestampMs: number | null;
+    basis: PricingTimestampBasis;
+};
+
+function resolvePricingTimestamp(
     basis: PricingTimestampBasis | undefined,
     requestOptions?: Record<string, any>,
-): number | null {
+): ResolvedPricingTimestamp {
+    const configuredBasis = basis ?? "request_start";
     const options = requestOptions ?? {};
     const candidates =
-        basis === "provider_accept"
+        configuredBasis === "provider_accept"
             ? [
                 options.provider_accepted_at,
                 options.providerAcceptedAt,
@@ -449,18 +455,19 @@ function resolvePricingTimestampMs(
                 options.upstreamStartedAt,
                 options.upstreamStartMs,
             ]
-            : basis === "completion"
+            : configuredBasis === "completion"
                 ? [
                     options.completed_at,
                     options.completedAt,
                     options.completion_at,
                     options.completionAt,
+                    options.completedAtMs,
                 ]
                 : [];
 
     for (const value of candidates) {
         const ms = normalizeTimestampMs(value);
-        if (ms !== null) return ms;
+        if (ms !== null) return { timestampMs: ms, basis: configuredBasis };
     }
 
     for (const value of [
@@ -471,10 +478,10 @@ function resolvePricingTimestampMs(
         options.startedAtMs,
     ]) {
         const ms = normalizeTimestampMs(value);
-        if (ms !== null) return ms;
+        if (ms !== null) return { timestampMs: ms, basis: "request_start" };
     }
 
-    return null;
+    return { timestampMs: null, basis: configuredBasis };
 }
 
 function parseUtcMinute(value: unknown): number | null {
@@ -493,12 +500,14 @@ function isMinuteInsideWindow(minute: number, startMinute: number, endMinute: nu
 type ResolvedRulePrice = {
     price_per_unit: string;
     billing_timestamp_basis: PricingTimestampBasis;
+    billing_timestamp_basis_configured: PricingTimestampBasis;
     pricing_time_window: PricingBreakdownLine["pricing_time_window"];
 };
 
 function resolveRulePrice(rule: PriceRule, requestOptions?: Record<string, any>): ResolvedRulePrice {
     const basis = rule.billing_timestamp_basis ?? "request_start";
-    const timestampMs = resolvePricingTimestampMs(basis, requestOptions);
+    const resolvedTimestamp = resolvePricingTimestamp(basis, requestOptions);
+    const timestampMs = resolvedTimestamp.timestampMs;
     const windows = Array.isArray(rule.time_windows) ? rule.time_windows : [];
 
     if (timestampMs !== null && windows.length > 0) {
@@ -521,7 +530,8 @@ function resolveRulePrice(rule: PriceRule, requestOptions?: Record<string, any>)
         if (matched && matched.price_per_unit !== undefined && matched.price_per_unit !== null) {
             return {
                 price_per_unit: String(matched.price_per_unit),
-                billing_timestamp_basis: basis,
+                billing_timestamp_basis: resolvedTimestamp.basis,
+                billing_timestamp_basis_configured: basis,
                 pricing_time_window: {
                     label: matched.label,
                     timezone: "UTC",
@@ -534,7 +544,8 @@ function resolveRulePrice(rule: PriceRule, requestOptions?: Record<string, any>)
 
     return {
         price_per_unit: rule.price_per_unit,
-        billing_timestamp_basis: basis,
+        billing_timestamp_basis: resolvedTimestamp.basis,
+        billing_timestamp_basis_configured: basis,
         pricing_time_window: null,
     };
 }
@@ -554,6 +565,7 @@ function priceWithRule(qty: number, rule: PriceRule, requestOptions?: Record<str
         billableUnits,
         price_per_unit: resolvedPrice.price_per_unit,
         billing_timestamp_basis: resolvedPrice.billing_timestamp_basis,
+        billing_timestamp_basis_configured: resolvedPrice.billing_timestamp_basis_configured,
         pricing_time_window: resolvedPrice.pricing_time_window,
         unitPriceNanos,
         lineNanos,
@@ -566,6 +578,7 @@ function priceWithRule(qty: number, rule: PriceRule, requestOptions?: Record<str
         lineCostUsd: formatUsdFromNanosExact(lineNanos),
         lineNanos,
         billingTimestampBasis: resolvedPrice.billing_timestamp_basis,
+        billingTimestampBasisConfigured: resolvedPrice.billing_timestamp_basis_configured,
         pricingTimeWindow: resolvedPrice.pricing_time_window,
     };
 }
@@ -726,6 +739,7 @@ export function computeBillSummary(
                 priority: rule.priority,
                 pricing_plan: rule.pricing_plan,
                 billing_timestamp_basis: priced.billingTimestampBasis,
+                billing_timestamp_basis_configured: priced.billingTimestampBasisConfigured,
                 pricing_time_window: priced.pricingTimeWindow,
             },
             result: {
@@ -750,6 +764,7 @@ export function computeBillSummary(
             rule_priority: rule.priority,
             rule_id: rule.id,
             billing_timestamp_basis: priced.billingTimestampBasis,
+            billing_timestamp_basis_configured: priced.billingTimestampBasisConfigured,
             pricing_time_window: priced.pricingTimeWindow,
         });
     }
@@ -809,6 +824,7 @@ export function computeBill(
         line_cost_usd: line.line_cost_usd,
         line_nanos: line.line_nanos ?? parseUsdToNanos(line.line_cost_usd),
         billing_timestamp_basis: line.billing_timestamp_basis,
+        billing_timestamp_basis_configured: line.billing_timestamp_basis_configured,
         pricing_time_window: line.pricing_time_window ?? null,
     }));
 

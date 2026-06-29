@@ -122,7 +122,7 @@ describe("pricing engine time-windowed rules", () => {
         ]);
     });
 
-    it("falls back to request start when the requested basis timestamp is missing", () => {
+    it("falls back to request start and snapshots the actual basis when the requested basis timestamp is missing", () => {
         const card = makeDeepSeekCard();
         card.rules[0] = {
             ...card.rules[0],
@@ -139,12 +139,130 @@ describe("pricing engine time-windowed rules", () => {
         expect(result.pricing.total_usd_str).toBe("0.87");
         expect(result.pricing.lines[0]).toMatchObject({
             unit_price_usd: "0.870000000",
-            billing_timestamp_basis: "provider_accept",
+            billing_timestamp_basis: "request_start",
+            billing_timestamp_basis_configured: "provider_accept",
             pricing_time_window: {
                 label: "peak",
                 timezone: "UTC",
                 start_time: "06:00",
                 end_time: "10:00",
+            },
+        });
+    });
+
+    it("matches wrap-around UTC windows", () => {
+        const card = makeDeepSeekCard();
+        card.rules[0] = {
+            ...card.rules[0],
+            time_windows: [
+                {
+                    label: "overnight",
+                    timezone: "UTC",
+                    start_time: "22:00",
+                    end_time: "02:00",
+                    price_per_unit: "0.99",
+                },
+            ],
+        };
+
+        const result = computeBillSummary(
+            { input_text_tokens: 1_000_000 },
+            card,
+            { request_started_at: "2026-07-20T23:30:00Z" },
+            "standard",
+        );
+
+        expect(result.lines[0]).toMatchObject({
+            unit_price_usd: "0.990000000",
+            pricing_time_window: {
+                label: "overnight",
+                timezone: "UTC",
+                start_time: "22:00",
+                end_time: "02:00",
+            },
+        });
+    });
+
+    it("treats end_time as an exclusive UTC boundary", () => {
+        const result = computeBillSummary(
+            { input_text_tokens: 1_000_000 },
+            makeDeepSeekCard(),
+            { request_started_at: "2026-07-20T04:00:00Z" },
+            "standard",
+        );
+
+        expect(result.lines[0]).toMatchObject({
+            unit_price_usd: "0.435000000",
+            pricing_time_window: null,
+        });
+    });
+
+    it("falls back to the base price when a matching window has no override price", () => {
+        const card = makeDeepSeekCard();
+        card.rules[0] = {
+            ...card.rules[0],
+            time_windows: [
+                {
+                    label: "metadata-only",
+                    timezone: "UTC",
+                    start_time: "01:00",
+                    end_time: "04:00",
+                    price_per_unit: null,
+                },
+            ],
+        };
+
+        const result = computeBillSummary(
+            { input_text_tokens: 1_000_000 },
+            card,
+            { request_started_at: "2026-07-20T01:30:00Z" },
+            "standard",
+        );
+
+        expect(result.lines[0]).toMatchObject({
+            unit_price_usd: "0.435000000",
+            pricing_time_window: null,
+        });
+    });
+
+    it("uses the highest priority matching window when windows overlap", () => {
+        const card = makeDeepSeekCard();
+        card.rules[0] = {
+            ...card.rules[0],
+            time_windows: [
+                {
+                    label: "broad",
+                    timezone: "UTC",
+                    start_time: "01:00",
+                    end_time: "04:00",
+                    price_per_unit: "0.50",
+                    priority: 1,
+                },
+                {
+                    label: "surge",
+                    timezone: "UTC",
+                    start_time: "02:00",
+                    end_time: "03:00",
+                    price_per_unit: "1.25",
+                    priority: 10,
+                },
+            ],
+        };
+
+        const result = computeBillSummary(
+            { input_text_tokens: 1_000_000 },
+            card,
+            { request_started_at: "2026-07-20T02:30:00Z" },
+            "standard",
+        );
+
+        expect(result.lines[0]).toMatchObject({
+            unit_price_usd: "1.250000000",
+            pricing_time_window: {
+                label: "surge",
+                timezone: "UTC",
+                start_time: "02:00",
+                end_time: "03:00",
             },
         });
     });
