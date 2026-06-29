@@ -48,7 +48,7 @@ jobs:
 
             - name: Restore Hugging Face discovery state cache
               id: hf-model-discovery-state-cache
-              uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
               with:
                   path: scripts/model-discovery/state
                   key: hf-model-discovery-state-${{ github.ref_name }}-${{ github.run_id }}
