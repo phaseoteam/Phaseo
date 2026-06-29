@@ -9,6 +9,7 @@ import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErr
 import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
 import { ArrowDown, Square } from "lucide-react";
 import {
+	DEFAULT_CHAT_PLACEHOLDER,
 	REASONING_OPTIONS,
 	extensionForAudioMimeType,
 	extractClipboardFiles,
@@ -123,8 +124,12 @@ export function ChatConversation({
 	const recordingChunksRef = useRef<Blob[]>([]);
 	const appliedPresetRef = useRef<string | null>(null);
 
-	const placeholder = useMemo(() => {
-		return getRandomPlaceholder();
+	const [placeholder, setPlaceholder] = useState<string>(
+		DEFAULT_CHAT_PLACEHOLDER,
+	);
+
+	useEffect(() => {
+		setPlaceholder(getRandomPlaceholder());
 	}, []);
 	const reasoningSelection: NonNullable<ChatSettings["reasoningEffort"]> =
 		reasoningEffort ?? "medium";

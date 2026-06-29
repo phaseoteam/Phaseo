@@ -42,9 +42,21 @@ test.describe("chat send performance", () => {
 			`/chat?chatPerfAuth=1&model=${encodeURIComponent(CHAT_PERF_MODEL)}`,
 		);
 
+		const acceptCookies = page.getByRole("button", { name: "Accept" });
+		if (await acceptCookies.isVisible().catch(() => false)) {
+			await acceptCookies.click();
+		}
+		await expect(
+			page.getByRole("button", { name: /^GPT 4o Mini/i }).first(),
+		).toBeVisible();
+		await page.waitForTimeout(500);
+
 		const composer = page.locator("[data-chat-composer-input='true']");
 		await expect(composer).toBeVisible();
 		await composer.fill(prompt);
+		await expect(composer).toHaveValue(prompt);
+		await page.waitForTimeout(100);
+		await expect(composer).toHaveValue(prompt);
 
 		const sendButton = page.getByRole("button", { name: "Send message" });
 		await expect(sendButton).toBeEnabled();

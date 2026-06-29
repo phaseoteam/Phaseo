@@ -22,6 +22,8 @@ const SAMPLE_QUESTIONS = [
 	"Create a concise checklist I can follow.",
 ] as const;
 
+export const DEFAULT_CHAT_PLACEHOLDER = SAMPLE_QUESTIONS[0];
+
 export const REASONING_OPTIONS: Array<{
 	value: NonNullable<ChatSettings["reasoningEffort"]>;
 	label: string;
