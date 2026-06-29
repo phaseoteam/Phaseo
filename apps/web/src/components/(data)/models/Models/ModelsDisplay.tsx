@@ -142,6 +142,16 @@ const SORT_OPTION_LABELS: Record<ModelsSortOption, string> = {
 	latency_low_to_high: "Latency: Low to High",
 };
 
+const SORT_TRIGGER_LABELS: Record<ModelsSortOption, string> = {
+	newest: "Newest",
+	popular_week: "Most Popular",
+	price_low_to_high: "Lowest Price",
+	price_high_to_low: "Highest Price",
+	context_high_to_low: "Largest Context",
+	throughput_high_to_low: "Fastest Throughput",
+	latency_low_to_high: "Lowest Latency",
+};
+
 const CONTEXT_LENGTH_STOPS = [
 	0,
 	4_000,
@@ -1335,66 +1345,84 @@ export default function ModelsDisplay({
 		? `${shownCountLabel} for "${search}"`
 		: shownCountLabel;
 
+	const filterButton = (compact = false) => (
+		<Button
+			type="button"
+			size="sm"
+			className={cn(
+				"relative h-8 shrink-0 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25",
+				compact ? "w-9 px-0" : "gap-1.5",
+			)}
+			onClick={() => setMobileFiltersOpen(true)}
+		>
+			<SlidersHorizontal className="h-3.5 w-3.5" />
+			<span className={compact ? "sr-only" : undefined}>Filters</span>
+			{activeFilterCount > 0 ? (
+				<span
+					className={cn(
+						"inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums",
+						compact && "absolute -right-1 -top-1 min-w-4 px-1 py-0 text-[10px]",
+					)}
+				>
+					{activeFilterCount}
+				</span>
+			) : null}
+		</Button>
+	);
+
+	const viewSwitcherItemClass = (active: boolean, isFirst = false) =>
+		cn(
+			"inline-flex h-8 w-9 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45",
+			!isFirst && "border-l border-border/70",
+			active &&
+				"bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+		);
+
 	const viewSwitcher = (
-		<div className="inline-flex rounded-md overflow-hidden border bg-background">
+		<div className="inline-flex h-8 shrink-0 overflow-hidden rounded-md border border-border/70 bg-background shadow-xs">
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						asChild
-						variant={!isTable ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+					<Link
+						href={buildHref("/models")}
+						prefetch={false}
+						aria-label="Card view"
+						aria-current={!isTable && !isCollections ? "page" : undefined}
+						className={viewSwitcherItemClass(!isTable && !isCollections, true)}
 					>
-						<Link
-							href={buildHref("/models")}
-							prefetch={false}
-							aria-label="Card view"
-						>
-							<GridIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<GridIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Card view</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						variant={isTable ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-						asChild
+					<Link
+						href={buildHref("/models/table", {
+							toTable: true,
+						})}
+						prefetch={false}
+						aria-label="Table view"
+						aria-current={isTable ? "page" : undefined}
+						className={viewSwitcherItemClass(isTable)}
 					>
-						<Link
-							href={buildHref("/models/table", {
-								toTable: true,
-							})}
-							prefetch={false}
-							aria-label="Table view"
-						>
-							<TableIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<TableIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Table view</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						variant={isCollections ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-						asChild
+					<Link
+						href={buildHref("/models/collections")}
+						prefetch={false}
+						aria-label="Collections view"
+						aria-current={isCollections ? "page" : undefined}
+						className={viewSwitcherItemClass(isCollections)}
 					>
-						<Link
-							href={buildHref("/models/collections")}
-							prefetch={false}
-							aria-label="Collections view"
-						>
-							<LayersIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<LayersIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Collections</TooltipContent>
 			</Tooltip>
@@ -1414,10 +1442,11 @@ export default function ModelsDisplay({
 					"border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25",
 					triggerClassName,
 				)}
+				aria-label="Sort models"
 			>
-				<span className="flex min-w-0 items-center gap-1.5">
-					<span className="text-muted-foreground">Sort:</span>
-					<span className="truncate">{SORT_OPTION_LABELS[selectedSort]}</span>
+				<span className="flex min-w-0 items-center gap-2">
+					<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+					<span className="truncate">{SORT_TRIGGER_LABELS[selectedSort]}</span>
 				</span>
 			</SelectTrigger>
 			<SelectContent align="end">
@@ -1698,15 +1727,18 @@ export default function ModelsDisplay({
 			<section className="min-w-0 flex flex-1 flex-col">
 				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
 					<div className="md:hidden space-y-2">
-						<div className="flex items-center justify-between gap-2">
+						<div className="flex items-center gap-2">
 							{showPrimaryHeader ? (
 								<h1 className="font-bold text-xl leading-8">Models</h1>
 							) : (
 								<div />
 							)}
-							<div className="flex items-center justify-end gap-2 min-w-0">
-								{showPrimaryHeader ? viewSwitcher : null}
-							</div>
+						</div>
+
+						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{filterButton(true)}
+							{showPrimaryHeader ? viewSwitcher : null}
 						</div>
 
 						<div className="relative w-full">
@@ -1723,40 +1755,17 @@ export default function ModelsDisplay({
 								style={{ minWidth: 0 }}
 							/>
 						</div>
-
-						<div className="flex items-center gap-2">
-							<Button
-								type="button"
-								size="sm"
-								className="h-8 flex-1 justify-center gap-1.5 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25"
-								onClick={() => setMobileFiltersOpen(true)}
-							>
-								<SlidersHorizontal className="h-3.5 w-3.5" />
-								Filters
-								{activeFilterCount > 0 ? (
-									<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
-										{activeFilterCount}
-									</span>
-								) : null}
-							</Button>
-							<div className="flex flex-1 items-center gap-1">
-								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-									<ArrowUpDown className="h-3.5 w-3.5" />
-								</span>
-								{sortSelect("h-8 w-full rounded-md bg-background text-sm")}
-							</div>
-						</div>
 					</div>
 
 					<div className="hidden md:block">
-						<div className="flex flex-wrap items-center gap-2 md:gap-3 2xl:grid 2xl:grid-cols-[1fr_minmax(24rem,32rem)_1fr] 2xl:items-center 2xl:gap-4">
-							<div className="min-w-0 shrink-0 md:flex md:h-8 md:items-center 2xl:justify-self-start">
+						<div className="hidden xl:grid xl:grid-cols-[auto_minmax(22rem,32rem)_auto] xl:items-center xl:gap-4">
+							<div className="min-w-0 shrink-0 xl:flex xl:h-8 xl:items-center">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
 								) : null}
 							</div>
 
-							<div className="relative min-w-[16rem] flex-1 md:max-w-[32rem] 2xl:w-full 2xl:max-w-[32rem] 2xl:justify-self-center">
+							<div className="relative min-w-0 xl:w-full">
 								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 								<Input
 									placeholder="Search"
@@ -1771,41 +1780,40 @@ export default function ModelsDisplay({
 								/>
 							</div>
 
-							<div className="ml-auto flex shrink-0 items-center gap-2 2xl:ml-0 2xl:justify-self-end">
-								<div className="hidden 2xl:flex items-center gap-2">
-									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap" aria-hidden="true">
-										<ArrowUpDown className="h-3.5 w-3.5" />
-									</span>
-									{sortSelect(
-										"h-8 w-[210px] rounded-md bg-background text-sm xl:w-[230px]",
-									)}
-								</div>
+							<div className="flex shrink-0 items-center justify-end gap-2">
+								{sortSelect(
+									"h-8 w-[190px] rounded-md bg-background text-sm 2xl:w-[210px]",
+								)}
 								{showPrimaryHeader ? viewSwitcher : null}
 							</div>
 						</div>
 
-						<div className="mt-1 flex flex-wrap items-center justify-between gap-2 2xl:hidden">
-							<div className="flex items-center gap-2">
-								<Button
-									type="button"
-									size="sm"
-									className="h-8 gap-1.5 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25 lg:hidden"
-									onClick={() => setMobileFiltersOpen(true)}
-								>
-									<SlidersHorizontal className="h-3.5 w-3.5" />
-									Filters
-									{activeFilterCount > 0 ? (
-										<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
-											{activeFilterCount}
-										</span>
-									) : null}
-								</Button>
+						<div className="xl:hidden">
+							<div className="flex h-8 items-center">
+								{showPrimaryHeader ? (
+									<h1 className="font-bold text-xl leading-8">Models</h1>
+								) : null}
 							</div>
-							<div className="flex items-center gap-2">
-								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground" aria-hidden="true">
-									<ArrowUpDown className="h-3.5 w-3.5" />
-								</span>
-								{sortSelect("h-8 w-[210px] rounded-md bg-background text-sm sm:w-[230px]")}
+							<div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 lg:grid-cols-[minmax(12rem,15rem)_minmax(18rem,1fr)_auto]">
+								{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+								<div className="relative col-span-full row-start-2 min-w-0 lg:col-span-1 lg:row-start-auto">
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+									<Input
+										placeholder="Search"
+										value={search}
+										onChange={(e) =>
+											setSearch(e.target.value || null, {
+												limitUrlUpdates: debounce(250),
+											})
+										}
+										className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+										style={{ minWidth: 0 }}
+									/>
+								</div>
+								<div className="flex shrink-0 items-center justify-end gap-2">
+									<div className="lg:hidden">{filterButton(true)}</div>
+									{showPrimaryHeader ? viewSwitcher : null}
+								</div>
 							</div>
 						</div>
 					</div>
