@@ -21,6 +21,7 @@ export type KnownModelId =
   | "anthropic/claude-opus-4.8"
   | "anthropic/claude-sonnet-4.5"
   | "anthropic/claude-sonnet-4.6"
+  | "anthropic/claude-sonnet-5"
   | "arcee-ai/trinity-large"
   | "arcee-ai/trinity-large-thinking"
   | "arcee-ai/trinity-mini"
