@@ -34,6 +34,8 @@ export interface PricingModel {
     api_model_id?: string;
     endpoint: string;
     display_name?: string;
+    release_date?: string | null;
+    announcement_date?: string | null;
     pricing_plan?: string | null;
     meters: PricingMeter[];
 }
@@ -137,7 +139,14 @@ export default async function getPricingModels(
             capabilities.push(...(batchRows ?? []));
         }
 
-        const modelNameMap = new Map<string, string>();
+        const modelMetadataMap = new Map<
+            string,
+            {
+                name?: string | null;
+                release_date?: string | null;
+                announcement_date?: string | null;
+            }
+        >();
         const visibleModelIds = new Set<string>();
         const modelIds = Array.from(
             new Set((providerModels ?? []).map((row) => row.model_id).filter(Boolean))
@@ -146,14 +155,18 @@ export default async function getPricingModels(
             const { data: models } = await applyHiddenFilter(
                 supabase
                     .from("data_models")
-                    .select("model_id, name, hidden")
+                    .select("model_id, name, release_date, announcement_date, hidden")
                     .in("model_id", modelIds),
                 includeHidden
             );
             for (const model of models ?? []) {
                 if (model.model_id) {
                     visibleModelIds.add(model.model_id);
-                    if (model.name) modelNameMap.set(model.model_id, model.name);
+                    modelMetadataMap.set(model.model_id, {
+                        name: model.name,
+                        release_date: model.release_date,
+                        announcement_date: model.announcement_date,
+                    });
                 }
             }
         }
@@ -236,14 +249,17 @@ export default async function getPricingModels(
             const key = `${parsed.provider_id}:${modelId}:${rule.capability_id}:${rule.pricing_plan || "standard"}`;
 
             if (!modelMap.has(key)) {
+                const modelMetadata = combo.model_id
+                    ? modelMetadataMap.get(combo.model_id)
+                    : undefined;
                 modelMap.set(key, {
                     provider: parsed.provider_id,
                     model: modelId,
                     api_model_id: combo.api_model_id ?? parsed.api_model_id,
                     endpoint: rule.capability_id,
-                    display_name: combo.model_id
-                        ? modelNameMap.get(combo.model_id)
-                        : undefined,
+                    display_name: modelMetadata?.name ?? undefined,
+                    release_date: modelMetadata?.release_date ?? null,
+                    announcement_date: modelMetadata?.announcement_date ?? null,
                     pricing_plan: rule.pricing_plan || "standard",
                     meters: [],
                 });

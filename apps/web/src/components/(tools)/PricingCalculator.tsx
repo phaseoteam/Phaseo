@@ -10,6 +10,7 @@ import {
 	CostBreakdown,
 	PricingReference,
 } from "@/components/(tools)/pricing-calculator";
+import type { SelectedPricingModelConfig } from "@/components/(tools)/pricing-calculator/ModelSelector";
 import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
@@ -18,11 +19,21 @@ function getCurrentUtcTime() {
 	return new Date().toISOString().slice(11, 16);
 }
 
+function releaseTimestamp(
+	releaseDate?: string | null,
+	announcementDate?: string | null
+): number {
+	const parsed = Date.parse(releaseDate || announcementDate || "");
+	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
 type PricingModel = {
 	provider: string;
 	model: string;
 	endpoint: string;
 	display_name?: string;
+	release_date?: string | null;
+	announcement_date?: string | null;
 	pricing_plan?: string | null;
 	meters: PricingMeter[];
 };
@@ -35,6 +46,12 @@ type PricingCalculatorProps = {
 	initialPlan?: string;
 	totalModelsCount?: number;
 	providersCount?: number;
+};
+
+type SelectedPricingModel = PricingModel & {
+	key: string;
+	label: string;
+	pricingPlan: string;
 };
 
 export default function PricingCalculator({
@@ -56,208 +73,266 @@ export default function PricingCalculator({
 	const [selectedModelId, setSelectedModelId] = useQueryState("model", {
 		defaultValue: initialModel || "",
 	});
-	const [selectedEndpoint, setSelectedEndpoint] = useQueryState("endpoint", {
+	const [, setSelectedEndpoint] = useQueryState("endpoint", {
 		defaultValue: initialEndpoint || "",
 	});
-	const [selectedProvider, setSelectedProvider] = useQueryState("provider", {
+	const [, setSelectedProvider] = useQueryState("provider", {
 		defaultValue: initialProvider || "",
 	});
-	const [selectedPricingPlan, setSelectedPricingPlan] = useQueryState("plan", {
+	const [, setSelectedPricingPlan] = useQueryState("plan", {
 		defaultValue: initialPlan || "",
 	});
 
+	const [selectedModelIds, setSelectedModelIds] = useState<string[]>(
+		initialModel ? [initialModel] : []
+	);
+	const [modelConfigs, setModelConfigs] = useState<
+		Record<string, SelectedPricingModelConfig>
+	>({});
 	const [meterInputs, setMeterInputs] = useState<Record<string, string>>({});
 	const [requestMultiplier, setRequestMultiplier] = useState<number>(1);
 	const [pricingTimeUtc, setPricingTimeUtc] = useState<string>(getCurrentUtcTime);
 
-	const availableModels = useMemo(() => {
-		const modelMap = new Map<
+	const modelsByReleaseDate = useMemo(() => {
+		const unique = new Map<
 			string,
 			{
 				modelId: string;
 				displayName: string;
-				endpoints: Map<string, Set<string>>;
+				releaseDate?: string | null;
+				announcementDate?: string | null;
 			}
+		>();
+		for (const row of models) {
+			if (!unique.has(row.model)) {
+				unique.set(row.model, {
+					modelId: row.model,
+					displayName: row.display_name || row.model,
+					releaseDate: row.release_date,
+					announcementDate: row.announcement_date,
+				});
+			}
+		}
+		return Array.from(unique.values()).sort((a, b) => {
+			const dateDiff =
+				releaseTimestamp(b.releaseDate, b.announcementDate) -
+				releaseTimestamp(a.releaseDate, a.announcementDate);
+			if (dateDiff !== 0) return dateDiff;
+			return a.displayName.localeCompare(b.displayName);
+		});
+	}, [models]);
+
+	const selectionOptions = useMemo(() => {
+		const map = new Map<
+			string,
+			Map<string, Map<string, Set<string>>>
 		>();
 
 		for (const row of models) {
-			if (!modelMap.has(row.model)) {
-				modelMap.set(row.model, {
-					modelId: row.model,
-					displayName: row.display_name || row.model,
-					endpoints: new Map(),
-				});
+			if (!map.has(row.model)) {
+				map.set(row.model, new Map());
 			}
-			const entry = modelMap.get(row.model)!;
-			if (!entry.endpoints.has(row.endpoint)) {
-				entry.endpoints.set(row.endpoint, new Set());
+			const endpointMap = map.get(row.model)!;
+			if (!endpointMap.has(row.endpoint)) {
+				endpointMap.set(row.endpoint, new Map());
 			}
-			entry.endpoints.get(row.endpoint)!.add(row.provider);
+			const providerMap = endpointMap.get(row.endpoint)!;
+			if (!providerMap.has(row.provider)) {
+				providerMap.set(row.provider, new Set());
+			}
+			providerMap.get(row.provider)!.add(row.pricing_plan || "standard");
 		}
 
-		return Array.from(modelMap.values()).sort((a, b) =>
-			a.displayName.localeCompare(b.displayName)
-		);
+		return map;
 	}, [models]);
 
-	const selectedModel = useMemo(() => {
-		return availableModels.find((model) => model.modelId === selectedModelId);
-	}, [availableModels, selectedModelId]);
+	const getDefaultConfig = (
+		modelId: string,
+		preferred?: Partial<SelectedPricingModelConfig>
+	): SelectedPricingModelConfig | null => {
+		const endpointMap = selectionOptions.get(modelId);
+		if (!endpointMap) return null;
 
-	const availableEndpoints = useMemo(() => {
-		if (!selectedModel) return [];
-		return Array.from(selectedModel.endpoints.keys()).sort();
-	}, [selectedModel]);
+		const endpoints = Array.from(endpointMap.keys()).sort();
+		const endpoint =
+			preferred?.endpoint && endpointMap.has(preferred.endpoint)
+				? preferred.endpoint
+				: endpoints[0] || "";
+		const providerMap = endpointMap.get(endpoint);
+		if (!providerMap) return null;
 
-	const availableProviders = useMemo(() => {
-		if (!selectedModel || !selectedEndpoint) return [];
-		const providers = selectedModel.endpoints.get(selectedEndpoint);
-		if (!providers) return [];
-		return Array.from(providers).sort();
-	}, [selectedEndpoint, selectedModel]);
-
-	const effectiveProvider = useMemo(() => {
-		if (selectedProvider && availableProviders.includes(selectedProvider)) {
-			return selectedProvider;
-		}
-		return availableProviders[0] || "";
-	}, [availableProviders, selectedProvider]);
-
-	const availablePricingPlans = useMemo(() => {
-		if (!selectedModelId || !selectedEndpoint || !effectiveProvider) return [];
-		const plans = new Set<string>();
-		for (const row of models) {
-			if (
-				row.model === selectedModelId &&
-				row.endpoint === selectedEndpoint &&
-				row.provider === effectiveProvider
-			) {
-				plans.add(row.pricing_plan || "standard");
-			}
-		}
-		return Array.from(plans).sort((a, b) => {
+		const providers = Array.from(providerMap.keys()).sort();
+		const provider =
+			preferred?.provider && providerMap.has(preferred.provider)
+				? preferred.provider
+				: providers[0] || "";
+		const plans = Array.from(providerMap.get(provider) ?? []).sort((a, b) => {
 			if (a === "standard") return -1;
 			if (b === "standard") return 1;
 			return a.localeCompare(b);
 		});
-	}, [effectiveProvider, models, selectedEndpoint, selectedModelId]);
+		const pricingPlan =
+			preferred?.pricingPlan && plans.includes(preferred.pricingPlan)
+				? preferred.pricingPlan
+				: plans.includes("standard")
+					? "standard"
+					: plans[0] || "";
 
-	const effectivePricingPlan = useMemo(() => {
-		if (
-			selectedPricingPlan &&
-			availablePricingPlans.includes(selectedPricingPlan)
-		) {
-			return selectedPricingPlan;
-		}
-		return availablePricingPlans.includes("standard")
-			? "standard"
-			: availablePricingPlans[0] || "";
-	}, [availablePricingPlans, selectedPricingPlan]);
+		return { endpoint, provider, pricingPlan };
+	};
 
 	useEffect(() => {
-		if (!selectedModel) return;
-		if (
-			!selectedEndpoint ||
-			!availableEndpoints.includes(selectedEndpoint)
-		) {
-			setSelectedEndpoint(availableEndpoints[0] || "");
-			setSelectedProvider("");
-			setSelectedPricingPlan("");
-			setMeterInputs({});
-		}
+		if (modelsByReleaseDate.length === 0) return;
+		if (selectedModelIds.length > 0) return;
+		const initialSelection =
+			selectedModelId && selectionOptions.has(selectedModelId)
+				? selectedModelId
+				: modelsByReleaseDate[0]?.modelId;
+		if (!initialSelection) return;
+		setSelectedModelIds([initialSelection]);
 	}, [
-		availableEndpoints,
-		selectedEndpoint,
-		selectedModel,
-		setSelectedEndpoint,
-		setSelectedPricingPlan,
-		setSelectedProvider,
-	]);
-
-	useEffect(() => {
-		if (!selectedEndpoint) return;
-		if (!selectedProvider || !availableProviders.includes(selectedProvider)) {
-			setSelectedProvider(availableProviders[0] || "");
-			setSelectedPricingPlan("");
-			setMeterInputs({});
-		}
-	}, [
-		availableProviders,
-		selectedEndpoint,
-		selectedProvider,
-		setSelectedPricingPlan,
-		setSelectedProvider,
-	]);
-
-	useEffect(() => {
-		if (!effectiveProvider || availablePricingPlans.length === 0) return;
-		if (
-			!selectedPricingPlan ||
-			!availablePricingPlans.includes(selectedPricingPlan)
-		) {
-			setSelectedPricingPlan(effectivePricingPlan);
-		}
-	}, [
-		availablePricingPlans,
-		effectivePricingPlan,
-		effectiveProvider,
-		selectedPricingPlan,
-		setSelectedPricingPlan,
-	]);
-
-	const selectedModelData = useMemo(() => {
-		if (
-			!selectedModelId ||
-			!selectedEndpoint ||
-			!effectiveProvider ||
-			!effectivePricingPlan
-		) {
-			return null;
-		}
-		return models.find(
-			(row) =>
-				row.model === selectedModelId &&
-				row.endpoint === selectedEndpoint &&
-				row.provider === effectiveProvider &&
-				(row.pricing_plan || "standard") === effectivePricingPlan
-		);
-	}, [
-		effectivePricingPlan,
-		effectiveProvider,
-		models,
-		selectedEndpoint,
+		modelsByReleaseDate,
 		selectedModelId,
+		selectedModelIds.length,
+		selectionOptions,
 	]);
 
-	const handleModelSelect = (modelId: string) => {
-		const nextModel = availableModels.find((model) => model.modelId === modelId);
-		const nextEndpoints = nextModel
-			? Array.from(nextModel.endpoints.keys()).sort()
-			: [];
-		const nextEndpoint = nextEndpoints[0] || "";
+	useEffect(() => {
+		if (selectedModelId && !selectedModelIds.includes(selectedModelId)) {
+			setSelectedModelIds((current) => [selectedModelId, ...current]);
+		}
+	}, [selectedModelId, selectedModelIds]);
 
-		setSelectedModelId(modelId);
-		setSelectedEndpoint(nextEndpoint);
-		setSelectedProvider("");
-		setSelectedPricingPlan("");
-		setMeterInputs({});
+	useEffect(() => {
+		if (selectedModelIds.length === 0) return;
+		setModelConfigs((current) => {
+			let changed = false;
+			const next: Record<string, SelectedPricingModelConfig> = {};
+			for (const modelId of selectedModelIds) {
+				const defaultConfig = getDefaultConfig(modelId, {
+					endpoint: current[modelId]?.endpoint || initialEndpoint,
+					provider: current[modelId]?.provider || initialProvider,
+					pricingPlan: current[modelId]?.pricingPlan || initialPlan,
+				});
+				if (!defaultConfig) continue;
+				next[modelId] = defaultConfig;
+				if (
+					current[modelId]?.endpoint !== defaultConfig.endpoint ||
+					current[modelId]?.provider !== defaultConfig.provider ||
+					current[modelId]?.pricingPlan !== defaultConfig.pricingPlan
+				) {
+					changed = true;
+				}
+			}
+			if (Object.keys(current).length !== Object.keys(next).length) {
+				changed = true;
+			}
+			return changed ? next : current;
+		});
+	}, [
+		initialEndpoint,
+		initialPlan,
+		initialProvider,
+		selectedModelIds,
+		selectionOptions,
+	]);
+
+	useEffect(() => {
+		const primaryModelId = selectedModelIds[0] || "";
+		const primaryConfig = primaryModelId ? modelConfigs[primaryModelId] : null;
+
+		setSelectedModelId(primaryModelId);
+		setSelectedEndpoint(primaryConfig?.endpoint || "");
+		setSelectedProvider(primaryConfig?.provider || "");
+		setSelectedPricingPlan(primaryConfig?.pricingPlan || "");
+	}, [
+		modelConfigs,
+		selectedModelIds,
+		setSelectedEndpoint,
+		setSelectedModelId,
+		setSelectedPricingPlan,
+		setSelectedProvider,
+	]);
+
+	const selectedModelData = useMemo<SelectedPricingModel[]>(() => {
+		return selectedModelIds
+			.map((modelId) => {
+				const config = modelConfigs[modelId] ?? getDefaultConfig(modelId);
+				if (!config) return null;
+				const row = models.find(
+					(item) =>
+						item.model === modelId &&
+						item.endpoint === config.endpoint &&
+						item.provider === config.provider &&
+						(item.pricing_plan || "standard") === config.pricingPlan
+				);
+				if (!row) return null;
+				return {
+					...row,
+					key: modelId,
+					label: row.display_name || row.model,
+					pricingPlan: config.pricingPlan,
+				};
+			})
+			.filter((row): row is SelectedPricingModel => Boolean(row));
+	}, [modelConfigs, models, selectedModelIds, selectionOptions]);
+
+	const allSelectedMeters = useMemo(() => {
+		const map = new Map<string, PricingMeter>();
+		for (const model of selectedModelData) {
+			for (const meter of model.meters) {
+				if (!map.has(meter.meter)) {
+					map.set(meter.meter, meter);
+				}
+			}
+		}
+		return Array.from(map.values());
+	}, [selectedModelData]);
+
+	const comparisonModels = useMemo(
+		() =>
+			selectedModelData.map((model) => ({
+				key: `${model.model}:${model.provider}:${model.endpoint}:${model.pricingPlan}`,
+				label: model.label,
+				modelId: model.model,
+				provider: model.provider,
+				pricingPlan: model.pricingPlan,
+				meters: model.meters,
+			})),
+		[selectedModelData]
+	);
+
+	const handleToggleModel = (modelId: string) => {
+		setSelectedModelIds((current) => {
+			if (current.includes(modelId)) {
+				setMeterInputs({});
+				return current.filter((id) => id !== modelId);
+			}
+			const defaultConfig = getDefaultConfig(modelId);
+			if (defaultConfig) {
+				setModelConfigs((configs) => ({
+					...configs,
+					[modelId]: defaultConfig,
+				}));
+			}
+			setMeterInputs({});
+			return [...current, modelId];
+		});
 	};
 
-	const handleEndpointSelect = (endpoint: string) => {
-		setSelectedEndpoint(endpoint);
-		setSelectedProvider("");
-		setSelectedPricingPlan("");
-		setMeterInputs({});
-	};
-
-	const handleProviderSelect = (provider: string) => {
-		setSelectedProvider(provider);
-		setSelectedPricingPlan("");
-		setMeterInputs({});
-	};
-
-	const handlePricingPlanSelect = (plan: string) => {
-		setSelectedPricingPlan(plan);
+	const handleUpdateModelConfig = (
+		modelId: string,
+		patch: Partial<SelectedPricingModelConfig>
+	) => {
+		setModelConfigs((current) => {
+			const existing = current[modelId] ?? getDefaultConfig(modelId);
+			const next = getDefaultConfig(modelId, { ...existing, ...patch });
+			if (!next) return current;
+			return {
+				...current,
+				[modelId]: next,
+			};
+		});
 		setMeterInputs({});
 	};
 
@@ -269,15 +344,15 @@ export default function PricingCalculator({
 	};
 
 	return (
-		<div className="mx-auto w-full max-w-[1320px] px-4 py-8">
-			<header className="mb-6 rounded-xl border bg-gradient-to-br from-background to-muted/20 p-4 md:p-6">
+		<div className="mx-auto w-full max-w-[1440px] px-4 py-8">
+			<header className="mb-6 rounded-xl border bg-muted/20 p-4 md:p-6">
 				<div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
 					<div className="space-y-2 max-w-4xl">
 						<h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
 							AI Pricing Calculator
 						</h1>
 						<p className="text-sm md:text-base text-muted-foreground">
-							Choose one model, pick the provider and plan, then estimate cost across every priced meter.
+							Select one or more models, configure their provider pricing, then compare every priced meter in a tabular view.
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -298,27 +373,20 @@ export default function PricingCalculator({
 			</header>
 
 			<div className="space-y-5">
-				<div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-					<div className="xl:col-span-7">
+				<div className="grid grid-cols-1 2xl:grid-cols-12 gap-6 items-start">
+					<div className="2xl:col-span-8">
 						<ModelSelector
 							models={models}
-							selectedModelId={selectedModelId || ""}
-							selectedProvider={effectiveProvider || ""}
-							selectedEndpoint={selectedEndpoint || ""}
-							selectedPricingPlan={effectivePricingPlan || ""}
-							availableEndpoints={availableEndpoints}
-							availableProviders={availableProviders}
-							availablePricingPlans={availablePricingPlans}
-							onModelSelect={handleModelSelect}
-							onEndpointSelect={handleEndpointSelect}
-							onProviderSelect={handleProviderSelect}
-							onPricingPlanSelect={handlePricingPlanSelect}
+							selectedModelIds={selectedModelIds}
+							modelConfigs={modelConfigs}
+							onToggleModel={handleToggleModel}
+							onUpdateModelConfig={handleUpdateModelConfig}
 						/>
 					</div>
-					<div className="xl:col-span-5">
-						{selectedModelData ? (
+					<div className="2xl:col-span-4">
+						{allSelectedMeters.length > 0 ? (
 							<UsageInputs
-								meters={selectedModelData.meters}
+								meters={allSelectedMeters}
 								meterInputs={meterInputs}
 								requestMultiplier={requestMultiplier}
 								pricingTimeUtc={pricingTimeUtc}
@@ -330,7 +398,7 @@ export default function PricingCalculator({
 							<Card>
 								<CardContent className="text-center py-12">
 									<p className="text-muted-foreground">
-										Select a model to configure usage inputs.
+										Select at least one model to configure usage inputs.
 									</p>
 								</CardContent>
 							</Card>
@@ -338,25 +406,23 @@ export default function PricingCalculator({
 					</div>
 				</div>
 
-				{selectedModelData ? (
+				{selectedModelData.length > 0 ? (
 					<>
 						<PricingReference
-							meters={selectedModelData.meters}
-							pricingPlan={selectedModelData.pricing_plan}
-							selectedModelId={selectedModelId}
-							selectedModelLabel={
-								selectedModel?.displayName ||
-								selectedModelData.display_name ||
-								selectedModelId
-							}
-							selectedProvider={effectiveProvider}
+							meters={selectedModelData[0]?.meters ?? []}
+							pricingPlan={selectedModelData[0]?.pricing_plan}
+							selectedModelId={selectedModelData[0]?.model}
+							selectedModelLabel={selectedModelData[0]?.label}
+							selectedProvider={selectedModelData[0]?.provider || ""}
 							pricingTimeUtc={pricingTimeUtc}
+							comparisonModels={comparisonModels}
 						/>
 						<CostBreakdown
-							meters={selectedModelData.meters}
+							meters={allSelectedMeters}
 							meterInputs={meterInputs}
 							requestMultiplier={requestMultiplier}
 							pricingTimeUtc={pricingTimeUtc}
+							comparisonModels={comparisonModels}
 						/>
 					</>
 				) : null}

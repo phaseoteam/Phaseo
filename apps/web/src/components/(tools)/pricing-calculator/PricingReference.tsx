@@ -24,7 +24,6 @@ import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { Logo } from "@/components/Logo";
 
 const BLENDED_USAGE_EXAMPLES = [100_000, 1_000_000, 100_000_000];
 const BLENDED_BUDGET_EXAMPLES = [1, 10, 100];
@@ -158,6 +157,42 @@ function formatUsageUnit(quantity: number, unitLabel: string) {
 	return unitLabel;
 }
 
+function getPricingModelHref(model: ComparisonPricingModel) {
+	if (!model.modelId) return null;
+	const [orgFromModelId] = model.modelId.split("/");
+	const organisationId = orgFromModelId || model.provider;
+	return getModelDetailsHref(organisationId, model.modelId);
+}
+
+function ModelColumnHeader({ model }: { model: ComparisonPricingModel }) {
+	const modelHref = getPricingModelHref(model);
+	const providerHref = `/api-providers/${encodeURIComponent(model.provider)}`;
+	const modelLabel = (
+		<p className="truncate text-sm font-medium">{model.label}</p>
+	);
+
+	return (
+		<div className="max-w-[220px] space-y-1">
+			{modelHref ? (
+				<Link
+					href={modelHref}
+					className="block underline decoration-transparent transition-colors duration-200 hover:decoration-current"
+				>
+					{modelLabel}
+				</Link>
+			) : (
+				modelLabel
+			)}
+			<Link
+				href={providerHref}
+				className="block truncate text-xs font-normal text-muted-foreground underline decoration-transparent transition-colors duration-200 hover:decoration-current"
+			>
+				{formatProviderLabel(model.provider)} · {model.pricingPlan}
+			</Link>
+		</div>
+	);
+}
+
 export function PricingReference({
 	meters,
 	pricingPlan,
@@ -186,41 +221,6 @@ export function PricingReference({
 					},
 			  ];
 
-	const getProviderHref = (providerId: string) =>
-		`/api-providers/${encodeURIComponent(providerId)}`;
-
-	const getPricingModelHref = (model: ComparisonPricingModel) => {
-		if (!model.modelId) return null;
-		const [orgFromModelId] = model.modelId.split("/");
-		const organisationId = orgFromModelId || model.provider;
-		return getModelDetailsHref(organisationId, model.modelId);
-	};
-
-	const renderModelName = (model: ComparisonPricingModel, className: string) => {
-		const href = getPricingModelHref(model);
-		if (!href) {
-			return <p className={className}>{model.label}</p>;
-		}
-		return (
-			<p className={className}>
-				<Link href={href} className="underline decoration-transparent hover:decoration-current transition-colors duration-200">
-					{model.label}
-				</Link>
-			</p>
-		);
-	};
-
-	const renderProviderName = (providerId: string, className: string) => (
-		<p className={className}>
-			<Link
-				href={getProviderHref(providerId)}
-				className="underline decoration-transparent hover:decoration-current transition-colors duration-200"
-			>
-				{formatProviderLabel(providerId)}
-			</Link>
-		</p>
-	);
-
 	const blendedByModel = activeModels.map((model) => ({
 		key: model.key,
 		blended: calculateBlendedRate(model.meters, pricingTimeUtc),
@@ -238,243 +238,112 @@ export function PricingReference({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="flex items-center justify-between flex-wrap gap-2">
+				<CardTitle className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex items-center gap-2">
 						<span>Pricing Reference</span>
 						<Badge variant="outline" className="text-[11px]">
 							{activeModels.length} model{activeModels.length === 1 ? "" : "s"}
 						</Badge>
 					</div>
-					<div className="flex items-center gap-2" />
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-7">
-				{hasBlendedComparison && (
-					<div className="space-y-4 rounded-xl border bg-primary/5 p-5">
-						<div className="flex flex-wrap items-center justify-between gap-2">
-							<div>
-								<h4 className="text-base font-semibold">
-									{activeModels.length > 1 ? "Blended Rate Comparison" : "Blended Rate"}
-								</h4>
-								<p className="text-xs text-muted-foreground">
-									90% input and 10% output token ratio
-								</p>
-							</div>
+			<CardContent className="space-y-6">
+				{hasBlendedComparison ? (
+					<div className="space-y-3 rounded-lg border bg-primary/5 p-4">
+						<div>
+							<h4 className="text-sm font-semibold">Blended Rate</h4>
+							<p className="text-xs text-muted-foreground">
+								90% input and 10% output token ratio
+							</p>
 						</div>
-
-						<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-							{activeModels.map((model) => {
-								const blendedModel = blendedByModel.find((entry) => entry.key === model.key);
-								return (
-									<div
-										key={`${model.key}-blend-summary`}
-										className="rounded-lg border bg-background p-4 space-y-3"
-									>
-										<div className="flex items-start justify-between gap-2">
-											<div className="min-w-0">
-												{renderModelName(model, "truncate text-sm font-medium")}
-												{renderProviderName(
-													model.provider,
-													"text-xs text-muted-foreground"
-												)}
-											</div>
-											<Link
-												href={getProviderHref(model.provider)}
-												className="shrink-0"
-												aria-label={`View ${formatProviderLabel(model.provider)} provider`}
-											>
-												<Logo
-													id={model.provider}
-													width={16}
-													height={16}
-													className="h-4 w-4 shrink-0"
-													fallback={<div className="h-4 w-4 rounded bg-muted" />}
-												/>
-											</Link>
-										</div>
-										<div className="space-y-2 text-sm">
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-muted-foreground">Blended / 1M</span>
-												<span className="font-semibold">
-													{blendedModel?.blended
-														? fmtUSD(blendedModel.blended.blendedPer1M)
-														: "-"}
-												</span>
-											</div>
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-muted-foreground">Input / 1M</span>
-												<span>
-													{blendedModel?.blended
-														? fmtUSD(blendedModel.blended.inputPer1M)
-														: "-"}
-												</span>
-											</div>
-											<div className="flex items-center justify-between gap-2">
-												<span className="text-muted-foreground">Output / 1M</span>
-												<span>
-													{blendedModel?.blended
-														? fmtUSD(blendedModel.blended.outputPer1M)
-														: "-"}
-												</span>
-											</div>
-										</div>
-									</div>
-								);
-							})}
-						</div>
-
-						<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-							<div className="rounded-lg border bg-background p-3">
-								<h5 className="mb-2 text-xs font-semibold text-muted-foreground">
-									Cost by Usage
-								</h5>
-								<div className="overflow-x-auto">
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead className="min-w-[190px]">Model</TableHead>
-												{BLENDED_USAGE_EXAMPLES.map((tokens) => (
-													<TableHead key={`blended-usage-h-${tokens}`}>
-														{formatQuantity(tokens)} tokens
-													</TableHead>
-												))}
-											</TableRow>
-										</TableHeader>
-										<TableBody>
+						<div className="overflow-x-auto rounded-lg border bg-background">
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead className="sticky left-0 z-10 min-w-[190px] bg-background">
+											Metric
+										</TableHead>
+										{activeModels.map((model) => (
+											<TableHead key={`blend-head-${model.key}`} className="min-w-[220px]">
+												<ModelColumnHeader model={model} />
+											</TableHead>
+										))}
+									</TableRow>
+								</TableHeader>
+								<TableBody>
+									{[
+										{
+											key: "blended",
+											label: "Blended / 1M",
+											value: (rate: BlendedRate) => fmtUSD(rate.blendedPer1M),
+										},
+										{
+											key: "input",
+											label: "Input / 1M",
+											value: (rate: BlendedRate) => fmtUSD(rate.inputPer1M),
+										},
+										{
+											key: "output",
+											label: "Output / 1M",
+											value: (rate: BlendedRate) => fmtUSD(rate.outputPer1M),
+										},
+										...BLENDED_USAGE_EXAMPLES.map((tokens) => ({
+											key: `usage-${tokens}`,
+											label: `${formatQuantity(tokens)} tokens`,
+											value: (rate: BlendedRate) =>
+												fmtUSD(
+													calculateCost(
+														tokens,
+														{
+															unit_size: 1,
+															price_per_unit: String(rate.blendedPricePerToken),
+														},
+														pricingTimeUtc
+													)
+												),
+										})),
+										...BLENDED_BUDGET_EXAMPLES.map((budget) => ({
+											key: `budget-${budget}`,
+											label: `Usage for ${fmtUSD(budget)}`,
+											value: (rate: BlendedRate) => {
+												const units = calculateUnits(
+													budget,
+													{
+														unit_size: 1,
+														price_per_unit: String(rate.blendedPricePerToken),
+													},
+													pricingTimeUtc
+												);
+												return `${formatQuantity(units)} ${formatUsageUnit(
+													units,
+													"tokens"
+												)}`;
+											},
+										})),
+									].map((row) => (
+										<TableRow key={`blend-row-${row.key}`}>
+											<TableCell className="sticky left-0 z-10 bg-background font-medium">
+												{row.label}
+											</TableCell>
 											{activeModels.map((model) => {
 												const blendedModel = blendedByModel.find(
 													(entry) => entry.key === model.key
 												);
 												return (
-													<TableRow key={`blended-usage-row-${model.key}`}>
-														<TableCell>
-															<div className="flex items-center gap-2">
-																<Link
-																	href={getProviderHref(model.provider)}
-																	className="shrink-0"
-																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
-																>
-																	<Logo
-																		id={model.provider}
-																		width={14}
-																		height={14}
-																		className="h-3.5 w-3.5"
-																		fallback={
-																			<div className="h-3.5 w-3.5 rounded bg-muted" />
-																		}
-																	/>
-																</Link>
-																<div className="min-w-0">
-																	{renderModelName(
-																		model,
-																		"truncate text-sm font-medium"
-																	)}
-																	{renderProviderName(
-																		model.provider,
-																		"text-[11px] text-muted-foreground"
-																	)}
-																</div>
-															</div>
-														</TableCell>
-														{BLENDED_USAGE_EXAMPLES.map((tokens) => (
-															<TableCell key={`blend-${model.key}-usage-${tokens}`}>
-																{blendedModel?.blended
-																	? fmtUSD(
-																			calculateCost(tokens, {
-																				unit_size: 1,
-																				price_per_unit: String(
-																					blendedModel.blended.blendedPricePerToken
-																				),
-																			}, pricingTimeUtc)
-																	  )
-																	: "-"}
-															</TableCell>
-														))}
-													</TableRow>
+													<TableCell key={`blend-${row.key}-${model.key}`}>
+														{blendedModel?.blended
+															? row.value(blendedModel.blended)
+															: "-"}
+													</TableCell>
 												);
 											})}
-										</TableBody>
-									</Table>
-								</div>
-							</div>
-
-							<div className="rounded-lg border bg-background p-3">
-								<h5 className="mb-2 text-xs font-semibold text-muted-foreground">
-									Usage by Budget
-								</h5>
-								<div className="overflow-x-auto">
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead className="min-w-[190px]">Model</TableHead>
-												{BLENDED_BUDGET_EXAMPLES.map((budget) => (
-													<TableHead key={`blended-budget-h-${budget}`}>
-														{fmtUSD(budget)}
-													</TableHead>
-												))}
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{activeModels.map((model) => {
-												const blendedModel = blendedByModel.find(
-													(entry) => entry.key === model.key
-												);
-												return (
-													<TableRow key={`blended-budget-row-${model.key}`}>
-														<TableCell>
-															<div className="flex items-center gap-2">
-																<Link
-																	href={getProviderHref(model.provider)}
-																	className="shrink-0"
-																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
-																>
-																	<Logo
-																		id={model.provider}
-																		width={14}
-																		height={14}
-																		className="h-3.5 w-3.5"
-																		fallback={
-																			<div className="h-3.5 w-3.5 rounded bg-muted" />
-																		}
-																	/>
-																</Link>
-																<div className="min-w-0">
-																	{renderModelName(
-																		model,
-																		"truncate text-sm font-medium"
-																	)}
-																	{renderProviderName(
-																		model.provider,
-																		"text-[11px] text-muted-foreground"
-																	)}
-																</div>
-															</div>
-														</TableCell>
-														{BLENDED_BUDGET_EXAMPLES.map((budget) => (
-															<TableCell key={`blend-${model.key}-budget-${budget}`}>
-																{blendedModel?.blended
-																	? (() => {
-																			const units = calculateUnits(budget, {
-																				unit_size: 1,
-																				price_per_unit: String(
-																					blendedModel.blended.blendedPricePerToken
-																				),
-																			}, pricingTimeUtc);
-																			return `${formatQuantity(units)} ${formatUsageUnit(units, "tokens")}`;
-																	  })()
-																	: "-"}
-															</TableCell>
-														))}
-													</TableRow>
-												);
-											})}
-										</TableBody>
-									</Table>
-								</div>
-							</div>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
 						</div>
 					</div>
-				)}
+				) : null}
 
 				{allMeterNames.map((meterName) => {
 					const meterByModel = activeModels.map((model) => ({
@@ -492,193 +361,87 @@ export function PricingReference({
 					const unitLabel =
 						derivedUnit !== "unknown" ? derivedUnit : baseMeter.unit;
 
+					const rows = [
+						{
+							key: "rate",
+							label: "Unit price",
+							value: (meter: PricingMeter) =>
+								formatUnitPrice(meter, unitLabel, pricingTimeUtc),
+						},
+						{
+							key: "window",
+							label: "Active time window",
+							value: (meter: PricingMeter) => {
+								const activeWindow = resolvePricingMeterPrice(
+									meter,
+									pricingTimeUtc
+								).timeWindow;
+								return activeWindow
+									? formatPricingTimeWindow(activeWindow)
+									: "Base rate";
+							},
+						},
+						...examples.map((quantity) => ({
+							key: `usage-${quantity}`,
+							label: `Cost for ${formatQuantity(quantity)} ${unitLabel}`,
+							value: (meter: PricingMeter) =>
+								fmtUSD(calculateCost(quantity, meter, pricingTimeUtc)),
+						})),
+						...budgets.map((budget) => ({
+							key: `budget-${budget}`,
+							label: `Usage for ${fmtUSD(budget)}`,
+							value: (meter: PricingMeter) => {
+								const units = calculateUnits(budget, meter, pricingTimeUtc);
+								return `${formatQuantity(units)} ${formatUsageUnit(
+									units,
+									unitLabel
+								)}`;
+							},
+						})),
+					];
+
 					return (
-						<div key={meterName} className="space-y-4 rounded-xl border p-5">
-							<div className="flex items-center justify-between gap-2 flex-wrap">
-								<h4 className="text-base font-semibold">{formatMeterName(meterName)}</h4>
-							</div>
-
-							<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-								{activeModels.map((model) => {
-									const entry = meterByModel.find((item) => item.key === model.key);
-									const activeWindow = entry?.meter
-										? resolvePricingMeterPrice(entry.meter, pricingTimeUtc).timeWindow
-										: null;
-									return (
-										<div
-											key={`${meterName}-${model.key}-rate-card`}
-											className="rounded-lg border bg-background p-4"
-										>
-											<div className="flex items-start justify-between gap-2">
-												<div className="min-w-0">
-													{renderModelName(model, "truncate text-sm font-medium")}
-													{renderProviderName(
-														model.provider,
-														"text-xs text-muted-foreground"
-													)}
-												</div>
-												<Link
-													href={getProviderHref(model.provider)}
-													className="shrink-0"
-													aria-label={`View ${formatProviderLabel(model.provider)} provider`}
+						<div key={meterName} className="space-y-3 rounded-lg border p-4">
+							<h4 className="text-sm font-semibold">
+								{formatMeterName(meterName)}
+							</h4>
+							<div className="overflow-x-auto rounded-lg border">
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead className="sticky left-0 z-10 min-w-[220px] bg-background">
+												Metric
+											</TableHead>
+											{activeModels.map((model) => (
+												<TableHead
+													key={`${meterName}-head-${model.key}`}
+													className="min-w-[220px]"
 												>
-													<Logo
-														id={model.provider}
-														width={16}
-														height={16}
-														className="h-4 w-4 shrink-0"
-														fallback={<div className="h-4 w-4 rounded bg-muted" />}
-													/>
-												</Link>
-											</div>
-											<p className="mt-3 text-sm font-medium leading-5">
-												{entry?.meter
-													? formatUnitPrice(entry.meter, unitLabel, pricingTimeUtc)
-													: "-"}
-											</p>
-											{activeWindow ? (
-												<p className="mt-2 text-xs text-muted-foreground">
-													{formatPricingTimeWindow(activeWindow)}
-												</p>
-											) : null}
-										</div>
-									);
-								})}
-							</div>
-
-							<div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-								<div className="rounded-lg border bg-background p-3">
-									<h5 className="mb-2 text-xs font-semibold text-muted-foreground">
-										Cost by Usage
-									</h5>
-									<div className="overflow-x-auto">
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead className="min-w-[190px]">Model</TableHead>
-													{examples.map((quantity) => (
-														<TableHead key={`${meterName}-${quantity}-usage-col`}>
-															{formatQuantity(quantity)} {unitLabel}
-														</TableHead>
-													))}
-												</TableRow>
-											</TableHeader>
-											<TableBody>
+													<ModelColumnHeader model={model} />
+												</TableHead>
+											))}
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{rows.map((row) => (
+											<TableRow key={`${meterName}-row-${row.key}`}>
+												<TableCell className="sticky left-0 z-10 bg-background font-medium">
+													{row.label}
+												</TableCell>
 												{activeModels.map((model) => {
-													const entry = meterByModel.find((item) => item.key === model.key);
+													const entry = meterByModel.find(
+														(item) => item.key === model.key
+													);
 													return (
-													<TableRow key={`${meterName}-usage-row-${model.key}`}>
-														<TableCell>
-															<div className="flex items-center gap-2">
-																<Link
-																	href={getProviderHref(model.provider)}
-																	className="shrink-0"
-																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
-																>
-																	<Logo
-																		id={model.provider}
-																		width={14}
-																		height={14}
-																		className="h-3.5 w-3.5"
-																		fallback={
-																			<div className="h-3.5 w-3.5 rounded bg-muted" />
-																		}
-																	/>
-																</Link>
-																<div className="min-w-0">
-																	{renderModelName(
-																		model,
-																		"truncate text-sm font-medium"
-																	)}
-																	{renderProviderName(
-																		model.provider,
-																		"text-[11px] text-muted-foreground"
-																	)}
-																</div>
-															</div>
+														<TableCell key={`${meterName}-${row.key}-${model.key}`}>
+															{entry?.meter ? row.value(entry.meter) : "-"}
 														</TableCell>
-														{examples.map((quantity) => (
-															<TableCell key={`${meterName}-${model.key}-${quantity}`}>
-																{entry?.meter
-																	? fmtUSD(calculateCost(quantity, entry.meter, pricingTimeUtc))
-																	: "-"}
-															</TableCell>
-														))}
-													</TableRow>
 													);
 												})}
-											</TableBody>
-										</Table>
-									</div>
-								</div>
-
-								<div className="rounded-lg border bg-background p-3">
-									<h5 className="mb-2 text-xs font-semibold text-muted-foreground">
-										Usage by Budget
-									</h5>
-									<div className="overflow-x-auto">
-										<Table>
-											<TableHeader>
-												<TableRow>
-													<TableHead className="min-w-[190px]">Model</TableHead>
-													{budgets.map((budget) => (
-														<TableHead key={`${meterName}-${budget}-budget-col`}>
-															{fmtUSD(budget)}
-														</TableHead>
-													))}
-												</TableRow>
-											</TableHeader>
-											<TableBody>
-												{activeModels.map((model) => {
-													const entry = meterByModel.find((item) => item.key === model.key);
-													return (
-													<TableRow key={`${meterName}-budget-row-${model.key}`}>
-														<TableCell>
-															<div className="flex items-center gap-2">
-																<Link
-																	href={getProviderHref(model.provider)}
-																	className="shrink-0"
-																	aria-label={`View ${formatProviderLabel(model.provider)} provider`}
-																>
-																	<Logo
-																		id={model.provider}
-																		width={14}
-																		height={14}
-																		className="h-3.5 w-3.5"
-																		fallback={
-																			<div className="h-3.5 w-3.5 rounded bg-muted" />
-																		}
-																	/>
-																</Link>
-																<div className="min-w-0">
-																	{renderModelName(
-																		model,
-																		"truncate text-sm font-medium"
-																	)}
-																	{renderProviderName(
-																		model.provider,
-																		"text-[11px] text-muted-foreground"
-																	)}
-																</div>
-															</div>
-														</TableCell>
-														{budgets.map((budget) => (
-															<TableCell key={`${meterName}-${model.key}-b-${budget}`}>
-																{entry?.meter
-																	? (() => {
-																			const units = calculateUnits(budget, entry.meter, pricingTimeUtc);
-																			return `${formatQuantity(units)} ${formatUsageUnit(units, unitLabel)}`;
-																	  })()
-																	: "-"}
-															</TableCell>
-														))}
-													</TableRow>
-													);
-												})}
-											</TableBody>
-										</Table>
-									</div>
-								</div>
+											</TableRow>
+										))}
+									</TableBody>
+								</Table>
 							</div>
 						</div>
 					);
@@ -687,4 +450,3 @@ export function PricingReference({
 		</Card>
 	);
 }
-
