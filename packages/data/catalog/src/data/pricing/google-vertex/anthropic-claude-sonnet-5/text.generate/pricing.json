@@ -12,7 +12,7 @@
       "price_per_unit": 2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex pricing prepared from prerelease/API migration materials for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -33,7 +33,7 @@
       "price_per_unit": 10,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex pricing prepared from prerelease/API migration materials for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -54,7 +54,7 @@
       "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex cache-read pricing prepared from existing Claude Vertex cache conventions for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex cache-hit pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -75,7 +75,7 @@
       "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex 5-minute cache-write pricing prepared from existing Claude Vertex cache conventions for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex 5-minute cache-write pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -96,7 +96,7 @@
       "price_per_unit": 4,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex 1-hour cache-write pricing prepared from existing Claude Vertex cache conventions for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex 1-hour cache-write pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -114,10 +114,10 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 4,
+      "price_per_unit": 2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -135,10 +135,10 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 15,
+      "price_per_unit": 10,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -156,10 +156,10 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.4,
+      "price_per_unit": 0.2,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex cache-read pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex cache-hit pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -177,10 +177,10 @@
       "meter": "cached_write_text_tokens_5m",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 5,
+      "price_per_unit": 2.5,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex 5-minute cache-write pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex 5-minute cache-write pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -198,10 +198,10 @@
       "meter": "cached_write_text_tokens_1h",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 8,
+      "price_per_unit": 4,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Introductory Claude Sonnet 5 Vertex 1-hour cache-write pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Introductory Claude Sonnet 5 Vertex 1-hour cache-write pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -222,7 +222,7 @@
       "price_per_unit": 3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex pricing prepared from prerelease/API migration materials for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -242,7 +242,7 @@
       "price_per_unit": 15,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex pricing prepared from prerelease/API migration materials for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -262,7 +262,7 @@
       "price_per_unit": 0.3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex cache-read pricing prepared from existing Claude Vertex cache conventions for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex cache-hit pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -282,7 +282,7 @@
       "price_per_unit": 3.75,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex 5-minute cache-write pricing prepared from existing Claude Vertex cache conventions for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex 5-minute cache-write pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -302,7 +302,7 @@
       "price_per_unit": 6,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex 1-hour cache-write pricing prepared from existing Claude Vertex cache conventions for requests up to 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex 1-hour cache-write pricing from Google's official partner-model pricing table for requests up to 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -319,10 +319,10 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 6,
+      "price_per_unit": 3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -339,10 +339,10 @@
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 22.5,
+      "price_per_unit": 15,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -359,10 +359,10 @@
       "meter": "cached_read_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.6,
+      "price_per_unit": 0.3,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex cache-read pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex cache-hit pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -379,10 +379,10 @@
       "meter": "cached_write_text_tokens_5m",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 7.5,
+      "price_per_unit": 3.75,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex 5-minute cache-write pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex 5-minute cache-write pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
@@ -399,10 +399,10 @@
       "meter": "cached_write_text_tokens_1h",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 12,
+      "price_per_unit": 6,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Standard Claude Sonnet 5 Vertex 1-hour cache-write pricing prepared from existing Claude Vertex long-context conventions for requests above 200k input tokens; pending official Vertex confirmation.",
+      "note": "Standard Claude Sonnet 5 Vertex 1-hour cache-write pricing from Google's official partner-model pricing table for requests above 200k input tokens.",
       "match": [
         {
           "path": "input_tokens",
