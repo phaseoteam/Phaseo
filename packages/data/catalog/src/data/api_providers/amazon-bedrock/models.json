@@ -420,6 +420,27 @@
     ]
   },
   {
+    "api_model_id": "anthropic/claude-sonnet-5",
+    "provider_api_model_id": "amazon-bedrock:anthropic/claude-sonnet-5",
+    "provider_model_slug": "anthropic.claude-sonnet-5",
+    "internal_model_id": "anthropic/claude-sonnet-5",
+    "is_active_gateway": false,
+    "quantization_scheme": null,
+    "input_modalities": "text,image",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-30T00:00:00",
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
     "api_model_id": "google/gemma-3-12b",
     "provider_api_model_id": "amazon-bedrock:google/gemma-3-12b",
     "provider_model_slug": "google.gemma-3-12b-it",

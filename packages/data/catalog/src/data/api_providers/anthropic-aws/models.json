@@ -966,6 +966,27 @@
                          ]
     },
     {
+        "api_model_id": "anthropic/claude-sonnet-5",
+        "provider_api_model_id": "anthropic-aws:anthropic/claude-sonnet-5",
+        "provider_model_slug": "claude-sonnet-5",
+        "internal_model_id": "anthropic/claude-sonnet-5",
+        "is_active_gateway": false,
+        "quantization_scheme": null,
+        "input_modalities": "text,image",
+        "output_modalities": "text",
+        "context_length": 1000000,
+        "max_output_tokens": 128000,
+        "effective_from": "2026-06-30T00:00:00",
+        "effective_to": null,
+        "capabilities": [
+            {
+                "capability_id": "text.generate",
+                "status": "active",
+                "params": []
+            }
+        ]
+    },
+    {
         "api_model_id":  "anthropic/claude-opus-4.7",
         "provider_api_model_id":  "anthropic-aws:anthropic/claude-opus-4.7",
         "provider_model_slug":  "claude-opus-4-7",

@@ -1,0 +1,46 @@
+{
+  "model_id": "anthropic/claude-sonnet-5",
+  "organisation_id": "anthropic",
+  "name": "Claude Sonnet 5",
+  "status": "Rumoured",
+  "previous_model_id": "anthropic/claude-sonnet-4.6",
+  "description": "Claude Sonnet 5 is Anthropic's expected next Sonnet-class model. Public Anthropic documentation is not yet available, so this record is prepared for catalog and provider support without marking the model as released.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-sonnet-5",
+  "family_id": "anthropic/claude-5",
+  "page_notice": {
+    "tone": "info",
+    "markdown": "Claude Sonnet 5 data is prepared from pre-release signals and API migration materials. Availability, pricing, context length, provider mappings, and model metadata may change when Anthropic and downstream providers publish official release documentation."
+  },
+  "links": [
+    {
+      "platform": "social",
+      "url": "https://fixupx.com/i/status/2071951093152505952"
+    }
+  ],
+  "details": [
+    {
+      "name": "source_status",
+      "value": "Unofficial social leak signal observed on 2026-06-30; no official Anthropic announcement or model documentation found as of 2026-06-30."
+    },
+    {
+      "name": "knowledge_signal",
+      "value": "January 2026 according to the 2026-06-30 unofficial social leak; pending official confirmation."
+    },
+    {
+      "name": "context_window",
+      "value": "1,000,000-token variant reported by the 2026-06-30 unofficial social leak; pending official confirmation."
+    },
+    {
+      "name": "pricing_signal",
+      "value": "Prerelease/API migration materials list standard Anthropic pricing at $3 per 1M input tokens and $15 per 1M output tokens, with introductory pricing at $2 per 1M input tokens and $10 per 1M output tokens through 2026-08-31."
+    }
+  ],
+  "benchmarks": []
+}

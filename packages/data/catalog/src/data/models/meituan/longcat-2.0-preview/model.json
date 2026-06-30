@@ -2,13 +2,13 @@
   "model_id": "meituan/longcat-2.0-preview",
   "organisation_id": "meituan",
   "name": "LongCat 2.0 Preview",
-  "status": "Available",
+  "status": "Retired",
   "previous_model_id": "meituan/longcat-flash-cat",
-  "description": "LongCat 2.0 Preview is Meituan's beta LongCat generation model, introduced as the successor to the legacy LongCat Flash models. Access is limited during the preview while Meituan expands beta capacity.",
+  "description": "LongCat 2.0 Preview was Meituan's beta LongCat generation model and was replaced by the stable LongCat 2.0 provider model ID on June 29, 2026.",
   "announced_date": null,
   "release_date": null,
-  "deprecation_date": null,
-  "retirement_date": null,
+  "deprecation_date": "2026-06-29T00:00:00",
+  "retirement_date": "2026-06-29T00:00:00",
   "license": null,
   "input_types": [
     "text"

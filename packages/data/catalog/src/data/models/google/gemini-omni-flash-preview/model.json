@@ -1,0 +1,30 @@
+{
+  "model_id": "google/gemini-omni-flash-preview",
+  "organisation_id": "google",
+  "name": "Gemini Omni Flash Preview",
+  "status": "Rumoured",
+  "previous_model_id": "google/gemini-3.5-flash",
+  "description": "Gemini Omni Flash Preview is a prepared catalog entry for Google's expected fast Gemini Omni preview model. Google announced Gemini Omni at I/O 2026, but this specific API model ID remains unconfirmed until it appears in official provider model lists.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text,image,video,audio",
+  "api_model_id": "google/gemini-omni-flash-preview",
+  "family_id": "google/gemini-omni",
+  "links": [
+    {
+      "platform": "event",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-collection/"
+    }
+  ],
+  "details": [
+    {
+      "name": "source_status",
+      "value": "Prepared from leak signal; awaiting official Google AI Studio or Vertex model ID confirmation."
+    }
+  ],
+  "benchmarks": []
+}

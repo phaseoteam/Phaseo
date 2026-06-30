@@ -1,0 +1,34 @@
+{
+  "model_id": "google/gemini-3.5-pro",
+  "organisation_id": "google",
+  "name": "Gemini 3.5 Pro",
+  "status": "Announced",
+  "previous_model_id": "google/gemini-3.1-pro-preview",
+  "description": "Gemini 3.5 Pro is Google's announced frontier Gemini 3.5 model for complex, agentic workflows. Google introduced the Gemini 3.5 family at I/O 2026 and said Pro was already in internal use with rollout planned after the initial 3.5 Flash release.",
+  "announced_date": "2026-05-19T00:00:00",
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,video,audio",
+  "output_types": "text",
+  "api_model_id": "google/gemini-3.5-pro",
+  "family_id": "google/gemini-3.5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/"
+    },
+    {
+      "platform": "event",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-collection/"
+    }
+  ],
+  "details": [
+    {
+      "name": "availability",
+      "value": "Announced at Google I/O 2026; Google said rollout was planned after the 3.5 Flash launch."
+    }
+  ],
+  "benchmarks": []
+}
