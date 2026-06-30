@@ -1397,6 +1397,7 @@ const (
 	KnownModelIdAnthropicClaudeOpus48 KnownModelId = "anthropic/claude-opus-4.8"
 	KnownModelIdAnthropicClaudeSonnet45 KnownModelId = "anthropic/claude-sonnet-4.5"
 	KnownModelIdAnthropicClaudeSonnet46 KnownModelId = "anthropic/claude-sonnet-4.6"
+	KnownModelIdAnthropicClaudeSonnet5 KnownModelId = "anthropic/claude-sonnet-5"
 	KnownModelIdArceeAiTrinityLarge KnownModelId = "arcee-ai/trinity-large"
 	KnownModelIdArceeAiTrinityLargeThinking KnownModelId = "arcee-ai/trinity-large-thinking"
 	KnownModelIdArceeAiTrinityMini KnownModelId = "arcee-ai/trinity-mini"

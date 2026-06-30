@@ -60,6 +60,9 @@ module AIStatsSdk
     # Model ID: anthropic/claude-sonnet-4.6
     # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6
     ANTHROPIC_CLAUDE_SONNET_4_6 = "anthropic/claude-sonnet-4.6"
+    # Model ID: anthropic/claude-sonnet-5
+    # Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-5
+    ANTHROPIC_CLAUDE_SONNET_5 = "anthropic/claude-sonnet-5"
     # Model ID: arcee-ai/trinity-large
     # Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large
     ARCEE_AI_TRINITY_LARGE = "arcee-ai/trinity-large"
@@ -87,6 +90,9 @@ module AIStatsSdk
     # Model ID: baidu/ernie-4.5-vl-424b-a47b
     # Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b
     BAIDU_ERNIE_4_5_VL_424B_A47B = "baidu/ernie-4.5-vl-424b-a47b"
+    # Model ID: black-forest-labs/flux-1-schnell
+    # Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell
+    BLACK_FOREST_LABS_FLUX_1_SCHNELL = "black-forest-labs/flux-1-schnell"
     # Model ID: bytedance/seed-1.6
     # Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6
     BYTEDANCE_SEED_1_6 = "bytedance/seed-1.6"
@@ -222,9 +228,6 @@ module AIStatsSdk
     # Model ID: google/gemini-3-pro-image
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image
     GOOGLE_GEMINI_3_PRO_IMAGE = "google/gemini-3-pro-image"
-    # Model ID: google/gemini-3-pro-image-preview
-    # Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview
-    GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW = "google/gemini-3-pro-image-preview"
     # Model ID: google/gemini-3.1-flash-image
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image
     GOOGLE_GEMINI_3_1_FLASH_IMAGE = "google/gemini-3.1-flash-image"
@@ -339,9 +342,9 @@ module AIStatsSdk
     # Model ID: liquid-ai/lfm-2-24b-a2b
     # Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
     LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b"
-    # Model ID: meituan/longcat-flash-cat
-    # Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat
-    MEITUAN_LONGCAT_FLASH_CAT = "meituan/longcat-flash-cat"
+    # Model ID: meituan/longcat-2.0-preview
+    # Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0-preview
+    MEITUAN_LONGCAT_2_0_PREVIEW = "meituan/longcat-2.0-preview"
     # Model ID: meta/llama-3-70b
     # Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b
     META_LLAMA_3_70B = "meta/llama-3-70b"
@@ -555,9 +558,6 @@ module AIStatsSdk
     # Model ID: nex-agi/nex-n2-pro
     # Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro
     NEX_AGI_NEX_N2_PRO = "nex-agi/nex-n2-pro"
-    # Model ID: nex-agi/nex-n2-pro:free
-    # Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
-    NEX_AGI_NEX_N2_PRO_FREE = "nex-agi/nex-n2-pro:free"
     # Model ID: nous/hermes-3-llama-3.1-405b
     # Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
     NOUS_HERMES_3_LLAMA_3_1_405B = "nous/hermes-3-llama-3.1-405b"
@@ -978,6 +978,9 @@ module AIStatsSdk
     # Model ID: qwen/qwen3-coder-plus-2025-09-23
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23
     QWEN_QWEN3_CODER_PLUS_2025_09_23 = "qwen/qwen3-coder-plus-2025-09-23"
+    # Model ID: qwen/qwen3-embedding-8b
+    # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b
+    QWEN_QWEN3_EMBEDDING_8B = "qwen/qwen3-embedding-8b"
     # Model ID: qwen/qwen3-max
     # Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max
     QWEN_QWEN3_MAX = "qwen/qwen3-max"
@@ -1356,6 +1359,7 @@ module AIStatsSdk
     ModelIds::ANTHROPIC_CLAUDE_OPUS_4_8,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_5,
     ModelIds::ANTHROPIC_CLAUDE_SONNET_4_6,
+    ModelIds::ANTHROPIC_CLAUDE_SONNET_5,
     ModelIds::ARCEE_AI_TRINITY_LARGE,
     ModelIds::ARCEE_AI_TRINITY_LARGE_THINKING,
     ModelIds::ARCEE_AI_TRINITY_MINI,
@@ -1365,6 +1369,7 @@ module AIStatsSdk
     ModelIds::BAIDU_ERNIE_4_5_VL_28B_A3B,
     ModelIds::BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING,
     ModelIds::BAIDU_ERNIE_4_5_VL_424B_A47B,
+    ModelIds::BLACK_FOREST_LABS_FLUX_1_SCHNELL,
     ModelIds::BYTEDANCE_SEED_1_6,
     ModelIds::BYTEDANCE_SEED_1_6_250915,
     ModelIds::BYTEDANCE_SEED_1_6_FLASH,
@@ -1410,7 +1415,6 @@ module AIStatsSdk
     ModelIds::GOOGLE_GEMINI_2_5_PRO,
     ModelIds::GOOGLE_GEMINI_3_FLASH_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_PRO_IMAGE,
-    ModelIds::GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_IMAGE,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_LITE,
@@ -1449,7 +1453,7 @@ module AIStatsSdk
     ModelIds::KWAIPILOT_KAT_CODER_PRO_V1,
     ModelIds::KWAIPILOT_KAT_CODER_PRO_V2,
     ModelIds::LIQUID_AI_LFM_2_24B_A2B,
-    ModelIds::MEITUAN_LONGCAT_FLASH_CAT,
+    ModelIds::MEITUAN_LONGCAT_2_0_PREVIEW,
     ModelIds::META_LLAMA_3_70B,
     ModelIds::META_LLAMA_3_8B,
     ModelIds::META_LLAMA_3_8B_LITE,
@@ -1521,7 +1525,6 @@ module AIStatsSdk
     ModelIds::MORPH_MORPH_V3_LARGE,
     ModelIds::NEX_AGI_DEEPSEEK_V3_1_NEX_N1,
     ModelIds::NEX_AGI_NEX_N2_PRO,
-    ModelIds::NEX_AGI_NEX_N2_PRO_FREE,
     ModelIds::NOUS_HERMES_3_LLAMA_3_1_405B,
     ModelIds::NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B,
     ModelIds::NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B,
@@ -1662,6 +1665,7 @@ module AIStatsSdk
     ModelIds::QWEN_QWEN3_CODER_NEXT,
     ModelIds::QWEN_QWEN3_CODER_PLUS_2025_07_22,
     ModelIds::QWEN_QWEN3_CODER_PLUS_2025_09_23,
+    ModelIds::QWEN_QWEN3_EMBEDDING_8B,
     ModelIds::QWEN_QWEN3_MAX,
     ModelIds::QWEN_QWEN3_MAX_2025_09_23,
     ModelIds::QWEN_QWEN3_MAX_2026_01_23,
