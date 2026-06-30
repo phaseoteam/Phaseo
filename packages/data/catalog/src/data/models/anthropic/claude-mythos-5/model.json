@@ -2,7 +2,7 @@
   "model_id": "anthropic/claude-mythos-5",
   "organisation_id": "anthropic",
   "name": "Claude Mythos 5",
-  "status": "Withheld",
+  "status": "Limited Access",
   "previous_model_id": "anthropic/claude-mythos-preview",
   "description": "Claude Mythos 5 is Anthropic's limited-availability Mythos-class model and the direct successor to [Claude Mythos Preview](/anthropic/claude-mythos-preview). It is the same underlying model as [Claude Fable 5](/anthropic/claude-fable-5), but offered through Project Glasswing and related trusted-access programs with safeguards lifted in specific high-risk domains, making it Anthropic's restricted frontier track for the hardest long-horizon coding, cyber-defense, and research workflows.",
   "announced_date": "2026-06-09T00:00:00",

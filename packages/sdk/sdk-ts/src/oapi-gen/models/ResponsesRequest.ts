@@ -1,5 +1,11 @@
 export interface ResponsesRequest {
   background?: boolean;
+  cache_control?: {
+    scope?: string;
+    ttl?: string;
+    type?: string;
+    [key: string]: unknown;
+  };
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -42,6 +48,7 @@ export interface ResponsesRequest {
   parallel_tool_calls?: boolean;
   previous_response_id?: string;
   prompt_cache_key?: string | null;
+  prompt_cache_retention?: string;
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -107,7 +114,7 @@ export interface ResponsesRequest {
     };
   };
   reasoning?: {
-    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
     enabled?: boolean;
     max_tokens?: number;
     summary?: "auto" | "concise" | "detailed";

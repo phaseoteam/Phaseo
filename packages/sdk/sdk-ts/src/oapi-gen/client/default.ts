@@ -1071,6 +1071,12 @@ export type CreateAnthropicMessageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -1111,6 +1117,7 @@ export type CreateAnthropicMessageParams = {
       [key: string]: unknown;
     };
     model: string;
+    prompt_cache_retention?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -1176,7 +1183,7 @@ export type CreateAnthropicMessageParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -1995,6 +2002,12 @@ export type CreateChatCompletionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -2102,6 +2115,7 @@ export type CreateChatCompletionParams = {
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
     prompt_cache_key?: string | null;
+    prompt_cache_retention?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -2167,7 +2181,7 @@ export type CreateChatCompletionParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -3180,6 +3194,12 @@ export type CreateResponseParams = {
   headers?: Record<string, never>;
   body?: {
     background?: boolean;
+    cache_control?: {
+      scope?: string;
+      ttl?: string;
+      type?: string;
+      [key: string]: unknown;
+    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -3222,6 +3242,7 @@ export type CreateResponseParams = {
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
     prompt_cache_key?: string | null;
+    prompt_cache_retention?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -3287,7 +3308,7 @@ export type CreateResponseParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";

@@ -6,6 +6,11 @@ import {
 	fetchFrontendFreeRouterOverview,
 	fetchFrontendModels,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import {
+	getCatalogPricingSummariesCached,
+	type CatalogPricingSummary,
+	type CatalogPricingSummaryByModelId,
+} from "@/lib/fetchers/models/getCatalogPricingSummaries";
 import type { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { featureOrder } from "@/lib/config/featureLabels";
@@ -76,6 +81,8 @@ const ACTIVE_PROVIDER_STATUS_SET = new Set([
 	"deranked_lvl3",
 ]);
 
+const UPCOMING_CATALOG_STATUS_SET = new Set(["announced"]);
+
 function getModelYear(model: ModelsPageModel): string {
 	if (Number.isFinite(model.primary_timestamp)) {
 		const year = new Date(Number(model.primary_timestamp)).getUTCFullYear();
@@ -88,6 +95,13 @@ function getModelYear(model: ModelsPageModel): string {
 		}
 	}
 	return "";
+}
+
+function getCatalogOnlyGatewayStatus(
+	model: ModelCard,
+): NonNullable<ModelsPageModel["gateway_status"]> {
+	const status = String(model.status ?? "").trim().toLowerCase();
+	return UPCOMING_CATALOG_STATUS_SET.has(status) ? "coming_soon" : "not_listed";
 }
 
 function normalizeModalityKey(value: string): string {
@@ -864,9 +878,30 @@ function resolveModelWeeklyMetrics(
 	);
 }
 
+function resolveCatalogPricingSummary(
+	modelId: string,
+	signals: GatewaySignals | undefined,
+	catalogPricingSummaries: CatalogPricingSummaryByModelId,
+): CatalogPricingSummary | undefined {
+	const candidates = [
+		modelId,
+		...Array.from(signals?.apiModelIds ?? []),
+	]
+		.map((value) => String(value ?? "").trim())
+		.filter(Boolean);
+
+	for (const candidate of candidates) {
+		const summary = catalogPricingSummaries[candidate];
+		if (summary) return summary;
+	}
+
+	return undefined;
+}
+
 function withGatewayMetadata(
 	baseModels: ModelCard[],
 	monitorRows: NonNullable<ModelCard["gateway_monitor_rows"]>,
+	catalogPricingSummaries: CatalogPricingSummaryByModelId,
 ): ModelsPageModel[] {
 	const signalsByModelId = aggregateGatewaySignals(monitorRows);
 	const weeklyMetricsByKey = buildWeeklyMetricsByModel(monitorRows);
@@ -882,6 +917,11 @@ function withGatewayMetadata(
 			model ?? ({ model_id: modelId, name: modelId, organisation_id: "" } as ModelCard),
 			signals,
 			weeklyMetricsByKey,
+		);
+		const catalogPricing = resolveCatalogPricingSummary(
+			modelId,
+			signals,
+			catalogPricingSummaries,
 		);
 		const providerCount = signals?.providerIds.size ?? 0;
 		const activeProviderCount = signals?.activeProviderIds.size ?? 0;
@@ -987,23 +1027,46 @@ function withGatewayMetadata(
 			supported_parameters: Array.from(
 				signals?.supportedParameters ?? [],
 			).sort(),
-			lowest_input_price: signals?.lowestInputPrice ?? null,
-			lowest_output_price: signals?.lowestOutputPrice ?? null,
-			lowest_standard_input_price: signals?.lowestStandardInputPrice ?? null,
-			lowest_standard_output_price: signals?.lowestStandardOutputPrice ?? null,
+			lowest_input_price:
+				signals?.lowestInputPrice ?? catalogPricing?.lowestInputPrice ?? null,
+			lowest_output_price:
+				signals?.lowestOutputPrice ?? catalogPricing?.lowestOutputPrice ?? null,
+			lowest_standard_input_price:
+				signals?.lowestStandardInputPrice ??
+				catalogPricing?.lowestStandardInputPrice ??
+				null,
+			lowest_standard_output_price:
+				signals?.lowestStandardOutputPrice ??
+				catalogPricing?.lowestStandardOutputPrice ??
+				null,
 			lowest_standard_input_price_label:
-				signals?.lowestStandardInputPriceLabel ?? null,
+				signals?.lowestStandardInputPriceLabel ??
+				catalogPricing?.lowestStandardInputPriceLabel ??
+				null,
 			lowest_standard_input_price_unit:
-				signals?.lowestStandardInputPriceUnit ?? null,
+				signals?.lowestStandardInputPriceUnit ??
+				catalogPricing?.lowestStandardInputPriceUnit ??
+				null,
 			lowest_standard_output_price_label:
-				signals?.lowestStandardOutputPriceLabel ?? null,
+				signals?.lowestStandardOutputPriceLabel ??
+				catalogPricing?.lowestStandardOutputPriceLabel ??
+				null,
 			lowest_standard_output_price_unit:
-				signals?.lowestStandardOutputPriceUnit ?? null,
-			lowest_from_price: signals?.lowestFromPrice ?? null,
-			lowest_from_price_unit: signals?.lowestFromPriceUnit ?? null,
-			pricing_detail_rows: mergePricingDetailRows(
-				(signals?.pricingDetailRows ?? []).slice(0, 12),
-			).slice(0, 6),
+				signals?.lowestStandardOutputPriceUnit ??
+				catalogPricing?.lowestStandardOutputPriceUnit ??
+				null,
+			lowest_from_price:
+				signals?.lowestFromPrice ?? catalogPricing?.lowestFromPrice ?? null,
+			lowest_from_price_unit:
+				signals?.lowestFromPriceUnit ?? catalogPricing?.lowestFromPriceUnit ?? null,
+			pricing_detail_rows: (() => {
+				const gatewayRows = mergePricingDetailRows(
+					(signals?.pricingDetailRows ?? []).slice(0, 12),
+				).slice(0, 6);
+				return gatewayRows.length > 0
+					? gatewayRows
+					: (catalogPricing?.pricingDetailRows ?? []);
+			})(),
 			popularity_tokens_week: weeklyMetrics.tokensWeek,
 			throughput_week: weeklyMetrics.throughputWeek,
 			latency_week: weeklyMetrics.latencyWeek,
@@ -1055,6 +1118,7 @@ function withGatewayMetadata(
 				weeklyMetricsByKey,
 			);
 			const modelId = String(model.model_id ?? "").trim();
+			const catalogPricing = catalogPricingSummaries[modelId];
 
 			return {
 				model_id: modelId,
@@ -1069,7 +1133,7 @@ function withGatewayMetadata(
 				primary_date: model.primary_date ?? null,
 				primary_timestamp: model.primary_timestamp ?? null,
 				primary_group_key: model.primary_group_key ?? null,
-				gateway_status: "not_listed" as const,
+				gateway_status: getCatalogOnlyGatewayStatus(model),
 				gateway_provider_count: 0,
 				gateway_active_provider_count: 0,
 				gateway_endpoints: [],
@@ -1084,19 +1148,28 @@ function withGatewayMetadata(
 				gateway_active_provider_names: [],
 				gateway_execution_regions: [],
 				gateway_provider_details: [],
-				gateway_api_model_ids: [],
+				gateway_api_model_ids: sortApiModelIdsForDisplay(
+					catalogPricing?.apiModelIds,
+				),
 				context_lengths: [],
 				supported_parameters: [],
-				lowest_input_price: null,
-				lowest_output_price: null,
-				lowest_standard_input_price: null,
-				lowest_standard_output_price: null,
-				lowest_standard_input_price_label: null,
-				lowest_standard_input_price_unit: null,
-				lowest_standard_output_price_label: null,
-				lowest_standard_output_price_unit: null,
-				lowest_from_price: null,
-				lowest_from_price_unit: null,
+				lowest_input_price: catalogPricing?.lowestInputPrice ?? null,
+				lowest_output_price: catalogPricing?.lowestOutputPrice ?? null,
+				lowest_standard_input_price:
+					catalogPricing?.lowestStandardInputPrice ?? null,
+				lowest_standard_output_price:
+					catalogPricing?.lowestStandardOutputPrice ?? null,
+				lowest_standard_input_price_label:
+					catalogPricing?.lowestStandardInputPriceLabel ?? null,
+				lowest_standard_input_price_unit:
+					catalogPricing?.lowestStandardInputPriceUnit ?? null,
+				lowest_standard_output_price_label:
+					catalogPricing?.lowestStandardOutputPriceLabel ?? null,
+				lowest_standard_output_price_unit:
+					catalogPricing?.lowestStandardOutputPriceUnit ?? null,
+				lowest_from_price: catalogPricing?.lowestFromPrice ?? null,
+				lowest_from_price_unit: catalogPricing?.lowestFromPriceUnit ?? null,
+				pricing_detail_rows: catalogPricing?.pricingDetailRows ?? [],
 				popularity_tokens_week: weeklyMetrics.tokensWeek,
 				throughput_week: weeklyMetrics.throughputWeek,
 				latency_week: weeklyMetrics.latencyWeek,
@@ -1177,14 +1250,19 @@ function buildFreeRouterModelsPageEntry(
 }
 
 async function ModelsPageDataSection() {
-	const [allModels, freeRouterOverview] = await Promise.all([
+	const [allModels, freeRouterOverview, catalogPricingSummaries] = await Promise.all([
 		fetchFrontendModels(),
 		fetchFrontendFreeRouterOverview(),
+		getCatalogPricingSummariesCached(),
 	]);
 	const monitorRows = allModels.flatMap(
 		(model) => model.gateway_monitor_rows ?? [],
 	);
-	const models = withGatewayMetadata(allModels, monitorRows);
+	const models = withGatewayMetadata(
+		allModels,
+		monitorRows,
+		catalogPricingSummaries,
+	);
 	const freeRouterModel = buildFreeRouterModelsPageEntry(freeRouterOverview);
 	const modelsWithFreeRouter = [
 		freeRouterModel,

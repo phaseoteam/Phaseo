@@ -630,6 +630,35 @@ describe("text request schema validation", () => {
 		expect(chatParsed.success).toBe(true);
 	});
 
+	it("accepts top-level cache controls on text request surfaces", () => {
+		const cache_control = { type: "ephemeral", ttl: "1h" };
+
+		const responsesParsed = ResponsesSchema.safeParse({
+			model: "openai/gpt-5.6-sol",
+			input: "hello",
+			prompt_cache_retention: "24h",
+			cache_control,
+		});
+		expect(responsesParsed.success).toBe(true);
+
+		const chatParsed = ChatCompletionsSchema.safeParse({
+			model: "anthropic/claude-sonnet-4",
+			messages: [{ role: "user", content: "hello" }],
+			prompt_cache_retention: "24h",
+			cache_control,
+		});
+		expect(chatParsed.success).toBe(true);
+
+		const messagesParsed = AnthropicMessagesSchema.safeParse({
+			model: "anthropic/claude-sonnet-4",
+			max_tokens: 128,
+			messages: [{ role: "user", content: "hello" }],
+			prompt_cache_retention: "24h",
+			cache_control,
+		});
+		expect(messagesParsed.success).toBe(true);
+	});
+
 	it("rejects unsupported context management type", () => {
 		const parsed = ResponsesSchema.safeParse({
 			model: "openai/gpt-5-nano",
@@ -656,4 +685,3 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(false);
 	});
 });
-

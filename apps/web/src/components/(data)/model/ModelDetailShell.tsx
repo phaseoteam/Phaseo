@@ -41,7 +41,9 @@ function isModelNotFoundError(error: unknown): boolean {
 
 function getVisibleTabKeys(modelStatus?: string | null): string[] {
 	const isLimitedAvailabilityModel =
-		modelStatus === "Announced" || modelStatus === "Withheld";
+		modelStatus === "Announced" ||
+		modelStatus === "Limited Access" ||
+		modelStatus === "Withheld";
 	if (isLimitedAvailabilityModel) {
 		return ["overview"];
 	}

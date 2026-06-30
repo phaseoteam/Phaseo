@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 export type FamilyModelStatus =
     | "Rumoured"
     | "Announced"
+    | "Limited Access"
     | "Withheld"
     | "Available"
     | "Deprecated"

@@ -1,0 +1,146 @@
+---
+title: "OpenAI: Migrating to GPT-5.6"
+description: "What to review before moving GPT-5.x traffic to GPT-5.6 Sol, Terra, or Luna."
+---
+
+# OpenAI: Migrating to GPT-5.6
+
+Use this guide when you are preparing existing OpenAI traffic for GPT-5.6.
+
+GPT-5.6 is currently tracked as a limited preview. In AI Stats, the models are listed as coming soon until public gateway routing is active, so treat this as a readiness checklist rather than a same-day production cutover.
+
+## Choose the right GPT-5.6 model
+
+| Model | Use it for | Reasoning effort |
+| --- | --- | --- |
+| `openai/gpt-5.6-sol` | Highest-capability reasoning, agentic coding, scientific analysis, and complex professional work | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-terra` | Balanced everyday work across reasoning, coding, and assistant workflows | `none`, `low`, `medium`, `high`, `xhigh` |
+| `openai/gpt-5.6-luna` | Lower-latency and cost-sensitive GPT-5.6 workloads | `none`, `low`, `medium`, `high`, `xhigh` |
+
+Only Sol is currently marked for the new `max` reasoning effort. Do not send `max` to Terra or Luna unless their model metadata changes.
+
+AI Stats also tracks preview aliases for the latest model in each tier: `openai/gpt-sol-latest`, `openai/gpt-terra-latest`, and `openai/gpt-luna-latest`. Use the fixed GPT-5.6 IDs for controlled migrations, and use the tier aliases only when you deliberately want future Sol, Terra, or Luna releases to roll forward through the same route.
+
+## What changed
+
+- GPT-5.6 adds the new Sol/Terra/Luna split instead of one default GPT route.
+- Sol adds `reasoning.effort: "max"` for the highest reasoning budget.
+- Terra and Luna keep the standard non-`max` GPT-5.6 reasoning effort set.
+- Prompt caching is priced with separate uncached input, cache read, cache write, and output meters.
+- Explicit cache breakpoints are supported during preview, with a 30-minute minimum cache life noted in the model metadata.
+
+## Update your request
+
+Start by swapping only the model id and keeping the rest of the request stable.
+
+The first examples use the Responses API-style `input` shape. If you are migrating Chat Completions traffic, keep using `messages` and the flat `reasoning_effort` field where the route supports it.
+
+```json
+{
+  "model": "openai/gpt-5.6-terra",
+  "input": "Summarize the rollout risks in this migration plan.",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+Use Sol's `max` effort only for routes where the extra reasoning budget is worth the latency and cost.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": "Review this multi-service incident report and propose a rollback plan.",
+  "reasoning": {
+    "effort": "max"
+  }
+}
+```
+
+If your integration still sends the flat OpenAI-compatible field, AI Stats also accepts `reasoning_effort` where the route supports it:
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Design a test plan for this agent workflow."
+    }
+  ],
+  "reasoning_effort": "max"
+}
+```
+
+## Review pricing
+
+GPT-5.6 pricing is tracked per 1M tokens in the catalog.
+
+| Model | Input | Cache read | Cache write | Output |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
+| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
+| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+
+Cache reads are priced separately from cache writes. In the current catalog, cache reads use a 90% discount from uncached input, while cache writes are priced at 1.25x uncached input.
+
+## Use prompt caching deliberately
+
+For repeated context, keep the stable part of the prompt in cacheable blocks and leave request-specific text uncached.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Stable policy document...",
+          "cache_control": {
+            "type": "ephemeral",
+            "ttl": "1h"
+          }
+        },
+        {
+          "type": "input_text",
+          "text": "Apply the policy to this new customer request."
+        }
+      ]
+    }
+  ],
+  "prompt_cache_retention": "24h"
+}
+```
+
+Use `cache_control` when you want provider-neutral cache hints or explicit cache breakpoints. Use `prompt_cache_retention` when you want to pass OpenAI cache-retention options directly.
+
+## What to test
+
+### Reasoning and output quality
+
+- Sol at `high`, `xhigh`, and `max` on your hardest tasks
+- Terra and Luna at the effort levels you expect to expose to users
+- structured outputs and schema pass rate at each effort level
+- tool-call selection and argument quality
+
+### Cost and latency
+
+- latency at each reasoning effort
+- output token growth when moving from older GPT-5.x models
+- cache read/write mix on repeated prompts
+- cost per successful task, not just price per token
+
+### Rollback
+
+- keep your previous GPT-5.x route available as a fallback
+- keep `max` behind a config flag or preset until it is proven on production-like prompts
+- monitor cache write volume separately from cache read volume
+- do not make GPT-5.6 your default route until the model page shows active gateway providers
+
+## Sources
+
+- [OpenAI GPT-5.6 preview announcement](https://openai.com/index/previewing-gpt-5-6-sol/)
+- [GPT-5.6 preview system card](https://deploymentsafety.openai.com/gpt-5-6-preview)
+- [AI Stats prompt caching guide](../guides/prompt-caching)

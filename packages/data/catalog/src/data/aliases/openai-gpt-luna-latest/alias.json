@@ -1,0 +1,8 @@
+{
+  "alias_slug": "openai/gpt-luna-latest",
+  "resolved_api_model_id": "openai/gpt-5.6-luna",
+  "resolved_model_id": "openai/gpt-5.6-luna",
+  "channel": "preview",
+  "is_enabled": true,
+  "notes": "Preview alias for the latest OpenAI Luna-tier GPT model."
+}

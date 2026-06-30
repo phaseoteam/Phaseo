@@ -44,6 +44,7 @@ class AnthropicMessage(TypedDict):
 	role: Literal["user", "assistant"]
 
 class AnthropicMessagesRequest(TypedDict):
+	cache_control: NotRequired[Dict[str, Any]]
 	debug: NotRequired[Dict[str, Any]]
 	echo_upstream_request: NotRequired[bool]
 	max_tokens: int
@@ -51,6 +52,7 @@ class AnthropicMessagesRequest(TypedDict):
 	meta: NotRequired[bool]
 	metadata: NotRequired[Dict[str, Any]]
 	model: str
+	prompt_cache_retention: NotRequired[str]
 	provider: NotRequired[Dict[str, Any]]
 	provider_options: NotRequired[Dict[str, Any]]
 	reasoning: NotRequired[Dict[str, Any]]
@@ -356,6 +358,7 @@ class ChatChoice(TypedDict):
 	message: NotRequired[Dict[str, Any]]
 
 class ChatCompletionsRequest(TypedDict):
+	cache_control: NotRequired[Dict[str, Any]]
 	debug: NotRequired[Dict[str, Any]]
 	echo_upstream_request: NotRequired[bool]
 	frequency_penalty: NotRequired[float]
@@ -373,6 +376,7 @@ class ChatCompletionsRequest(TypedDict):
 	parallel_tool_calls: NotRequired[bool]
 	presence_penalty: NotRequired[float]
 	prompt_cache_key: NotRequired[Optional[str]]
+	prompt_cache_retention: NotRequired[str]
 	provider: NotRequired[Dict[str, Any]]
 	provider_options: NotRequired[Dict[str, Any]]
 	reasoning: NotRequired[Dict[str, Any]]
@@ -925,7 +929,7 @@ class RealtimeNotImplementedResponse(TypedDict):
 	error: Dict[str, Any]
 
 class ReasoningConfig(TypedDict):
-	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh"]]
+	effort: NotRequired[Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"]]
 	enabled: NotRequired[bool]
 	max_tokens: NotRequired[int]
 	summary: NotRequired[Literal["auto", "concise", "detailed"]]
@@ -995,6 +999,7 @@ class ResponsesOutputTextPart(TypedDict):
 
 class ResponsesRequest(TypedDict):
 	background: NotRequired[bool]
+	cache_control: NotRequired[Dict[str, Any]]
 	debug: NotRequired[Dict[str, Any]]
 	echo_upstream_request: NotRequired[bool]
 	image_config: NotRequired[Dict[str, Any]]
@@ -1009,6 +1014,7 @@ class ResponsesRequest(TypedDict):
 	parallel_tool_calls: NotRequired[bool]
 	previous_response_id: NotRequired[str]
 	prompt_cache_key: NotRequired[Optional[str]]
+	prompt_cache_retention: NotRequired[str]
 	provider: NotRequired[Dict[str, Any]]
 	provider_options: NotRequired[Dict[str, Any]]
 	reasoning: NotRequired[Dict[str, Any]]
