@@ -49,6 +49,7 @@ pub struct AnthropicMessage {
 }
 
 pub struct AnthropicMessagesRequest {
+	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
@@ -56,6 +57,7 @@ pub struct AnthropicMessagesRequest {
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
+	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -395,6 +397,7 @@ pub struct ChatChoice {
 }
 
 pub struct ChatCompletionsRequest {
+	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub frequency_penalty: Option<f64>,
@@ -412,6 +415,7 @@ pub struct ChatCompletionsRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
 	pub prompt_cache_key: Option<Option<String>>,
+	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -1108,6 +1112,7 @@ pub struct ResponsesOutputTextPart {
 
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
+	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub image_config: Option<HashMap<String, String>>,
@@ -1122,6 +1127,7 @@ pub struct ResponsesRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub previous_response_id: Option<String>,
 	pub prompt_cache_key: Option<Option<String>>,
+	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,

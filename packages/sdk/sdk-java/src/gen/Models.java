@@ -50,6 +50,7 @@ public final class Models {
 	}
 
 	public static class AnthropicMessagesRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -57,6 +58,7 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
+		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -398,6 +400,7 @@ public final class Models {
 	}
 
 	public static class ChatCompletionsRequest {
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
@@ -415,6 +418,7 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public String prompt_cache_key;
+		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -1119,6 +1123,7 @@ public final class Models {
 
 	public static class ResponsesRequest {
 		public Boolean background;
+		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Object image_config;
@@ -1133,6 +1138,7 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
 		public String prompt_cache_key;
+		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
