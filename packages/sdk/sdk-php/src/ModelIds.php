@@ -65,6 +65,9 @@ final class ModelIds
     /** Model ID: anthropic/claude-sonnet-4.6. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6 */
     public const ANTHROPIC_CLAUDE_SONNET_4_6 = 'anthropic/claude-sonnet-4.6';
 
+    /** Model ID: anthropic/claude-sonnet-5. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-5 */
+    public const ANTHROPIC_CLAUDE_SONNET_5 = 'anthropic/claude-sonnet-5';
+
     /** Model ID: arcee-ai/trinity-large. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large */
     public const ARCEE_AI_TRINITY_LARGE = 'arcee-ai/trinity-large';
 
@@ -91,6 +94,9 @@ final class ModelIds
 
     /** Model ID: baidu/ernie-4.5-vl-424b-a47b. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b */
     public const BAIDU_ERNIE_4_5_VL_424B_A47B = 'baidu/ernie-4.5-vl-424b-a47b';
+
+    /** Model ID: black-forest-labs/flux-1-schnell. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell */
+    public const BLACK_FOREST_LABS_FLUX_1_SCHNELL = 'black-forest-labs/flux-1-schnell';
 
     /** Model ID: bytedance/seed-1.6. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6 */
     public const BYTEDANCE_SEED_1_6 = 'bytedance/seed-1.6';
@@ -227,9 +233,6 @@ final class ModelIds
     /** Model ID: google/gemini-3-pro-image. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image */
     public const GOOGLE_GEMINI_3_PRO_IMAGE = 'google/gemini-3-pro-image';
 
-    /** Model ID: google/gemini-3-pro-image-preview. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview */
-    public const GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW = 'google/gemini-3-pro-image-preview';
-
     /** Model ID: google/gemini-3.1-flash-image. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image */
     public const GOOGLE_GEMINI_3_1_FLASH_IMAGE = 'google/gemini-3.1-flash-image';
 
@@ -344,8 +347,8 @@ final class ModelIds
     /** Model ID: liquid-ai/lfm-2-24b-a2b. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b */
     public const LIQUID_AI_LFM_2_24B_A2B = 'liquid-ai/lfm-2-24b-a2b';
 
-    /** Model ID: meituan/longcat-flash-cat. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat */
-    public const MEITUAN_LONGCAT_FLASH_CAT = 'meituan/longcat-flash-cat';
+    /** Model ID: meituan/longcat-2.0-preview. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0-preview */
+    public const MEITUAN_LONGCAT_2_0_PREVIEW = 'meituan/longcat-2.0-preview';
 
     /** Model ID: meta/llama-3-70b. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b */
     public const META_LLAMA_3_70B = 'meta/llama-3-70b';
@@ -559,9 +562,6 @@ final class ModelIds
 
     /** Model ID: nex-agi/nex-n2-pro. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro */
     public const NEX_AGI_NEX_N2_PRO = 'nex-agi/nex-n2-pro';
-
-    /** Model ID: nex-agi/nex-n2-pro:free. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree */
-    public const NEX_AGI_NEX_N2_PRO_FREE = 'nex-agi/nex-n2-pro:free';
 
     /** Model ID: nous/hermes-3-llama-3.1-405b. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b */
     public const NOUS_HERMES_3_LLAMA_3_1_405B = 'nous/hermes-3-llama-3.1-405b';
@@ -982,6 +982,9 @@ final class ModelIds
 
     /** Model ID: qwen/qwen3-coder-plus-2025-09-23. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23 */
     public const QWEN_QWEN3_CODER_PLUS_2025_09_23 = 'qwen/qwen3-coder-plus-2025-09-23';
+
+    /** Model ID: qwen/qwen3-embedding-8b. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b */
+    public const QWEN_QWEN3_EMBEDDING_8B = 'qwen/qwen3-embedding-8b';
 
     /** Model ID: qwen/qwen3-max. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max */
     public const QWEN_QWEN3_MAX = 'qwen/qwen3-max';

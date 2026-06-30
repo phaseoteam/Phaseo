@@ -64,6 +64,9 @@ const (
 	// Model ID: anthropic/claude-sonnet-4.6
 	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6
 	ModelIDAnthropicClaudeSonnet46 gen.ModelId = "anthropic/claude-sonnet-4.6"
+	// Model ID: anthropic/claude-sonnet-5
+	// Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-5
+	ModelIDAnthropicClaudeSonnet5 gen.ModelId = "anthropic/claude-sonnet-5"
 	// Model ID: arcee-ai/trinity-large
 	// Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large
 	ModelIDArceeAiTrinityLarge gen.ModelId = "arcee-ai/trinity-large"
@@ -91,6 +94,9 @@ const (
 	// Model ID: baidu/ernie-4.5-vl-424b-a47b
 	// Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b
 	ModelIDBaiduErnie45Vl424bA47b gen.ModelId = "baidu/ernie-4.5-vl-424b-a47b"
+	// Model ID: black-forest-labs/flux-1-schnell
+	// Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell
+	ModelIDBlackForestLabsFlux1Schnell gen.ModelId = "black-forest-labs/flux-1-schnell"
 	// Model ID: bytedance/seed-1.6
 	// Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6
 	ModelIDBytedanceSeed16 gen.ModelId = "bytedance/seed-1.6"
@@ -226,9 +232,6 @@ const (
 	// Model ID: google/gemini-3-pro-image
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image
 	ModelIDGoogleGemini3ProImage gen.ModelId = "google/gemini-3-pro-image"
-	// Model ID: google/gemini-3-pro-image-preview
-	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview
-	ModelIDGoogleGemini3ProImagePreview gen.ModelId = "google/gemini-3-pro-image-preview"
 	// Model ID: google/gemini-3.1-flash-image
 	// Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image
 	ModelIDGoogleGemini31FlashImage gen.ModelId = "google/gemini-3.1-flash-image"
@@ -343,9 +346,9 @@ const (
 	// Model ID: liquid-ai/lfm-2-24b-a2b
 	// Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
 	ModelIDLiquidAiLfm224bA2b gen.ModelId = "liquid-ai/lfm-2-24b-a2b"
-	// Model ID: meituan/longcat-flash-cat
-	// Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat
-	ModelIDMeituanLongcatFlashCat gen.ModelId = "meituan/longcat-flash-cat"
+	// Model ID: meituan/longcat-2.0-preview
+	// Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0-preview
+	ModelIDMeituanLongcat20Preview gen.ModelId = "meituan/longcat-2.0-preview"
 	// Model ID: meta/llama-3-70b
 	// Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b
 	ModelIDMetaLlama370b gen.ModelId = "meta/llama-3-70b"
@@ -559,9 +562,6 @@ const (
 	// Model ID: nex-agi/nex-n2-pro
 	// Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro
 	ModelIDNexAgiNexN2Pro gen.ModelId = "nex-agi/nex-n2-pro"
-	// Model ID: nex-agi/nex-n2-pro:free
-	// Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree
-	ModelIDNexAgiNexN2ProFree gen.ModelId = "nex-agi/nex-n2-pro:free"
 	// Model ID: nous/hermes-3-llama-3.1-405b
 	// Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b
 	ModelIDNousHermes3Llama31405b gen.ModelId = "nous/hermes-3-llama-3.1-405b"
@@ -982,6 +982,9 @@ const (
 	// Model ID: qwen/qwen3-coder-plus-2025-09-23
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23
 	ModelIDQwenQwen3CoderPlus20250923 gen.ModelId = "qwen/qwen3-coder-plus-2025-09-23"
+	// Model ID: qwen/qwen3-embedding-8b
+	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b
+	ModelIDQwenQwen3Embedding8b gen.ModelId = "qwen/qwen3-embedding-8b"
 	// Model ID: qwen/qwen3-max
 	// Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max
 	ModelIDQwenQwen3Max gen.ModelId = "qwen/qwen3-max"
@@ -1360,6 +1363,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDAnthropicClaudeOpus48,
 	ModelIDAnthropicClaudeSonnet45,
 	ModelIDAnthropicClaudeSonnet46,
+	ModelIDAnthropicClaudeSonnet5,
 	ModelIDArceeAiTrinityLarge,
 	ModelIDArceeAiTrinityLargeThinking,
 	ModelIDArceeAiTrinityMini,
@@ -1369,6 +1373,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDBaiduErnie45Vl28bA3b,
 	ModelIDBaiduErnie45Vl28bA3bThinking,
 	ModelIDBaiduErnie45Vl424bA47b,
+	ModelIDBlackForestLabsFlux1Schnell,
 	ModelIDBytedanceSeed16,
 	ModelIDBytedanceSeed16250915,
 	ModelIDBytedanceSeed16Flash,
@@ -1414,7 +1419,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDGoogleGemini25Pro,
 	ModelIDGoogleGemini3FlashPreview,
 	ModelIDGoogleGemini3ProImage,
-	ModelIDGoogleGemini3ProImagePreview,
 	ModelIDGoogleGemini31FlashImage,
 	ModelIDGoogleGemini31FlashImagePreview,
 	ModelIDGoogleGemini31FlashLite,
@@ -1453,7 +1457,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDKwaipilotKatCoderProV1,
 	ModelIDKwaipilotKatCoderProV2,
 	ModelIDLiquidAiLfm224bA2b,
-	ModelIDMeituanLongcatFlashCat,
+	ModelIDMeituanLongcat20Preview,
 	ModelIDMetaLlama370b,
 	ModelIDMetaLlama38b,
 	ModelIDMetaLlama38bLite,
@@ -1525,7 +1529,6 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDMorphMorphV3Large,
 	ModelIDNexAgiDeepseekV31NexN1,
 	ModelIDNexAgiNexN2Pro,
-	ModelIDNexAgiNexN2ProFree,
 	ModelIDNousHermes3Llama31405b,
 	ModelIDNousresearchHermes3Llama31405b,
 	ModelIDNousresearchHermes3Llama3170b,
@@ -1666,6 +1669,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDQwenQwen3CoderNext,
 	ModelIDQwenQwen3CoderPlus20250722,
 	ModelIDQwenQwen3CoderPlus20250923,
+	ModelIDQwenQwen3Embedding8b,
 	ModelIDQwenQwen3Max,
 	ModelIDQwenQwen3Max20250923,
 	ModelIDQwenQwen3Max20260123,

@@ -41,6 +41,8 @@ export const ModelIds = {
   ANTHROPIC_CLAUDE_SONNET_4_5: "anthropic/claude-sonnet-4.5",
   /** Model ID: `anthropic/claude-sonnet-4.6`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6 */
   ANTHROPIC_CLAUDE_SONNET_4_6: "anthropic/claude-sonnet-4.6",
+  /** Model ID: `anthropic/claude-sonnet-5`. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-5 */
+  ANTHROPIC_CLAUDE_SONNET_5: "anthropic/claude-sonnet-5",
   /** Model ID: `arcee-ai/trinity-large`. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large */
   ARCEE_AI_TRINITY_LARGE: "arcee-ai/trinity-large",
   /** Model ID: `arcee-ai/trinity-large-thinking`. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large-thinking */
@@ -59,6 +61,8 @@ export const ModelIds = {
   BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING: "baidu/ernie-4.5-vl-28b-a3b-thinking",
   /** Model ID: `baidu/ernie-4.5-vl-424b-a47b`. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b */
   BAIDU_ERNIE_4_5_VL_424B_A47B: "baidu/ernie-4.5-vl-424b-a47b",
+  /** Model ID: `black-forest-labs/flux-1-schnell`. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell */
+  BLACK_FOREST_LABS_FLUX_1_SCHNELL: "black-forest-labs/flux-1-schnell",
   /** Model ID: `bytedance/seed-1.6`. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6 */
   BYTEDANCE_SEED_1_6: "bytedance/seed-1.6",
   /** Model ID: `bytedance/seed-1.6-250915`. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-250915 */
@@ -149,8 +153,6 @@ export const ModelIds = {
   GOOGLE_GEMINI_3_FLASH_PREVIEW: "google/gemini-3-flash-preview",
   /** Model ID: `google/gemini-3-pro-image`. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image */
   GOOGLE_GEMINI_3_PRO_IMAGE: "google/gemini-3-pro-image",
-  /** Model ID: `google/gemini-3-pro-image-preview`. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview */
-  GOOGLE_GEMINI_3_PRO_IMAGE_PREVIEW: "google/gemini-3-pro-image-preview",
   /** Model ID: `google/gemini-3.1-flash-image`. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image */
   GOOGLE_GEMINI_3_1_FLASH_IMAGE: "google/gemini-3.1-flash-image",
   /** Model ID: `google/gemini-3.1-flash-image-preview`. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview */
@@ -227,8 +229,8 @@ export const ModelIds = {
   KWAIPILOT_KAT_CODER_PRO_V2: "kwaipilot/kat-coder-pro-v2",
   /** Model ID: `liquid-ai/lfm-2-24b-a2b`. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b */
   LIQUID_AI_LFM_2_24B_A2B: "liquid-ai/lfm-2-24b-a2b",
-  /** Model ID: `meituan/longcat-flash-cat`. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat */
-  MEITUAN_LONGCAT_FLASH_CAT: "meituan/longcat-flash-cat",
+  /** Model ID: `meituan/longcat-2.0-preview`. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0-preview */
+  MEITUAN_LONGCAT_2_0_PREVIEW: "meituan/longcat-2.0-preview",
   /** Model ID: `meta/llama-3-70b`. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b */
   META_LLAMA_3_70B: "meta/llama-3-70b",
   /** Model ID: `meta/llama-3-8b`. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-8b */
@@ -371,8 +373,6 @@ export const ModelIds = {
   NEX_AGI_DEEPSEEK_V3_1_NEX_N1: "nex-agi/deepseek-v3.1-nex-n1",
   /** Model ID: `nex-agi/nex-n2-pro`. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro */
   NEX_AGI_NEX_N2_PRO: "nex-agi/nex-n2-pro",
-  /** Model ID: `nex-agi/nex-n2-pro:free`. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree */
-  NEX_AGI_NEX_N2_PRO_FREE: "nex-agi/nex-n2-pro:free",
   /** Model ID: `nous/hermes-3-llama-3.1-405b`. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b */
   NOUS_HERMES_3_LLAMA_3_1_405B: "nous/hermes-3-llama-3.1-405b",
   /** Model ID: `nousresearch/hermes-3-llama-3.1-405b`. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b */
@@ -653,6 +653,8 @@ export const ModelIds = {
   QWEN_QWEN3_CODER_PLUS_2025_07_22: "qwen/qwen3-coder-plus-2025-07-22",
   /** Model ID: `qwen/qwen3-coder-plus-2025-09-23`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23 */
   QWEN_QWEN3_CODER_PLUS_2025_09_23: "qwen/qwen3-coder-plus-2025-09-23",
+  /** Model ID: `qwen/qwen3-embedding-8b`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b */
+  QWEN_QWEN3_EMBEDDING_8B: "qwen/qwen3-embedding-8b",
   /** Model ID: `qwen/qwen3-max`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max */
   QWEN_QWEN3_MAX: "qwen/qwen3-max",
   /** Model ID: `qwen/qwen3-max-2025-09-23`. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2025-09-23 */

@@ -44,6 +44,8 @@ namespace AiStatsSdk
         public const string AnthropicClaudeSonnet45 = "anthropic/claude-sonnet-4.5";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.6</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6</summary>
         public const string AnthropicClaudeSonnet46 = "anthropic/claude-sonnet-4.6";
+        /// <summary>Model ID: <c>anthropic/claude-sonnet-5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-5</summary>
+        public const string AnthropicClaudeSonnet5 = "anthropic/claude-sonnet-5";
         /// <summary>Model ID: <c>arcee-ai/trinity-large</c>. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large</summary>
         public const string ArceeAiTrinityLarge = "arcee-ai/trinity-large";
         /// <summary>Model ID: <c>arcee-ai/trinity-large-thinking</c>. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large-thinking</summary>
@@ -62,6 +64,8 @@ namespace AiStatsSdk
         public const string BaiduErnie45Vl28bA3bThinking = "baidu/ernie-4.5-vl-28b-a3b-thinking";
         /// <summary>Model ID: <c>baidu/ernie-4.5-vl-424b-a47b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b</summary>
         public const string BaiduErnie45Vl424bA47b = "baidu/ernie-4.5-vl-424b-a47b";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-schnell</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell</summary>
+        public const string BlackForestLabsFlux1Schnell = "black-forest-labs/flux-1-schnell";
         /// <summary>Model ID: <c>bytedance/seed-1.6</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6</summary>
         public const string BytedanceSeed16 = "bytedance/seed-1.6";
         /// <summary>Model ID: <c>bytedance/seed-1.6-250915</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-250915</summary>
@@ -152,8 +156,6 @@ namespace AiStatsSdk
         public const string GoogleGemini3FlashPreview = "google/gemini-3-flash-preview";
         /// <summary>Model ID: <c>google/gemini-3-pro-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image</summary>
         public const string GoogleGemini3ProImage = "google/gemini-3-pro-image";
-        /// <summary>Model ID: <c>google/gemini-3-pro-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview</summary>
-        public const string GoogleGemini3ProImagePreview = "google/gemini-3-pro-image-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image</summary>
         public const string GoogleGemini31FlashImage = "google/gemini-3.1-flash-image";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview</summary>
@@ -230,8 +232,8 @@ namespace AiStatsSdk
         public const string KwaipilotKatCoderProV2 = "kwaipilot/kat-coder-pro-v2";
         /// <summary>Model ID: <c>liquid-ai/lfm-2-24b-a2b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b</summary>
         public const string LiquidAiLfm224bA2b = "liquid-ai/lfm-2-24b-a2b";
-        /// <summary>Model ID: <c>meituan/longcat-flash-cat</c>. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat</summary>
-        public const string MeituanLongcatFlashCat = "meituan/longcat-flash-cat";
+        /// <summary>Model ID: <c>meituan/longcat-2.0-preview</c>. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0-preview</summary>
+        public const string MeituanLongcat20Preview = "meituan/longcat-2.0-preview";
         /// <summary>Model ID: <c>meta/llama-3-70b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b</summary>
         public const string MetaLlama370b = "meta/llama-3-70b";
         /// <summary>Model ID: <c>meta/llama-3-8b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-8b</summary>
@@ -374,8 +376,6 @@ namespace AiStatsSdk
         public const string NexAgiDeepseekV31NexN1 = "nex-agi/deepseek-v3.1-nex-n1";
         /// <summary>Model ID: <c>nex-agi/nex-n2-pro</c>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro</summary>
         public const string NexAgiNexN2Pro = "nex-agi/nex-n2-pro";
-        /// <summary>Model ID: <c>nex-agi/nex-n2-pro:free</c>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree</summary>
-        public const string NexAgiNexN2ProFree = "nex-agi/nex-n2-pro:free";
         /// <summary>Model ID: <c>nous/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b</summary>
         public const string NousHermes3Llama31405b = "nous/hermes-3-llama-3.1-405b";
         /// <summary>Model ID: <c>nousresearch/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b</summary>
@@ -656,6 +656,8 @@ namespace AiStatsSdk
         public const string QwenQwen3CoderPlus20250722 = "qwen/qwen3-coder-plus-2025-07-22";
         /// <summary>Model ID: <c>qwen/qwen3-coder-plus-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23</summary>
         public const string QwenQwen3CoderPlus20250923 = "qwen/qwen3-coder-plus-2025-09-23";
+        /// <summary>Model ID: <c>qwen/qwen3-embedding-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b</summary>
+        public const string QwenQwen3Embedding8b = "qwen/qwen3-embedding-8b";
         /// <summary>Model ID: <c>qwen/qwen3-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max</summary>
         public const string QwenQwen3Max = "qwen/qwen3-max";
         /// <summary>Model ID: <c>qwen/qwen3-max-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2025-09-23</summary>
