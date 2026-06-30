@@ -108,7 +108,7 @@
     {
       "benchmark_id": "cursorbench-3.1",
       "score": 61.2,
-      "is_self_reported": true,
+      "is_self_reported": false,
       "other_info": "Cursor production agent harness; measured and reported independently by Cursor",
       "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
     },
@@ -199,7 +199,7 @@
     {
       "benchmark_id": "gdpval-aa",
       "score": 1609,
-      "is_self_reported": true,
+      "is_self_reported": false,
       "other_info": "GDPval-AA v2; Elo; independent Artificial Analysis evaluation, score as of 2026-06-06",
       "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
     },
