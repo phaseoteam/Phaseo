@@ -119,8 +119,7 @@
       "anthropic/claude-opus-4.8",
       "anthropic/claude-sonnet-4",
       "anthropic/claude-sonnet-4.5",
-      "anthropic/claude-sonnet-4.6",
-      "anthropic/claude-sonnet-5"
+      "anthropic/claude-sonnet-4.6"
     ],
     "arcee-ai": [
       "arcee-ai/trinity-large",
@@ -1881,7 +1880,6 @@
     "anthropic-claude-3.7",
     "anthropic-claude-4.0",
     "anthropic-claude-4.1",
-    "anthropic-claude-5",
     "anthropic-claude-instant-1",
     "baidu-ernie-4.5",
     "google-gemini-1.0",
@@ -2000,7 +1998,6 @@
     "amazon-bedrock:text.generate:anthropic-claude-sonnet-4",
     "amazon-bedrock:text.generate:anthropic-claude-sonnet-4.5",
     "amazon-bedrock:text.generate:anthropic-claude-sonnet-4.6",
-    "amazon-bedrock:text.generate:anthropic-claude-sonnet-5",
     "amazon-bedrock:text.generate:google-gemma-3-12b",
     "amazon-bedrock:text.generate:google-gemma-3-27b",
     "amazon-bedrock:text.generate:google-gemma-3-4b",
@@ -2034,7 +2031,6 @@
     "anthropic:text.generate:anthropic-claude-sonnet-4",
     "anthropic:text.generate:anthropic-claude-sonnet-4.5",
     "anthropic:text.generate:anthropic-claude-sonnet-4.6",
-    "anthropic:text.generate:anthropic-claude-sonnet-5",
     "arcee-ai:text.generate:arcee-ai-trinity-large",
     "arcee-ai:text.generate:arcee-ai-trinity-large-thinking",
     "arcee-ai:text.generate:arcee-ai-trinity-mini",
@@ -2555,7 +2551,6 @@
     "venice:text.generate:anthropic-claude-opus-4.6",
     "venice:text.generate:anthropic-claude-sonnet-4.5",
     "venice:text.generate:anthropic-claude-sonnet-4.6",
-    "venice:text.generate:anthropic-claude-sonnet-5",
     "venice:text.generate:deepseek-deepseek-v3.2",
     "venice:text.generate:google-gemini-3-flash-preview",
     "venice:text.generate:google-gemini-3.5-flash",
