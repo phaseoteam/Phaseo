@@ -1,0 +1,7 @@
+{
+  "alias_slug": "google/gemini-image-pro-latest",
+  "resolved_api_model_id": "google/gemini-3-pro-image",
+  "channel": "stable",
+  "is_enabled": true,
+  "notes": "Tracks Google's latest Pro-tier Gemini image generation and editing model."
+}

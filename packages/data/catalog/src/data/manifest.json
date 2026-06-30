@@ -1860,6 +1860,9 @@
   "aliases": [
     "google-gemini-flash-latest",
     "google-gemini-flash-lite-latest",
+    "google-gemini-image-latest",
+    "google-gemini-image-lite-latest",
+    "google-gemini-image-pro-latest",
     "google-gemini-pro-latest",
     "minimax-m2.x-latest",
     "openai-gpt-chat-latest",
