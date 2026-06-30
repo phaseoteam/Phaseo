@@ -4,13 +4,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import {
 	Table,
 	TableBody,
 	TableCell,
@@ -32,20 +25,16 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { Logo } from "@/components/Logo";
-import { CircleDollarSign, Gift, Layers, Sparkles, Zap } from "lucide-react";
 
 const BLENDED_USAGE_EXAMPLES = [100_000, 1_000_000, 100_000_000];
 const BLENDED_BUDGET_EXAMPLES = [1, 10, 100];
-const PRICING_PLAN_ORDER = ["batch", "flex", "standard", "priority"] as const;
 
 type ComparisonPricingModel = {
 	key: string;
 	label: string;
 	modelId?: string;
 	provider: string;
-	availableProviders?: string[];
 	pricingPlan: string;
-	availablePricingPlans?: string[];
 	meters: PricingMeter[];
 };
 
@@ -61,14 +50,9 @@ interface PricingReferenceProps {
 	pricingPlan?: string | null;
 	selectedModelId?: string;
 	selectedModelLabel?: string;
-	availableProviders: Array<{ provider: string; displayName: string }>;
 	selectedProvider: string;
-	onProviderSelect: (provider: string) => void;
-	onPricingPlanSelect: (plan: string) => void;
 	pricingTimeUtc: string;
 	comparisonModels?: ComparisonPricingModel[];
-	onComparisonModelPricingPlanSelect?: (modelKey: string, plan: string) => void;
-	onComparisonModelProviderSelect?: (modelKey: string, provider: string) => void;
 }
 
 function calculateBlendedRate(
@@ -166,23 +150,6 @@ function formatProviderLabel(providerId: string): string {
 		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function sortPricingPlans(plans: string[]) {
-	const priorityByPlan = new Map<string, number>(
-		PRICING_PLAN_ORDER.map((plan, index) => [plan, index])
-	);
-
-	return [...plans].sort((a, b) => {
-		const aPriority = priorityByPlan.get(a.toLowerCase());
-		const bPriority = priorityByPlan.get(b.toLowerCase());
-		if (aPriority !== undefined && bPriority !== undefined) {
-			return aPriority - bPriority;
-		}
-		if (aPriority !== undefined) return -1;
-		if (bPriority !== undefined) return 1;
-		return a.localeCompare(b);
-	});
-}
-
 function formatUsageUnit(quantity: number, unitLabel: string) {
 	const normalized = unitLabel.trim().toLowerCase();
 	if (normalized === "token" || normalized === "tokens") {
@@ -196,21 +163,15 @@ export function PricingReference({
 	pricingPlan,
 	selectedModelId,
 	selectedModelLabel,
-	availableProviders,
 	selectedProvider,
-	onProviderSelect,
-	onPricingPlanSelect,
 	pricingTimeUtc,
 	comparisonModels,
-	onComparisonModelPricingPlanSelect,
-	onComparisonModelProviderSelect,
 }: PricingReferenceProps) {
 	if (meters.length === 0) {
 		return null;
 	}
 
 	const displayPlan = pricingPlan || "standard";
-	const hasComparisonModels = Boolean(comparisonModels && comparisonModels.length > 0);
 	const activeModels =
 		comparisonModels && comparisonModels.length > 0
 			? comparisonModels
@@ -219,10 +180,8 @@ export function PricingReference({
 						key: "primary",
 						label: selectedModelLabel || selectedModelId || "Selected Model",
 						modelId: selectedModelId,
-						provider: selectedProvider || availableProviders[0]?.provider || "selected",
-						availableProviders: availableProviders.map((item) => item.provider),
+						provider: selectedProvider || "selected",
 						pricingPlan: displayPlan,
-						availablePricingPlans: [displayPlan],
 						meters,
 					},
 			  ];
@@ -262,44 +221,6 @@ export function PricingReference({
 		</p>
 	);
 
-	const handleModelProviderSelect = (
-		model: ComparisonPricingModel,
-		provider: string
-	) => {
-		if (model.key === "primary") {
-			onProviderSelect(provider);
-			return;
-		}
-		onComparisonModelProviderSelect?.(model.key, provider);
-	};
-
-	const handleModelPricingPlanSelect = (
-		model: ComparisonPricingModel,
-		plan: string
-	) => {
-		if (model.key === "primary") {
-			onPricingPlanSelect(plan);
-			return;
-		}
-		onComparisonModelPricingPlanSelect?.(model.key, plan);
-	};
-
-	const getPricingPlanIcon = (plan: string) => {
-		switch (plan.toLowerCase()) {
-			case "free":
-				return <Gift className="w-4 h-4" />;
-			case "batch":
-				return <Layers className="w-4 h-4" />;
-			case "flex":
-				return <Zap className="w-4 h-4" />;
-			case "priority":
-				return <Sparkles className="w-4 h-4" />;
-			case "standard":
-			default:
-				return <CircleDollarSign className="w-4 h-4" />;
-		}
-	};
-
 	const blendedByModel = activeModels.map((model) => ({
 		key: model.key,
 		blended: calculateBlendedRate(model.meters, pricingTimeUtc),
@@ -328,112 +249,13 @@ export function PricingReference({
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-7">
-				<div className="rounded-xl border bg-muted/20 p-4">
-					<div className="mb-3 flex items-center justify-between gap-2">
-						<h4 className="text-sm font-semibold">Selected Models</h4>
-					</div>
-					<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-						{activeModels.map((model) => {
-							const modelProviderOptions = Array.from(
-								new Set(model.availableProviders ?? [model.provider])
-							).sort((a, b) =>
-								formatProviderLabel(a).localeCompare(formatProviderLabel(b))
-							);
-							const modelPlanOptions = sortPricingPlans(
-								model.availablePricingPlans ?? []
-							);
-
-							return (
-								<div
-									key={`${model.key}-selected`}
-									className="rounded-lg border bg-background p-3"
-								>
-								<div className="flex items-start justify-between gap-2">
-									<div className="min-w-0 space-y-1">
-										{renderModelName(model, "truncate text-sm font-medium")}
-										{renderProviderName(
-											model.provider,
-											"text-xs text-muted-foreground"
-										)}
-									</div>
-									<Link
-										href={getProviderHref(model.provider)}
-										className="shrink-0"
-										aria-label={`View ${formatProviderLabel(model.provider)} provider`}
-									>
-										<Logo
-											id={model.provider}
-											width={18}
-											height={18}
-											className="h-[18px] w-[18px] shrink-0"
-											fallback={<div className="h-[18px] w-[18px] rounded bg-muted" />}
-										/>
-									</Link>
-								</div>
-								<Select
-									value={model.provider}
-									onValueChange={(provider) =>
-										handleModelProviderSelect(model, provider)
-									}
-									disabled={modelProviderOptions.length <= 1}
-								>
-									<SelectTrigger className="mt-2 h-8 w-full text-xs">
-										<SelectValue placeholder="Provider" />
-									</SelectTrigger>
-									<SelectContent>
-										{modelProviderOptions.map((providerId) => (
-											<SelectItem
-												key={`${model.key}-provider-${providerId}`}
-												value={providerId}
-											>
-												<div className="flex items-center gap-2">
-													<Logo
-														id={providerId}
-														width={14}
-														height={14}
-														className="h-3.5 w-3.5"
-														fallback={
-															<div className="h-3.5 w-3.5 rounded bg-muted" />
-														}
-													/>
-													{formatProviderLabel(providerId)}
-												</div>
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-								{model.availablePricingPlans && model.availablePricingPlans.length > 0 ? (
-									<Select
-										value={model.pricingPlan}
-										onValueChange={(plan) => handleModelPricingPlanSelect(model, plan)}
-										disabled={modelPlanOptions.length <= 1}
-									>
-										<SelectTrigger className="mt-2 h-8 w-full text-xs">
-											<SelectValue placeholder="Tier" />
-										</SelectTrigger>
-										<SelectContent>
-											{modelPlanOptions.map((plan) => (
-												<SelectItem key={`${model.key}-${plan}`} value={plan}>
-													<div className="flex items-center gap-2">
-														{getPricingPlanIcon(plan)}
-														{plan.charAt(0).toUpperCase() + plan.slice(1)}
-													</div>
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								) : null}
-								</div>
-							);
-						})}
-					</div>
-				</div>
-
 				{hasBlendedComparison && (
 					<div className="space-y-4 rounded-xl border bg-primary/5 p-5">
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<div>
-								<h4 className="text-base font-semibold">Blended Rate Comparison</h4>
+								<h4 className="text-base font-semibold">
+									{activeModels.length > 1 ? "Blended Rate Comparison" : "Blended Rate"}
+								</h4>
 								<p className="text-xs text-muted-foreground">
 									90% input and 10% output token ratio
 								</p>

@@ -1,16 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { ChevronsUpDown, X } from "lucide-react";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Command,
 	CommandEmpty,
@@ -19,6 +12,12 @@ import {
 	CommandItem,
 	CommandList,
 } from "@/components/ui/command";
+import { Label } from "@/components/ui/label";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Select,
 	SelectContent,
@@ -27,13 +26,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
-
-type ComparisonCandidate = {
-	key: string;
-	modelId: string;
-	displayName: string;
-	provider: string;
-};
+import { ChevronsUpDown } from "lucide-react";
 
 function formatProviderLabel(providerId: string): string {
 	const known: Record<string, string> = {
@@ -52,6 +45,12 @@ function formatProviderLabel(providerId: string): string {
 	}
 
 	return providerId
+		.replace(/[-_]+/g, " ")
+		.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatPlanLabel(plan: string): string {
+	return plan
 		.replace(/[-_]+/g, " ")
 		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -76,14 +75,14 @@ interface ModelSelectorProps {
 	selectedModelId: string;
 	selectedProvider: string;
 	selectedEndpoint: string;
+	selectedPricingPlan: string;
 	availableEndpoints: string[];
-	comparisonCandidates: ComparisonCandidate[];
-	comparisonModelKeys: string[];
-	maxComparisonModels: number;
+	availableProviders: string[];
+	availablePricingPlans: string[];
 	onModelSelect: (modelId: string) => void;
 	onEndpointSelect: (endpoint: string) => void;
-	onToggleComparisonModel: (modelKey: string) => void;
-	onRemoveModelSelection: (modelKey: string) => void;
+	onProviderSelect: (provider: string) => void;
+	onPricingPlanSelect: (plan: string) => void;
 }
 
 export function ModelSelector({
@@ -91,413 +90,211 @@ export function ModelSelector({
 	selectedModelId,
 	selectedProvider,
 	selectedEndpoint,
+	selectedPricingPlan,
 	availableEndpoints,
-	comparisonCandidates,
-	comparisonModelKeys,
-	maxComparisonModels,
+	availableProviders,
+	availablePricingPlans,
 	onModelSelect,
 	onEndpointSelect,
-	onToggleComparisonModel,
-	onRemoveModelSelection,
+	onProviderSelect,
+	onPricingPlanSelect,
 }: ModelSelectorProps) {
 	const [openModel, setOpenModel] = useState(false);
-	const MAX_PROVIDER_LOGOS = 4;
 
-	// Build model data with provider information
 	const availableModels = useMemo(() => {
 		const modelMap = new Map<
 			string,
-			{ modelId: string; displayName: string; providers: Set<string> }
+			{
+				modelId: string;
+				displayName: string;
+				providers: Set<string>;
+				endpoints: Set<string>;
+			}
 		>();
 
-		models.forEach((m) => {
-			if (!modelMap.has(m.model)) {
-				modelMap.set(m.model, {
-					modelId: m.model,
-					displayName: m.display_name || m.model,
+		for (const row of models) {
+			if (!modelMap.has(row.model)) {
+				modelMap.set(row.model, {
+					modelId: row.model,
+					displayName: row.display_name || row.model,
 					providers: new Set(),
+					endpoints: new Set(),
 				});
 			}
-			modelMap.get(m.model)!.providers.add(m.provider);
-		});
+			const entry = modelMap.get(row.model)!;
+			entry.providers.add(row.provider);
+			entry.endpoints.add(row.endpoint);
+		}
 
 		return Array.from(modelMap.values())
-			.map((m) => ({
-				...m,
-				providers: Array.from(m.providers).sort(),
+			.map((model) => ({
+				...model,
+				providers: Array.from(model.providers).sort(),
+				endpoints: Array.from(model.endpoints).sort(),
 			}))
 			.sort((a, b) => a.displayName.localeCompare(b.displayName));
 	}, [models]);
 
-	const selectedComparisonModels = useMemo(() => {
-		const map = new Map(comparisonCandidates.map((candidate) => [candidate.key, candidate]));
-		return comparisonModelKeys
-			.map((key) => map.get(key))
-			.filter((candidate): candidate is ComparisonCandidate => Boolean(candidate));
-	}, [comparisonCandidates, comparisonModelKeys]);
-
-	const selectedPrimaryModel = useMemo(
-		() => availableModels.find((model) => model.modelId === selectedModelId) ?? null,
+	const selectedModel = useMemo(
+		() => availableModels.find((model) => model.modelId === selectedModelId),
 		[availableModels, selectedModelId]
 	);
 
-	const selectedPrimaryCandidate = useMemo(() => {
-		if (!selectedModelId) return null;
-
-		const exact =
-			selectedProvider
-				? comparisonCandidates.find(
-						(candidate) =>
-							candidate.modelId === selectedModelId &&
-							candidate.provider === selectedProvider
-				  )
-				: null;
-		if (exact) return exact;
-
-		return (
-			comparisonCandidates.find(
-				(candidate) => candidate.modelId === selectedModelId
-			) ?? null
-		);
-	}, [comparisonCandidates, selectedModelId, selectedProvider]);
-
-	const selectedDropdownItems = useMemo(() => {
-		if (!selectedPrimaryCandidate) {
-			return selectedComparisonModels.map((model) => ({
-				...model,
-				isPrimary: false,
-			}));
-		}
-
-		const comparisonWithoutPrimary = selectedComparisonModels.filter(
-			(model) => model.key !== selectedPrimaryCandidate.key
-		);
-
-		return [
-			{ ...selectedPrimaryCandidate, isPrimary: true },
-			...comparisonWithoutPrimary.map((model) => ({
-				...model,
-				isPrimary: false,
-			})),
-		];
-	}, [selectedComparisonModels, selectedPrimaryCandidate]);
-
-	const comparisonCandidatesByProvider = useMemo(() => {
-		const grouped = new Map<string, ComparisonCandidate[]>();
-
-		for (const candidate of comparisonCandidates) {
-			if (!grouped.has(candidate.provider)) {
-				grouped.set(candidate.provider, []);
-			}
-			grouped.get(candidate.provider)!.push(candidate);
-		}
-
-		return Array.from(grouped.entries())
-			.map(([provider, candidates]) => ({
-				provider,
-				providerLabel: formatProviderLabel(provider),
-				candidates: [...candidates].sort((a, b) =>
-					a.displayName.localeCompare(b.displayName)
-				),
-			}))
-			.sort((a, b) => a.providerLabel.localeCompare(b.providerLabel));
-	}, [comparisonCandidates]);
-
-	const comparisonProvidersByModelId = useMemo(() => {
-		const grouped = new Map<string, Set<string>>();
-
-		for (const row of models) {
-			if (selectedEndpoint && row.endpoint !== selectedEndpoint) {
-				continue;
-			}
-			if (!grouped.has(row.model)) {
-				grouped.set(row.model, new Set<string>());
-			}
-			grouped.get(row.model)!.add(row.provider);
-		}
-
-		return new Map(
-			Array.from(grouped.entries()).map(([modelId, providers]) => [
-				modelId,
-				Array.from(providers).sort((a, b) =>
-					formatProviderLabel(a).localeCompare(formatProviderLabel(b))
-				),
-			])
-		);
-	}, [models, selectedEndpoint]);
-
-	const availableModelsByProvider = useMemo(() => {
-		const grouped = new Map<
-			string,
-			Array<{ modelId: string; displayName: string; providers: string[] }>
-		>();
-
-		for (const model of availableModels) {
-			for (const provider of model.providers) {
-				if (!grouped.has(provider)) {
-					grouped.set(provider, []);
-				}
-				grouped.get(provider)!.push({
-					modelId: model.modelId,
-					displayName: model.displayName,
-					providers: model.providers,
-				});
-			}
-		}
-
-		return Array.from(grouped.entries())
-			.map(([provider, models]) => ({
-				provider,
-				providerLabel: formatProviderLabel(provider),
-				models: [...models].sort((a, b) =>
-					a.displayName.localeCompare(b.displayName)
-				),
-			}))
-			.sort((a, b) => a.providerLabel.localeCompare(b.providerLabel));
-	}, [availableModels]);
-
-	const renderProviderLogos = (providerIds: string[]) => {
-		const visible = providerIds.slice(0, MAX_PROVIDER_LOGOS);
-		const hiddenCount = Math.max(0, providerIds.length - visible.length);
-
-		return (
-			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-				<div className="flex items-center gap-1">
-					{visible.map((providerId) => (
-						<Logo
-							key={providerId}
-							id={providerId}
-							width={16}
-							height={16}
-							className="h-4 w-4 shrink-0"
-							fallback={<div className="h-4 w-4 rounded bg-muted" />}
-						/>
-					))}
-				</div>
-				{hiddenCount > 0 ? <span>+{hiddenCount}</span> : null}
-			</div>
-		);
-	};
-
-	const selectorLabel = useMemo(() => {
-		const primaryLabel = selectedPrimaryModel?.displayName || selectedModelId;
-		const totalSelected = selectedDropdownItems.length;
-
-		if (!primaryLabel && totalSelected === 0) {
-			return "Select models...";
-		}
-
-		if (totalSelected <= 1 && primaryLabel) {
-			return primaryLabel;
-		}
-
-		if (totalSelected > 1) {
-			return `${totalSelected} models selected`;
-		}
-
-		if (selectedComparisonModels.length === 1) {
-			return selectedComparisonModels[0].displayName;
-		}
-
-		return "Select models...";
-	}, [maxComparisonModels, selectedComparisonModels, selectedDropdownItems.length, selectedModelId, selectedPrimaryModel]);
+	const modelButtonLabel =
+		selectedModel?.displayName || selectedModelId || "Select model";
 
 	return (
 		<Card>
 			<CardHeader className="pb-4">
 				<CardTitle className="flex items-center justify-between gap-3 flex-wrap">
-					<span>Model Selection</span>
+					<span>Model</span>
 					<Badge variant="outline" className="text-[11px]">
-						{availableModels.length.toLocaleString()} models
+						{availableModels.length.toLocaleString()} unique models
 					</Badge>
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="space-y-5">
+			<CardContent className="space-y-4">
 				<div className="space-y-2">
-					<Label htmlFor="model-select">Select Models</Label>
+					<Label htmlFor="model-select">Model</Label>
 					<Popover open={openModel} onOpenChange={setOpenModel}>
 						<PopoverTrigger asChild>
 							<Button
+								id="model-select"
 								variant="outline"
 								role="combobox"
 								aria-expanded={openModel}
-								className="w-full justify-between"
+								className="h-11 w-full justify-between"
 							>
-								{selectorLabel}
+								<span className="truncate">{modelButtonLabel}</span>
 								<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 							</Button>
 						</PopoverTrigger>
-						<PopoverContent className="w-[min(620px,95vw)] p-0">
+						<PopoverContent className="w-[min(720px,95vw)] p-0">
 							<Command>
 								<CommandInput placeholder="Search models..." />
 								<CommandList>
 									<CommandEmpty>No model found.</CommandEmpty>
-								{selectedEndpoint && comparisonCandidates.length > 0 ? (
-										<>
-											{selectedDropdownItems.length > 0 && (
-												<CommandGroup heading="Selected">
-													{selectedDropdownItems.map((model) => {
-														const supportedProviders =
-															comparisonProvidersByModelId.get(model.modelId) ?? [model.provider];
-														return (
-															<CommandItem
-																key={`selected-${model.key}`}
-																value={`selected ${model.displayName} ${model.provider}`}
-																onSelect={() => {
-																	onRemoveModelSelection(model.key);
-																	setTimeout(() => setOpenModel(true), 0);
-																}}
-																className="flex items-center justify-between gap-2"
-															>
-																<div className="flex min-w-0 items-center gap-2">
-																	<Logo
-																		id={model.provider}
-																		width={16}
-																		height={16}
-																		className="h-4 w-4 shrink-0"
-																		fallback={<div className="h-4 w-4 rounded bg-muted" />}
-																	/>
-																	<span className="truncate text-sm">{model.displayName}</span>
-																</div>
-																{renderProviderLogos(supportedProviders)}
-															</CommandItem>
-														);
-													})}
-												</CommandGroup>
-											)}
-
-											{comparisonCandidatesByProvider.map((group) => (
-												<CommandGroup key={group.provider} heading={group.providerLabel}>
-													{group.candidates.map((candidate) => {
-														const isPrimary =
-															selectedPrimaryCandidate?.key === candidate.key;
-														const isComparisonSelected =
-															comparisonModelKeys.includes(candidate.key);
-														const isSelected = isPrimary || isComparisonSelected;
-														const atLimit =
-															!isSelected &&
-															comparisonModelKeys.length >= maxComparisonModels;
-														const supportedProviders =
-															comparisonProvidersByModelId.get(candidate.modelId) ?? [candidate.provider];
-
-														return (
-															<CommandItem
-																key={candidate.key}
-																value={`all ${candidate.displayName} ${candidate.provider}`}
-																onSelect={() => {
-																	if (isPrimary) {
-																		setTimeout(() => setOpenModel(true), 0);
-																		return;
+									<CommandGroup heading="Models">
+										{availableModels.map((model) => {
+											const isSelected = model.modelId === selectedModelId;
+											return (
+												<CommandItem
+													key={model.modelId}
+													value={`${model.displayName} ${model.modelId}`}
+													onSelect={() => {
+														onModelSelect(model.modelId);
+														setOpenModel(false);
+													}}
+													className={`flex items-center justify-between gap-4 ${isSelected ? "bg-foreground/5" : ""}`}
+												>
+													<div className="min-w-0">
+														<p className="truncate text-sm font-medium">
+															{model.displayName}
+														</p>
+														<p className="truncate text-xs text-muted-foreground">
+															{model.modelId}
+														</p>
+													</div>
+													<div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+														<span>
+															{model.providers.length} provider
+															{model.providers.length === 1 ? "" : "s"}
+														</span>
+														<div className="hidden items-center gap-1 sm:flex">
+															{model.providers.slice(0, 4).map((providerId) => (
+																<Logo
+																	key={providerId}
+																	id={providerId}
+																	width={16}
+																	height={16}
+																	className="h-4 w-4 shrink-0"
+																	fallback={
+																		<div className="h-4 w-4 rounded bg-muted" />
 																	}
-																	if (!atLimit) {
-																		onToggleComparisonModel(candidate.key);
-																		setTimeout(() => setOpenModel(true), 0);
-																	}
-																}}
-																disabled={atLimit}
-																className={`flex items-center justify-between gap-2 ${isSelected ? "bg-foreground/5" : ""}`}
-															>
-																<div className="flex min-w-0 items-center gap-2">
-																	<Logo
-																		id={candidate.provider}
-																		width={16}
-																		height={16}
-																		className="h-4 w-4 shrink-0"
-																		fallback={<div className="h-4 w-4 rounded bg-muted" />}
-																	/>
-																	<span className="truncate text-sm">{candidate.displayName}</span>
-																</div>
-																{renderProviderLogos(supportedProviders)}
-															</CommandItem>
-														);
-													})}
-												</CommandGroup>
-											))}
-										</>
-									) : (
-										<>
-											{availableModelsByProvider.map((group) => (
-												<CommandGroup key={group.provider} heading={group.providerLabel}>
-													{group.models.map((model) => {
-														const isSelected = selectedModelId === model.modelId;
-														return (
-															<CommandItem
-																key={`${group.provider}-${model.modelId}`}
-																value={`${group.providerLabel} ${model.displayName}`}
-																onSelect={() => {
-																	onModelSelect(model.modelId);
-																	setTimeout(() => setOpenModel(true), 0);
-																}}
-																className={`flex items-center justify-between ${isSelected ? "bg-foreground/5" : ""}`}
-															>
-																<div className="flex min-w-0 items-center gap-2">
-																	<Logo
-																		id={group.provider}
-																		width={16}
-																		height={16}
-																		className="h-4 w-4 shrink-0"
-																		fallback={<div className="h-4 w-4 rounded bg-muted" />}
-																	/>
-																	<span className="truncate text-sm">{model.displayName}</span>
-																</div>
-																{renderProviderLogos(model.providers)}
-															</CommandItem>
-														);
-													})}
-												</CommandGroup>
-											))}
-										</>
-									)}
+																/>
+															))}
+														</div>
+													</div>
+												</CommandItem>
+											);
+										})}
+									</CommandGroup>
 								</CommandList>
 							</Command>
 						</PopoverContent>
 					</Popover>
 				</div>
 
-				{selectedDropdownItems.length > 0 && (
-					<div className="flex flex-wrap gap-2 rounded-lg border bg-muted/20 p-3">
-						{selectedDropdownItems.map((model) => {
-							return (
-								<Badge
-									key={model.key}
-									variant="secondary"
-									className="flex items-center gap-1.5 py-1"
-								>
-									<span className="max-w-[220px] truncate">{model.displayName}</span>
-									<button
-										type="button"
-										className="inline-flex items-center"
-										onClick={() => onRemoveModelSelection(model.key)}
-										aria-label={`Remove ${model.displayName} from selection`}
-									>
-										<X className="h-3 w-3" />
-									</button>
-								</Badge>
-							);
-						})}
-					</div>
-				)}
+				{selectedModelId ? (
+					<div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+						<div className="space-y-2">
+							<Label htmlFor="endpoint-select">Endpoint</Label>
+							<Select value={selectedEndpoint} onValueChange={onEndpointSelect}>
+								<SelectTrigger id="endpoint-select" className="h-10">
+									<SelectValue placeholder="Select endpoint" />
+								</SelectTrigger>
+								<SelectContent>
+									{availableEndpoints.map((endpoint) => (
+										<SelectItem key={endpoint} value={endpoint}>
+											{endpoint}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 
-				{selectedModelId && availableEndpoints.length > 0 && (
-					<div className="space-y-2">
-						<Label htmlFor="endpoint-select">Select Endpoint</Label>
-						<Select
-							value={selectedEndpoint}
-							onValueChange={onEndpointSelect}
-						>
-							<SelectTrigger id="endpoint-select">
-								<SelectValue placeholder="Select endpoint..." />
-							</SelectTrigger>
-							<SelectContent>
-								{availableEndpoints.map((endpoint) => (
-									<SelectItem key={endpoint} value={endpoint}>
-										{endpoint}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+						<div className="space-y-2">
+							<Label htmlFor="provider-select">Provider</Label>
+							<Select
+								value={selectedProvider}
+								onValueChange={onProviderSelect}
+								disabled={availableProviders.length === 0}
+							>
+								<SelectTrigger id="provider-select" className="h-10">
+									<SelectValue placeholder="Select provider" />
+								</SelectTrigger>
+								<SelectContent>
+									{availableProviders.map((provider) => (
+										<SelectItem key={provider} value={provider}>
+											<div className="flex items-center gap-2">
+												<Logo
+													id={provider}
+													width={14}
+													height={14}
+													className="h-3.5 w-3.5"
+													fallback={
+														<div className="h-3.5 w-3.5 rounded bg-muted" />
+													}
+												/>
+												{formatProviderLabel(provider)}
+											</div>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="space-y-2">
+							<Label htmlFor="plan-select">Plan</Label>
+							<Select
+								value={selectedPricingPlan}
+								onValueChange={onPricingPlanSelect}
+								disabled={availablePricingPlans.length === 0}
+							>
+								<SelectTrigger id="plan-select" className="h-10">
+									<SelectValue placeholder="Select plan" />
+								</SelectTrigger>
+								<SelectContent>
+									{availablePricingPlans.map((plan) => (
+										<SelectItem key={plan} value={plan}>
+											{formatPlanLabel(plan)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
 					</div>
-				)}
+				) : null}
 			</CardContent>
 		</Card>
 	);

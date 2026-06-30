@@ -57,6 +57,10 @@ interface PricingRuleRow {
 }
 
 const MODEL_KEY_BATCH_SIZE = 250;
+const PRICING_RULE_SELECT =
+    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows";
+const PRICING_RULE_SELECT_LEGACY =
+    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match";
 
 function getNormalizedMeterPrice(meter: Pick<PricingMeter, "price_per_unit" | "unit_size">) {
     const rawPrice = Number(meter.price_per_unit ?? 0);
@@ -112,15 +116,25 @@ export default async function getPricingModels(
             return [];
         }
 
-        const { data: capabilities, error: capError } = await supabase
-            .from("data_api_provider_model_capabilities")
-            .select("provider_api_model_id, capability_id, status")
-            .in("provider_api_model_id", providerModelIds)
-            .neq("status", "disabled");
+        const capabilities: Array<{
+            provider_api_model_id: string | null;
+            capability_id: string | null;
+            status: string | null;
+        }> = [];
+        for (let i = 0; i < providerModelIds.length; i += MODEL_KEY_BATCH_SIZE) {
+            const batch = providerModelIds.slice(i, i + MODEL_KEY_BATCH_SIZE);
+            const { data: batchRows, error: capError } = await supabase
+                .from("data_api_provider_model_capabilities")
+                .select("provider_api_model_id, capability_id, status")
+                .in("provider_api_model_id", batch)
+                .neq("status", "disabled");
 
-        if (capError) {
-            console.error("[pricing-models] failed to load provider capabilities", capError);
-            return [];
+            if (capError) {
+                console.error("[pricing-models] failed to load provider capabilities", capError);
+                return [];
+            }
+
+            capabilities.push(...(batchRows ?? []));
         }
 
         const modelNameMap = new Map<string, string>();
@@ -175,14 +189,31 @@ export default async function getPricingModels(
         const pricingRules: PricingRuleRow[] = [];
         for (let i = 0; i < comboKeys.length; i += MODEL_KEY_BATCH_SIZE) {
             const batch = comboKeys.slice(i, i + MODEL_KEY_BATCH_SIZE);
-            const { data: batchRows, error: prError } = await supabase
+            const pricingResult = await supabase
                 .from("data_api_pricing_rules")
-                .select(
-                    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows"
-                )
+                .select(PRICING_RULE_SELECT)
                 .in("model_key", batch)
                 .or(activeWindowClause)
                 .order("priority", { ascending: false });
+            let batchRows = pricingResult.data as any[] | null;
+            let prError = pricingResult.error as any;
+
+            if (
+                prError &&
+                (
+                    (prError as { code?: string }).code === "42703" ||
+                    String((prError as { message?: string }).message ?? "").includes("does not exist")
+                )
+            ) {
+                const legacyResult = await supabase
+                    .from("data_api_pricing_rules")
+                    .select(PRICING_RULE_SELECT_LEGACY)
+                    .in("model_key", batch)
+                    .or(activeWindowClause)
+                    .order("priority", { ascending: false });
+                batchRows = legacyResult.data;
+                prError = legacyResult.error;
+            }
 
             if (prError) {
                 console.error("[pricing-models] failed to load pricing rules", prError);
