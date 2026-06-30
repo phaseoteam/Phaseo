@@ -1,0 +1,419 @@
+{
+  "key": "google-vertex-eu:anthropic/claude-sonnet-5:text.generate",
+  "api_provider_id": "google-vertex-eu",
+  "provider_slug": "google-vertex-eu",
+  "api_model_id": "anthropic/claude-sonnet-5",
+  "capability_id": "text.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 11,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region cache-hit pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region 5-minute cache-write pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region 1-hour cache-write pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 11,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.22,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region cache-hit pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 2.75,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region 5-minute cache-write pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.4,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Introductory Claude Sonnet 5 Vertex EU multi-region 1-hour cache-write pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z",
+      "effective_to": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 16.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.33,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region cache-hit pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.125,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region 5-minute cache-write pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region 1-hour cache-write pricing from Google's official partner-model regional pricing table for requests up to 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "lte",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 3.3,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 16.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_read_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 0.33,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region cache-hit pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_5m",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 4.125,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region 5-minute cache-write pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    },
+    {
+      "meter": "cached_write_text_tokens_1h",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 6.6,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Standard Claude Sonnet 5 Vertex EU multi-region 1-hour cache-write pricing from Google's official partner-model regional pricing table for requests above 200k input tokens.",
+      "match": [
+        {
+          "path": "input_tokens",
+          "op": "gt",
+          "or_group": 1,
+          "and_index": 1,
+          "value": 200000
+        }
+      ],
+      "priority": 100,
+      "effective_from": "2026-09-01T00:00:00Z"
+    }
+  ]
+}
