@@ -322,7 +322,7 @@ export async function loadModels(
             }
             if (hasPageNotice) {
                 await syncModelPageNotice(apiModelId, m.page_notice ?? null);
-            } else if (previousHadPageNotice) {
+            } else {
                 await syncModelPageNotice(apiModelId, null);
             }
 
