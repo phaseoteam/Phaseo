@@ -119,7 +119,7 @@
         "provider_api_model_id": "anthropic-aws-us:anthropic/claude-sonnet-5",
         "provider_model_slug": "claude-sonnet-5",
         "internal_model_id": "anthropic/claude-sonnet-5",
-        "is_active_gateway": false,
+        "is_active_gateway": true,
         "quantization_scheme": null,
         "input_modalities": "text,image",
         "output_modalities": "text",
