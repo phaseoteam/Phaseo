@@ -7,6 +7,8 @@ import {
 	fmtUSD,
 	formatQuantity,
 	formatMeterName,
+	formatPricingTimeWindow,
+	resolvePricingMeterPrice,
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 
@@ -14,12 +16,14 @@ interface CostBreakdownProps {
 	meters: PricingMeter[];
 	meterInputs: Record<string, string>;
 	requestMultiplier: number;
+	pricingTimeUtc: string;
 }
 
 export function CostBreakdown({
 	meters,
 	meterInputs,
 	requestMultiplier,
+	pricingTimeUtc,
 }: CostBreakdownProps) {
 	const uniqueMeters = useMemo(() => {
 		const map = new Map<string, PricingMeter>();
@@ -38,9 +42,9 @@ export function CostBreakdown({
 		const multipliedValue = inputValue * requestMultiplier;
 		const unitSize = meter.unit_size || 1;
 		const billedUnits = multipliedValue / unitSize;
-		const unitPrice = parseFloat(meter.price_per_unit) || 0;
+		const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
 
-		return billedUnits * unitPrice;
+		return billedUnits * pricePerUnit;
 	};
 
 	const calculateBilledUnits = (meter: PricingMeter): number => {
@@ -60,7 +64,7 @@ export function CostBreakdown({
 			inputValue: parseFloat(meterInputs[meter.meter] || "0"),
 			multipliedValue: parseFloat(meterInputs[meter.meter] || "0") * requestMultiplier,
 			billedUnits: calculateBilledUnits(meter),
-			unitPrice: parseFloat(meter.price_per_unit) || 0,
+			resolvedPrice: resolvePricingMeterPrice(meter, pricingTimeUtc),
 		}))
 		.filter((line) => line.inputValue > 0);
 
@@ -122,8 +126,16 @@ export function CostBreakdown({
 								</div>
 								<div className="flex justify-between">
 									<span>Unit price:</span>
-									<span>{fmtUSD(line.unitPrice)}</span>
+									<span>{fmtUSD(line.resolvedPrice.pricePerUnit)}</span>
 								</div>
+								{line.resolvedPrice.timeWindow ? (
+									<div className="flex justify-between gap-3">
+										<span>Active window:</span>
+										<span className="text-right">
+											{formatPricingTimeWindow(line.resolvedPrice.timeWindow)}
+										</span>
+									</div>
+								) : null}
 							</div>
 						</div>
 					))}

@@ -9,7 +9,24 @@ export interface PricingMeter {
     price_per_unit: string;
     currency: string;
     conditions?: any[];
+    billing_timestamp_basis?: PricingTimestampBasis;
+    time_windows?: PricingTimeWindow[];
 }
+
+type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: string | number | null;
+    priority?: number | null;
+};
 
 export interface PricingModel {
     provider: string;
@@ -35,6 +52,8 @@ interface PricingRuleRow {
     effective_from: string;
     effective_to: string | null;
     match: any[] | null;
+    billing_timestamp_basis: PricingTimestampBasis | null;
+    time_windows: PricingTimeWindow[] | null;
 }
 
 const MODEL_KEY_BATCH_SIZE = 250;
@@ -159,7 +178,7 @@ export default async function getPricingModels(
             const { data: batchRows, error: prError } = await supabase
                 .from("data_api_pricing_rules")
                 .select(
-                    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match"
+                    "rule_id, model_key, capability_id, pricing_plan, meter, unit, unit_size, price_per_unit, currency, priority, effective_from, effective_to, match, billing_timestamp_basis, time_windows"
                 )
                 .in("model_key", batch)
                 .or(activeWindowClause)
@@ -208,6 +227,8 @@ export default async function getPricingModels(
                 price_per_unit: String(rule.price_per_unit ?? "0"),
                 currency: rule.currency ?? "USD",
                 conditions: rule.match ?? [],
+                billing_timestamp_basis: rule.billing_timestamp_basis ?? "request_start",
+                time_windows: Array.isArray(rule.time_windows) ? rule.time_windows : [],
             };
 
             const existingIndex = model.meters.findIndex(

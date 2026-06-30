@@ -26,6 +26,8 @@ import {
 	getExamplesForMeter,
 	parseMeter,
 	fmtUSD,
+	formatPricingTimeWindow,
+	resolvePricingMeterPrice,
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
@@ -63,12 +65,16 @@ interface PricingReferenceProps {
 	selectedProvider: string;
 	onProviderSelect: (provider: string) => void;
 	onPricingPlanSelect: (plan: string) => void;
+	pricingTimeUtc: string;
 	comparisonModels?: ComparisonPricingModel[];
 	onComparisonModelPricingPlanSelect?: (modelKey: string, plan: string) => void;
 	onComparisonModelProviderSelect?: (modelKey: string, provider: string) => void;
 }
 
-function calculateBlendedRate(meters: PricingMeter[]): BlendedRate | null {
+function calculateBlendedRate(
+	meters: PricingMeter[],
+	pricingTimeUtc: string
+): BlendedRate | null {
 	const inputMeter = meters.find(
 		(m) =>
 			m.meter.toLowerCase().includes("input") &&
@@ -84,9 +90,11 @@ function calculateBlendedRate(meters: PricingMeter[]): BlendedRate | null {
 	if (!inputMeter || !outputMeter) return null;
 
 	const inputPricePerToken =
-		parseFloat(inputMeter.price_per_unit) / (inputMeter.unit_size || 1);
+		resolvePricingMeterPrice(inputMeter, pricingTimeUtc).pricePerUnit /
+		(inputMeter.unit_size || 1);
 	const outputPricePerToken =
-		parseFloat(outputMeter.price_per_unit) / (outputMeter.unit_size || 1);
+		resolvePricingMeterPrice(outputMeter, pricingTimeUtc).pricePerUnit /
+		(outputMeter.unit_size || 1);
 	const blendedPricePerToken =
 		inputPricePerToken * 0.9 + outputPricePerToken * 0.1;
 
@@ -98,19 +106,26 @@ function calculateBlendedRate(meters: PricingMeter[]): BlendedRate | null {
 	};
 }
 
-function formatUnitPrice(meter: PricingMeter, unitLabel: string) {
+function formatUnitPrice(
+	meter: PricingMeter,
+	unitLabel: string,
+	pricingTimeUtc: string
+) {
 	const normalizedUnit = unitLabel.toLowerCase();
 	const isTokenUnit = normalizedUnit.includes("token");
 	const unitSize = meter.unit_size || 1;
-	const unitPrice = parseFloat(meter.price_per_unit);
+	const { pricePerUnit, pricePerUnitRaw } = resolvePricingMeterPrice(
+		meter,
+		pricingTimeUtc
+	);
 
-	if (isTokenUnit && Number.isFinite(unitPrice)) {
-		const perTokenPrice = unitPrice / unitSize;
+	if (isTokenUnit && Number.isFinite(pricePerUnit)) {
+		const perTokenPrice = pricePerUnit / unitSize;
 		const perMillionTokens = perTokenPrice * 1_000_000;
 		return `${fmtUSD(perMillionTokens)} / 1M tokens`;
 	}
 
-	return `${meter.price_per_unit} ${meter.currency} / ${meter.unit_size} ${unitLabel}`;
+	return `${pricePerUnitRaw} ${meter.currency} / ${meter.unit_size} ${unitLabel}`;
 }
 
 function getMeterSortPriority(meterName: string): number {
@@ -185,6 +200,7 @@ export function PricingReference({
 	selectedProvider,
 	onProviderSelect,
 	onPricingPlanSelect,
+	pricingTimeUtc,
 	comparisonModels,
 	onComparisonModelPricingPlanSelect,
 	onComparisonModelProviderSelect,
@@ -286,7 +302,7 @@ export function PricingReference({
 
 	const blendedByModel = activeModels.map((model) => ({
 		key: model.key,
-		blended: calculateBlendedRate(model.meters),
+		blended: calculateBlendedRate(model.meters, pricingTimeUtc),
 	}));
 
 	const hasBlendedComparison = blendedByModel.some((model) => Boolean(model.blended));
@@ -547,7 +563,7 @@ export function PricingReference({
 																				price_per_unit: String(
 																					blendedModel.blended.blendedPricePerToken
 																				),
-																			})
+																			}, pricingTimeUtc)
 																	  )
 																	: "-"}
 															</TableCell>
@@ -621,7 +637,7 @@ export function PricingReference({
 																				price_per_unit: String(
 																					blendedModel.blended.blendedPricePerToken
 																				),
-																			});
+																			}, pricingTimeUtc);
 																			return `${formatQuantity(units)} ${formatUsageUnit(units, "tokens")}`;
 																	  })()
 																	: "-"}
@@ -663,6 +679,9 @@ export function PricingReference({
 							<div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
 								{activeModels.map((model) => {
 									const entry = meterByModel.find((item) => item.key === model.key);
+									const activeWindow = entry?.meter
+										? resolvePricingMeterPrice(entry.meter, pricingTimeUtc).timeWindow
+										: null;
 									return (
 										<div
 											key={`${meterName}-${model.key}-rate-card`}
@@ -691,8 +710,15 @@ export function PricingReference({
 												</Link>
 											</div>
 											<p className="mt-3 text-sm font-medium leading-5">
-												{entry?.meter ? formatUnitPrice(entry.meter, unitLabel) : "-"}
+												{entry?.meter
+													? formatUnitPrice(entry.meter, unitLabel, pricingTimeUtc)
+													: "-"}
 											</p>
+											{activeWindow ? (
+												<p className="mt-2 text-xs text-muted-foreground">
+													{formatPricingTimeWindow(activeWindow)}
+												</p>
+											) : null}
 										</div>
 									);
 								})}
@@ -752,7 +778,7 @@ export function PricingReference({
 														{examples.map((quantity) => (
 															<TableCell key={`${meterName}-${model.key}-${quantity}`}>
 																{entry?.meter
-																	? fmtUSD(calculateCost(quantity, entry.meter))
+																	? fmtUSD(calculateCost(quantity, entry.meter, pricingTimeUtc))
 																	: "-"}
 															</TableCell>
 														))}
@@ -818,7 +844,7 @@ export function PricingReference({
 															<TableCell key={`${meterName}-${model.key}-b-${budget}`}>
 																{entry?.meter
 																	? (() => {
-																			const units = calculateUnits(budget, entry.meter);
+																			const units = calculateUnits(budget, entry.meter, pricingTimeUtc);
 																			return `${formatQuantity(units)} ${formatUsageUnit(units, unitLabel)}`;
 																	  })()
 																	: "-"}

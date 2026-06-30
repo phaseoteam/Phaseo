@@ -15,6 +15,10 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 const MAX_COMPARISON_MODELS = 4;
 
+function getCurrentUtcTime() {
+	return new Date().toISOString().slice(11, 16);
+}
+
 type PricingModel = {
 	provider: string;
 	model: string;
@@ -81,6 +85,7 @@ export default function PricingCalculator({
 
 	const [meterInputs, setMeterInputs] = useState<Record<string, string>>({});
 	const [requestMultiplier, setRequestMultiplier] = useState<number>(1);
+	const [pricingTimeUtc, setPricingTimeUtc] = useState<string>(getCurrentUtcTime);
 	const [comparisonModelKeys, setComparisonModelKeys] = useState<string[]>([]);
 	const [comparisonModelPlans, setComparisonModelPlans] = useState<Record<string, string>>({});
 
@@ -260,6 +265,10 @@ export default function PricingCalculator({
 
 	const handleRequestMultiplierChange = (value: number) => {
 		setRequestMultiplier(value);
+	};
+
+	const handlePricingTimeUtcChange = (value: string) => {
+		setPricingTimeUtc(value);
 	};
 
 	const comparisonCandidates = useMemo<ModelComparisonOption[]>(() => {
@@ -627,10 +636,12 @@ export default function PricingCalculator({
 								meters={selectedModelData.meters}
 								meterInputs={meterInputs}
 								requestMultiplier={requestMultiplier}
+								pricingTimeUtc={pricingTimeUtc}
 								onMeterInputChange={handleMeterInputChange}
 								onRequestMultiplierChange={
 									handleRequestMultiplierChange
 								}
+								onPricingTimeUtcChange={handlePricingTimeUtcChange}
 							/>
 						) : (
 							<Card>
@@ -662,6 +673,7 @@ export default function PricingCalculator({
 							selectedProvider={effectiveProvider}
 							onProviderSelect={setSelectedProvider}
 							onPricingPlanSelect={setSelectedPricingPlan}
+							pricingTimeUtc={pricingTimeUtc}
 							comparisonModels={selectedModelsForReference}
 							onComparisonModelPricingPlanSelect={setComparisonModelPlan}
 							onComparisonModelProviderSelect={setComparisonModelProvider}
@@ -670,6 +682,7 @@ export default function PricingCalculator({
 							meters={selectedModelData.meters}
 							meterInputs={meterInputs}
 							requestMultiplier={requestMultiplier}
+							pricingTimeUtc={pricingTimeUtc}
 						/>
 					</>
 				) : null}

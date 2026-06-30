@@ -1213,6 +1213,89 @@ export interface PricingMeter {
     price_per_unit: string;
     currency: string;
     conditions?: any[];
+    billing_timestamp_basis?: PricingTimestampBasis;
+    time_windows?: PricingTimeWindow[];
+}
+
+export type PricingTimestampBasis =
+    | "request_start"
+    | "provider_accept"
+    | "completion"
+    | "unknown";
+
+export type PricingTimeWindow = {
+    label: string;
+    timezone: "UTC";
+    start_time: string;
+    end_time: string;
+    price_per_unit?: string | number | null;
+    priority?: number | null;
+};
+
+export type ResolvedPricingMeterPrice = {
+    pricePerUnit: number;
+    pricePerUnitRaw: string;
+    timeWindow: PricingTimeWindow | null;
+};
+
+function parseUtcMinute(value: unknown): number | null {
+    if (typeof value !== "string") return null;
+    const match = value.match(/^([01]\d|2[0-3]):([0-5]\d)$/);
+    if (!match) return null;
+    return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function isMinuteInsideWindow(minute: number, startMinute: number, endMinute: number): boolean {
+    if (startMinute === endMinute) return false;
+    if (startMinute < endMinute) return minute >= startMinute && minute < endMinute;
+    return minute >= startMinute || minute < endMinute;
+}
+
+export function resolvePricingMeterPrice(
+    meter: Pick<PricingMeter, "price_per_unit" | "time_windows">,
+    pricingTimeUtc?: string | null
+): ResolvedPricingMeterPrice {
+    const basePrice = String(meter.price_per_unit ?? "0");
+    const utcMinute = parseUtcMinute(pricingTimeUtc);
+    const windows = Array.isArray(meter.time_windows) ? meter.time_windows : [];
+
+    if (utcMinute !== null && windows.length > 0) {
+        const matched = windows
+            .map((window, index) => ({ window, index }))
+            .filter(({ window }) => {
+                if (!window || window.timezone !== "UTC") return false;
+                if (window.price_per_unit === undefined || window.price_per_unit === null) {
+                    return false;
+                }
+                const startMinute = parseUtcMinute(window.start_time);
+                const endMinute = parseUtcMinute(window.end_time);
+                if (startMinute === null || endMinute === null) return false;
+                return isMinuteInsideWindow(utcMinute, startMinute, endMinute);
+            })
+            .sort((a, b) =>
+                Number(b.window.priority ?? 0) - Number(a.window.priority ?? 0) ||
+                a.index - b.index
+            )[0]?.window ?? null;
+
+        if (matched) {
+            const matchedPrice = String(matched.price_per_unit ?? basePrice);
+            return {
+                pricePerUnit: parseFloat(matchedPrice) || 0,
+                pricePerUnitRaw: matchedPrice,
+                timeWindow: matched,
+            };
+        }
+    }
+
+    return {
+        pricePerUnit: parseFloat(basePrice) || 0,
+        pricePerUnitRaw: basePrice,
+        timeWindow: null,
+    };
+}
+
+export function formatPricingTimeWindow(window: PricingTimeWindow): string {
+    return `${window.label} ${window.start_time}-${window.end_time} UTC`;
 }
 
 /**
@@ -1220,11 +1303,12 @@ export interface PricingMeter {
  */
 export function calculateCost(
     quantity: number,
-    meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
+    meter: Pick<PricingMeter, "unit_size" | "price_per_unit" | "time_windows">,
+    pricingTimeUtc?: string | null
 ): number {
     const unitSize = Number(meter.unit_size) > 0 ? Number(meter.unit_size) : 1;
     const billableUnits = Math.max(0, quantity) / unitSize;
-    const pricePerUnit = parseFloat(meter.price_per_unit) || 0;
+    const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
     return billableUnits * pricePerUnit;
 }
 
@@ -1233,9 +1317,10 @@ export function calculateCost(
  */
 export function calculateUnits(
     budget: number,
-    meter: Pick<PricingMeter, 'unit_size' | 'price_per_unit'>
+    meter: Pick<PricingMeter, "unit_size" | "price_per_unit" | "time_windows">,
+    pricingTimeUtc?: string | null
 ): number {
-    const pricePerUnit = parseFloat(meter.price_per_unit);
+    const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
     const unitSize = meter.unit_size || 1;
     if (pricePerUnit === 0) return 0;
     return (budget / pricePerUnit) * unitSize;
