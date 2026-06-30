@@ -3324,7 +3324,7 @@
         "provider_api_model_id":  "google-ai-studio:google/gemini-3.5-pro",
         "provider_model_slug":  "gemini-3.5-pro",
         "internal_model_id":  "google/gemini-3.5-pro",
-        "is_active_gateway":  false,
+        "is_active_gateway":  true,
         "quantization_scheme":  null,
         "input_modalities":  "text,image,video,audio",
         "output_modalities":  "text",
@@ -3349,19 +3349,44 @@
         "internal_model_id":  "google/gemini-omni-flash-preview",
         "is_active_gateway":  false,
         "quantization_scheme":  null,
-        "input_modalities":  "text,image,video,audio",
-        "output_modalities":  "text,image,video,audio",
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "video",
         "context_length":  1048576,
         "max_output_tokens":  65536,
         "effective_from":  "2026-06-30T00:00:00",
         "effective_to":  null,
         "capabilities":  [
                              {
-                                 "capability_id":  "text.generate",
-                                 "status":  "coming_soon",
-                                 "params":  [
-
-                                            ]
+                                 "capability_id":  "video.generate",
+                                 "status":  "active",
+                                 "params":  {
+                                                "prompt":  {
+                                                               "type":  "string"
+                                                           },
+                                                "duration":  {
+                                                                 "type":  "number",
+                                                                 "min":  1,
+                                                                 "aliases":  [
+                                                                                 "seconds",
+                                                                                 "duration_seconds"
+                                                                             ]
+                                                             },
+                                                "size":  {
+                                                             "type":  "string",
+                                                             "aliases":  [
+                                                                             "resolution"
+                                                                         ]
+                                                         },
+                                                "aspect_ratio":  {
+                                                                     "type":  "string"
+                                                                 },
+                                                "input_image":  {
+                                                                    "type":  "string"
+                                                                },
+                                                "input_video":  {
+                                                                    "type":  "string"
+                                                                }
+                                            }
                              }
                          ]
     },
