@@ -478,12 +478,9 @@ const (
 	// Model ID: mistral/devstral-small-1.1
 	// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
 	ModelIDMistralDevstralSmall11 gen.ModelId = "mistral/devstral-small-1.1"
-	// Model ID: mistral/leanstral-1.5
-	// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5
-	ModelIDMistralLeanstral15 gen.ModelId = "mistral/leanstral-1.5"
-	// Model ID: mistral/leanstral-1.5-1
-	// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5-1
-	ModelIDMistralLeanstral151 gen.ModelId = "mistral/leanstral-1.5-1"
+	// Model ID: mistral/leanstral-1.5:free
+	// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5%3Afree
+	ModelIDMistralLeanstral15Free gen.ModelId = "mistral/leanstral-1.5:free"
 	// Model ID: mistral/magistral-medium-1.2
 	// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
 	ModelIDMistralMagistralMedium12 gen.ModelId = "mistral/magistral-medium-1.2"
@@ -1528,8 +1525,7 @@ var KnownModelIDs = []gen.ModelId{
 	ModelIDMistralDevstral2,
 	ModelIDMistralDevstralMedium10,
 	ModelIDMistralDevstralSmall11,
-	ModelIDMistralLeanstral15,
-	ModelIDMistralLeanstral151,
+	ModelIDMistralLeanstral15Free,
 	ModelIDMistralMagistralMedium12,
 	ModelIDMistralMinistral314b,
 	ModelIDMistralMinistral33b,
