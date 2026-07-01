@@ -208,7 +208,7 @@ function digestRule(r: any) {
         billing_timestamp_basis: r.billing_timestamp_basis ?? "request_start",
         time_windows: deepSortObjectKeys(normalizeTimeWindows(r.time_windows)),
     };
-    return createHash("md5").update(JSON.stringify(payload)).digest("hex");
+    return createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 }
 
 type PricingJSON = {

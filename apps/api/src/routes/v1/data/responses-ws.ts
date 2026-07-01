@@ -43,6 +43,7 @@ type WsState = {
 	reconnectAttempts: number;
 	restartedFromPreviousNotFound: boolean;
 	lastResponseCreatePayload: Record<string, any> | null;
+	currentResponseStartedAtMs: number | null;
 	upstreamWs: WebSocket | null;
 	upstreamKey: string | null;
 	pricingCard: PriceCard | null;
@@ -254,6 +255,10 @@ async function maybeChargeCompletedResponse(state: WsState, payload: any): Promi
 		state.pricingCard,
 		state.lastResponseCreatePayload ?? {},
 		state.teamTier,
+		{
+			startedAtMs: state.currentResponseStartedAtMs ?? Date.now(),
+			completedAtMs: Date.now(),
+		} as any,
 	);
 	if (!Number.isFinite(totalNanos) || totalNanos <= 0) {
 		rememberChargedResponseId(state, responseId);
@@ -346,6 +351,7 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 		reconnectAttempts: 0,
 		restartedFromPreviousNotFound: false,
 		lastResponseCreatePayload: null,
+		currentResponseStartedAtMs: null,
 		upstreamWs: null,
 		upstreamKey: null,
 		pricingCard: null,
@@ -671,11 +677,13 @@ const responsesWsHandler = async (req: Request): Promise<Response> => {
 			state.reconnectAttempts = 0;
 			state.restartedFromPreviousNotFound = false;
 			state.lastResponseCreatePayload = normalized.payload;
+			state.currentResponseStartedAtMs = Date.now();
 
 			try {
 				state.upstreamWs.send(JSON.stringify(normalized.payload));
 			} catch {
 				state.inFlight = false;
+				state.currentResponseStartedAtMs = null;
 				sendSocketJson(gatewayWs, {
 					type: "error",
 					status: 502,

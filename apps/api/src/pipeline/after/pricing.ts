@@ -68,6 +68,8 @@ function attachBillingTimestamps(
     if (!meta) {
         return {
             ...options,
+            request_started_at: completedAtMs,
+            startedAtMs: completedAtMs,
             completed_at: completedAtMs,
             completedAtMs,
         };

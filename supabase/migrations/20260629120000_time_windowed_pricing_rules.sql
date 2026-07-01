@@ -22,14 +22,24 @@ as $$
         or item.window->>'start_time' = item.window->>'end_time'
         or (
           item.window ? 'price_per_unit'
-          and jsonb_typeof(item.window->'price_per_unit') not in ('string', 'number', 'null')
+          and case jsonb_typeof(item.window->'price_per_unit')
+            when 'null' then false
+            when 'number' then (item.window->>'price_per_unit')::numeric < 0
+            when 'string' then
+              case
+                when btrim(item.window->>'price_per_unit') !~ '^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$' then true
+                else (btrim(item.window->>'price_per_unit'))::numeric < 0
+              end
+            else true
+          end
         )
         or (
           item.window ? 'priority'
-          and (
-            jsonb_typeof(item.window->'priority') is distinct from 'number'
-            or ((item.window->>'priority')::numeric % 1) <> 0
-          )
+          and case jsonb_typeof(item.window->'priority')
+            when 'null' then false
+            when 'number' then ((item.window->>'priority')::numeric % 1) <> 0
+            else true
+          end
         )
     );
 $$;
@@ -40,6 +50,7 @@ begin
     select 1
     from pg_constraint
     where conname = 'data_api_pricing_rules_billing_timestamp_basis_check'
+      and conrelid = 'public.data_api_pricing_rules'::regclass
   ) then
     alter table public.data_api_pricing_rules
       add constraint data_api_pricing_rules_billing_timestamp_basis_check
@@ -50,6 +61,7 @@ begin
     select 1
     from pg_constraint
     where conname = 'data_api_pricing_rules_time_windows_array_check'
+      and conrelid = 'public.data_api_pricing_rules'::regclass
   ) then
     alter table public.data_api_pricing_rules
       add constraint data_api_pricing_rules_time_windows_array_check
@@ -60,6 +72,7 @@ begin
     select 1
     from pg_constraint
     where conname = 'data_api_pricing_rules_time_windows_shape_check'
+      and conrelid = 'public.data_api_pricing_rules'::regclass
   ) then
     alter table public.data_api_pricing_rules
       add constraint data_api_pricing_rules_time_windows_shape_check

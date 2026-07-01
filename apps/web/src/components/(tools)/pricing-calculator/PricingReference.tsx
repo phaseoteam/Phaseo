@@ -215,7 +215,9 @@ export function PricingReference({
 						key: "primary",
 						label: selectedModelLabel || selectedModelId || "Selected Model",
 						modelId: selectedModelId,
-						provider: selectedProvider || "selected",
+						provider:
+							selectedProvider ||
+							(selectedModelId?.includes("/") ? selectedModelId.split("/")[0] : "selected"),
 						pricingPlan: displayPlan,
 						meters,
 					},

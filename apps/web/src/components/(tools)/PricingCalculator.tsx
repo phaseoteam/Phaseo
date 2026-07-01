@@ -91,7 +91,11 @@ export default function PricingCalculator({
 	>({});
 	const [meterInputs, setMeterInputs] = useState<Record<string, string>>({});
 	const [requestMultiplier, setRequestMultiplier] = useState<number>(1);
-	const [pricingTimeUtc, setPricingTimeUtc] = useState<string>(getCurrentUtcTime);
+	const [pricingTimeUtc, setPricingTimeUtc] = useState<string>("00:00");
+
+	useEffect(() => {
+		setPricingTimeUtc(getCurrentUtcTime());
+	}, []);
 
 	const modelsByReleaseDate = useMemo(() => {
 		const unique = new Map<
