@@ -2266,6 +2266,7 @@
     "google-vertex:text.generate:anthropic-claude-sonnet-5",
     "google-vertex:text.embed:google-gemini-embedding-2-preview",
     "google-vertex:text.generate:google-gemini-3.1-flash-image-preview",
+    "google-vertex:text.generate:google-gemini-3.1-flash-lite-image",
     "google-vertex:text.generate:google-gemini-3.1-flash-lite-preview",
     "google-vertex:text.generate:google-gemini-3.1-pro-preview",
     "google-vertex:video.generate:google-veo-2",
