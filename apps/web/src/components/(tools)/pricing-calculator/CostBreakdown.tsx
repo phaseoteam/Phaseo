@@ -43,10 +43,10 @@ function calculateLineCost(
 	pricingTimeUtc: string
 ): number {
 	const inputValue = parseFloat(meterInputs[meter.meter] || "0");
-	if (inputValue === 0) return 0;
+	if (!Number.isFinite(inputValue) || inputValue <= 0) return 0;
 
 	const multipliedValue = inputValue * requestMultiplier;
-	const unitSize = meter.unit_size || 1;
+	const unitSize = Number(meter.unit_size) > 0 ? Number(meter.unit_size) : 1;
 	const billedUnits = multipliedValue / unitSize;
 	const { pricePerUnit } = resolvePricingMeterPrice(meter, pricingTimeUtc);
 

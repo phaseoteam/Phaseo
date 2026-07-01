@@ -122,6 +122,38 @@ describe("pricing engine time-windowed rules", () => {
         ]);
     });
 
+    it("uses the upstream send time for provider-accept pricing windows", () => {
+        const card = makeDeepSeekCard();
+        card.rules[0] = {
+            ...card.rules[0],
+            billing_timestamp_basis: "provider_accept",
+        };
+
+        const result = computeBill(
+            { input_text_tokens: 1_000_000 },
+            card,
+            {
+                request_started_at: "2026-07-20T05:30:00Z",
+                upstreamStartMs: Date.parse("2026-07-20T06:30:00Z"),
+                completed_at: "2026-07-20T11:30:00Z",
+            },
+            "standard",
+        );
+
+        expect(result.pricing.total_usd_str).toBe("0.87");
+        expect(result.pricing.lines[0]).toMatchObject({
+            unit_price_usd: "0.870000000",
+            billing_timestamp_basis: "provider_accept",
+            billing_timestamp_basis_configured: "provider_accept",
+            pricing_time_window: {
+                label: "peak",
+                timezone: "UTC",
+                start_time: "06:00",
+                end_time: "10:00",
+            },
+        });
+    });
+
     it("falls back to request start and snapshots the actual basis when the requested basis timestamp is missing", () => {
         const card = makeDeepSeekCard();
         card.rules[0] = {

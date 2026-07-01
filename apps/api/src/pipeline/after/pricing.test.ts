@@ -145,6 +145,64 @@ describe("after/pricing calculatePricing", () => {
 		]);
 	});
 
+	it("uses upstream start time for provider-accept pricing windows", () => {
+		const upstreamWindowCard: PriceCard = {
+			...TTS_CARD,
+			provider: "deepseek",
+			model: "deepseek/deepseek-v4-pro",
+			endpoint: "text.generate",
+			rules: [
+				{
+					meter: "input_text_tokens",
+					unit: "token",
+					unit_size: 1_000_000,
+					price_per_unit: "1",
+					currency: "USD",
+					pricing_plan: "standard",
+					note: null,
+					match: [],
+					priority: 100,
+					billing_timestamp_basis: "provider_accept",
+					time_windows: [
+						{
+							label: "upstream-peak",
+							timezone: "UTC",
+							start_time: "06:00",
+							end_time: "10:00",
+							price_per_unit: "3",
+						},
+					],
+				},
+			],
+		};
+
+		const result = calculatePricing(
+			{ input_text_tokens: 1_000_000 },
+			upstreamWindowCard,
+			{},
+			null,
+			{
+				startedAtMs: Date.parse("2026-07-20T05:30:00Z"),
+				upstreamStartMs: Date.parse("2026-07-20T06:30:00Z"),
+				completedAtMs: Date.parse("2026-07-20T11:30:00Z"),
+			} as any,
+		);
+
+		expect(result.totalNanos).toBe(3_000_000_000);
+		expect(result.totalCents).toBe(300);
+		expect(result.pricedUsage?.pricing?.lines?.[0]).toMatchObject({
+			unit_price_usd: "3.000000000",
+			billing_timestamp_basis: "provider_accept",
+			billing_timestamp_basis_configured: "provider_accept",
+			pricing_time_window: {
+				label: "upstream-peak",
+				timezone: "UTC",
+				start_time: "06:00",
+				end_time: "10:00",
+			},
+		});
+	});
+
 	it("uses the request service tier for pricing when usage does not echo it", () => {
 		const priorityCard: PriceCard = {
 			...TTS_CARD,

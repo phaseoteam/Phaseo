@@ -160,7 +160,9 @@ function formatUsageUnit(quantity: number, unitLabel: string) {
 function getPricingModelHref(model: ComparisonPricingModel) {
 	if (!model.modelId) return null;
 	const [orgFromModelId] = model.modelId.split("/");
-	const organisationId = orgFromModelId || model.provider;
+	const organisationId = model.modelId.includes("/")
+		? orgFromModelId
+		: model.provider;
 	return getModelDetailsHref(organisationId, model.modelId);
 }
 

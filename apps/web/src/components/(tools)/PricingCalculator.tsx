@@ -202,10 +202,11 @@ export default function PricingCalculator({
 	]);
 
 	useEffect(() => {
-		if (selectedModelId && !selectedModelIds.includes(selectedModelId)) {
-			setSelectedModelIds((current) => [selectedModelId, ...current]);
-		}
-	}, [selectedModelId, selectedModelIds]);
+		if (!selectedModelId) return;
+		setSelectedModelIds((current) =>
+			current.includes(selectedModelId) ? current : [selectedModelId, ...current]
+		);
+	}, [selectedModelId]);
 
 	useEffect(() => {
 		if (selectedModelIds.length === 0) return;
