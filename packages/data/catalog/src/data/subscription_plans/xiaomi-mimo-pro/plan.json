@@ -1,1 +1,66 @@
-{   "plan_id": "xiaomi-mimo-pro",   "name": "MiMo Token Plan Pro",   "organisation_id": "xiaomi",   "description": null,   "pricing_options": [     {       "frequency": "monthly",       "usd_price": 50,       "link": "https://platform.xiaomimimo.com/",       "other_info": null     },     {       "frequency": "yearly",       "usd_price": 528,       "link": "https://platform.xiaomimimo.com/",       "other_info": null     }   ],   "features": [     {       "feature_name": "Monthly Credit Quota",       "feature_value": "700M Credits",       "feature_description": null,       "other_info": null     },     {       "feature_name": "Yearly Credit Quota",       "feature_value": "8400M Credits",       "feature_description": null,       "other_info": null     },     {       "feature_name": "Supported Models",       "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS-VoiceClone, MiMo-V2.5-TTS-VoiceDesign, MiMo-V2.5-TTS, MiMo-V2-Pro, MiMo-V2-Omni, MiMo-V2-TTS",       "feature_description": null,       "other_info": null     },     {       "feature_name": "Tools",       "feature_value": "OpenCode, OpenClaw, Claude Code",       "feature_description": null,       "other_info": null     }   ],   "models": [     {       "model_id": "xiaomi/mimo-v2.5-pro",       "model_info": null,       "rate_limit": null,       "other_info": null     },     {       "model_id": "xiaomi/mimo-v2.5",       "model_info": null,       "rate_limit": null,       "other_info": null     },     {       "model_id": "xiaomi/mimo-v2.5-tts",       "model_info": null,       "rate_limit": null,       "other_info": "Limited-time free"     },     {       "model_id": "xiaomi/mimo-v2-pro",       "model_info": null,       "rate_limit": null,       "other_info": null     },     {       "model_id": "xiaomi/mimo-v2-omni",       "model_info": null,       "rate_limit": null,       "other_info": null     },     {       "model_id": "xiaomi/mimo-v2-tts",       "model_info": null,       "rate_limit": null,       "other_info": "Limited-time free"     }   ] }
+{
+  "plan_id": "xiaomi-mimo-pro",
+  "name": "MiMo Token Plan Pro",
+  "organisation_id": "xiaomi",
+  "description": null,
+  "pricing_options": [
+    {
+      "frequency": "monthly",
+      "usd_price": 50,
+      "link": "https://platform.xiaomimimo.com/",
+      "other_info": null
+    },
+    {
+      "frequency": "yearly",
+      "usd_price": 528,
+      "link": "https://platform.xiaomimimo.com/",
+      "other_info": null
+    }
+  ],
+  "features": [
+    {
+      "feature_name": "Monthly Credit Quota",
+      "feature_value": "700M Credits",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Yearly Credit Quota",
+      "feature_value": "8400M Credits",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Supported Models",
+      "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
+      "feature_description": null,
+      "other_info": null
+    },
+    {
+      "feature_name": "Tools",
+      "feature_value": "OpenCode, OpenClaw, Claude Code",
+      "feature_description": null,
+      "other_info": null
+    }
+  ],
+  "models": [
+    {
+      "model_id": "xiaomi/mimo-v2.5-pro",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "xiaomi/mimo-v2.5",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": null
+    },
+    {
+      "model_id": "xiaomi/mimo-v2.5-tts",
+      "model_info": null,
+      "rate_limit": null,
+      "other_info": "Limited-time free"
+    }
+  ]
+}
