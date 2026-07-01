@@ -474,9 +474,9 @@ pub mod model_ids {
     /// Model ID: `mistral/devstral-small-1.1`.
     /// Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
     pub const MISTRAL_DEVSTRAL_SMALL_1_1: &str = "mistral/devstral-small-1.1";
-    /// Model ID: `mistral/leanstral-1.5`.
-    /// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5
-    pub const MISTRAL_LEANSTRAL_1_5: &str = "mistral/leanstral-1.5";
+    /// Model ID: `mistral/leanstral-1.5:free`.
+    /// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5%3Afree
+    pub const MISTRAL_LEANSTRAL_1_5_FREE: &str = "mistral/leanstral-1.5:free";
     /// Model ID: `mistral/magistral-medium-1.2`.
     /// Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
     pub const MISTRAL_MAGISTRAL_MEDIUM_1_2: &str = "mistral/magistral-medium-1.2";
@@ -1521,7 +1521,7 @@ pub mod model_ids {
         MISTRAL_DEVSTRAL_2,
         MISTRAL_DEVSTRAL_MEDIUM_1_0,
         MISTRAL_DEVSTRAL_SMALL_1_1,
-        MISTRAL_LEANSTRAL_1_5,
+        MISTRAL_LEANSTRAL_1_5_FREE,
         MISTRAL_MAGISTRAL_MEDIUM_1_2,
         MISTRAL_MINISTRAL_3_14B,
         MISTRAL_MINISTRAL_3_3B,

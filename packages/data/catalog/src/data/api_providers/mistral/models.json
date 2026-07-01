@@ -466,8 +466,8 @@
     ]
   },
   {
-    "api_model_id": "mistral/leanstral-1.5",
-    "provider_api_model_id": "mistral:mistral/leanstral-1.5",
+    "api_model_id": "mistral/leanstral-1.5:free",
+    "provider_api_model_id": "mistral:mistral/leanstral-1.5:free",
     "provider_model_slug": "labs-leanstral-1-5",
     "internal_model_id": "mistral/leanstral-1.5",
     "is_active_gateway": true,

@@ -477,9 +477,9 @@ inline constexpr std::string_view MISTRAL_DEVSTRAL_MEDIUM_1_0 = "mistral/devstra
 // Model ID: mistral/devstral-small-1.1
 // Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
 inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_1_1 = "mistral/devstral-small-1.1";
-// Model ID: mistral/leanstral-1.5
-// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5
-inline constexpr std::string_view MISTRAL_LEANSTRAL_1_5 = "mistral/leanstral-1.5";
+// Model ID: mistral/leanstral-1.5:free
+// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5%3Afree
+inline constexpr std::string_view MISTRAL_LEANSTRAL_1_5_FREE = "mistral/leanstral-1.5:free";
 // Model ID: mistral/magistral-medium-1.2
 // Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
 inline constexpr std::string_view MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2";
@@ -1523,7 +1523,7 @@ inline constexpr std::array<std::string_view, 452> ALL = {
 	MISTRAL_DEVSTRAL_2,
 	MISTRAL_DEVSTRAL_MEDIUM_1_0,
 	MISTRAL_DEVSTRAL_SMALL_1_1,
-	MISTRAL_LEANSTRAL_1_5,
+	MISTRAL_LEANSTRAL_1_5_FREE,
 	MISTRAL_MAGISTRAL_MEDIUM_1_2,
 	MISTRAL_MINISTRAL_3_14B,
 	MISTRAL_MINISTRAL_3_3B,

@@ -1,8 +1,8 @@
 {
-  "key": "mistral:mistral/leanstral-1.5:text.generate",
+  "key": "mistral:mistral/leanstral-1.5:free:text.generate",
   "api_provider_id": "mistral",
   "provider_slug": "mistral",
-  "api_model_id": "mistral/leanstral-1.5",
+  "api_model_id": "mistral/leanstral-1.5:free",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -11,7 +11,7 @@
       "unit_size": 1000000,
       "price_per_unit": 0,
       "currency": "USD",
-      "pricing_plan": "standard",
+      "pricing_plan": "free",
       "note": "Mistral's Leanstral 1.5 model card lists the API price as $0.",
       "match": [],
       "priority": 100,
@@ -23,7 +23,7 @@
       "unit_size": 1000000,
       "price_per_unit": 0,
       "currency": "USD",
-      "pricing_plan": "standard",
+      "pricing_plan": "free",
       "note": "Mistral's Leanstral 1.5 model card lists the API price as $0.",
       "match": [],
       "priority": 100,

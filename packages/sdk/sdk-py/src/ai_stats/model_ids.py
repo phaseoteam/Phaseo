@@ -638,9 +638,9 @@ class ModelIds:
     # Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
     MISTRAL_DEVSTRAL_SMALL_1_1: Final[str] = "mistral/devstral-small-1.1"
 
-    # Model ID: mistral/leanstral-1.5
-    # Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5
-    MISTRAL_LEANSTRAL_1_5: Final[str] = "mistral/leanstral-1.5"
+    # Model ID: mistral/leanstral-1.5:free
+    # Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5%3Afree
+    MISTRAL_LEANSTRAL_1_5_FREE: Final[str] = "mistral/leanstral-1.5:free"
 
     # Model ID: mistral/magistral-medium-1.2
     # Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
@@ -1981,7 +1981,7 @@ MODEL_IDS: Final[tuple[str, ...]] = tuple(
         ModelIds.MISTRAL_DEVSTRAL_2,
         ModelIds.MISTRAL_DEVSTRAL_MEDIUM_1_0,
         ModelIds.MISTRAL_DEVSTRAL_SMALL_1_1,
-        ModelIds.MISTRAL_LEANSTRAL_1_5,
+        ModelIds.MISTRAL_LEANSTRAL_1_5_FREE,
         ModelIds.MISTRAL_MAGISTRAL_MEDIUM_1_2,
         ModelIds.MISTRAL_MINISTRAL_3_14B,
         ModelIds.MISTRAL_MINISTRAL_3_3B,
