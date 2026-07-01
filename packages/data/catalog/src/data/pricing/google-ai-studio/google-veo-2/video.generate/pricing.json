@@ -15,7 +15,8 @@
       "note": null,
       "match": [],
       "priority": 100,
-      "effective_from": "2025-04-09T00:00:00Z"
+      "effective_from": "2025-04-09T00:00:00Z",
+      "effective_to": "2026-06-30T00:00:00Z"
     }
   ]
 }
