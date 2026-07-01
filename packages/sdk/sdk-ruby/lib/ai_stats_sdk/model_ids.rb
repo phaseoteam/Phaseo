@@ -135,6 +135,9 @@ module AIStatsSdk
     # Model ID: bytedance/seedance-2.0-fast
     # Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast
     BYTEDANCE_SEEDANCE_2_0_FAST = "bytedance/seedance-2.0-fast"
+    # Model ID: bytedance/seedance-2.0-mini-260615
+    # Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-mini-260615
+    BYTEDANCE_SEEDANCE_2_0_MINI_260615 = "bytedance/seedance-2.0-mini-260615"
     # Model ID: crofai/greg-1-mini
     # Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini
     CROFAI_GREG_1_MINI = "crofai/greg-1-mini"
@@ -204,6 +207,30 @@ module AIStatsSdk
     # Model ID: deepseek/deepseek-v4-pro-lightning
     # Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning
     DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING = "deepseek/deepseek-v4-pro-lightning"
+    # Model ID: eleven-labs/eleven-flash-v2
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2
+    ELEVEN_LABS_ELEVEN_FLASH_V2 = "eleven-labs/eleven-flash-v2"
+    # Model ID: eleven-labs/eleven-flash-v2.5
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2.5
+    ELEVEN_LABS_ELEVEN_FLASH_V2_5 = "eleven-labs/eleven-flash-v2.5"
+    # Model ID: eleven-labs/eleven-monolingual-v1
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-monolingual-v1
+    ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1 = "eleven-labs/eleven-monolingual-v1"
+    # Model ID: eleven-labs/eleven-multilingual-v1
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v1
+    ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1 = "eleven-labs/eleven-multilingual-v1"
+    # Model ID: eleven-labs/eleven-multilingual-v2
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v2
+    ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2 = "eleven-labs/eleven-multilingual-v2"
+    # Model ID: eleven-labs/eleven-turbo-v2
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2
+    ELEVEN_LABS_ELEVEN_TURBO_V2 = "eleven-labs/eleven-turbo-v2"
+    # Model ID: eleven-labs/eleven-turbo-v2.5
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2.5
+    ELEVEN_LABS_ELEVEN_TURBO_V2_5 = "eleven-labs/eleven-turbo-v2.5"
+    # Model ID: eleven-labs/eleven-v3
+    # Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-v3
+    ELEVEN_LABS_ELEVEN_V3 = "eleven-labs/eleven-v3"
     # Model ID: essential-ai/rnj-1
     # Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1
     ESSENTIAL_AI_RNJ_1 = "essential-ai/rnj-1"
@@ -237,6 +264,9 @@ module AIStatsSdk
     # Model ID: google/gemini-3.1-flash-lite
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite
     GOOGLE_GEMINI_3_1_FLASH_LITE = "google/gemini-3.1-flash-lite"
+    # Model ID: google/gemini-3.1-flash-lite-image
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-image
+    GOOGLE_GEMINI_3_1_FLASH_LITE_IMAGE = "google/gemini-3.1-flash-lite-image"
     # Model ID: google/gemini-3.1-flash-lite-preview
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-preview
     GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW = "google/gemini-3.1-flash-lite-preview"
@@ -252,6 +282,9 @@ module AIStatsSdk
     # Model ID: google/gemini-3.5-flash
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.5-flash
     GOOGLE_GEMINI_3_5_FLASH = "google/gemini-3.5-flash"
+    # Model ID: google/gemini-3.5-pro
+    # Model page: https://ai-stats.phaseo.app/models/google/gemini-3.5-pro
+    GOOGLE_GEMINI_3_5_PRO = "google/gemini-3.5-pro"
     # Model ID: google/gemini-embedding-001
     # Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-001
     GOOGLE_GEMINI_EMBEDDING_001 = "google/gemini-embedding-001"
@@ -342,9 +375,9 @@ module AIStatsSdk
     # Model ID: liquid-ai/lfm-2-24b-a2b
     # Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b
     LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b"
-    # Model ID: meituan/longcat-2.0-preview
-    # Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0-preview
-    MEITUAN_LONGCAT_2_0_PREVIEW = "meituan/longcat-2.0-preview"
+    # Model ID: meituan/longcat-2.0
+    # Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0
+    MEITUAN_LONGCAT_2_0 = "meituan/longcat-2.0"
     # Model ID: meta/llama-3-70b
     # Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b
     META_LLAMA_3_70B = "meta/llama-3-70b"
@@ -441,6 +474,12 @@ module AIStatsSdk
     # Model ID: mistral/devstral-small-1.1
     # Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1
     MISTRAL_DEVSTRAL_SMALL_1_1 = "mistral/devstral-small-1.1"
+    # Model ID: mistral/leanstral-1.5
+    # Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5
+    MISTRAL_LEANSTRAL_1_5 = "mistral/leanstral-1.5"
+    # Model ID: mistral/leanstral-1.5-1
+    # Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5-1
+    MISTRAL_LEANSTRAL_1_5_1 = "mistral/leanstral-1.5-1"
     # Model ID: mistral/magistral-medium-1.2
     # Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
     MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2"
@@ -810,9 +849,6 @@ module AIStatsSdk
     # Model ID: poolside/laguna-xs.2:free
     # Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree
     POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free"
-    # Model ID: primeintellect/intellect-3
-    # Model page: https://ai-stats.phaseo.app/models/primeintellect/intellect-3
-    PRIMEINTELLECT_INTELLECT_3 = "primeintellect/intellect-3"
     # Model ID: qwen/qvq-max
     # Model page: https://ai-stats.phaseo.app/models/qwen/qvq-max
     QWEN_QVQ_MAX = "qwen/qvq-max"
@@ -1257,15 +1293,6 @@ module AIStatsSdk
     # Model ID: xiaomi/mimo-v2-flash
     # Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash
     XIAOMI_MIMO_V2_FLASH = "xiaomi/mimo-v2-flash"
-    # Model ID: xiaomi/mimo-v2-omni
-    # Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-omni
-    XIAOMI_MIMO_V2_OMNI = "xiaomi/mimo-v2-omni"
-    # Model ID: xiaomi/mimo-v2-pro
-    # Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-pro
-    XIAOMI_MIMO_V2_PRO = "xiaomi/mimo-v2-pro"
-    # Model ID: xiaomi/mimo-v2-tts:free
-    # Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-tts%3Afree
-    XIAOMI_MIMO_V2_TTS_FREE = "xiaomi/mimo-v2-tts:free"
     # Model ID: xiaomi/mimo-v2.5
     # Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5
     XIAOMI_MIMO_V2_5 = "xiaomi/mimo-v2.5"
@@ -1384,6 +1411,7 @@ module AIStatsSdk
     ModelIds::BYTEDANCE_SEED_TRANSLATION,
     ModelIds::BYTEDANCE_SEEDANCE_2_0,
     ModelIds::BYTEDANCE_SEEDANCE_2_0_FAST,
+    ModelIds::BYTEDANCE_SEEDANCE_2_0_MINI_260615,
     ModelIds::CROFAI_GREG_1_MINI,
     ModelIds::CROFAI_GREG_2_SUPER,
     ModelIds::CROFAI_GREG_2_ULTRA,
@@ -1407,6 +1435,14 @@ module AIStatsSdk
     ModelIds::DEEPSEEK_DEEPSEEK_V4_FLASH,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO,
     ModelIds::DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING,
+    ModelIds::ELEVEN_LABS_ELEVEN_FLASH_V2,
+    ModelIds::ELEVEN_LABS_ELEVEN_FLASH_V2_5,
+    ModelIds::ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1,
+    ModelIds::ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1,
+    ModelIds::ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2,
+    ModelIds::ELEVEN_LABS_ELEVEN_TURBO_V2,
+    ModelIds::ELEVEN_LABS_ELEVEN_TURBO_V2_5,
+    ModelIds::ELEVEN_LABS_ELEVEN_V3,
     ModelIds::ESSENTIAL_AI_RNJ_1,
     ModelIds::GOOGLE_GEMINI_2_5_FLASH,
     ModelIds::GOOGLE_GEMINI_2_5_FLASH_LITE,
@@ -1418,11 +1454,13 @@ module AIStatsSdk
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_IMAGE,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_LITE,
+    ModelIds::GOOGLE_GEMINI_3_1_FLASH_LITE_IMAGE,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_1_FLASH_TTS_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_1_PRO_PREVIEW,
     ModelIds::GOOGLE_GEMINI_3_1_PRO_PREVIEW_CUSTOMTOOLS,
     ModelIds::GOOGLE_GEMINI_3_5_FLASH,
+    ModelIds::GOOGLE_GEMINI_3_5_PRO,
     ModelIds::GOOGLE_GEMINI_EMBEDDING_001,
     ModelIds::GOOGLE_GEMINI_EMBEDDING_2,
     ModelIds::GOOGLE_GEMINI_EMBEDDING_2_PREVIEW,
@@ -1453,7 +1491,7 @@ module AIStatsSdk
     ModelIds::KWAIPILOT_KAT_CODER_PRO_V1,
     ModelIds::KWAIPILOT_KAT_CODER_PRO_V2,
     ModelIds::LIQUID_AI_LFM_2_24B_A2B,
-    ModelIds::MEITUAN_LONGCAT_2_0_PREVIEW,
+    ModelIds::MEITUAN_LONGCAT_2_0,
     ModelIds::META_LLAMA_3_70B,
     ModelIds::META_LLAMA_3_8B,
     ModelIds::META_LLAMA_3_8B_LITE,
@@ -1486,6 +1524,8 @@ module AIStatsSdk
     ModelIds::MISTRAL_DEVSTRAL_2,
     ModelIds::MISTRAL_DEVSTRAL_MEDIUM_1_0,
     ModelIds::MISTRAL_DEVSTRAL_SMALL_1_1,
+    ModelIds::MISTRAL_LEANSTRAL_1_5,
+    ModelIds::MISTRAL_LEANSTRAL_1_5_1,
     ModelIds::MISTRAL_MAGISTRAL_MEDIUM_1_2,
     ModelIds::MISTRAL_MINISTRAL_3_14B,
     ModelIds::MISTRAL_MINISTRAL_3_3B,
@@ -1609,7 +1649,6 @@ module AIStatsSdk
     ModelIds::OPENAI_WHISPER_1,
     ModelIds::POOLSIDE_LAGUNA_M_1_FREE,
     ModelIds::POOLSIDE_LAGUNA_XS_2_FREE,
-    ModelIds::PRIMEINTELLECT_INTELLECT_3,
     ModelIds::QWEN_QVQ_MAX,
     ModelIds::QWEN_QWEN_3_6_PLUS,
     ModelIds::QWEN_QWEN_FLASH,
@@ -1758,9 +1797,6 @@ module AIStatsSdk
     ModelIds::X_AI_GROK_IMAGINE_VIDEO,
     ModelIds::X_AI_GROK_TTS,
     ModelIds::XIAOMI_MIMO_V2_FLASH,
-    ModelIds::XIAOMI_MIMO_V2_OMNI,
-    ModelIds::XIAOMI_MIMO_V2_PRO,
-    ModelIds::XIAOMI_MIMO_V2_TTS_FREE,
     ModelIds::XIAOMI_MIMO_V2_5,
     ModelIds::XIAOMI_MIMO_V2_5_PRO,
     ModelIds::XIAOMI_MIMO_V2_5_TTS_FREE,

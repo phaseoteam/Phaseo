@@ -1,0 +1,33 @@
+{
+  "key": "mistral:mistral/ocr-4:ocr",
+  "api_provider_id": "mistral",
+  "provider_slug": "mistral",
+  "api_model_id": "mistral/ocr-4",
+  "capability_id": "ocr",
+  "rules": [
+    {
+      "meter": "input_pages",
+      "unit": "page",
+      "unit_size": 1000,
+      "price_per_unit": 2,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Mistral pricing lists OCR 4 at $2 per 1,000 pages.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    },
+    {
+      "meter": "input_pages",
+      "unit": "page",
+      "unit_size": 1000,
+      "price_per_unit": 1,
+      "currency": "USD",
+      "pricing_plan": "batch",
+      "note": "Mistral batch processing is billed at a 50% discount from standard OCR 4 page pricing.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    }
+  ]
+}
