@@ -32,7 +32,7 @@
     },
     {
       "feature_name": "Supported Models",
-      "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS-VoiceClone, MiMo-V2.5-TTS-VoiceDesign, MiMo-V2.5-TTS",
+      "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS",
       "feature_description": null,
       "other_info": null
     },
