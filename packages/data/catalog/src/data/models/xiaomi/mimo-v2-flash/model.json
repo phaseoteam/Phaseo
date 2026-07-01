@@ -2,7 +2,7 @@
   "model_id": "xiaomi/mimo-v2-flash",
   "organisation_id": "xiaomi",
   "name": "MiMo V2 Flash",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "MiMo V2 Flash is an open-source foundation language model developed by Xiaomi. It is a Mixture-of-Experts model with 309B total parameters and 15B active parameters, adopting hybrid attention architecture.",
   "announced_date": "2025-12-16T00:00:00",
