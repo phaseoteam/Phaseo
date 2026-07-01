@@ -1824,27 +1824,6 @@
     ]
   },
   {
-    "api_model_id": "qwen/qwen3.7-plus",
-    "provider_api_model_id": "venice:qwen/qwen3.7-plus",
-    "provider_model_slug": "qwen-3-7-plus",
-    "internal_model_id": "qwen/qwen3.7-plus",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image,video",
-    "output_modalities": "text",
-    "context_length": 1000000,
-    "max_output_tokens": 65536,
-    "effective_from": "2026-06-08T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "anthropic/claude-opus-4.7-fast",
     "provider_api_model_id": "venice:anthropic/claude-opus-4.7-fast",
     "provider_model_slug": "claude-opus-4-7-fast",
