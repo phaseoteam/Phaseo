@@ -60,7 +60,7 @@
       "price_per_unit": 30,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Gemini 3.1 Flash-Lite Image consumes 1120 output image tokens for each 1K output image.",
+      "note": "Equivalent to $0.0336 per 1K output image using 1120 output image tokens.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z"
@@ -120,7 +120,7 @@
       "price_per_unit": 15,
       "currency": "USD",
       "pricing_plan": "batch",
-      "note": "Batch rate for 1K image output tokens.",
+      "note": "Equivalent to $0.0168 per 1K output image using 1120 output image tokens after the Batch API discount.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z"
@@ -180,7 +180,7 @@
       "price_per_unit": 15,
       "currency": "USD",
       "pricing_plan": "flex",
-      "note": "Flex rate for 1K image output tokens.",
+      "note": "Equivalent to $0.0168 per 1K output image using 1120 output image tokens with Flex processing.",
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z"
