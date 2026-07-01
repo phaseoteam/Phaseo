@@ -629,6 +629,9 @@ export async function loadProviders(
         api_model_id: string;
         model_id: string | null;
         provider_model_slug: string | null;
+        prompt_training_policy_override: string | null;
+        prompt_training_override_notes: string | null;
+        prompt_training_override_source_url: string | null;
         internal_model_id: string | null;
         is_active_gateway: boolean;
         input_modalities: string[] | null;
@@ -841,6 +844,9 @@ export async function loadProviders(
                     api_model_id: apiModelId,
                     model_id: hasResolvedModelId ? resolvedModelId : null,
                     provider_model_slug: model.provider_model_slug ?? null,
+                    prompt_training_policy_override: model.prompt_training_policy_override ?? null,
+                    prompt_training_override_notes: model.prompt_training_override_notes ?? null,
+                    prompt_training_override_source_url: model.prompt_training_override_source_url ?? null,
                     internal_model_id: effectiveInternalModelId,
                     is_active_gateway: !!model.is_active_gateway,
                     input_modalities: toTextArray(model.input_modalities),

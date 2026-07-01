@@ -481,9 +481,6 @@ public final class ModelIds {
     /** Model ID: <code>mistral/leanstral-1.5</code>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5 */
     public static final String MISTRAL_LEANSTRAL_1_5 = "mistral/leanstral-1.5";
 
-    /** Model ID: <code>mistral/leanstral-1.5-1</code>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5-1 */
-    public static final String MISTRAL_LEANSTRAL_1_5_1 = "mistral/leanstral-1.5-1";
-
     /** Model ID: <code>mistral/magistral-medium-1.2</code>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2 */
     public static final String MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2";
 

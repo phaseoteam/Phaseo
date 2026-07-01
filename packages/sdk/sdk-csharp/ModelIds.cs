@@ -322,8 +322,6 @@ namespace AiStatsSdk
         public const string MistralDevstralSmall11 = "mistral/devstral-small-1.1";
         /// <summary>Model ID: <c>mistral/leanstral-1.5</c>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5</summary>
         public const string MistralLeanstral15 = "mistral/leanstral-1.5";
-        /// <summary>Model ID: <c>mistral/leanstral-1.5-1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5-1</summary>
-        public const string MistralLeanstral151 = "mistral/leanstral-1.5-1";
         /// <summary>Model ID: <c>mistral/magistral-medium-1.2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2</summary>
         public const string MistralMagistralMedium12 = "mistral/magistral-medium-1.2";
         /// <summary>Model ID: <c>mistral/ministral-3-14b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b</summary>

@@ -160,7 +160,6 @@ export type KnownModelId =
   | "mistral/devstral-medium-1.0"
   | "mistral/devstral-small-1.1"
   | "mistral/leanstral-1.5"
-  | "mistral/leanstral-1.5-1"
   | "mistral/magistral-medium-1.2"
   | "mistral/ministral-3-14b"
   | "mistral/ministral-3-3b"

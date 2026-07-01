@@ -1536,7 +1536,6 @@ const (
 	KnownModelIdMistralDevstralMedium10 KnownModelId = "mistral/devstral-medium-1.0"
 	KnownModelIdMistralDevstralSmall11 KnownModelId = "mistral/devstral-small-1.1"
 	KnownModelIdMistralLeanstral15 KnownModelId = "mistral/leanstral-1.5"
-	KnownModelIdMistralLeanstral151 KnownModelId = "mistral/leanstral-1.5-1"
 	KnownModelIdMistralMagistralMedium12 KnownModelId = "mistral/magistral-medium-1.2"
 	KnownModelIdMistralMinistral314b KnownModelId = "mistral/ministral-3-14b"
 	KnownModelIdMistralMinistral33b KnownModelId = "mistral/ministral-3-3b"

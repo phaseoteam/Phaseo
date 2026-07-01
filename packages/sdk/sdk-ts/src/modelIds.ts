@@ -319,8 +319,6 @@ export const ModelIds = {
   MISTRAL_DEVSTRAL_SMALL_1_1: "mistral/devstral-small-1.1",
   /** Model ID: `mistral/leanstral-1.5`. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5 */
   MISTRAL_LEANSTRAL_1_5: "mistral/leanstral-1.5",
-  /** Model ID: `mistral/leanstral-1.5-1`. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5-1 */
-  MISTRAL_LEANSTRAL_1_5_1: "mistral/leanstral-1.5-1",
   /** Model ID: `mistral/magistral-medium-1.2`. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2 */
   MISTRAL_MAGISTRAL_MEDIUM_1_2: "mistral/magistral-medium-1.2",
   /** Model ID: `mistral/ministral-3-14b`. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b */

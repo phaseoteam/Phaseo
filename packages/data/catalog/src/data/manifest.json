@@ -2311,7 +2311,6 @@
     "mistral:text.generate:mistral-devstral-small-2-free",
     "mistral:text.generate:mistral-leanstral-free",
     "mistral:text.generate:mistral-leanstral-1.5",
-    "mistral:text.generate:mistral-leanstral-1.5-1",
     "mistral:text.generate:mistral-magistral-medium-1.2",
     "mistral:text.generate:mistral-magistral-small-1.2",
     "mistral:text.generate:mistral-ministral-3-14b",

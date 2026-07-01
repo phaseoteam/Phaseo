@@ -471,97 +471,15 @@
     "provider_model_slug": "labs-leanstral-1-5",
     "internal_model_id": "mistral/leanstral-1.5",
     "is_active_gateway": true,
+    "prompt_training_policy_override": "may_train",
+    "prompt_training_override_notes": "Mistral documents Leanstral 1.5 as a Labs model with a $0 price. Mistral says API data is generally not used for model training, but Labs models can be used to train Mistral models regardless of subscription plan or opt-out settings under the Commercial Terms of Service.",
+    "prompt_training_override_source_url": "https://docs.mistral.ai/admin/monitor-comply/privacy-data-controls",
     "quantization_scheme": null,
     "input_modalities": "text,image",
     "output_modalities": "text",
     "context_length": 262144,
     "max_output_tokens": null,
-    "effective_from": "2026-06-30T09:54:48",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": [
-          {
-            "param_id": "temperature",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": 1,
-            "notes": null
-          },
-          {
-            "param_id": "top_p",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "presence_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "frequency_penalty",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "max_tokens",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "stop",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tools",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "tool_choice",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          },
-          {
-            "param_id": "response_format",
-            "provider_min": null,
-            "provider_max": null,
-            "provider_default": null,
-            "notes": null
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "api_model_id": "mistral/leanstral-1.5-1",
-    "provider_api_model_id": "mistral:mistral/leanstral-1.5-1",
-    "provider_model_slug": "labs-leanstral-1-5-1",
-    "internal_model_id": "mistral/leanstral-1.5",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text,image",
-    "output_modalities": "text",
-    "context_length": 262144,
-    "max_output_tokens": null,
-    "effective_from": "2026-06-30T09:54:48",
+    "effective_from": "2026-06-30T00:00:00",
     "effective_to": null,
     "capabilities": [
       {

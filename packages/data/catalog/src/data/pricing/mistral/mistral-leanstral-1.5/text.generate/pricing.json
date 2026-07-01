@@ -9,49 +9,25 @@
       "meter": "input_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.15,
+      "price_per_unit": 0,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Leanstral 1.5 is described by Mistral as post-trained from Mistral Small 4; using Mistral Small 4 pricing pending a dedicated published Leanstral 1.5 price.",
+      "note": "Mistral's Leanstral 1.5 model card lists the API price as $0.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T09:54:48Z"
+      "effective_from": "2026-06-30T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
       "unit": "token",
       "unit_size": 1000000,
-      "price_per_unit": 0.6,
+      "price_per_unit": 0,
       "currency": "USD",
       "pricing_plan": "standard",
-      "note": "Leanstral 1.5 is described by Mistral as post-trained from Mistral Small 4; using Mistral Small 4 pricing pending a dedicated published Leanstral 1.5 price.",
+      "note": "Mistral's Leanstral 1.5 model card lists the API price as $0.",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-06-30T09:54:48Z"
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.075,
-      "currency": "USD",
-      "pricing_plan": "batch",
-      "note": "Batch pricing follows the Mistral Small 4 50% discount pending a dedicated published Leanstral 1.5 price.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T09:54:48Z"
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.3,
-      "currency": "USD",
-      "pricing_plan": "batch",
-      "note": "Batch pricing follows the Mistral Small 4 50% discount pending a dedicated published Leanstral 1.5 price.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T09:54:48Z"
+      "effective_from": "2026-06-30T00:00:00Z"
     }
   ]
 }

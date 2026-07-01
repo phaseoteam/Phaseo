@@ -480,9 +480,6 @@ inline constexpr std::string_view MISTRAL_DEVSTRAL_SMALL_1_1 = "mistral/devstral
 // Model ID: mistral/leanstral-1.5
 // Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5
 inline constexpr std::string_view MISTRAL_LEANSTRAL_1_5 = "mistral/leanstral-1.5";
-// Model ID: mistral/leanstral-1.5-1
-// Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5-1
-inline constexpr std::string_view MISTRAL_LEANSTRAL_1_5_1 = "mistral/leanstral-1.5-1";
 // Model ID: mistral/magistral-medium-1.2
 // Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2
 inline constexpr std::string_view MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2";
@@ -1368,7 +1365,7 @@ inline constexpr std::string_view ZAI_GLM_5 = "zai/glm-5";
 // Deprecated alias for deepseek/deepseek-v4; use deepseek/deepseek-v4-pro. Remove in the next major SDK release.
 inline constexpr std::string_view DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO;
 
-inline constexpr std::array<std::string_view, 453> ALL = {
+inline constexpr std::array<std::string_view, 452> ALL = {
 	AI21_JAMBA_LARGE_1_7,
 	AI21_JAMBA_MINI_2,
 	AION_LABS_AION_1_0,
@@ -1527,7 +1524,6 @@ inline constexpr std::array<std::string_view, 453> ALL = {
 	MISTRAL_DEVSTRAL_MEDIUM_1_0,
 	MISTRAL_DEVSTRAL_SMALL_1_1,
 	MISTRAL_LEANSTRAL_1_5,
-	MISTRAL_LEANSTRAL_1_5_1,
 	MISTRAL_MAGISTRAL_MEDIUM_1_2,
 	MISTRAL_MINISTRAL_3_14B,
 	MISTRAL_MINISTRAL_3_3B,
