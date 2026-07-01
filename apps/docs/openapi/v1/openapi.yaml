@@ -8348,6 +8348,7 @@ components:
         - bytedance/seed-translation
         - bytedance/seedance-2.0
         - bytedance/seedance-2.0-fast
+        - bytedance/seedance-2.0-mini-260615
         - crofai/greg-1-mini
         - crofai/greg-2-super
         - crofai/greg-2-ultra
@@ -8371,6 +8372,14 @@ components:
         - deepseek/deepseek-v4-flash
         - deepseek/deepseek-v4-pro
         - deepseek/deepseek-v4-pro-lightning
+        - eleven-labs/eleven-flash-v2
+        - eleven-labs/eleven-flash-v2.5
+        - eleven-labs/eleven-monolingual-v1
+        - eleven-labs/eleven-multilingual-v1
+        - eleven-labs/eleven-multilingual-v2
+        - eleven-labs/eleven-turbo-v2
+        - eleven-labs/eleven-turbo-v2.5
+        - eleven-labs/eleven-v3
         - essential-ai/rnj-1
         - google/gemini-2.5-flash
         - google/gemini-2.5-flash-lite
@@ -8382,11 +8391,13 @@ components:
         - google/gemini-3.1-flash-image
         - google/gemini-3.1-flash-image-preview
         - google/gemini-3.1-flash-lite
+        - google/gemini-3.1-flash-lite-image
         - google/gemini-3.1-flash-lite-preview
         - google/gemini-3.1-flash-tts-preview
         - google/gemini-3.1-pro-preview
         - google/gemini-3.1-pro-preview-customtools
         - google/gemini-3.5-flash
+        - google/gemini-3.5-pro
         - google/gemini-embedding-001
         - google/gemini-embedding-2
         - google/gemini-embedding-2-preview
@@ -8417,7 +8428,7 @@ components:
         - kwaipilot/kat-coder-pro-v1
         - kwaipilot/kat-coder-pro-v2
         - liquid-ai/lfm-2-24b-a2b
-        - meituan/longcat-2.0-preview
+        - meituan/longcat-2.0
         - meta/llama-3-70b
         - meta/llama-3-8b
         - meta/llama-3-8b-lite
@@ -8450,6 +8461,7 @@ components:
         - mistral/devstral-2
         - mistral/devstral-medium-1.0
         - mistral/devstral-small-1.1
+        - mistral/leanstral-1.5:free
         - mistral/magistral-medium-1.2
         - mistral/ministral-3-14b
         - mistral/ministral-3-3b
@@ -8573,7 +8585,6 @@ components:
         - openai/whisper-1
         - poolside/laguna-m.1:free
         - poolside/laguna-xs.2:free
-        - primeintellect/intellect-3
         - qwen/qvq-max
         - qwen/qwen-3.6-plus
         - qwen/qwen-flash
@@ -8722,9 +8733,6 @@ components:
         - x-ai/grok-imagine-video
         - x-ai/grok-tts
         - xiaomi/mimo-v2-flash
-        - xiaomi/mimo-v2-omni
-        - xiaomi/mimo-v2-pro
-        - xiaomi/mimo-v2-tts:free
         - xiaomi/mimo-v2.5
         - xiaomi/mimo-v2.5-pro
         - xiaomi/mimo-v2.5-tts:free

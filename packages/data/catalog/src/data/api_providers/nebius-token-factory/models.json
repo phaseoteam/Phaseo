@@ -89,7 +89,7 @@
     "provider_model_slug": "google/gemma-2-2b-it",
     "internal_model_id": "google/gemma-2-2b",
     "is_active_gateway": false,
-    "quantization_scheme": null,
+    "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 8000,
@@ -326,6 +326,27 @@
     "context_length": 256000,
     "max_output_tokens": null,
     "effective_from": null,
+    "effective_to": null,
+    "capabilities": [
+      {
+        "capability_id": "text.generate",
+        "status": "active",
+        "params": []
+      }
+    ]
+  },
+  {
+    "api_model_id": "moonshotai/kimi-k2.7-code",
+    "provider_api_model_id": "nebius-token-factory:moonshotai/kimi-k2.7-code",
+    "provider_model_slug": "moonshotai/Kimi-K2.7-Code",
+    "internal_model_id": "moonshotai/kimi-k2.7-code",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 262144,
+    "max_output_tokens": null,
+    "effective_from": "2026-06-30T00:00:00",
     "effective_to": null,
     "capabilities": [
       {
@@ -593,18 +614,18 @@
     "provider_api_model_id": "nebius-token-factory:primeintellect/intellect-3",
     "provider_model_slug": "PrimeIntellect/INTELLECT-3",
     "internal_model_id": "prime-intellect/intellect-3",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP8",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 128000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-23T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": []
       }
     ]
@@ -866,18 +887,18 @@
     "provider_api_model_id": "nebius-token-factory:z-ai/glm-5",
     "provider_model_slug": "zai-org/GLM-5",
     "internal_model_id": "z-ai/glm-5",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": "FP4",
     "input_modalities": "text",
     "output_modalities": "text",
     "context_length": 200000,
     "max_output_tokens": null,
     "effective_from": "2026-03-25T00:00:00",
-    "effective_to": null,
+    "effective_to": "2026-06-23T00:00:00",
     "capabilities": [
       {
         "capability_id": "text.generate",
-        "status": "active",
+        "status": "inactive",
         "params": []
       }
     ]

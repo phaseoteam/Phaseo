@@ -1,0 +1,81 @@
+{
+  "key": "google-ai-studio:google/gemini-omni-flash-preview:video.generate",
+  "api_provider_id": "google-ai-studio",
+  "provider_slug": "google-ai-studio",
+  "api_model_id": "google/gemini-omni-flash-preview",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "input_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    },
+    {
+      "meter": "input_image_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    },
+    {
+      "meter": "input_video_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": null,
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    },
+    {
+      "meter": "input_audio_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 1.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Google pricing lists audio with the same input rate, although the model page lists text, image, and video inputs.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    },
+    {
+      "meter": "output_text_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 9,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Includes thinking tokens.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    },
+    {
+      "meter": "output_video_tokens",
+      "unit": "token",
+      "unit_size": 1000000,
+      "price_per_unit": 17.5,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Google bills output video token consumption at 5,792 tokens per second of 720p video, approximately $0.10 per second.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-30T00:00:00Z"
+    }
+  ]
+}
