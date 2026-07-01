@@ -32,7 +32,7 @@
     },
     {
       "feature_name": "Supported Models",
-      "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS-VoiceClone, MiMo-V2.5-TTS-VoiceDesign, MiMo-V2.5-TTS, MiMo-V2-Pro, MiMo-V2-Omni",
+      "feature_value": "MiMo-V2.5-Pro, MiMo-V2.5, MiMo-V2.5-TTS-VoiceClone, MiMo-V2.5-TTS-VoiceDesign, MiMo-V2.5-TTS",
       "feature_description": null,
       "other_info": null
     },
@@ -61,18 +61,6 @@
       "model_info": null,
       "rate_limit": null,
       "other_info": "Limited-time free"
-    },
-    {
-      "model_id": "xiaomi/mimo-v2-pro",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
-    },
-    {
-      "model_id": "xiaomi/mimo-v2-omni",
-      "model_info": null,
-      "rate_limit": null,
-      "other_info": null
     }
   ]
 }
