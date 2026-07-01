@@ -504,27 +504,6 @@
     ]
   },
   {
-    "api_model_id": "meituan/longcat-2.0",
-    "provider_api_model_id": "atlascloud:meituan/longcat-2.0",
-    "provider_model_slug": "meituan-longcat/longcat-2.0",
-    "internal_model_id": "meituan/longcat-2.0",
-    "is_active_gateway": true,
-    "quantization_scheme": null,
-    "input_modalities": "text",
-    "output_modalities": "text",
-    "context_length": 131072,
-    "max_output_tokens": 65536,
-    "effective_from": "2026-06-30T00:00:00",
-    "effective_to": null,
-    "capabilities": [
-      {
-        "capability_id": "text.generate",
-        "status": "active",
-        "params": []
-      }
-    ]
-  },
-  {
     "api_model_id": "moonshotai/kimi-k2.6",
     "provider_api_model_id": "atlascloud:moonshotai/kimi-k2.6",
     "provider_model_slug": "moonshotai/kimi-k2.6",
