@@ -13,7 +13,7 @@ import {
 	fetchFrontendModelPendingApiReleaseState,
 	fetchFrontendModelPricing,
 	fetchFrontendModelPricingHistory,
-	fetchFrontendModelProviderRuntimeStats,
+	fetchFrontendModelUsageDailyBreakdown,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function ModelPricingInsightsSection({
@@ -79,17 +79,24 @@ export default async function ModelPricingInsightsSection({
 		);
 	}
 
-	const [runtimeStats, pricingHistoryRules] = await Promise.all([
-		fetchFrontendModelProviderRuntimeStats({
-			modelId,
-			providerIds,
-			modelAliases,
-		}),
+	const [pricingHistoryRules, usageRows] = await Promise.all([
 		fetchFrontendModelPricingHistory(modelId, {
 			includeHidden,
 			days: 30,
 		}).catch((error) => {
 			console.warn("[pricing] failed to fetch pricing history rules", {
+				modelId,
+				error,
+			});
+			return [];
+		}),
+		fetchFrontendModelUsageDailyBreakdown({
+			modelId,
+			providerIds,
+			modelAliases,
+			days: 30,
+		}).catch((error) => {
+			console.warn("[pricing] failed to fetch usage breakdown", {
 				modelId,
 				error,
 			});
@@ -107,8 +114,8 @@ export default async function ModelPricingInsightsSection({
 			) : null}
 			<ModelPricingInsightsClient
 				providers={providersForDisplay}
-				runtimeStats={runtimeStats}
 				historyRules={pricingHistoryRules}
+				usageRows={usageRows}
 				showPageHeader={showPageHeader}
 			/>
 		</div>

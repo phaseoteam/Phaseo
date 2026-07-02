@@ -378,7 +378,7 @@ export default function ModelTokenTrajectoryChart({
 									<ReferenceLine
 										key={successor.modelId}
 										x={successor.daysSinceRelease}
-										stroke="hsl(var(--color-latency))"
+										stroke="hsl(217, 91%, 60%)"
 										strokeDasharray="4 2"
 										label={
 											<SuccessorReferenceLabel

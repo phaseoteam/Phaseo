@@ -1,5 +1,9 @@
 // lib/fetchers/models/getAllModels.ts
 import { cacheLife, cacheTag } from "next/cache";
+import {
+	MODEL_LIST_TAGS,
+	PUBLIC_MODEL_CATALOGUE_CACHE_LIFE,
+} from "@/lib/cache/publicModelCatalogueTags";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { applyHiddenFilter } from "./visibility";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
@@ -11,6 +15,10 @@ import {
 	type MonitorModelData,
 	getMonitorModels,
 } from "@/lib/fetchers/models/table-view/getMonitorModels";
+import {
+	parseModelPageNoticeRow,
+	type ModelPageNotice,
+} from "@/lib/fetchers/models/getModelPageNotice";
 
 export interface ModelCard {
     model_id: string;
@@ -23,6 +31,7 @@ export interface ModelCard {
     release_date?: string | null;
     announcement_date?: string | null;
     updated_at?: string | null;
+    api_model_id?: string | null;
     input_types?: string[];
     output_types?: string[];
     // Backward-compatibility alias used in some legacy call sites
@@ -32,7 +41,7 @@ export interface ModelCard {
     primary_timestamp: number | null;
     primary_group_key: string | null;
     model_source?: "api_backed" | "internal_only";
-    gateway_status?: "active" | "coming_soon" | "inactive" | "not_listed";
+    gateway_status?: "active" | "inactive" | "not_listed";
     gateway_provider_count?: number;
     gateway_active_provider_count?: number;
     gateway_endpoints?: string[];
@@ -69,6 +78,7 @@ export interface ModelCard {
     popularity_tokens_week?: number | null;
     throughput_week?: number | null;
     latency_week?: number | null;
+    model_page_notice?: ModelPageNotice | null;
     gateway_supported_models?: GatewaySupportedModel[];
     gateway_monitor_rows?: MonitorModelData[];
 }
@@ -148,6 +158,7 @@ export function mapRawToModelCard(
         release_date: raw.release_date ?? null,
         announcement_date: raw.announcement_date ?? null,
         updated_at: raw.updated_at ?? null,
+        api_model_id: raw.api_model_id ?? null,
         input_types: inputTypes,
         output_types: outputTypes,
         input_modalities: inputTypes,
@@ -216,6 +227,7 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
             release_date,
             announcement_date,
             updated_at,
+            api_model_id,
             input_types,
             output_types,
             organisation: data_organisations (name, colour)
@@ -311,11 +323,76 @@ async function fetchModelsFromDb(filters: GetModelsFilter): Promise<any[]> {
     return uniqueRows;
 }
 
-export async function getAllModels(includeHidden: boolean): Promise<ModelCard[]> {
-    const [rows, gatewayModels, monitorResult] = await Promise.all([
+function isMissingRelationError(error: unknown): boolean {
+    const text = String((error as { message?: unknown })?.message ?? "").toLowerCase();
+    return (
+        text.includes("does not exist") ||
+        text.includes("could not find table") ||
+        text.includes("relation") ||
+        text.includes("schema cache")
+    );
+}
+
+async function fetchModelPageNoticesFromDb(): Promise<Map<string, ModelPageNotice>> {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+        .from("data_api_model_page_notices")
+        .select("api_model_id, tone, markdown");
+
+    if (error) {
+        if (isMissingRelationError(error)) return new Map();
+        // eslint-disable-next-line no-console
+        console.warn("[getAllModels] supabase error fetching model notices", error.message);
+        throw error;
+    }
+
+    const notices = new Map<string, ModelPageNotice>();
+    for (const row of data ?? []) {
+        const notice = parseModelPageNoticeRow(row);
+        if (!notice) continue;
+        notices.set(notice.apiModelId, notice);
+    }
+    return notices;
+}
+
+function resolveModelPageNotice(
+    noticesByApiModelId: Map<string, ModelPageNotice>,
+    raw: any,
+    gatewayModels: GatewaySupportedModel[],
+    monitorRows: MonitorModelData[],
+): ModelPageNotice | null {
+    const candidates = [
+        raw.api_model_id,
+        raw.model_id,
+        raw.id,
+        raw.slug,
+        ...gatewayModels.flatMap((model) => [
+            model.modelId,
+            model.selectorModelId,
+            model.internalModelId,
+        ]),
+        ...monitorRows.flatMap((row) => [row.apiModelId, row.modelId]),
+    ];
+
+    for (const candidate of candidates) {
+        const id = String(candidate ?? "").trim();
+        if (!id) continue;
+        const notice = noticesByApiModelId.get(id);
+        if (notice) return notice;
+    }
+
+    return null;
+}
+
+export async function getAllModels(
+    includeHidden: boolean,
+    includeInternal = false,
+): Promise<ModelCard[]> {
+    const [rows, gatewayModels, monitorResult, noticesByApiModelId] = await Promise.all([
         fetchModelsFromDb({ includeHidden }),
         getGatewaySupportedModels(includeHidden),
-        getMonitorModels({}, includeHidden),
+        getMonitorModels({}, includeHidden, includeInternal),
+        fetchModelPageNoticesFromDb(),
     ]);
 
     const gatewayModelsByInternalId = new Map<string, GatewaySupportedModel[]>();
@@ -338,13 +415,21 @@ export async function getAllModels(includeHidden: boolean): Promise<ModelCard[]>
     const models: ModelCard[] = rows
         .map((raw: any) => {
             const modelId = String(raw.model_id ?? raw.id ?? raw.slug ?? "").trim();
+            const gatewaySupportedModels = modelId
+                ? gatewayModelsByInternalId.get(modelId) ?? []
+                : [];
+            const gatewayMonitorRows = modelId
+                ? monitorRowsByModelId.get(modelId) ?? []
+                : [];
             return mapRawToModelCard(raw, {
-                gateway_supported_models: modelId
-                    ? gatewayModelsByInternalId.get(modelId) ?? []
-                    : [],
-                gateway_monitor_rows: modelId
-                    ? monitorRowsByModelId.get(modelId) ?? []
-                    : [],
+                model_page_notice: resolveModelPageNotice(
+                    noticesByApiModelId,
+                    raw,
+                    gatewaySupportedModels,
+                    gatewayMonitorRows,
+                ),
+                gateway_supported_models: gatewaySupportedModels,
+                gateway_monitor_rows: gatewayMonitorRows,
             });
         })
         .filter((m) => !!m.model_id);
@@ -377,15 +462,17 @@ export async function getModelsFilteredCached(
 	return getModelsFiltered(filters);
 }
 
-export async function getAllModelsCached(includeHidden: boolean): Promise<ModelCard[]> {
+export async function getAllModelsCached(
+    includeHidden: boolean,
+    includeInternal = false,
+): Promise<ModelCard[]> {
     "use cache";
 
-    cacheLife("days");
-    cacheTag("public-model-catalogue");
-    cacheTag("data:models");
-    cacheTag("models:list-base");
-    cacheTag("frontend:models");
+    cacheLife(PUBLIC_MODEL_CATALOGUE_CACHE_LIFE);
+    for (const tag of MODEL_LIST_TAGS) {
+        cacheTag(tag);
+    }
 
     console.log("[fetch] HIT DB for models");
-    return getAllModels(includeHidden);
+    return getAllModels(includeHidden, includeInternal);
 }

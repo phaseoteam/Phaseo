@@ -3,7 +3,7 @@ title: "Chat completions"
 description: "Call /chat/completions with the TypeScript SDK."
 ---
 
-**Method**: `client.generateText()` (stream with `client.streamText()`).
+**Method**: `client.generateText()` (stream parsed chunks with `client.streamChat()`).
 
 ### Example
 ```typescript
@@ -19,11 +19,11 @@ const chat = await client.generateText({
 
 ### Streaming
 ```typescript
-for await (const line of client.streamText({
+for await (const chunk of client.streamChat({
   model: "openai/gpt-4o-mini",
   messages: [{ role: "user", content: "Stream a story" }],
 })) {
-  console.log(line);
+  if (chunk.text) process.stdout.write(chunk.text);
 }
 ```
 

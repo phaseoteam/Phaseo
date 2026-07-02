@@ -967,7 +967,7 @@ async function main(): Promise<void> {
 
         const runTimestamp = nowIso();
         runChangeEntries = buildProviderChangeEntries(changes, runTimestamp);
-        upstreamIssueEntries = buildProviderChangeEntries(rawChanges, runTimestamp).map((entry) => ({
+        upstreamIssueEntries = buildProviderChangeEntries(changes, runTimestamp).map((entry) => ({
             source: "provider-api",
             ts: entry.ts,
             action: entry.action,
@@ -1050,7 +1050,13 @@ async function main(): Promise<void> {
         }
 
         if (changes.length === 0 && upstreamIssueEntries.length === 0) {
-            console.log("[model-discovery] No model changes detected.");
+            if (rawChanges.length > 0) {
+                console.log(
+                    "[model-discovery] Upstream provider changes were detected outside the known catalog allowlist; skipping Discord and GitHub issue sync."
+                );
+            } else {
+                console.log("[model-discovery] No model changes detected.");
+            }
         } else {
             if (changes.length > 0) {
                 const message = buildDiscordMessage(changes, runChangeEntries);
@@ -1061,26 +1067,21 @@ async function main(): Promise<void> {
                     notificationError = error instanceof Error ? error.message : String(error);
                     console.error(`[model-discovery] Discord notification failed: ${notificationError}`);
                 }
-            } else {
-                console.log(
-                    `[model-discovery] ${upstreamIssueEntries.length} upstream provider event(s) detected outside known catalog allowlist; skipping Discord catalog notification.`
-                );
-            }
-
-            console.log("[model-discovery] Syncing GitHub issues for detected upstream provider model changes.");
-            try {
-                const issueSync = await syncUpstreamDiscoveryIssues(upstreamIssueEntries, {
-                    statePath: ISSUE_STATE_PATH,
-                    logger: console,
-                });
-                if (!issueSync.skipped) {
-                    console.log(
-                        `[model-discovery] GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
-                    );
+                console.log("[model-discovery] Syncing GitHub issues for detected upstream provider model changes.");
+                try {
+                    const issueSync = await syncUpstreamDiscoveryIssues(upstreamIssueEntries, {
+                        statePath: ISSUE_STATE_PATH,
+                        logger: console,
+                    });
+                    if (!issueSync.skipped) {
+                        console.log(
+                            `[model-discovery] GitHub issue sync complete: created=${issueSync.created}, updated=${issueSync.updated}.`
+                        );
+                    }
+                } catch (error) {
+                    issueSyncError = error instanceof Error ? error.message : String(error);
+                    console.error(`[model-discovery] GitHub issue sync failed: ${issueSyncError}`);
                 }
-            } catch (error) {
-                issueSyncError = error instanceof Error ? error.message : String(error);
-                console.error(`[model-discovery] GitHub issue sync failed: ${issueSyncError}`);
             }
         }
 

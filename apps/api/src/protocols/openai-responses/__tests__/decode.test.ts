@@ -773,7 +773,6 @@ describe("decodeOpenAIResponsesRequest cache options", () => {
 		const request = {
 			model: "gpt-4.1",
 			input: "Hello",
-			prompt_cache_retention: "24h",
 			provider_options: {
 				openai: {
 					prompt_cache_retention: "1h",
@@ -792,7 +791,7 @@ describe("decodeOpenAIResponsesRequest cache options", () => {
 		};
 
 		const ir: IRChatRequest = decodeOpenAIResponsesRequest(request as any);
-		expect(ir.promptCacheRetention).toBe("24h");
+		expect(ir.promptCacheRetention).toBe("1h");
 		expect(ir.anthropicCacheControl).toEqual({
 			type: "ephemeral",
 			ttl: "1h",
@@ -802,7 +801,7 @@ describe("decodeOpenAIResponsesRequest cache options", () => {
 	});
 
 
-	it("decodes top-level cache_control without treating it as OpenAI retention", () => {
+	it("decodes top-level cache_control and ignores unrelated top-level cache aliases", () => {
 		const request = {
 			model: "gpt-4.1",
 			input: "Hello",

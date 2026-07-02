@@ -182,6 +182,7 @@ import type {
 	MarketShareData,
 	MarketShareTimeseriesData,
 	ModelLeaderboardMeta,
+	ModalityTimeseriesMetric,
 	MultimodalData,
 	PerformanceData,
 	ProviderMeta,
@@ -198,6 +199,7 @@ import {
 	getMarketShareTimeseries,
 	getModelLeaderboardMetaByIds,
 	getModelNamesByIds,
+	getModalityWeeklyTimeseries,
 	getMultimodalBreakdown,
 	getOrganisationLogoIdsByNames,
 	getPerformanceData,
@@ -210,6 +212,7 @@ import {
 	getTrendingApps,
 	getPublicMonthlyTokenTotal,
 	getTopModelsWithMetadata,
+	getUniqueUserTimeseriesData,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import getDbStats from "@/lib/fetchers/landing/dbStats";
 import type { UpdateCardProps } from "@/lib/fetchers/updates/getLatestUpdates";
@@ -1577,6 +1580,39 @@ export async function fetchFrontendRankingMultimodal(
 	cacheTag("public-multimodal");
 
 	return getMultimodalBreakdown(timeRange);
+}
+
+export async function fetchFrontendRankingModalityTimeseries(
+	metric: ModalityTimeseriesMetric,
+	timeRange = "year",
+): Promise<{ data: TimeseriesData[] }> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:rankings");
+	cacheTag("frontend:rankings-modality-timeseries");
+	cacheTag("public-multimodal");
+	cacheTag("public-timeseries");
+
+	return getModalityWeeklyTimeseries(metric, timeRange);
+}
+
+export async function fetchFrontendRankingUniqueUserTimeseries(
+	timeRange = "year",
+	bucketSize = "week",
+	topN = 10,
+): Promise<{ data: TimeseriesData[] }> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("public-model-catalogue");
+	cacheTag("frontend:rankings");
+	cacheTag("frontend:rankings-unique-users");
+	cacheTag("public-unique-users");
+	cacheTag("public-timeseries");
+
+	return getUniqueUserTimeseriesData(timeRange, bucketSize, topN);
 }
 
 export async function fetchFrontendModelRankings(

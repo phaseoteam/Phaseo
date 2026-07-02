@@ -114,9 +114,6 @@ public sealed class AnthropicMessage
 
 public sealed class AnthropicMessagesRequest
 {
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -137,9 +134,6 @@ public sealed class AnthropicMessagesRequest
 
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
-
-	[JsonPropertyName("prompt_cache_retention")]
-	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -980,9 +974,6 @@ public sealed class ChatChoice
 
 public sealed class ChatCompletionsRequest
 {
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -1033,9 +1024,6 @@ public sealed class ChatCompletionsRequest
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
-
-	[JsonPropertyName("prompt_cache_retention")]
-	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -2520,13 +2508,6 @@ public sealed class ProvisioningKeyWithValue
 
 }
 
-public sealed class RealtimeNotImplementedResponse
-{
-	[JsonPropertyName("error")]
-	public Dictionary<string, object> Error { get; set; }
-
-}
-
 public sealed class ReasoningConfig
 {
 	[JsonPropertyName("effort")]
@@ -2713,9 +2694,6 @@ public sealed class ResponsesRequest
 	[JsonPropertyName("background")]
 	public bool? Background { get; set; }
 
-	[JsonPropertyName("cache_control")]
-	public Dictionary<string, object>? CacheControl { get; set; }
-
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -2757,9 +2735,6 @@ public sealed class ResponsesRequest
 
 	[JsonPropertyName("prompt_cache_key")]
 	public string? PromptCacheKey { get; set; }
-
-	[JsonPropertyName("prompt_cache_retention")]
-	public string? PromptCacheRetention { get; set; }
 
 	[JsonPropertyName("provider")]
 	public Dictionary<string, object>? Provider { get; set; }
@@ -2845,54 +2820,6 @@ public sealed class ResponsesResponse
 
 	[JsonPropertyName("usage")]
 	public Dictionary<string, object>? Usage { get; set; }
-
-}
-
-public sealed class ResponsesWebSocketCreateEvent
-{
-	[JsonPropertyName("input")]
-	public object? Input { get; set; }
-
-	[JsonPropertyName("model")]
-	public string Model { get; set; }
-
-	[JsonPropertyName("previous_response_id")]
-	public string? PreviousResponseId { get; set; }
-
-	[JsonPropertyName("store")]
-	public bool? Store { get; set; }
-
-	[JsonPropertyName("tool_choice")]
-	public object? ToolChoice { get; set; }
-
-	[JsonPropertyName("tools")]
-	public List<Dictionary<string, object>>? Tools { get; set; }
-
-	[JsonPropertyName("type")]
-	public string Type { get; set; }
-
-}
-
-public sealed class ResponsesWebSocketServerEvent
-{
-	[JsonPropertyName("error")]
-	public Dictionary<string, object>? Error { get; set; }
-
-	[JsonPropertyName("response")]
-	public Dictionary<string, object>? Response { get; set; }
-
-	[JsonPropertyName("status")]
-	public int? Status { get; set; }
-
-	[JsonPropertyName("type")]
-	public string? Type { get; set; }
-
-}
-
-public sealed class ResponsesWebSocketUpgradeRequiredResponse
-{
-	[JsonPropertyName("error")]
-	public Dictionary<string, object>? Error { get; set; }
 
 }
 

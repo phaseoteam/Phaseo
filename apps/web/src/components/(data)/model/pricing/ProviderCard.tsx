@@ -2,30 +2,24 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	AlertTriangle,
 	Ban,
+	ChevronRight,
 	CheckCircle2,
-	CircleHelp,
 	Clock3,
-	Copy,
+	FlaskConical,
 	XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { TableCell, TableRow } from "@/components/ui/table";
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-	TierTiles,
 	ImageGenSection,
 	VideoGenSection,
 	InputsSection,
@@ -33,13 +27,18 @@ import {
 	RequestsSection,
 	UpcomingPricingSection,
 } from "@/components/(data)/model/pricing/sections";
-import ProviderModelParameters from "@/components/(data)/model/pricing/ProviderModelParameters";
+import {
+	buildSupportedParameters,
+	prettifyParamName,
+} from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
+	buildProviderTablePriceSummary,
 	fmtUSD,
 	ruleMatchCovers,
 	type QualityRow,
 	type ResolutionRow,
+	type ProviderTablePriceSummary,
 	type TokenTier,
 	type TokenTriple,
 	type UsageRow,
@@ -51,24 +50,47 @@ import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
 import {
+	getParameterDocsHref,
+	getParameterReference,
+} from "@/lib/parameters/reference";
+import {
 	getProviderModelScopeForPlan,
 	getProviderPricingRulesForPlan,
 } from "@/components/(data)/model/pricing/providerPlanRouting";
+import {
+	formatProviderOfferDisplayName,
+	resolveProviderLogoId,
+} from "@/lib/providers/providerOffers";
+import {
+	chooseGatewayStatus,
+	type CanonicalGatewayStatus,
+	resolveGatewayStatus,
+} from "@/components/(data)/model/pricing/providerGatewayStatus";
 
-const SERVICE_TIERS_DOCS_HREF =
-	"https://docs.ai-stats.phaseo.app/v1/guides/service-tiers";
 const PROVIDER_STATUSES_DOCS_HREF =
 	"https://docs.ai-stats.phaseo.app/v1/guides/provider-statuses";
 
+function hasObservedValue(value: number | null | undefined): value is number {
+	return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function hasUptimeObservation(
+	runtimeStats: ProviderRuntimeStats | null | undefined,
+): boolean {
+	if (!runtimeStats) return false;
+	if ((runtimeStats.healthRequests3d ?? 0) > 0) return true;
+	return runtimeStats.uptimeDaily3d.some((entry) => entry.requests > 0);
+}
+
 function formatLatencySeconds(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
+	if (!hasObservedValue(value)) return "--";
 	const seconds = value / 1000;
 	const decimals = seconds >= 10 ? 1 : 2;
 	return `${seconds.toFixed(decimals)}s`;
 }
 
 function formatThroughputValue(value: number | null | undefined): string | null {
-	if (value == null || !Number.isFinite(value)) return null;
+	if (!hasObservedValue(value)) return null;
 	return value >= 100 ? value.toFixed(0) : value.toFixed(1);
 }
 
@@ -77,29 +99,177 @@ function formatPercent(value: number | null | undefined): string {
 	return `${value.toFixed(1)}%`;
 }
 
-function UptimeMetricLabel() {
+function getPricingPlanLabel(plan: string): string {
+	switch (plan) {
+		case "standard":
+			return "Standard";
+		case "free":
+			return "Free";
+		case "batch":
+			return "Batch";
+		case "flex":
+			return "Flex";
+		case "priority":
+			return "Priority";
+		default:
+			return plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : plan;
+	}
+}
+
+function uptimeValueClass(value: number | null | undefined): string {
+	if (value == null || !Number.isFinite(value)) return "text-foreground";
+	if (value > 99) return "text-emerald-600 dark:text-emerald-400";
+	if (value >= 97) return "text-amber-600 dark:text-amber-400";
+	return "text-red-600 dark:text-red-400";
+}
+
+function getDisplayedUptimePct(
+	runtimeStats: ProviderRuntimeStats | null | undefined,
+): number | null {
+	if (!hasUptimeObservation(runtimeStats)) return null;
+	const currentDay =
+		runtimeStats?.uptimeDaily3d.find((entry) => entry.dayOffset === 0)?.uptimePct ??
+		null;
+	return currentDay ?? runtimeStats?.uptimePct3d ?? null;
+}
+
+function getUptimeTrendPoints(
+	runtimeStats: ProviderRuntimeStats | null | undefined,
+): Array<number | null> {
+	if (!hasUptimeObservation(runtimeStats)) return [null, null, null];
+	const pointsByHour = new Map(
+		(runtimeStats?.uptimeHourly3h ?? []).map((entry) => [entry.hourOffset, entry.uptimePct]),
+	);
+	const hourlyPoints = [2, 1, 0].map(
+		(hourOffset) => pointsByHour.get(hourOffset as 0 | 1 | 2) ?? null,
+	);
+	if (hourlyPoints.some((value) => value != null && Number.isFinite(value))) {
+		return hourlyPoints;
+	}
+	const pointsByDay = new Map(
+		(runtimeStats?.uptimeDaily3d ?? []).map((entry) => [entry.dayOffset, entry.uptimePct]),
+	);
+	return [2, 1, 0].map((dayOffset) => pointsByDay.get(dayOffset as 0 | 1 | 2) ?? null);
+}
+
+function UptimeSparkline({
+	points,
+	className,
+}: {
+	points: Array<number | null>;
+	className?: string;
+}) {
+	const values = points.filter(
+		(value): value is number => value != null && Number.isFinite(value),
+	);
+
+	if (values.length === 0) return null;
+
+	const width = 28;
+	const height = 14;
+	const insetX = 1;
+	const insetY = 1.5;
+	const gap = 2.5;
+	const barWidth =
+		(width - insetX * 2 - gap * Math.max(points.length - 1, 0)) / Math.max(points.length, 1);
+	const minValue = Math.min(...values);
+	const maxValue = Math.max(...values);
+	const range = maxValue - minValue;
+	const minBarHeight = 3.5;
+	const maxBarHeight = height - insetY * 2;
+
+	const getBarHeight = (value: number | null): number => {
+		if (value == null || !Number.isFinite(value)) return 2;
+		if (range < 0.25) return maxBarHeight - 1;
+		return minBarHeight + ((value - minValue) / range) * (maxBarHeight - minBarHeight);
+	};
+
 	return (
-		<span className="inline-flex items-center gap-1">
-			<span>Uptime</span>
-			<HoverCard openDelay={120} closeDelay={80}>
-				<HoverCardTrigger asChild>
-					<button
-						type="button"
-						aria-label="How uptime is calculated"
-						className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
-					>
-						<CircleHelp className="h-3 w-3" />
-					</button>
-				</HoverCardTrigger>
-				<HoverCardContent align="center" className="w-64 p-2 text-xs">
-					<p className="font-medium text-foreground">Recent request health</p>
-					<p className="mt-1 text-muted-foreground">
-						Uptime is based on recent request outcomes. Upstream rate limits and
-						aborted requests are excluded instead of counting as downtime.
-					</p>
-				</HoverCardContent>
-			</HoverCard>
-		</span>
+		<svg
+			viewBox={`0 0 ${width} ${height}`}
+			className={cn("h-3.5 w-8 shrink-0 overflow-visible", className)}
+			aria-hidden="true"
+		>
+			{points.map((value, index) => {
+				const barHeight = getBarHeight(value);
+				const x = insetX + index * (barWidth + gap);
+				const y = height - insetY - barHeight;
+				const opacity =
+					value == null || !Number.isFinite(value)
+						? 0.18
+						: index === points.length - 1
+							? 0.95
+							: index === points.length - 2
+								? 0.68
+								: 0.42;
+
+				return (
+					<rect
+						key={`${index}-${value ?? "null"}`}
+						x={x}
+						y={y}
+						width={barWidth}
+						height={barHeight}
+						rx={1.8}
+						fill="currentColor"
+						fillOpacity={opacity}
+						stroke={
+							index === points.length - 1 && value != null && Number.isFinite(value)
+								? "currentColor"
+								: "none"
+						}
+						strokeOpacity={0.12}
+						strokeWidth={0.6}
+					/>
+				);
+			})}
+			<path
+				d={`M ${insetX} ${height - insetY} H ${width - insetX}`}
+				fill="none"
+				stroke="currentColor"
+				strokeOpacity="0.14"
+				strokeWidth="1"
+				strokeLinecap="round"
+			/>
+		</svg>
+	);
+}
+
+function renderCompactTierSummary(
+	tiers?: TokenTier[] | null,
+	valueClassName?: string,
+) {
+	const tier = tiers?.find((entry) => entry.isCurrent) ?? tiers?.[0] ?? null;
+	if (!tier) {
+		return (
+			<div className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
+				--
+			</div>
+		);
+	}
+
+	const hasDiscount =
+		tier.basePer1M != null &&
+		Number.isFinite(tier.basePer1M) &&
+		Math.abs(tier.basePer1M - tier.per1M) > 1e-9;
+
+	return (
+		<div className="mt-0.5 flex items-baseline gap-1.5">
+			{hasDiscount ? (
+				<span className="text-[11px] tabular-nums text-muted-foreground line-through">
+					{fmtUSD(tier.basePer1M!)}
+				</span>
+			) : null}
+			<span
+				className={cn(
+					"text-lg font-semibold tabular-nums text-foreground",
+					valueClassName,
+					hasDiscount && "text-emerald-700 dark:text-emerald-300",
+				)}
+			>
+				{fmtUSD(tier.per1M)}
+			</span>
+		</div>
 	);
 }
 
@@ -126,20 +296,6 @@ function getRoutingHealthSummary(
 	return null;
 }
 
-function uptimeBarColorClass(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "bg-muted";
-	if (value > 99) return "bg-emerald-500";
-	if (value >= 90) return "bg-amber-500";
-	return "bg-red-500";
-}
-
-function uptimeBarCount(value: number | null | undefined): number {
-	if (value == null || !Number.isFinite(value)) return 0;
-	if (value > 99) return 3;
-	if (value >= 90) return 2;
-	return 1;
-}
-
 function formatTokenLimit(value: number | null | undefined): string {
 	if (value == null || !Number.isFinite(value) || value <= 0) return "--";
 	if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
@@ -154,6 +310,45 @@ function formatTokenLimit1dp(value: number | null | undefined): string {
 	if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`;
 	if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
 	return `${value.toFixed(1)}`;
+}
+
+function renderTablePriceSummary(
+	summary: ProviderTablePriceSummary,
+	accentClassName: string,
+) {
+	if (!summary.primary) {
+		return <div className="font-medium tabular-nums text-foreground">--</div>;
+	}
+
+	const detailParts: string[] = [];
+	if (!summary.secondary && summary.primary.label !== "text") {
+		detailParts.push(summary.primary.label);
+	}
+	if (summary.secondary) {
+		detailParts.push(summary.secondary.label);
+	}
+	if (summary.extraCount > 0) {
+		detailParts.push(`+${summary.extraCount} more`);
+	}
+	const detailLabel = detailParts.join(" / ");
+
+	return (
+		<div className="flex flex-col items-end gap-0.5">
+			<div className={cn("font-medium tabular-nums", accentClassName)}>
+				{summary.primary.formattedPrice}
+			</div>
+			{summary.secondary ? (
+				<div className="truncate text-[10px] text-muted-foreground">
+					<span>{summary.secondary.label}</span>
+					{" "}
+					<span className="tabular-nums">{summary.secondary.formattedPrice}</span>
+					{summary.extraCount > 0 ? <span>{` +${summary.extraCount} more`}</span> : null}
+				</div>
+			) : detailLabel ? (
+				<div className="truncate text-[10px] text-muted-foreground">{detailLabel}</div>
+			) : null}
+		</div>
+	);
 }
 
 function tokenTileGridClass(count: number): string {
@@ -494,52 +689,6 @@ function formatPlanMultiplierLabel(value: DerivedPlanMultiplier | null): string 
 	return `${formatMultiplierValue(value.multiplier)}x`;
 }
 
-function formatServiceTierBreakdown(value: DerivedPlanMultiplier | null): string | null {
-	if (!value) return null;
-	const parts: string[] = [];
-	if (value.inputMultiplier != null) {
-		parts.push(`Input ${formatMultiplierValue(value.inputMultiplier)}x`);
-	}
-	if (value.outputMultiplier != null) {
-		parts.push(`Output ${formatMultiplierValue(value.outputMultiplier)}x`);
-	}
-	return parts.length > 0 ? parts.join(", ") : null;
-}
-
-function formatSelectedPlanUsageHint(args: {
-	selectedPlan: string;
-	breakdown: string | null;
-}):
-	| {
-			kind: "service_tier";
-			snippet: string;
-			description: string;
-			breakdown: string | null;
-	  }
-	| {
-			kind: "batch";
-			description: string;
-			breakdown: string | null;
-	  }
-	| null {
-	if (args.selectedPlan === "priority" || args.selectedPlan === "flex") {
-		return {
-			kind: "service_tier",
-			snippet: `service_tier: "${args.selectedPlan}"`,
-			description: "in your request to route to this tier.",
-			breakdown: args.breakdown,
-		};
-	}
-	if (args.selectedPlan === "batch") {
-		return {
-			kind: "batch",
-			description: "Use the Batch API to route requests to this tier.",
-			breakdown: args.breakdown,
-		};
-	}
-	return null;
-}
-
 function formatLeavingDate(value: string, now: Date): string {
 	const to = new Date(value);
 	const includeYear = to.getFullYear() !== now.getFullYear();
@@ -574,9 +723,6 @@ function parseRuleConditionValues(value: unknown): string[] {
 	return [];
 }
 
-const MISSING_PERFORMANCE_EXPLAINER =
-	"This can be blank when AI Stats has not seen enough recent gateway requests for this provider/model combination to show a reliable metric yet.";
-
 function formatDiscountCountdown(value: string | null | undefined): string | null {
 	if (!value) return null;
 	const end = new Date(value).getTime();
@@ -590,13 +736,55 @@ function formatDiscountCountdown(value: string | null | undefined): string | nul
 	return `Discount ends in ${Math.max(remHours, 1)}h`;
 }
 
-function collectDiscountEntriesFromTiers(tiers?: TokenTier[] | null): Array<{
+function formatDiscountTimeRemaining(value: string | null | undefined): string | null {
+	const countdown = formatDiscountCountdown(value);
+	if (!countdown) return null;
+	if (countdown === "Discount ending now") return "Ending now";
+	return countdown.replace(/^Discount ends/i, "Ends");
+}
+
+type ActiveDiscountEntry = {
 	endsAt: string | null;
-}> {
+	percentOff: number | null;
+};
+
+function getPercentOff(basePrice: number | null | undefined, discountedPrice: number | null | undefined): number | null {
+	const base = Number(basePrice);
+	const discounted = Number(discountedPrice);
+	if (!Number.isFinite(base) || !Number.isFinite(discounted) || base <= 0 || discounted < 0) {
+		return null;
+	}
+	if (discounted >= base) return null;
+	const percent = ((base - discounted) / base) * 100;
+	return Number.isFinite(percent) && percent > 0 ? percent : null;
+}
+
+function formatDiscountBadge(entries: ActiveDiscountEntry[]): string | null {
+	const roundedPercents = entries
+		.map((entry) => entry.percentOff)
+		.filter((value): value is number => value != null && Number.isFinite(value) && value > 0)
+		.map((value) => Math.max(1, Math.round(value)));
+
+	if (!roundedPercents.length) return entries.length ? "Discount" : null;
+
+	const min = Math.min(...roundedPercents);
+	const max = Math.max(...roundedPercents);
+	if (min === max) return `${max}% Off`;
+	return `Up to ${max}% Off`;
+}
+
+function collectDiscountEntriesFromTiers(tiers?: TokenTier[] | null): ActiveDiscountEntry[] {
 	if (!tiers?.length) return [];
 	return tiers
 		.filter((tier) => tier.basePrice != null || tier.basePer1M != null)
-		.map((tier) => ({ endsAt: tier.discountEndsAt ?? null }));
+		.map((tier) => {
+			const base = tier.basePer1M ?? tier.basePrice ?? null;
+			const discounted = tier.basePer1M != null ? tier.per1M : tier.price;
+			return {
+				endsAt: tier.discountEndsAt ?? null,
+				percentOff: getPercentOff(base, discounted),
+			};
+		});
 }
 
 function getPrivacyReasonMeta(reason: string): {
@@ -648,9 +836,7 @@ function getPrivacyReasonMeta(reason: string): {
 	return null;
 }
 
-function collectDiscountEntriesFromTriple(triple?: TokenTriple | null): Array<{
-	endsAt: string | null;
-}> {
+function collectDiscountEntriesFromTriple(triple?: TokenTriple | null): ActiveDiscountEntry[] {
 	if (!triple) return [];
 	return [
 		...collectDiscountEntriesFromTiers(triple.in),
@@ -660,79 +846,36 @@ function collectDiscountEntriesFromTriple(triple?: TokenTriple | null): Array<{
 	];
 }
 
-function collectDiscountEntriesFromUsage(rows?: UsageRow[] | null): Array<{
-	endsAt: string | null;
-}> {
+function collectDiscountEntriesFromUsage(rows?: UsageRow[] | null): ActiveDiscountEntry[] {
 	if (!rows?.length) return [];
 	return rows
 		.filter((row) => row.basePrice != null)
-		.map((row) => ({ endsAt: row.discountEndsAt ?? null }));
+		.map((row) => ({
+			endsAt: row.discountEndsAt ?? null,
+			percentOff: getPercentOff(row.basePrice, row.price),
+		}));
 }
 
-function collectDiscountEntriesFromImage(rows?: QualityRow[] | null): Array<{
-	endsAt: string | null;
-}> {
+function collectDiscountEntriesFromImage(rows?: QualityRow[] | null): ActiveDiscountEntry[] {
 	if (!rows?.length) return [];
 	return rows.flatMap((row) =>
 		row.items
 			.filter((item) => item.basePrice != null)
-			.map((item) => ({ endsAt: item.discountEndsAt ?? null })),
+			.map((item) => ({
+				endsAt: item.discountEndsAt ?? null,
+				percentOff: getPercentOff(item.basePrice, item.price),
+			})),
 	);
 }
 
-function collectDiscountEntriesFromVideo(rows?: ResolutionRow[] | null): Array<{
-	endsAt: string | null;
-}> {
+function collectDiscountEntriesFromVideo(rows?: ResolutionRow[] | null): ActiveDiscountEntry[] {
 	if (!rows?.length) return [];
 	return rows
 		.filter((row) => row.basePrice != null)
-		.map((row) => ({ endsAt: row.discountEndsAt ?? null }));
-}
-
-function MissingPerformanceMetricValue({
-	metricLabel,
-}: {
-	metricLabel: string;
-}) {
-	const ariaLabel = `Why ${metricLabel.toLowerCase()} is blank`;
-
-	return (
-		<span className="inline-flex items-center gap-1 text-muted-foreground">
-			<span>--</span>
-			<span className="hidden md:inline-flex">
-				<Tooltip>
-					<TooltipTrigger asChild>
-						<button
-							type="button"
-							aria-label={ariaLabel}
-							className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
-						>
-							<CircleHelp className="h-3.5 w-3.5" />
-						</button>
-					</TooltipTrigger>
-					<TooltipContent side="top" className="max-w-[220px]">
-						{MISSING_PERFORMANCE_EXPLAINER}
-					</TooltipContent>
-				</Tooltip>
-			</span>
-			<span className="md:hidden">
-				<Popover>
-					<PopoverTrigger asChild>
-						<button
-							type="button"
-							aria-label={ariaLabel}
-							className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
-						>
-							<CircleHelp className="h-3.5 w-3.5" />
-						</button>
-					</PopoverTrigger>
-					<PopoverContent align="center" className="w-64 p-3 text-xs leading-relaxed">
-						{MISSING_PERFORMANCE_EXPLAINER}
-					</PopoverContent>
-				</Popover>
-			</span>
-		</span>
-	);
+		.map((row) => ({
+			endsAt: row.discountEndsAt ?? null,
+			percentOff: getPercentOff(row.basePrice, row.price),
+		}));
 }
 
 function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | null {
@@ -752,23 +895,6 @@ function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | nu
 	if (hasFalse && !hasTrue) return "without-audio";
 	return null;
 }
-
-const PROVIDER_STATUS_PRIORITY_ORDER = [
-	"active",
-	"coming_soon",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
-	"inactive",
-	"disabled",
-	"not_listed",
-] as const;
-
-type CanonicalGatewayStatus = (typeof PROVIDER_STATUS_PRIORITY_ORDER)[number];
-
-const providerStatusPriority = new Map<string, number>(
-	PROVIDER_STATUS_PRIORITY_ORDER.map((status, index) => [status, index])
-);
 
 const PROVIDER_STATUS_META: Record<
 	CanonicalGatewayStatus,
@@ -790,6 +916,12 @@ const PROVIDER_STATUS_META: Record<
 		icon: Clock3,
 		iconClass: "text-blue-600",
 		description: "Not active yet.",
+	},
+	internal_testing: {
+		label: "Internal Testing",
+		icon: FlaskConical,
+		iconClass: "text-sky-600",
+		description: "Visible to admins only while this provider/model capability is being tested.",
 	},
 	deranked_lvl1: {
 		label: "Deranked L1",
@@ -829,45 +961,6 @@ const PROVIDER_STATUS_META: Record<
 	},
 };
 
-function normalizeGatewayStatusValue(value: unknown): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase()
-		.replace(/[\s-]+/g, "_");
-	if (!normalized) return "";
-	if (normalized === "not_active") return "inactive";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
-	return normalized;
-}
-
-function resolveGatewayStatus(
-	isActiveGateway: boolean | null | undefined,
-	capabilityStatus: unknown
-): string {
-	const normalizedCapabilityStatus =
-		normalizeGatewayStatusValue(capabilityStatus);
-
-	if (normalizedCapabilityStatus === "disabled") return "disabled";
-	if (normalizedCapabilityStatus === "coming_soon") return "coming_soon";
-	if (normalizedCapabilityStatus.startsWith("deranked")) {
-		return normalizedCapabilityStatus;
-	}
-	if (
-		normalizedCapabilityStatus &&
-		normalizedCapabilityStatus !== "active" &&
-		normalizedCapabilityStatus !== "inactive"
-	) {
-		return normalizedCapabilityStatus;
-	}
-	if (normalizedCapabilityStatus === "inactive") return "inactive";
-	return isActiveGateway ? "active" : "inactive";
-}
-
 export default function ProviderCard({
 	provider,
 	defaultPlan,
@@ -878,6 +971,7 @@ export default function ProviderCard({
 	routingStatus,
 	displayNameOverride,
 	variantLabels,
+	showCacheReadColumn = false,
 }: {
 	provider: ProviderPricing;
 	defaultPlan: string;
@@ -888,9 +982,10 @@ export default function ProviderCard({
 	routingStatus: ProviderRoutingStatus | null;
 	displayNameOverride?: string | null;
 	variantLabels?: string[] | null;
+	showCacheReadColumn?: boolean;
 }) {
 	const [selectedPlan, setSelectedPlan] = useState(defaultPlan);
-	const [copiedUsageSnippet, setCopiedUsageSnippet] = useState<string | null>(null);
+	const [expanded, setExpanded] = useState(false);
 
 	useEffect(() => {
 		if (availablePlans.includes(selectedPlan)) return;
@@ -900,12 +995,6 @@ export default function ProviderCard({
 	useEffect(() => {
 		setSelectedPlan(defaultPlan);
 	}, [defaultPlan]);
-
-	useEffect(() => {
-		if (!copiedUsageSnippet) return;
-		const timeout = window.setTimeout(() => setCopiedUsageSnippet(null), 1600);
-		return () => window.clearTimeout(timeout);
-	}, [copiedUsageSnippet]);
 
 	const sec = useMemo(
 		() => buildProviderSections(provider, selectedPlan),
@@ -940,29 +1029,7 @@ export default function ProviderCard({
 		}
 		return labels;
 	}, [availablePlans, defaultPlan, provider]);
-	const selectedPlanMultiplier =
-		selectedPlan === defaultPlan
-			? null
-			: derivePlanMultiplier({
-					provider,
-					basePlan: defaultPlan,
-					targetPlan: selectedPlan,
-					nowMs: Date.now(),
-			  });
-	const selectedPlanBreakdown = formatServiceTierBreakdown(selectedPlanMultiplier);
-	const selectedPlanUsageHint = formatSelectedPlanUsageHint({
-		selectedPlan,
-		breakdown: selectedPlanBreakdown,
-	});
 	const pricingComparisonAccent = selectedPlan === "batch" ? "batch" : null;
-	const handleUsageSnippetCopy = (value: string) => {
-		navigator.clipboard
-			.writeText(value)
-			.then(() => setCopiedUsageSnippet(value))
-			.catch((error) => {
-				console.error("Error copying service tier snippet", error);
-			});
-	};
 
 	const now = new Date();
 
@@ -986,21 +1053,17 @@ export default function ProviderCard({
 		)[0];
 
 	const resolvedGatewayStatuses = providerModelsInScope.map((providerModel) =>
-		resolveGatewayStatus(
-			providerModel.is_active_gateway,
-			providerModel.capability_status
-		)
+		resolveGatewayStatus({
+			isActiveGateway: providerModel.is_active_gateway,
+			capabilityStatus: providerModel.capability_status,
+			providerStatus: provider.provider.status,
+			providerRoutingStatus: provider.provider.routing_status,
+			modelRoutingStatus: providerModel.routing_status,
+			effectiveFrom: providerModel.effective_from,
+			effectiveTo: providerModel.effective_to,
+		})
 	);
-	const chosenGatewayStatus =
-		resolvedGatewayStatuses.reduce<string | undefined>((current, candidate) => {
-			if (!current) return candidate;
-			const currentPriority =
-				providerStatusPriority.get(current) ?? providerStatusPriority.size + 1;
-			const candidatePriority =
-				providerStatusPriority.get(candidate) ?? providerStatusPriority.size + 1;
-			return candidatePriority < currentPriority ? candidate : current;
-		}, undefined) ?? "not_listed";
-	const statusKey = chosenGatewayStatus as CanonicalGatewayStatus;
+	const statusKey = chooseGatewayStatus(resolvedGatewayStatuses);
 	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
 	const statusIcon = statusMeta.icon;
 	const statusClass = cn("h-3.5 w-3.5", statusMeta.iconClass);
@@ -1011,6 +1074,7 @@ export default function ProviderCard({
 			? `${statusMeta.description} Leaving on ${formatLeavingDate(leavingSoonRule.effective_to, now)}`
 			: statusMeta.description;
 	const isComingSoonProvider = statusKey === "coming_soon";
+	const isInternalTestingProvider = statusKey === "internal_testing";
 	const privacyReasonMeta = (privacyIgnoredReasons ?? []).map((reason) => ({
 		reason,
 		meta: getPrivacyReasonMeta(reason),
@@ -1052,13 +1116,13 @@ export default function ProviderCard({
 				? {
 						label: "Total Context",
 						value: formatTokenLimit1dp(maxContextTokens),
-				  }
+				}
 				: null,
 			maxOutputTokens !== null
 				? {
 						label: "Max Output",
 						value: formatTokenLimit(maxOutputTokens),
-				  }
+				}
 				: null,
 		].filter(
 			(
@@ -1132,16 +1196,6 @@ export default function ProviderCard({
 	const infoScope = providerModelsInScope;
 	const providerModelSlugs = infoScope.map((pm) => pm.provider_model_slug);
 	const providerApiModelIds = infoScope.map((pm) => pm.model_id);
-	const providerExecutionRegions = Array.isArray(
-		provider.provider.default_execution_regions
-	)
-		? provider.provider.default_execution_regions
-		: [];
-	const providerDataRegions = Array.isArray(
-		provider.provider.default_data_regions
-	)
-		? provider.provider.default_data_regions
-		: [];
 	const videoAudioRuleHints = planRules.flatMap((rule) => {
 		const meter = String(rule.meter ?? "").toLowerCase();
 		const isVideoMeter =
@@ -1255,7 +1309,8 @@ export default function ProviderCard({
 
 	if (allEmpty && !isFreePlan && hasPlanPricing) return null;
 
-	const uptimePct = runtimeStats?.uptimePct3d;
+	const uptimePct = getDisplayedUptimePct(runtimeStats);
+	const uptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
 	const throughputValue = formatThroughputValue(runtimeStats?.throughput30m);
 	const activeDiscountEntries = [
 		...collectDiscountEntriesFromTriple(sec.textTokens),
@@ -1273,177 +1328,428 @@ export default function ProviderCard({
 		.map((entry) => entry.endsAt)
 		.filter((value): value is string => Boolean(value))
 		.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
-	const discountSummary =
+	const discountBadge = discountCount ? formatDiscountBadge(activeDiscountEntries) : null;
+	const discountTimeRemaining =
 		discountCount && soonestDiscountEnd
-			? formatDiscountCountdown(soonestDiscountEnd)
+			? formatDiscountTimeRemaining(soonestDiscountEnd)
 			: null;
-	const uptimeByDay = runtimeStats?.uptimeDaily3d ?? [];
-	const uptimeBars = [2, 1, 0].map((dayOffset) => {
-		const match = uptimeByDay.find((d) => d.dayOffset === dayOffset);
-		return {
-			dayOffset,
-			label:
-				dayOffset === 0
-					? "today"
-					: dayOffset === 1
-					? "yesterday"
-					: `${dayOffset} days ago`,
-			uptimePct: match?.uptimePct ?? null,
-		};
-	});
+	const selectedPlanLabel = getPricingPlanLabel(selectedPlan);
+	const selectedPlanTheme = (() => {
+		switch (selectedPlan) {
+			case "free":
+				return {
+					accent: "text-emerald-700 dark:text-emerald-300",
+				};
+			case "batch":
+				return {
+					accent: "text-orange-700 dark:text-orange-300",
+				};
+			case "flex":
+				return {
+					accent: "text-emerald-700 dark:text-emerald-300",
+				};
+			case "priority":
+				return {
+					accent: "text-violet-700 dark:text-violet-300",
+				};
+			default:
+				return {
+					accent: "text-zinc-700 dark:text-zinc-200",
+				};
+		}
+	})();
 	const performanceMetrics = [
 		{
 			key: "latency",
 			label: "Latency",
 			value:
-				runtimeStats?.latencyMs30m != null ? (
-					(formatLatencySeconds(runtimeStats?.latencyMs30m) as React.ReactNode)
-				) : (
-					<MissingPerformanceMetricValue metricLabel="Latency" />
-				),
+				runtimeStats?.latencyMs30m != null
+					? formatLatencySeconds(runtimeStats.latencyMs30m)
+					: "--",
+			valueClassName: "text-foreground",
+			meta: "30m",
 		},
 		{
 			key: "throughput",
 			label: "Throughput",
-			value: throughputValue ? (
-				<>
-					{throughputValue}
-					<span className="ml-0.5 text-[0.68em] font-medium">tps</span>
-				</>
-			) : (
-				<MissingPerformanceMetricValue metricLabel="Throughput" />
-			),
+			value: throughputValue ? `${throughputValue} tps` : "--",
+			valueClassName: "text-foreground",
+			meta: "30m",
 		},
 		{
 			key: "uptime",
-			label: <UptimeMetricLabel />,
-			value: (
-				<div
-					className="mt-0.5 flex items-center justify-center gap-[3px]"
-					aria-label={`Uptime ${formatPercent(uptimePct)}`}
-				>
-					{uptimeBars.map((bar) => (
-						<HoverCard key={bar.dayOffset} openDelay={120} closeDelay={80}>
-							<HoverCardTrigger asChild>
-								<button
-									type="button"
-									aria-label={`Uptime ${formatPercent(bar.uptimePct)} ${bar.label}`}
-									className={cn(
-										"h-[16px] w-[7px] rounded-[2px] transition-colors",
-										uptimeBarCount(bar.uptimePct) > 0
-											? uptimeBarColorClass(bar.uptimePct)
-											: "bg-muted"
-									)}
-								/>
-							</HoverCardTrigger>
-							<HoverCardContent align="center" className="w-auto p-2 text-xs">
-								<p className="font-medium text-foreground">
-									{formatPercent(bar.uptimePct)} uptime {bar.label}
-								</p>
-							</HoverCardContent>
-						</HoverCard>
-					))}
-				</div>
-			),
+			label: "Uptime",
+			value: formatPercent(uptimePct),
+			valueClassName: uptimeValueClass(uptimePct),
+			meta: "1d",
 		},
-	];
-	const displayName =
+	] as const;
+	const formattedDisplayName =
 		typeof displayNameOverride === "string" && displayNameOverride.trim()
 			? displayNameOverride.trim()
-			: sec.providerName;
+			: formatProviderOfferDisplayName({
+					providerId: sec.providerId,
+					providerName:
+						provider.provider.api_provider_name ||
+						sec.providerName ||
+						sec.providerId,
+					offerLabel: provider.provider.offer_label ?? null,
+					offerScope: provider.provider.offer_scope ?? null,
+				});
+	const displayName = (() => {
+		const providerId = String(sec.providerId ?? "").trim().toLowerCase();
+		const name = formattedDisplayName.trim();
+		if (providerId.endsWith("-eu") && !/\bEU\b/i.test(name)) {
+			return `${name} (EU)`;
+		}
+		if (providerId.endsWith("-us") && !/\bUS\b/i.test(name)) {
+			return `${name} (US)`;
+		}
+		return name;
+	})();
+	const logoProviderId = resolveProviderLogoId({
+		providerId: sec.providerId,
+		providerFamilyId: provider.provider.provider_family_id ?? null,
+	});
+	const inputPriceSummary = buildProviderTablePriceSummary(sec, "input");
+	const outputPriceSummary = buildProviderTablePriceSummary(sec, "output");
+	const cacheReadPriceSummary = showCacheReadColumn
+		? buildProviderTablePriceSummary(sec, "cached")
+		: null;
+	const summaryQuantization =
+		typeof quantizationScheme === "string" && quantizationScheme.trim()
+			? quantizationScheme.trim()
+			: null;
+	const visibleVariantLabels = variantLabels?.slice(0, 2) ?? [];
+	const hiddenVariantCount = Math.max((variantLabels?.length ?? 0) - visibleVariantLabels.length, 0);
+	const inlineProviderLabels = [
+		...visibleVariantLabels,
+		hiddenVariantCount > 0 ? `+${hiddenVariantCount} more` : null,
+	].filter((value): value is string => Boolean(value));
+	const toggleExpanded = () => setExpanded((current) => !current);
+	const handleSummaryRowClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
+		const interactiveTarget = (event.target as HTMLElement).closest(
+			"a, button, input, select, textarea, [role='button']",
+		);
+		if (interactiveTarget) return;
+		toggleExpanded();
+	};
+	const providerInfoProps = {
+		providerId: sec.providerId,
+		providerModelSlugs,
+		apiModelIds: providerApiModelIds,
+		quantizationScheme,
+		dataPolicy: [
+			{
+				tier: provider.provider.data_policy_tier ?? null,
+				confidence: provider.provider.data_policy_confidence ?? null,
+				contractMode: provider.provider.data_policy_contract_mode ?? null,
+				contractNotes: provider.provider.data_policy_contract_notes ?? null,
+				notes: provider.provider.prompt_training_notes ?? null,
+				sourceUrl: provider.provider.prompt_training_source_url ?? null,
+				promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
+				zeroDataRetention: provider.provider.zero_data_retention ?? null,
+			},
+		],
+		residency: [
+			{
+				residencyMode: provider.provider.residency_mode ?? null,
+				executionRegions: provider.provider.default_execution_regions ?? null,
+				dataRegions: provider.provider.default_data_regions ?? null,
+				zeroDataRetention: provider.provider.zero_data_retention ?? null,
+				notes: provider.provider.residency_notes ?? null,
+				sourceUrl: provider.provider.residency_source_url ?? null,
+			},
+		],
+		pricingPolicy: {
+			regionalPricingMode: provider.provider.regional_pricing_mode ?? null,
+			regionalPricingUpliftPercent:
+				provider.provider.regional_pricing_uplift_percent ?? null,
+			derivedMultiplier: derivedPricingMultiplier?.multiplier ?? null,
+			derivedMinMultiplier: derivedPricingMultiplier?.minMultiplier ?? null,
+			derivedMaxMultiplier: derivedPricingMultiplier?.maxMultiplier ?? null,
+			derivedComparisonProviderName:
+				derivedPricingMultiplier?.comparedProviderName ?? null,
+			derivedRuleCount: derivedPricingMultiplier?.ruleCount ?? null,
+			notes: provider.provider.regional_pricing_notes ?? null,
+			sourceUrl: provider.provider.pricing_source_url ?? null,
+		},
+		showQuantizationTrigger: false,
+		promptTraining:
+			infoScope.length > 0
+				? infoScope.map((providerModel) => ({
+						policy:
+							providerModel.prompt_training_policy_override ??
+							provider.provider.prompt_training_policy ??
+							null,
+						notes:
+							providerModel.prompt_training_override_notes ??
+							provider.provider.prompt_training_notes ??
+							null,
+						sourceUrl:
+							providerModel.prompt_training_override_source_url ??
+							provider.provider.prompt_training_source_url ??
+							null,
+						userIdentifierPolicy:
+							provider.provider.user_identifier_policy ?? null,
+						userIdentifierNotes:
+							provider.provider.user_identifier_notes ?? null,
+						privacyPolicyUrl:
+							provider.provider.privacy_policy_url ?? null,
+						termsOfServiceUrl:
+							provider.provider.terms_of_service_url ?? null,
+						isOverride: Boolean(
+							providerModel.prompt_training_policy_override,
+						),
+				}))
+				: [
+						{
+							policy: provider.provider.prompt_training_policy ?? null,
+							notes: provider.provider.prompt_training_notes ?? null,
+							sourceUrl:
+								provider.provider.prompt_training_source_url ?? null,
+							userIdentifierPolicy:
+								provider.provider.user_identifier_policy ?? null,
+							userIdentifierNotes:
+								provider.provider.user_identifier_notes ?? null,
+							privacyPolicyUrl:
+								provider.provider.privacy_policy_url ?? null,
+							termsOfServiceUrl:
+								provider.provider.terms_of_service_url ?? null,
+							isOverride: false,
+						},
+		],
+	};
+	const contextLengthValue =
+		capacityMetrics.find((metric) => metric.label === "Total Context")?.value ?? "--";
+	const maxOutputValue =
+		capacityMetrics.find((metric) => metric.label === "Max Output")?.value ?? "--";
+	const supportedParameters = buildSupportedParameters(infoScope);
+	const pricingPrimaryContent = !hasPlanPricing ? (
+		isInternalTestingProvider ? (
+			<div className="rounded-xl border border-sky-200/80 bg-sky-50/60 px-3 py-2.5 text-xs text-sky-900 dark:border-sky-900/70 dark:bg-sky-950/30 dark:text-sky-100">
+				<div className="inline-flex items-center gap-1.5 font-semibold">
+					<FlaskConical className="h-3.5 w-3.5" />
+					Internal Testing
+				</div>
+				<p className="mt-1 text-[11px] leading-snug text-sky-800/90 dark:text-sky-200/90">
+					This provider/model capability is visible to admins for testing before public rollout.
+				</p>
+			</div>
+		) : isComingSoonProvider ? (
+			<div className="rounded-xl border border-blue-200/80 bg-blue-50/60 px-3 py-2.5 text-xs text-blue-900 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-100">
+				<div className="inline-flex items-center gap-1.5 font-semibold">
+					<Clock3 className="h-3.5 w-3.5" />
+					Coming Soon
+				</div>
+				<p className="mt-1 text-[11px] leading-snug text-blue-800/90 dark:text-blue-200/90">
+					This provider is not live for the selected tier yet. Pricing will appear once
+					availability starts.
+				</p>
+			</div>
+		) : (
+			<div className="rounded-xl border border-dashed border-zinc-200/80 bg-zinc-50/60 px-3 py-2.5 text-xs text-muted-foreground dark:border-zinc-800 dark:bg-zinc-900/30">
+				Pricing is not available for the selected tier on this provider.
+			</div>
+		)
+	) : isFreePlan ? (
+		<div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-background dark:border-zinc-800">
+			<div className="px-4 py-3">
+				<div className="text-[11px] text-muted-foreground">Input and output</div>
+				<div
+					className={cn(
+						"mt-0.5 text-lg font-semibold tabular-nums",
+						selectedPlanTheme.accent,
+					)}
+				>
+					{fmtUSD(0)}
+				</div>
+				<div className="mt-0.5 text-[10px] text-muted-foreground">
+					Per 1M tokens
+				</div>
+			</div>
+		</div>
+	) : tokenMetricTiles.length > 0 ? (
+		<div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-background dark:border-zinc-800">
+			<div
+				className={cn(
+					"grid divide-y divide-zinc-200/80 md:divide-y-0 md:divide-x dark:divide-zinc-800",
+					tokenTileGridClass(tokenMetricTiles.length),
+				)}
+			>
+				{tokenMetricTiles.map((tile) => (
+					<div key={tile.key} className="min-w-0 px-4 py-3">
+						<div className="text-[11px] text-muted-foreground">
+							{showTokenGroupEyebrows && tile.groupTitle
+								? `${tile.groupTitle} ${tile.title}`
+								: tile.title}
+						</div>
+						{tile.tiers ? (
+							<>
+								{renderCompactTierSummary(tile.tiers, selectedPlanTheme.accent)}
+								<div className="mt-0.5 text-[10px] text-muted-foreground">
+									{tile.unitLabel}
+								</div>
+							</>
+						) : null}
+					</div>
+				))}
+			</div>
+		</div>
+	) : null;
+	const pricingAdditionalContent =
+		!isFreePlan &&
+		((sec.requests?.length ?? 0) > 0 ||
+			upcomingFor("requests").length > 0 ||
+			imageInputs.length > 0 ||
+			upcomingFor("imageInputs").length > 0 ||
+			videoInputs.length > 0 ||
+			upcomingFor("videoInputs").length > 0 ||
+			Boolean(sec.imageGen) ||
+			upcomingFor("imageGen").length > 0 ||
+			Boolean(sec.videoGen) ||
+			upcomingFor("videoGen").length > 0 ||
+			sec.otherRules.length > 0 ||
+			upcomingFor("other").length > 0) ? (
+			<div className="space-y-2 pt-1">
+				{sec.requests && sec.requests.length > 0 ? (
+					<RequestsSection
+						rows={sec.requests}
+						comparisonAccent={pricingComparisonAccent}
+					/>
+				) : null}
+				{upcomingFor("requests").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
+				) : null}
+				{imageInputs.length > 0 ? (
+					<InputsSection
+						title="Image Inputs"
+						rows={imageInputs}
+						comparisonAccent={pricingComparisonAccent}
+					/>
+				) : null}
+				{upcomingFor("imageInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
+				) : null}
+				{videoInputs.length > 0 ? (
+					<InputsSection
+						title="Video Inputs"
+						rows={videoInputs}
+						comparisonAccent={pricingComparisonAccent}
+					/>
+				) : null}
+				{upcomingFor("videoInputs").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
+				) : null}
+				{sec.imageGen ? (
+					<ImageGenSection
+						rows={sec.imageGen}
+						comparisonAccent={pricingComparisonAccent}
+					/>
+				) : null}
+				{upcomingFor("imageGen").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("imageGen")} title="Upcoming" compact />
+				) : null}
+				{sec.videoGen ? (
+					<VideoGenSection
+						rows={sec.videoGen}
+						showAudioVariants={
+							hasExplicitVideoAudioRules ||
+							hasVideoAudioSplitData ||
+							videoAudioRuleHints.length > 0
+						}
+						audioHints={videoAudioRuleHints}
+						comparisonAccent={pricingComparisonAccent}
+					/>
+				) : null}
+				{upcomingFor("videoGen").length > 0 ? (
+					<UpcomingPricingSection rows={upcomingFor("videoGen")} title="Upcoming" compact />
+				) : null}
+				{sec.otherRules.length > 0 ? (
+					<div>
+						<AdvancedTable rows={sec.otherRules} />
+					</div>
+				) : null}
+				{upcomingFor("other").length > 0 ? (
+					<UpcomingPricingSection
+						rows={upcomingFor("other")}
+						title="Other Upcoming Pricing"
+						compact
+					/>
+				) : null}
+			</div>
+		) : null;
 
 	return (
-		<Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
-			<CardHeader className="px-4 py-3">
-				<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-					<div className="min-w-0 flex-1 space-y-2">
-							<div className="flex min-w-0 flex-wrap items-center gap-2">
-								<Link href={`/api-providers/${sec.providerId}`} className="group">
-									<div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/80 bg-background dark:border-zinc-800">
-										<div className="relative h-5 w-5">
-											<Logo
-												id={sec.logoProviderId}
-												alt={`${sec.providerName} logo`}
-												className="object-contain transition group-hover:opacity-80"
-												fill
-											/>
-										</div>
+		<>
+			<TableRow
+				onClick={handleSummaryRowClick}
+				className="group cursor-pointer hover:bg-zinc-50/70 dark:hover:bg-zinc-900/30"
+			>
+				<TableCell className="min-w-[280px] py-2 pl-3 pr-2">
+					<div>
+						<div className="flex items-center gap-2.5">
+							<Link
+								href={`/api-providers/${sec.providerId}`}
+								className="group/provider inline-flex items-center gap-2.5 whitespace-nowrap"
+							>
+								<div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover/provider:border-zinc-300 dark:border-zinc-800 dark:group-hover/provider:border-zinc-700">
+									<div className="relative h-4 w-4">
+										<Logo
+											id={logoProviderId}
+											alt={`${displayName} logo`}
+											className="object-contain"
+											fill
+											sizes="18px"
+										/>
 									</div>
-								</Link>
-								<Link href={`/api-providers/${sec.providerId}`} className="group min-w-0">
-									<CardTitle className="truncate text-lg transition-colors group-hover:text-primary">
-										{displayName}
-									</CardTitle>
-								</Link>
-								{discountSummary ? (
-									<span className="inline-flex max-w-full items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
-										{discountSummary}
-									</span>
-								) : null}
-								{privacyIgnoredReasons?.length ? (
-									<span
-										title={privacyIgnoredReasons.join(" ")}
-										className="inline-flex max-w-full items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
-									>
-										Ignored
-									</span>
-								) : null}
-							</div>
-							{variantLabels?.length ? (
-								<div className="flex flex-wrap items-center gap-1.5">
-									<span className="text-[11px] font-medium text-muted-foreground">
-										Variants
-									</span>
-									{variantLabels.map((label) => (
-										<span
-											key={label}
-											className="inline-flex items-center rounded-full border border-zinc-200/80 bg-zinc-50/80 px-2 py-0.5 text-[11px] font-medium text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-200"
-										>
-											{label}
-										</span>
-									))}
 								</div>
-							) : null}
-							<div className="flex flex-wrap items-center gap-1.5">
+								<span className="whitespace-nowrap font-semibold text-foreground transition-colors group-hover/provider:text-primary">
+									{displayName}
+								</span>
+							</Link>
+
+							<div className="flex shrink-0 items-center gap-1">
 								<HoverCard openDelay={120} closeDelay={80}>
 									<HoverCardTrigger asChild>
 										<button
 											type="button"
 											aria-label={`Provider status: ${statusLabel}`}
-											className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors hover:border-slate-300 dark:border-zinc-800 dark:hover:border-slate-700"
+											className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 										>
 											{React.createElement(statusIcon, {
-												className: statusClass,
+												className: cn("h-3.5 w-3.5", statusClass),
 											})}
 										</button>
 									</HoverCardTrigger>
-										<HoverCardContent align="start" className="w-auto p-2 text-xs">
-											<p className="font-semibold">{statusLabel}</p>
-											{routingHealthSummary ? (
-												<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-													<p className="font-semibold">{routingHealthSummary.label}</p>
-													<p>{routingHealthSummary.description}</p>
-												</div>
-											) : null}
+									<HoverCardContent align="start" className="w-auto p-2 text-xs">
+										<p className="font-semibold">{statusLabel}</p>
+										<p className="mt-1 text-muted-foreground">{statusDetail}</p>
+										{routingHealthSummary ? (
 											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-												<Link
-													href={PROVIDER_STATUSES_DOCS_HREF}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-												>
-													Learn more about provider statuses
-												</Link>
+												<p className="font-semibold">{routingHealthSummary.label}</p>
+												<p>{routingHealthSummary.description}</p>
 											</div>
-										</HoverCardContent>
-									</HoverCard>
+										) : null}
+										<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
+											<Link
+												href={PROVIDER_STATUSES_DOCS_HREF}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+											>
+												Learn more about provider statuses
+											</Link>
+										</div>
+									</HoverCardContent>
+								</HoverCard>
 								{privacyIgnoredReasons?.length ? (
 									<HoverCard openDelay={120} closeDelay={80}>
 										<HoverCardTrigger asChild>
 											<button
 												type="button"
 												aria-label="Blocked by workspace privacy settings"
-												className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-600/80 bg-red-600 text-white transition-colors hover:bg-red-700 dark:border-red-400/70 dark:bg-red-400 dark:text-zinc-950 dark:hover:bg-red-300"
+												className="inline-flex h-5 w-5 items-center justify-center rounded-sm text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
 											>
 												<Ban className="h-3.5 w-3.5" />
 											</button>
@@ -1484,337 +1790,237 @@ export default function ProviderCard({
 										</HoverCardContent>
 									</HoverCard>
 								) : null}
-								<ProviderInfoHoverIcons
-									providerId={sec.providerId}
-									providerModelSlugs={providerModelSlugs}
-									apiModelIds={providerApiModelIds}
-									quantizationScheme={quantizationScheme}
-									residency={
-										[
-											{
-												residencyMode:
-													provider.provider.residency_mode ?? null,
-												executionRegions:
-													provider.provider.default_execution_regions ??
-													null,
-												dataRegions:
-													provider.provider.default_data_regions ?? null,
-												zeroDataRetention:
-													provider.provider.zero_data_retention ?? null,
-												notes: provider.provider.residency_notes ?? null,
-												sourceUrl:
-													provider.provider.residency_source_url ?? null,
-											},
-										]
-									}
-									pricingPolicy={{
-										regionalPricingMode:
-											provider.provider.regional_pricing_mode ?? null,
-										regionalPricingUpliftPercent:
-											provider.provider.regional_pricing_uplift_percent ??
-											null,
-										derivedMultiplier:
-											derivedPricingMultiplier?.multiplier ?? null,
-										derivedMinMultiplier:
-											derivedPricingMultiplier?.minMultiplier ?? null,
-										derivedMaxMultiplier:
-											derivedPricingMultiplier?.maxMultiplier ?? null,
-										derivedComparisonProviderName:
-											derivedPricingMultiplier?.comparedProviderName ?? null,
-										derivedRuleCount:
-											derivedPricingMultiplier?.ruleCount ?? null,
-										notes:
-											provider.provider.regional_pricing_notes ?? null,
-										sourceUrl: provider.provider.pricing_source_url ?? null,
-									}}
-									promptTraining={
-										infoScope.length > 0
-											? infoScope.map((providerModel) => ({
-													policy:
-														providerModel.prompt_training_policy_override ??
-														provider.provider.prompt_training_policy ??
-														null,
-													notes:
-														providerModel.prompt_training_override_notes ??
-														provider.provider.prompt_training_notes ??
-														null,
-													sourceUrl:
-														providerModel.prompt_training_override_source_url ??
-														provider.provider.prompt_training_source_url ??
-														null,
-													userIdentifierPolicy:
-														provider.provider.user_identifier_policy ?? null,
-													userIdentifierNotes:
-														provider.provider.user_identifier_notes ?? null,
-													privacyPolicyUrl:
-														provider.provider.privacy_policy_url ?? null,
-													termsOfServiceUrl:
-														provider.provider.terms_of_service_url ?? null,
-													isOverride: Boolean(
-														providerModel.prompt_training_policy_override,
-													),
-											  }))
-											: [
-													{
-														policy:
-															provider.provider.prompt_training_policy ?? null,
-														notes:
-															provider.provider.prompt_training_notes ?? null,
-														sourceUrl:
-															provider.provider
-																.prompt_training_source_url ?? null,
-														userIdentifierPolicy:
-															provider.provider.user_identifier_policy ?? null,
-														userIdentifierNotes:
-															provider.provider.user_identifier_notes ?? null,
-														privacyPolicyUrl:
-															provider.provider.privacy_policy_url ?? null,
-														termsOfServiceUrl:
-															provider.provider.terms_of_service_url ?? null,
-														isOverride: false,
-													},
-											  ]
-									}
-								/>
-								<ProviderModelParameters models={infoScope} />
+								<ProviderInfoHoverIcons {...providerInfoProps} />
 							</div>
-							{capacityMetrics.length > 0 ? (
-								<div className="flex flex-wrap items-center gap-2 pt-0.5">
-									{capacityMetrics.map((metric) => (
-										<div
-											key={metric.label}
-											className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/80 bg-zinc-50/70 px-2.5 py-1 text-[11px] dark:border-zinc-800 dark:bg-zinc-900/50"
-										>
-											<span className="text-muted-foreground">{metric.label}</span>
-											<span className="font-semibold tabular-nums text-foreground">
-												{metric.value}
-											</span>
-										</div>
+							{inlineProviderLabels.length > 0 || discountBadge ? (
+								<div className="flex shrink-0 items-center gap-x-1.5 text-[11px] text-muted-foreground">
+									{inlineProviderLabels.map((item, index) => (
+										<React.Fragment key={item}>
+											{index > 0 ? <span className="text-zinc-300 dark:text-zinc-700">/</span> : null}
+											<span className="whitespace-nowrap">{item}</span>
+										</React.Fragment>
 									))}
+									{discountBadge ? (
+										<>
+											{inlineProviderLabels.length > 0 ? (
+												<span className="text-zinc-300 dark:text-zinc-700">/</span>
+											) : null}
+											<span className="whitespace-nowrap font-medium text-emerald-700 dark:text-emerald-300">
+												{discountBadge}
+											</span>
+										</>
+									) : null}
 								</div>
 							) : null}
 						</div>
-
-					<div className="w-full lg:w-auto lg:min-w-[240px]">
-						<div className="grid grid-cols-3 rounded-lg border border-zinc-200/70 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/40">
-							{performanceMetrics.map((metric) => (
-								<div
-									key={metric.key}
-									className="flex min-w-0 flex-col items-center justify-center px-3 py-2 text-center [&:not(:last-child)]:border-r [&:not(:last-child)]:border-zinc-200/70 dark:[&:not(:last-child)]:border-zinc-800"
-								>
-									<p className="text-[10px] font-medium text-muted-foreground">
-										{metric.label}
-									</p>
-									<div className="text-xs font-semibold leading-tight text-foreground tabular-nums">
-										{metric.value}
-									</div>
-								</div>
-							))}
-						</div>
 					</div>
-				</div>
-			</CardHeader>
-			<CardContent className="px-4 pb-4 pt-0">
-				<div className="grid grid-cols-1 gap-2.5 border-t border-zinc-200/80 pt-3 dark:border-zinc-800">
-					<div className="space-y-1.5">
-						<div className="flex flex-wrap items-center gap-1.5">
-							<div className="text-[11px] font-semibold tracking-wide text-foreground">
-								Pricing
-							</div>
-							{availablePlans.length > 0 ? (
-								<PricingPlanSelect
-									value={selectedPlan}
-									onChange={setSelectedPlan}
-									plans={availablePlans}
-									planMetaLabels={planMultiplierLabels}
-									compact
-								/>
-							) : null}
-						</div>
+				</TableCell>
+				<TableCell className="py-2 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					{renderTablePriceSummary(inputPriceSummary, selectedPlanTheme.accent)}
+				</TableCell>
+				<TableCell className="py-2 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					{renderTablePriceSummary(outputPriceSummary, selectedPlanTheme.accent)}
+				</TableCell>
+				{showCacheReadColumn && cacheReadPriceSummary ? (
+					<TableCell className="py-2 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+						{renderTablePriceSummary(cacheReadPriceSummary, selectedPlanTheme.accent)}
+					</TableCell>
+				) : null}
+				<TableCell className="py-2 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					<div className="font-medium text-foreground">{performanceMetrics[0].value}</div>
+				</TableCell>
+				<TableCell className="py-2 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					<div className="font-medium text-foreground">{performanceMetrics[1].value}</div>
+				</TableCell>
+				<TableCell className="py-2 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+					<div
+						className={cn(
+							"inline-flex items-center justify-end gap-2 font-medium tabular-nums",
+							performanceMetrics[2].valueClassName,
+						)}
+					>
+						<span>{performanceMetrics[2].value}</span>
+						<UptimeSparkline points={uptimeTrendPoints} />
 					</div>
-					{!hasPlanPricing ? (
-						isComingSoonProvider ? (
-							<div className="rounded-md border border-blue-200/80 bg-blue-50/60 px-3 py-2 text-xs text-blue-900 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-100">
-								<div className="inline-flex items-center gap-1.5 font-semibold">
-									<Clock3 className="h-3.5 w-3.5" />
-									Coming Soon
-								</div>
-								<p className="mt-1 text-[11px] leading-snug text-blue-800/90 dark:text-blue-200/90">
-									This provider is not live for the selected tier yet. Pricing will
-									appear once availability starts.
-								</p>
-							</div>
-						) : (
-							<div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-								Pricing is not available for the selected tier on this provider.
-							</div>
-						)
-					) : null}
-					{isFreePlan && (
-						<div className="px-1 py-1">
-							<div className="mb-0.5 text-xs text-muted-foreground">
-								Per 1M tokens
-							</div>
-							<div className="text-xs font-semibold leading-tight tabular-nums">
-								{fmtUSD(0)}
-							</div>
-						</div>
+				</TableCell>
+				<TableCell className="w-10 py-2 pl-2 pr-3 text-right">
+					<button
+						type="button"
+						onClick={toggleExpanded}
+						aria-expanded={expanded}
+						aria-label={expanded ? `Collapse ${displayName} details` : `Expand ${displayName} details`}
+						className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-zinc-100 hover:text-foreground dark:hover:bg-zinc-900"
+					>
+						<ChevronRight
+							className={cn(
+								"h-4 w-4 transition-transform duration-200 ease-out",
+								expanded ? "rotate-90" : "rotate-0",
+							)}
+						/>
+					</button>
+				</TableCell>
+			</TableRow>
+			<TableRow
+				className={cn(
+					"hover:bg-transparent data-[state=selected]:bg-transparent",
+					expanded ? "border-b" : "border-b-0",
+				)}
+				aria-hidden={!expanded}
+			>
+				<TableCell
+					colSpan={showCacheReadColumn ? 8 : 7}
+					className={cn(
+						"overflow-hidden bg-zinc-50/45 px-0 py-0 dark:bg-zinc-900/20",
+						expanded ? "border-t border-zinc-200/70 dark:border-zinc-800/70" : "border-t-0",
 					)}
-					{!isFreePlan && tokenMetricTiles.length > 0 && (
-						<div className="w-full">
+				>
+					<div
+						className={cn(
+							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+							expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+						)}
+					>
+						<div className="min-h-0 overflow-hidden">
 							<div
 								className={cn(
-									"grid gap-x-3 gap-y-2",
-									tokenTileGridClass(tokenMetricTiles.length),
+									"space-y-4 px-4 transition-[transform,opacity,padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none",
+									expanded
+										? "translate-y-0 py-4 opacity-100"
+										: "-translate-y-1 py-0 opacity-0 pointer-events-none",
 								)}
 							>
-								{tokenMetricTiles.map((tile) => (
-									<div
-										key={tile.key}
-										className="min-w-0 rounded-lg border border-zinc-200/70 bg-zinc-50/50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900/30"
-									>
-										{showTokenGroupEyebrows && tile.groupTitle ? (
-											<div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-												{tile.groupTitle}
+								<div className="space-y-3">
+									<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+										<div className="min-w-0">
+											{availablePlans.length > 0 ? (
+												<PricingPlanSelect
+													value={selectedPlan}
+													onChange={setSelectedPlan}
+													plans={availablePlans}
+													planMetaLabels={planMultiplierLabels}
+													compact
+												/>
+											) : null}
+										</div>
+
+										<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground lg:justify-end">
+											<span>
+												Quantization:{" "}
+												<span className="font-medium text-foreground">
+													{summaryQuantization ?? "--"}
+												</span>
+											</span>
+											<span className="text-zinc-300 dark:text-zinc-700">|</span>
+											<span>
+												Context Length:{" "}
+												<span className="font-medium text-foreground">{contextLengthValue}</span>
+											</span>
+											<span className="text-zinc-300 dark:text-zinc-700">|</span>
+											<span>
+												Max Output:{" "}
+												<span className="font-medium text-foreground">{maxOutputValue}</span>
+											</span>
+										</div>
+									</div>
+								</div>
+
+								<div aria-label={`${selectedPlanLabel} pricing`} className="space-y-2">
+									<div className="text-sm font-medium text-foreground">Pricing</div>
+									{discountBadge ? (
+										<div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-emerald-200/70 bg-emerald-50/50 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/20 dark:text-emerald-100">
+											<span className="font-semibold text-emerald-700 dark:text-emerald-300">
+												{discountBadge}
+											</span>
+											<span className="text-emerald-800/80 dark:text-emerald-200/80">
+												Promotion
+											</span>
+											{discountTimeRemaining ? (
+												<span className="text-emerald-800/80 dark:text-emerald-200/80">
+													{discountTimeRemaining}
+												</span>
+											) : null}
+										</div>
+									) : null}
+									{pricingPrimaryContent}
+									{pricingAdditionalContent}
+								</div>
+
+								<div className="space-y-2">
+									<div className="flex items-center justify-between gap-3">
+										<div className="text-sm font-medium text-foreground">Supported parameters</div>
+										{supportedParameters.length > 0 ? (
+											<div className="text-[11px] text-muted-foreground">
+												Hover for details
 											</div>
 										) : null}
-										<div className="mb-0.5 text-xs text-muted-foreground">{tile.title}</div>
-										{tile.tiers ? (
-											<TierTiles
-												tiers={tile.tiers}
-												dense
-												unitLabel={tile.unitLabel}
-												comparisonAccent={pricingComparisonAccent}
-											/>
-										) : null}
 									</div>
-								))}
+									{supportedParameters.length > 0 ? (
+										<div className="mt-3 max-h-[4.75rem] overflow-hidden">
+											<div className="flex flex-wrap items-start gap-2">
+												{supportedParameters.map((param) => {
+													const reference = getParameterReference(param);
+													return (
+														<HoverCard key={param} openDelay={120} closeDelay={80}>
+															<HoverCardTrigger asChild>
+																<Button
+																	type="button"
+																	variant="outline"
+																	size="sm"
+																	className="h-auto min-h-8 justify-start rounded-md px-2.5 py-1.5 font-mono text-xs"
+																>
+																	{prettifyParamName(param)}
+																</Button>
+															</HoverCardTrigger>
+															<HoverCardContent align="start" className="w-80 p-3 text-xs">
+																<div className="space-y-2">
+																	<div className="space-y-1">
+																		<div className="flex items-center justify-between gap-3">
+																			<code className="font-mono text-[11px] text-foreground">
+																				{param}
+																			</code>
+																			<Link
+																				href={getParameterDocsHref(param)}
+																				target="_blank"
+																				rel="noopener noreferrer"
+																				className="text-[11px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
+																			>
+																				Docs
+																			</Link>
+																		</div>
+																		<p className="leading-relaxed text-muted-foreground">
+																			{reference.description}
+																		</p>
+																	</div>
+																	<div className="flex items-center gap-4 border-t border-zinc-200/70 pt-2 text-[11px] text-muted-foreground dark:border-zinc-800">
+																		<span>
+																			Type:{" "}
+																			<span className="text-foreground">{reference.type}</span>
+																		</span>
+																		<span>
+																			Default:{" "}
+																			<span className="text-foreground">
+																				{reference.defaultValue}
+																			</span>
+																		</span>
+																	</div>
+																</div>
+															</HoverCardContent>
+														</HoverCard>
+													);
+												})}
+											</div>
+										</div>
+									) : (
+										<div className="mt-3 text-sm text-muted-foreground">
+											No parameter metadata is published for this route.
+										</div>
+									)}
+								</div>
 							</div>
 						</div>
-					)}
-					{!isFreePlan && sec.requests && sec.requests.length > 0 && (
-						<RequestsSection
-							rows={sec.requests}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					)}
-					{!isFreePlan && upcomingFor("requests").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("requests")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && imageInputs.length > 0 && (
-						<InputsSection
-							title="Image Inputs"
-							rows={imageInputs}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					)}
-					{!isFreePlan && upcomingFor("imageInputs").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("imageInputs")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && videoInputs.length > 0 && (
-						<InputsSection
-							title="Video Inputs"
-							rows={videoInputs}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					)}
-					{!isFreePlan && upcomingFor("videoInputs").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("videoInputs")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && sec.imageGen && (
-						<ImageGenSection
-							rows={sec.imageGen}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					)}
-					{!isFreePlan && upcomingFor("imageGen").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("imageGen")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && sec.videoGen && (
-						<VideoGenSection
-							rows={sec.videoGen}
-							showAudioVariants={
-								hasExplicitVideoAudioRules ||
-								hasVideoAudioSplitData ||
-								videoAudioRuleHints.length > 0
-							}
-							audioHints={videoAudioRuleHints}
-							comparisonAccent={pricingComparisonAccent}
-						/>
-					)}
-					{!isFreePlan && upcomingFor("videoGen").length > 0 && (
-						<UpcomingPricingSection rows={upcomingFor("videoGen")} title="Upcoming" compact />
-					)}
-					{!isFreePlan && sec.otherRules.length > 0 && (
-						<div>
-							<AdvancedTable rows={sec.otherRules} />
-						</div>
-					)}
-					{!isFreePlan && upcomingFor("other").length > 0 && (
-						<UpcomingPricingSection
-							rows={upcomingFor("other")}
-							title="Other Upcoming Pricing"
-							compact
-						/>
-					)}
-					{selectedPlanUsageHint ? (
-						<div className="text-[11px] leading-relaxed text-muted-foreground">
-							<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-								{selectedPlanUsageHint.breakdown ? (
-									<span
-										className="mr-1 inline-flex items-center text-muted-foreground"
-										aria-hidden="true"
-									>
-										<CircleHelp className="h-3.5 w-3.5" />
-									</span>
-								) : null}
-								{selectedPlanUsageHint.kind === "service_tier" ? (
-									<>
-										<span>Set</span>
-										<button
-											type="button"
-											onClick={() =>
-												handleUsageSnippetCopy(selectedPlanUsageHint.snippet)
-											}
-											className="mx-0.5 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-mono text-[11px] text-zinc-700 transition-colors hover:bg-zinc-100/80 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-900/70 dark:hover:text-zinc-100"
-											aria-label={`Copy ${selectedPlanUsageHint.snippet}`}
-											title="Copy snippet"
-										>
-											<code>{selectedPlanUsageHint.snippet}</code>
-											{copiedUsageSnippet === selectedPlanUsageHint.snippet ? (
-												<CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-											) : (
-												<Copy className="h-3 w-3 text-muted-foreground" />
-											)}
-										</button>
-										<span>{selectedPlanUsageHint.description}</span>
-										<Link
-											href={SERVICE_TIERS_DOCS_HREF}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-										>
-											Learn more
-										</Link>
-									</>
-								) : (
-									<>
-										<span>{selectedPlanUsageHint.description}</span>
-										<Link
-											href={SERVICE_TIERS_DOCS_HREF}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-										>
-											Learn more
-										</Link>
-									</>
-								)}
-							</div>
-						</div>
-					) : null}
-				</div>
-			</CardContent>
-		</Card>
+					</div>
+				</TableCell>
+			</TableRow>
+		</>
 	);
 }

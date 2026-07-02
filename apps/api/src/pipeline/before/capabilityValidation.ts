@@ -8,6 +8,7 @@ import { err } from "./http";
 import { providerSupportsParam, extractRequestedParams, getUnknownTopLevelParams } from "./paramCapabilities";
 import { isAlwaysSupportedParam } from "./textParamPolicy";
 import { validateProviderDocsCompliance } from "./providerDocsValidation";
+import { getEffectiveRoutingHints } from "../requestRouting";
 
 type ValidationResult =
 	| {
@@ -141,6 +142,47 @@ function preferProvidersByRequestedParams(args: {
 	return preferred.length > 0 ? preferred : args.providers;
 }
 
+function filterProvidersForRequiredParams(args: {
+	endpoint: Endpoint;
+	providers: ProviderCandidate[];
+	requestedParams: string[];
+	supportMap: Record<string, ProviderSupportInfo[]>;
+}): ProviderCandidate[] {
+	if (args.requestedParams.length === 0) return args.providers;
+	return args.providers.filter((provider) =>
+		args.requestedParams.every((param) => {
+			if (isAlwaysSupportedParam(args.endpoint, param)) return true;
+			const rows = args.supportMap[param] ?? [];
+			const match = rows.find((row) => row.providerId === provider.providerId);
+			return match ? match.supported : false;
+		}),
+	);
+}
+
+function isJsonSchemaResponseFormat(body: any): boolean {
+	const directFormat = body?.response_format;
+	if (directFormat && typeof directFormat === "object" && directFormat.type === "json_schema") {
+		return true;
+	}
+	const textFormat = body?.text?.format;
+	return Boolean(textFormat && typeof textFormat === "object" && textFormat.type === "json_schema");
+}
+
+function hasRequestedResponseFormat(body: any): boolean {
+	return body?.response_format != null || body?.text?.format != null;
+}
+
+function filterProvidersByCapability(
+	providers: ProviderCandidate[],
+	paramPath: string,
+): ProviderCandidate[] {
+	return providers.filter((provider) =>
+		providerSupportsParam(provider, paramPath, {
+			assumeSupportedOnMissingConfig: false,
+		}),
+	);
+}
+
 /**
  * Gets the max_tokens value from the request body, checking both field names
  */
@@ -206,9 +248,17 @@ function validateParameterSupport(args: {
 		}));
 	}
 
+	const requireParameters = getEffectiveRoutingHints(args.body).requireParameters;
 	return {
 		ok: true,
-		providers: args.providers,
+		providers: requireParameters
+			? filterProvidersForRequiredParams({
+				endpoint: args.endpoint,
+				providers: args.providers,
+				requestedParams: requested,
+				supportMap,
+			})
+			: args.providers,
 		body: args.body,
 		requestedParams: requested,
 		supportMap,
@@ -225,10 +275,28 @@ function validateResponseFormat(args: {
 	workspaceId: string;
 	model: string;
 }): StageValidationResult {
-	void args.requestId;
-	void args.workspaceId;
-	void args.model;
-	return { ok: true, providers: args.providers, body: args.body };
+	if (!hasRequestedResponseFormat(args.body)) {
+		return { ok: true, providers: args.providers, body: args.body };
+	}
+
+	const filtered = filterProvidersByCapability(args.providers, "response_format");
+	if (filtered.length > 0) {
+		return { ok: true, providers: filtered, body: args.body };
+	}
+
+	return {
+		ok: false,
+		response: err("validation_error", {
+			details: [{
+				message: `Model "${args.model}" has no providers that support the requested response_format.`,
+				path: ["response_format"],
+				keyword: "response_format_unsupported",
+				params: { model: args.model },
+			}],
+			request_id: args.requestId,
+			workspace_id: args.workspaceId,
+		}),
+	};
 }
 
 /**
@@ -288,10 +356,28 @@ function validateStructuredOutputs(args: {
 	workspaceId: string;
 	model: string;
 }): StageValidationResult {
-	void args.requestId;
-	void args.workspaceId;
-	void args.model;
-	return { ok: true, providers: args.providers, body: args.body };
+	if (!isJsonSchemaResponseFormat(args.body)) {
+		return { ok: true, providers: args.providers, body: args.body };
+	}
+
+	const filtered = filterProvidersByCapability(args.providers, "structured_outputs");
+	if (filtered.length > 0) {
+		return { ok: true, providers: filtered, body: args.body };
+	}
+
+	return {
+		ok: false,
+		response: err("validation_error", {
+			details: [{
+				message: `Model "${args.model}" has no providers that support structured outputs for the requested JSON schema response format.`,
+				path: ["response_format"],
+				keyword: "structured_outputs_unsupported",
+				params: { model: args.model },
+			}],
+			request_id: args.requestId,
+			workspace_id: args.workspaceId,
+		}),
+	};
 }
 
 /**
@@ -322,6 +408,25 @@ export function validateCapabilities(args: {
 	});
 	if ("response" in paramResult) return { ok: false, response: paramResult.response };
 	pushFilteringStage(filteringStages, "param_support", initialProviders, paramResult.providers);
+
+	if (paramResult.providers.length === 0) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details: [{
+					message: `Model "${args.model}" has no providers that support all requested parameters.`,
+					path: ["provider", "require_parameters"],
+					keyword: "require_parameters_unsatisfied",
+					params: {
+						model: args.model,
+						requested_params: paramResult.requestedParams,
+					},
+				}],
+				request_id: args.requestId,
+				workspace_id: args.workspaceId,
+			}),
+		};
+	}
 
 	const preferredProviders = preferProvidersByRequestedParams({
 		providers: paramResult.providers,

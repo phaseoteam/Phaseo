@@ -977,21 +977,6 @@ func OpenAsyncJobWebSocket(client *Client, path map[string]string, query map[str
 	return out, nil
 }
 
-func OpenResponsesWebSocket(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
-	resolvedPath := "/responses/ws"
-	data, err := client.Request("GET", resolvedPath, query, headers, body)
-	if err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	var out interface{}
-	if err := DecodeJSON(data, &out); err != nil {
-		var zero interface{}
-		return zero, err
-	}
-	return out, nil
-}
-
 func RetrieveBatch(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)

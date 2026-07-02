@@ -494,6 +494,7 @@ export function makeMeta(input: {
     oauthClientId?: string | null;
     oauthUserId?: string | null;
     returnMeta?: boolean;
+    returnRoutingDiagnostics?: boolean;
     debug?: DebugOptions;
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
@@ -600,6 +601,7 @@ export function makeMeta(input: {
         edgeContinent: edge.continent ?? null,
         edgeAsn: edge.asn ?? null,
         returnMeta: input.returnMeta ?? false,
+        returnRoutingDiagnostics: input.returnRoutingDiagnostics ?? false,
         providerCapabilitiesBeta: input.providerCapabilitiesBeta ?? false,
         beta: input.beta,
     };

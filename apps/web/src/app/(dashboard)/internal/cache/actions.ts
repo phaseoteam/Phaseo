@@ -2,7 +2,6 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
-	expirePublicModelCatalogueCache,
 	revalidateAppDataTags,
 	revalidateBenchmarkDataTags,
 	revalidateModelDataOnlyTags,
@@ -55,15 +54,6 @@ const SIGN_IN_TAGS = [
 	"data:models",
 ] as const;
 
-const SUBSCRIPTION_PLAN_TAGS = [
-	"data:subscription_plans",
-	"data:subscription_plan_models",
-	"frontend:subscription-plans",
-	"frontend:model-subscription-plans",
-	"search:data",
-	"public-model-catalogue",
-] as const;
-
 const RANKINGS_TAGS = [
 	"public-rankings",
 	"public-performance",
@@ -73,6 +63,7 @@ const RANKINGS_TAGS = [
 	"public-reliability",
 	"public-geography",
 	"public-multimodal",
+	"public-unique-users",
 	"public-top-apps",
 	"frontend:rankings",
 	"frontend:rankings-indexability",
@@ -80,11 +71,26 @@ const RANKINGS_TAGS = [
 	"frontend:rankings-market-share",
 	"frontend:rankings-market-share-timeseries",
 	"frontend:rankings-timeseries",
+	"frontend:rankings-unique-users",
 	"frontend:model-rankings",
 	"frontend:model-names",
 	"frontend:provider-names",
 	"frontend:provider-meta",
 	"frontend:organisation-logo-ids",
+] as const;
+
+const APP_FRONTEND_TAGS = [
+	"data:public_apps",
+	"data:app_details",
+	"data:app_usage",
+	"data:apps",
+	"frontend:apps",
+	"frontend:app-details",
+	"frontend:app-usage",
+	"frontend:app-images",
+	"frontend:app-rankings",
+	"frontend:app-provider-model-mappings",
+	"frontend:model-leaderboard-meta",
 ] as const;
 
 const COUNTRY_FRONTEND_TAGS = [
@@ -103,27 +109,6 @@ type CacheOpResult = {
 	ok: boolean;
 	message: string;
 };
-
-function revalidateFrontendModelApiPaths(modelId: string) {
-	revalidatePath(`/api/frontend/models/${modelId}/header`);
-	revalidatePath(`/api/frontend/models/${modelId}/notice`);
-	revalidatePath(`/api/frontend/models/${modelId}/canonical`);
-	revalidatePath(`/api/frontend/models/${modelId}/pending-api-release`);
-	revalidatePath(`/api/frontend/models/${modelId}/overview`);
-	revalidatePath(`/api/frontend/models/${modelId}/pricing`);
-	revalidatePath(`/api/frontend/models/${modelId}/pricing-history`);
-	revalidatePath(`/api/frontend/models/${modelId}/subscription-plans`);
-	revalidatePath(`/api/frontend/models/${modelId}/gateway-metadata`);
-	revalidatePath(`/api/frontend/models/${modelId}/timeline`);
-	revalidatePath(`/api/frontend/models/${modelId}/apps`);
-	revalidatePath(`/api/frontend/models/${modelId}/performance`);
-	revalidatePath(`/api/frontend/models/${modelId}/activity`);
-	revalidatePath(`/api/frontend/models/${modelId}/token-trajectory`);
-	revalidatePath(`/api/frontend/models/${modelId}/realtime-window`);
-	revalidatePath(`/api/frontend/models/${modelId}/runtime-stats`);
-	revalidatePath(`/api/frontend/models/${modelId}/routing-health`);
-	revalidatePath(`/api/frontend/models/${modelId}/benchmark-highlights`);
-}
 
 async function requireAdmin() {
 	const supabase = await createClient();
@@ -177,19 +162,22 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 		revalidatePath("/models");
 		revalidatePath("/models/collections");
 		revalidatePath("/monitor");
-		revalidatePath("/api/frontend/models");
-		revalidatePath("/api/frontend/models/collections");
-		revalidatePath("/api/frontend/models/monitor");
-		revalidatePath("/api/frontend/models/free-router");
-		revalidatePath("/api/frontend/monitor/history");
-		revalidatePath("/api/frontend/countries");
 	});
 }
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
-	return runAdminAction("Models + providers", async () => {
-		expirePublicModelCatalogueCache();
+	return runAdminAction("Public catalogue", async () => {
+		revalidateModelDataTags();
+		for (const tag of APP_FRONTEND_TAGS) {
+			revalidateTag(tag, EXPIRE_NOW);
+		}
 		revalidateTag("collections", EXPIRE_NOW);
+		revalidatePath("/models");
+		revalidatePath("/models/collections");
+		revalidatePath("/monitor");
+		revalidatePath("/compare");
+		revalidatePath("/api-providers");
+		revalidatePath("/apps");
 	});
 }
 
@@ -200,8 +188,6 @@ export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResul
 		revalidatePath("/api-providers");
 		revalidatePath("/models");
 		revalidatePath("/models/collections");
-		revalidatePath("/api/frontend/api-providers");
-		revalidatePath("/api/frontend/gateway-models");
 	});
 }
 
@@ -220,18 +206,6 @@ export async function revalidateProviderScopeAction(input: {
 				revalidateProviderDataTags({ providerId });
 				revalidatePath(`/api-providers/${providerId}`);
 				revalidatePath(`/api-providers/${providerId}/models`);
-				revalidatePath(`/api/frontend/api-providers/${providerId}/header`);
-				revalidatePath(`/api/frontend/api-providers/${providerId}/models`);
-				revalidatePath(`/api/frontend/api-providers/${providerId}/top-apps`);
-				revalidatePath(`/api/frontend/api-providers/${providerId}/top-models`);
-				revalidatePath(
-					`/api/frontend/api-providers/${providerId}/model-token-timeseries`,
-				);
-				revalidatePath(
-					`/api/frontend/api-providers/${providerId}/app-token-timeseries`,
-				);
-				revalidatePath(`/api/frontend/api-providers/${providerId}/metrics`);
-				revalidatePath(`/api/frontend/api-providers/${providerId}/updates`);
 			} else {
 				revalidateProviderDataTags();
 			}
@@ -255,18 +229,10 @@ export async function revalidateOrganisationScopeAction(input: {
 				revalidateOrganisationDataTags({ organisationId });
 				revalidatePath(`/organisations/${organisationId}`);
 				revalidatePath(`/organisations/${organisationId}/models`);
-				revalidatePath(`/api/frontend/organisations/${organisationId}/header`);
-				revalidatePath(`/api/frontend/organisations/${organisationId}`);
-				revalidatePath(`/api/frontend/organisations/${organisationId}/models`);
-				revalidatePath(
-					`/api/frontend/updates/organisations/${organisationId}/releases`,
-				);
 			} else {
 				revalidateOrganisationDataTags();
 			}
 			revalidatePath("/organisations");
-			revalidatePath("/api/frontend/organisations");
-			revalidatePath("/api/frontend/countries");
 		}
 	);
 }
@@ -287,7 +253,6 @@ export async function revalidateSearchDataAction(): Promise<CacheOpResult> {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
 		revalidatePath("/search");
-		revalidatePath("/api/frontend/search");
 	});
 }
 
@@ -306,19 +271,17 @@ export async function revalidateSignInCatalogAction(): Promise<CacheOpResult> {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
 		revalidatePath("/sign-in");
-		revalidatePath("/api/frontend/sign-in/main-models");
-		revalidatePath("/api/frontend/sign-in/supported-models-stats");
 	});
 }
 
 export async function revalidateSubscriptionPlansAction(): Promise<CacheOpResult> {
 	return runAdminAction("Subscription plans", async () => {
-		for (const tag of SUBSCRIPTION_PLAN_TAGS) {
+		for (const tag of ["data:subscription_plans", "frontend:subscription-plans"] as const) {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
+		revalidateTag("search:data", EXPIRE_NOW);
 		revalidatePath("/subscription-plans");
-		revalidatePath("/api/frontend/subscription-plans");
-		revalidatePath("/api/frontend/search");
+		revalidatePath("/search");
 	});
 }
 
@@ -373,12 +336,10 @@ export async function revalidateCountryDataAction(
 				revalidateTag(tag, EXPIRE_NOW);
 			}
 			revalidatePath("/countries");
-			revalidatePath("/api/frontend/countries");
 			if (trimmedIso) {
 				revalidateTag(`frontend:countries:${trimmedIso}`, EXPIRE_NOW);
 				revalidatePath(`/countries/${trimmedIso.toLowerCase()}`);
 				revalidatePath(`/countries/${trimmedIso.toLowerCase()}/models`);
-				revalidatePath(`/api/frontend/countries/${trimmedIso}`);
 			}
 		}
 	);
@@ -404,7 +365,6 @@ export async function revalidateProfileDataAction(
 			if (trimmedSlug) {
 				revalidateTag(`frontend:profile:${trimmedSlug}`, EXPIRE_NOW);
 				revalidatePath(`/profile/${trimmedSlug}`);
-				revalidatePath(`/api/frontend/profile/${trimmedSlug}`);
 			}
 		}
 	);
@@ -428,7 +388,6 @@ export async function revalidateModelScopeAction(input: {
 		} else {
 			result = await revalidateSingleModelAllAction(modelId);
 		}
-		revalidateFrontendModelApiPaths(modelId);
 		return { ok: result.ok, message: result.message };
 	} catch (error) {
 		return {
@@ -455,12 +414,10 @@ export async function revalidateBenchmarkScopeAction(input: {
 			if (benchmarkId) {
 				revalidateBenchmarkDataTags({ benchmarkId });
 				revalidatePath(`/benchmarks/${benchmarkId}`);
-				revalidatePath(`/api/frontend/benchmarks/${benchmarkId}`);
 			} else {
 				revalidateBenchmarkDataTags();
 			}
 			revalidatePath("/benchmarks");
-			revalidatePath("/api/frontend/benchmarks");
 		}
 	);
 }

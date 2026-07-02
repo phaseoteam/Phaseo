@@ -282,10 +282,10 @@ export function ChatSidebar({
 					</Button>
 				</div>
 			</SidebarHeader>
-			<SidebarContent>
+			<SidebarContent className="gap-0">
 				<ChatRoomSwitcher />
 				<SidebarSeparator className="my-0" />
-				<div className="px-2 py-1.5">
+				<div className="px-2 pb-1 pt-1.5">
 					{withCollapsedTooltip(
 						"New Chat",
 						<Button
@@ -294,7 +294,7 @@ export function ChatSidebar({
 								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
 								collapsed
 									? "justify-center px-0"
-									: "flex-1 justify-start px-2",
+									: "w-full flex-1 justify-start px-2",
 							)}
 							onClick={onCreateThread}
 							aria-label="New Chat"
@@ -313,7 +313,7 @@ export function ChatSidebar({
 								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
 								collapsed
 									? "justify-center px-0"
-									: "flex-1 justify-start px-2",
+									: "w-full flex-1 justify-start px-2",
 							)}
 							asChild
 							aria-label="Database"
@@ -345,7 +345,7 @@ export function ChatSidebar({
 								"h-8 min-w-0 w-full gap-2 text-sm font-medium",
 								collapsed
 									? "justify-center px-0"
-									: "flex-1 justify-start px-2",
+									: "w-full flex-1 justify-start px-2",
 							)}
 							onClick={onSearch}
 							aria-label="Search Chats"
@@ -359,7 +359,7 @@ export function ChatSidebar({
 				</div>
 				<SidebarSeparator className="my-0" />
 				<ScrollArea className="h-full group-data-[collapsible=icon]:hidden">
-					<SidebarGroup className="px-2 pb-2 pt-1">
+					<SidebarGroup className="px-2 pb-2 pt-1.5">
 						<SidebarGroupLabel className="h-6 px-3 text-[13px] font-semibold text-foreground/80">
 							Chats
 						</SidebarGroupLabel>

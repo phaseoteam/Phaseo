@@ -62,8 +62,6 @@ module AiStats
     # @!attribute [rw] role
     #   @return [String]
     AnthropicMessage = Struct.new(:content, :role, keyword_init: true)
-    # @!attribute [rw] cache_control
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -78,8 +76,6 @@ module AiStats
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] model
     #   @return [String]
-    # @!attribute [rw] prompt_cache_retention
-    #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] provider_options
@@ -106,7 +102,7 @@ module AiStats
     #   @return [Float, nil]
     # @!attribute [rw] usage
     #   @return [Boolean, nil]
-    AnthropicMessagesRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :prompt_cache_retention, :provider, :provider_options, :reasoning, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
+    AnthropicMessagesRequest = Struct.new(:debug, :echo_upstream_request, :max_tokens, :messages, :meta, :metadata, :model, :provider, :provider_options, :reasoning, :session_id, :stop_sequences, :stream, :system, :temperature, :tool_choice, :tools, :top_k, :top_p, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] id
@@ -582,8 +578,6 @@ module AiStats
     # @!attribute [rw] message
     #   @return [Hash{String => Object}, nil]
     ChatChoice = Struct.new(:finish_reason, :index, :message, keyword_init: true)
-    # @!attribute [rw] cache_control
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -617,8 +611,6 @@ module AiStats
     # @!attribute [rw] presence_penalty
     #   @return [Float, nil]
     # @!attribute [rw] prompt_cache_key
-    #   @return [String, nil]
-    # @!attribute [rw] prompt_cache_retention
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
@@ -660,7 +652,7 @@ module AiStats
     #   @return [String, nil]
     # @!attribute [rw] user_id
     #   @return [String, nil]
-    ChatCompletionsRequest = Struct.new(:cache_control, :debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :prompt_cache_retention, :provider, :provider_options, :reasoning, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
+    ChatCompletionsRequest = Struct.new(:debug, :echo_upstream_request, :frequency_penalty, :image_config, :logit_bias, :logprobs, :max_completion_tokens, :max_tokens, :max_tool_calls, :messages, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :presence_penalty, :prompt_cache_key, :provider, :provider_options, :reasoning, :response_format, :safety_identifier, :seed, :service_tier, :session_id, :stop, :store, :stream, :stream_options, :temperature, :tool_choice, :tools, :top_logprobs, :top_p, :usage, :user, :user_id, keyword_init: true)
     # @!attribute [rw] choices
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -1498,9 +1490,6 @@ module AiStats
     # @!attribute [rw] status
     #   @return [String, nil]
     ProvisioningKeyWithValue = Struct.new(:created_at, :id, :key, :name, :prefix, :scopes, :status, keyword_init: true)
-    # @!attribute [rw] error
-    #   @return [Hash{String => Object}]
-    RealtimeNotImplementedResponse = Struct.new(:error, keyword_init: true)
     # @!attribute [rw] effort
     #   @return [String, nil]
     # @!attribute [rw] enabled
@@ -1608,8 +1597,6 @@ module AiStats
     ResponsesOutputTextPart = Struct.new(:annotations, :text, :type, keyword_init: true)
     # @!attribute [rw] background
     #   @return [Boolean, nil]
-    # @!attribute [rw] cache_control
-    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -1637,8 +1624,6 @@ module AiStats
     # @!attribute [rw] previous_response_id
     #   @return [String, nil]
     # @!attribute [rw] prompt_cache_key
-    #   @return [String, nil]
-    # @!attribute [rw] prompt_cache_retention
     #   @return [String, nil]
     # @!attribute [rw] provider
     #   @return [Hash{String => Object}, nil]
@@ -1672,7 +1657,7 @@ module AiStats
     #   @return [Boolean, nil]
     # @!attribute [rw] user
     #   @return [String, nil]
-    ResponsesRequest = Struct.new(:background, :cache_control, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :prompt_cache_retention, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
+    ResponsesRequest = Struct.new(:background, :debug, :echo_upstream_request, :image_config, :include, :input, :instructions, :max_output_tokens, :meta, :metadata, :modalities, :model, :parallel_tool_calls, :previous_response_id, :prompt_cache_key, :provider, :provider_options, :reasoning, :safety_identifier, :service_tier, :session_id, :store, :stream, :temperature, :text, :tool_choice, :tools, :top_p, :truncation, :usage, :user, keyword_init: true)
     # @!attribute [rw] content
     #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] created
@@ -1696,33 +1681,6 @@ module AiStats
     # @!attribute [rw] usage
     #   @return [Hash{String => Object}, nil]
     ResponsesResponse = Struct.new(:content, :created, :id, :model, :object, :output, :output_items, :role, :stop_reason, :type, :usage, keyword_init: true)
-    # @!attribute [rw] input
-    #   @return [String, Array<Hash{String => Object}>, Hash{String => Object}, nil]
-    # @!attribute [rw] model
-    #   @return [String]
-    # @!attribute [rw] previous_response_id
-    #   @return [String, nil]
-    # @!attribute [rw] store
-    #   @return [Boolean, nil]
-    # @!attribute [rw] tool_choice
-    #   @return [String, Hash{String => Object}, nil]
-    # @!attribute [rw] tools
-    #   @return [Array<Hash{String => Object}>, nil]
-    # @!attribute [rw] type
-    #   @return [String]
-    ResponsesWebSocketCreateEvent = Struct.new(:input, :model, :previous_response_id, :store, :tool_choice, :tools, :type, keyword_init: true)
-    # @!attribute [rw] error
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] response
-    #   @return [Hash{String => Object}, nil]
-    # @!attribute [rw] status
-    #   @return [Integer, nil]
-    # @!attribute [rw] type
-    #   @return [String, nil]
-    ResponsesWebSocketServerEvent = Struct.new(:error, :response, :status, :type, keyword_init: true)
-    # @!attribute [rw] error
-    #   @return [Hash{String => Object}, nil]
-    ResponsesWebSocketUpgradeRequiredResponse = Struct.new(:error, keyword_init: true)
     # @!attribute [rw] datetime_requests
     #   @return [Integer, nil]
     # @!attribute [rw] web_fetch_requests

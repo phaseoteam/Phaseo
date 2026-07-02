@@ -15,6 +15,7 @@ import {
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
+import { analyseModelIndexability } from "@/lib/seo/modelIndexability";
 
 // Cache sitemap output at the edge to avoid repeated compute (and Fast Origin Transfer)
 // from crawlers hitting `/sitemap.xml` frequently.
@@ -38,9 +39,25 @@ type RouteSuffix = {
 
 type ModelSitemapSource = {
 	model_id?: string | null;
+	name?: string | null;
+	organisation_id?: string | null;
+	organisation_name?: string | null;
+	status?: string | null;
+	hidden?: boolean | null;
+	release_date?: string | null;
 	updated_at?: string | null;
 	primary_date?: string | null;
 	announcement_date?: string | null;
+	api_model_id?: string | null;
+	gateway_api_model_ids?: string[] | null;
+	input_types?: string[] | null;
+	output_types?: string[] | null;
+	gateway_provider_count?: number | null;
+	gateway_active_provider_count?: number | null;
+	lowest_input_price?: number | null;
+	lowest_output_price?: number | null;
+	context_lengths?: number[] | null;
+	supported_parameters?: string[] | null;
 };
 
 const baseUrl = SITE_URL;
@@ -222,6 +239,31 @@ function normalizeModelRouteSlugs(models?: ModelSitemapSource[]): string[] {
 	return [...normalized].sort();
 }
 
+function isModelIndexableForSitemap(model: ModelSitemapSource): boolean {
+	return analyseModelIndexability({
+		modelId: model.model_id,
+		name: model.name,
+		organisationId: model.organisation_id,
+		organisationName: model.organisation_name,
+		status: model.status,
+		hidden: model.hidden,
+		releaseDate: model.release_date,
+		announcementDate: model.announcement_date,
+		updatedAt: model.updated_at,
+		primaryDate: model.primary_date,
+		apiModelId: model.api_model_id,
+		apiModelIds: model.gateway_api_model_ids,
+		inputTypes: model.input_types,
+		outputTypes: model.output_types,
+		providerCount: model.gateway_provider_count,
+		activeProviderCount: model.gateway_active_provider_count,
+		lowestInputPrice: model.lowest_input_price,
+		lowestOutputPrice: model.lowest_output_price,
+		contextLengths: model.context_lengths,
+		supportedParameters: model.supported_parameters,
+	}).indexable;
+}
+
 function fromSettled<T>(
 	result: PromiseSettledResult<T>,
 	label: string,
@@ -336,9 +378,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	]);
 
 	const modelsForSitemap = fromSettled(modelsResult, "models for sitemap", []);
-	const modelSlugs = normalizeModelRouteSlugs(modelsForSitemap);
+	const indexableModelsForSitemap = modelsForSitemap.filter(
+		isModelIndexableForSitemap,
+	);
+	const modelSlugs = normalizeModelRouteSlugs(indexableModelsForSitemap);
 	const modelEntries = modelSlugs.map((slug) => {
-		const source = modelsForSitemap.find(
+		const source = indexableModelsForSitemap.find(
 			(model) => String(model.model_id ?? "").trim() === slug,
 		);
 		return {

@@ -27,6 +27,10 @@ export function getModelPath(modelId: string, tab?: string): string {
 	return tab ? `/models/${modelId}/${tab}` : `/models/${modelId}`;
 }
 
+export function getModelSectionPath(modelId: string, sectionId: string): string {
+	return `${getModelPath(modelId)}#${sectionId}`;
+}
+
 export type ModelMetadataIdentity = {
 	modelId: string;
 	modelName: string;

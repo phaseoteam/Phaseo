@@ -191,40 +191,4 @@ describe("x-ai text executor", () => {
 			output_text_tokens: 8,
 		});
 	});
-
-	it("captures xAI default service tier as standard for pricing", async () => {
-		const mock = installFetchMock([{
-			match: (url) => url.includes("/responses"),
-			response: jsonResponse({
-				id: "resp_xai_3",
-				object: "response",
-				created_at: Math.floor(Date.now() / 1000),
-				model: "grok-4.3",
-				status: "completed",
-				service_tier: "default",
-				output: [{
-					type: "message",
-					role: "assistant",
-					content: [{ type: "output_text", text: "ok" }],
-				}],
-				usage: {
-					input_tokens: 10,
-					output_tokens: 5,
-					total_tokens: 15,
-				},
-			}, { status: 200 }),
-		}]);
-
-		const result = await executor(buildArgs({
-			serviceTier: "priority",
-		}));
-		mock.restore();
-
-		expect(result.kind).toBe("completed");
-		if (result.kind !== "completed") return;
-		expect(result.bill.usage).toMatchObject({
-			service_tier: "standard",
-			serviceTier: "standard",
-		});
-	});
 });

@@ -3,25 +3,26 @@ title: "Responses"
 description: "Call the Responses API with the Python SDK."
 ---
 
-**Method**: `client.generate_response()` (stream with `client.stream_response()`).
+**Method**: `client.generate_response()` (stream parsed chunks with `client.stream_responses()`).
 
 ### Example
 ```python
 resp = client.generate_response({
     "model": "openai/gpt-4.1",
-    "input": [{"role": "user", "content": [{"type": "output_text", "text": "Summarise this"}]}],
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this"}]}],
     "temperature": 0.7,
 })
 ```
 
 ### Streaming
 ```python
-for line in client.stream_response({
+for chunk in client.stream_responses({
     "model": "openai/gpt-4.1",
-    "input": [{"role": "user", "content": [{"type": "output_text", "text": "Stream this"}]}],
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
     "stream": True,
 }):
-    print(line)
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
 ```
 
 ### Key parameters

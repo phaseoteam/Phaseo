@@ -1130,7 +1130,7 @@ describe("DevTools Integration", () => {
       const url = new URL(String(input));
       const method = String(init?.method ?? "GET").toUpperCase();
 
-      if (`${url.origin}${url.pathname}` === "https://example.test/models" && method === "GET") {
+      if (`${url.origin}${url.pathname}` === "https://example.test/gateway/models" && method === "GET") {
         expect(url.searchParams.get("limit")).toBe("2");
         expect(url.searchParams.get("endpoints")).toBe("responses");
         return new Response(JSON.stringify({

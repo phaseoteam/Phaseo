@@ -47,7 +47,6 @@ type AnthropicMessage struct {
 }
 
 type AnthropicMessagesRequest struct {
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
@@ -55,7 +54,6 @@ type AnthropicMessagesRequest struct {
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1025,7 +1023,6 @@ type ChatChoice struct {
 }
 
 type ChatCompletionsRequest struct {
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
@@ -1043,7 +1040,6 @@ type ChatCompletionsRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -2164,10 +2160,6 @@ type ProvisioningKeyWithValue struct {
 	Status *string `json:"status,omitempty"`
 }
 
-type RealtimeNotImplementedResponse struct {
-	Error map[string]interface{} `json:"error"`
-}
-
 type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
@@ -2248,7 +2240,6 @@ type ResponsesOutputTextPart struct {
 
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
@@ -2263,7 +2254,6 @@ type ResponsesRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -2294,27 +2284,6 @@ type ResponsesResponse struct {
 	StopReason *string `json:"stop_reason,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
-}
-
-type ResponsesWebSocketCreateEvent struct {
-	Input interface{} `json:"input,omitempty"`
-	Model string `json:"model"`
-	PreviousResponseId *string `json:"previous_response_id,omitempty"`
-	Store *bool `json:"store,omitempty"`
-	ToolChoice interface{} `json:"tool_choice,omitempty"`
-	Tools *[]map[string]interface{} `json:"tools,omitempty"`
-	Type string `json:"type"`
-}
-
-type ResponsesWebSocketServerEvent struct {
-	Error *map[string]interface{} `json:"error,omitempty"`
-	Response *map[string]interface{} `json:"response,omitempty"`
-	Status *int `json:"status,omitempty"`
-	Type *string `json:"type,omitempty"`
-}
-
-type ResponsesWebSocketUpgradeRequiredResponse struct {
-	Error *map[string]interface{} `json:"error,omitempty"`
 }
 
 type ServerToolUsage struct {

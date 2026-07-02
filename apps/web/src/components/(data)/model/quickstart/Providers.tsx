@@ -168,6 +168,7 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 												providerId={provider.providerId}
 												providerModelSlugs={Array.from(provider.modelSlugs)}
 												quantizationScheme={provider.quantizationScheme}
+												dataPolicy={provider.dataPolicy}
 												promptTraining={provider.promptTraining}
 												residency={provider.residency}
 												pricingPolicy={{

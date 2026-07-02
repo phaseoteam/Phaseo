@@ -5,12 +5,13 @@ import {
 	fetchFrontendModelProviderRoutingHealth,
 	fetchFrontendModelProviderRuntimeStats,
 	fetchFrontendModelPricing,
-	fetchFrontendModelSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getModelPricingCached } from "@/lib/fetchers/models/getModelPricing";
 import ModelPricingClient from "@/components/(data)/model/pricing/ModelPricingClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWorkspacePrivacySettings";
 import type { WorkspacePrivacySettings } from "@/app/api/internal/workspace/privacy-settings/route";
+import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import {
 	Empty,
 	EmptyContent,
@@ -29,12 +30,12 @@ export default async function ModelPricing({
 	includeHidden: boolean;
 	showHeader?: boolean;
 }) {
-	const [providers, header, subscriptionPlans] = await Promise.all([
-		fetchFrontendModelPricing(modelId),
+	const includeInternalProviders = await isAdminViewer().catch(() => false);
+	const [providers, header] = await Promise.all([
+		includeInternalProviders
+			? getModelPricingCached(modelId, includeHidden)
+			: fetchFrontendModelPricing(modelId),
 		fetchFrontendModelHeader(modelId, includeHidden),
-		fetchFrontendModelSubscriptionPlans(modelId).catch(() => {
-			return [];
-		}),
 	]);
 	const workspacePrivacySettings: WorkspacePrivacySettings | null =
 		await fetchWorkspacePrivacySettings().catch(() => {
@@ -89,12 +90,12 @@ export default async function ModelPricing({
 	// 	}))
 	// );
 
-	if (!providersForDisplay.length && !subscriptionPlans.length) {
+	if (!providersForDisplay.length) {
 		return (
 			<div className="space-y-4">
 				{showHeader ? (
 					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
-						Availability + Pricing
+						Providers
 					</h2>
 				) : null}
 				{showPendingApiBanner ? (
@@ -112,8 +113,7 @@ export default async function ModelPricing({
 						</EmptyMedia>
 						<EmptyTitle>No pricing data available yet</EmptyTitle>
 						<EmptyDescription>
-							No API pricing or subscription plan information is available
-							for this model yet.
+							No API provider pricing or availability is available for this model yet.
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
@@ -145,8 +145,8 @@ export default async function ModelPricing({
 				/>
 			) : null}
 			<ModelPricingClient
+				modelId={modelId}
 				providers={providersForDisplay}
-				subscriptionPlans={subscriptionPlans}
 				creatorOrgId={header?.organisation_id ?? null}
 				runtimeStats={runtimeStats}
 				routingHealth={routingHealth}

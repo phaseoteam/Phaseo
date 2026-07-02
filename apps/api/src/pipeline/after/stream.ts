@@ -36,6 +36,10 @@ import {
 } from "../execute/sticky-routing";
 import { applyResponsePlugins } from "@/plugins/registry";
 
+function shouldAttachRoutingDiagnostics(ctx: PipelineContext): boolean {
+	return Boolean(ctx.meta?.debug?.enabled || ctx.meta?.returnRoutingDiagnostics);
+}
+
 function getStreamTerminalPayload(frame: any): any | null {
     if (!frame || typeof frame !== "object") return null;
     if (frame.object === "response" || frame.object === "chat.completion") {
@@ -286,6 +290,12 @@ export async function handleStreamResponse(
                         ? { plugin_executions: ctx.pluginExecutions }
                         : {}),
                 };
+            }
+            if (
+                shouldAttachRoutingDiagnostics(ctx) &&
+                (next?.usage || next?.response?.usage || next?.object === "chat.completion" || next?.object === "response")
+            ) {
+                next.routing_diagnostics = (ctx as any).routingDiagnostics ?? null;
             }
             if (ctx.meta?.echoUpstreamRequest && result.mappedRequest) {
                 if (next.usage || next.response?.usage || next.object === "chat.completion" || next.object === "response") {

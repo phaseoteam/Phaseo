@@ -3,7 +3,7 @@ title: "Chat completions"
 description: "Call /chat/completions with the Python SDK."
 ---
 
-**Method**: `client.generate_text()` (stream with `client.stream_text()`).
+**Method**: `client.generate_text()` (stream parsed chunks with `client.stream_chat()`).
 
 ### Example
 ```python
@@ -19,11 +19,12 @@ chat = client.generate_text({
 
 ### Streaming
 ```python
-for line in client.stream_text({
+for chunk in client.stream_chat({
     "model": "openai/gpt-4o-mini",
     "messages": [{"role": "user", "content": "Stream a story"}],
 }):
-    print(line)
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
 ```
 
 ### Key parameters

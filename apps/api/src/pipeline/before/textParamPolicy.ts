@@ -54,7 +54,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"service_tier",
 			"prompt_cache_key",
 			"prompt_cache_retention",
-			"cache_control",
 			"provider_options",
 			"providerOptions",
 			"web_search_options",
@@ -66,6 +65,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"plugins",
 			"trace",
 			"provider",
+			"routing",
 		]),
 		keyToCanonicalParam: {
 			tools: "tools",
@@ -97,7 +97,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			service_tier: "service_tier",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
-			cache_control: "cache_control",
 			provider_options: "provider_options",
 			providerOptions: "provider_options",
 			web_search_options: "web_search_options",
@@ -132,7 +131,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"prompt",
 			"prompt_cache_key",
 			"prompt_cache_retention",
-			"cache_control",
 			"provider_options",
 			"providerOptions",
 			"modalities",
@@ -164,6 +162,7 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"echo_upstream_request",
 			"debug",
 			"provider",
+			"routing",
 			"stop",
 			"logit_bias",
 			"logprobs",
@@ -199,7 +198,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			service_tier: "service_tier",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
-			cache_control: "cache_control",
 			provider_options: "provider_options",
 			providerOptions: "provider_options",
 			web_search_options: "web_search_options",
@@ -235,14 +233,11 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			"web_search_options",
 			"webSearchOptions",
 			"plugins",
-			"prompt_cache_retention",
-			"cache_control",
-			"provider_options",
-			"providerOptions",
 			"meta",
 			"echo_upstream_request",
 			"debug",
 			"provider",
+			"routing",
 		]),
 		keyToCanonicalParam: {
 			tools: "tools",
@@ -262,7 +257,6 @@ const TEXT_ENDPOINT_REGISTRY: Record<TextEndpoint, EndpointParamRegistry> = {
 			service_tier: "service_tier",
 			web_search_options: "web_search_options",
 			webSearchOptions: "web_search_options",
-			cache_control: "cache_control",
 			prompt_cache_key: "prompt_cache_key",
 			prompt_cache_retention: "prompt_cache_retention",
 			provider_options: "provider_options",
@@ -285,7 +279,6 @@ const CAPABILITY_PARAM_ALIASES: Record<string, string[]> = {
 	provider_options: ["provider_options", "providerOptions"],
 	prompt_cache_key: ["prompt_cache_key"],
 	prompt_cache_retention: ["prompt_cache_retention"],
-	cache_control: ["cache_control"],
 	logprobs: ["logprobs", "top_logprobs"],
 	top_logprobs: ["top_logprobs", "logprobs"],
 };
@@ -320,7 +313,6 @@ export function expandCapabilityParamAliases(rootParam: string): string[] {
 
 export function isAlwaysSupportedParam(endpoint: Endpoint, param: string): boolean {
 	if (param === "modalities") return true;
-	if (param === "cache_control") return true;
 	if (endpoint === "messages" && param === "max_tokens") return true;
 	return false;
 }

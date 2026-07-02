@@ -50,7 +50,6 @@ public final class Models {
 	}
 
 	public static class AnthropicMessagesRequest {
-		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Integer max_tokens;
@@ -58,7 +57,6 @@ public final class Models {
 		public Boolean meta;
 		public Object metadata;
 		public String model;
-		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -400,7 +398,6 @@ public final class Models {
 	}
 
 	public static class ChatCompletionsRequest {
-		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Double frequency_penalty;
@@ -418,7 +415,6 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public Double presence_penalty;
 		public String prompt_cache_key;
-		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -1037,10 +1033,6 @@ public final class Models {
 		public Object status;
 	}
 
-	public static class RealtimeNotImplementedResponse {
-		public Object error;
-	}
-
 	public static class ReasoningConfig {
 		public Object effort;
 		public Boolean enabled;
@@ -1123,7 +1115,6 @@ public final class Models {
 
 	public static class ResponsesRequest {
 		public Boolean background;
-		public Object cache_control;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public Object image_config;
@@ -1138,7 +1129,6 @@ public final class Models {
 		public Boolean parallel_tool_calls;
 		public String previous_response_id;
 		public String prompt_cache_key;
-		public String prompt_cache_retention;
 		public Object provider;
 		public Object provider_options;
 		public Object reasoning;
@@ -1169,27 +1159,6 @@ public final class Models {
 		public String stop_reason;
 		public String type;
 		public Object usage;
-	}
-
-	public static class ResponsesWebSocketCreateEvent {
-		public Object input;
-		public String model;
-		public String previous_response_id;
-		public Boolean store;
-		public Object tool_choice;
-		public java.util.List<Object> tools;
-		public Object type;
-	}
-
-	public static class ResponsesWebSocketServerEvent {
-		public Object error;
-		public Object response;
-		public Integer status;
-		public String type;
-	}
-
-	public static class ResponsesWebSocketUpgradeRequiredResponse {
-		public Object error;
 	}
 
 	public static class ServerToolUsage {

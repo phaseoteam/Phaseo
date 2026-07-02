@@ -72,6 +72,8 @@ type AnnouncedInternalModelsState = {
 
 const LEGACY_MODELS_ROOT_PREFIX = "apps/web/src/data/models/";
 const CANONICAL_MODELS_ROOT_PREFIX = "packages/data/catalog/src/data/models/";
+const HUGGING_FACE_API_ORIGIN = "https://huggingface.co";
+const HUGGING_FACE_MODELS_API_PATH = "/api/models";
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -492,7 +494,7 @@ function buildOrganisationMetaMap(repoRoot: string): Record<string, Organisation
     return Object.fromEntries(Array.from(map.entries()));
 }
 
-function parseNextLink(linkHeader: string | null): string | null {
+function parseNextLink(linkHeader: string | null, currentUrl: string): string | null {
     if (!linkHeader) return null;
     for (const part of linkHeader.split(",")) {
         const section = part.trim();
@@ -500,7 +502,15 @@ function parseNextLink(linkHeader: string | null): string | null {
         const start = section.indexOf("<");
         const end = section.indexOf(">");
         if (start === -1 || end === -1 || end <= start + 1) continue;
-        return section.slice(start + 1, end);
+        const candidate = section.slice(start + 1, end).trim();
+        try {
+            const next = new URL(candidate, currentUrl);
+            if (next.origin !== HUGGING_FACE_API_ORIGIN) return null;
+            if (next.pathname !== HUGGING_FACE_MODELS_API_PATH) return null;
+            return next.toString();
+        } catch {
+            return null;
+        }
     }
     return null;
 }
@@ -540,7 +550,12 @@ async function fetchHfOrgModelIds(org: string, hfToken: string | null): Promise<
             if (modelId) discovered.add(modelId);
         }
 
-        nextUrl = parseNextLink(response.headers.get("link"));
+        const linkHeader = response.headers.get("link");
+        const parsedNextUrl = parseNextLink(linkHeader, nextUrl);
+        if (linkHeader?.includes('rel="next"') && !parsedNextUrl) {
+            console.warn(`[internal-model-check] HF org '${org}' returned an unsafe pagination link; ignoring it.`);
+        }
+        nextUrl = parsedNextUrl;
         pageCount += 1;
     }
 
@@ -1107,3 +1122,7 @@ if (isMainModule()) {
         process.exitCode = 1;
     });
 }
+
+export const testingExports = {
+    parseNextLink,
+};

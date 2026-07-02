@@ -5,7 +5,7 @@ import type { PriceCard } from "../pricing/types";
 import { ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
 import type { ProviderCandidate } from "./types";
 
-export type ServiceTierPlan = "standard" | "priority" | "batch" | "flex";
+type ServiceTierPlan = "standard" | "priority" | "batch" | "flex";
 
 type ServiceTierRoutingDiagnostics = {
     requestedTier: string | null;
@@ -62,7 +62,7 @@ function normalizeRequestedServiceTier(body: any): string | null {
     return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? null;
 }
 
-export function normalizeRequestedPlan(tier: string | null): ServiceTierPlan | null {
+function normalizeRequestedPlan(tier: string | null): ServiceTierPlan | null {
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
@@ -82,7 +82,7 @@ function isPriorityDedicatedOffer(candidate: ProviderCandidate): boolean {
     );
 }
 
-export function isTierDedicatedOffer(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
+function isTierDedicatedOffer(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
     if (requestedPlan === "priority") return isPriorityDedicatedOffer(candidate);
     return (
         candidate.offerScope === "specialized" &&
@@ -90,7 +90,7 @@ export function isTierDedicatedOffer(candidate: ProviderCandidate, requestedPlan
     );
 }
 
-export function isTierSiblingModel(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
+function isTierSiblingModel(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
     const apiModelId = String(candidate.apiModelId ?? "").trim().toLowerCase();
     const providerModelSlug = String(candidate.providerModelSlug ?? "").trim().toLowerCase();
     if (requestedPlan === "priority") {
@@ -135,7 +135,7 @@ function getHiddenTierSiblingLookupApiModelId(
     return getTierSiblingApiModelId(apiModelId, requestedPlan);
 }
 
-export function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
+function supportsRequestedTier(candidate: ProviderCandidate, requestedPlan: ServiceTierPlan): boolean {
     if (requestedPlan === "priority" || requestedPlan === "flex") {
         return (
             hasPricingPlan(candidate.pricingCard, requestedPlan) ||

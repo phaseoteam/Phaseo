@@ -9,6 +9,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getPublicAppIdsCached } from "@/lib/fetchers/apps/getAppDetails";
 import {
 	fetchPublicGatewayRequestRows,
+	type PublicGatewayRequestRow,
 } from "@/lib/fetchers/gateway/fetchPublicGatewayRequests";
 import { sumTokens } from "@/lib/utils/sumTokens";
 
@@ -74,6 +75,101 @@ function roundTokens(value: unknown): number {
 	return Math.max(0, Math.round(sumTokens(value)));
 }
 
+function readUsageNumber(
+	usage: Record<string, unknown> | null | undefined,
+	...keys: string[]
+): number {
+	if (!usage) return 0;
+	for (const key of keys) {
+		const value = usage[key];
+		if (typeof value === "number" && Number.isFinite(value)) {
+			return Math.max(0, value);
+		}
+		if (typeof value === "string" && value.trim()) {
+			const parsed = Number(value);
+			if (Number.isFinite(parsed)) return Math.max(0, parsed);
+		}
+	}
+	return 0;
+}
+
+function addFinite(
+	total: number,
+	value: number | string | null | undefined,
+): number {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) && parsed > 0 ? total + parsed : total;
+}
+
+function resolveGatewayRequestModelId(row: {
+	canonical_model_id?: string | null;
+	model_id?: string | null;
+	routed_model_id?: string | null;
+	requested_model_id?: string | null;
+}): string | null {
+	for (const value of [
+		row.canonical_model_id,
+		row.model_id,
+		row.routed_model_id,
+		row.requested_model_id,
+	]) {
+		const normalized = String(value ?? "").trim();
+		if (normalized) return normalized;
+	}
+	return null;
+}
+
+function emptyMultimodalAggregate(model_id: string): MultimodalData {
+	return {
+		model_id,
+		text_tokens: 0,
+		audio_tokens: 0,
+		video_tokens: 0,
+		cached_tokens: 0,
+		image_count: 0,
+		input_text_tokens: 0,
+		output_text_tokens: 0,
+		input_image_tokens: 0,
+		output_image_tokens: 0,
+		image_inputs: 0,
+		image_outputs: 0,
+		image_megapixels: 0,
+		input_audio_tokens: 0,
+		output_audio_tokens: 0,
+		audio_inputs: 0,
+		audio_outputs: 0,
+		audio_seconds: 0,
+		input_video_tokens: 0,
+		output_video_tokens: 0,
+		video_inputs: 0,
+		video_outputs: 0,
+		video_seconds: 0,
+		video_pixel_seconds: 0,
+		cached_read_tokens: 0,
+		cached_write_tokens: 0,
+		cached_read_text_tokens: 0,
+		cached_write_text_tokens: 0,
+		cached_read_image_tokens: 0,
+		cached_write_image_tokens: 0,
+		cached_read_audio_tokens: 0,
+		cached_write_audio_tokens: 0,
+		cached_read_video_tokens: 0,
+		cached_write_video_tokens: 0,
+		input_quad_tokens: 0,
+		output_quad_tokens: 0,
+		total_quad_tokens: 0,
+		text_quad_tokens: 0,
+		rerank_quad_tokens: 0,
+		embedding_tokens: 0,
+		embedding_quad_tokens: 0,
+		total_requests: 0,
+		total_cost_nanos: 0,
+		avg_latency_ms: null,
+		avg_generation_ms: null,
+		avg_throughput: null,
+	};
+}
+
 export type PerformanceData = {
     model_id: string;
     provider: string;
@@ -105,6 +201,7 @@ export type TimeseriesData = {
     model_id: string;
     requests: number;
     tokens: number;
+    users?: number;
     colour?: string | null;
 };
 
@@ -135,7 +232,59 @@ export type MultimodalData = {
     video_tokens: number;
     cached_tokens: number;
     image_count: number;
+    input_text_tokens?: number;
+    output_text_tokens?: number;
+    input_image_tokens?: number;
+    output_image_tokens?: number;
+    image_inputs?: number;
+    image_outputs?: number;
+    image_megapixels?: number;
+    input_audio_tokens?: number;
+    output_audio_tokens?: number;
+    audio_inputs?: number;
+    audio_outputs?: number;
+    audio_seconds?: number;
+    input_video_tokens?: number;
+    output_video_tokens?: number;
+    video_inputs?: number;
+    video_outputs?: number;
+    video_seconds?: number;
+    video_pixel_seconds?: number;
+    cached_read_tokens?: number;
+    cached_write_tokens?: number;
+    cached_read_text_tokens?: number;
+    cached_write_text_tokens?: number;
+    cached_read_image_tokens?: number;
+    cached_write_image_tokens?: number;
+    cached_read_audio_tokens?: number;
+    cached_write_audio_tokens?: number;
+    cached_read_video_tokens?: number;
+    cached_write_video_tokens?: number;
+    input_quad_tokens?: number;
+    output_quad_tokens?: number;
+    total_quad_tokens?: number;
+    text_quad_tokens?: number;
+    rerank_quad_tokens?: number;
+    embedding_tokens?: number;
+    embedding_quad_tokens?: number;
+    total_requests?: number;
+    total_cost_nanos?: number;
+    avg_latency_ms?: number | null;
+    avg_generation_ms?: number | null;
+    avg_throughput?: number | null;
 };
+
+export type ModalityTimeseriesMetric =
+	| "text_tokens"
+	| "image_inputs"
+	| "image_outputs"
+	| "audio_tokens"
+	| "video_tokens"
+	| "video_seconds"
+	| "cached_tokens"
+	| "audio_seconds"
+	| "embedding_tokens"
+	| "rerank_quad_tokens";
 
 export type TopAppData = {
     app_id: string;
@@ -268,6 +417,8 @@ function getRangeStart(timeRange: string): Date {
 			return new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
 		case "month":
 			return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+		case "year":
+			return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
 		default:
 			return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 	}
@@ -283,9 +434,129 @@ function getFetchWindowDays(timeRange: string): number {
 			return 28;
 		case "month":
 			return 30;
+		case "year":
+			return 365;
 		default:
 			return 7;
 	}
+}
+
+function startOfUtcWeek(value: string | null | undefined): string | null {
+	if (!value) return null;
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) return null;
+	const date = new Date(
+		Date.UTC(
+			parsed.getUTCFullYear(),
+			parsed.getUTCMonth(),
+			parsed.getUTCDate(),
+		),
+	);
+	const day = (date.getUTCDay() + 6) % 7;
+	date.setUTCDate(date.getUTCDate() - day);
+	return date.toISOString();
+}
+
+function extractGatewayRequestModalityMetrics(
+	row: PublicGatewayRequestRow,
+): Record<ModalityTimeseriesMetric, number> {
+	const usage = row.usage ?? {};
+	const endpoint = String(row.endpoint ?? "").trim();
+	const inputTextTokens = readUsageNumber(
+		usage,
+		"input_text_tokens",
+		"prompt_text_tokens",
+		"text_input_tokens",
+	);
+	const outputTextTokens = readUsageNumber(
+		usage,
+		"output_text_tokens",
+		"completion_text_tokens",
+		"text_output_tokens",
+	);
+	const inputTokens = readUsageNumber(usage, "input_tokens", "prompt_tokens");
+	const outputTokens = readUsageNumber(
+		usage,
+		"output_tokens",
+		"completion_tokens",
+	);
+	const totalTokens = readUsageNumber(usage, "total_tokens") || roundTokens(usage);
+	const textEndpoint =
+		endpoint === "chat.completions" ||
+		endpoint === "responses" ||
+		endpoint === "messages" ||
+		endpoint === "completions";
+	const embeddingEndpoint = endpoint === "embeddings";
+	const rerankEndpoint = endpoint === "rerank";
+	const resolvedInputText = inputTextTokens || (textEndpoint ? inputTokens : 0);
+	const resolvedOutputText = outputTextTokens || (textEndpoint ? outputTokens : 0);
+	const inputAudioTokens = readUsageNumber(
+		usage,
+		"input_audio_tokens",
+		"audio_input_tokens",
+	);
+	const outputAudioTokens = readUsageNumber(
+		usage,
+		"output_audio_tokens",
+		"audio_output_tokens",
+	);
+	const inputVideoTokens = readUsageNumber(
+		usage,
+		"input_video_tokens",
+		"video_input_tokens",
+	);
+	const outputVideoTokens = readUsageNumber(
+		usage,
+		"output_video_tokens",
+		"video_output_tokens",
+	);
+	const cachedRead = readUsageNumber(
+		usage,
+		"cached_read_tokens",
+		"cache_read_tokens",
+	);
+	const cachedWrite = readUsageNumber(
+		usage,
+		"cached_write_tokens",
+		"cache_write_tokens",
+	);
+	return {
+		text_tokens: resolvedInputText + resolvedOutputText,
+		image_inputs: readUsageNumber(
+			usage,
+			"image_inputs",
+			"input_images",
+			"images_input",
+		),
+		image_outputs: readUsageNumber(
+			usage,
+			"image_outputs",
+			"output_images",
+			"images",
+			"images_output",
+		),
+		audio_tokens: inputAudioTokens + outputAudioTokens,
+		video_tokens: inputVideoTokens + outputVideoTokens,
+		video_seconds: readUsageNumber(
+			usage,
+			"video_seconds",
+			"input_video_seconds",
+			"output_video_seconds",
+		),
+		cached_tokens: cachedRead + cachedWrite,
+		audio_seconds: readUsageNumber(
+			usage,
+			"audio_seconds",
+			"input_audio_seconds",
+			"output_audio_seconds",
+		),
+		embedding_tokens:
+			readUsageNumber(usage, "embedding_tokens") ||
+			(embeddingEndpoint ? totalTokens || inputTokens : 0),
+		rerank_quad_tokens:
+			readUsageNumber(usage, "rerank_tokens", "rerank_quad_tokens") ||
+			(rerankEndpoint ? totalTokens || inputTokens : 0),
+	};
 }
 
 function isMissingRollupRelationError(error: unknown): boolean {
@@ -424,7 +695,7 @@ async function fetchTrendingAppsFromGatewayRequests(
 										metrics.previousWeekTokens) *
 									100
 								).toFixed(2),
-						  )
+						)
 						: null,
 			};
 		})
@@ -697,21 +968,12 @@ export async function getModelNamesByIds(
     const uniqueIds = Array.from(new Set(modelIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};
 
-    const supabase = createAdminClient();
-    const { data, error } = await supabase
-        .from("data_models")
-        .select("model_id, name")
-        .in("model_id", uniqueIds);
-
-    if (error) {
-        console.error("[getModelNamesByIds] Error:", error);
-        return {};
-    }
+    const metaById = await getModelLeaderboardMetaByIds(uniqueIds);
 
     const out: Record<string, string> = {};
-    for (const row of data ?? []) {
-        if (!row?.model_id || !row?.name) continue;
-        out[row.model_id] = row.name;
+    for (const modelId of uniqueIds) {
+        const name = metaById[modelId]?.name?.trim();
+        if (name) out[modelId] = name;
     }
 
     return out;
@@ -858,6 +1120,7 @@ export type ModelLeaderboardMeta = {
     organisation_id: string | null;
     organisation_name: string | null;
     organisation_colour: string | null;
+    license: string | null;
 };
 
 /**
@@ -871,16 +1134,31 @@ export async function getModelLeaderboardMetaByIds(
     cacheLife("hours");
     cacheTag("public-model-catalogue");
     cacheTag("data:models");
+    cacheTag("data:data_api_provider_models");
     cacheTag("frontend:model-leaderboard-meta");
 
     const uniqueIds = Array.from(new Set(modelIds.filter(Boolean)));
     if (uniqueIds.length === 0) return {};
 
     const supabase = createAdminClient();
+
+    const toMeta = (row: any): ModelLeaderboardMeta | null => {
+        if (!row?.model_id) return null;
+        const organisation = row.organisation ?? null;
+        return {
+            model_id: row.model_id,
+            name: row.name ?? null,
+            organisation_id: row.organisation_id ?? null,
+            organisation_name: organisation?.name ?? null,
+            organisation_colour: organisation?.colour ?? null,
+            license: row.license ?? null,
+        };
+    };
+
     const { data, error } = await supabase
         .from("data_models")
         .select(
-            "model_id, name, organisation_id, organisation:data_organisations!data_models_organisation_id_fkey(name, colour)"
+            "model_id, name, organisation_id, license, organisation:data_organisations!data_models_organisation_id_fkey(name, colour)"
         )
         .in("model_id", uniqueIds);
 
@@ -891,15 +1169,91 @@ export async function getModelLeaderboardMetaByIds(
 
     const out: Record<string, ModelLeaderboardMeta> = {};
     for (const row of data ?? []) {
-        if (!row?.model_id) continue;
-        const organisation = (row as any).organisation ?? null;
-        out[row.model_id] = {
-            model_id: row.model_id,
-            name: row.name ?? null,
-            organisation_id: row.organisation_id ?? null,
-            organisation_name: organisation?.name ?? null,
-            organisation_colour: organisation?.colour ?? null,
-        };
+        const meta = toMeta(row);
+        if (meta) out[meta.model_id] = meta;
+    }
+
+    const unresolvedIds = uniqueIds.filter((modelId) => !out[modelId]);
+    if (!unresolvedIds.length) return out;
+
+    const unresolvedSet = new Set(unresolvedIds);
+    const [
+        providerApiIdRes,
+        apiModelIdRes,
+        providerSlugRes,
+    ] = await Promise.all([
+        supabase
+            .from("data_api_provider_models")
+            .select("provider_api_model_id, api_model_id, provider_model_slug, model_id")
+            .in("provider_api_model_id", unresolvedIds),
+        supabase
+            .from("data_api_provider_models")
+            .select("provider_api_model_id, api_model_id, provider_model_slug, model_id")
+            .in("api_model_id", unresolvedIds),
+        supabase
+            .from("data_api_provider_models")
+            .select("provider_api_model_id, api_model_id, provider_model_slug, model_id")
+            .in("provider_model_slug", unresolvedIds),
+    ]);
+
+    for (const result of [providerApiIdRes, apiModelIdRes, providerSlugRes]) {
+        if (result.error) {
+            console.error("[getModelLeaderboardMetaByIds] Alias lookup error:", result.error);
+        }
+    }
+
+    const aliasToCanonical = new Map<string, string>();
+    for (const row of [
+        ...(providerApiIdRes.data ?? []),
+        ...(apiModelIdRes.data ?? []),
+        ...(providerSlugRes.data ?? []),
+    ]) {
+        const canonicalId = String(row?.model_id ?? "").trim();
+        if (!canonicalId) continue;
+        for (const alias of [
+            row?.provider_api_model_id,
+            row?.api_model_id,
+            row?.provider_model_slug,
+        ]) {
+            const normalizedAlias = String(alias ?? "").trim();
+            if (unresolvedSet.has(normalizedAlias) && !aliasToCanonical.has(normalizedAlias)) {
+                aliasToCanonical.set(normalizedAlias, canonicalId);
+            }
+        }
+    }
+
+    const canonicalIds = Array.from(new Set(aliasToCanonical.values()));
+    if (!canonicalIds.length) return out;
+
+    const { data: canonicalData, error: canonicalError } = await supabase
+        .from("data_models")
+        .select(
+            "model_id, name, organisation_id, license, organisation:data_organisations!data_models_organisation_id_fkey(name, colour)"
+        )
+        .in("model_id", canonicalIds);
+
+    if (canonicalError) {
+        console.error("[getModelLeaderboardMetaByIds] Canonical lookup error:", canonicalError);
+        return out;
+    }
+
+    const canonicalMetaById = new Map<string, ModelLeaderboardMeta>();
+    for (const row of canonicalData ?? []) {
+        const meta = toMeta(row);
+        if (meta) canonicalMetaById.set(meta.model_id, meta);
+    }
+
+    for (const [alias, canonicalId] of aliasToCanonical.entries()) {
+        const canonicalMeta = canonicalMetaById.get(canonicalId);
+        out[alias] =
+            canonicalMeta ?? {
+                model_id: canonicalId,
+                name: null,
+                organisation_id: null,
+                organisation_name: null,
+                organisation_colour: null,
+                license: null,
+            };
     }
 
     return out;
@@ -978,6 +1332,299 @@ export async function getGeographicDistribution(
 /**
  * Get multimodal breakdown
  */
+async function getMultimodalBreakdownFromGatewayRequests(
+	timeRange: string,
+): Promise<MultimodalData[]> {
+	const rows = await fetchPublicGatewayRequestRows(getFetchWindowDays(timeRange), {
+		successOnly: true,
+	});
+	const aggregate = new Map<
+		string,
+		MultimodalData & {
+			latency_sum_ms: number;
+			latency_samples: number;
+			generation_sum_ms: number;
+			generation_samples: number;
+			throughput_sum: number;
+			throughput_samples: number;
+		}
+	>();
+
+	for (const row of rows) {
+		const modelId = resolveGatewayRequestModelId(row);
+		if (!modelId) continue;
+
+		const usage = row.usage ?? {};
+		const endpoint = String(row.endpoint ?? "").trim();
+		const current =
+			aggregate.get(modelId) ??
+			({
+				...emptyMultimodalAggregate(modelId),
+				latency_sum_ms: 0,
+				latency_samples: 0,
+				generation_sum_ms: 0,
+				generation_samples: 0,
+				throughput_sum: 0,
+				throughput_samples: 0,
+			});
+
+		const inputTextTokens = readUsageNumber(
+			usage,
+			"input_text_tokens",
+			"prompt_text_tokens",
+			"text_input_tokens",
+		);
+		const outputTextTokens = readUsageNumber(
+			usage,
+			"output_text_tokens",
+			"completion_text_tokens",
+			"text_output_tokens",
+		);
+		const inputTokens = readUsageNumber(usage, "input_tokens", "prompt_tokens");
+		const outputTokens = readUsageNumber(
+			usage,
+			"output_tokens",
+			"completion_tokens",
+		);
+		const totalTokens = readUsageNumber(usage, "total_tokens") || roundTokens(usage);
+		const textEndpoint =
+			endpoint === "chat.completions" ||
+			endpoint === "responses" ||
+			endpoint === "messages" ||
+			endpoint === "completions";
+		const embeddingEndpoint = endpoint === "embeddings";
+		const rerankEndpoint = endpoint === "rerank";
+
+		const resolvedInputText = inputTextTokens || (textEndpoint ? inputTokens : 0);
+		const resolvedOutputText = outputTextTokens || (textEndpoint ? outputTokens : 0);
+		current.input_text_tokens =
+			Number(current.input_text_tokens ?? 0) + resolvedInputText;
+		current.output_text_tokens =
+			Number(current.output_text_tokens ?? 0) + resolvedOutputText;
+		current.text_tokens =
+			Number(current.text_tokens ?? 0) + resolvedInputText + resolvedOutputText;
+
+		const inputImageTokens = readUsageNumber(
+			usage,
+			"input_image_tokens",
+			"image_input_tokens",
+		);
+		const outputImageTokens = readUsageNumber(
+			usage,
+			"output_image_tokens",
+			"image_output_tokens",
+		);
+		const imageInputs = readUsageNumber(
+			usage,
+			"image_inputs",
+			"input_images",
+			"images_input",
+		);
+		const imageOutputs = readUsageNumber(
+			usage,
+			"image_outputs",
+			"output_images",
+			"images",
+			"images_output",
+		);
+		current.input_image_tokens =
+			Number(current.input_image_tokens ?? 0) + inputImageTokens;
+		current.output_image_tokens =
+			Number(current.output_image_tokens ?? 0) + outputImageTokens;
+		current.image_inputs = Number(current.image_inputs ?? 0) + imageInputs;
+		current.image_outputs = Number(current.image_outputs ?? 0) + imageOutputs;
+		current.image_count =
+			Number(current.image_count ?? 0) + imageInputs + imageOutputs;
+		current.image_megapixels =
+			Number(current.image_megapixels ?? 0) +
+			readUsageNumber(usage, "image_megapixels", "output_image_megapixels");
+
+		const inputAudioTokens = readUsageNumber(
+			usage,
+			"input_audio_tokens",
+			"audio_input_tokens",
+		);
+		const outputAudioTokens = readUsageNumber(
+			usage,
+			"output_audio_tokens",
+			"audio_output_tokens",
+		);
+		current.input_audio_tokens =
+			Number(current.input_audio_tokens ?? 0) + inputAudioTokens;
+		current.output_audio_tokens =
+			Number(current.output_audio_tokens ?? 0) + outputAudioTokens;
+		current.audio_tokens =
+			Number(current.audio_tokens ?? 0) + inputAudioTokens + outputAudioTokens;
+		current.audio_inputs =
+			Number(current.audio_inputs ?? 0) +
+			readUsageNumber(usage, "audio_inputs", "input_audio_count");
+		current.audio_outputs =
+			Number(current.audio_outputs ?? 0) +
+			readUsageNumber(usage, "audio_outputs", "output_audio_count");
+		current.audio_seconds =
+			Number(current.audio_seconds ?? 0) +
+			readUsageNumber(
+				usage,
+				"audio_seconds",
+				"input_audio_seconds",
+				"output_audio_seconds",
+			);
+
+		const inputVideoTokens = readUsageNumber(
+			usage,
+			"input_video_tokens",
+			"video_input_tokens",
+		);
+		const outputVideoTokens = readUsageNumber(
+			usage,
+			"output_video_tokens",
+			"video_output_tokens",
+		);
+		current.input_video_tokens =
+			Number(current.input_video_tokens ?? 0) + inputVideoTokens;
+		current.output_video_tokens =
+			Number(current.output_video_tokens ?? 0) + outputVideoTokens;
+		current.video_tokens =
+			Number(current.video_tokens ?? 0) + inputVideoTokens + outputVideoTokens;
+		current.video_inputs =
+			Number(current.video_inputs ?? 0) +
+			readUsageNumber(usage, "video_inputs", "input_video_count");
+		current.video_outputs =
+			Number(current.video_outputs ?? 0) +
+			readUsageNumber(usage, "video_outputs", "output_video_count");
+		current.video_seconds =
+			Number(current.video_seconds ?? 0) +
+			readUsageNumber(
+				usage,
+				"video_seconds",
+				"input_video_seconds",
+				"output_video_seconds",
+			);
+		current.video_pixel_seconds =
+			Number(current.video_pixel_seconds ?? 0) +
+			readUsageNumber(usage, "video_pixel_seconds");
+
+		const cachedRead = readUsageNumber(
+			usage,
+			"cached_read_tokens",
+			"cache_read_tokens",
+		);
+		const cachedWrite = readUsageNumber(
+			usage,
+			"cached_write_tokens",
+			"cache_write_tokens",
+		);
+		current.cached_read_tokens = Number(current.cached_read_tokens ?? 0) + cachedRead;
+		current.cached_write_tokens =
+			Number(current.cached_write_tokens ?? 0) + cachedWrite;
+		current.cached_tokens =
+			Number(current.cached_tokens ?? 0) + cachedRead + cachedWrite;
+
+		const embeddingTokens =
+			readUsageNumber(usage, "embedding_tokens") ||
+			(embeddingEndpoint ? totalTokens || inputTokens : 0);
+		const rerankTokens =
+			readUsageNumber(usage, "rerank_tokens") ||
+			(rerankEndpoint ? totalTokens || inputTokens : 0);
+		current.embedding_tokens =
+			Number(current.embedding_tokens ?? 0) + embeddingTokens;
+		current.embedding_quad_tokens =
+			Number(current.embedding_quad_tokens ?? 0) +
+			readUsageNumber(usage, "embedding_quad_tokens");
+		current.rerank_quad_tokens =
+			Number(current.rerank_quad_tokens ?? 0) + rerankTokens;
+		current.input_quad_tokens =
+			Number(current.input_quad_tokens ?? 0) + (inputTokens || resolvedInputText);
+		current.output_quad_tokens =
+			Number(current.output_quad_tokens ?? 0) + (outputTokens || resolvedOutputText);
+		current.total_quad_tokens =
+			Number(current.total_quad_tokens ?? 0) + totalTokens;
+		current.text_quad_tokens =
+			Number(current.text_quad_tokens ?? 0) + resolvedInputText + resolvedOutputText;
+		current.total_requests = Number(current.total_requests ?? 0) + 1;
+		current.total_cost_nanos = addFinite(
+			Number(current.total_cost_nanos ?? 0),
+			row.cost_nanos,
+		);
+
+		const latency = Number(row.latency_ms);
+		if (Number.isFinite(latency) && latency > 0) {
+			current.latency_sum_ms += latency;
+			current.latency_samples += 1;
+		}
+		const generation = Number(row.generation_ms);
+		if (Number.isFinite(generation) && generation > 0) {
+			current.generation_sum_ms += generation;
+			current.generation_samples += 1;
+		}
+		const throughput = Number(row.throughput);
+		if (Number.isFinite(throughput) && throughput > 0) {
+			current.throughput_sum += throughput;
+			current.throughput_samples += 1;
+		}
+
+		aggregate.set(modelId, current);
+	}
+
+	return Array.from(aggregate.values())
+		.map((row) => {
+			const {
+				latency_sum_ms,
+				latency_samples,
+				generation_sum_ms,
+				generation_samples,
+				throughput_sum,
+				throughput_samples,
+				...publicRow
+			} = row;
+			return {
+				...publicRow,
+				avg_latency_ms:
+					latency_samples > 0
+						? Number((latency_sum_ms / latency_samples).toFixed(2))
+						: null,
+				avg_generation_ms:
+					generation_samples > 0
+						? Number((generation_sum_ms / generation_samples).toFixed(2))
+						: null,
+				avg_throughput:
+					throughput_samples > 0
+						? Number((throughput_sum / throughput_samples).toFixed(2))
+						: null,
+			};
+		})
+		.filter((row) => {
+			const total =
+				Number(row.text_tokens ?? 0) +
+				Number(row.image_count ?? 0) +
+				Number(row.audio_tokens ?? 0) +
+				Number(row.video_tokens ?? 0) +
+				(Number(row.embedding_tokens ?? 0) ||
+					Number(row.embedding_quad_tokens ?? 0)) +
+				Number(row.rerank_quad_tokens ?? 0);
+			return total > 0;
+		})
+		.sort((left, right) => {
+			const leftTotal =
+				Number(left.text_tokens ?? 0) +
+				Number(left.image_count ?? 0) +
+				Number(left.audio_tokens ?? 0) +
+				Number(left.video_tokens ?? 0) +
+				(Number(left.embedding_tokens ?? 0) ||
+					Number(left.embedding_quad_tokens ?? 0)) +
+				Number(left.rerank_quad_tokens ?? 0);
+			const rightTotal =
+				Number(right.text_tokens ?? 0) +
+				Number(right.image_count ?? 0) +
+				Number(right.audio_tokens ?? 0) +
+				Number(right.video_tokens ?? 0) +
+				(Number(right.embedding_tokens ?? 0) ||
+					Number(right.embedding_quad_tokens ?? 0)) +
+				Number(right.rerank_quad_tokens ?? 0);
+			return rightTotal - leftTotal;
+		});
+}
+
 export async function getMultimodalBreakdown(
     timeRange: string = "week"
 ): Promise<{ data: MultimodalData[] }> {
@@ -991,7 +1638,65 @@ export async function getMultimodalBreakdown(
         p_time_range: timeRange,
     });
 
+    if (error) {
+		console.error("[getMultimodalBreakdown] Error:", error);
+		return { data: [] };
+	}
+
     return { data: (data ?? []) as MultimodalData[] };
+}
+
+export async function getModalityWeeklyTimeseries(
+	metric: ModalityTimeseriesMetric,
+	timeRange: string = "year",
+): Promise<{ data: TimeseriesData[] }> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("public-multimodal");
+	cacheTag("public-timeseries");
+	cacheTag("frontend:rankings-modality-timeseries");
+	cacheTag("data:gateway_model_usage_daily");
+
+	const supabase = createAdminClient();
+	const { data, error } = await supabase.rpc("get_public_modality_usage_timeseries", {
+		p_metric: metric,
+		p_time_range: timeRange,
+		p_top_n: 20,
+	});
+
+	if (error) {
+		console.error("[getModalityWeeklyTimeseries] Error:", error);
+	}
+
+	return { data: (data ?? []) as TimeseriesData[] };
+}
+
+export async function getUniqueUserTimeseriesData(
+	timeRange: string = "year",
+	bucketSize: string = "week",
+	topN: number = 10,
+): Promise<{ data: TimeseriesData[] }> {
+	"use cache";
+
+	cacheLife("hours");
+	cacheTag("public-timeseries");
+	cacheTag("public-unique-users");
+	cacheTag("frontend:rankings-unique-users");
+
+	const supabase = createAdminClient();
+	const { data, error } = await supabase.rpc("get_public_unique_user_timeseries", {
+		p_time_range: timeRange,
+		p_bucket_size: bucketSize,
+		p_top_n: topN,
+	});
+
+	if (error) {
+		console.error("[getUniqueUserTimeseriesData] Error:", error);
+		return { data: [] };
+	}
+
+	return { data: (data ?? []) as TimeseriesData[] };
 }
 
 /**

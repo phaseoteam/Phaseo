@@ -60,11 +60,11 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 					return (
 						<Card
 							key={`${highlight.benchmarkId}`}
-							className="flex min-h-0 flex-col justify-center rounded-lg border border-gray-200 border-b-2 border-b-gray-300 bg-white p-3 dark:border-gray-700 dark:border-b-gray-600"
+							className="flex min-h-0 flex-col justify-center rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-xs"
 							style={{ minHeight: 0 }}
 						>
 							<div className="flex flex-col gap-1">
-								<div className="truncate text-xs font-semibold leading-tight text-zinc-800 dark:text-zinc-100">
+								<div className="truncate text-xs font-semibold leading-tight text-card-foreground">
 									<Link
 										href={`/benchmarks/${highlight.benchmarkId}`}
 									>
@@ -74,8 +74,10 @@ export function ModelBenchmarksGrid({ highlights }: ModelBenchmarksGridProps) {
 										</span>
 									</Link>
 								</div>
-								<div className="flex items-center justify-between font-mono text-base">
-									<span>{highlight.scoreDisplay}</span>
+								<div className="flex items-center justify-between font-mono text-base text-foreground">
+									<span className="truncate text-sm text-muted-foreground">
+										{highlight.scoreDisplay}
+									</span>
 									<span
 										className={`ml-2 min-w-12 rounded px-2 py-0.5 text-center text-xs font-bold ${rankClass}`}
 										title={

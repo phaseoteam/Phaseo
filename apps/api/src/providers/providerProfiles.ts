@@ -44,12 +44,6 @@ export type ProviderProfile = {
 
 function openAIReasoningFallback(model: string): TextReasoningEffort[] {
 	const m = model.toLowerCase();
-	if (m.includes("gpt-5.6-sol")) {
-		return ["none", "low", "medium", "high", "xhigh", "max"];
-	}
-	if (m.includes("gpt-5.6")) {
-		return ["none", "low", "medium", "high", "xhigh"];
-	}
 	if (m.includes("gpt-5.1-codex-max")) {
 		return ["none", "minimal", "low", "medium", "high", "xhigh"];
 	}
@@ -79,7 +73,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			paramPolicy: {
 				supportedParams: [
 					"provider_options.openai.context_management",
-					"service_tier",
 				],
 			},
 			normalize: {
@@ -93,7 +86,6 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "anthropic",
-		aliases: ["anthropic-us"],
 		text: {
 			paramPolicy: {
 				supportedParams: ["service_tier"],
@@ -101,34 +93,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 			normalize: {
 				maxTemperature: 1,
 				defaultMaxTokensWhenMissing: 4096,
-				reasoningEffortFallback: ["low", "medium", "high", "xhigh", "max"],
-			},
-		},
-	},
-	{
-		id: "google-ai-studio",
-		aliases: ["google", "google-vertex", "google-vertex-eu"],
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
-			},
-		},
-	},
-	{
-		id: "moonshotai",
-		aliases: ["moonshot-ai", "moonshotai-turbo", "moonshot-ai-turbo"],
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
-			},
-		},
-	},
-	{
-		id: "x-ai",
-		aliases: ["xai"],
-		text: {
-			paramPolicy: {
-				supportedParams: ["service_tier"],
+				reasoningEffortFallback: ["low", "medium", "high", "max"],
 			},
 		},
 	},
@@ -151,29 +116,10 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		},
 	},
 	{
-		id: "baseten",
-		text: {
-			paramPolicy: {
-				supportedParams: [
-					"max_tokens",
-					"temperature",
-					"top_p",
-					"stop",
-				],
-			},
-		},
-	},
-	{
 		id: "deepinfra",
 		text: {
 			paramPolicy: {
-				supportedParams: [
-					"service_tier",
-					"max_tokens",
-					"temperature",
-					"top_p",
-					"stop",
-				],
+				supportedParams: ["service_tier"],
 			},
 		},
 	},
@@ -191,7 +137,11 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
-		id: "longcat",
+		id: "featherless",
+		textOnly: true,
+	},
+	{
+		id: "mancer",
 		textOnly: true,
 	},
 	{
@@ -199,7 +149,35 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		textOnly: true,
 	},
 	{
+		id: "avian",
+		textOnly: true,
+	},
+	{
+		id: "baidu",
+		textOnly: true,
+	},
+	{
+		id: "inference-net",
+		textOnly: true,
+	},
+	{
+		id: "perceptron",
+		textOnly: true,
+	},
+	{
+		id: "reka",
+		textOnly: true,
+	},
+	{
+		id: "streamlake",
+		textOnly: true,
+	},
+	{
 		id: "thinking-machines",
+		textOnly: true,
+	},
+	{
+		id: "upstage",
 		textOnly: true,
 	},
 ];

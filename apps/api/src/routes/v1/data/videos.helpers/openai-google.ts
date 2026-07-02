@@ -139,8 +139,7 @@ export async function proxyOpenAIVideoRequest(
 ) {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const config = resolveOpenAICompatConfig(providerId);
-	const envKeys = Array.isArray(config.apiKeyEnv) ? config.apiKeyEnv : [config.apiKeyEnv ?? "OPENAI_API_KEY"];
-	let key = envKeys.map((envKey) => bindings[envKey]).find((value) => typeof value === "string" && value.length > 0);
+	let key = bindings[config.apiKeyEnv ?? "OPENAI_API_KEY"];
 	const videoMeta = options?.videoMeta;
 	if (videoMeta?.keySource === "byok" && videoMeta.byokKeyId) {
 		const byok = await loadByokKey({
