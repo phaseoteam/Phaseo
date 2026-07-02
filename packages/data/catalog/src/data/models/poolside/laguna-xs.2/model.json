@@ -2,14 +2,14 @@
   "model_id": "poolside/laguna-xs.2",
   "organisation_id": "poolside",
   "name": "Laguna XS.2",
-  "status": "Available",
+  "status": "Deprecated",
   "previous_model_id": null,
-  "description": "Laguna XS.2 is the second-generation model in the XS size class from [Poolside](https://poolside.ai), their efficient coding agent series. It accepts text inputs and produces text outputs.",
+  "description": "Laguna XS.2 is the second-generation model in the XS size class from [Poolside](https://poolside.ai), their efficient coding agent series. It accepts text inputs and produces text outputs, and was superseded by Laguna XS 2.1.",
   "announced_date": null,
-  "release_date": null,
-  "deprecation_date": null,
-  "retirement_date": null,
-  "license": "Proprietary",
+  "release_date": "2026-04-28T00:00:00",
+  "deprecation_date": "2026-07-02T00:00:00",
+  "retirement_date": "2026-07-09T00:00:00",
+  "license": "Apache 2.0",
   "input_types": "text",
   "output_types": "text",
   "api_model_id": "poolside/laguna-xs.2",
@@ -21,13 +21,54 @@
     {
       "platform": "documentation",
       "url": "https://docs.poolside.ai/release-notes/laguna-xs2"
+    },
+    {
+      "platform": "weights",
+      "url": "https://huggingface.co/poolside/Laguna-XS.2"
     }
   ],
   "details": [
     {
       "name": "input_context_length",
       "value": 262144
+    },
+    {
+      "name": "output_context_length",
+      "value": 32768
     }
   ],
-  "benchmarks": []
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 69.9,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Verified mean pass@1",
+      "source_link": "https://huggingface.co/poolside/Laguna-XS.2#benchmark-results",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 57.7,
+      "is_self_reported": true,
+      "other_info": "mean pass@1",
+      "source_link": "https://huggingface.co/poolside/Laguna-XS.2#benchmark-results",
+      "rank": null
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 46.3,
+      "is_self_reported": true,
+      "other_info": "public dataset mean pass@1",
+      "source_link": "https://huggingface.co/poolside/Laguna-XS.2#benchmark-results",
+      "rank": null
+    },
+    {
+      "benchmark_id": "terminal-bench-2.0",
+      "score": 35.7,
+      "is_self_reported": true,
+      "other_info": "mean pass@1",
+      "source_link": "https://huggingface.co/poolside/Laguna-XS.2#benchmark-results",
+      "rank": null
+    }
+  ]
 }

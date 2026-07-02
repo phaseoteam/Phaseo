@@ -35,6 +35,7 @@
     "openai",
     "perplexity",
     "poe",
+    "poolside",
     "prime-intellect",
     "qwen",
     "relace",
@@ -814,6 +815,11 @@
       "openai/whisper-1",
       "openai/whisper-3",
       "openai/whisper-3-turbo"
+    ],
+    "poolside": [
+      "poolside/laguna-m.1",
+      "poolside/laguna-xs-2.1",
+      "poolside/laguna-xs.2"
     ],
     "prime-intellect": [
       "prime-intellect/intellect-3",
@@ -1755,6 +1761,7 @@
     "parasail",
     "perplexity",
     "phala",
+    "poolside",
     "sambanova",
     "siliconflow",
     "sourceful",
@@ -2548,6 +2555,9 @@
     "openai:text.generate:openai-o4-mini",
     "openai:video.generate:openai-sora-2",
     "openai:video.generate:openai-sora-2-pro",
+    "poolside:text.generate:poolside-laguna-m.1-free",
+    "poolside:text.generate:poolside-laguna-xs-2.1-free",
+    "poolside:text.generate:poolside-laguna-xs.2-free",
     "suno:music.generate:suno-suno-v4",
     "suno:music.generate:suno-suno-v4.5",
     "suno:music.generate:suno-suno-v4.5-",
