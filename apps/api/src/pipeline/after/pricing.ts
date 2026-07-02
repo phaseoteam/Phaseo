@@ -13,24 +13,24 @@ import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 
-function normalizeRequestedServiceTier(body: any, usage: any): string {
-    const tiers = [
-        usage?.service_tier,
-        usage?.serviceTier,
-        readRequestedServiceTier(body).value,
-    ]
-        .filter((value): value is string => typeof value === "string")
-        .map((value) => normalizeTextServiceTier(value))
-        .filter(Boolean);
+function normalizeObservedServiceTier(value: unknown): string {
+    if (typeof value === "string" && value.trim().toLowerCase() === "default") {
+        return "standard";
+    }
+    return normalizeTextServiceTier(value) ?? "";
+}
 
-    const nonStandardTier = tiers.find((tier) => tier === "priority" || tier === "batch" || tier === "flex");
-    if (nonStandardTier) return nonStandardTier;
+function normalizePricingServiceTier(body: any, usage: any): string {
+    const observedTier =
+        normalizeObservedServiceTier(usage?.service_tier) ||
+        normalizeObservedServiceTier(usage?.serviceTier);
+    if (observedTier) return observedTier;
 
-    return tiers.find((tier) => tier === "standard") ?? "";
+    return normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
 }
 
 function derivePricingPlan(body: any, usage: any): string {
-    const tier = normalizeRequestedServiceTier(body, usage);
+    const tier = normalizePricingServiceTier(body, usage);
 
     if (tier === "priority") return "priority";
     if (tier === "batch") return "batch";
@@ -46,7 +46,7 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         pricing_plan: pricingPlan,
     };
 
-    const serviceTier = normalizeRequestedServiceTier(body, usage);
+    const serviceTier = normalizePricingServiceTier(body, usage);
     if (serviceTier) {
         options.service_tier = serviceTier;
         options.serviceTier = serviceTier;

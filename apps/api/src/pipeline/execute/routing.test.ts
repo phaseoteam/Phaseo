@@ -724,7 +724,7 @@ describe("routeProviders testing mode", () => {
 				body: {
 					routing: {
 						max_price: {
-							prompt: 0.00002,
+							prompt: 20,
 						},
 					},
 				},

@@ -59,6 +59,7 @@ const PRESETS: Record<Priority, RoutingPreset> = {
 
 const TEXT_ENDPOINTS = new Set<Endpoint>(["responses", "chat.completions", "messages"]);
 const TEXT_PRICE_METERS = ["input_text_tokens", "output_text_tokens"];
+const TOKEN_PRICE_CAP_UNIT_SIZE = 1_000_000;
 
 function normalizeRoutingMode(value?: string | null): RoutingMode {
     const mode = (value ?? "").toLowerCase();
@@ -369,6 +370,13 @@ function priceCapMetersForField(field: string): string[] {
 	return [];
 }
 
+function meterPriceForCapComparison(meter: string, pricePerMeterUnit: number): number {
+	if (meter.endsWith("_tokens")) {
+		return pricePerMeterUnit * TOKEN_PRICE_CAP_UNIT_SIZE;
+	}
+	return pricePerMeterUnit;
+}
+
 function candidateMatchesPriceCaps(candidate: ProviderCandidate, maxPrice: Record<string, any> | null): boolean {
 	if (!maxPrice || !candidate.pricingCard) return maxPrice == null;
 	const prices = extractMeterPrices(candidate.pricingCard);
@@ -378,7 +386,12 @@ function candidateMatchesPriceCaps(candidate: ProviderCandidate, maxPrice: Recor
 		const meters = priceCapMetersForField(field);
 		if (meters.length === 0) continue;
 		const matchingPrices = meters
-			.map((meter) => prices.get(meter))
+			.map((meter) => {
+				const price = prices.get(meter);
+				return typeof price === "number" && Number.isFinite(price)
+					? meterPriceForCapComparison(meter, price)
+					: price;
+			})
 			.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 		if (matchingPrices.length === 0) {
 			return false;
