@@ -21,10 +21,6 @@
     {
       "platform": "weights",
       "url": "https://huggingface.co/poolside/Laguna-XS-2.1"
-    },
-    {
-      "platform": "documentation",
-      "url": "https://openrouter.ai/poolside/laguna-xs-2.1"
     }
   ],
   "details": [
