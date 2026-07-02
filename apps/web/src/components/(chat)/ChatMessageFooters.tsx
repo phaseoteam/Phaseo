@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -22,6 +23,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Logo } from "@/components/Logo";
 
 function formatMetric(
 	value: number | string | null | undefined,
@@ -51,6 +53,7 @@ export function UserMessageFooter({
 						variant="ghost"
 						className="h-7 w-7"
 						onClick={onCopy}
+						aria-label={copied ? "Message copied" : "Copy message"}
 					>
 						{copied ? (
 							<Check className="h-3.5 w-3.5" />
@@ -70,6 +73,7 @@ export function UserMessageFooter({
 						variant="ghost"
 						className="h-7 w-7"
 						onClick={onEdit}
+						aria-label="Edit message"
 					>
 						<Pencil className="h-3.5 w-3.5" />
 					</Button>
@@ -88,6 +92,7 @@ type AssistantMessageFooterProps = {
 	isPendingAssistant: boolean;
 	latencyDisplay: number | null;
 	metadataOpen: boolean;
+	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
 	onBranch: () => void;
 	onCopy: () => void;
@@ -107,6 +112,7 @@ export function AssistantMessageFooter({
 	isPendingAssistant,
 	latencyDisplay,
 	metadataOpen,
+	metadataProviderId,
 	metadataProviderLabel,
 	onBranch,
 	onCopy,
@@ -117,6 +123,12 @@ export function AssistantMessageFooter({
 	totalTokens,
 	variantCount,
 }: AssistantMessageFooterProps) {
+	const providerHref = metadataProviderId && metadataProviderId !== "auto"
+		? `/api-providers/${encodeURIComponent(metadataProviderId)}`
+		: null;
+	const providerLabel =
+		metadataProviderLabel ?? metadataProviderId ?? "-";
+
 	return (
 		<MessageFooter className="mt-0 flex flex-wrap items-center gap-2 px-0 text-xs text-muted-foreground">
 			{isPendingAssistant ? null : (
@@ -128,6 +140,11 @@ export function AssistantMessageFooter({
 								variant="ghost"
 								className="h-7 w-7"
 								onClick={onCopy}
+								aria-label={
+									assistantCopied
+										? "Assistant response copied"
+										: "Copy assistant response"
+								}
 							>
 								{assistantCopied ? (
 									<Check className="h-3.5 w-3.5" />
@@ -147,6 +164,7 @@ export function AssistantMessageFooter({
 								variant="ghost"
 								className="h-7 w-7"
 								onClick={onRetry}
+								aria-label="Retry assistant response"
 							>
 								<RotateCcw className="h-3.5 w-3.5" />
 							</Button>
@@ -160,6 +178,7 @@ export function AssistantMessageFooter({
 								variant="ghost"
 								className="h-7 w-7"
 								onClick={onBranch}
+								aria-label="Branch from assistant response"
 							>
 								<GitBranch className="h-3.5 w-3.5" />
 							</Button>
@@ -177,6 +196,7 @@ export function AssistantMessageFooter({
 										size="icon"
 										variant="ghost"
 										className="h-7 w-7"
+										aria-label="Show response metadata"
 									>
 										<Info className="h-3.5 w-3.5" />
 									</Button>
@@ -191,9 +211,27 @@ export function AssistantMessageFooter({
 										<span className="text-muted-foreground">
 											Provider
 										</span>
-										<span className="truncate pl-3 text-right">
-											{metadataProviderLabel ?? "-"}
-										</span>
+										{providerHref && metadataProviderId ? (
+											<Link
+												href={providerHref}
+												className="inline-flex min-w-0 items-center gap-1.5 pl-3 text-right font-medium text-foreground transition-colors hover:text-primary"
+											>
+												<Logo
+													id={metadataProviderId}
+													alt={providerLabel}
+													width={16}
+													height={16}
+													className="shrink-0 rounded-none"
+												/>
+												<span className="truncate">
+													{providerLabel}
+												</span>
+											</Link>
+										) : (
+											<span className="truncate pl-3 text-right">
+												{providerLabel}
+											</span>
+										)}
 									</div>
 									<div className="flex items-center justify-between">
 										<span className="text-muted-foreground">
@@ -244,6 +282,7 @@ export function AssistantMessageFooter({
 							onSelectVariant(Math.max(0, activeVariantIndex - 1))
 						}
 						disabled={activeVariantIndex <= 0}
+						aria-label="Previous response variant"
 					>
 						<ChevronLeft className="h-4 w-4" />
 					</Button>
@@ -259,6 +298,7 @@ export function AssistantMessageFooter({
 							)
 						}
 						disabled={activeVariantIndex >= variantCount - 1}
+						aria-label="Next response variant"
 					>
 						<ChevronRight className="h-4 w-4" />
 					</Button>

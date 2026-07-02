@@ -7,13 +7,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import type { TopAppData } from "@/lib/fetchers/rankings/getRankingsData";
 import { cn } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 
 type AppRange = "today" | "week" | "month";
@@ -62,17 +61,12 @@ export function AppsUsageList({
 		[dataByRange, data, defaultRange]
 	);
 
-	const availableRanges = useMemo(
-		() =>
-			RANGE_OPTIONS.filter(
-				(option) => resolvedDataByRange[option.key]?.length
-			),
-		[resolvedDataByRange]
-	);
-
 	const [range, setRange] = useState<AppRange>(() => {
 		if (resolvedDataByRange[defaultRange]?.length) return defaultRange;
-		return availableRanges[0]?.key ?? defaultRange;
+		return (
+			RANGE_OPTIONS.find((option) => resolvedDataByRange[option.key]?.length)
+				?.key ?? defaultRange
+		);
 	});
 	const [showAll, setShowAll] = useState(false);
 
@@ -82,29 +76,24 @@ export function AppsUsageList({
 			if (range !== defaultRange) setRange(defaultRange);
 			return;
 		}
-		const nextRange = availableRanges[0]?.key ?? defaultRange;
+		const nextRange =
+			RANGE_OPTIONS.find((option) => resolvedDataByRange[option.key]?.length)
+				?.key ?? defaultRange;
 		if (range !== nextRange) setRange(nextRange);
-	}, [availableRanges, defaultRange, range, resolvedDataByRange]);
+	}, [defaultRange, range, resolvedDataByRange]);
 
 	const entries = resolvedDataByRange[range] ?? [];
 	const visibleEntries = entries.slice(0, maxCollapsed);
 	const extraEntries = entries.slice(maxCollapsed, maxExpanded);
-
-	if (!entries.length) {
-		return (
-			<RankingsEmptyState
-				title="No app usage data yet"
-				description="App usage appears once requests are recorded."
-			/>
-		);
-	}
+	const selectedRangeLabel =
+		RANGE_OPTIONS.find((option) => option.key === range)?.label ?? "Range";
 
 	return (
 		<div className="space-y-4">
 			<div
 				className={[
-					"flex items-start gap-3",
-					showHeader ? "justify-between" : "justify-end",
+					"flex flex-col gap-3 sm:flex-row sm:items-start",
+					showHeader ? "sm:justify-between" : "sm:justify-end",
 				].join(" ")}
 			>
 				{showHeader ? (
@@ -118,7 +107,7 @@ export function AppsUsageList({
 						) : null}
 					</div>
 				) : null}
-				{availableRanges.length > 1 ? (
+				{RANGE_OPTIONS.length > 1 ? (
 					<Select
 						value={range}
 						onValueChange={(value) => {
@@ -126,16 +115,22 @@ export function AppsUsageList({
 							setShowAll(false);
 						}}
 					>
-						<SelectTrigger className="h-8 w-[150px]">
-							<SelectValue placeholder="Range" />
+						<SelectTrigger
+							className="h-9 w-full min-w-[10rem] border border-border/70 bg-background shadow-xs hover:bg-muted/45 sm:w-fit dark:border-border/70 dark:bg-background dark:hover:bg-muted/25"
+							aria-label="Select app usage range"
+						>
+							<span className="flex min-w-0 items-center gap-2">
+								<CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+								<span className="truncate">{selectedRangeLabel}</span>
+							</span>
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent
+							align="end"
+							alignItemWithTrigger={false}
+							className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+						>
 							{RANGE_OPTIONS.map((option) => (
-								<SelectItem
-									key={option.key}
-									value={option.key}
-									disabled={!resolvedDataByRange[option.key]?.length}
-								>
+								<SelectItem key={option.key} value={option.key}>
 									{option.label}
 								</SelectItem>
 							))}
@@ -144,6 +139,13 @@ export function AppsUsageList({
 				) : null}
 			</div>
 
+			{!entries.length ? (
+				<RankingsEmptyState
+					title={`No app usage data for ${selectedRangeLabel.toLowerCase()}`}
+					description="Try a wider timeframe or check back once more app traffic is aggregated."
+				/>
+			) : (
+			<>
 			<div className="space-y-2">
 				<div className="grid gap-2 md:grid-cols-2">
 					{visibleEntries.map((entry, index) => (
@@ -317,6 +319,8 @@ export function AppsUsageList({
 					</Button>
 				</div>
 			) : null}
+			</>
+			)}
 		</div>
 	);
 }

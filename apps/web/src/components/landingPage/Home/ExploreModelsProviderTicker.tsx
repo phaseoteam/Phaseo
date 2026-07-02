@@ -45,7 +45,7 @@ export default function ExploreModelsProviderTicker() {
 		const interval = window.setInterval(() => {
 			setNextProviderIndex((providerIndex + 1) % EXPLORE_PROVIDERS.length);
 			setIsSliding(true);
-		}, 2000);
+		}, 3000);
 
 		return () => {
 			window.clearInterval(interval);

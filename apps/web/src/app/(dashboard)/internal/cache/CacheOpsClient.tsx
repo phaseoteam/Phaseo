@@ -11,18 +11,15 @@ import {
 	revalidateBenchmarkScopeAction,
 	revalidateCountryDataAction,
 	revalidateCustomScopeAction,
-	revalidateGlobalModelAndProviderAction,
 	revalidateLandingDataAction,
 	revalidateModelScopeAction,
-	revalidateModelsGlobalDataAction,
 	revalidateOrganisationScopeAction,
 	revalidateProfileDataAction,
 	revalidateProviderScopeAction,
-	revalidateProvidersGlobalApiAction,
 	revalidatePublicModelCatalogueAction,
 	revalidateRankingsAction,
 	revalidateSearchDataAction,
-	revalidateSignInCatalogAction,
+	revalidateSubscriptionPlansAction,
 } from "./actions";
 
 type StatusState = {
@@ -137,42 +134,40 @@ export default function CacheOpsClient() {
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Preset scopes</CardTitle>
+					<CardTitle>Models + providers</CardTitle>
 					<CardDescription>
-						One-click revalidation for common global surfaces.
+						Use this after adding or editing a model, provider, pricing row,
+						gateway row, or capability. It refreshes the public catalogue,
+						model pages, provider pages, chat picker, search, sign-in, and
+						related API endpoints.
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+				<CardContent>
 					<Button
 						type="button"
 						disabled={isPending}
 						onClick={() => runAction(revalidatePublicModelCatalogueAction)}
 					>
-						Refresh Public Catalogue
+						Refresh Models + Providers
 					</Button>
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>Other global scopes</CardTitle>
+					<CardDescription>
+						Target non-model surfaces when only that area changed.
+					</CardDescription>
+				</CardHeader>
+				<CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
 					<Button
 						type="button"
 						variant="outline"
 						disabled={isPending}
-						onClick={() => runAction(revalidateModelsGlobalDataAction)}
+						onClick={() => runAction(revalidateSubscriptionPlansAction)}
 					>
-						Models: Global Data
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						disabled={isPending}
-						onClick={() => runAction(revalidateProvidersGlobalApiAction)}
-					>
-						Providers: Global API
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						disabled={isPending}
-						onClick={() => runAction(revalidateGlobalModelAndProviderAction)}
-					>
-						Models + Providers
+						Subscription Plans
 					</Button>
 					<Button
 						type="button"
@@ -189,14 +184,6 @@ export default function CacheOpsClient() {
 						onClick={() => runAction(revalidateLandingDataAction)}
 					>
 						Landing
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						disabled={isPending}
-						onClick={() => runAction(revalidateSignInCatalogAction)}
-					>
-						Sign-in Catalog
 					</Button>
 					<Button
 						type="button"
@@ -252,7 +239,8 @@ export default function CacheOpsClient() {
 				<CardHeader>
 					<CardTitle>Providers</CardTitle>
 					<CardDescription>
-						Revalidate all provider caches, or one provider ID.
+						Target one provider ID. Use Models + providers for global provider
+						changes.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
@@ -262,14 +250,6 @@ export default function CacheOpsClient() {
 						placeholder="Optional provider id (e.g. openai)"
 					/>
 					<div className="flex flex-wrap gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							disabled={isPending}
-							onClick={() => runAction(() => revalidateProviderScopeAction({}))}
-						>
-							Revalidate Providers (Global)
-						</Button>
 						<Button
 							type="button"
 							disabled={isPending || !providerId.trim()}

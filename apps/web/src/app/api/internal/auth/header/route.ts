@@ -40,6 +40,17 @@ function readMetadataString(
 		: null;
 }
 
+function readFirstMetadataString(
+	metadata: Record<string, unknown> | undefined,
+	keys: string[],
+) {
+	for (const key of keys) {
+		const value = readMetadataString(metadata, key);
+		if (value) return value;
+	}
+	return null;
+}
+
 function toHeaderUser(
 	user: {
 		id: string;
@@ -56,7 +67,11 @@ function toHeaderUser(
 			displayName ??
 			readMetadataString(metadata, "full_name") ??
 			readMetadataString(metadata, "name"),
-		avatarUrl: readMetadataString(metadata, "avatar_url"),
+		avatarUrl: readFirstMetadataString(metadata, [
+			"avatar_url",
+			"picture",
+			"picture_url",
+		]),
 	};
 }
 

@@ -4,48 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme {
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-
-	--color-sidebar: hsl(var(--sidebar-background));
-	--color-sidebar-foreground: hsl(var(--sidebar-foreground));
-	--color-sidebar-primary: hsl(var(--sidebar-primary));
-	--color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
-	--color-sidebar-accent: hsl(var(--sidebar-accent));
-	--color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
-	--color-sidebar-border: hsl(var(--sidebar-border));
-	--color-sidebar-ring: hsl(var(--sidebar-ring));
-
-	--radius-lg: var(--radius);
-	--radius-md: calc(var(--radius) - 2px);
-	--radius-sm: calc(var(--radius) - 4px);
-
-	--animate-accordion-down: accordion-down 0.2s ease-out;
-	--animate-accordion-up: accordion-up 0.2s ease-out;
-
-	@keyframes accordion-down {
-		from {
-			height: 0;
-		}
-		to {
-			height: var(--radix-accordion-content-height);
-		}
-	}
-	@keyframes accordion-up {
-		from {
-			height: var(--radix-accordion-content-height);
-		}
-		to {
-			height: 0;
-		}
-	}
-}
-
 @theme inline {
 	--animate-marquee: marquee var(--duration) infinite linear;
 	--animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
 	--animate-shiny-text: shiny-text 1.15s cubic-bezier(.6, .6, 0, 1) both;
+	--animate-accordion-down: accordion-down 0.2s ease-out;
+	--animate-accordion-up: accordion-up 0.2s ease-out;
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -141,62 +105,31 @@
 	::file-selector-button {
 		border-color: var(--color-gray-200, currentcolor);
 	}
-  * {
-    @apply border-border outline-ring/50;
+	* {
+		@apply border-border outline-ring/50;
 	}
-  body {
-    @apply bg-background text-foreground;
-	}
-  button:not(:disabled), [role="button"]:not(:disabled) {
-    cursor: pointer;
-	}
-  html {
-    @apply font-sans;
-	}
-}
-
-@utility text-balance {
-	text-wrap: balance;
-}
-
-@layer utilities {
 	body {
-		font-family: Arial, Helvetica, sans-serif;
+		@apply bg-background text-foreground;
 	}
-
+	body[data-hide-footer="true"] #dashboard-shell > footer {
+		display: none !important;
+	}
+	a[href],
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+	html {
+		@apply font-sans;
+	}
 	.dark body {
 		--dot-bg: #161616;
 		--dot-color: #848282;
 	}
 }
 
-@layer base {
-	:root {
-		--radius: 0.5rem;
-		--sidebar-background: 0 0% 100%;
-		--sidebar-foreground: 240 5.3% 26.1%;
-		--sidebar-primary: 240 5.9% 10%;
-		--sidebar-primary-foreground: 0 0% 98%;
-		--sidebar-accent: 240 4.8% 95.9%;
-		--sidebar-accent-foreground: 240 5.9% 10%;
-		--sidebar-border: 220 13% 91%;
-		--sidebar-ring: 217.2 91.2% 59.8%;
-	}
-	.dark {
-		--sidebar-background: 240 5.9% 10%;
-		--sidebar-foreground: 240 4.8% 95.9%;
-		--sidebar-primary: 224.3 76.3% 48%;
-		--sidebar-primary-foreground: 0 0% 100%;
-		--sidebar-accent: 240 3.7% 15.9%;
-		--sidebar-accent-foreground: 240 4.8% 95.9%;
-		--sidebar-border: 240 3.7% 15.9%;
-		--sidebar-ring: 217.2 91.2% 59.8%;
-	}
-	.theme {
-		--animate-marquee: marquee var(--duration) infinite linear;
-		--animate-marquee-vertical: marquee-vertical var(--duration) linear
-			infinite;
-	}
+@utility text-balance {
+	text-wrap: balance;
 }
 
 /*
@@ -288,22 +221,9 @@
 */
 
 @layer base {
-	* {
-		@apply border-border outline-ring/50;
-	}
-	body {
-		@apply bg-background text-foreground;
-	}
-
-	body[data-hide-footer="true"] #dashboard-shell > footer {
-		display: none !important;
-	}
-}
-
-@layer base {
-	button:not(:disabled),
-	[role="button"]:not(:disabled) {
-		cursor: pointer;
+	.theme {
+		--animate-marquee: marquee var(--duration) infinite linear;
+		--animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
 	}
 }
 

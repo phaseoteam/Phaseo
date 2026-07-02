@@ -31,7 +31,7 @@ const startYear = 2025;
 
 const productLinks = [
 	{ href: "/models", label: "Models", icon: Boxes },
-	{ href: "/chat", label: "Playground", icon: MessageSquare },
+	{ href: "/chat", label: "Chat", icon: MessageSquare },
 	{ href: "/compare", label: "Compare", icon: Scale },
 	{ href: "/api-providers", label: "Providers", icon: Server },
 	{ href: "/apps", label: "Apps", icon: AppWindow },

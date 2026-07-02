@@ -10,6 +10,8 @@ CREATE TABLE public.api_apps (
   is_active boolean NOT NULL DEFAULT true,
   first_seen timestamp with time zone NOT NULL DEFAULT now(),
   last_seen timestamp with time zone NOT NULL DEFAULT now(),
+  category text,
+  docs_url text,
   meta jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),

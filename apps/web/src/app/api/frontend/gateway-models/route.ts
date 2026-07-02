@@ -4,7 +4,9 @@ import { getGatewaySupportedModels } from "@/lib/fetchers/gateway/getGatewaySupp
 
 export async function GET() {
 	try {
-		const models = await getGatewaySupportedModels(false);
+		const models = await getGatewaySupportedModels(false, {
+			availableOnly: true,
+		});
 		return NextResponse.json(models, {
 			headers: PUBLIC_CDN_CACHE_HEADERS,
 		});

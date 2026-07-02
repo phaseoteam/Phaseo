@@ -74,6 +74,18 @@ function AnnouncementLink({ href, ...props }: ComponentPropsWithoutRef<"a">) {
 }
 
 function InlineCode({ className, ...props }: ComponentPropsWithoutRef<"code">) {
+	if (className?.startsWith("language-")) {
+		return (
+			<code
+				{...props}
+				className={cn(
+					"block whitespace-pre font-mono text-[0.875rem] leading-7 text-zinc-950 dark:text-zinc-100",
+					className
+				)}
+			/>
+		);
+	}
+
 	return (
 		<code
 			{...props}
@@ -90,7 +102,7 @@ function CodeBlock({ className, ...props }: ComponentPropsWithoutRef<"pre">) {
 		<pre
 			{...props}
 			className={cn(
-				"my-6 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-950 p-4 text-sm text-zinc-100 dark:border-zinc-800",
+				"my-6 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-100",
 				className
 			)}
 		/>

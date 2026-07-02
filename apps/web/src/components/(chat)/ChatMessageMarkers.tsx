@@ -87,14 +87,13 @@ export function ChatMessageMarkers({
 	if (!markers.length) return null;
 
 	return (
-		<div className="grid gap-1 px-1 py-1">
+		<div className="flex flex-col items-center gap-1 px-1 py-2">
 			{markers.map((marker) => {
 				const Icon = marker.icon;
 				return (
 					<Marker
 						key={`${messageId}-${marker.id}`}
-						variant="separator"
-						className="text-xs text-muted-foreground"
+						className="w-fit rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm"
 					>
 						<MarkerIcon>
 							<Icon className="h-3.5 w-3.5" />

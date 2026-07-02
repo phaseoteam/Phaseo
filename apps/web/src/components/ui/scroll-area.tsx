@@ -9,12 +9,16 @@ function ScrollArea({
   className,
   viewportClassName,
   scrollBarOrientation = "vertical",
+  viewportRef,
+  keepScrollbarMounted = false,
   type,
   children,
   ...props
 }: ScrollAreaPrimitive.Root.Props & {
   viewportClassName?: string
   scrollBarOrientation?: "vertical" | "horizontal" | "both"
+  viewportRef?: React.Ref<HTMLDivElement>
+  keepScrollbarMounted?: boolean
   type?: string
 }) {
   void type
@@ -25,6 +29,7 @@ function ScrollArea({
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
+        ref={viewportRef}
         data-radix-scroll-area-viewport=""
         data-slot="scroll-area-viewport"
         className={cn(
@@ -36,11 +41,11 @@ function ScrollArea({
       </ScrollAreaPrimitive.Viewport>
       {scrollBarOrientation === "both" ? (
         <>
-          <ScrollBar orientation="vertical" />
-          <ScrollBar orientation="horizontal" />
+          <ScrollBar orientation="vertical" keepMounted={keepScrollbarMounted} />
+          <ScrollBar orientation="horizontal" keepMounted={keepScrollbarMounted} />
         </>
       ) : (
-        <ScrollBar orientation={scrollBarOrientation} />
+        <ScrollBar orientation={scrollBarOrientation} keepMounted={keepScrollbarMounted} />
       )}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>

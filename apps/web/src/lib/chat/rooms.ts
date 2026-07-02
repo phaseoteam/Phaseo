@@ -3,6 +3,10 @@ export type ChatRoomId =
 	| "image"
 	| "video"
 	| "audio"
+	| "speech"
+	| "speech-to-text"
+	| "music"
+	| "realtime"
 	| "moderation"
 	| "embeddings";
 
@@ -38,10 +42,23 @@ const AUDIO_CAPABILITY_HINTS = [
 	"audio.transcription",
 	"audio.translate",
 	"audio.translation",
-	"music.generate",
 	"audio",
-	"music",
 ];
+const SPEECH_CAPABILITY_HINTS = ["audio.speech", "text to speech", "tts", "speech"];
+const SPEECH_TO_TEXT_CAPABILITY_HINTS = [
+	"audio.transcribe",
+	"audio.transcription",
+	"audio.transcriptions",
+	"audio.translate",
+	"audio.translation",
+	"audio.translations",
+	"speech to text",
+	"transcription",
+	"translation",
+	"whisper",
+];
+const MUSIC_CAPABILITY_HINTS = ["music.generate", "music", "song", "audio.music"];
+const REALTIME_CAPABILITY_HINTS = ["audio.realtime", "realtime", "real-time"];
 const MODERATION_CAPABILITY_HINTS = ["moderation", "moderations.create", "text.moderate"];
 const EMBEDDINGS_CAPABILITY_HINTS = ["text.embed", "embeddings", "embedding"];
 
@@ -68,11 +85,32 @@ export const CHAT_ROOMS: ChatRoomConfig[] = [
 		capabilityHints: VIDEO_CAPABILITY_HINTS,
 	},
 	{
-		id: "audio",
-		label: "Audio",
-		route: "/chat/audio",
-		description: "Speech, music generation, transcription, and translation workspace.",
-		capabilityHints: AUDIO_CAPABILITY_HINTS,
+		id: "speech",
+		label: "Text to Speech",
+		route: "/chat/speech",
+		description: "Text-to-speech workspace for generating spoken audio.",
+		capabilityHints: SPEECH_CAPABILITY_HINTS,
+	},
+	{
+		id: "speech-to-text",
+		label: "Speech to Text",
+		route: "/chat/speech-to-text",
+		description: "Speech transcription and translation workspace.",
+		capabilityHints: SPEECH_TO_TEXT_CAPABILITY_HINTS,
+	},
+	{
+		id: "music",
+		label: "Music",
+		route: "/chat/music",
+		description: "Music generation workspace.",
+		capabilityHints: MUSIC_CAPABILITY_HINTS,
+	},
+	{
+		id: "realtime",
+		label: "Realtime",
+		route: "/chat/realtime",
+		description: "Realtime voice and multimodal conversation workspace.",
+		capabilityHints: REALTIME_CAPABILITY_HINTS,
 	},
 	{
 		id: "moderation",
@@ -94,9 +132,19 @@ export const CHAT_ROOM_BY_ID: Record<ChatRoomId, ChatRoomConfig> = {
 	text: CHAT_ROOMS[0],
 	image: CHAT_ROOMS[1],
 	video: CHAT_ROOMS[2],
-	audio: CHAT_ROOMS[3],
-	moderation: CHAT_ROOMS[4],
-	embeddings: CHAT_ROOMS[5],
+	audio: {
+		id: "audio",
+		label: "Audio",
+		route: "/chat/audio",
+		description: "Legacy audio workspace.",
+		capabilityHints: AUDIO_CAPABILITY_HINTS,
+	},
+	speech: CHAT_ROOMS[3],
+	"speech-to-text": CHAT_ROOMS[4],
+	music: CHAT_ROOMS[5],
+	realtime: CHAT_ROOMS[6],
+	moderation: CHAT_ROOMS[7],
+	embeddings: CHAT_ROOMS[8],
 };
 
 const IMAGE_MODEL_HINTS = [
@@ -120,8 +168,10 @@ const AUDIO_MODEL_HINTS = [
 	"udio",
 	"melody",
 ];
+const REALTIME_MODEL_HINTS = ["realtime", "real-time", "gpt-4o-realtime"];
 const MODERATION_MODEL_HINTS = ["moderation"];
 const EMBEDDING_MODEL_HINTS = ["embedding", "embed"];
+const MUSIC_MODEL_HINTS = ["music", "suno", "udio", "melody", "song"];
 
 function normalizeCapability(capabilityId: string): string {
 	return capabilityId.trim().toLowerCase();
@@ -147,6 +197,18 @@ export function capabilityIdToRoomId(
 	}
 	if (VIDEO_CAPABILITY_HINTS.some((hint) => normalized.includes(hint))) {
 		return "video";
+	}
+	if (REALTIME_CAPABILITY_HINTS.some((hint) => normalized.includes(hint))) {
+		return "realtime";
+	}
+	if (SPEECH_TO_TEXT_CAPABILITY_HINTS.some((hint) => normalized.includes(hint))) {
+		return "speech-to-text";
+	}
+	if (SPEECH_CAPABILITY_HINTS.some((hint) => normalized.includes(hint))) {
+		return "speech";
+	}
+	if (MUSIC_CAPABILITY_HINTS.some((hint) => normalized.includes(hint))) {
+		return "music";
 	}
 	if (AUDIO_CAPABILITY_HINTS.some((hint) => normalized.includes(hint))) {
 		return "audio";
@@ -175,10 +237,16 @@ export function roomIdsFromCapabilities(
 
 export function inferModelRoomFromId(modelId: string): ChatRoomId {
 	const normalized = modelId.toLowerCase();
+	if (includesHint(normalized, REALTIME_MODEL_HINTS)) return "realtime";
 	if (includesHint(normalized, VIDEO_MODEL_HINTS)) return "video";
 	if (includesHint(normalized, IMAGE_MODEL_HINTS)) return "image";
 	if (includesHint(normalized, MODERATION_MODEL_HINTS)) return "moderation";
 	if (includesHint(normalized, EMBEDDING_MODEL_HINTS)) return "embeddings";
+	if (includesHint(normalized, ["whisper", "transcribe", "transcription"])) {
+		return "speech-to-text";
+	}
+	if (includesHint(normalized, ["tts", "voice", "speech"])) return "speech";
+	if (includesHint(normalized, MUSIC_MODEL_HINTS)) return "music";
 	if (includesHint(normalized, AUDIO_MODEL_HINTS)) return "audio";
 	return "text";
 }
@@ -194,6 +262,15 @@ export function modelSupportsRoom(
 ): boolean {
 	const capabilityRooms = roomIdsFromCapabilities(model.capabilities);
 	if (capabilityRooms.length > 0) {
+		if (roomId === "audio") {
+			return capabilityRooms.some((id) =>
+				id === "audio" ||
+				id === "speech" ||
+				id === "speech-to-text" ||
+				id === "music" ||
+				id === "realtime",
+			);
+		}
 		return capabilityRooms.includes(roomId);
 	}
 	if (roomId === "text") {

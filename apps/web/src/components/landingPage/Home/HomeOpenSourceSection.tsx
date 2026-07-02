@@ -291,13 +291,43 @@ function SnippetIcon({ id, active = false }: { id: SnippetId; active?: boolean }
 	return <TerminalSquare className="h-3.5 w-3.5" />;
 }
 
+function getReadableDarkTokenColor(color?: string) {
+	const normalized = color?.trim().toLowerCase();
+	if (!normalized) return "#e4e4e7";
+
+	switch (normalized) {
+		case "#005cc5":
+		case "#032f62":
+		case "#0366d6":
+			return "#60a5fa";
+		case "#6f42c1":
+		case "#5a32a3":
+			return "#a78bfa";
+		case "#22863a":
+		case "#28a745":
+			return "#4ade80";
+		case "#d73a49":
+		case "#cb2431":
+			return "#fb7185";
+		case "#e36209":
+		case "#b31d28":
+			return "#fbbf24";
+		case "#24292e":
+		case "#586069":
+		case "#6a737d":
+			return "#d4d4d8";
+		default:
+			return color ?? "#e4e4e7";
+	}
+}
+
 function getTokenStyle(token: Token): CSSProperties {
 	const light = token.variants.light;
 	const dark = token.variants.dark;
 	const fontStyle = light.fontStyle ?? 0;
 	const style: CSSProperties & Record<string, string | number> = {
-		color: light.color ?? "currentColor",
-		"--token-dark": dark.color ?? light.color ?? "currentColor",
+		"--token-light": light.color ?? "currentColor",
+		"--token-dark": getReadableDarkTokenColor(dark.color ?? light.color),
 	};
 
 	if (fontStyle & 1) style.fontStyle = "italic";
@@ -379,7 +409,7 @@ function FirstPromptCodeBlock({
 	};
 
 	return (
-		<div className="mt-3 overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-950/70">
+		<div className="mt-3 overflow-hidden rounded-xl border border-zinc-200/80 bg-zinc-50/60 dark:border-zinc-800 dark:bg-zinc-900/70">
 			<div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200/80 px-3 py-2 dark:border-zinc-800">
 				<div className="flex flex-wrap items-center gap-1.5">
 					{(variant === "beta" ? PRIMARY_SNIPPETS : FIRST_PROMPT_SNIPPETS.slice(0, 3)).map((snippet) => {
@@ -493,7 +523,7 @@ function FirstPromptCodeBlock({
 				</button>
 			</div>
 			{!error && tokens ? (
-				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-100">
+				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-200">
 					<code>
 						{tokens.map((line: TokenLine, lineIndex: number) => (
 							<span key={lineIndex} className="block min-h-6">
@@ -502,7 +532,7 @@ function FirstPromptCodeBlock({
 										<span
 											key={`${lineIndex}-${tokenIndex}`}
 											style={getTokenStyle(token)}
-											className="dark:[color:var(--token-dark)]"
+											className="[color:var(--token-light)] dark:[color:var(--token-dark)]"
 										>
 											{token.content}
 										</span>
@@ -515,7 +545,7 @@ function FirstPromptCodeBlock({
 					</code>
 				</pre>
 			) : (
-				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-100">
+				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-200">
 					<code>{activeSnippet.code(modelId)}</code>
 				</pre>
 			)}

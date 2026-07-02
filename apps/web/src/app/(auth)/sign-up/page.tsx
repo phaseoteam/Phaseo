@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SignUp } from "@/components/(gateway)/auth/sign-up/SignUp";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
@@ -27,16 +26,12 @@ export default async function Page({ searchParams }: SignUpPageProps) {
 
 	return (
 		<div className="min-h-svh">
-			<div className="flex min-h-svh flex-col p-6 md:p-10">
-				<div className="shrink-0">
+			<div className="relative grid min-h-svh place-items-center p-6 md:p-10">
+				<div className="absolute left-6 top-6 md:left-10 md:top-10">
 					<AuthWordmark />
 				</div>
-				<div className="flex flex-1 items-start justify-center pt-8 md:items-center md:pt-0">
-					<div className="mx-auto w-full max-w-sm">
-						<Suspense fallback={<div>Loading...</div>}>
-							<SignUp returnUrl={returnUrl} />
-						</Suspense>
-					</div>
+				<div className="mx-auto w-full max-w-sm">
+					<SignUp returnUrl={returnUrl} />
 				</div>
 			</div>
 		</div>

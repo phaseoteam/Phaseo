@@ -137,10 +137,10 @@ export default function CreateManagementKeyDialog({
 				<Button
 					variant="default"
 					size="sm"
-					className="flex items-center bg-amber-600 hover:bg-amber-700"
+					className="flex items-center"
 				>
 					<Plus className="h-4 w-4" />
-					Create Management API Key
+					Create Key
 				</Button>
 			</DialogTrigger>
 

@@ -1,14 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";
 
 type SocialProviderId = "google" | "github" | "gitlab";
+type LastAuthProvider = SocialProviderId | "email";
 
 const SOCIAL_PROVIDER_IDS: SocialProviderId[] = ["google", "github", "gitlab"];
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
 
 type ProviderMeta = {
 	label: string;
@@ -88,24 +91,54 @@ function OAuthSubmitButton({
 
 export default function OAuthButtons({
 	returnUrl,
-	lastUsedProvider,
 }: {
 	returnUrl?: string;
-	lastUsedProvider?: SocialProviderId | null;
 }) {
+	const [lastUsedProvider, setLastUsedProvider] =
+		useState<LastAuthProvider | null>(null);
+
+	useEffect(() => {
+		try {
+			const stored = window.localStorage.getItem(LAST_AUTH_PROVIDER_STORAGE_KEY);
+			if (
+				stored === "google" ||
+				stored === "github" ||
+				stored === "gitlab" ||
+				stored === "email"
+			) {
+				setLastUsedProvider(stored);
+			}
+		} catch {
+			setLastUsedProvider(null);
+		}
+	}, []);
+
 	return (
-		<div className="grid gap-5">
+		<div className="grid gap-4">
 			<div className="flex items-center gap-2">
 				<div className="flex-1 border-t border-border" />
 				<span className="px-2 text-sm font-medium">Quick sign-in</span>
 				<div className="flex-1 border-t border-border" />
 			</div>
 
-			<div className="grid grid-cols-3 gap-3">
+			<div className="grid grid-cols-3 gap-3 pb-2">
 				{SOCIAL_PROVIDER_IDS.map((id) => {
 					const meta = META[id];
 					return (
-						<form action={handleOAuthRedirect} key={id}>
+						<form
+							action={handleOAuthRedirect}
+							key={id}
+							onSubmit={() => {
+								try {
+									window.localStorage.setItem(
+										LAST_AUTH_PROVIDER_STORAGE_KEY,
+										id
+									);
+								} catch {
+									// Ignore storage failures; auth still proceeds.
+								}
+							}}
+						>
 							<input type="hidden" name="authFlow" value="signin" />
 							<input type="hidden" name="provider" value={id} />
 							{returnUrl ? (

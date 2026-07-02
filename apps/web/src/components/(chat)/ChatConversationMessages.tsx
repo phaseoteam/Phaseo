@@ -20,12 +20,12 @@ import {
 	ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
 import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import {
 	ChatRequestErrorNotice,
 	type ChatRequestErrorDetails,
 } from "@/components/(chat)/ChatRequestErrorNotice";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	AssistantMessageFooter,
 	UserMessageFooter,
@@ -58,18 +58,17 @@ import {
 } from "@/components/ui/message";
 import { cn } from "@/lib/utils";
 import type { ChatThread } from "@/lib/indexeddb/chats";
+import type {
+	ChatResponseLayout,
+	ModelOption,
+} from "@/components/(chat)/playground/chat-playground-core";
 import {
-	Brain,
 	Cpu,
-	Paperclip,
 	Save,
-	Search,
-	Settings2,
 	X,
 } from "lucide-react";
 import {
 	ChatMessageMarkers,
-	formatReasoningEffort,
 	getComparableModelSet,
 	getRequestContextMarker,
 	type ChatMessageMarker,
@@ -119,8 +118,13 @@ type ChatConversationMessagesProps = {
 	onSelectVariant: (messageId: string, variantIndex: number) => void;
 	onCopy: (text: string) => boolean | Promise<boolean>;
 	requestError?: ChatRequestErrorDetails | null;
-	onDismissRequestError?: () => void;
 	scrollViewportRef: RefObject<HTMLDivElement | null>;
+	responseLayout?: ChatResponseLayout;
+	modelOrderIds?: string[];
+	modelOptions: ModelOption[];
+	selectedModelIds: string[];
+	onAddModelSet: (modelIds: string[]) => void;
+	temporaryMode?: boolean;
 };
 
 export function ChatConversationMessages({
@@ -144,13 +148,15 @@ export function ChatConversationMessages({
 	onSelectVariant,
 	onCopy,
 	requestError = null,
-	onDismissRequestError,
 	scrollViewportRef,
+	responseLayout = "sequential",
+	modelOrderIds = [],
+	modelOptions,
+	selectedModelIds,
+	onAddModelSet,
+	temporaryMode = false,
 }: ChatConversationMessagesProps) {
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
-	const [dismissedErrorMessageIds, setDismissedErrorMessageIds] = useState<
-		Set<string>
-	>(() => new Set());
 	const copiedResetTimeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
@@ -266,6 +272,7 @@ export function ChatConversationMessages({
 	}, [messages]);
 
 	const shouldVirtualizeMessages =
+		responseLayout === "sequential" &&
 		messages.length > VIRTUALIZE_AFTER_MESSAGES;
 	// TanStack Virtual exposes imperative measurement APIs; keep them local to this list.
 	// eslint-disable-next-line react-hooks/incompatible-library
@@ -288,14 +295,28 @@ export function ChatConversationMessages({
 
 	const messagesContent = useMemo(() => {
 		if (!activeThread || !messages.length) {
-			return <ChatMessagesEmptyState />;
+			return (
+				<ChatMessagesEmptyState
+					modelOptions={modelOptions}
+					selectedModelIds={selectedModelIds}
+					onAddModelSet={onAddModelSet}
+					temporaryMode={temporaryMode}
+				/>
+			);
 		}
 
 		const renderMessage = (
 			message: ChatThread["messages"][number],
 			messageIndex: number,
+			options: {
+				inSideBySideGroup?: boolean;
+				wrapInScroller?: boolean;
+				hideMarkers?: boolean;
+			} = {},
 		) => {
 			const isUser = message.role === "user";
+			const inSideBySideGroup = Boolean(options.inSideBySideGroup && !isUser);
+			const wrapInScroller = options.wrapInScroller ?? true;
 			const userCopyKey = `user:${message.id}`;
 			const assistantCopyKey = `assistant:${message.id}`;
 			const userCopied = copiedMessageKey === userCopyKey;
@@ -322,11 +343,9 @@ export function ChatConversationMessages({
 					)
 				: null;
 			const requestContextMarkers: ChatMessageMarker[] = [];
-			if (requestContext) {
+			if (requestContext && previousUserRequestContext) {
 				const currentModelSet = getComparableModelSet(requestContext);
-				const previousModelSet = previousUserRequestContext
-					? getComparableModelSet(previousUserRequestContext)
-					: "";
+				const previousModelSet = getComparableModelSet(previousUserRequestContext);
 				if (currentModelSet && currentModelSet !== previousModelSet) {
 					const labels = [
 						requestContext.modelId
@@ -344,58 +363,8 @@ export function ChatConversationMessages({
 						icon: Cpu,
 						label:
 							labels.length > 1
-								? `Comparing ${labels.join(", ")}`
-								: `Switched to ${labels[0] ?? "selected model"}`,
-					});
-				}
-				const previousReasoning =
-					previousUserRequestContext?.reasoningEnabled
-						? previousUserRequestContext.reasoningEffort
-						: "off";
-				const currentReasoning = requestContext.reasoningEnabled
-					? requestContext.reasoningEffort
-					: "off";
-				if (currentReasoning !== previousReasoning) {
-					requestContextMarkers.push({
-						id: "reasoning",
-						icon: Brain,
-						label: requestContext.reasoningEnabled
-							? `Reasoning set to ${formatReasoningEffort(requestContext.reasoningEffort)}`
-							: "Reasoning disabled",
-					});
-				}
-				if (
-					requestContext.webSearchEnabled !==
-					Boolean(previousUserRequestContext?.webSearchEnabled)
-				) {
-					requestContextMarkers.push({
-						id: "web",
-						icon: Search,
-						label: requestContext.webSearchEnabled
-							? "Web search enabled"
-							: "Web search disabled",
-					});
-				}
-				if (
-					requestContext.apiServerToolsEnabled !==
-					Boolean(previousUserRequestContext?.apiServerToolsEnabled)
-				) {
-					requestContextMarkers.push({
-						id: "tools",
-						icon: Settings2,
-						label: requestContext.apiServerToolsEnabled
-							? "API tools enabled"
-							: "API tools disabled",
-					});
-				}
-				if (requestContext.attachmentsCount > 0) {
-					requestContextMarkers.push({
-						id: "attachments",
-						icon: Paperclip,
-						label:
-							requestContext.attachmentsCount === 1
-								? "Added 1 attachment"
-								: `Added ${requestContext.attachmentsCount} attachments`,
+								? `Models changed to ${labels.join(", ")}`
+								: `Model changed to ${labels[0] ?? "selected model"}`,
 					});
 				}
 			}
@@ -410,15 +379,12 @@ export function ChatConversationMessages({
 						activeMeta.chat_request_error as ChatRequestErrorDetails;
 				} else if (
 					requestError &&
-					lastMessageId === message.id &&
-					!dismissedErrorMessageIds.has(message.id)
+					lastMessageId === message.id
 				) {
 					messageRequestError = requestError;
 				}
 			}
-			const showRequestError =
-				Boolean(messageRequestError) &&
-				!dismissedErrorMessageIds.has(message.id);
+			const showRequestError = Boolean(messageRequestError);
 			const videoUrl = isUser
 				? null
 				: sanitizeHttpMediaUrl(extractGeneratedVideoUrl(content));
@@ -473,34 +439,6 @@ export function ChatConversationMessages({
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??
 				buildModelLink(displayModelId);
 			const hasModelLink = Boolean(displayModelId && modelLink !== "#");
-			const previousAssistantModelId =
-				activeThread.messages
-					.slice(0, messageIndex)
-					.reverse()
-					.find((item) => item.role !== "user" && item.modelId?.trim())
-					?.modelId?.trim() ?? null;
-			const precedingUserRequestContext =
-				!isUser && messageIndex > 0
-					? getRequestContextMarker(
-							activeThread.messages[messageIndex - 1]?.role === "user"
-								? activeThread.messages[messageIndex - 1]?.meta
-								: undefined,
-						)
-					: null;
-			const precedingUserModelSet = precedingUserRequestContext
-				? new Set([
-						precedingUserRequestContext.modelId,
-						...precedingUserRequestContext.compareModelIds,
-					])
-				: null;
-			const showModelMarker =
-				!isUser &&
-				Boolean(displayModelId) &&
-				previousAssistantModelId !== displayModelId &&
-				!precedingUserModelSet?.has(displayModelId);
-			const modelMarkerLabel = previousAssistantModelId
-				? `Switched to ${modelLabel}`
-				: `Using ${modelLabel}`;
 			const routingSelectedProvider =
 				(activeMeta?.routing as any)?.selected_provider;
 			let responseProviderId = message.providerId?.trim() || null;
@@ -537,40 +475,25 @@ export function ChatConversationMessages({
 					message.content.trim(),
 				);
 			const hasAccent = Boolean(accentColor);
-			const userBubbleStyle =
+			const messagePanelStyle =
 				isUser && hasAccent
 					? { backgroundColor: accentColor }
 					: undefined;
 
-				return (
-					<Fragment key={message.id}>
-						<ChatMessageMarkers
-							markers={requestContextMarkers}
-							messageId={message.id}
-						/>
-						{showModelMarker ? (
-							<ChatMessageMarkers
-								markers={[
-									{
-										id: "assistant-model",
-										icon: Cpu,
-										label: modelMarkerLabel,
-									},
-								]}
-								messageId={message.id}
-							/>
-						) : null}
-						<MessageScroller.Item
-							messageId={message.id}
-							scrollAnchor={isUser}
-						>
+			const messageNode = (
 						<Message
 							align={isUser ? "end" : "start"}
 							data-chat-message-id={message.id}
 							data-chat-message-role={message.role}
+							className={cn(inSideBySideGroup && "h-full")}
 						>
 							<MessageContent
-								className={cn(isUser ? "items-end" : "items-start")}
+								className={cn(
+									"max-w-[min(100%,42rem)] gap-2",
+									isUser ? "items-end" : "items-start",
+									inSideBySideGroup &&
+										"max-w-none items-stretch h-full",
+								)}
 							>
 								{!isUser && displayModelId && (
 									<MessageHeader className="mb-0 flex-col items-start gap-0.5 px-0 text-xs text-muted-foreground">
@@ -611,21 +534,27 @@ export function ChatConversationMessages({
 										) : null}
 									</MessageHeader>
 								)}
-								<Bubble
-									align={isUser ? "end" : "start"}
-									variant="ghost"
-									className="max-w-[85%]"
-								>
-									<BubbleContent
+								{showRequestError && messageRequestError ? (
+									<ChatRequestErrorNotice
+										error={messageRequestError}
+										threadTitle={activeThread.title}
+										className="mb-0 max-w-full"
+									/>
+								) : (
+									<div
+										data-slot="message-panel"
 										className={cn(
-											"rounded-2xl px-4 py-3 text-sm leading-relaxed",
+											"max-w-full rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
+											inSideBySideGroup
+												? "flex h-full min-h-[180px] w-full flex-col"
+												: "w-fit",
 											isUser
 												? hasAccent
 													? "text-background"
 													: "bg-foreground text-background"
-												: "border border-border bg-muted text-foreground",
+												: "border border-border bg-card text-card-foreground",
 										)}
-										style={userBubbleStyle}
+										style={messagePanelStyle}
 									>
 						{isUser ? (
 							isEditing ? (
@@ -786,21 +715,7 @@ export function ChatConversationMessages({
 									</ReasoningContent>
 									</Reasoning>
 								) : null}
-								{showRequestError && messageRequestError ? (
-									<ChatRequestErrorNotice
-										error={messageRequestError}
-										threadTitle={activeThread.title}
-										className="not-prose"
-										onDismiss={() => {
-											setDismissedErrorMessageIds((current) => {
-												const next = new Set(current);
-												next.add(message.id);
-												return next;
-											});
-											onDismissRequestError?.();
-										}}
-									/>
-								) : !contentWithoutMediaLinks &&
+								{!contentWithoutMediaLinks &&
 									messageRequestError ? (
 									<p className="not-prose text-sm text-muted-foreground">
 										Request failed. Use Retry to run this message again.
@@ -899,8 +814,8 @@ export function ChatConversationMessages({
 								) : null}
 							</div>
 						)}
-									</BubbleContent>
-								</Bubble>
+									</div>
+								)}
 								{isUser ? (
 									<UserMessageFooter
 										copied={userCopied}
@@ -924,6 +839,7 @@ export function ChatConversationMessages({
 										isPendingAssistant={isPendingAssistant}
 										latencyDisplay={latencyDisplay}
 										metadataOpen={metadataOpenId === message.id}
+										metadataProviderId={metadataProviderId}
 										metadataProviderLabel={metadataProviderLabel}
 										onBranch={() => onBranchAssistant(message.id)}
 										onCopy={() => {
@@ -948,9 +864,28 @@ export function ChatConversationMessages({
 								)}
 							</MessageContent>
 						</Message>
-						</MessageScroller.Item>
-					</Fragment>
-				);
+			);
+
+			if (!wrapInScroller) {
+				return messageNode;
+			}
+
+			return (
+				<Fragment key={message.id}>
+					{options.hideMarkers ? null : (
+						<ChatMessageMarkers
+							markers={requestContextMarkers}
+							messageId={message.id}
+						/>
+					)}
+					<MessageScroller.Item
+						messageId={message.id}
+						scrollAnchor={isUser}
+					>
+						{messageNode}
+					</MessageScroller.Item>
+				</Fragment>
+			);
 		};
 
 		if (shouldVirtualizeMessages) {
@@ -966,9 +901,275 @@ export function ChatConversationMessages({
 			);
 		}
 
-		return messages.map((message, messageIndex) =>
-			renderMessage(message, messageIndex),
-		);
+		if (responseLayout === "side-by-side") {
+			type SideBySideItem = {
+				message: ChatThread["messages"][number];
+				messageIndex: number;
+			};
+			type SideBySideTurn = {
+				key: string;
+				user: SideBySideItem | null;
+				assistantsByModelKey: Map<string, SideBySideItem[]>;
+			};
+			const rawTurns: SideBySideTurn[] = [];
+			const firstAssistantIndexByModelKey = new Map<string, number>();
+			let currentTurn: SideBySideTurn | null = null;
+
+			messages.forEach((message, messageIndex) => {
+				const item = { message, messageIndex };
+				if (message.role === "user") {
+					currentTurn = {
+						key: message.id,
+						user: item,
+						assistantsByModelKey: new Map(),
+					};
+					rawTurns.push(currentTurn);
+					return;
+				}
+
+				if (!currentTurn) {
+					currentTurn = {
+						key: `assistant-${message.id}`,
+						user: null,
+						assistantsByModelKey: new Map(),
+					};
+					rawTurns.push(currentTurn);
+				}
+
+				const modelKey =
+					(message.modelId ?? activeThread.modelId ?? "").trim() ||
+					message.id;
+				const modelItems =
+					currentTurn.assistantsByModelKey.get(modelKey) ?? [];
+				modelItems.push(item);
+				currentTurn.assistantsByModelKey.set(modelKey, modelItems);
+				if (!firstAssistantIndexByModelKey.has(modelKey)) {
+					firstAssistantIndexByModelKey.set(modelKey, messageIndex);
+				}
+			});
+
+			const haveOverlappingModels = (
+				a: SideBySideTurn,
+				b: SideBySideTurn,
+			) => {
+				for (const modelKey of a.assistantsByModelKey.keys()) {
+					if (b.assistantsByModelKey.has(modelKey)) {
+						return true;
+					}
+				}
+				return false;
+			};
+			const mergeTurns = (
+				target: SideBySideTurn,
+				source: SideBySideTurn,
+			) => {
+				for (const [modelKey, items] of source.assistantsByModelKey) {
+					const targetItems =
+						target.assistantsByModelKey.get(modelKey) ?? [];
+					targetItems.push(...items);
+					target.assistantsByModelKey.set(modelKey, targetItems);
+				}
+			};
+			const turns: SideBySideTurn[] = [];
+			for (const turn of rawTurns) {
+				const previousTurn = turns[turns.length - 1];
+				const previousPrompt = previousTurn?.user?.message.content.trim();
+				const currentPrompt = turn.user?.message.content.trim();
+				if (
+					previousTurn?.user &&
+					turn.user &&
+					previousPrompt &&
+					currentPrompt &&
+					previousPrompt === currentPrompt &&
+					previousTurn.assistantsByModelKey.size > 0 &&
+					turn.assistantsByModelKey.size > 0 &&
+					!haveOverlappingModels(previousTurn, turn)
+				) {
+					mergeTurns(previousTurn, turn);
+					continue;
+				}
+				turns.push(turn);
+			}
+
+			const modelOrder = new Map(
+				modelOrderIds.map((modelId, index) => [modelId, index]),
+			);
+			const modelKeys = Array.from(firstAssistantIndexByModelKey.keys()).sort(
+				(a, b) => {
+					const aOrder = modelOrder.get(a);
+					const bOrder = modelOrder.get(b);
+					if (aOrder !== undefined || bOrder !== undefined) {
+						return (
+							(aOrder ?? Number.MAX_SAFE_INTEGER) -
+							(bOrder ?? Number.MAX_SAFE_INTEGER)
+						);
+					}
+					return (
+						(firstAssistantIndexByModelKey.get(a) ??
+							Number.MAX_SAFE_INTEGER) -
+						(firstAssistantIndexByModelKey.get(b) ??
+							Number.MAX_SAFE_INTEGER)
+					);
+				},
+			);
+			if (modelKeys.length === 0) {
+				return messages.map((message, messageIndex) =>
+					renderMessage(message, messageIndex),
+				);
+			}
+
+			return (
+				<MessageScroller.Item
+					messageId={
+						turns[0]?.user?.message.id ??
+						turns[0]?.assistantsByModelKey.values().next().value?.[0]
+							?.message.id ??
+						"side-by-side"
+					}
+					scrollAnchor={false}
+				>
+					<ScrollArea
+						data-chat-response-layout="side-by-side"
+						scrollBarOrientation="horizontal"
+						className="w-full pb-3"
+						viewportClassName="overscroll-x-contain"
+					>
+						<div
+							className="grid min-w-max items-stretch gap-x-4 gap-y-5 pr-4"
+							style={{
+								gridTemplateColumns: `repeat(${modelKeys.length}, minmax(0, min(88vw, 32rem)))`,
+							}}
+						>
+							{turns.flatMap((turn) =>
+								modelKeys.map((modelKey, modelIndex) => {
+									const assistantItems =
+										turn.assistantsByModelKey.get(modelKey) ?? [];
+									return (
+										<section
+											key={`${turn.key}-${modelKey}`}
+											className={cn(
+												"flex min-h-full flex-col gap-4",
+												modelIndex > 0 && "border-l border-border pl-4",
+											)}
+										>
+											{turn.user ? (
+												renderMessage(
+													turn.user.message,
+													turn.user.messageIndex,
+													{
+														hideMarkers: true,
+														wrapInScroller: false,
+													},
+												)
+											) : null}
+											{assistantItems.length > 0 ? (
+												assistantItems.map((item) => (
+													<Fragment
+														key={`${turn.key}-${modelKey}-${item.message.id}-${item.messageIndex}`}
+													>
+														{renderMessage(
+															item.message,
+															item.messageIndex,
+															{
+																hideMarkers: true,
+																inSideBySideGroup: true,
+																wrapInScroller: false,
+															},
+														)}
+													</Fragment>
+												))
+											) : (
+												<div
+													className="min-h-[180px] flex-1"
+													aria-hidden="true"
+												/>
+											)}
+										</section>
+									);
+								}),
+							)}
+						</div>
+					</ScrollArea>
+				</MessageScroller.Item>
+			);
+		}
+
+		type SequentialItem = {
+			message: ChatThread["messages"][number];
+			messageIndex: number;
+		};
+		type SequentialTurn = {
+			user: SequentialItem | null;
+			assistants: SequentialItem[];
+		};
+		const sequentialTurns: SequentialTurn[] = [];
+		let currentTurn: SequentialTurn | null = null;
+
+		messages.forEach((message, messageIndex) => {
+			const item = { message, messageIndex };
+			if (message.role === "user") {
+				currentTurn = {
+					user: item,
+					assistants: [],
+				};
+				sequentialTurns.push(currentTurn);
+				return;
+			}
+			if (!currentTurn) {
+				currentTurn = {
+					user: null,
+					assistants: [],
+				};
+				sequentialTurns.push(currentTurn);
+			}
+			currentTurn.assistants.push(item);
+		});
+
+		const getAssistantModelKey = (
+			message: ChatThread["messages"][number],
+		) => (message.modelId ?? activeThread.modelId ?? message.id).trim();
+
+		const mergedTurns: SequentialTurn[] = [];
+		for (const turn of sequentialTurns) {
+			const previousTurn = mergedTurns[mergedTurns.length - 1];
+			const previousPrompt = previousTurn?.user?.message.content.trim();
+			const currentPrompt = turn.user?.message.content.trim();
+			if (
+				previousTurn?.user &&
+				turn.user &&
+				previousPrompt &&
+				currentPrompt &&
+				previousPrompt === currentPrompt &&
+				previousTurn.assistants.length > 0 &&
+				turn.assistants.length > 0
+			) {
+				const previousModels = new Set(
+					previousTurn.assistants.map((item) =>
+						getAssistantModelKey(item.message),
+					),
+				);
+				const hasOverlappingModel = turn.assistants.some((item) =>
+					previousModels.has(getAssistantModelKey(item.message)),
+				);
+				if (!hasOverlappingModel) {
+					previousTurn.assistants.push(...turn.assistants);
+					continue;
+				}
+			}
+			mergedTurns.push({
+				user: turn.user,
+				assistants: [...turn.assistants],
+			});
+		}
+
+		return mergedTurns.flatMap((turn) => [
+			...(turn.user
+				? [renderMessage(turn.user.message, turn.user.messageIndex)]
+				: []),
+			...turn.assistants.map((item) =>
+				renderMessage(item.message, item.messageIndex),
+			),
+		]);
 	}, [
 		activeThread,
 		messages,
@@ -987,8 +1188,6 @@ export function ChatConversationMessages({
 		modelLinkById,
 		accentColor,
 		requestError,
-		onDismissRequestError,
-		dismissedErrorMessageIds,
 		handleCopyForMessage,
 		copiedMessageKey,
 		onEditingValueChange,
@@ -1004,6 +1203,11 @@ export function ChatConversationMessages({
 		totalTokens,
 		metadataProviderLabel,
 		onMetadataOpenIdChange,
+		responseLayout,
+		modelOrderIds,
+		modelOptions,
+		selectedModelIds,
+		onAddModelSet,
 	]);
 
 	return <>{messagesContent}</>;

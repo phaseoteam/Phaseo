@@ -9,21 +9,13 @@ import {
 	type BenchmarkCard,
 } from "@/lib/fetchers/benchmarks/getAllBenchmarks";
 import {
-	getCountrySummariesCached,
-	type CountrySummary,
-} from "@/lib/fetchers/countries/getCountrySummaries";
-import {
-	getAllModelsCached,
+	getModelsFilteredCached,
 	type ModelCard,
 } from "@/lib/fetchers/models/getAllModels";
 import {
 	getAllOrganisationsCached,
 	type OrganisationCard,
 } from "@/lib/fetchers/organisations/getAllOrganisations";
-import {
-	getAllSubscriptionPlansCached,
-	type SubscriptionPlanSummary,
-} from "@/lib/fetchers/subscription-plans/getAllSubscriptionPlans";
 
 export interface SearchableModel {
 	id: string;
@@ -31,6 +23,7 @@ export interface SearchableModel {
 	subtitle: string | null;
 	href: string;
 	logoId: string;
+	releaseGroupLabel: string | null;
 }
 
 export interface SearchableOrganisation {
@@ -81,6 +74,7 @@ export interface SearchData {
 	countries: SearchableCountry[];
 }
 
+type SearchModelTuple = [string, string, string | null, string, string, string | null];
 type SearchLogoTuple = [string, string, string | null, string, string];
 type SearchBenchmarkTuple = [string, string, string | null, string];
 type SearchNullableLogoTuple = [
@@ -93,7 +87,7 @@ type SearchNullableLogoTuple = [
 type SearchCountryTuple = [string, string, string | null, string, string];
 
 export interface CompactSearchData {
-	m: SearchLogoTuple[];
+	m: SearchModelTuple[];
 	o: SearchLogoTuple[];
 	b: SearchBenchmarkTuple[];
 	p: SearchLogoTuple[];
@@ -109,6 +103,7 @@ export function compactSearchData(data: SearchData): CompactSearchData {
 			item.subtitle,
 			item.href,
 			item.logoId,
+			item.releaseGroupLabel,
 		]),
 		o: data.organisations.map((item) => [
 			item.id,
@@ -147,14 +142,45 @@ export function compactSearchData(data: SearchData): CompactSearchData {
 	};
 }
 
+function formatMonthGroup(value: string | null | undefined): string | null {
+	if (!value) return null;
+	const parsed = new Date(value);
+	if (Number.isNaN(parsed.getTime())) return null;
+
+	const monthNames = [
+		"January",
+		"February",
+		"March",
+		"April",
+		"May",
+		"June",
+		"July",
+		"August",
+		"September",
+		"October",
+		"November",
+		"December",
+	];
+
+	return `${monthNames[parsed.getUTCMonth()]} ${parsed.getUTCFullYear()}`;
+}
+
 function transformModels(models: ModelCard[]): SearchableModel[] {
-	return models.map((model) => ({
-		id: model.model_id,
-		title: model.name,
-		subtitle: model.organisation_name,
-		href: `/models/${model.model_id}`,
-		logoId: model.organisation_id,
-	}));
+	return [...models]
+		.sort((left, right) => {
+			const rightTime = right.primary_timestamp ?? Number.NEGATIVE_INFINITY;
+			const leftTime = left.primary_timestamp ?? Number.NEGATIVE_INFINITY;
+			if (rightTime !== leftTime) return rightTime - leftTime;
+			return left.name.localeCompare(right.name);
+		})
+		.map((model) => ({
+			id: model.model_id,
+			title: model.name,
+			subtitle: model.organisation_name,
+			href: `/models/${model.model_id}`,
+			logoId: model.organisation_id,
+			releaseGroupLabel: formatMonthGroup(model.primary_date),
+		}));
 }
 
 function transformOrganisations(
@@ -181,47 +207,17 @@ function transformBenchmarks(benchmarks: BenchmarkCard[]): SearchableBenchmark[]
 function transformAPIProviders(
 	providers: APIProviderCard[],
 ): SearchableAPIProvider[] {
-	return providers.map((provider) => ({
-		id: provider.api_provider_id,
-		title: provider.api_provider_name,
-		subtitle: null,
-		href: `/api-providers/${provider.api_provider_id}`,
-		logoId: provider.api_provider_id,
-	}));
-}
-
-function transformSubscriptionPlans(
-	plans: SubscriptionPlanSummary[],
-): SearchableSubscriptionPlan[] {
-	return plans.flatMap((plan) => {
-		const organisationName = plan.organisation?.name ?? "";
-		return plan.prices.map((price) => {
-			const frequencyLabel = price.frequency
-				? price.frequency.charAt(0).toUpperCase() + price.frequency.slice(1)
-				: "";
-			const subtitle = frequencyLabel
-				? `${organisationName} - ${frequencyLabel}`.trim()
-				: organisationName || null;
-
-			return {
-				id: price.plan_uuid,
-				title: plan.name,
-				subtitle,
-				href: `/subscription-plans/${plan.plan_id}`,
-				logoId: plan.organisation_id,
-			};
-		});
-	});
-}
-
-function transformCountries(countries: CountrySummary[]): SearchableCountry[] {
-	return countries.slice(0, 20).map((country) => ({
-		id: country.iso.toLowerCase(),
-		title: country.countryName,
-		subtitle: `${country.totalModels} models`,
-		href: `/countries/${country.iso.toLowerCase()}`,
-		flagIso: country.iso.toLowerCase(),
-	}));
+	return [...providers]
+		.sort((left, right) => {
+			return left.api_provider_name.localeCompare(right.api_provider_name);
+		})
+		.map((provider) => ({
+			id: provider.api_provider_id,
+			title: provider.api_provider_name,
+			subtitle: `${provider.active_models.toLocaleString()} active models`,
+			href: `/api-providers/${provider.api_provider_id}`,
+			logoId: provider.api_provider_id,
+		}));
 }
 
 export async function getSearchData(includeHidden: boolean): Promise<SearchData> {
@@ -230,15 +226,11 @@ export async function getSearchData(includeHidden: boolean): Promise<SearchData>
 		organisations,
 		benchmarks,
 		apiProviders,
-		subscriptionPlans,
-		countrySummaries,
 	] = await Promise.all([
-		getAllModelsCached(includeHidden),
+		getModelsFilteredCached({ includeHidden }),
 		getAllOrganisationsCached(),
 		getAllBenchmarksCached(),
 		getAllAPIProvidersCached(),
-		getAllSubscriptionPlansCached(),
-		getCountrySummariesCached(includeHidden),
 	]);
 
 	return {
@@ -246,8 +238,8 @@ export async function getSearchData(includeHidden: boolean): Promise<SearchData>
 		organisations: transformOrganisations(organisations),
 		benchmarks: transformBenchmarks(benchmarks),
 		apiProviders: transformAPIProviders(apiProviders),
-		subscriptionPlans: transformSubscriptionPlans(subscriptionPlans),
-		countries: transformCountries(countrySummaries),
+		subscriptionPlans: [],
+		countries: [],
 	};
 }
 
@@ -262,8 +254,6 @@ export async function getSearchDataCached(
 	cacheTag("data:organisations");
 	cacheTag("data:benchmarks");
 	cacheTag("data:api_providers");
-	cacheTag("data:subscription_plans");
-	cacheTag("frontend:subscription-plans");
 
 	console.log("[fetch] HIT DB for search data");
 	return getSearchData(includeHidden);

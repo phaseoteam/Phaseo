@@ -11,11 +11,15 @@ import {
 } from "@/components/ui/command";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { XIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
 export type ModelSelectorProps = ComponentProps<typeof Dialog>;
@@ -42,8 +46,23 @@ export const ModelSelectorContent = ({
   commandProps,
   ...props
 }: ModelSelectorContentProps) => (
-  <DialogContent className={cn("p-0", className)} {...props}>
+  <DialogContent
+    className={cn("p-0", className)}
+    showCloseButton={false}
+    {...props}
+  >
     <DialogTitle className="sr-only">{title}</DialogTitle>
+    <DialogClose asChild>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="absolute right-4 top-2.5 z-10 bg-secondary"
+      >
+        <XIcon />
+        <span className="sr-only">Close</span>
+      </Button>
+    </DialogClose>
     <Command
       className="**:data-[slot=command-input-wrapper]:h-auto **:data-[slot=command-input-wrapper]:pr-11"
       {...commandProps}
@@ -68,10 +87,21 @@ export const ModelSelectorInput = ({
   <CommandInput className={cn("h-auto py-3.5", className)} {...props} />
 );
 
-export type ModelSelectorListProps = ComponentProps<typeof CommandList>;
+export type ModelSelectorListProps = ComponentProps<typeof CommandList> & {
+  viewportClassName?: string;
+};
 
-export const ModelSelectorList = (props: ModelSelectorListProps) => (
-  <CommandList {...props} />
+export const ModelSelectorList = ({
+  className,
+  viewportClassName,
+  ...props
+}: ModelSelectorListProps) => (
+  <ScrollArea className={cn("max-h-72", className)} viewportClassName={viewportClassName}>
+    <CommandList
+      className="max-h-none overflow-visible"
+      {...props}
+    />
+  </ScrollArea>
 );
 
 export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;

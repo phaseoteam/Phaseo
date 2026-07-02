@@ -42,6 +42,7 @@ function PopoverContent({
   className,
   align = "center",
   alignOffset = 0,
+  anchor,
   side = "bottom",
   sideOffset = 4,
   onOpenAutoFocus,
@@ -49,7 +50,7 @@ function PopoverContent({
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset"
+    "align" | "alignOffset" | "anchor" | "side" | "sideOffset"
   > & {
     onOpenAutoFocus?: (event: Event) => void
   }) {
@@ -59,6 +60,7 @@ function PopoverContent({
       <PopoverPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
+        anchor={anchor}
         side={side}
         sideOffset={sideOffset}
         className="isolate z-50"

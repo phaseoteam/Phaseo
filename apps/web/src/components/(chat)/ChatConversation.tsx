@@ -6,7 +6,12 @@ import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
 import type { ChatRequestErrorDetails } from "@/components/(chat)/ChatRequestErrorNotice";
-import type { ChatSettings, ChatThread } from "@/lib/indexeddb/chats";
+import type {
+	ChatServerToolConfigs,
+	ChatServerToolType,
+	ChatSettings,
+	ChatThread,
+} from "@/lib/indexeddb/chats";
 import { ArrowDown, Square } from "lucide-react";
 import {
 	DEFAULT_CHAT_PLACEHOLDER,
@@ -17,12 +22,18 @@ import {
 	getSupportedRecordingMimeType,
 } from "./chatConversationHelpers";
 import { startChatSendPerformanceRun } from "@/components/(chat)/playground/chat-performance";
+import type {
+	ChatResponseLayout,
+	ModelOption,
+} from "@/components/(chat)/playground/chat-playground-core";
 
 export type ChatSendPayload = {
 	content: string;
 	attachments: File[];
 	webSearchEnabled: boolean;
 	apiServerToolsEnabled: boolean;
+	serverTools: ChatServerToolType[];
+	serverToolConfigs: ChatServerToolConfigs;
 	performanceRunId?: string | null;
 };
 
@@ -30,11 +41,15 @@ type ChatConversationProps = {
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	isAuthenticated: boolean;
+	temporaryMode?: boolean;
 	mode?: "classic" | "unified";
 	webSearchEnabled?: boolean;
 	onWebSearchEnabledChange?: (enabled: boolean) => void;
 	apiServerToolsEnabled?: boolean;
-	onApiServerToolsEnabledChange?: (enabled: boolean) => void;
+	serverTools?: ChatServerToolType[];
+	onServerToolsChange?: (tools: ChatServerToolType[]) => void;
+	serverToolConfigs?: ChatServerToolConfigs;
+	onServerToolConfigsChange?: (configs: ChatServerToolConfigs) => void;
 	reasoningEnabled?: boolean;
 	reasoningEffort?: ChatSettings["reasoningEffort"];
 	onReasoningEnabledChange?: (enabled: boolean) => void;
@@ -50,15 +65,17 @@ type ChatConversationProps = {
 	modelOrgIdById: Record<string, string>;
 	modelLinkById: Record<string, string>;
 	accentColor: string;
-	selectedOrgId: string;
 	selectedModelId: string;
 	selectedModelLabel: string;
 	selectedModelCount?: number;
 	selectedModelsHint?: string;
-	onOpenModelPicker: () => void;
+	selectedModelIds: string[];
+	modelOptions: ModelOption[];
+	onToggleModel: (modelId: string) => void;
+	onAddModelSet: (modelIds: string[]) => void;
 	onAudioAttachmentRequirementChange?: (requiresAudioInput: boolean) => void;
 	requestError?: ChatRequestErrorDetails | null;
-	onDismissRequestError?: () => void;
+	responseLayout?: ChatResponseLayout;
 };
 
 type SendGateType = "auth";
@@ -67,11 +84,15 @@ export function ChatConversation({
 	activeThread,
 	isSending,
 	isAuthenticated,
+	temporaryMode = false,
 	mode = "classic",
 	webSearchEnabled = false,
 	onWebSearchEnabledChange,
 	apiServerToolsEnabled = false,
-	onApiServerToolsEnabledChange,
+	serverTools = [],
+	onServerToolsChange,
+	serverToolConfigs = {},
+	onServerToolConfigsChange,
 	reasoningEnabled = false,
 	reasoningEffort = "medium",
 	onReasoningEnabledChange,
@@ -87,15 +108,17 @@ export function ChatConversation({
 	modelOrgIdById,
 	modelLinkById,
 	accentColor,
-	selectedOrgId,
 	selectedModelId,
 	selectedModelLabel,
 	selectedModelCount = selectedModelId ? 1 : 0,
 	selectedModelsHint,
-	onOpenModelPicker,
+	selectedModelIds,
+	modelOptions,
+	onToggleModel,
+	onAddModelSet,
 	onAudioAttachmentRequirementChange,
 	requestError = null,
-	onDismissRequestError,
+	responseLayout = "sequential",
 }: ChatConversationProps) {
 	const isUnified = mode === "unified";
 	const [composer, setComposer] = useState("");
@@ -390,6 +413,11 @@ export function ChatConversation({
 		if (isSending) return;
 		const text = composer.trim();
 		if (!text && attachments.length === 0) return;
+		const hasSelectedModel =
+			selectedModelIds.length > 0 ||
+			selectedModelCount > 0 ||
+			Boolean(selectedModelId);
+		if (!hasSelectedModel) return;
 		if (!isAuthenticated) {
 			setSendGateType("auth");
 			return;
@@ -404,6 +432,8 @@ export function ChatConversation({
 			attachments,
 			webSearchEnabled: isUnified ? webSearchEnabled : false,
 			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
+			serverTools: isUnified ? serverTools : [],
+			serverToolConfigs: isUnified ? serverToolConfigs : {},
 			performanceRunId,
 		});
 		setComposer("");
@@ -437,6 +467,7 @@ export function ChatConversation({
 	]);
 	const effectiveSendGateType =
 		isAuthenticated && sendGateType === "auth" ? null : sendGateType;
+	const hasNoMessages = (activeThread?.messages.length ?? 0) === 0;
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -451,7 +482,9 @@ export function ChatConversation({
 						ref={scrollViewportRef}
 						className="h-full w-full overflow-y-auto overscroll-contain"
 					>
-						<MessageScroller.Content className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8">
+						<MessageScroller.Content
+							className={`mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
+						>
 							{isRecording ? (
 								<div className="sticky top-2 z-10 mx-auto w-full max-w-md rounded-2xl border border-border bg-background/92 px-4 py-3 shadow-sm backdrop-blur">
 									<div className="flex items-center gap-3">
@@ -497,8 +530,13 @@ export function ChatConversation({
 								onSelectVariant={onSelectVariant}
 								onCopy={handleCopy}
 								requestError={requestError}
-								onDismissRequestError={onDismissRequestError}
 								scrollViewportRef={scrollViewportRef}
+								responseLayout={responseLayout}
+								modelOrderIds={selectedModelIds}
+								modelOptions={modelOptions}
+								selectedModelIds={selectedModelIds}
+								onAddModelSet={onAddModelSet}
+								temporaryMode={temporaryMode}
 							/>
 						</MessageScroller.Content>
 					</MessageScroller.Viewport>
@@ -524,9 +562,11 @@ export function ChatConversation({
 				isUnified={isUnified}
 				webSearchEnabled={webSearchEnabled}
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
-				apiServerToolsEnabled={apiServerToolsEnabled}
-				onApiServerToolsEnabledChange={onApiServerToolsEnabledChange}
-				showEvaluationPrompts={(activeThread?.messages.length ?? 0) === 0}
+				serverTools={serverTools}
+				onServerToolsChange={onServerToolsChange}
+				serverToolConfigs={serverToolConfigs}
+				onServerToolConfigsChange={onServerToolConfigsChange}
+				showEvaluationPrompts={hasNoMessages}
 				reasoningEnabled={reasoningEnabled}
 				reasoningPickerOpen={reasoningPickerOpen}
 				onReasoningPickerOpenChange={setReasoningPickerOpen}
@@ -535,14 +575,15 @@ export function ChatConversation({
 				onReasoningSelection={applyReasoningSelection}
 				selectedModelCount={selectedModelCount}
 				selectedModelsHint={selectedModelsHint}
+				selectedModelIds={selectedModelIds}
 				selectedModelId={selectedModelId}
 				selectedModelLabel={selectedModelLabel}
-				selectedOrgId={selectedOrgId}
+				modelOptions={modelOptions}
 				isRecording={isRecording}
 				isStartingRecording={isStartingRecording}
 				recordingSupported={recordingSupported}
 				onToggleRecording={toggleRecording}
-				onOpenModelPicker={onOpenModelPicker}
+				onToggleModel={onToggleModel}
 				onSubmit={handleSubmit}
 				onSelectEvaluationPrompt={handleSelectEvaluationPrompt}
 				onComposerChange={setComposer}

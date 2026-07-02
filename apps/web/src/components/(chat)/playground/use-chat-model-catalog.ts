@@ -1,5 +1,8 @@
 import { useCallback, useMemo } from "react";
-import { compareByReleaseDateDesc } from "@/components/(chat)/playgroundConfig";
+import {
+	CHAT_DEFAULT_MODEL_IDS,
+	compareByReleaseDateDesc,
+} from "@/components/(chat)/playgroundConfig";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
@@ -18,6 +21,7 @@ import {
 	isModelExpired,
 	type ModelOption,
 } from "@/components/(chat)/playground/chat-playground-core";
+import { buildChatProviderOptions } from "@/components/(chat)/playground/provider-options";
 
 export const resolveGatewayModelOrgId = (model: GatewaySupportedModel) =>
 	model.organisationId?.trim() || getOrgId(model.modelId);
@@ -97,7 +101,12 @@ export function useChatModelCatalog(args: {
 		}
 		return providerIdsByModelId;
 	}, [selectableModels]);
-	const defaultModelId = selectableModels[0]?.selectorModelId ?? "";
+	const defaultModelId =
+		CHAT_DEFAULT_MODEL_IDS.find((modelId) =>
+			selectableModels.some((model) => model.selectorModelId === modelId),
+		) ??
+		selectableModels[0]?.selectorModelId ??
+		"";
 	const queryModelId = (modelParam ?? "").trim();
 	const selectableModelIdSet = useMemo(
 		() =>
@@ -250,18 +259,7 @@ export function useChatModelCatalog(args: {
 	}, [modelOptions.active, modelOptions.comingSoon]);
 
 	const providerOptions = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const model of models) {
-			if (!map.has(model.providerId)) {
-				map.set(
-					model.providerId,
-					model.providerName ?? formatOrgLabel(model.providerId),
-				);
-			}
-		}
-		return Array.from(map.entries())
-			.map(([id, name]) => ({ id, name }))
-			.sort((a, b) => a.name.localeCompare(b.name));
+		return buildChatProviderOptions(models);
 	}, [models]);
 	const providerNameById = useMemo(
 		() =>

@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
-	DropdownMenuTrigger,
 	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical } from "lucide-react";
 import {
 	Tooltip,
-	TooltipTrigger,
 	TooltipContent,
+	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
 	Empty,
@@ -20,13 +20,56 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import ManagementKeyUsageItem from "./ManagementKeyUsageItem";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+import {
+	Ban,
+	CheckCircle2,
+	Edit2,
+	KeyRound,
+	MoreVertical,
+	Shield,
+	Trash2,
+} from "lucide-react";
 import EditManagementKeyItem from "./EditManagementKeyItem";
 import DeleteManagementKeyItem from "./DeleteManagementKeyItem";
-import ManagementKeyLimitsItem from "./ManagementKeyLimitsItem";
-import { Shield } from "lucide-react";
 
 type ManagementKeyState = "active" | "paused" | "expired" | "unknown";
+type ManagementKeyDialogType = "edit" | "delete";
+type ActiveManagementKeyDialog = {
+	type: ManagementKeyDialogType;
+	key: any;
+} | null;
+
+function ManagementDialogMenuItem({
+	label,
+	Icon,
+	variant,
+	onOpen,
+}: {
+	label: string;
+	Icon: React.ComponentType<{ className?: string }>;
+	variant?: "default" | "destructive";
+	onOpen: () => void;
+}) {
+	return (
+		<DropdownMenuItem asChild variant={variant}>
+			<div
+				className="flex w-full items-center gap-2 text-left"
+				onClick={onOpen}
+			>
+				<Icon className="mr-2 h-4 w-4" />
+				<span>{label}</span>
+			</div>
+		</DropdownMenuItem>
+	);
+}
 
 function getManagementKeyState(k: any): ManagementKeyState {
 	const expiresRaw = typeof k?.expires_at === "string" ? k.expires_at : "";
@@ -39,36 +82,82 @@ function getManagementKeyState(k: any): ManagementKeyState {
 
 	const status = String(k?.status ?? "").toLowerCase();
 	if (status === "active") return "active";
-	if (status === "paused") return "paused";
+	if (status === "paused" || status === "disabled" || status === "revoked") {
+		return "paused";
+	}
 	return "unknown";
+}
+
+function stateMeta(state: ManagementKeyState) {
+	switch (state) {
+		case "active":
+			return {
+				label: "Active",
+				Icon: CheckCircle2,
+				className: "text-emerald-600",
+			};
+		case "paused":
+			return {
+				label: "Disabled",
+				Icon: Ban,
+				className: "text-zinc-400",
+			};
+		case "expired":
+			return {
+				label: "Expired",
+				Icon: Ban,
+				className: "text-amber-600",
+			};
+		case "unknown":
+			return {
+				label: "Unknown",
+				Icon: Shield,
+				className: "text-muted-foreground",
+			};
+	}
+}
+
+function formatDate(value?: string | null) {
+	if (!value) return "Never";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return "Never";
+	return date.toLocaleDateString();
 }
 
 function formatExpiry(value?: string | null) {
 	if (!value) return "No expiry";
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return "No expiry";
-	return date.toLocaleString();
+	const days = Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+	if (days <= 0) return "Expired";
+	return `${days}d`;
+}
+
+function formatKeyReference(prefix?: string | null) {
+	const ref = typeof prefix === "string" ? prefix.trim() : "";
+	return ref ? `aistats_v1_sk_...${ref}` : "aistats_v1_sk_...";
 }
 
 export default function ManagementKeysPanel({ teamsWithKeys }: any) {
-	const sortedTeams = useMemo(() => {
-		if (!Array.isArray(teamsWithKeys)) return teamsWithKeys;
-		const withKeys: any[] = [];
-		const withoutKeys: any[] = [];
-		for (const t of teamsWithKeys) {
-			if (t && Array.isArray(t.keys) && t.keys.length > 0)
-				withKeys.push(t);
-			else withoutKeys.push(t);
-		}
-		return [...withKeys, ...withoutKeys];
+	const [activeDialog, setActiveDialog] =
+		useState<ActiveManagementKeyDialog>(null);
+	const rows = useMemo(() => {
+		if (!Array.isArray(teamsWithKeys)) return [];
+		return teamsWithKeys.flatMap((team: any) => {
+			const keys = Array.isArray(team?.keys) ? team.keys : [];
+			return keys.map((key: any) => ({
+				key,
+				workspaceName: team?.name ?? "Workspace",
+			}));
+		});
 	}, [teamsWithKeys]);
 
-	if (!sortedTeams || sortedTeams.length === 0) {
+	if (rows.length === 0) {
 		return (
 			<Empty className="mt-6 rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
 					<EmptyMedia variant="icon">
-						<Shield className="h-5 w-5" />
+						<KeyRound className="h-5 w-5" />
 					</EmptyMedia>
 					<EmptyTitle>No management keys yet</EmptyTitle>
 					<EmptyDescription>
@@ -80,120 +169,129 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 	}
 
 	return (
-		<div className="mt-6 space-y-6">
-			{sortedTeams.map((team: any) => (
-				<div key={team.id ?? "personal"}>
-					<div className="font-medium mb-2">{team.name}</div>
-					{!team.keys || team.keys.length === 0 ? (
-						<Empty
-							size="compact"
-							className="rounded-lg border border-dashed border-border/80 p-6"
-						>
-							<EmptyHeader>
-								<EmptyMedia variant="icon">
-									<Shield className="h-5 w-5" />
-								</EmptyMedia>
-								<EmptyTitle className="text-base">
-									No management keys for this workspace
-								</EmptyTitle>
-								<EmptyDescription>
-									Generate one to manage workspaces and resources programmatically.
-								</EmptyDescription>
-							</EmptyHeader>
-						</Empty>
-					) : (
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-							{team.keys.map((k: any) => {
-								const state = getManagementKeyState(k);
-								const stateLabel =
-									state === "active"
-										? "Active"
-										: state === "paused"
-											? "Paused"
-											: state === "expired"
-												? "Expired"
-												: "Unknown";
-								const pulseClass =
-									state === "active"
-										? "bg-emerald-400"
-										: state === "paused"
-											? "bg-amber-400"
-											: state === "expired"
-												? "bg-red-400"
-												: "bg-zinc-400";
-								const dotClass =
-									state === "active"
-										? "bg-emerald-500"
-										: state === "paused"
-											? "bg-amber-500"
-											: state === "expired"
-												? "bg-red-500"
-												: "bg-zinc-500";
+		<>
+			<div className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
+				<Table className="table-fixed [&_tr:last-child]:border-b-0 [&_th]:px-3 [&_td]:px-3 [&_th]:align-middle [&_td]:align-middle">
+				<TableHeader className="bg-muted/30">
+					<TableRow>
+						<TableHead className="w-[34%]">
+							Key{" "}
+							<span className="ml-1 text-xs font-normal text-muted-foreground">
+								({rows.length})
+							</span>
+						</TableHead>
+						<TableHead className="w-[18%]">Workspace</TableHead>
+						<TableHead className="w-[14%]">Status</TableHead>
+						<TableHead className="w-[13%]">Created</TableHead>
+						<TableHead className="w-[13%]">Last Used</TableHead>
+						<TableHead className="w-[10%]">Expires</TableHead>
+						<TableHead className="w-[5%] text-right" />
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{rows.map(({ key: k, workspaceName }: any) => {
+						const state = getManagementKeyState(k);
+						const meta = stateMeta(state);
 
-								return (
-									<div
-										key={k.id}
-										className="relative p-4 border rounded-md bg-white dark:bg-zinc-950 border-amber-200 dark:border-amber-900/50"
-									>
-										<div className="flex items-center">
-											<div className="flex items-center flex-1">
-												<div>
-													<div className="mb-2 font-medium flex items-center gap-2">
-														<span>{k.name}</span>
-														<Tooltip delayDuration={0}>
-															<TooltipTrigger asChild>
-																<span className="relative flex size-2">
-																	<span
-																		className={`absolute inline-flex h-full w-full animate-ping rounded-full ${pulseClass} opacity-75`}
-																	></span>
-																	<span
-																		className={`relative inline-flex size-2 rounded-full ${dotClass}`}
-																	></span>
-																</span>
-															</TooltipTrigger>
-															<TooltipContent>{stateLabel}</TooltipContent>
-														</Tooltip>
-													</div>
-
-													<div className="font-mono text-sm text-zinc-700 dark:text-zinc-300">
-														{k.prefix}
-													</div>
-													<div className="mt-2 text-xs text-muted-foreground">
-														Expires: {formatExpiry(k.expires_at)}
-													</div>
-												</div>
-											</div>
-											<div className="ml-2">
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button
-															variant="ghost"
-															size="icon"
-															aria-label="Actions"
-														>
-															<MoreVertical />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent
-														side="bottom"
-														align="end"
-													>
-														<ManagementKeyUsageItem k={k} />
-														<EditManagementKeyItem k={k} />
-														<ManagementKeyLimitsItem k={k} />
-														<DeleteManagementKeyItem k={k} />
-													</DropdownMenuContent>
-												</DropdownMenu>
+						return (
+							<TableRow key={k.id}>
+								<TableCell className="min-w-0">
+									<div className="flex min-w-0 items-center gap-2">
+										<Tooltip delayDuration={0}>
+											<TooltipTrigger asChild>
+												<meta.Icon
+													aria-label={meta.label}
+													className={`h-4 w-4 shrink-0 ${meta.className}`}
+												/>
+											</TooltipTrigger>
+											<TooltipContent>{meta.label}</TooltipContent>
+										</Tooltip>
+										<div className="min-w-0">
+											<div className="truncate font-medium">{k.name}</div>
+											<div className="truncate font-mono text-xs text-muted-foreground">
+												{formatKeyReference(k.prefix)}
 											</div>
 										</div>
 									</div>
-								);
-							})}
-						</div>
-					)}
-				</div>
-			))}
-		</div>
+								</TableCell>
+								<TableCell className="min-w-0">
+									<div className="truncate text-sm text-muted-foreground">
+										{workspaceName}
+									</div>
+								</TableCell>
+								<TableCell>
+									<div className="flex items-center gap-2 text-sm">
+										<meta.Icon className={`h-4 w-4 ${meta.className}`} />
+										<span>{meta.label}</span>
+									</div>
+								</TableCell>
+								<TableCell className="text-xs text-muted-foreground">
+									{formatDate(k.created_at)}
+								</TableCell>
+								<TableCell className="text-xs text-muted-foreground">
+									{formatDate(k.last_used_at)}
+								</TableCell>
+								<TableCell className="text-xs text-muted-foreground">
+									{formatExpiry(k.expires_at)}
+								</TableCell>
+								<TableCell className="text-right">
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button
+												variant="ghost"
+												size="icon"
+												aria-label="Actions"
+											>
+												<MoreVertical />
+											</Button>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent
+											side="bottom"
+											align="end"
+											className="w-40"
+										>
+											<ManagementDialogMenuItem
+												label="Edit"
+												Icon={Edit2}
+												onOpen={() => setActiveDialog({ type: "edit", key: k })}
+											/>
+											<ManagementDialogMenuItem
+												label="Delete"
+												Icon={Trash2}
+												variant="destructive"
+												onOpen={() => setActiveDialog({ type: "delete", key: k })}
+											/>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</TableCell>
+							</TableRow>
+						);
+					})}
+				</TableBody>
+				</Table>
+			</div>
+			{activeDialog?.type === "edit" ? (
+				<EditManagementKeyItem
+					key={`edit-${activeDialog.key?.id ?? "key"}`}
+					k={activeDialog.key}
+					trigger={false}
+					open
+					onOpenChange={(next) => {
+						if (!next) setActiveDialog(null);
+					}}
+				/>
+			) : null}
+			{activeDialog?.type === "delete" ? (
+				<DeleteManagementKeyItem
+					key={`delete-${activeDialog.key?.id ?? "key"}`}
+					k={activeDialog.key}
+					trigger={false}
+					open
+					onOpenChange={(next) => {
+						if (!next) setActiveDialog(null);
+					}}
+				/>
+			) : null}
+		</>
 	);
 }
-

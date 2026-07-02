@@ -3,7 +3,6 @@ import CreateManagementKeyDialog from "@/components/(gateway)/settings/managemen
 import ManagementKeysPanel from "@/components/(gateway)/settings/management-api-keys/ManagementKeysPanel";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ShieldAlert } from "lucide-react";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { fetchSettingsManagementApiKeysInitialData } from "@/lib/fetchers/internal/fetchSettingsManagementApiKeysInitialData";
@@ -16,22 +15,7 @@ export default function ManagementApiKeysPage(props: {
 	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
 	return (
-		<div className="space-y-6">
-			<Alert
-				variant="destructive"
-				className="border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-			>
-				<ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-				<AlertTitle className="text-amber-800 dark:text-amber-300">
-					Keep these keys extra secure
-				</AlertTitle>
-				<AlertDescription className="text-amber-700 dark:text-amber-400">
-					Management API keys grant higher privileges to your account. They can
-					create resources, manage workspaces, and access sensitive data. Never share
-					these keys and rotate them immediately if compromised.
-				</AlertDescription>
-			</Alert>
-
+		<div>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<ManagementApiKeysContent searchParams={props.searchParams} />
 			</Suspense>

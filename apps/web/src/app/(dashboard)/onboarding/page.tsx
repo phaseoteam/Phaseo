@@ -113,7 +113,7 @@ export default async function OnboardingPage() {
 			.select("workspace_id, role, workspaces(id, name)")
 			.eq("user_id", user.id)
 			.in("role", ["owner", "admin"]),
-		getGatewaySupportedModels(false),
+		getGatewaySupportedModels(false, { availableOnly: true }),
 	]);
 
 	const workspaces: OnboardingWorkspace[] = [];

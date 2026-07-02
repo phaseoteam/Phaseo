@@ -12,6 +12,8 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import type {
 	ChatMessage,
 	ChatModelSettings,
+	ChatServerToolConfigs,
+	ChatServerToolType,
 	ChatSettings,
 	ChatThread,
 	UnifiedChatEndpoint,
@@ -45,8 +47,10 @@ import {
 import {
 	APP_HEADERS,
 	DEFAULT_SETTINGS,
+	DEFAULT_SERVER_TOOLS,
 	STORAGE_KEYS,
 	TEMP_CHAT_ID,
+	buildServerToolDefinitions,
 	buildDefaultSystemPrompt,
 	buildPersonalizationPrompt,
 	buildTitle,
@@ -59,14 +63,15 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getOrgId,
+	normalizeServerTools,
 	normalizeBaseUrl,
 	nowIso,
 	shouldRequestImageModalities,
+	type ChatResponseLayout,
 	type PersonalizationSettings,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
-	resolveGatewayModelOrgId,
 	useChatModelCatalog,
 } from "@/components/(chat)/playground/use-chat-model-catalog";
 import { useChatAuth } from "@/components/(chat)/playground/use-chat-auth";
@@ -133,6 +138,13 @@ function ChatPlaygroundContent({
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [composerRequiresAudioInput, setComposerRequiresAudioInput] =
 		useState(false);
+	const [responseLayout, setResponseLayout] = useState<ChatResponseLayout>(() => {
+		if (typeof window === "undefined") return "sequential";
+		return window.localStorage.getItem(STORAGE_KEYS.responseLayout) ===
+			"side-by-side"
+			? "side-by-side"
+			: "sequential";
+	});
 	const [temporaryThread, setTemporaryThread] = useState<ChatThread | null>(
 		null,
 	);
@@ -186,6 +198,16 @@ function ChatPlaygroundContent({
 			);
 		}
 	}, []);
+
+	const handleResponseLayoutChange = useCallback(
+		(value: ChatResponseLayout) => {
+			setResponseLayout(value);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(STORAGE_KEYS.responseLayout, value);
+			}
+		},
+		[],
+	);
 
 	const handleExportChats = useCallback(async () => {
 		const chats = await getAllChats("text");
@@ -726,6 +748,36 @@ function ChatPlaygroundContent({
 			const requestBody: Record<string, unknown> = {
 				model: requestExecutionModelId,
 			};
+			const setOptionalRequestNumber = (
+				key: string,
+				value: number | null | undefined,
+			) => {
+				if (typeof value === "number" && Number.isFinite(value)) {
+					requestBody[key] = value;
+				}
+			};
+			setOptionalRequestNumber("temperature", effectiveModelSettings.temperature);
+			setOptionalRequestNumber(
+				"max_output_tokens",
+				effectiveModelSettings.maxOutputTokens,
+			);
+			setOptionalRequestNumber("top_p", effectiveModelSettings.topP);
+			setOptionalRequestNumber("top_k", effectiveModelSettings.topK);
+			setOptionalRequestNumber("min_p", effectiveModelSettings.minP);
+			setOptionalRequestNumber("top_a", effectiveModelSettings.topA);
+			setOptionalRequestNumber(
+				"presence_penalty",
+				effectiveModelSettings.presencePenalty,
+			);
+			setOptionalRequestNumber(
+				"frequency_penalty",
+				effectiveModelSettings.frequencyPenalty,
+			);
+			setOptionalRequestNumber(
+				"repetition_penalty",
+				effectiveModelSettings.repetitionPenalty,
+			);
+			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.meta = true;
@@ -733,14 +785,15 @@ function ChatPlaygroundContent({
 				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
 				}
-				const tools: Array<Record<string, unknown>> = [];
-				if (
-					isUnified &&
-					(sendPayload?.apiServerToolsEnabled ??
-						effectiveModelSettings.apiServerToolsEnabled)
-				) {
-					tools.push({ type: "gateway:datetime" });
-				}
+				const tools = isUnified
+					? buildServerToolDefinitions(
+							sendPayload?.serverTools ??
+								effectiveModelSettings.serverTools ??
+								DEFAULT_SERVER_TOOLS,
+							sendPayload?.serverToolConfigs ??
+								effectiveModelSettings.serverToolConfigs,
+						)
+					: [];
 				if (tools.length > 0) {
 					requestBody.tools = tools;
 				}
@@ -1789,6 +1842,8 @@ function ChatPlaygroundContent({
 					reasoning_effort: activeThread.settings.reasoningEffort ?? "medium",
 					web_search_enabled: payload.webSearchEnabled,
 					api_server_tools_enabled: payload.apiServerToolsEnabled,
+					server_tools: payload.serverTools,
+					server_tool_configs: payload.serverToolConfigs,
 					attachments_count: payload.attachments.length,
 				},
 			};
@@ -2382,6 +2437,174 @@ function ChatPlaygroundContent({
 				isModelSelectableForContext,
 				temporaryMode,
 				updateThreadState,
+			],
+	);
+
+	const updateSelectedModelOrder = useCallback(
+		(ids: string[]) => {
+			if (!activeThread) return;
+			const currentSelectedIds = [
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			].filter(Boolean);
+			const knownSelectedIds = new Set(currentSelectedIds);
+			const nextSelectedIds = Array.from(
+				new Set(ids.filter((id) => knownSelectedIds.has(id))),
+			);
+			if (nextSelectedIds.length === 0) return;
+			for (const id of currentSelectedIds) {
+				if (!nextSelectedIds.includes(id)) {
+					nextSelectedIds.push(id);
+				}
+			}
+			const [nextPrimaryModelId, ...nextCompareModelIds] =
+				nextSelectedIds;
+			if (!nextPrimaryModelId) return;
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					nextPrimaryModelId
+				]?.displayName ?? "";
+			const previousDefault = buildDefaultSystemPrompt(
+				activeThread.modelId,
+				currentModelDisplayName,
+			);
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				activeThread.settings.systemPrompt === previousDefault
+					? buildDefaultSystemPrompt(
+							nextPrimaryModelId,
+							nextModelDisplayName,
+						)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[nextPrimaryModelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimaryModelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimaryModelId,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[activeThread, temporaryMode, updateThreadState],
+	);
+
+	const addComposerModelSet = useCallback(
+		(modelIds: string[]) => {
+			if (!activeThread) return;
+			const currentSelectedIds = [
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			].filter(Boolean);
+			const nextSelectedIds = Array.from(
+				new Set([...currentSelectedIds, ...modelIds.filter(Boolean)]),
+			);
+			const [nextPrimaryModelId, ...candidateCompareIds] =
+				nextSelectedIds;
+			if (!nextPrimaryModelId) return;
+			const requiredCapability =
+				getPrimaryCapabilityForModel(nextPrimaryModelId);
+			const nextCompareModelIds = candidateCompareIds.filter((id) =>
+				isModelSelectableForContext(
+					id,
+					requiredCapability,
+					composerRequiresAudioInput,
+				),
+			);
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					nextPrimaryModelId
+				]?.displayName ?? "";
+			const previousDefault = buildDefaultSystemPrompt(
+				activeThread.modelId,
+				currentModelDisplayName,
+			);
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				activeThread.settings.systemPrompt === previousDefault
+					? buildDefaultSystemPrompt(
+							nextPrimaryModelId,
+							nextModelDisplayName,
+						)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[nextPrimaryModelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimaryModelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimaryModelId,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[
+			activeThread,
+			composerRequiresAudioInput,
+			getPrimaryCapabilityForModel,
+			isModelSelectableForContext,
+			temporaryMode,
+			updateThreadState,
+		],
+	);
+
+	const toggleComposerModel = useCallback(
+		(modelId: string) => {
+			if (!activeThread) return;
+			if (!activeThread.modelId) {
+				updateActiveModel(modelId);
+				return;
+			}
+			if (activeThread.modelId === modelId) {
+				removeSelectedModel(modelId);
+				return;
+			}
+			const compare = activeThread.settings.compareModelIds ?? [];
+			const nextCompare = compare.includes(modelId)
+				? compare.filter((id) => id !== modelId)
+				: [...compare, modelId];
+			updateCompareModelIds(nextCompare);
+		},
+		[
+			activeThread,
+			removeSelectedModel,
+			updateActiveModel,
+			updateCompareModelIds,
 		],
 	);
 
@@ -2596,9 +2819,6 @@ function ChatPlaygroundContent({
 		}
 	};
 
-	const selectedOrgId = activeModelId
-		? getOrgId(activeModelId)
-		: "ai-stats";
 	const selectedModelIds = useMemo(() => {
 		const ids: string[] = [];
 		if (activeModelId) {
@@ -2638,10 +2858,20 @@ function ChatPlaygroundContent({
 			const requiresAudioInput = composerRequiresAudioInput;
 			const byId = new Map<
 				string,
-				{ id: string; label: string; orgId: string; orgName: string }
+				{
+					id: string;
+					label: string;
+					orgId: string;
+					orgName: string;
+					releaseDate: string | null;
+				}
 			>();
-			for (const model of selectableModels) {
-				const selectorModelId = model.selectorModelId;
+			const orderedOptions = [
+				...modelOptions.active,
+				...modelOptions.comingSoon,
+			];
+			for (const model of orderedOptions) {
+				const selectorModelId = model.modelId;
 				const modelCapabilities = getModelCapabilities(selectorModelId);
 				if (
 					requiredCapability &&
@@ -2656,35 +2886,28 @@ function ChatPlaygroundContent({
 					continue;
 				}
 				if (byId.has(selectorModelId)) continue;
-				const orgId = resolveGatewayModelOrgId(model);
-				const orgName =
-					model.organisationName ??
-					model.providerName ??
-					formatOrgLabel(orgId);
 				// Keep selector labels canonical; nicknames are display-only in chat UI.
-			const baseLabel =
-				model.modelName || formatModelLabel(selectorModelId);
-			const isDisabled =
-				activeModelOverrides?.[selectorModelId]?.enabled === false;
+				const baseLabel =
+					model.label || formatModelLabel(selectorModelId);
+				const isDisabled =
+					activeModelOverrides?.[selectorModelId]?.enabled === false;
 				byId.set(selectorModelId, {
 					id: selectorModelId,
 					label: isDisabled ? `${baseLabel} (Off)` : baseLabel,
-					orgId,
-					orgName,
+					orgId: model.orgId,
+					orgName: model.orgName,
+					releaseDate: model.releaseDate,
 				});
 			}
-			return Array.from(byId.values()).sort(
-				(a, b) =>
-					a.orgName.localeCompare(b.orgName) ||
-					a.label.localeCompare(b.label),
-			);
+			return Array.from(byId.values());
 		},
 			[
 				activeModelCapability,
 				activeModelOverrides,
 				composerRequiresAudioInput,
 				getModelCapabilities,
-				selectableModels,
+				modelOptions.active,
+				modelOptions.comingSoon,
 				supportsModelAudioInput,
 			],
 	);
@@ -2754,6 +2977,8 @@ function ChatPlaygroundContent({
 			endpoint: DEFAULT_SETTINGS.endpoint,
 			webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
 			apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+			serverTools: DEFAULT_SETTINGS.serverTools,
+			serverToolConfigs: DEFAULT_SETTINGS.serverToolConfigs,
 			imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 			enabled: true,
 			displayName: "",
@@ -2774,11 +2999,11 @@ function ChatPlaygroundContent({
 	const presenceValue = activeModelSettings?.presencePenalty ?? 0;
 	const repetitionValue = activeModelSettings?.repetitionPenalty ?? 1;
 
-	const updateModelSettings = useCallback(
-		(partial: Partial<ChatModelSettings>) => {
-			if (!activeThread || !modelSettingsModelId) return;
+	const updateModelSettingsForModel = useCallback(
+		(modelId: string, partial: Partial<ChatModelSettings>) => {
+			if (!activeThread || !modelId) return;
 			const currentOverrides = activeThread.settings.modelOverridesById ?? {};
-			const existingModelOverrides = currentOverrides[modelSettingsModelId] ?? {};
+			const existingModelOverrides = currentOverrides[modelId] ?? {};
 			const nextPartial = { ...partial };
 			if (typeof partial.displayName === "string" && partial.systemPrompt === undefined) {
 				const previousDisplayName =
@@ -2787,16 +3012,16 @@ function ChatPlaygroundContent({
 						: "";
 				const nextDisplayName = partial.displayName;
 				const previousDefaultPrompt = buildDefaultSystemPrompt(
-					modelSettingsModelId,
+					modelId,
 					previousDisplayName,
 				);
 				const nextDefaultPrompt = buildDefaultSystemPrompt(
-					modelSettingsModelId,
+					modelId,
 					nextDisplayName,
 				);
 				const currentEffectiveSystemPrompt = getEffectiveModelSettings(
 					activeThread,
-					modelSettingsModelId,
+					modelId,
 				).systemPrompt;
 				const hasExplicitModelPrompt =
 					existingModelOverrides.systemPrompt !== undefined;
@@ -2817,7 +3042,7 @@ function ChatPlaygroundContent({
 					...activeThread.settings,
 					modelOverridesById: {
 						...currentOverrides,
-						[modelSettingsModelId]: nextModelOverrides,
+						[modelId]: nextModelOverrides,
 					},
 				},
 				updatedAt: nowIso(),
@@ -2826,10 +3051,16 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
-			modelSettingsModelId,
 			temporaryMode,
 			updateThreadState,
 		],
+	);
+	const updateModelSettings = useCallback(
+		(partial: Partial<ChatModelSettings>) => {
+			if (!modelSettingsModelId) return;
+			updateModelSettingsForModel(modelSettingsModelId, partial);
+		},
+		[modelSettingsModelId, updateModelSettingsForModel],
 	);
 
 	const updateModelSettingNumber = useCallback(
@@ -2904,11 +3135,6 @@ function ChatPlaygroundContent({
 		temporaryMode,
 		updateThreadState,
 	]);
-	const handleDismissRequestError = useCallback(() => {
-		setRequestError(null);
-		setError(null);
-	}, []);
-
 	return (
 		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
@@ -2952,14 +3178,18 @@ function ChatPlaygroundContent({
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
 					onDebugChange={handleDebugChange}
+					responseLayout={responseLayout}
+					onResponseLayoutChange={handleResponseLayoutChange}
 					allowModelCompare
 					compareModelIds={
 						activeThread?.settings.compareModelIds ?? []
 					}
 					onCompareModelIdsChange={updateCompareModelIds}
+					onSelectedModelOrderChange={updateSelectedModelOrder}
 					onRemoveModel={removeSelectedModel}
 					onRemoveAllModels={removeAllSelectedModels}
 					onOpenModelSettingsForModel={openModelSettingsForModel}
+					onUpdateModelSettingsForModel={updateModelSettingsForModel}
 					modelDisplayNameById={selectedModelDisplayNameById}
 					modelEnabledById={selectedModelEnabledById}
 					modelCapabilitiesById={modelCapabilitiesById}
@@ -2970,6 +3200,7 @@ function ChatPlaygroundContent({
 				<ChatConversation
 					activeThread={activeThread}
 					isSending={isSending}
+					temporaryMode={temporaryMode}
 					mode="unified"
 					webSearchEnabled={
 						activeThread?.settings.webSearchEnabled ?? false
@@ -2978,11 +3209,25 @@ function ChatPlaygroundContent({
 						updateActiveSettings({ webSearchEnabled: enabled })
 					}
 					apiServerToolsEnabled={
-						activeThread?.settings.apiServerToolsEnabled ?? false
+						activeThread?.settings.apiServerToolsEnabled ??
+						DEFAULT_SETTINGS.apiServerToolsEnabled
 					}
-					onApiServerToolsEnabledChange={(enabled) =>
-						updateActiveSettings({ apiServerToolsEnabled: enabled })
+					serverTools={
+						normalizeServerTools(activeThread?.settings.serverTools)
 					}
+					onServerToolsChange={(serverTools: ChatServerToolType[]) =>
+						updateActiveSettings({
+							serverTools: normalizeServerTools(serverTools),
+							apiServerToolsEnabled: true,
+						})
+					}
+					serverToolConfigs={
+						activeThread?.settings.serverToolConfigs ??
+						DEFAULT_SETTINGS.serverToolConfigs
+					}
+					onServerToolConfigsChange={(
+						serverToolConfigs: ChatServerToolConfigs,
+					) => updateActiveSettings({ serverToolConfigs })}
 					reasoningEnabled={
 						activeThread?.settings.reasoningEnabled ?? false
 					}
@@ -3007,17 +3252,19 @@ function ChatPlaygroundContent({
 					modelLinkById={modelLinkById}
 					isAuthenticated={isAuthenticated}
 					accentColor={personalization.accentColor}
-					selectedOrgId={selectedOrgId}
 					selectedModelId={activeThread?.modelId ?? ""}
 					selectedModelLabel={selectedModelLabel}
 					selectedModelCount={selectedModelIds.length}
 					selectedModelsHint={selectedModelsHint}
-					onOpenModelPicker={() => setModelPickerOpen(true)}
+					selectedModelIds={selectedModelIds}
+					modelOptions={modelOptions.active}
+					onToggleModel={toggleComposerModel}
+					onAddModelSet={addComposerModelSet}
 					onAudioAttachmentRequirementChange={
 						handleAudioAttachmentRequirementChange
 					}
 					requestError={requestError}
-					onDismissRequestError={handleDismissRequestError}
+					responseLayout={responseLayout}
 				/>
 			</SidebarInset>
 			<ModelSettingsDialog

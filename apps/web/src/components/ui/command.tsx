@@ -38,12 +38,14 @@ function CommandDialog({
   description = "Search for a command to run...",
   children,
   className,
+  commandProps,
   showCloseButton = false,
   ...props
 }: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
   title?: string
   description?: string
   className?: string
+  commandProps?: React.ComponentProps<typeof CommandPrimitive>
   showCloseButton?: boolean
   children: React.ReactNode
 }) {
@@ -51,7 +53,7 @@ function CommandDialog({
     <Dialog {...props}>
       <DialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-3xl! p-0",
+          "top-[16vh] -translate-y-0 overflow-hidden rounded-3xl! p-0 origin-top duration-150 data-open:zoom-in-100 data-open:slide-in-from-top-2 data-closed:zoom-out-100 data-closed:slide-out-to-top-2 sm:top-[18vh]",
           className
         )}
         showCloseButton={showCloseButton}
@@ -60,7 +62,7 @@ function CommandDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <Command>{children}</Command>
+        <Command {...commandProps}>{children}</Command>
       </DialogContent>
     </Dialog>
   )

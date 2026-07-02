@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
 import TeamSwitcher from "./TeamSwitcher";
 import { SwapTeam } from "@/app/(dashboard)/actions";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
@@ -75,6 +76,7 @@ export default function HeaderClient({
 	const [activeWorkspaceId, setActiveTeamId] = useState<string | undefined>(
 		currentTeamId ?? teams[0]?.id,
 	);
+	const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 	const [isMobileTeamDialogOpen, setIsMobileTeamDialogOpen] = useState(false);
 	const activeTeam = teams.find((team) => team.id === activeWorkspaceId) ?? teams[0];
 
@@ -88,8 +90,7 @@ export default function HeaderClient({
 		} catch (error) {
 			console.error("Sign out error", error);
 		} finally {
-			router.push("/");
-			router.refresh();
+			window.location.assign("/");
 		}
 	}
 
@@ -117,7 +118,7 @@ export default function HeaderClient({
 
 	const navLinks = [
 		{ href: "/models", label: "Models", icon: Boxes },
-		{ href: "/chat", label: "Playground", icon: MessageSquare },
+		{ href: "/chat", label: "Chat", icon: MessageSquare },
 		{ href: "/compare", label: "Compare", icon: Scale },
 		{ href: "/api-providers", label: "Providers", icon: Server },
 		{ href: "/apps", label: "Apps", icon: AppWindow },
@@ -126,6 +127,99 @@ export default function HeaderClient({
 	const docsHref = "https://docs.ai-stats.phaseo.app/v1";
 
 	if (variant === "mobile") {
+		if (!isLoggedIn) {
+			return (
+				<DropdownMenu open={isMobileNavOpen} onOpenChange={setIsMobileNavOpen}>
+					<ButtonGroup className="h-8 items-stretch overflow-hidden rounded-2xl shadow-xs">
+						<Button asChild className="h-8 rounded-r-none px-4">
+							<Link href="/sign-up" prefetch={false}>
+								Sign Up
+							</Link>
+						</Button>
+						<DropdownMenuTrigger asChild>
+							<Button
+								className="h-8 w-8 rounded-l-none border-l border-primary-foreground/25 px-0"
+								aria-label="Open navigation menu"
+							>
+								<ChevronDown
+									className={cn(
+										"size-4 transition-transform duration-150",
+										isMobileNavOpen && "rotate-180"
+									)}
+									aria-hidden="true"
+								/>
+							</Button>
+						</DropdownMenuTrigger>
+					</ButtonGroup>
+					<DropdownMenuContent align="end" className="w-48 rounded-xl p-1">
+						{navLinks.map(({ href, label, icon: Icon }) => {
+							const isActive =
+								pathname === href || pathname.startsWith(href + "/");
+							return (
+								<DropdownMenuItem
+									key={href}
+									asChild
+									className={cn(
+										"rounded-md py-2 text-sm",
+										isActive && "font-semibold text-primary"
+									)}
+								>
+									<Link href={href} prefetch={false} className="flex items-center gap-2">
+										<Icon className="h-4 w-4" />
+										{label}
+									</Link>
+								</DropdownMenuItem>
+							);
+						})}
+						<DropdownMenuItem asChild className="rounded-md py-2 text-sm">
+							<Link
+								href={docsHref}
+								target="_blank"
+								rel="noreferrer"
+								className="flex items-center gap-2"
+							>
+								<BookOpenText className="h-4 w-4" />
+								Docs
+							</Link>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<div className="px-1 py-1">
+							<div
+								role="radiogroup"
+								aria-label="Theme mode"
+								className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-900"
+							>
+								{(["light", "dark", "system"] as const).map((mode) => {
+									const Icon = themeMeta[mode].icon;
+									const selected = currentTheme === mode;
+									return (
+										<button
+											key={mode}
+											type="button"
+											role="radio"
+											aria-checked={selected}
+											aria-label={`Set theme: ${themeMeta[mode].label}`}
+											onClick={() => setTheme(mode)}
+											className={cn(
+												"relative flex h-8 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
+												"hover:bg-white hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50",
+												selected
+													? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-50"
+													: "bg-transparent dark:text-zinc-400"
+											)}
+											title={themeMeta[mode].label}
+										>
+											<Icon className="h-4 w-4" />
+										</button>
+									);
+								})}
+							</div>
+						</div>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			);
+		}
+
 		return (
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
@@ -357,7 +451,7 @@ export default function HeaderClient({
 
 								<DropdownMenuItem
 									className="rounded-md py-1.5 text-sm"
-								onSelect={(event) => {
+								onClick={(event) => {
 									event.preventDefault();
 									void handleSignOut();
 								}}
@@ -369,8 +463,8 @@ export default function HeaderClient({
 					) : (
 						<>
 							<DropdownMenuItem asChild className="rounded-md py-1.5 text-sm">
-								<Link href="/sign-in" prefetch={false}>
-									Sign in
+								<Link href="/sign-up" prefetch={false}>
+									Sign Up
 								</Link>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
@@ -426,12 +520,12 @@ export default function HeaderClient({
 					/>
 				</>
 			) : (
-				<Link href="/sign-in" prefetch={false}>
+				<Link href="/sign-up" prefetch={false}>
 					<Button
-						variant="outline"
+						variant="default"
 						className="rounded-lg px-4 py-2 text-xs font-semibold"
 					>
-						Sign In
+						Sign Up
 					</Button>
 				</Link>
 			)}

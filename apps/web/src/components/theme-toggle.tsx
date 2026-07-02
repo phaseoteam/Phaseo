@@ -45,11 +45,13 @@ export function ThemeToggle() {
 type ThemeSelectorProps = {
 	className?: string;
 	labelSize?: "xs" | "sm";
+	showSelectedLabel?: boolean;
 };
 
 export function ThemeSelector({
 	className,
 	labelSize: _labelSize = "xs",
+	showSelectedLabel = true,
 }: ThemeSelectorProps = {}) {
 	const { theme, setTheme } = useTheme();
 	const reduceMotion = useReducedMotion();
@@ -120,16 +122,18 @@ export function ThemeSelector({
 							aria-label={`Use ${labels[themeOption]} theme`}
 							onClick={() => {
 								setTheme(themeOption);
-								revealLabel();
+								if (showSelectedLabel) {
+									revealLabel();
+								}
 							}}
 							className={cn(
-								"group/theme relative inline-flex h-8 w-8 items-center justify-center rounded-lg px-0.5 text-zinc-500 transition-colors hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 sm:h-7 sm:w-7 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:ring-zinc-700",
+								"group/theme relative inline-flex h-8 w-8 touch-manipulation items-center justify-center rounded-lg px-0.5 text-zinc-500 transition-colors hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 dark:text-zinc-400 dark:hover:text-zinc-100 dark:focus-visible:ring-zinc-700",
 								active && "text-zinc-900 dark:text-zinc-100",
 							)}
 						>
 							<motion.span
 								className={cn(
-									"flex h-6 w-6 items-center justify-center rounded-md bg-zinc-100 p-1 text-zinc-500 transition-colors group-hover/theme:bg-zinc-200 group-hover/theme:text-zinc-900 sm:h-[1.5rem] sm:w-[1.5rem] dark:bg-zinc-900 dark:text-zinc-400 dark:group-hover/theme:bg-zinc-800 dark:group-hover/theme:text-zinc-100",
+									"flex h-6 w-6 items-center justify-center rounded-md bg-zinc-100 p-1 text-zinc-500 transition-colors group-hover/theme:bg-zinc-200 group-hover/theme:text-zinc-900 dark:bg-zinc-900 dark:text-zinc-400 dark:group-hover/theme:bg-zinc-800 dark:group-hover/theme:text-zinc-100",
 									active &&
 										"bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100",
 								)}
@@ -141,47 +145,49 @@ export function ThemeSelector({
 								}
 								transition={springTransition}
 							>
-								<Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+								<Icon className="h-4 w-4" />
 							</motion.span>
 						</button>
 					);
 				})}
 			</div>
-			<AnimatePresence initial={false} mode="wait">
-				{showLabel ? (
-					<motion.span
-						key={normalizedTheme}
-						initial={
-							reduceMotion
-								? undefined
-								: { opacity: 0, x: -6, filter: "blur(3px)" }
-						}
-						animate={
-							reduceMotion
-								? undefined
-								: {
-										opacity: 1,
-										x: 0,
-										filter: "blur(0px)",
-										transition: springTransition,
-									}
-						}
-						exit={
-							reduceMotion
-								? undefined
-								: {
-										opacity: 0,
-										x: -6,
-										filter: "blur(3px)",
-										transition: { duration: 0.18, ease: "easeOut" },
-									}
-						}
-						className="relative inline-flex min-w-[3.75rem] overflow-hidden text-sm font-medium text-zinc-600 dark:text-zinc-300"
-					>
-						{labels[normalizedTheme]}
-					</motion.span>
-				) : null}
-			</AnimatePresence>
+			{showSelectedLabel ? (
+				<AnimatePresence initial={false} mode="wait">
+					{showLabel ? (
+						<motion.span
+							key={normalizedTheme}
+							initial={
+								reduceMotion
+									? undefined
+									: { opacity: 0, x: -6, filter: "blur(3px)" }
+							}
+							animate={
+								reduceMotion
+									? undefined
+									: {
+											opacity: 1,
+											x: 0,
+											filter: "blur(0px)",
+											transition: springTransition,
+										}
+							}
+							exit={
+								reduceMotion
+									? undefined
+									: {
+											opacity: 0,
+											x: -6,
+											filter: "blur(3px)",
+											transition: { duration: 0.18, ease: "easeOut" },
+										}
+							}
+							className="relative inline-flex min-w-[3.75rem] overflow-hidden text-sm font-medium text-zinc-600 dark:text-zinc-300"
+						>
+							{labels[normalizedTheme]}
+						</motion.span>
+					) : null}
+				</AnimatePresence>
+			) : null}
 		</div>
 	);
 }
