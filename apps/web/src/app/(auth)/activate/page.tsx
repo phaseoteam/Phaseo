@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { ShieldCheck, Terminal } from "lucide-react";
 import { approveDeviceAction, denyDeviceAction, lookupDeviceRequest } from "./actions";
 import { createClient } from "@/utils/supabase/server";
@@ -20,7 +21,15 @@ type ActivatePageProps = {
 	}>;
 };
 
-export default async function ActivatePage({ searchParams }: ActivatePageProps) {
+export default function ActivatePage({ searchParams }: ActivatePageProps) {
+	return (
+		<Suspense fallback={null}>
+			<ActivatePageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
 	const {
