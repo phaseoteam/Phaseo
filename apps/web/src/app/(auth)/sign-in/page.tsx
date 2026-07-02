@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Login } from "@/components/(gateway)/auth/Login";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
+import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 
 type SignInPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -13,7 +15,15 @@ export const metadata: Metadata = {
 		"Sign in to AI Stats to access the Gateway, manage teams, monitor usage, and continue with provider routing, model analytics, and account-level billing controls.",
 };
 
-export default async function Page({ searchParams }: SignInPageProps) {
+export default function Page({ searchParams }: SignInPageProps) {
+	return (
+		<Suspense fallback={<AuthSuspenseFallback />}>
+			<SignInPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function SignInPageContent({ searchParams }: SignInPageProps) {
 	const params = (await searchParams) ?? {};
 	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
 	const signupNotice =

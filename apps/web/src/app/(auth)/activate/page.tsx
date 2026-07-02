@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 export const metadata = {
@@ -23,7 +24,7 @@ type ActivatePageProps = {
 
 export default function ActivatePage({ searchParams }: ActivatePageProps) {
 	return (
-		<Suspense fallback={null}>
+		<Suspense fallback={<AuthSuspenseFallback />}>
 			<ActivatePageContent searchParams={searchParams} />
 		</Suspense>
 	);

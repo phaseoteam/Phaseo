@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SignUp } from "@/components/(gateway)/auth/sign-up/SignUp";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
+import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 
 type SignUpPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -13,7 +15,15 @@ export const metadata: Metadata = {
 		"Create an AI Stats account to access the Gateway, configure model routing, review performance analytics, and manage billing across personal and team workspaces.",
 };
 
-export default async function Page({ searchParams }: SignUpPageProps) {
+export default function Page({ searchParams }: SignUpPageProps) {
+	return (
+		<Suspense fallback={<AuthSuspenseFallback />}>
+			<SignUpPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function SignUpPageContent({ searchParams }: SignUpPageProps) {
 	const params = (await searchParams) ?? {};
 	const returnUrlParam = Array.isArray(params.returnUrl)
 		? params.returnUrl[0]
