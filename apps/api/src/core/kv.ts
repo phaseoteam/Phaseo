@@ -85,6 +85,37 @@ export async function getJson<T>(key: string): Promise<T | null> {
     }
 }
 
+export async function getTextMany(keys: string[]): Promise<Record<string, string | null>> {
+    const uniqueKeys = Array.from(new Set(keys.filter((key) => key.length > 0)));
+    if (uniqueKeys.length === 0) return {};
+    const out: Record<string, string | null> = {};
+
+    for (let index = 0; index < uniqueKeys.length; index += 100) {
+        const chunk = uniqueKeys.slice(index, index + 100);
+        try {
+            const values = await getCache().get(chunk, "text");
+            for (const key of chunk) {
+                out[key] = values.get(key) ?? null;
+            }
+        } catch {
+            const pairs = await Promise.all(
+                chunk.map(async (key) => {
+                    try {
+                        return [key, await getCache().get(key, "text")] as const;
+                    } catch {
+                        return [key, null] as const;
+                    }
+                }),
+            );
+            for (const [key, value] of pairs) {
+                out[key] = value;
+            }
+        }
+    }
+
+    return out;
+}
+
 export async function putJson(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
     const options = ttlSeconds ? { expirationTtl: ttlSeconds } : undefined;
     await getCache().put(key, JSON.stringify(value), options);

@@ -351,6 +351,24 @@ export default async function Page() {
 		url: absoluteUrl("/"),
 		description:
 			"Compare AI models, providers, pricing, benchmarks, and gateway reliability data.",
+		potentialAction: {
+			"@type": "SearchAction",
+			target: `${absoluteUrl("/models")}?q={search_term_string}`,
+			"query-input": "required name=search_term_string",
+		},
+	};
+	const organizationSchema = {
+		"@context": "https://schema.org",
+		"@type": "Organization",
+		name: PREFERRED_SITE_NAME,
+		alternateName: SITE_ALTERNATE_NAME,
+		url: absoluteUrl("/"),
+		logo: absoluteUrl("/png_logo_light.png"),
+		sameAs: [
+			"https://github.com/AI-Stats/AI-Stats",
+			"https://x.com/ai_stats_team",
+			"https://www.linkedin.com/company/phaseoapp/",
+		],
 	};
 
 	return (
@@ -366,6 +384,13 @@ export default async function Page() {
 				id="homepage-website-schema"
 				type="application/ld+json"
 				dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+			/>
+			<Script
+				id="homepage-organization-schema"
+				type="application/ld+json"
+				dangerouslySetInnerHTML={{
+					__html: JSON.stringify(organizationSchema),
+				}}
 			/>
 			<HomepageModelContext />
 			<LandingPage isBeta={heroVariant === "experimental"} />

@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { cn } from "@/lib/utils";
+import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { CalendarDays, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 
 type LeaderboardRange = "today" | "week" | "month" | "trending";
@@ -39,7 +41,6 @@ type ModelLeaderboardProps = {
 	showRangeControls?: boolean;
 	title?: string;
 	subtitle?: string;
-	icon?: ReactNode;
 	maxCollapsed?: number;
 	maxExpanded?: number;
 };
@@ -53,9 +54,9 @@ const RANGE_OPTIONS: Array<{ key: LeaderboardRange; label: string }> = [
 
 function formatTokens(value: number) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e9) return `${(value / 1e9).toFixed(1)}B`;
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+	if (value >= 1e9) return `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`;
+	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
 	return value.toLocaleString();
 }
 
@@ -107,85 +108,80 @@ export function ModelLeaderboard({
 	showRangeControls = true,
 	title,
 	subtitle,
-	icon,
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
+	const availableRanges = useMemo(
+		() =>
+			RANGE_OPTIONS.filter(
+				(option) => dataByRange[option.key]?.length
+			),
+		[dataByRange]
+	);
+
 	const [range, setRange] = useState<LeaderboardRange>(() => {
 		if (dataByRange[defaultRange]?.length) return defaultRange;
-		return (
-			RANGE_OPTIONS.find((option) => dataByRange[option.key]?.length)?.key ??
-			defaultRange
-		);
+		return availableRanges[0]?.key ?? "week";
 	});
 	const [showAll, setShowAll] = useState(false);
 
 	const entries = dataByRange[range] ?? [];
 	const visibleEntries = entries.slice(0, maxCollapsed);
 	const extraEntries = entries.slice(maxCollapsed, maxExpanded);
-	const selectedRangeLabel =
-		RANGE_OPTIONS.find((option) => option.key === range)?.label ?? "Range";
+
+	if (!entries.length) {
+		return (
+			<RankingsEmptyState
+				title="No leaderboard data yet"
+				description="Leaderboard entries appear once rankings are available."
+			/>
+		);
+	}
 
 	return (
 		<div className="space-y-4">
 			{showRangeControls || title ? (
 				<div
 					className={[
-						"flex flex-col gap-3 sm:flex-row sm:items-start",
+						"flex items-start gap-3",
 						title ? "justify-between" : "justify-end",
 					].join(" ")}
 				>
 					{title ? (
 						<div className="space-y-0.5">
-							<div className="flex items-center gap-2">
-								{icon}
-								<h3 className="text-xl font-semibold leading-8">{title}</h3>
-							</div>
+							<h3 className="text-xl font-semibold leading-8">{title}</h3>
 							{subtitle ? (
 								<p className="text-sm text-muted-foreground">{subtitle}</p>
 							) : null}
 						</div>
 					) : null}
 					{showRangeControls ? (
-						<Select
-							value={range}
-							onValueChange={(value) => {
-								setRange(value as LeaderboardRange);
-								setShowAll(false);
-							}}
-						>
-							<SelectTrigger
-								className="h-9 w-full min-w-[10rem] border border-border/70 bg-background shadow-xs hover:bg-muted/45 sm:w-fit dark:border-border/70 dark:bg-background dark:hover:bg-muted/25"
-								aria-label="Select leaderboard range"
-							>
-								<span className="flex min-w-0 items-center gap-2">
-									<CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-									<span className="truncate">{selectedRangeLabel}</span>
-								</span>
-							</SelectTrigger>
-							<SelectContent
-								align="end"
-								alignItemWithTrigger={false}
-								className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
-							>
-								{RANGE_OPTIONS.map((option) => (
-									<SelectItem key={option.key} value={option.key}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
+					<Select
+						value={range}
+						onValueChange={(value) => {
+							setRange(value as LeaderboardRange);
+							setShowAll(false);
+						}}
+					>
+						<SelectTrigger className="h-8 w-[150px]">
+							<SelectValue placeholder="Range" />
+						</SelectTrigger>
+						<SelectContent>
+							{RANGE_OPTIONS.map((option) => (
+								<SelectItem
+									key={option.key}
+									value={option.key}
+									disabled={!dataByRange[option.key]?.length}
+								>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					) : null}
 				</div>
 			) : null}
 
-			{!entries.length ? (
-				<RankingsEmptyState
-					title={`No leaderboard data for ${selectedRangeLabel.toLowerCase()}`}
-					description="Try a wider timeframe or check back once more gateway requests are aggregated."
-				/>
-			) : (
-			<>
 			<div className="space-y-2">
 				<div className="grid gap-2 md:grid-cols-2">
 					{visibleEntries.map((entry, index) => {
@@ -206,6 +202,10 @@ export function ModelLeaderboard({
 					const organisationHref = getOrganisationHref(entry);
 					const providerHref = getProviderHref(entry);
 					const logoHref = organisationHref ?? providerHref ?? modelHref;
+					const modelName = formatModelDisplayName(
+						entry.model_name,
+						entry.model_id,
+					);
 					return (
 						<div
 							key={entry.key}
@@ -217,15 +217,15 @@ export function ModelLeaderboard({
 							{logoHref ? (
 								<Link
 									href={logoHref}
-									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60"
-									aria-label={entry.organisation_name ?? entry.model_name}
+									className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+									aria-label={entry.organisation_name ?? modelName}
 								>
 									<div className="relative h-5 w-5">
 										<Logo
 											id={logoId}
 											alt={
 												entry.organisation_name ??
-												entry.model_name
+												modelName
 											}
 											className="object-contain"
 											fill
@@ -233,13 +233,13 @@ export function ModelLeaderboard({
 									</div>
 								</Link>
 							) : (
-								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60">
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800">
 									<div className="relative h-5 w-5">
 										<Logo
 											id={logoId}
 											alt={
 												entry.organisation_name ??
-												entry.model_name
+												modelName
 											}
 											className="object-contain"
 											fill
@@ -253,11 +253,11 @@ export function ModelLeaderboard({
 										href={modelHref}
 										className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 									>
-										{entry.model_name}
+										{modelName}
 									</Link>
 								) : (
 									<div className="block min-w-0 truncate font-medium">
-										{entry.model_name}
+										{modelName}
 									</div>
 								)}
 								{entry.organisation_name ? (
@@ -319,6 +319,10 @@ export function ModelLeaderboard({
 							const organisationHref = getOrganisationHref(entry);
 							const providerHref = getProviderHref(entry);
 							const logoHref = organisationHref ?? providerHref ?? modelHref;
+							const modelName = formatModelDisplayName(
+								entry.model_name,
+								entry.model_id,
+							);
 							return (
 								<div
 									key={`${entry.key}-extra`}
@@ -330,15 +334,15 @@ export function ModelLeaderboard({
 									{logoHref ? (
 										<Link
 											href={logoHref}
-											className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60"
-											aria-label={entry.organisation_name ?? entry.model_name}
+											className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800"
+											aria-label={entry.organisation_name ?? modelName}
 										>
 											<div className="relative h-5 w-5">
 												<Logo
 													id={logoId}
 													alt={
 														entry.organisation_name ??
-														entry.model_name
+														modelName
 													}
 													className="object-contain"
 													fill
@@ -346,13 +350,13 @@ export function ModelLeaderboard({
 											</div>
 										</Link>
 									) : (
-										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60">
+										<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-zinc-200/80 bg-transparent dark:border-zinc-800">
 											<div className="relative h-5 w-5">
 												<Logo
 													id={logoId}
 													alt={
 														entry.organisation_name ??
-														entry.model_name
+														modelName
 													}
 													className="object-contain"
 													fill
@@ -366,11 +370,11 @@ export function ModelLeaderboard({
 												href={modelHref}
 												className="block min-w-0 truncate font-medium underline decoration-2 decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 											>
-												{entry.model_name}
+												{modelName}
 											</Link>
 										) : (
 											<div className="block min-w-0 truncate font-medium">
-												{entry.model_name}
+												{modelName}
 											</div>
 										)}
 										{entry.organisation_name ? (
@@ -432,8 +436,6 @@ export function ModelLeaderboard({
 					</Button>
 				</div>
 			) : null}
-			</>
-			)}
 		</div>
 	);
 }

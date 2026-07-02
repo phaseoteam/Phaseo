@@ -49,7 +49,6 @@ pub struct AnthropicMessage {
 }
 
 pub struct AnthropicMessagesRequest {
-	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub max_tokens: i64,
@@ -57,7 +56,6 @@ pub struct AnthropicMessagesRequest {
 	pub meta: Option<bool>,
 	pub metadata: Option<HashMap<String, String>>,
 	pub model: String,
-	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -397,7 +395,6 @@ pub struct ChatChoice {
 }
 
 pub struct ChatCompletionsRequest {
-	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub frequency_penalty: Option<f64>,
@@ -415,7 +412,6 @@ pub struct ChatCompletionsRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub presence_penalty: Option<f64>,
 	pub prompt_cache_key: Option<Option<String>>,
-	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -1028,10 +1024,6 @@ pub struct ProvisioningKeyWithValue {
 	pub status: Option<String>,
 }
 
-pub struct RealtimeNotImplementedResponse {
-	pub error: HashMap<String, String>,
-}
-
 pub struct ReasoningConfig {
 	pub effort: Option<String>,
 	pub enabled: Option<bool>,
@@ -1112,7 +1104,6 @@ pub struct ResponsesOutputTextPart {
 
 pub struct ResponsesRequest {
 	pub background: Option<bool>,
-	pub cache_control: Option<HashMap<String, String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub image_config: Option<HashMap<String, String>>,
@@ -1127,7 +1118,6 @@ pub struct ResponsesRequest {
 	pub parallel_tool_calls: Option<bool>,
 	pub previous_response_id: Option<String>,
 	pub prompt_cache_key: Option<Option<String>>,
-	pub prompt_cache_retention: Option<String>,
 	pub provider: Option<HashMap<String, String>>,
 	pub provider_options: Option<HashMap<String, String>>,
 	pub reasoning: Option<HashMap<String, String>>,
@@ -1158,27 +1148,6 @@ pub struct ResponsesResponse {
 	pub stop_reason: Option<String>,
 	pub r#type: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
-}
-
-pub struct ResponsesWebSocketCreateEvent {
-	pub input: Option<String>,
-	pub model: String,
-	pub previous_response_id: Option<Option<String>>,
-	pub store: Option<bool>,
-	pub tool_choice: Option<String>,
-	pub tools: Option<Vec<HashMap<String, String>>>,
-	pub r#type: String,
-}
-
-pub struct ResponsesWebSocketServerEvent {
-	pub error: Option<HashMap<String, String>>,
-	pub response: Option<HashMap<String, String>>,
-	pub status: Option<i64>,
-	pub r#type: Option<String>,
-}
-
-pub struct ResponsesWebSocketUpgradeRequiredResponse {
-	pub error: Option<HashMap<String, String>>,
 }
 
 pub struct ServerToolUsage {

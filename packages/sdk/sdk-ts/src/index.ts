@@ -1,4 +1,6 @@
 import type {
+  AnthropicMessagesRequest,
+  AnthropicMessagesResponse,
   AudioSpeechRequest,
   AudioTranscriptionRequest,
   AudioTranscriptionResponse,
@@ -99,6 +101,44 @@ type AsyncWebhookDeliveryAttempt = Record<string, unknown>;
 type AsyncWebhookDeliverySummary = Record<string, unknown>;
 type AsyncWebhookPublicState = Record<string, unknown>;
 type VideoBillingSummary = Record<string, unknown>;
+export type GatewayStreamUsage = Record<string, unknown> & {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+  reasoning_tokens?: number;
+  reasoningTokens?: number;
+  completion_tokens_details?: {
+    reasoning_tokens?: number;
+    [key: string]: unknown;
+  };
+  output_tokens_details?: {
+    reasoning_tokens?: number;
+    [key: string]: unknown;
+  };
+};
+
+export type ChatStreamChunk = Record<string, unknown> & {
+  choices?: Array<{
+    delta?: {
+      content?: string | null;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  }>;
+  text: string;
+  usage?: GatewayStreamUsage | null;
+  reasoningTokens?: number | null;
+};
+export type ResponseStreamChunk = Record<string, unknown> & {
+  text: string;
+  usage?: GatewayStreamUsage | null;
+  reasoningTokens?: number | null;
+};
+export type MessageStreamChunk = Record<string, unknown> & {
+  text: string;
+  usage?: GatewayStreamUsage | null;
+  reasoningTokens?: number | null;
+};
 
 export type VideoCreateRequest = {
   model: ModelId;
@@ -246,6 +286,8 @@ export type {
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
+export type BatchListResponse = Awaited<ReturnType<typeof ops.listBatches>>;
+export type BatchModelsResponse = Awaited<ReturnType<typeof ops.listBatchModels>>;
 export type VideoListResponse = {
   object: "list";
   data: VideoStatusResponse[];
@@ -279,24 +321,31 @@ export class AIStats {
   private readonly modelLifecycleCache = new Map<string, ModelLifecycleInfo | null>();
 
   readonly responses = {
-    create: async (req: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<string>> => {
+    create: async (req: ResponsesRequest): Promise<ResponsesResponse | AsyncGenerator<ResponseStreamChunk>> => {
       if ((req as { stream?: boolean }).stream) {
-        return this.streamResponse(req);
+        return this.streamResponses(req);
       }
       return this.generateResponse(req);
     },
-    websocketUrl: (options: { model?: string; sessionId?: string } = {}): string =>
-      this.getResponsesWebSocketUrl(options),
   };
 
   readonly chat = {
     completions: {
-      create: async (req: ChatCompletionsParams): Promise<ChatCompletionsResponse | AsyncGenerator<string>> => {
+      create: async (req: ChatCompletionsParams): Promise<ChatCompletionsResponse | AsyncGenerator<ChatStreamChunk>> => {
         if ((req as { stream?: boolean }).stream) {
-          return this.streamText(req);
+          return this.streamChat(req);
         }
         return this.generateText(req);
       }
+    }
+  };
+
+  readonly messages = {
+    create: async (req: AnthropicMessagesRequest): Promise<AnthropicMessagesResponse | AsyncGenerator<MessageStreamChunk>> => {
+      if ((req as { stream?: boolean }).stream) {
+        return this.streamMessages(req);
+      }
+      return this.generateMessage(req);
     }
   };
 
@@ -310,8 +359,11 @@ export class AIStats {
 
   readonly batches = {
     create: async (req: BatchRequest): Promise<BatchResponse> => this.createBatch(req),
+    list: async (params: Record<string, unknown> = {}): Promise<BatchListResponse> => this.listBatches(params),
     get: async (batchId: string): Promise<BatchResponse> => this.getBatch(batchId),
     cancel: async (batchId: string): Promise<BatchResponse> => this.cancelBatch(batchId),
+    listModels: async (params: Record<string, unknown> = {}): Promise<BatchModelsResponse> =>
+      this.listBatchModels(params),
     websocketUrl: (batchId: string, options: AsyncJobWebSocketOptions = {}): string =>
       this.getAsyncJobWebSocketUrl("batch", batchId, options),
   };
@@ -568,6 +620,54 @@ export class AIStats {
     );
   }
 
+  async *streamChat(req: ChatCompletionsParams): AsyncGenerator<ChatStreamChunk> {
+    for await (const line of this.streamText(req)) {
+      const chunk = parseChatStreamLine(line);
+      if (!chunk) continue;
+      yield chunk;
+    }
+  }
+
+  generateMessage(req: AnthropicMessagesRequest): Promise<AnthropicMessagesResponse> {
+    const payload = { ...req, stream: false };
+    return this.withLifecycleGuard(
+      payload,
+      () => this.telemetry.wrap(
+        "messages",
+        () => ops.createAnthropicMessage(this.client, { body: payload }),
+        () => payload,
+        extractChatMetadata
+      )
+    );
+  }
+
+  async *streamMessages(req: AnthropicMessagesRequest): AsyncGenerator<MessageStreamChunk> {
+    const payload = { ...req, stream: true };
+    await this.maybeWarnForPayload(payload);
+
+    const generator = async function* (this: AIStats) {
+      const res = await this.fetchImpl(`${this.basePath}/messages`, {
+        method: "POST",
+        headers: { ...this.headers, "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text();
+        throw createStreamHttpError(res, text);
+      }
+      for await (const line of readSseLines(res)) {
+        const chunk = parseMessageStreamLine(line);
+        if (chunk) yield chunk;
+      }
+    }.bind(this);
+
+    yield* this.telemetry.wrapStream(
+      "messages",
+      generator(),
+      () => payload
+    );
+  }
+
   generateImage(req: ImagesGenerationRequest): Promise<ImagesGenerationResponse> {
     return this.withLifecycleGuard(
       req,
@@ -774,6 +874,14 @@ export class AIStats {
     );
   }
 
+  async *streamResponses(req: ResponsesRequest): AsyncGenerator<ResponseStreamChunk> {
+    for await (const line of this.streamResponse(req)) {
+      const chunk = parseResponseStreamLine(line);
+      if (!chunk) continue;
+      yield chunk;
+    }
+  }
+
   createBatch(req: BatchRequest): Promise<BatchResponse> {
     return this.telemetry.wrap(
       "batches.create",
@@ -798,6 +906,22 @@ export class AIStats {
       () => ops.cancelBatch(this.client, { path: { batch_id: batchId } as any }),
       () => ({ batch_id: batchId }),
       extractBatchMetadata
+    );
+  }
+
+  listBatches(params: Record<string, unknown> = {}): Promise<BatchListResponse> {
+    return this.telemetry.wrap(
+      "batches.list",
+      () => ops.listBatches(this.client, { query: params as any }),
+      () => params
+    );
+  }
+
+  listBatchModels(params: Record<string, unknown> = {}): Promise<BatchModelsResponse> {
+    return this.telemetry.wrap(
+      "batches.models",
+      () => ops.listBatchModels(this.client, { query: params as any }),
+      () => params
     );
   }
 
@@ -1092,17 +1216,6 @@ export class AIStats {
     );
   }
 
-  getResponsesWebSocketUrl(options: { model?: string; sessionId?: string } = {}): string {
-    const url = new URL("responses/ws", `${this.basePath}/`);
-    if (options.model) {
-      url.searchParams.set("model", options.model);
-    }
-    if (options.sessionId) {
-      url.searchParams.set("session_id", options.sessionId);
-    }
-    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-    return url.toString();
-  }
 }
 
 function normalizeMessage(msg: ChatMessageInput): ChatMessage {
@@ -1132,6 +1245,140 @@ async function* readSseLines(res: Response): AsyncGenerator<string> {
   } finally {
     reader.releaseLock();
   }
+}
+
+function parseChatStreamLine(line: string): ChatStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  if (!isRecord(parsed)) {
+    return {
+      raw: parsed,
+      text: "",
+      usage: null,
+      reasoningTokens: null
+    };
+  }
+
+  const usage = extractUsage(parsed);
+  return {
+    ...parsed,
+    text: extractChatChunkText(parsed),
+    usage,
+    reasoningTokens: extractReasoningTokens(usage)
+  };
+}
+
+function parseResponseStreamLine(line: string): ResponseStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  if (!isRecord(parsed)) {
+    return {
+      raw: parsed,
+      text: "",
+      usage: null,
+      reasoningTokens: null
+    };
+  }
+
+  const usage = extractUsage(parsed);
+  return {
+    ...parsed,
+    text: extractResponseChunkText(parsed),
+    usage,
+    reasoningTokens: extractReasoningTokens(usage)
+  };
+}
+
+function parseMessageStreamLine(line: string): MessageStreamChunk | null {
+  const parsed = parseSseJson(line);
+  if (parsed === null) return null;
+  if (!isRecord(parsed)) {
+    return {
+      raw: parsed,
+      text: "",
+      usage: null,
+      reasoningTokens: null
+    };
+  }
+
+  const usage = extractUsage(parsed);
+  return {
+    ...parsed,
+    text: extractMessageChunkText(parsed),
+    usage,
+    reasoningTokens: extractReasoningTokens(usage)
+  };
+}
+
+function parseSseJson(line: string): unknown | null {
+  const data = line.startsWith("data:") ? line.slice(5).trim() : line.trim();
+  if (!data || data === "[DONE]") return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return data;
+  }
+}
+
+function extractChatChunkText(chunk: Record<string, unknown>): string {
+  const choices = Array.isArray(chunk.choices) ? chunk.choices : [];
+  return choices
+    .map((choice) => {
+      if (!isRecord(choice) || !isRecord(choice.delta)) return "";
+      const content = choice.delta.content;
+      return typeof content === "string" ? content : "";
+    })
+    .join("");
+}
+
+function extractResponseChunkText(chunk: Record<string, unknown>): string {
+  if (typeof chunk.delta === "string") return chunk.delta;
+  if (typeof chunk.text === "string") return chunk.text;
+  if (typeof chunk.output_text === "string") return chunk.output_text;
+  if (isRecord(chunk.response) && typeof chunk.response.output_text === "string") {
+    return chunk.response.output_text;
+  }
+  return "";
+}
+
+function extractMessageChunkText(chunk: Record<string, unknown>): string {
+  if (isRecord(chunk.delta) && typeof chunk.delta.text === "string") {
+    return chunk.delta.text;
+  }
+  if (typeof chunk.text === "string") return chunk.text;
+  if (isRecord(chunk.content_block) && typeof chunk.content_block.text === "string") {
+    return chunk.content_block.text;
+  }
+  return "";
+}
+
+function extractUsage(chunk: Record<string, unknown>): GatewayStreamUsage | null {
+  if (isRecord(chunk.usage)) return chunk.usage as GatewayStreamUsage;
+  if (isRecord(chunk.response) && isRecord(chunk.response.usage)) {
+    return chunk.response.usage as GatewayStreamUsage;
+  }
+  if (isRecord(chunk.message) && isRecord(chunk.message.usage)) {
+    return chunk.message.usage as GatewayStreamUsage;
+  }
+  return null;
+}
+
+function extractReasoningTokens(usage: GatewayStreamUsage | null): number | null {
+  if (!usage) return null;
+  return (
+    readNumber(usage.reasoningTokens) ??
+    readNumber(usage.reasoning_tokens) ??
+    readNumber(usage.completion_tokens_details?.reasoning_tokens) ??
+    readNumber(usage.output_tokens_details?.reasoning_tokens)
+  );
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 /**

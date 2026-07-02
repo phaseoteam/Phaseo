@@ -50,11 +50,6 @@ type ProviderConfig = {
 	baseUrlEnv?: string[];
 	apiKeyEnv?: string[];
 	authStyle?: "bearer" | "anthropic" | "google_api_key_query" | "clarifai_key" | "elevenlabs" | "api_key_authorization" | "none";
-	pagination?: {
-		nextPageTokenFields: string[];
-		pageTokenQueryParam: string;
-		maxPages?: number;
-	};
 };
 
 type ProviderChange = {
@@ -249,7 +244,7 @@ const PROVIDERS: ProviderConfig[] = [
 		apiKeyEnv: ["ANTHROPIC_API_KEY"],
 		authStyle: "anthropic",
 	},
-	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_API_KEY"] },
+	{ providerId: "arcee-ai", providerName: "Arcee AI", modelsEndpoint: "https://api.arcee.ai/api/v1/models", apiKeyEnv: ["ARCEE_AI_API_KEY", "ARCEE_API_KEY"] },
 	{ providerId: "atlascloud", providerName: "AtlasCloud", modelsEndpoint: "https://api.atlascloud.ai/api/v1/models", apiKeyEnv: ["ATLAS_CLOUD_API_KEY"] },
 	{ providerId: "crofai", providerName: "CrofAI", modelsEndpoint: "https://crof.ai/v1/models", authStyle: "none" },
 	{
@@ -281,25 +276,15 @@ const PROVIDERS: ProviderConfig[] = [
 		providerId: "elevenlabs",
 		providerName: "ElevenLabs",
 		modelsEndpoint: "https://api.elevenlabs.io/v1/models",
-		apiKeyEnv: ["ELEVENLABS_API_KEY"],
+		apiKeyEnv: ["ELEVEN_LABS_API_KEY", "ELEVENLABS_API_KEY"],
 		authStyle: "elevenlabs",
 	},
-	{
-		providerId: "fireworks",
-		providerName: "Fireworks",
-		modelsEndpoint: "https://api.fireworks.ai/v1/accounts/fireworks/models?filter=supports_serverless%3Dtrue&pageSize=200",
-		apiKeyEnv: ["FIREWORKS_API_KEY"],
-		pagination: {
-			nextPageTokenFields: ["nextPageToken"],
-			pageTokenQueryParam: "pageToken",
-			maxPages: 50,
-		},
-	},
+	{ providerId: "fireworks", providerName: "Fireworks", modelsEndpoint: "https://api.fireworks.ai/inference/v1/models", apiKeyEnv: ["FIREWORKS_API_KEY"] },
 	{
 		providerId: "gmicloud",
 		providerName: "GMICloud",
 		modelsEndpoint: "https://api.gmi-serving.com/v1/models",
-		apiKeyEnv: ["GMI_API_KEY"],
+		apiKeyEnv: ["GMI_CLOUD_API_KEY", "GMI_API_KEY"],
 	},
 	{
 		providerId: "google-ai-studio",
@@ -311,21 +296,13 @@ const PROVIDERS: ProviderConfig[] = [
 	{ providerId: "groq", providerName: "Groq", modelsEndpoint: "https://api.groq.com/openai/v1/models", apiKeyEnv: ["GROQ_API_KEY"] },
 	{ providerId: "inception", providerName: "Inception", modelsEndpoint: "https://api.inceptionlabs.ai/v1/models", apiKeyEnv: ["INCEPTION_API_KEY"] },
 	{ providerId: "ionrouter", providerName: "IonRouter", modelsEndpoint: "https://api.ionrouter.io/v1/models", apiKeyEnv: ["IONROUTER_API_KEY"] },
-	{
-		providerId: "longcat",
-		providerName: "LongCat",
-		modelsEndpoint: "https://api.longcat.chat/openai/v1/models",
-		pathPrefix: "/openai/v1",
-		baseUrlEnv: ["MEITUAN_BASE_URL", "LONGCAT_BASE_URL"],
-		apiKeyEnv: ["MEITUAN_API_KEY", "LONGCAT_API_KEY"],
-	},
 	{ providerId: "mistral", providerName: "Mistral", modelsEndpoint: "https://api.mistral.ai/v1/models", apiKeyEnv: ["MISTRAL_AI_API_KEY"] },
 	{ providerId: "moonshot-ai", providerName: "Moonshot AI", modelsEndpoint: "https://api.moonshot.ai/v1/models", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	{
 		providerId: "nebius-token-factory",
 		providerName: "Nebius Token Factory",
 		modelsEndpoint: "https://api.tokenfactory.nebius.com/v1/models",
-		apiKeyEnv: ["NEBIUS_API_KEY"],
+		apiKeyEnv: ["NEBIUS_TOKEN_FACTORY_API_KEY", "NEBIUS_API_KEY"],
 	},
 	{ providerId: "nextbit", providerName: "NextBit", modelsEndpoint: "https://api.nextbit256.com/v1/models", apiKeyEnv: ["NEXTBIT_API_KEY"] },
 	{ providerId: "novitaai", providerName: "NovitaAI", modelsEndpoint: "https://api.novita.ai/openai/v1/models", apiKeyEnv: ["NOVITA_API_KEY"] },
@@ -341,7 +318,7 @@ const PROVIDERS: ProviderConfig[] = [
 	},
 	{ providerId: "voyage", providerName: "Voyage", modelsEndpoint: "https://api.voyageai.com/v1/models", apiKeyEnv: ["VOYAGE_API_KEY"] },
 	{ providerId: "stepfun", providerName: "StepFun", modelsEndpoint: "https://api.stepfun.ai/v1/models", apiKeyEnv: ["STEPFUN_API_KEY"] },
-	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.ai/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
+	{ providerId: "together", providerName: "Together", modelsEndpoint: "https://api.together.xyz/v1/models", apiKeyEnv: ["TOGETHER_API_KEY"] },
 	{ providerId: "venice", providerName: "Venice", modelsEndpoint: "https://api.venice.ai/api/v1/models", apiKeyEnv: ["VENICE_API_KEY"] },
 		{
 			providerId: "weights-and-biases",

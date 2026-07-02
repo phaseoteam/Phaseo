@@ -1,5 +1,9 @@
 import { cacheLife, cacheTag } from "next/cache";
 import {
+	MODEL_LIST_TAGS,
+	PUBLIC_MODEL_CATALOGUE_CACHE_LIFE,
+} from "@/lib/cache/publicModelCatalogueTags";
+import {
 	getAllModelsCached,
 	type ModelCard,
 } from "@/lib/fetchers/models/getAllModels";
@@ -191,11 +195,10 @@ function buildEndpoint(row: GatewayMonitorRow): FrontendModelEndpoint {
 export async function getFrontendModelsPayload(): Promise<ModelCard[]> {
 	"use cache";
 
-	cacheLife("days");
-	cacheTag("public-model-catalogue");
-	cacheTag("frontend:models");
-	cacheTag("data:models");
-	cacheTag("models:list-base");
+	cacheLife(PUBLIC_MODEL_CATALOGUE_CACHE_LIFE);
+	for (const tag of MODEL_LIST_TAGS) {
+		cacheTag(tag);
+	}
 
 	return getAllModelsCached(false);
 }
@@ -205,11 +208,10 @@ export async function getFrontendModelsApiPayload(): Promise<
 > {
 	"use cache";
 
-	cacheLife("days");
-	cacheTag("public-model-catalogue");
-	cacheTag("frontend:models");
-	cacheTag("data:models");
-	cacheTag("models:list-base");
+	cacheLife(PUBLIC_MODEL_CATALOGUE_CACHE_LIFE);
+	for (const tag of MODEL_LIST_TAGS) {
+		cacheTag(tag);
+	}
 
 	const models = await getFrontendModelsPayload();
 	return models.map(

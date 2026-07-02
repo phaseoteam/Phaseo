@@ -596,7 +596,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		expect(ir.serviceTier).toBeUndefined();
 	});
 
-	it("should decode reasoning.effort=max into IR reasoning effort max", () => {
+	it("should decode reasoning.effort=max into IR reasoning effort xhigh", () => {
 		const request = {
 			model: "claude-3-5-sonnet-20241022",
 			max_tokens: 2048,
@@ -607,7 +607,7 @@ describe("decodeAnthropicMessagesRequest", () => {
 		};
 
 		const ir: IRChatRequest = decodeAnthropicMessagesRequest(request as any);
-		expect(ir.reasoning?.effort).toBe("max");
+		expect(ir.reasoning?.effort).toBe("xhigh");
 	});
 
 	it("should decode reasoning.effort=xhigh on Anthropic messages surface", () => {

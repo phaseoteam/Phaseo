@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { setKeyVersion } from "@/core/kv";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
+import { bumpWorkspacePolicyVersion } from "@/pipeline/before/workspacePolicy";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "@/routes/utils";
 import {
@@ -47,6 +49,24 @@ const CAMEL_TO_SNAKE: Record<string, string> = {
 	providerRestrictionEnforceAllowed: "provider_restriction_enforce_allowed",
 };
 
+const WORKSPACE_POLICY_FIELDS = new Set([
+	"provider_restriction_mode",
+	"provider_restriction_provider_ids",
+	"provider_restriction_enforce_allowed",
+]);
+
+const GATEWAY_CONTEXT_FIELDS = new Set([
+	"routing_mode",
+	"beta_channel_enabled",
+	"alpha_channel_enabled",
+	"byok_fallback_enabled",
+	"cache_aware_routing_enabled",
+	"privacy_enable_paid_may_train",
+	"privacy_enable_free_may_train",
+	"privacy_enable_input_output_logging",
+	"privacy_zdr_only",
+]);
+
 function normalizeSettingsPatch(body: Record<string, unknown>): Record<string, unknown> {
 	const patch: Record<string, unknown> = {};
 	for (const [rawKey, value] of Object.entries(body)) {
@@ -57,6 +77,22 @@ function normalizeSettingsPatch(body: Record<string, unknown>): Record<string, u
 		patch.alpha_channel_enabled = false;
 	}
 	return patch;
+}
+
+async function invalidateWorkspaceGatewayContextCache(workspaceId: string): Promise<void> {
+	const { data, error } = await getSupabaseAdmin()
+		.from("keys")
+		.select("id")
+		.eq("workspace_id", workspaceId)
+		.neq("status", "deleted");
+	if (error) throw new Error(error.message || "Failed to list workspace keys for context cache invalidation");
+	const nowVersion = Date.now();
+	await Promise.all(
+		(data ?? [])
+			.map((row) => String((row as { id?: unknown }).id ?? "").trim())
+			.filter(Boolean)
+			.map((keyId) => setKeyVersion("id", keyId, nowVersion)),
+	);
 }
 
 async function handleGetSettings(req: Request) {
@@ -107,6 +143,12 @@ async function handleUpdateSettings(req: Request) {
 			.select("*")
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update workspace settings");
+		if (Object.keys(patch).some((field) => WORKSPACE_POLICY_FIELDS.has(field))) {
+			await bumpWorkspacePolicyVersion(auth.value.workspaceId);
+		}
+		if (Object.keys(patch).some((field) => GATEWAY_CONTEXT_FIELDS.has(field))) {
+			await invalidateWorkspaceGatewayContextCache(auth.value.workspaceId);
+		}
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return json({ error: "failed", message: String(error?.message ?? error) }, 500, { "Cache-Control": "no-store" });

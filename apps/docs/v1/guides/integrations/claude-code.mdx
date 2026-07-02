@@ -44,4 +44,5 @@ claude
 ## Compatibility notes
 
 - `ANTHROPIC_AUTH_TOKEN` is sent as an `Authorization` header, which AI Stats accepts.
+- You can also set `ANTHROPIC_MODEL` to an AI Stats model id when you want Claude Code to use one default model.
 - Current limitation: streaming + tools on Anthropic Messages can return `400 invalid_request`. If your workflow depends on streamed tool loops, test this path before broad rollout.

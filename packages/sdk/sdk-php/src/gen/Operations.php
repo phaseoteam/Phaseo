@@ -458,13 +458,6 @@ function openAsyncJobWebSocket(Client $client, ?array $path = null, ?array $quer
 	return $client->request("GET", $resolvedPath, $query, $headers, $body);
 }
 
-function openResponsesWebSocket(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
-{
-	$path = $path ?? [];
-	$resolvedPath = "/responses/ws";
-	return $client->request("GET", $resolvedPath, $query, $headers, $body);
-}
-
 function retrieveBatch(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

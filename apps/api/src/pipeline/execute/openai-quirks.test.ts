@@ -51,15 +51,4 @@ describe("openai reasoning effort quirks", () => {
 		expect(validateOpenAIReasoningEffort("gpt-5.4-pro", "none")).toContain("does not support");
 		expect(validateOpenAIReasoningEffort("gpt-5.4-pro-2026-03-05", "none")).toContain("does not support");
 	});
-
-	it("supports max reasoning for gpt-5.6 Sol only", () => {
-		expectSupports("gpt-5.6-sol", ["none", "low", "medium", "high", "xhigh", "max"]);
-		expectSupports("openai/gpt-5.6-sol", ["none", "low", "medium", "high", "xhigh", "max"]);
-		expect(validateOpenAIReasoningEffort("openai/gpt-5.6-sol", "max")).toBeNull();
-
-		expectSupports("gpt-5.6-terra", ["none", "low", "medium", "high", "xhigh"]);
-		expectSupports("gpt-5.6-luna", ["none", "low", "medium", "high", "xhigh"]);
-		expect(validateOpenAIReasoningEffort("gpt-5.6-terra", "max")).toContain("does not support");
-		expect(validateOpenAIReasoningEffort("gpt-5.6-luna", "max")).toContain("does not support");
-	});
 });

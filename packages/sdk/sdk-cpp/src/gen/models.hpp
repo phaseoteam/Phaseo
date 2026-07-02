@@ -53,7 +53,6 @@ struct AnthropicMessage {
 };
 
 struct AnthropicMessagesRequest {
-	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	int max_tokens;
@@ -61,7 +60,6 @@ struct AnthropicMessagesRequest {
 	std::optional<bool> meta;
 	std::map<std::string, std::any> metadata;
 	std::string model;
-	std::string prompt_cache_retention;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -401,7 +399,6 @@ struct ChatChoice {
 };
 
 struct ChatCompletionsRequest {
-	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::optional<double> frequency_penalty;
@@ -419,7 +416,6 @@ struct ChatCompletionsRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::optional<double> presence_penalty;
 	std::optional<std::string> prompt_cache_key;
-	std::string prompt_cache_retention;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -1032,10 +1028,6 @@ struct ProvisioningKeyWithValue {
 	std::any status;
 };
 
-struct RealtimeNotImplementedResponse {
-	std::map<std::string, std::any> error;
-};
-
 struct ReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;
@@ -1116,7 +1108,6 @@ struct ResponsesOutputTextPart {
 
 struct ResponsesRequest {
 	std::optional<bool> background;
-	std::map<std::string, std::any> cache_control;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::map<std::string, std::any> image_config;
@@ -1131,7 +1122,6 @@ struct ResponsesRequest {
 	std::optional<bool> parallel_tool_calls;
 	std::string previous_response_id;
 	std::optional<std::string> prompt_cache_key;
-	std::string prompt_cache_retention;
 	std::map<std::string, std::any> provider;
 	std::map<std::string, std::any> provider_options;
 	std::map<std::string, std::any> reasoning;
@@ -1162,27 +1152,6 @@ struct ResponsesResponse {
 	std::string stop_reason;
 	std::string type;
 	std::map<std::string, std::any> usage;
-};
-
-struct ResponsesWebSocketCreateEvent {
-	std::any input;
-	std::string model;
-	std::optional<std::string> previous_response_id;
-	std::optional<bool> store;
-	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
-	std::any type;
-};
-
-struct ResponsesWebSocketServerEvent {
-	std::map<std::string, std::any> error;
-	std::map<std::string, std::any> response;
-	std::optional<int> status;
-	std::string type;
-};
-
-struct ResponsesWebSocketUpgradeRequiredResponse {
-	std::map<std::string, std::any> error;
 };
 
 struct ServerToolUsage {

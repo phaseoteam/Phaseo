@@ -1,11 +1,20 @@
-import { fetchFrontendModelOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import {
+	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelGatewayMetadata,
+	fetchFrontendModelOverview,
+	fetchFrontendModelPerformance,
+	fetchFrontendModelPricing,
+	fetchFrontendModelSubscriptionPlans,
+} from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import ModelOverviewSections, {
 	ModelCreatorModelsSection,
 	ModelCreatorModelsSkeleton,
-	ModelOverviewSectionsSkeleton,
 } from "@/components/(data)/model/overview/ModelOverviewSections";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
+import ModelPageToc, {
+	type ModelPageTocItem,
+} from "@/components/(data)/model/ModelPageToc";
 import type { Metadata } from "next";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 import {
@@ -21,33 +30,13 @@ import { isFreeRouterModelId } from "@/lib/models/freeRouter";
 import FreeRouterOverview from "@/components/(data)/model/free-router/FreeRouterOverview";
 import {
 	resolveQuickstartRequestContext,
-	type QuickstartRequestContext,
 	type QuickstartSearchParams,
 } from "@/components/(data)/model/quickstart/requestContext";
-import Script from "next/script";
-
-async function ModelOverviewSectionsContent({
-	modelId,
-	includeHidden,
-	modelPromise,
-	quickstartRequestContext,
-}: {
-	modelId: string;
-	includeHidden: boolean;
-	modelPromise: Promise<ModelOverviewPage | null>;
-	quickstartRequestContext?: QuickstartRequestContext;
-}) {
-	const model = await modelPromise;
-
-	return (
-		<ModelOverviewSections
-			modelId={modelId}
-			model={model}
-			includeHidden={includeHidden}
-			quickstartRequestContext={quickstartRequestContext}
-		/>
-	);
-}
+import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import {
+	analyseModelIndexability,
+	robotsForModelIndexability,
+} from "@/lib/seo/modelIndexability";
 
 async function ModelCreatorModelsSectionContent({
 	modelId,
@@ -72,6 +61,33 @@ async function ModelCreatorModelsSectionContent({
 	);
 }
 
+const baseModelPageTocItems: ModelPageTocItem[] = [
+	{ id: "providers", label: "Providers" },
+	{ id: "performance", label: "Performance" },
+	{ id: "pricing", label: "Pricing" },
+	{ id: "benchmarks", label: "Benchmarks" },
+	{ id: "activity", label: "Activity" },
+	{ id: "apps", label: "Apps" },
+	{ id: "uptime", label: "Uptime" },
+	{ id: "quickstart", label: "Quickstart" },
+	{ id: "about", label: "About" },
+	{ id: "subscriptions", label: "Subscriptions" },
+];
+
+function getModelPageTocItems({
+	showBenchmarks,
+	showSubscriptions,
+}: {
+	showBenchmarks: boolean;
+	showSubscriptions: boolean;
+}): ModelPageTocItem[] {
+	return baseModelPageTocItems.filter((item) => {
+		if (item.id === "benchmarks") return showBenchmarks;
+		if (item.id === "subscriptions") return showSubscriptions;
+		return true;
+	});
+}
+
 export async function generateMetadata(props: {
 	params: Promise<ModelRouteParams>;
 }): Promise<Metadata> {
@@ -82,6 +98,60 @@ export async function generateMetadata(props: {
 	);
 	const path = getModelPath(modelId);
 	const imagePath = `/og/models/${modelId}`;
+	const [
+		modelOverview,
+		benchmarkHighlights,
+		gatewayMetadata,
+		pricingProviders,
+		subscriptionPlans,
+	] = await Promise.all([
+		fetchFrontendModelOverview(modelId).catch(() => null),
+		fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
+		fetchFrontendModelGatewayMetadata(modelId).catch(() => null),
+		fetchFrontendModelPricing(modelId).catch(() => []),
+		fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
+	]);
+	const indexability = isFreeRouterModelId(modelId)
+		? analyseModelIndexability({
+				modelId,
+				name: modelName,
+				organisationName,
+				description: modelDescription,
+				providerCount: 1,
+				inputTypes: ["text"],
+				outputTypes: ["text"],
+			})
+		: analyseModelIndexability({
+				modelId,
+				name: modelName,
+				organisationName,
+				description: modelDescription,
+				status: modelOverview?.status,
+				releaseDate: modelOverview?.release_date,
+				announcementDate: modelOverview?.announcement_date,
+				updatedAt: modelOverview?.updated_at,
+				apiModelIds: gatewayMetadata?.apiModelIds,
+				inputTypes: modelOverview?.input_types,
+				outputTypes: modelOverview?.output_types,
+				modelDetails: modelOverview?.model_details,
+				modelLinks: modelOverview?.model_links,
+				benchmarkCount: benchmarkHighlights.length,
+				providerCount: gatewayMetadata?.providers.length ?? 0,
+				activeProviderCount: gatewayMetadata?.activeProviders.length ?? 0,
+				pricingRuleCount: pricingProviders.reduce(
+					(total, provider) => total + provider.pricing_rules.length,
+					0,
+				),
+				contextLengths: gatewayMetadata?.providers.map(
+					(provider) => provider.context_length,
+				),
+				supportedParameters: Object.values(
+					gatewayMetadata?.supportedParametersByEndpoint ?? {},
+				).flatMap((parameters) =>
+					parameters.map((parameter) => parameter.param_id),
+				),
+				hasSubscriptionPlans: subscriptionPlans.length > 0,
+			});
 
 	return buildMetadata({
 		title: `${modelName} Pricing, Benchmarks, Latency & Providers`,
@@ -101,6 +171,7 @@ export async function generateMetadata(props: {
 			"AI model comparison",
 		].filter(Boolean) as string[],
 		imagePath,
+		robots: robotsForModelIndexability(indexability),
 	});
 }
 
@@ -134,7 +205,21 @@ export default async function Page({
 		);
 	}
 	const modelPromise = fetchFrontendModelOverview(modelId);
-	const modelOverview = await modelPromise;
+	const performancePromise = fetchFrontendModelPerformance(modelId, 24).catch(
+		() => null,
+	);
+	const [modelOverview, benchmarkHighlights, subscriptionPlans] =
+		await Promise.all([
+			modelPromise,
+			fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
+			fetchFrontendModelSubscriptionPlans(modelId).catch(() => []),
+		]);
+	const showBenchmarks = benchmarkHighlights.length > 0;
+	const showSubscriptions = subscriptionPlans.length > 0;
+	const modelPageTocItems = getModelPageTocItems({
+		showBenchmarks,
+		showSubscriptions,
+	});
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
 		modelOverview?.organisation?.name ?? routeParams.organisationId;
@@ -187,32 +272,38 @@ export default async function Page({
 
 	return (
 		<>
-			<Script
+			<JsonLdScript
 				id="model-dataset-schema"
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }}
+				data={datasetSchema}
 			/>
-			<Script
+			<JsonLdScript
 				id="model-breadcrumb-schema"
-				type="application/ld+json"
-				dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+				data={breadcrumbSchema}
 			/>
 			<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden}>
-				<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
-					<ModelOverviewSectionsContent
-						modelId={modelId}
-						includeHidden={includeHidden}
-						modelPromise={modelPromise}
-						quickstartRequestContext={quickstartRequestContext}
-					/>
-				</Suspense>
-				<Suspense fallback={<ModelCreatorModelsSkeleton />}>
-					<ModelCreatorModelsSectionContent
-						modelId={modelId}
-						includeHidden={includeHidden}
-						modelPromise={modelPromise}
-					/>
-				</Suspense>
+				<div className="space-y-10">
+					<div className="grid gap-8 lg:grid-cols-[220px,minmax(0,1fr)] xl:grid-cols-[240px,minmax(0,1fr)]">
+						<ModelPageToc items={modelPageTocItems} className="lg:col-start-1 lg:h-full" />
+						<div className="min-w-0 space-y-10 lg:col-start-2">
+							<ModelOverviewSections
+								modelId={modelId}
+								model={modelOverview}
+								includeHidden={includeHidden}
+								showBenchmarks={showBenchmarks}
+								showSubscriptions={showSubscriptions}
+								performancePromise={performancePromise}
+								quickstartRequestContext={quickstartRequestContext}
+							/>
+						</div>
+					</div>
+					<Suspense fallback={<ModelCreatorModelsSkeleton />}>
+						<ModelCreatorModelsSectionContent
+							modelId={modelId}
+							includeHidden={includeHidden}
+							modelPromise={modelPromise}
+						/>
+					</Suspense>
+				</div>
 			</ModelDetailShell>
 		</>
 	);

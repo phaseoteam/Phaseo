@@ -278,8 +278,6 @@ export default function PerformanceBenchmarkGraph({
 		() => buildComparableBenchmarks(selectedModels),
 		[selectedModels]
 	);
-	if (!comparableBenchmarks.length) return null;
-
 	const availableScoreTypes = React.useMemo(() => {
 		const types = new Set<BenchmarkScoreType>();
 		for (const benchmark of comparableBenchmarks) {
@@ -287,22 +285,17 @@ export default function PerformanceBenchmarkGraph({
 		}
 		return Array.from(types);
 	}, [comparableBenchmarks]);
-
-	React.useEffect(() => {
-		if (!availableScoreTypes.includes(selectedScoreType)) {
-			setSelectedScoreType(availableScoreTypes[0] ?? "percent");
-			setExpanded(false);
-		}
-	}, [availableScoreTypes, selectedScoreType]);
+	const activeScoreType = availableScoreTypes.includes(selectedScoreType)
+		? selectedScoreType
+		: availableScoreTypes[0] ?? "percent";
 
 	const activeBenchmarks = React.useMemo(
 		() =>
 			comparableBenchmarks.filter(
-				(benchmark) => benchmark.scoreType === selectedScoreType
+				(benchmark) => benchmark.scoreType === activeScoreType
 			),
-		[comparableBenchmarks, selectedScoreType]
+		[activeScoreType, comparableBenchmarks]
 	);
-	if (!activeBenchmarks.length) return null;
 
 	const chartData = React.useMemo(
 		() => toChartData(selectedModels, activeBenchmarks),
@@ -315,6 +308,8 @@ export default function PerformanceBenchmarkGraph({
 		}
 		return map;
 	}, [activeBenchmarks]);
+
+	if (!comparableBenchmarks.length || !activeBenchmarks.length) return null;
 
 	const hiddenCount = Math.max(0, activeBenchmarks.length - DEFAULT_VISIBLE_BENCHMARKS);
 	const visibleBenchmarks = expanded
@@ -337,7 +332,7 @@ export default function PerformanceBenchmarkGraph({
 					<div className="flex items-start justify-between gap-3">
 						<div>
 							<CardTitle className="text-sm font-semibold">
-								Benchmark Scores ({scoreTypeLabel(selectedScoreType)})
+								Benchmark Scores ({scoreTypeLabel(activeScoreType)})
 							</CardTitle>
 							<p className="text-xs text-muted-foreground mt-1">
 								Switch benchmark type to compare percent and numerical families separately.
@@ -351,14 +346,14 @@ export default function PerformanceBenchmarkGraph({
 											<Button
 												type="button"
 												size="icon"
-												variant={selectedScoreType === "percent" ? "default" : "outline"}
+												variant={activeScoreType === "percent" ? "default" : "outline"}
 												onClick={() => {
 													setSelectedScoreType("percent");
 													setExpanded(false);
 												}}
 												className="h-7 w-7"
 												aria-label="Percentage benchmarks"
-												aria-pressed={selectedScoreType === "percent"}
+												aria-pressed={activeScoreType === "percent"}
 											>
 												<Percent className="h-4 w-4" />
 											</Button>
@@ -370,14 +365,14 @@ export default function PerformanceBenchmarkGraph({
 											<Button
 												type="button"
 												size="icon"
-												variant={selectedScoreType === "numeric" ? "default" : "outline"}
+												variant={activeScoreType === "numeric" ? "default" : "outline"}
 												onClick={() => {
 													setSelectedScoreType("numeric");
 													setExpanded(false);
 												}}
 												className="h-7 w-7"
 												aria-label="Numerical benchmarks"
-												aria-pressed={selectedScoreType === "numeric"}
+												aria-pressed={activeScoreType === "numeric"}
 											>
 												<Hash className="h-4 w-4" />
 											</Button>

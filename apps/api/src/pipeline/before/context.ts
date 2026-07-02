@@ -5,7 +5,8 @@
 
 import { getSupabaseAdmin, getCache } from "@/runtime/env";
 import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
-import { keyVersionToken } from "@/core/kv";
+import { getTextMany, keyVersionToken } from "@/core/kv";
+import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { contextSchema } from "./schemas";
 import { loadPriceCard } from "@pipeline/pricing";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
@@ -18,7 +19,9 @@ import {
 	clampTtl,
 	cloneGatewayContextData,
 	computeAdaptiveTtlForDynamic,
+	computeCreditSnapshotTtlForContext,
 	computeStaticTtl,
+	isCreditContextLike,
 	isDynamicContextLike,
 	isStaticContextLike,
 	isWithinEffectiveWindow,
@@ -47,7 +50,10 @@ import type {
 
 export { getContextCapabilityCandidates } from "./context.capability-aliases";
 export { applyNebiusRegionalModelAllowlist } from "./context.nebius";
-export { computeBalanceAwareTtlSeconds } from "./context.shared";
+export {
+	computeBalanceAwareTtlSeconds,
+	computeCreditSnapshotTtlSeconds,
+} from "./context.shared";
 
 const CONTEXT_CACHE_PREFIX = "gateway:context";
 
@@ -164,6 +170,41 @@ function getTextContextCapabilitiesToLoad(
     return requestedSurface
         ? ["text.generate", requestedSurface]
         : ["text.generate"];
+}
+
+function normalizePromptTrainingPolicy(value: unknown): GatewayProviderSnapshot["promptTrainingPolicy"] {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    if (
+        normalized === "no_train" ||
+        normalized === "may_train" ||
+        normalized === "opt_out_available" ||
+        normalized === "enterprise_no_train"
+    ) {
+        return normalized;
+    }
+    return "unknown";
+}
+
+function normalizeDataPolicyTier(value: unknown): GatewayProviderSnapshot["dataPolicyTier"] {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    if (normalized === "private" || normalized === "logs" || normalized === "trains") {
+        return normalized;
+    }
+    return "unknown";
+}
+
+function normalizeDataPolicyConfidence(value: unknown): GatewayProviderSnapshot["dataPolicyConfidence"] {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    if (normalized === "confirmed" || normalized === "maybe") return normalized;
+    return "unknown";
+}
+
+function normalizeDataPolicyContractMode(value: unknown): GatewayProviderSnapshot["dataPolicyContractMode"] {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    if (normalized === "customer_agreement" || normalized === "enterprise_agreement") {
+        return normalized;
+    }
+    return "none";
 }
 
 async function backfillProviderModalities(args: {
@@ -541,6 +582,7 @@ export async function fetchGatewayContext(args: {
     }
     const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
+    const creditCacheKey = gatewayCreditCacheKey(args.workspaceId);
     const staticCacheKey = isPreset
         ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.model}:${args.endpoint}`
         : `${STATIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.endpoint}:${args.model}`;
@@ -550,18 +592,25 @@ export async function fetchGatewayContext(args: {
     if (shouldUseCache) {
         const cacheReadStartedAt = performance.now();
         try {
-            const [dynamicCachedRaw, staticCachedRaw] = await Promise.all([
-                cache.get(dynamicCacheKey, "text"),
-                cache.get(staticCacheKey, "text"),
+            const cachedValues = await getTextMany([
+                dynamicCacheKey,
+                staticCacheKey,
+                creditCacheKey,
             ]);
+            const dynamicCachedRaw = cachedValues[dynamicCacheKey] ?? null;
+            const staticCachedRaw = cachedValues[staticCacheKey] ?? null;
+            const creditCachedRaw = cachedValues[creditCacheKey] ?? null;
             telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
             if (dynamicCachedRaw && staticCachedRaw) {
                 const dynamicParsed = JSON.parse(dynamicCachedRaw);
                 const staticParsed = JSON.parse(staticCachedRaw);
                 if (isDynamicContextLike(dynamicParsed) && isStaticContextLike(staticParsed)) {
+                    const creditParsed = creditCachedRaw ? JSON.parse(creditCachedRaw) : null;
+                    const creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
                     const merged = mergeCachedContext({
                         dynamic: dynamicParsed,
                         static: staticParsed,
+                        credit: creditContext,
                         endpoint: args.endpoint,
                     });
                     return {
@@ -834,6 +883,10 @@ export async function fetchGatewayContext(args: {
             betaChannelEnabled: false,
             alphaChannelEnabled: false,
             cacheAwareRoutingEnabled: null,
+            privacyZdrOnly: false,
+            privacyEnablePaidMayTrain: true,
+            privacyEnableFreeMayTrain: true,
+            privacyEnableInputOutputLogging: true,
             billingMode: "wallet",
         };
 
@@ -849,14 +902,14 @@ export async function fetchGatewayContext(args: {
             const providerStatusQuery = providerIds.length
                 ? supabase
                       .from("data_api_providers")
-                      .select("api_provider_id,status,routing_status,provider_family_id,offer_scope,offer_label")
+                      .select("api_provider_id,status,routing_status,provider_family_id,offer_scope,offer_label,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode")
                       .in("api_provider_id", providerIds)
                 : Promise.resolve({ data: [], error: null } as any);
 
             const [settingsResult, providerStatusResult, teamResult] = await Promise.all([
                 supabase
                     .from("workspace_settings")
-                    .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,cache_aware_routing_enabled")
+                    .select("routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,cache_aware_routing_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging")
                     .eq("workspace_id", args.workspaceId)
                     .maybeSingle(),
                 providerStatusQuery,
@@ -883,6 +936,14 @@ export async function fetchGatewayContext(args: {
                         settingsResult.data?.alpha_channel_enabled ?? false,
                     cacheAwareRoutingEnabled:
                         settingsResult.data?.cache_aware_routing_enabled ?? null,
+                    privacyZdrOnly:
+                        settingsResult.data?.privacy_zdr_only ?? false,
+                    privacyEnablePaidMayTrain:
+                        settingsResult.data?.privacy_enable_paid_may_train ?? true,
+                    privacyEnableFreeMayTrain:
+                        settingsResult.data?.privacy_enable_free_may_train ?? true,
+                    privacyEnableInputOutputLogging:
+                        settingsResult.data?.privacy_enable_input_output_logging ?? true,
                     billingMode,
                 };
             }
@@ -892,6 +953,10 @@ export async function fetchGatewayContext(args: {
             const providerFamilyByProvider = new Map<string, string | null>();
             const offerScopeByProvider = new Map<string, GatewayProviderSnapshot["offerScope"]>();
             const offerLabelByProvider = new Map<string, string | null>();
+            const promptTrainingPolicyByProvider = new Map<string, GatewayProviderSnapshot["promptTrainingPolicy"]>();
+            const dataPolicyTierByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyTier"]>();
+            const dataPolicyConfidenceByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyConfidence"]>();
+            const dataPolicyContractModeByProvider = new Map<string, GatewayProviderSnapshot["dataPolicyContractMode"]>();
             if (!providerStatusResult?.error) {
                 for (const row of providerStatusResult.data ?? []) {
                     if (!row?.api_provider_id) continue;
@@ -920,6 +985,22 @@ export async function fetchGatewayContext(args: {
                         typeof row.offer_label === "string" && row.offer_label.trim().length > 0
                             ? row.offer_label
                             : null,
+                    );
+                    promptTrainingPolicyByProvider.set(
+                        row.api_provider_id,
+                        normalizePromptTrainingPolicy(row.prompt_training_policy),
+                    );
+                    dataPolicyTierByProvider.set(
+                        row.api_provider_id,
+                        normalizeDataPolicyTier(row.data_policy_tier),
+                    );
+                    dataPolicyConfidenceByProvider.set(
+                        row.api_provider_id,
+                        normalizeDataPolicyConfidence(row.data_policy_confidence),
+                    );
+                    dataPolicyContractModeByProvider.set(
+                        row.api_provider_id,
+                        normalizeDataPolicyContractMode(row.data_policy_contract_mode),
                     );
                 }
             }
@@ -964,6 +1045,22 @@ export async function fetchGatewayContext(args: {
                     dataRegions: provider.dataRegions ?? residency.dataRegions,
                     zeroDataRetention:
                         provider.zeroDataRetention ?? residency.zeroDataRetention,
+                    promptTrainingPolicy:
+                        promptTrainingPolicyByProvider.get(provider.providerId) ??
+                        provider.promptTrainingPolicy ??
+                        "unknown",
+                    dataPolicyTier:
+                        dataPolicyTierByProvider.get(provider.providerId) ??
+                        provider.dataPolicyTier ??
+                        "unknown",
+                    dataPolicyConfidence:
+                        dataPolicyConfidenceByProvider.get(provider.providerId) ??
+                        provider.dataPolicyConfidence ??
+                        "unknown",
+                    dataPolicyContractMode:
+                        dataPolicyContractModeByProvider.get(provider.providerId) ??
+                        provider.dataPolicyContractMode ??
+                        "none",
                 };
             });
         } catch {
@@ -981,9 +1078,11 @@ export async function fetchGatewayContext(args: {
                 const split = splitContextForCache(parsed);
                 const dynamicTtl = clampTtl(computeAdaptiveTtlForDynamic(parsed));
                 const staticTtl = clampTtl(isPreset ? PRESET_TTL : computeStaticTtl());
+                const creditTtl = clampTtl(computeCreditSnapshotTtlForContext(parsed));
                 await Promise.all([
                     cache.put(dynamicCacheKey, JSON.stringify(split.dynamic), { expirationTtl: dynamicTtl }),
                     cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
+                    cache.put(creditCacheKey, JSON.stringify(split.credit), { expirationTtl: creditTtl }),
                 ]);
             } catch {
                 // ignore cache write failures

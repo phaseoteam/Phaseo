@@ -21,13 +21,14 @@ completion = client.generate_text(
     }
 )
 
-for line in client.stream_text(
+for chunk in client.stream_chat(
     {
         "model": "openai/gpt-4o-mini",
         "messages": [{"role": "user", "content": "Stream a story"}],
     }
 ):
-    print(line)
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
 ```
 
 ## Responses
@@ -36,17 +37,18 @@ for line in client.stream_text(
 resp = client.generate_response(
     {
         "model": "openai/gpt-4.1",
-        "input": [{"role": "user", "content": [{"type": "output_text", "text": "Summarise"}]}],
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise"}]}],
     }
 )
 
-for line in client.stream_response(
+for chunk in client.stream_responses(
     {
         "model": "openai/gpt-4.1",
-        "input": [{"role": "user", "content": [{"type": "output_text", "text": "Stream it"}]}],
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream it"}]}],
     }
 ):
-    print(line)
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
 ```
 
 ## Messages (Anthropic-compatible)
@@ -60,7 +62,7 @@ message = client.generate_message(
     }
 )
 
-for line in client.stream_messages(
+for chunk in client.stream_message(
     {
         "model": "anthropic/claude-3-5-sonnet-latest",
         "messages": [{"role": "user", "content": "Stream a short hello"}],
@@ -68,7 +70,8 @@ for line in client.stream_messages(
         "stream": True,
     }
 ):
-    print(line)
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
 ```
 
 ## Embeddings and moderations

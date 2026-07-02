@@ -73,6 +73,7 @@ import { normalizeCapability } from "@/executors";
 import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
+import { getEffectiveRoutingHints } from "../requestRouting";
 
 function shouldFallbackFromByok(status: number | null | undefined): boolean {
 	const code = Number(status ?? 0);
@@ -389,7 +390,8 @@ export async function doRequestWithIR(
 	);
 
 	// 3) Try providers in order (failover up to 5)
-	const maxTries = calculateMaxTries(ranked.length);
+	const allowFallbacks = getEffectiveRoutingHints(ctx.body).allowFallbacks;
+	const maxTries = calculateMaxTries(ranked.length, allowFallbacks);
 	let anyPricingFound = anyPricingAvailable;
 
 	for (let attempt = 0; attempt < maxTries; attempt++) {
@@ -736,6 +738,10 @@ async function attemptProviderWithIR(
 			: 0;
 
 		if (executorResult.kind === "completed") {
+			const completedLatencyMs = ctx.meta.latency_ms ?? generationTimeMs;
+			const completedGenerationMs = ctx.meta.generation_ms ?? 0;
+			ctx.meta.latency_ms = completedLatencyMs;
+			ctx.meta.generation_ms = completedGenerationMs;
 			const healthImpact = classifyProviderHealthImpact({
 				upstreamStatus: executorResult.upstream.status,
 			});
@@ -744,8 +750,8 @@ async function attemptProviderWithIR(
 				model: baseModel,
 				ok: executorResult.upstream.ok,
 				healthImpact,
-				latency_ms: ctx.meta.latency_ms ?? attemptDurationMs,
-				generation_ms: ctx.meta.generation_ms ?? generationTimeMs,
+				latency_ms: completedLatencyMs,
+				generation_ms: completedGenerationMs,
 				tokens_in: tokensIn,
 				tokens_out: tokensOut,
 			});

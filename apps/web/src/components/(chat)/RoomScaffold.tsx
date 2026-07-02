@@ -175,12 +175,12 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 						</Link>
 					</div>
 				</SidebarHeader>
-				<SidebarContent>
+				<SidebarContent className="gap-0">
 					<ChatRoomSwitcher />
 					<SidebarSeparator className="my-0" />
 					{!hasCustomSidebarContent ? (
 						<>
-							<div className="px-2 py-1.5">
+							<div className="px-2 pb-1 pt-1.5">
 								<RoomSidebarDatabaseButton />
 							</div>
 							<SidebarSeparator className="my-0" />
@@ -188,7 +188,7 @@ export function RoomScaffold({ children }: RoomScaffoldProps) {
 					) : null}
 					<div
 						id={ROOM_SIDEBAR_SLOT_ID}
-						className="flex min-h-0 flex-1 flex-col gap-2"
+						className="flex min-h-0 flex-1 flex-col gap-0"
 					/>
 				</SidebarContent>
 				<SidebarFooter className="border-t border-border px-3 py-3">

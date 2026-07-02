@@ -2,38 +2,6 @@ import { describe, expect, it } from "vitest";
 import { crofAIQuirks } from "../../providers/crofai/quirks";
 
 describe("CrofAI quirks", () => {
-	it("normalizes K2.7 Code request fields to Moonshot-compatible constraints", () => {
-		const request: Record<string, any> = {
-			model: "moonshotai/kimi-k2.7-code",
-			messages: [{ role: "user", content: "hi" }],
-			tools: [
-				{
-					type: "function",
-					function: {
-						name: "get_weather",
-						description: "Get weather",
-						parameters: { type: "object", properties: {} },
-					},
-				},
-			],
-			tool_choice: { type: "function", function: { name: "get_weather" } },
-			thinking: { type: "disabled" },
-			temperature: 0.2,
-			top_p: 0.5,
-			frequency_penalty: 0.3,
-			presence_penalty: -0.2,
-		};
-
-		crofAIQuirks.transformRequest?.({ request, ir: {} as any });
-
-		expect(request.thinking).toEqual({ type: "enabled" });
-		expect(request.temperature).toBeUndefined();
-		expect(request.top_p).toBeUndefined();
-		expect(request.frequency_penalty).toBeUndefined();
-		expect(request.presence_penalty).toBeUndefined();
-		expect(request.tool_choice).toBe("auto");
-	});
-
 	it("extracts reasoning_content into reasoning blocks", () => {
 		const result = crofAIQuirks.extractReasoning?.({
 			choice: {

@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Copy, TerminalSquare, type LucideIcon } from "lucide-react";
+import {
+	Check,
+	Copy,
+	Gauge,
+	Layers,
+	Shuffle,
+	TerminalSquare,
+	type LucideIcon,
+	Zap,
+} from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -30,6 +39,12 @@ import {
 	codeToHtmlBoth,
 	type ShikiLang,
 } from "@/components/(data)/model/quickstart/shiki";
+import {
+	ALL_PARAMETERS_DOCS_HREF,
+	getParameterDocsHref,
+	getParameterReference,
+} from "@/lib/parameters/reference";
+import { cn } from "@/lib/utils";
 
 type LanguageFamilyOption = {
 	id: string;
@@ -39,7 +54,7 @@ type LanguageFamilyOption = {
 
 type QuickstartVisual =
 	| { kind: "logo"; logoId: string; alt: string }
-	| { kind: "icon"; icon: LucideIcon };
+	| { kind: "icon"; icon: LucideIcon; className?: string };
 
 type ServiceTierOption = {
 	value: "standard" | "priority" | "flex" | "batch";
@@ -167,6 +182,36 @@ function getLanguageFamilyVisual(familyId: string): QuickstartVisual {
 	}
 }
 
+function getServiceTierVisual(tier: ServiceTierOption["value"]): QuickstartVisual {
+	switch (tier) {
+		case "priority":
+			return {
+				kind: "icon",
+				icon: Zap,
+				className: "text-violet-600 dark:text-violet-300",
+			};
+		case "flex":
+			return {
+				kind: "icon",
+				icon: Shuffle,
+				className: "text-emerald-600 dark:text-emerald-300",
+			};
+		case "batch":
+			return {
+				kind: "icon",
+				icon: Layers,
+				className: "text-orange-600 dark:text-orange-300",
+			};
+		case "standard":
+		default:
+			return {
+				kind: "icon",
+				icon: Gauge,
+				className: "text-muted-foreground",
+			};
+	}
+}
+
 function OptionVisual({ visual }: { visual: QuickstartVisual }) {
 	if (visual.kind === "logo") {
 		return (
@@ -184,7 +229,14 @@ function OptionVisual({ visual }: { visual: QuickstartVisual }) {
 
 	const Icon = visual.icon;
 
-	return <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
+	return (
+		<Icon
+			className={cn(
+				"h-3.5 w-3.5 shrink-0 text-muted-foreground",
+				visual.className,
+			)}
+		/>
+	);
 }
 
 function OptionLabel({
@@ -230,193 +282,6 @@ const PARAMETER_PRIORITY = [
 const PARAMETER_PRIORITY_INDEX = new Map<string, number>(
 	PARAMETER_PRIORITY.map((paramId, index) => [paramId, index]),
 );
-const ALL_PARAMETERS_DOCS_HREF =
-	"https://docs.ai-stats.phaseo.app/v1/api-reference/parameters";
-
-const PARAMETER_REFERENCE: Record<
-	string,
-	{
-		type: string;
-		defaultValue: string;
-		description: string;
-	}
-> = {
-	reasoning: {
-		type: "object",
-		defaultValue: "-",
-		description:
-			"Provider-specific reasoning configuration for reasoning-capable APIs.",
-	},
-	temperature: {
-		type: "number",
-		defaultValue: "Provider specific",
-		description: "Controls how random token selection can be.",
-	},
-	top_p: {
-		type: "number",
-		defaultValue: "Provider specific",
-		description:
-			"Applies nucleus sampling by limiting candidates to a probability mass threshold.",
-	},
-	top_k: {
-		type: "integer",
-		defaultValue: "Provider specific",
-		description:
-			"Restricts sampling to the top-k candidate tokens on providers that expose it.",
-	},
-	min_p: {
-		type: "number",
-		defaultValue: "Provider specific",
-		description:
-			"Narrows sampling by discarding tokens below a minimum probability threshold.",
-	},
-	max_tokens: {
-		type: "integer",
-		defaultValue: "Provider specific",
-		description:
-			"Caps output length on endpoints and providers that use the max_tokens field name.",
-	},
-	max_output_tokens: {
-		type: "integer",
-		defaultValue: "Provider specific",
-		description:
-			"Caps output length on routes that use max_output_tokens instead of max_tokens.",
-	},
-	max_completion_tokens: {
-		type: "integer",
-		defaultValue: "Provider specific",
-		description:
-			"Caps output length on newer OpenAI-style text APIs that use max_completion_tokens.",
-	},
-	seed: {
-		type: "integer",
-		defaultValue: "Unset",
-		description:
-			"Requests deterministic sampling when the upstream provider supports seeded generation.",
-	},
-	stop: {
-		type: "string or string[]",
-		defaultValue: "-",
-		description:
-			"Defines one or more sequences that terminate generation early.",
-	},
-	logprobs: {
-		type: "boolean",
-		defaultValue: "false",
-		description: "Requests token-level probability data in the response.",
-	},
-	top_logprobs: {
-		type: "integer",
-		defaultValue: "-",
-		description:
-			"Limits how many alternative token probabilities are returned per position.",
-	},
-	logit_bias: {
-		type: "object",
-		defaultValue: "-",
-		description:
-			"Adjusts token selection bias directly when a provider exposes logit control.",
-	},
-	tools: {
-		type: "array",
-		defaultValue: "-",
-		description:
-			"Defines callable tools or functions the model can invoke.",
-	},
-	tool_choice: {
-		type: "string or object",
-		defaultValue: "auto",
-		description: "Controls which tool, if any, the model should call.",
-	},
-	parallel_tool_calls: {
-		type: "boolean",
-		defaultValue: "Provider specific",
-		description:
-			"Allows or restricts concurrent tool execution where supported.",
-	},
-	response_format: {
-		type: "string or object",
-		defaultValue: "-",
-		description:
-			"Requests plain text, JSON, or schema-constrained output formats.",
-	},
-	structured_outputs: {
-		type: "boolean",
-		defaultValue: "false",
-		description:
-			"Capability signal for reliable schema-constrained output workflows.",
-	},
-	json_schema: {
-		type: "object",
-		defaultValue: "-",
-		description:
-			"Defines the schema to enforce for structured output workflows.",
-	},
-	frequency_penalty: {
-		type: "number",
-		defaultValue: "0",
-		description:
-			"Discourages repeated tokens in proportion to how often they already appeared.",
-	},
-	presence_penalty: {
-		type: "number",
-		defaultValue: "0",
-		description:
-			"Encourages the model to explore new wording or topics after they first appear.",
-	},
-	repetition_penalty: {
-		type: "number",
-		defaultValue: "Provider specific",
-		description:
-			"Applies provider-specific anti-repetition behavior outside the classic penalty fields.",
-	},
-	include_reasoning: {
-		type: "boolean",
-		defaultValue: "false",
-		description:
-			"Requests reasoning content or reasoning summaries in responses where supported.",
-	},
-	reasoning_effort: {
-		type: "string",
-		defaultValue: "Provider specific",
-		description:
-			"Requests a lower or higher reasoning budget when the endpoint exposes that control.",
-	},
-	reasoning_tokens: {
-		type: "integer",
-		defaultValue: "Provider specific",
-		description:
-			"Represents a reasoning-specific token budget or accounting field where supported.",
-	},
-	service_tier: {
-		type: "string",
-		defaultValue: "standard",
-		description:
-			"Chooses a supported request tier such as priority or flex when the route supports it.",
-	},
-	stream: {
-		type: "boolean",
-		defaultValue: "false",
-		description:
-			"Returns output incrementally over Server-Sent Events instead of one final response body.",
-	},
-};
-
-function getParameterDocsHref(paramId: string) {
-	return `${ALL_PARAMETERS_DOCS_HREF}#parameter-${paramId}`;
-}
-
-function getParameterReference(paramId: string) {
-	return (
-		PARAMETER_REFERENCE[paramId] ?? {
-			type: "-",
-			defaultValue: "-",
-			description:
-				"See the full parameter reference for endpoint-specific semantics and provider caveats.",
-		}
-	);
-}
-
 function sortSupportedParameters(
 	parameters: QuickstartUsageSectionProps["supportedParameters"],
 ) {
@@ -593,6 +458,7 @@ export function QuickstartUsageSection({
 	const selectedServiceTierLabel =
 		SERVICE_TIER_OPTIONS.find((option) => option.value === selectedServiceTier)
 			?.label ?? "Service tier";
+	const selectedServiceTierVisual = getServiceTierVisual(selectedServiceTier);
 	const sortedSupportedParameters = useMemo(
 		() => sortSupportedParameters(supportedParameters),
 		[supportedParameters],
@@ -796,7 +662,10 @@ export function QuickstartUsageSection({
 								>
 									<SelectTrigger className="h-8 rounded-lg text-xs">
 										<SelectValue placeholder="Service tier">
-											{selectedServiceTierLabel}
+											<OptionLabel
+												label={selectedServiceTierLabel}
+												visual={selectedServiceTierVisual}
+											/>
 										</SelectValue>
 									</SelectTrigger>
 									<SelectContent>
@@ -813,7 +682,10 @@ export function QuickstartUsageSection({
 													title={option.hint}
 												>
 													<div className="flex w-full items-center justify-between gap-3">
-														<span>{option.label}</span>
+														<OptionLabel
+															label={option.label}
+															visual={getServiceTierVisual(option.value)}
+														/>
 														{option.hint ? (
 															<span className="text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
 																{option.hint}
@@ -847,7 +719,7 @@ export function QuickstartUsageSection({
 				<Separator />
 				<div className="flex flex-col gap-2 px-3 py-3">
 					<div className="flex items-center justify-between gap-3">
-						<span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+						<span className="text-xs font-medium text-muted-foreground">
 							Accepted IDs
 						</span>
 						<span className="text-xs text-muted-foreground">
@@ -895,7 +767,7 @@ export function QuickstartUsageSection({
 						<div className="flex flex-col gap-3 px-3 py-3">
 							<div className="flex flex-wrap items-start justify-between gap-3">
 								<div className="space-y-1">
-									<p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+									<p className="text-xs font-medium text-muted-foreground">
 										Parameters
 									</p>
 									<p className="text-xs text-muted-foreground">

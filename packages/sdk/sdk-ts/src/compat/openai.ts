@@ -96,8 +96,10 @@ export class OpenAI {
 
   public readonly batches: {
     create(params: BatchRequest): Promise<BatchResponse>;
+    list(params?: Record<string, unknown>): Promise<unknown>;
     retrieve(batchId: string): Promise<BatchResponse>;
     cancel(batchId: string): Promise<BatchResponse>;
+    listModels(params?: Record<string, unknown>): Promise<unknown>;
   };
 
   constructor(config: OpenAIConfig) {
@@ -159,8 +161,10 @@ export class OpenAI {
     // Batches
     this.batches = {
       create: (params) => this.aiStats.createBatch(params),
+      list: (params) => this.aiStats.listBatches(params),
       retrieve: (batchId) => this.aiStats.getBatch(batchId),
-      cancel: (batchId) => this.aiStats.cancelBatch(batchId)
+      cancel: (batchId) => this.aiStats.cancelBatch(batchId),
+      listModels: (params) => this.aiStats.listBatchModels(params)
     };
   }
 

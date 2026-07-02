@@ -129,40 +129,6 @@ function textPricingCard(inputTextPerToken: number, cachedReadPerToken: number) 
 	};
 }
 
-function textTierPricingCard(plans: Array<"standard" | "priority" | "flex">) {
-	return {
-		provider: "test",
-		model: "moonshotai/kimi-k2.7-code",
-		endpoint: "responses",
-		effective_from: null,
-		effective_to: null,
-		currency: "USD",
-		version: "1",
-		rules: plans.flatMap((plan) => [
-			{
-				pricing_plan: plan,
-				meter: "input_text_tokens",
-				unit: "token",
-				unit_size: 1,
-				price_per_unit: plan === "priority" ? "0.000002" : "0.000001",
-				currency: "USD",
-				match: [],
-				priority: 1,
-			},
-			{
-				pricing_plan: plan,
-				meter: "output_text_tokens",
-				unit: "token",
-				unit_size: 1,
-				price_per_unit: plan === "priority" ? "0.000008" : "0.000004",
-				currency: "USD",
-				match: [],
-				priority: 1,
-			},
-		]),
-	};
-}
-
 describe("routeProviders testing mode", () => {
 	beforeEach(() => {
 		readHealthManyMock.mockReset();
@@ -491,197 +457,6 @@ describe("routeProviders testing mode", () => {
 		]);
 	});
 
-	it("filters priority service-tier routing to providers that support the requested tier", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
-			moonshotai: health("moonshotai", {
-				lat_ewma_60s: 900,
-				lat_ewma_300s: 900,
-			}),
-			novita: health("novita", {
-				lat_ewma_60s: 100,
-				lat_ewma_300s: 100,
-			}),
-		}));
-
-		const result = await routeProviders(
-			[
-				candidate({
-					providerId: "moonshotai",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "kimi-k2.7-code-highspeed",
-					pricingCard: textTierPricingCard(["standard", "priority"]),
-				}),
-				candidate({
-					providerId: "novita",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "moonshotai/kimi-k2.7-code",
-					pricingCard: textTierPricingCard(["standard"]),
-				}),
-			],
-			{
-				endpoint: "responses",
-				model: "moonshotai/kimi-k2.7-code",
-				workspaceId: "team_123",
-				body: {
-					service_tier: "priority",
-				},
-				testingMode: false,
-			},
-		);
-
-		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
-			"moonshotai",
-		]);
-		const serviceTierStage = result.diagnostics.filterStages.find(
-			(stage) => stage.stage === "service_tier_support_gate",
-		);
-		expect(serviceTierStage).toMatchObject({
-			beforeCount: 2,
-			afterCount: 1,
-			droppedProviders: [
-				{
-					providerId: "novita",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "moonshotai/kimi-k2.7-code",
-					reason: "service_tier_priority_unsupported",
-				},
-			],
-		});
-	});
-
-	it("preserves provider routing when service_tier is omitted", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
-			moonshotai: health("moonshotai", {
-				lat_ewma_60s: 900,
-				lat_ewma_300s: 900,
-			}),
-			novita: health("novita", {
-				lat_ewma_60s: 100,
-				lat_ewma_300s: 100,
-			}),
-		}));
-
-		const result = await routeProviders(
-			[
-				candidate({
-					providerId: "moonshotai",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "kimi-k2.7-code-highspeed",
-					pricingCard: textTierPricingCard(["standard", "priority"]),
-				}),
-				candidate({
-					providerId: "novita",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "moonshotai/kimi-k2.7-code",
-					pricingCard: textTierPricingCard(["standard"]),
-				}),
-			],
-			{
-				endpoint: "responses",
-				model: "moonshotai/kimi-k2.7-code",
-				workspaceId: "team_123",
-				body: {
-					provider: { sort: "latency" },
-				},
-				testingMode: false,
-			},
-		);
-
-		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
-			"novita",
-			"moonshotai",
-		]);
-		expect(
-			result.diagnostics.filterStages.some(
-				(stage) => stage.stage === "service_tier_support_gate",
-			),
-		).toBe(false);
-	});
-
-	it("keeps standard-priced providers for explicit standard service tier", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
-			novita: health("novita", {
-				lat_ewma_60s: 100,
-				lat_ewma_300s: 100,
-			}),
-		}));
-
-		const result = await routeProviders(
-			[
-				candidate({
-					providerId: "novita",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "moonshotai/kimi-k2.7-code",
-					capabilityParams: {},
-					pricingCard: textTierPricingCard(["standard"]),
-				}),
-			],
-			{
-				endpoint: "responses",
-				model: "moonshotai/kimi-k2.7-code",
-				workspaceId: "team_123",
-				body: {
-					service_tier: "standard",
-				},
-				testingMode: false,
-			},
-		);
-
-		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
-			"novita",
-		]);
-		const serviceTierStage = result.diagnostics.filterStages.find(
-			(stage) => stage.stage === "service_tier_support_gate",
-		);
-		expect(serviceTierStage).toMatchObject({
-			beforeCount: 1,
-			afterCount: 1,
-			droppedProviders: [],
-		});
-	});
-
-	it("does not apply service-tier support gate in testing mode", async () => {
-		readHealthManyMock.mockImplementation(async () => ({
-			novita: health("novita", {
-				lat_ewma_60s: 100,
-				lat_ewma_300s: 100,
-			}),
-		}));
-
-		const result = await routeProviders(
-			[
-				candidate({
-					providerId: "novita",
-					apiModelId: "moonshotai/kimi-k2.7-code",
-					providerModelSlug: "moonshotai/kimi-k2.7-code",
-					capabilityParams: {},
-					pricingCard: null,
-				}),
-			],
-			{
-				endpoint: "responses",
-				model: "moonshotai/kimi-k2.7-code",
-				workspaceId: "team_123",
-				body: {
-					service_tier: "priority",
-				},
-				testingMode: true,
-			},
-		);
-
-		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual([
-			"novita",
-		]);
-		const serviceTierStage = result.diagnostics.filterStages.find(
-			(stage) => stage.stage === "service_tier_support_gate",
-		);
-		expect(serviceTierStage).toMatchObject({
-			beforeCount: 1,
-			afterCount: 1,
-			droppedProviders: [],
-		});
-	});
-
 	it("applies strong derank multipliers (legacy deranked maps to lvl1)", async () => {
 		const result = await routeProviders(
 			[
@@ -760,6 +535,45 @@ describe("routeProviders testing mode", () => {
 		expect(result.diagnostics.routingMode).toBe("price");
 	});
 
+	it("uses cheapest stable providers first for default balanced routing", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 250,
+				lat_ewma_300s: 250,
+				tp_ewma_60s: 20,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 900,
+				lat_ewma_300s: 900,
+				tp_ewma_60s: 3,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					pricingCard: textPricingCard(0.00004, 0.00002),
+				}),
+				candidate({
+					providerId: "anthropic",
+					pricingCard: textPricingCard(0.00001, 0.000005),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: { routing: { mode: "balanced" } },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("anthropic");
+		expect(result.diagnostics.routingMode).toBe("balanced");
+		expect(result.diagnostics.rankedProviders[0]?.scoreFactors.priceScore).toBe(1);
+	});
+
 	it("honors provider.sort=latency from the request body", async () => {
 		readHealthManyMock.mockImplementation(async () => ({
 			openai: health("openai", {
@@ -822,6 +636,135 @@ describe("routeProviders testing mode", () => {
 
 		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("anthropic");
 		expect(result.diagnostics.routingMode).toBe("throughput");
+	});
+
+	it("honors the first-class routing.mode object", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 180,
+				lat_ewma_300s: 180,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 900,
+				lat_ewma_300s: 900,
+			}),
+		}));
+
+		const result = await routeProviders(
+			[
+				candidate({ providerId: "openai" }),
+				candidate({ providerId: "anthropic" }),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: { routing: { mode: "latency" } },
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)[0]).toBe("openai");
+		expect(result.diagnostics.requestedRouting.requestedMode).toBe("latency");
+	});
+
+	it("treats :cheap as the single price-first alias", async () => {
+		readHealthManyMock.mockImplementation(async () => ({
+			openai: health("openai", {
+				lat_ewma_60s: 120,
+				lat_ewma_300s: 120,
+				tp_ewma_60s: 10,
+			}),
+			anthropic: health("anthropic", {
+				lat_ewma_60s: 900,
+				lat_ewma_300s: 900,
+				tp_ewma_60s: 2,
+			}),
+		}));
+
+		const cheapResult = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					pricingCard: textPricingCard(0.00004, 0.00002),
+				}),
+				candidate({
+					providerId: "anthropic",
+					pricingCard: textPricingCard(0.00001, 0.000005),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini:cheap",
+				workspaceId: "team_123",
+				testingMode: false,
+			},
+		);
+
+		expect(cheapResult.ranked[0]?.candidate.providerId).toBe("anthropic");
+		expect(cheapResult.diagnostics.routingMode).toBe("price");
+	});
+
+	it("filters providers by first-class routing max_price ceilings", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					pricingCard: textPricingCard(0.00004, 0.00002),
+				}),
+				candidate({
+					providerId: "anthropic",
+					pricingCard: textPricingCard(0.00001, 0.000005),
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: {
+					routing: {
+						max_price: {
+							prompt: 0.00002,
+						},
+					},
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["anthropic"]);
+		expect(
+			result.diagnostics.filterStages.find((stage) => stage.stage === "pricing_cap_gate")?.afterCount,
+		).toBe(1);
+	});
+
+	it("maps routing.zdr to zero-data-retention enforcement", async () => {
+		const result = await routeProviders(
+			[
+				candidate({
+					providerId: "openai",
+					zeroDataRetention: "optional",
+				}),
+				candidate({
+					providerId: "anthropic",
+					zeroDataRetention: "unsupported",
+				}),
+			],
+			{
+				endpoint: "responses",
+				model: "openai/gpt-4o-mini",
+				workspaceId: "team_123",
+				body: {
+					routing: {
+						zdr: true,
+					},
+				},
+				testingMode: false,
+			},
+		);
+
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["openai"]);
+		expect(result.diagnostics.requestedRouting.requireZeroDataRetention).toBe(true);
 	});
 
 	it("prioritizes hinted provider when sticky cache metadata exists", async () => {
@@ -1051,7 +994,7 @@ describe("routeProviders testing mode", () => {
 		);
 	});
 
-	it("deprioritizes providers with open circuit breakers when other options exist", async () => {
+	it("keeps open-breaker providers reachable as tail fallbacks", async () => {
 		readHealthManyMock.mockImplementation(async () => ({
 			openai: health("openai", {
 				breaker: "open",
@@ -1076,16 +1019,16 @@ describe("routeProviders testing mode", () => {
 			}
 		);
 
-		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["anthropic"]);
+		expect(result.ranked.map((entry) => entry.candidate.providerId)).toEqual(["anthropic", "openai"]);
 		const breakerStage = result.diagnostics.filterStages.find((stage) => stage.stage === "health_breaker");
 		expect(breakerStage?.beforeCount).toBe(2);
-		expect(breakerStage?.afterCount).toBe(1);
+		expect(breakerStage?.afterCount).toBe(2);
 		expect(breakerStage?.droppedProviders).toEqual([
 			{
 				providerId: "openai",
 				apiModelId: null,
 				providerModelSlug: null,
-				reason: "breaker_open",
+				reason: "breaker_open_deranked",
 			},
 		]);
 	});
