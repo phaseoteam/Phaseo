@@ -119,15 +119,16 @@ export default function ModelStatusBanner({
 		return (
 			<Alert
 				className={cn(
-					"border-red-200 bg-red-50 text-red-950 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-50",
+					"border-red-500/30 bg-muted/40 text-foreground dark:border-red-500/35 dark:bg-muted/25",
 					className,
 				)}
 			>
 				<XCircle className="h-4 w-4 text-red-700 dark:text-red-300" />
 				<AlertTitle>Retired Model</AlertTitle>
-				<AlertDescription className="text-red-900/90 dark:text-red-100/90">
-					This model has reached end of life, and can no longer be used. This
-					page will likely receive no updates from now on.
+				<AlertDescription className="text-muted-foreground">
+					This model has reached end of life and can no longer be used. We keep
+					this page as an archive for historical metadata, benchmark context,
+					and any related subscription records.
 				</AlertDescription>
 			</Alert>
 		);

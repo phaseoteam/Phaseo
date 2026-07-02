@@ -41,6 +41,10 @@ function isModelNotFoundError(error: unknown): boolean {
 }
 
 function getVisibleTabKeys(modelStatus?: string | null): string[] {
+	if (modelStatus === "Retired") {
+		return ["overview", "benchmarks"];
+	}
+
 	const isLimitedAvailabilityModel =
 		modelStatus === "Announced" || modelStatus === "Withheld";
 	if (isLimitedAvailabilityModel) {
@@ -110,6 +114,7 @@ export default async function ModelDetailShell({
 	const scopedVisibleTabKeys = isFreeRouter
 		? ["overview"]
 		: visibleTabKeys;
+	const canChat = header.status !== "Retired";
 	if (tab && !scopedVisibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
@@ -122,6 +127,7 @@ export default async function ModelDetailShell({
 				organisationName={header.organisation.name}
 				modelName={header.name}
 				observeId="model-detail-primary-header"
+				canChat={canChat}
 			/>
 
 			<div className="container mx-auto px-4 py-8">
@@ -178,12 +184,14 @@ export default async function ModelDetailShell({
 					</div>
 
 					<div className="flex w-full flex-row gap-2 md:mt-0 md:ml-6 md:w-auto md:flex-col">
-						<Button asChild variant="outline" size="sm" className="flex-1 justify-center md:flex-none">
-							<Link href={`/chat?model=${modelId}`}>
-								<MessageSquare className="h-4 w-4" />
-								Chat
-							</Link>
-						</Button>
+						{canChat ? (
+							<Button asChild variant="outline" size="sm" className="flex-1 justify-center md:flex-none">
+								<Link href={`/chat?model=${modelId}`}>
+									<MessageSquare className="h-4 w-4" />
+									Chat
+								</Link>
+							</Button>
+						) : null}
 						<Button asChild variant="outline" size="sm" className="flex-1 justify-center md:flex-none">
 							<Link href={`/compare?models=${modelId}`}>
 								<Scale className="h-4 w-4" />

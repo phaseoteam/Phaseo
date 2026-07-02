@@ -77,10 +77,20 @@ const baseModelPageTocItems: ModelPageTocItem[] = [
 function getModelPageTocItems({
 	showBenchmarks,
 	showSubscriptions,
+	status,
 }: {
 	showBenchmarks: boolean;
 	showSubscriptions: boolean;
+	status?: string | null;
 }): ModelPageTocItem[] {
+	if (status === "Retired") {
+		return baseModelPageTocItems.filter((item) => {
+			if (item.id === "benchmarks") return showBenchmarks;
+			if (item.id === "subscriptions") return showSubscriptions;
+			return item.id === "about";
+		});
+	}
+
 	return baseModelPageTocItems.filter((item) => {
 		if (item.id === "benchmarks") return showBenchmarks;
 		if (item.id === "subscriptions") return showSubscriptions;
@@ -216,9 +226,11 @@ export default async function Page({
 		]);
 	const showBenchmarks = benchmarkHighlights.length > 0;
 	const showSubscriptions = subscriptionPlans.length > 0;
+	const isRetired = modelOverview?.status === "Retired";
 	const modelPageTocItems = getModelPageTocItems({
 		showBenchmarks,
 		showSubscriptions,
+		status: modelOverview?.status,
 	});
 	const modelName = modelOverview?.name ?? modelId.split("/").slice(-1)[0] ?? modelId;
 	const organisationName =
@@ -291,18 +303,21 @@ export default async function Page({
 								includeHidden={includeHidden}
 								showBenchmarks={showBenchmarks}
 								showSubscriptions={showSubscriptions}
+								status={modelOverview?.status}
 								performancePromise={performancePromise}
 								quickstartRequestContext={quickstartRequestContext}
 							/>
 						</div>
 					</div>
-					<Suspense fallback={<ModelCreatorModelsSkeleton />}>
-						<ModelCreatorModelsSectionContent
-							modelId={modelId}
-							includeHidden={includeHidden}
-							modelPromise={modelPromise}
-						/>
-					</Suspense>
+					{isRetired ? null : (
+						<Suspense fallback={<ModelCreatorModelsSkeleton />}>
+							<ModelCreatorModelsSectionContent
+								modelId={modelId}
+								includeHidden={includeHidden}
+								modelPromise={modelPromise}
+							/>
+						</Suspense>
+					)}
 				</div>
 			</ModelDetailShell>
 		</>

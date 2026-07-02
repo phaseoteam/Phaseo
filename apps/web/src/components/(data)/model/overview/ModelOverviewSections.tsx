@@ -67,6 +67,7 @@ type ModelOverviewSectionsProps = {
 	includeHidden: boolean;
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
+	status?: string | null;
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 	quickstartRequestContext?: QuickstartRequestContext;
 };
@@ -1043,10 +1044,62 @@ export default function ModelOverviewSections({
 	includeHidden,
 	showBenchmarks = true,
 	showSubscriptions = true,
+	status,
 	performancePromise,
 	quickstartRequestContext,
 }: ModelOverviewSectionsProps) {
 	const hasInternalModelData = Boolean(model);
+	const isRetired = status === "Retired";
+
+	if (isRetired) {
+		return (
+			<div className="space-y-10">
+				{showBenchmarks ? (
+					<Section id="benchmarks" showDivider={false}>
+						<SectionHeader
+							title="Benchmarks"
+							description="Historical benchmark standings and comparison context."
+						/>
+						<Suspense fallback={<BenchmarksSectionSkeleton />}>
+							<ModelBenchmarksSection
+								modelId={modelId}
+								includeHidden={includeHidden}
+								hideWhenEmpty
+							/>
+						</Suspense>
+					</Section>
+				) : null}
+				{hasInternalModelData ? (
+					<>
+						<Section id="about" showDivider={showBenchmarks}>
+							<SectionHeader
+								title="About"
+								description="Archived dates, capabilities, links, and model metadata."
+							/>
+							<Suspense fallback={<AboutSectionSkeleton />}>
+								<ModelAboutSection model={model!} />
+							</Suspense>
+						</Section>
+						{showSubscriptions ? (
+							<Section id="subscriptions">
+								<SectionHeader
+									title="Subscriptions"
+									description="Historical commercial plans and bundled access that listed this model."
+								/>
+								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
+									<ModelSubscriptionsSection
+										modelId={modelId}
+										ownerOrganisationId={model?.organisation_id}
+										ownerOrganisationName={model?.organisation?.name}
+									/>
+								</Suspense>
+							</Section>
+						) : null}
+					</>
+				) : null}
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-10">
