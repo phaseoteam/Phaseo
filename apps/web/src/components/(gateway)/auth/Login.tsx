@@ -1,14 +1,9 @@
-// components/(gateway)/auth/Login.tsx
-import { cookies } from "next/headers";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
 
-const OAUTH = ["google", "github", "gitlab"] as const;
-type OAuthProvider = (typeof OAUTH)[number];
-type Provider = OAuthProvider | "email";
 type SignupNotice = "check-email" | null;
 
-export async function Login({
+export function Login({
 	signupNotice = null,
 	authError = null,
 	returnUrl,
@@ -17,15 +12,6 @@ export async function Login({
 	authError?: "auth-failed" | null;
 	returnUrl?: string;
 }) {
-	let lastProvider: Provider | null = null;
-	try {
-		const c = await cookies();
-		lastProvider = (c.get("auth_provider")?.value?.toLowerCase() ??
-			null) as Provider | null;
-	} catch {
-		lastProvider = null;
-	}
-
 	const signupNoticeText =
 		signupNotice === "check-email"
 			? "If an account exists for that email, check your inbox for next steps."
@@ -53,12 +39,7 @@ export async function Login({
 				</p>
 			) : null}
 
-			<OAuthButtons
-				returnUrl={returnUrl}
-				lastUsedProvider={
-					lastProvider && lastProvider !== "email" ? lastProvider : null
-				}
-			/>
+			<OAuthButtons returnUrl={returnUrl} />
 			<EmailPassword returnUrl={returnUrl} />
 		</div>
 	);

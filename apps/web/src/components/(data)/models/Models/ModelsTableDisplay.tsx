@@ -23,7 +23,7 @@ import {
 	Route,
 	Sparkles,
 	Speech,
-	Text as TextIcon,
+	Type as TypeIcon,
 	ImageIcon,
 	Video,
 	CalendarDays,
@@ -248,7 +248,7 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TextIcon;
+	if (normalized.includes("text")) return TypeIcon;
 	return CircleDot;
 }
 

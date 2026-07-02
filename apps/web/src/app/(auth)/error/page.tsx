@@ -1,12 +1,22 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import AuthErrorMessage from "./AuthErrorMessage";
 import { DEFAULT_AUTH_ERROR_MESSAGE, normalizeAuthErrorMessage } from "@/lib/auth/errorMessage";
+import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 
 type AuthErrorPageProps = {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
+export default function AuthErrorPage({ searchParams }: AuthErrorPageProps) {
+    return (
+        <Suspense fallback={<AuthSuspenseFallback />}>
+            <AuthErrorPageContent searchParams={searchParams} />
+        </Suspense>
+    );
+}
+
+async function AuthErrorPageContent({ searchParams }: AuthErrorPageProps) {
     const params = (await searchParams) ?? {};
     const rawMessage = Array.isArray(params.message) ? params.message[0] : params.message;
     const initialMessage = normalizeAuthErrorMessage(rawMessage);

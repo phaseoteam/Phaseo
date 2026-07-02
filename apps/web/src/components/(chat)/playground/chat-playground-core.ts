@@ -7,10 +7,23 @@ import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySup
 import type {
 	ChatMessage,
 	ChatModelSettings,
+	ChatServerToolConfigs,
+	ChatServerToolType,
 	ChatSettings,
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
+
+export const DEFAULT_SERVER_TOOLS: ChatServerToolType[] = ["gateway:datetime"];
+
+export type ChatResponseLayout = "sequential" | "side-by-side";
+
+export function normalizeServerTools(
+	serverTools?: ChatServerToolType[],
+): ChatServerToolType[] {
+	if (serverTools === undefined) return DEFAULT_SERVER_TOOLS;
+	return Array.from(new Set(serverTools));
+}
 
 export const DEFAULT_SETTINGS: ChatSettings = {
 	temperature: null,
@@ -30,7 +43,9 @@ export const DEFAULT_SETTINGS: ChatSettings = {
 	reasoningEffort: "medium",
 	endpoint: "responses",
 	webSearchEnabled: false,
-	apiServerToolsEnabled: false,
+	apiServerToolsEnabled: true,
+	serverTools: DEFAULT_SERVER_TOOLS,
+	serverToolConfigs: {},
 	imageOutputEnabled: false,
 	compareMode: false,
 	compareModelIds: [],
@@ -56,6 +71,8 @@ const MODEL_SETTING_KEYS: Array<keyof ChatModelSettings> = [
 	"endpoint",
 	"webSearchEnabled",
 	"apiServerToolsEnabled",
+	"serverTools",
+	"serverToolConfigs",
 	"imageOutputEnabled",
 	"enabled",
 	"displayName",
@@ -166,6 +183,7 @@ export function getRoomStorageKeys(roomId: ChatRoomId) {
 		personalizationAccent: getRoomScopedStorageKey(roomId, "personal-accent"),
 		notifyOnComplete: getRoomScopedStorageKey(roomId, "notify-on-complete"),
 		debugMode: getRoomScopedStorageKey(roomId, "debug"),
+		responseLayout: getRoomScopedStorageKey(roomId, "response-layout"),
 	};
 }
 
@@ -336,6 +354,8 @@ export function getEffectiveModelSettings(
 		endpoint: DEFAULT_SETTINGS.endpoint,
 		webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
 		apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+		serverTools: DEFAULT_SETTINGS.serverTools,
+		serverToolConfigs: DEFAULT_SETTINGS.serverToolConfigs,
 		imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 		enabled: true,
 		displayName: "",
@@ -349,6 +369,55 @@ export function getEffectiveModelSettings(
 		...globalModelSettings,
 		...modelOverrides,
 	};
+}
+
+export function buildServerToolDefinitions(
+	serverTools?: ChatServerToolType[],
+	serverToolConfigs?: ChatServerToolConfigs,
+): Array<Record<string, unknown>> {
+	return normalizeServerTools(serverTools).map((toolType) => {
+		if (toolType !== "ai-stats:advisor") {
+			return { type: toolType };
+		}
+		const advisor = serverToolConfigs?.advisor;
+		const parameters: Record<string, unknown> = {};
+		if (advisor?.name?.trim()) {
+			parameters.name = advisor.name.trim();
+		}
+		if (advisor?.model?.trim()) {
+			parameters.model = advisor.model.trim();
+		}
+		if (advisor?.instructions?.trim()) {
+			parameters.instructions = advisor.instructions.trim();
+		}
+		if (advisor?.forwardTranscript !== undefined) {
+			parameters.forward_transcript = advisor.forwardTranscript;
+		}
+		if (typeof advisor?.maxUses === "number" && Number.isFinite(advisor.maxUses)) {
+			parameters.max_uses = Math.max(1, Math.round(advisor.maxUses));
+		}
+		if (
+			typeof advisor?.maxCompletionTokens === "number" &&
+			Number.isFinite(advisor.maxCompletionTokens)
+		) {
+			parameters.max_completion_tokens = Math.max(
+				1,
+				Math.round(advisor.maxCompletionTokens),
+			);
+		}
+		if (
+			typeof advisor?.temperature === "number" &&
+			Number.isFinite(advisor.temperature)
+		) {
+			parameters.temperature = advisor.temperature;
+		}
+		if (advisor?.reasoningEffort && advisor.reasoningEffort !== "none") {
+			parameters.reasoning = { effort: advisor.reasoningEffort };
+		}
+		return Object.keys(parameters).length > 0
+			? { type: toolType, parameters }
+			: { type: toolType };
+	});
 }
 
 export function ensureModelOverridesForIds(

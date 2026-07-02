@@ -18,8 +18,20 @@ import { deleteManagementKeyAction } from "@/app/(dashboard)/settings/management
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
-export default function DeleteManagementKeyItem({ k }: any) {
+export default function DeleteManagementKeyItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
 	const [open, setOpen] = useState(false);
+	const dialogOpen = controlledOpen ?? open;
+	const setDialogOpen = onOpenChange ?? setOpen;
 	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -38,26 +50,30 @@ export default function DeleteManagementKeyItem({ k }: any) {
 					);
 				},
 			});
-			setOpen(false);
+			setDialogOpen(false);
 		} finally {
 			setLoading(false);
 		}
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2 text-red-600"
-					onClick={(e) => {
-						e.preventDefault();
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<Trash2 className="mr-2" />
-					Delete
-				</button>
-			</DropdownMenuItem>
+		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+			{trigger ? (
+				<DropdownMenuItem asChild>
+					<div
+						role="button"
+						tabIndex={0}
+						className="w-full text-left flex items-center gap-2 text-red-600"
+						onClick={(e) => {
+							e.preventDefault();
+							setTimeout(() => setDialogOpen(true), 0);
+						}}
+					>
+						<Trash2 className="mr-2" />
+						Delete
+					</div>
+				</DropdownMenuItem>
+			) : null}
 
 			<DialogContent>
 				<DialogHeader>

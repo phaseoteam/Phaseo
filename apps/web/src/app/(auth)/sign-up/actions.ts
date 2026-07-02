@@ -2,21 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { cookies } from 'next/headers'
 import { resolveAuthCallbackUrl } from '@/lib/auth/authOrigin'
 import { sanitizeReturnUrl } from '@/lib/auth/return-url'
-
-const cookieOpts = {
-	path: '/',
-	httpOnly: true,
-	secure: process.env.NODE_ENV === 'production',
-	sameSite: 'lax' as const,
-	maxAge: 60 * 60 * 24 * 180, // 6 months
-}
-
-async function setAuthProviderCookie(provider: string): Promise<void> {
-	await (await cookies()).set('auth_provider', provider, cookieOpts)
-}
 
 function buildRedirect(pathname: string, params: Record<string, string | undefined>) {
 	const url = new URL(pathname, 'http://localhost')
@@ -42,8 +29,6 @@ export async function handleOAuthRedirect(formData: FormData) {
 	const returnUrl = sanitizeReturnUrl(formData.get('returnUrl'), '/')
 	const safeReturnUrl = returnUrl === '/' ? undefined : returnUrl
 	const redirectTo = await resolveAuthCallbackUrl(safeReturnUrl)
-
-	await setAuthProviderCookie(provider)
 
 	const { data, error } = await supabase.auth.signInWithOAuth({
 		provider: provider as any,
@@ -95,8 +80,6 @@ export async function handleEmailSignup(formData: FormData) {
 		}
 		redirect(`/error?message=${encodeURIComponent(error.message || 'Authentication failed')}`)
 	}
-
-	await setAuthProviderCookie('email')
 
 	if (data?.session) {
 		redirect(buildCallbackPath({ returnUrl: safeReturnUrl, type: 'email' }))

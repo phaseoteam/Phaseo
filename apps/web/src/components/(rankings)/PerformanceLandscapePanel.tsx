@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
+import { CalendarDays, Gauge, Zap } from "lucide-react";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import {
 	PerformanceScatter,
@@ -75,17 +75,32 @@ export function PerformanceLandscapePanel({
 	}, [availableRanges, defaultRange, range, resolvedDataByRange]);
 
 	const chartData = resolvedDataByRange[range] ?? [];
+	const selectedRangeLabel =
+		RANGE_OPTIONS.find((option) => option.key === range)?.label ?? "Range";
+	const selectedModeLabel =
+		MODE_OPTIONS.find((option) => option.key === mode)?.label ?? "Mode";
+	const ModeIcon = mode === "latency" ? Gauge : Zap;
 	const controls = (
-		<div className="flex items-center gap-2">
+		<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 			{availableRanges.length > 1 ? (
 				<Select
 					value={range}
 					onValueChange={(value) => setRange(value as RangeKey)}
 				>
-					<SelectTrigger className="h-8 w-[150px]">
-						<SelectValue placeholder="Range" />
+					<SelectTrigger
+						className="h-9 w-full min-w-[10rem] border border-border/70 bg-background shadow-xs hover:bg-muted/45 sm:w-fit dark:border-border/70 dark:bg-background dark:hover:bg-muted/25"
+						aria-label="Select performance range"
+					>
+						<span className="flex min-w-0 items-center gap-2">
+							<CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+							<span className="truncate">{selectedRangeLabel}</span>
+						</span>
 					</SelectTrigger>
-					<SelectContent>
+					<SelectContent
+						align="end"
+						alignItemWithTrigger={false}
+						className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+					>
 						{RANGE_OPTIONS.map((option) => (
 							<SelectItem
 								key={option.key}
@@ -102,13 +117,28 @@ export function PerformanceLandscapePanel({
 				value={mode}
 				onValueChange={(value) => setMode(value as PerformanceMode)}
 			>
-				<SelectTrigger className="h-8 w-[150px]">
-					<SelectValue placeholder="Mode" />
+				<SelectTrigger
+					className="h-9 w-full min-w-[10rem] border border-border/70 bg-background shadow-xs hover:bg-muted/45 sm:w-fit dark:border-border/70 dark:bg-background dark:hover:bg-muted/25"
+					aria-label="Select performance metric"
+				>
+					<span className="flex min-w-0 items-center gap-2">
+						<ModeIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+						<span className="truncate">{selectedModeLabel}</span>
+					</span>
 				</SelectTrigger>
-				<SelectContent>
+				<SelectContent
+					align="end"
+					alignItemWithTrigger={false}
+					className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+				>
 					{MODE_OPTIONS.map((option) => (
 						<SelectItem key={option.key} value={option.key}>
-							{option.label}
+							{option.key === "latency" ? (
+								<Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+							) : (
+								<Zap className="h-3.5 w-3.5 text-muted-foreground" />
+							)}
+							<span>{option.label}</span>
 						</SelectItem>
 					))}
 				</SelectContent>
@@ -119,7 +149,7 @@ export function PerformanceLandscapePanel({
 	return (
 		<div className="space-y-4">
 			{showHeader ? (
-				<div className="flex items-start justify-between gap-3">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-0.5">
 						<div className="flex items-center gap-2">
 							{icon}

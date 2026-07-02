@@ -10,6 +10,7 @@ import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
 
 type PasswordChecks = {
 	hasLower: boolean;
@@ -83,6 +84,11 @@ export default function EmailPassword({
 				"Password must include lowercase, uppercase, a number, and a symbol."
 			);
 			return;
+		}
+		try {
+			window.localStorage.setItem(LAST_AUTH_PROVIDER_STORAGE_KEY, "email");
+		} catch {
+			// Ignore storage failures; auth still proceeds.
 		}
 		setFormError(null);
 	};

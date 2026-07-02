@@ -32,6 +32,29 @@ export type UnifiedChatEndpoint =
     | "moderations"
     | "embeddings";
 
+export type ChatServerToolType =
+    | "gateway:datetime"
+    | "ai-stats:web_search"
+    | "ai-stats:web_fetch"
+    | "ai-stats:advisor"
+    | "ai-stats:image_generation"
+    | "ai-stats:apply_patch";
+
+export type ChatAdvisorServerToolConfig = {
+    name?: string;
+    model?: string;
+    instructions?: string;
+    forwardTranscript?: boolean;
+    maxUses?: number | null;
+    maxCompletionTokens?: number | null;
+    temperature?: number | null;
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+};
+
+export type ChatServerToolConfigs = {
+    advisor?: ChatAdvisorServerToolConfig;
+};
+
 export type ChatModelSettings = {
     temperature: number | null;
     maxOutputTokens: number | null;
@@ -51,6 +74,8 @@ export type ChatModelSettings = {
     endpoint?: UnifiedChatEndpoint;
     webSearchEnabled?: boolean;
     apiServerToolsEnabled?: boolean;
+    serverTools?: ChatServerToolType[];
+    serverToolConfigs?: ChatServerToolConfigs;
     imageOutputEnabled?: boolean;
     enabled?: boolean;
     displayName?: string;
@@ -75,13 +100,17 @@ export type ChatThread = {
 };
 
 const DB_NAME = "ai-stats-chat";
-const DB_VERSION = 2;
+const DB_VERSION = 6;
 const LEGACY_TEXT_STORE_NAME = "chats";
 const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
     text: LEGACY_TEXT_STORE_NAME,
     image: "chats-image",
     video: "chats-video",
     audio: "chats-audio",
+    speech: "chats-speech",
+    "speech-to-text": "chats-speech-to-text",
+    music: "chats-music",
+    realtime: "chats-realtime",
     moderation: "chats-moderation",
     embeddings: "chats-embeddings",
 };

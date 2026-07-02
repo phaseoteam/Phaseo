@@ -7,13 +7,12 @@ import { Button } from "@/components/ui/button";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
 import { cn } from "@/lib/utils";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { ChevronDown } from "lucide-react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 
 type LeaderboardRange = "today" | "week" | "month" | "trending";
@@ -112,39 +111,27 @@ export function ModelLeaderboard({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: ModelLeaderboardProps) {
-	const availableRanges = useMemo(
-		() =>
-			RANGE_OPTIONS.filter(
-				(option) => dataByRange[option.key]?.length
-			),
-		[dataByRange]
-	);
-
 	const [range, setRange] = useState<LeaderboardRange>(() => {
 		if (dataByRange[defaultRange]?.length) return defaultRange;
-		return availableRanges[0]?.key ?? "week";
+		return (
+			RANGE_OPTIONS.find((option) => dataByRange[option.key]?.length)?.key ??
+			defaultRange
+		);
 	});
 	const [showAll, setShowAll] = useState(false);
 
 	const entries = dataByRange[range] ?? [];
 	const visibleEntries = entries.slice(0, maxCollapsed);
 	const extraEntries = entries.slice(maxCollapsed, maxExpanded);
-
-	if (!entries.length) {
-		return (
-			<RankingsEmptyState
-				title="No leaderboard data yet"
-				description="Leaderboard entries appear once rankings are available."
-			/>
-		);
-	}
+	const selectedRangeLabel =
+		RANGE_OPTIONS.find((option) => option.key === range)?.label ?? "Range";
 
 	return (
 		<div className="space-y-4">
 			{showRangeControls || title ? (
 				<div
 					className={[
-						"flex items-start gap-3",
+						"flex flex-col gap-3 sm:flex-row sm:items-start",
 						title ? "justify-between" : "justify-end",
 					].join(" ")}
 				>
@@ -160,32 +147,45 @@ export function ModelLeaderboard({
 						</div>
 					) : null}
 					{showRangeControls ? (
-					<Select
-						value={range}
-						onValueChange={(value) => {
-							setRange(value as LeaderboardRange);
-							setShowAll(false);
-						}}
-					>
-						<SelectTrigger className="h-8 w-[150px]">
-							<SelectValue placeholder="Range" />
-						</SelectTrigger>
-						<SelectContent>
-							{RANGE_OPTIONS.map((option) => (
-								<SelectItem
-									key={option.key}
-									value={option.key}
-									disabled={!dataByRange[option.key]?.length}
-								>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
+						<Select
+							value={range}
+							onValueChange={(value) => {
+								setRange(value as LeaderboardRange);
+								setShowAll(false);
+							}}
+						>
+							<SelectTrigger
+								className="h-9 w-full min-w-[10rem] border border-border/70 bg-background shadow-xs hover:bg-muted/45 sm:w-fit dark:border-border/70 dark:bg-background dark:hover:bg-muted/25"
+								aria-label="Select leaderboard range"
+							>
+								<span className="flex min-w-0 items-center gap-2">
+									<CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+									<span className="truncate">{selectedRangeLabel}</span>
+								</span>
+							</SelectTrigger>
+							<SelectContent
+								align="end"
+								alignItemWithTrigger={false}
+								className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+							>
+								{RANGE_OPTIONS.map((option) => (
+									<SelectItem key={option.key} value={option.key}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					) : null}
 				</div>
 			) : null}
 
+			{!entries.length ? (
+				<RankingsEmptyState
+					title={`No leaderboard data for ${selectedRangeLabel.toLowerCase()}`}
+					description="Try a wider timeframe or check back once more gateway requests are aggregated."
+				/>
+			) : (
+			<>
 			<div className="space-y-2">
 				<div className="grid gap-2 md:grid-cols-2">
 					{visibleEntries.map((entry, index) => {
@@ -432,6 +432,8 @@ export function ModelLeaderboard({
 					</Button>
 				</div>
 			) : null}
+			</>
+			)}
 		</div>
 	);
 }

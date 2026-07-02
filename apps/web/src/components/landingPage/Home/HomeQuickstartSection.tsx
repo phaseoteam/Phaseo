@@ -676,7 +676,7 @@ function BetaDatabaseVisual() {
 		const timer = window.setTimeout(() => {
 			setNextIndex((activeIndex + 1) % modelPool.length);
 			setIsSliding(true);
-		}, 2600);
+		}, 6000);
 		return () => window.clearTimeout(timer);
 	}, [activeIndex, isSliding, modelPool.length]);
 
@@ -695,6 +695,8 @@ function BetaDatabaseVisual() {
 	const currentModel = modelPool[activeIndex] ?? modelPool[0];
 	const incomingModel =
 		nextIndex === null ? currentModel : modelPool[nextIndex] ?? currentModel;
+	const displayedMetricsModel =
+		isSliding && nextIndex !== null ? incomingModel : currentModel;
 
 	return (
 		<div className="w-full px-4">
@@ -742,7 +744,7 @@ function BetaDatabaseVisual() {
 							Latency
 						</span>
 						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
-							<NumberFlow value={currentModel.latencyMs} />
+							<NumberFlow value={displayedMetricsModel.latencyMs} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								ms
 							</span>
@@ -753,7 +755,7 @@ function BetaDatabaseVisual() {
 							Throughput
 						</span>
 						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
-							<NumberFlow value={currentModel.throughputTps} />
+							<NumberFlow value={displayedMetricsModel.throughputTps} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								tok/s
 							</span>
@@ -764,9 +766,9 @@ function BetaDatabaseVisual() {
 							Pricing
 						</span>
 						<p className="mt-1 whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							$<NumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							$<NumberFlow value={displayedMetricsModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 							<span className="px-1 text-zinc-400 dark:text-zinc-500">/</span>$
-							<NumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							<NumberFlow value={displayedMetricsModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 						</p>
 					</div>
 				</div>
@@ -850,7 +852,7 @@ export default function HomeQuickstartSection({
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
-			<div className={`grid grid-cols-1 gap-5 ${variant === "beta" ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2 xl:grid-cols-4"}`}>
+			<div className={`grid grid-cols-1 gap-5 ${variant === "beta" ? "lg:grid-cols-3" : "xl:grid-cols-4"}`}>
 				{benefits.map((benefit) => (
 					<Link
 						key={benefit.title}

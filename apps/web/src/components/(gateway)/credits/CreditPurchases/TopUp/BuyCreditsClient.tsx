@@ -31,7 +31,7 @@ export default function BuyCreditsClient({
 
 	if (embedded) {
 		return (
-			<div className="space-y-4">
+			<div className="space-y-3">
 				<h3 className="text-base font-semibold">Buy Credits</h3>
 
 				<Button className="w-full" onClick={() => setOpen(true)}>

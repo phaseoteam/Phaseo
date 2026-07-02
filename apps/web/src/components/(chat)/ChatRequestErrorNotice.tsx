@@ -1,9 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Bug, ClipboardCopy, ExternalLink, X } from "lucide-react";
+import { AlertTriangle, Bug, ClipboardCopy, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+	Bubble,
+	BubbleContent,
+	BubbleReactions,
+} from "@/components/ui/bubble";
 import { cn } from "@/lib/utils";
 import {
 	Dialog,
@@ -13,7 +18,20 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import {
+	Popover,
+	PopoverContent,
+	PopoverDescription,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type ChatRequestErrorDetails = {
 	status: number | null;
@@ -37,7 +55,6 @@ export type ChatRequestErrorDetails = {
 type ChatRequestErrorNoticeProps = {
 	error: ChatRequestErrorDetails;
 	threadTitle?: string | null;
-	onDismiss: () => void;
 	className?: string;
 };
 
@@ -77,7 +94,6 @@ function buildCopyPayload(error: ChatRequestErrorDetails): string {
 export function ChatRequestErrorNotice({
 	error,
 	threadTitle,
-	onDismiss,
 	className,
 }: ChatRequestErrorNoticeProps) {
 	const [open, setOpen] = useState(false);
@@ -139,61 +155,109 @@ export function ChatRequestErrorNotice({
 
 	return (
 		<>
-			<div
-				className={cn(
-					"mx-auto mb-4 flex w-full max-w-5xl items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-950 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-100",
-					className,
-				)}
+			<Bubble
+				variant="destructive"
+				className={cn("mb-4 max-w-full", className)}
 			>
-				<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-				<div className="min-w-0 flex-1">
-					<p className="text-sm font-medium">
-						Request failed{error.status ? ` (${error.status})` : ""}.
-					</p>
-					<p className="mt-0.5 text-xs opacity-90">{summary}</p>
-					<div className="mt-2 flex flex-wrap gap-2">
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							className="h-8"
-							onClick={() => setOpen(true)}
-						>
-							<ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-							Details
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							className="h-8"
-							onClick={copyDiagnostics}
-						>
-							<ClipboardCopy className="mr-1.5 h-3.5 w-3.5" />
-							Copy
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							variant="outline"
-							className="h-8"
-							onClick={() => setOpen(true)}
-						>
-							<Bug className="mr-1.5 h-3.5 w-3.5" />
-							Report
-						</Button>
+				<BubbleContent className="w-full max-w-full border-destructive/20 px-3.5 py-3">
+					<div className="flex min-w-0 items-start gap-2.5">
+						<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+						<div className="min-w-0 flex-1">
+							<p className="text-sm font-medium">
+								Request failed{error.status ? ` (${error.status})` : ""}.
+							</p>
+							<p className="mt-0.5 text-xs text-destructive/80">{summary}</p>
+						</div>
 					</div>
-				</div>
-				<Button
-					type="button"
-					size="icon"
-					variant="ghost"
-					className="h-7 w-7 shrink-0 text-red-900 hover:bg-red-100 hover:text-red-950 dark:text-red-100 dark:hover:bg-red-900/40"
-					onClick={onDismiss}
+				</BubbleContent>
+				<BubbleReactions
+					align="end"
+					className="bg-background text-destructive ring-background"
 				>
-					<X className="h-4 w-4" />
-				</Button>
-			</div>
+					<Popover>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<PopoverTrigger asChild>
+									<Button
+										type="button"
+										size="icon-xs"
+										variant="ghost"
+										aria-label="Show error details"
+										className="text-destructive hover:text-destructive aria-expanded:text-destructive"
+									>
+										<InfoIcon />
+									</Button>
+								</PopoverTrigger>
+							</TooltipTrigger>
+							<TooltipContent side="top" sideOffset={6}>
+								Show error details
+							</TooltipContent>
+						</Tooltip>
+						<PopoverContent align="end" className="w-80 gap-3 rounded-2xl">
+							<PopoverHeader>
+								<PopoverTitle className="text-sm">
+									Chat request failed
+								</PopoverTitle>
+								<PopoverDescription className="text-sm">
+									{summary}
+								</PopoverDescription>
+							</PopoverHeader>
+							<div className="grid gap-1 text-xs text-muted-foreground">
+								<p>
+									<span className="font-medium text-foreground">Status:</span>{" "}
+									{error.status ?? "unknown"}
+								</p>
+								<p>
+									<span className="font-medium text-foreground">Code:</span>{" "}
+									{error.errorCode ?? "unknown"}
+								</p>
+								<p className="break-all">
+									<span className="font-medium text-foreground">Request:</span>{" "}
+									{error.requestId ?? "unknown"}
+								</p>
+								<p className="break-all">
+									<span className="font-medium text-foreground">Model:</span>{" "}
+									{error.modelId}
+								</p>
+							</div>
+						</PopoverContent>
+					</Popover>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								type="button"
+								size="icon-xs"
+							variant="ghost"
+							aria-label="Copy error diagnostics"
+							className="text-destructive hover:text-destructive"
+							onClick={copyDiagnostics}
+							>
+								<ClipboardCopy />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side="top" sideOffset={6}>
+							Copy diagnostics
+						</TooltipContent>
+					</Tooltip>
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								type="button"
+								size="icon-xs"
+							variant="ghost"
+							aria-label="Report error"
+							className="text-destructive hover:text-destructive"
+							onClick={() => setOpen(true)}
+							>
+								<Bug />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent side="top" sideOffset={6}>
+							Report error
+						</TooltipContent>
+					</Tooltip>
+				</BubbleReactions>
+			</Bubble>
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-2xl">
 					<DialogHeader>

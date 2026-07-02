@@ -117,8 +117,8 @@ function RangeOptionButton({
 			className={cn(
 				"h-auto w-full justify-between rounded-lg px-2 py-1.5 text-left text-xs font-normal",
 				active
-					? "bg-zinc-100 text-zinc-950"
-					: "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950",
+					? "bg-muted text-foreground"
+					: "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
 			)}
 			onClick={onClick}
 		>
@@ -129,11 +129,11 @@ function RangeOptionButton({
 					</div>
 				) : badge ? (
 					badgeVariant === "plain" ? (
-						<span className="inline-flex h-4 w-4 items-center justify-center text-zinc-400">
+						<span className="inline-flex h-4 w-4 items-center justify-center text-muted-foreground">
 							{badge}
 						</span>
 					) : (
-						<span className="inline-flex min-w-[2.25rem] items-center justify-center rounded-full border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 shadow-sm">
+						<span className="inline-flex min-w-[2.25rem] items-center justify-center rounded-full border border-border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
 							{badge}
 						</span>
 					)
@@ -182,6 +182,7 @@ export default function UsageLogsToolbar({
 		from: parseDateInput(customFrom ?? undefined),
 		to: parseDateInput(customTo ?? undefined),
 	}));
+	const rangeAnchorRef = React.useRef<HTMLDivElement | null>(null);
 	const rangeInputRef = React.useRef<HTMLInputElement | null>(null);
 
 	const currentQuery = searchParams.toString();
@@ -443,14 +444,14 @@ export default function UsageLogsToolbar({
 					}}
 				>
 					<PopoverAnchor asChild>
-						<div className="relative min-w-[320px]">
+						<div ref={rangeAnchorRef} className="relative min-w-[17rem] sm:min-w-[20rem]">
 							{effectivePreset === "live" ? (
 								<div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
 									<LiveIndicator />
 								</div>
 							) : (
 								<div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-									<CalendarDays className="h-3.5 w-3.5 text-zinc-400" />
+									<CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
 								</div>
 							)}
 							<Input
@@ -492,9 +493,9 @@ export default function UsageLogsToolbar({
 								aria-label="Usage time range"
 								placeholder="YYYY-MM-DD HH:mm -> YYYY-MM-DD HH:mm"
 								className={cn(
-									"h-9 rounded-xl border-zinc-200 bg-white pl-9 pr-10 text-[13px] font-medium shadow-none",
+									"h-9 rounded-2xl border-transparent bg-input/50 pl-9 pr-10 text-sm font-medium text-foreground shadow-none transition-colors hover:bg-input/70 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30",
 									effectivePreset === "live" &&
-										"border-emerald-300 text-emerald-700 hover:border-emerald-400 hover:bg-emerald-50/60",
+										"border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:border-emerald-500/40 hover:bg-emerald-500/15 dark:text-emerald-300",
 								)}
 							/>
 							<div className="absolute inset-y-0 right-1 flex items-center">
@@ -515,6 +516,7 @@ export default function UsageLogsToolbar({
 					</PopoverAnchor>
 					<PopoverContent
 						align="start"
+						anchor={rangeAnchorRef}
 						onOpenAutoFocus={(event) => event.preventDefault()}
 						className={cn(showCustomRange ? "w-max p-0" : "w-[320px] p-3")}
 					>
@@ -596,7 +598,7 @@ export default function UsageLogsToolbar({
 
 								<div className="space-y-0.5">
 									<RangeOptionButton
-										badge={<CalendarDays className="h-3.5 w-3.5 text-zinc-400" />}
+										badge={<CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />}
 										badgeVariant="plain"
 										label={
 											effectivePreset === "custom"

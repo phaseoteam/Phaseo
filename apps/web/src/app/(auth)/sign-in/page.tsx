@@ -1,8 +1,9 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Login } from "@/components/(gateway)/auth/Login";
 import { AuthWordmark } from "@/components/(gateway)/auth/AuthWordmark";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
+import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 
 type SignInPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -14,7 +15,15 @@ export const metadata: Metadata = {
 		"Sign in to AI Stats to access the Gateway, manage teams, monitor usage, and continue with provider routing, model analytics, and account-level billing controls.",
 };
 
-export default async function Page({ searchParams }: SignInPageProps) {
+export default function Page({ searchParams }: SignInPageProps) {
+	return (
+		<Suspense fallback={<AuthSuspenseFallback />}>
+			<SignInPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function SignInPageContent({ searchParams }: SignInPageProps) {
 	const params = (await searchParams) ?? {};
 	const signup = Array.isArray(params.signup) ? params.signup[0] : params.signup;
 	const signupNotice =
@@ -34,20 +43,16 @@ export default async function Page({ searchParams }: SignInPageProps) {
 
 	return (
 		<div className="min-h-svh">
-			<div className="flex min-h-svh flex-col p-6 md:p-10">
-				<div className="shrink-0">
+			<div className="relative grid min-h-svh place-items-center p-6 md:p-10">
+				<div className="absolute left-6 top-6 md:left-10 md:top-10">
 					<AuthWordmark />
 				</div>
-				<div className="flex flex-1 items-start justify-center pt-8 md:items-center md:pt-0">
-					<div className="mx-auto w-full max-w-sm">
-						<Suspense fallback={<div>Loading...</div>}>
-							<Login
-								signupNotice={signupNotice}
-								authError={authError}
-								returnUrl={returnUrl}
-							/>
-						</Suspense>
-					</div>
+				<div className="mx-auto w-full max-w-sm">
+					<Login
+						signupNotice={signupNotice}
+						authError={authError}
+						returnUrl={returnUrl}
+					/>
 				</div>
 			</div>
 		</div>

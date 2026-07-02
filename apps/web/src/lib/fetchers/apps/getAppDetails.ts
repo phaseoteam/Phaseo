@@ -105,6 +105,28 @@ export async function getAppDetails(appId: string): Promise<AppDetails | null> {
 	}
 }
 
+export async function isPublicAppId(appId: string): Promise<boolean> {
+	try {
+		const supabase = createAdminClient();
+		const { data, error } = await supabase
+			.from("api_apps")
+			.select("id")
+			.eq("id", appId)
+			.eq("is_public", true)
+			.maybeSingle();
+
+		if (error) {
+			console.error("Error checking public app access:", error);
+			return false;
+		}
+
+		return Boolean(data?.id);
+	} catch (err) {
+		console.error("Unexpected error checking public app access:", err);
+		return false;
+	}
+}
+
 export async function getAppDetailsCached(appId: string): Promise<AppDetails | null> {
 	"use cache";
 

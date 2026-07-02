@@ -15,7 +15,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
 	ExternalLink,
 	ArrowUpCircle,
-	Info,
 	CheckCircle,
 	XCircle,
 	Clock,
@@ -35,11 +34,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
 	HoverCard,
 	HoverCardContent,
@@ -102,6 +96,25 @@ const REFUND_REASON_OPTIONS = [
 ] as const;
 type RefundReasonValue = (typeof REFUND_REASON_OPTIONS)[number]["value"];
 
+const TRANSACTION_CHIP_BASE =
+	"inline-flex h-5 items-center gap-1 rounded-md px-1.5 py-0 text-[10px] font-medium";
+
+const TRANSACTION_CHIP_TONES = {
+	success:
+		"border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-300",
+	danger:
+		"border-rose-500/30 bg-rose-500/10 text-rose-700 dark:border-rose-400/30 dark:bg-rose-400/10 dark:text-rose-300",
+	warning:
+		"border-amber-500/30 bg-amber-500/10 text-amber-700 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-300",
+	info:
+		"border-sky-500/30 bg-sky-500/10 text-sky-700 dark:border-sky-400/30 dark:bg-sky-400/10 dark:text-sky-300",
+	teal:
+		"border-teal-500/30 bg-teal-500/10 text-teal-700 dark:border-teal-400/30 dark:bg-teal-400/10 dark:text-teal-300",
+	indigo:
+		"border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:border-indigo-400/30 dark:bg-indigo-400/10 dark:text-indigo-300",
+	neutral: "border-border bg-muted/50 text-muted-foreground",
+} as const;
+
 function formatNanos(nanos?: number | null, currency = "USD") {
 	const val = (nanos ?? 0) / 1_000_000_000;
 	try {
@@ -126,10 +139,15 @@ function formatDateTime(date: Date, timeZone: string): string {
 		hour: "2-digit",
 		minute: "2-digit",
 		second: "2-digit",
-		fractionalSecondDigits: 3,
 		hour12: false,
 		timeZone,
 	}).format(date);
+}
+
+function formatSignedNanos(nanos?: number | null, currency = "USD") {
+	const value = nanos ?? 0;
+	if (value === 0) return formatNanos(0, currency);
+	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency)}`;
 }
 
 function statusChip(status?: string | null, kind?: string | null) {
@@ -144,32 +162,32 @@ function statusChip(status?: string | null, kind?: string | null) {
 		if (raw === "succeeded")
 			return {
 				label: "succeeded",
-				className: "capitalize border-emerald-200 bg-emerald-50/50 text-emerald-700",
+				className: cn("capitalize", TRANSACTION_CHIP_TONES.success),
 				icon: <CheckCircle className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "failed")
 			return {
 				label: "failed",
-				className: "capitalize border-rose-200 bg-rose-50/50 text-rose-700",
+				className: cn("capitalize", TRANSACTION_CHIP_TONES.danger),
 				icon: <XCircle className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "pending")
 			return {
 				label: "pending",
-				className: "capitalize border-amber-200 bg-amber-50/40 text-amber-700",
+				className: cn("capitalize", TRANSACTION_CHIP_TONES.warning),
 				icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 			};
 		if (raw === "cancelled" || raw === "canceled")
 			return {
 				label: "cancelled",
-				className: "capitalize border-zinc-200 bg-zinc-50/50 text-zinc-700",
+				className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 				icon: <Ban className="h-3.5 w-3.5" aria-hidden />,
 			};
 
 		// Unknown -> default to 'processing'
 		return {
 			label: "processing",
-			className: "capitalize border-blue-200 bg-blue-50/40 text-blue-700",
+			className: cn("capitalize", TRANSACTION_CHIP_TONES.info),
 			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
 	}
@@ -178,26 +196,26 @@ function statusChip(status?: string | null, kind?: string | null) {
 	if (raw === "cancelled" || raw === "canceled")
 		return {
 			label: "cancelled",
-			className: "capitalize border-zinc-200 bg-zinc-50/50 text-zinc-700",
+			className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 			icon: <Ban className="h-3.5 w-3.5" aria-hidden />,
 		};
 	if (raw === "processing")
 		return {
 			label: "processing",
-			className: "capitalize border-blue-200 bg-blue-50/40 text-blue-700",
+			className: cn("capitalize", TRANSACTION_CHIP_TONES.info),
 			icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 		};
 	if (raw === "paid")
 		return {
 			label: "paid",
-			className: "capitalize border-emerald-200 bg-emerald-50/50 text-emerald-700",
+			className: cn("capitalize", TRANSACTION_CHIP_TONES.success),
 			icon: <CheckCircle className="h-3.5 w-3.5" aria-hidden />,
 		};
 
 	// Unknown -> default to 'processing'
 	return {
 		label: "processing",
-		className: "capitalize border-zinc-200 bg-zinc-50/50 text-zinc-700",
+		className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 		icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 	};
 }
@@ -209,7 +227,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-amber-200 bg-amber-50/40 px-1.5 py-0 text-[10px] font-medium text-amber-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.warning)}
 			>
 				<Zap className="h-3 w-3" aria-hidden />
 				{label ?? "Promo"}
@@ -221,7 +239,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-emerald-200 bg-emerald-50/40 px-1.5 py-0 text-[10px] font-medium text-emerald-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.success)}
 			>
 				<DollarSign className="h-3 w-3" aria-hidden />
 				{label ?? "One-Off"}
@@ -232,7 +250,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-emerald-200 bg-emerald-50/40 px-1.5 py-0 text-[10px] font-medium text-emerald-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.success)}
 			>
 				<DollarSign className="h-3 w-3" aria-hidden />
 				{label ?? "Top Up"}
@@ -243,7 +261,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-teal-200 bg-teal-50/40 px-1.5 py-0 text-[10px] font-medium text-teal-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.teal)}
 			>
 				<Repeat className="h-3 w-3" aria-hidden />
 				{label ?? "Auto Top Up"}
@@ -254,7 +272,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-rose-200 bg-rose-50/40 px-1.5 py-0 text-[10px] font-medium text-rose-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.danger)}
 			>
 				<ArrowUpCircle className="h-3 w-3" aria-hidden />
 				{label ?? "Refund"}
@@ -265,7 +283,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-zinc-200 bg-zinc-50/40 px-1.5 py-0 text-[10px] font-medium text-zinc-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.neutral)}
 			>
 				<Zap className="h-3 w-3" aria-hidden />
 				{label ?? "Adjustment"}
@@ -276,7 +294,7 @@ function kindBadge(kind?: string | null) {
 		return (
 			<Badge
 				variant="outline"
-				className="inline-flex h-5 items-center gap-1 rounded-sm border-indigo-200 bg-indigo-50/40 px-1.5 py-0 text-[10px] font-medium text-indigo-700"
+				className={cn(TRANSACTION_CHIP_BASE, TRANSACTION_CHIP_TONES.indigo)}
 			>
 				<CreditCard className="h-3 w-3" aria-hidden />
 				{label ?? "Usage"}
@@ -611,12 +629,6 @@ export default function RecentTransactions({
 																			: "-"}
 																	</div>
 																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">Timestamp</div>
-																	<div className="font-mono">
-																		{Math.floor(createdAtDate.getTime() / 1000)}
-																	</div>
-																</div>
 															</div>
 														</HoverCardContent>
 													</HoverCard>
@@ -632,7 +644,7 @@ export default function RecentTransactions({
 												<Badge
 													variant="outline"
 													className={cn(
-														"inline-flex h-5 items-center gap-1 rounded-sm px-1.5 py-0 text-[10px] font-medium",
+														TRANSACTION_CHIP_BASE,
 														className
 													)}
 												>
@@ -642,21 +654,54 @@ export default function RecentTransactions({
 											</TableCell>
 											<TableCell className="py-2">
 												{after !== null ? (
-													<Tooltip>
-														<TooltipTrigger asChild>
+													<HoverCard>
+														<HoverCardTrigger asChild>
 															<span className="cursor-default font-medium tabular-nums">
 																{formatNanos(after, currency)}
 															</span>
-														</TooltipTrigger>
-														<TooltipContent className="flex items-center gap-2">
-															<Info className="h-4 w-4" />
-															<span className="tabular-nums">
-																{before !== null
-																	? `${formatNanos(before, currency)} -> ${formatNanos(after, currency)}`
-																	: `Balance: ${formatNanos(after, currency)}`}
-															</span>
-														</TooltipContent>
-													</Tooltip>
+														</HoverCardTrigger>
+														<HoverCardContent align="start" className="w-64">
+															<div className="space-y-3 text-xs">
+																<div>
+																	<div className="font-medium text-foreground">
+																		Balance movement
+																	</div>
+																	<p className="mt-0.5 text-muted-foreground">
+																		Balance after this transaction settled.
+																	</p>
+																</div>
+																<div className="grid gap-2">
+																	<div className="flex items-center justify-between gap-4">
+																		<span className="text-muted-foreground">Before</span>
+																		<span className="font-mono font-medium tabular-nums">
+																			{before !== null ? formatNanos(before, currency) : "-"}
+																		</span>
+																	</div>
+																	<div className="flex items-center justify-between gap-4">
+																		<span className="text-muted-foreground">Change</span>
+																		<span
+																			className={cn(
+																				"font-mono font-medium tabular-nums",
+																				(amountNanos ?? 0) < 0
+																					? "text-rose-500 dark:text-rose-300"
+																					: (amountNanos ?? 0) > 0
+																						? "text-emerald-600 dark:text-emerald-300"
+																						: "text-muted-foreground"
+																			)}
+																		>
+																			{formatSignedNanos(amountNanos, currency)}
+																		</span>
+																	</div>
+																	<div className="flex items-center justify-between gap-4 border-t pt-2">
+																		<span className="text-muted-foreground">After</span>
+																		<span className="font-mono font-semibold tabular-nums text-foreground">
+																			{formatNanos(after, currency)}
+																		</span>
+																	</div>
+																</div>
+															</div>
+														</HoverCardContent>
+													</HoverCard>
 												) : (
 													<span className="text-muted-foreground">-</span>
 												)}

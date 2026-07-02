@@ -105,6 +105,10 @@ import {
 } from "lucide-react";
 
 type AudioMode = "speech" | "transcription" | "translation" | "music";
+type AudioRoomId = Extract<
+	NonTextRoomId,
+	"audio" | "speech" | "speech-to-text" | "music"
+>;
 
 type AudioHistoryPayload = {
 	conversationId?: string;
@@ -178,21 +182,12 @@ const AUDIO_MODE_SUPPORT_FALLBACK: AudioModeSupport = {
 	music: false,
 };
 
-// Temporary UI clamp: keep audio room focused on prompt-driven generation flows for now.
-const AUDIO_MODE_UI_ENABLED: AudioModeSupport = {
-	speech: true,
-	transcription: false,
-	translation: false,
-	music: true,
-};
-
 const AUDIO_MODE_OPTIONS: AudioMode[] = [
 	"speech",
 	"music",
 	"transcription",
 	"translation",
 ];
-const AUDIO_PINNED_STORAGE_KEY = "ai-stats-audio-room-pinned-conversations-v1";
 const MUSIC_POLL_INTERVAL_MS = 2_500;
 const MUSIC_POLL_MAX_ATTEMPTS = 36;
 
@@ -200,8 +195,8 @@ function nowIso() {
 	return new Date().toISOString();
 }
 
-function createConversationId(): string {
-	return `audio-${crypto.randomUUID()}`;
+function createConversationId(roomId: AudioRoomId): string {
+	return `${roomId}-${crypto.randomUUID()}`;
 }
 
 function truncateTitle(value: string, max = 72): string {
@@ -211,7 +206,7 @@ function truncateTitle(value: string, max = 72): string {
 }
 
 function modeLabel(mode: AudioMode): string {
-	if (mode === "speech") return "Speech";
+	if (mode === "speech") return "Text to Speech";
 	if (mode === "music") return "Music";
 	if (mode === "transcription") return "Transcription";
 	return "Translation";
@@ -948,10 +943,47 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 	}
 }
 
-export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
+type AudioRoomProps = {
+	models: GatewaySupportedModel[];
+	roomId?: AudioRoomId;
+	initialMode?: AudioMode;
+	allowedModes?: AudioMode[];
+};
+
+function modeSupportFromModes(modes: AudioMode[]): AudioModeSupport {
+	const allowed = new Set(modes);
+	return {
+		speech: allowed.has("speech"),
+		transcription: allowed.has("transcription"),
+		translation: allowed.has("translation"),
+		music: allowed.has("music"),
+	};
+}
+
+export function AudioRoom({
+	models,
+	roomId = "audio",
+	initialMode = "speech",
+	allowedModes = ["speech", "music"],
+}: AudioRoomProps) {
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
-	const [mode, setMode] = useState<AudioMode>("speech");
+	const normalizedAllowedModes = useMemo(
+		() =>
+			allowedModes.length > 0
+				? allowedModes
+				: (["speech"] as AudioMode[]),
+		[allowedModes],
+	);
+	const roomModeSupport = useMemo(
+		() => modeSupportFromModes(normalizedAllowedModes),
+		[normalizedAllowedModes],
+	);
+	const [mode, setMode] = useState<AudioMode>(
+		normalizedAllowedModes.includes(initialMode)
+			? initialMode
+			: (normalizedAllowedModes[0] ?? "speech"),
+	);
 	const allAudioModels = useMemo(
 		() => filterModelsForRoom(models, "audio"),
 		[models],
@@ -961,11 +993,11 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			allAudioModels.filter((model) => {
 				const support = intersectAudioModeSupport(
 					getAudioModeSupportForCapabilities(model.capabilities),
-					AUDIO_MODE_UI_ENABLED,
+					roomModeSupport,
 				);
 				return support[mode];
 			}),
-		[allAudioModels, mode],
+		[allAudioModels, mode, roomModeSupport],
 	);
 	const [modelId, setModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
@@ -988,9 +1020,10 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		null,
 	);
 	const copiedPromptTimeoutRef = useRef<number | null>(null);
+	const pinnedStorageKey = `${roomId}-room-pinned-conversations-v1`;
 
 	const modelSettings = useRoomModelSettings({
-		roomId: "audio",
+		roomId,
 		models: filteredModels,
 		selectedModelId: modelId,
 		onModelChange: setModelId,
@@ -1036,8 +1069,8 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		[allAudioModels, modelId, selectedProviderId],
 	);
 	const effectiveModeSupport = useMemo(
-		() => intersectAudioModeSupport(selectedModeSupport, AUDIO_MODE_UI_ENABLED),
-		[selectedModeSupport],
+		() => intersectAudioModeSupport(selectedModeSupport, roomModeSupport),
+		[selectedModeSupport, roomModeSupport],
 	);
 	const availableModes = useMemo(() => {
 		const supported: AudioMode[] = [];
@@ -1049,12 +1082,12 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	}, [effectiveModeSupport]);
 	const uiAvailableModes = useMemo(() => {
 		const enabled: AudioMode[] = [];
-		if (AUDIO_MODE_UI_ENABLED.speech) enabled.push("speech");
-		if (AUDIO_MODE_UI_ENABLED.music) enabled.push("music");
-		if (AUDIO_MODE_UI_ENABLED.transcription) enabled.push("transcription");
-		if (AUDIO_MODE_UI_ENABLED.translation) enabled.push("translation");
+		if (roomModeSupport.speech) enabled.push("speech");
+		if (roomModeSupport.music) enabled.push("music");
+		if (roomModeSupport.transcription) enabled.push("transcription");
+		if (roomModeSupport.translation) enabled.push("translation");
 		return enabled.length ? enabled : (["speech"] as AudioMode[]);
-	}, []);
+	}, [roomModeSupport]);
 	const conversations = useMemo(
 		() => buildConversations(entries, pinnedConversationIds),
 		[entries, pinnedConversationIds],
@@ -1109,8 +1142,8 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			dialogModelId ?? "",
 			(dialogProfile?.providerId as string | undefined) ?? "auto",
 		);
-		return intersectAudioModeSupport(detected, AUDIO_MODE_UI_ENABLED);
-	}, [allAudioModels, dialogModelId, dialogProfile?.providerId]);
+		return intersectAudioModeSupport(detected, roomModeSupport);
+	}, [allAudioModels, dialogModelId, dialogProfile?.providerId, roomModeSupport]);
 	const updateModelBaseSettings = (partial: Record<string, unknown>) => {
 		if (typeof modelSettingsCompat.updateModelBaseSettings === "function") {
 			modelSettingsCompat.updateModelBaseSettings(partial);
@@ -1158,7 +1191,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			const fallbackModel = allAudioModels.find((model) => {
 				const support = intersectAudioModeSupport(
 					getAudioModeSupportForCapabilities(model.capabilities),
-					AUDIO_MODE_UI_ENABLED,
+					roomModeSupport,
 				);
 				return support[targetMode];
 			});
@@ -1185,21 +1218,21 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
-		const stored = window.localStorage.getItem(AUDIO_PINNED_STORAGE_KEY);
+		const stored = window.localStorage.getItem(pinnedStorageKey);
 		setPinnedConversationIds(safeParsePinned(stored));
-	}, []);
+	}, [pinnedStorageKey]);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
 		window.localStorage.setItem(
-			AUDIO_PINNED_STORAGE_KEY,
+			pinnedStorageKey,
 			JSON.stringify(pinnedConversationIds),
 		);
-	}, [pinnedConversationIds]);
+	}, [pinnedConversationIds, pinnedStorageKey]);
 
 	useEffect(() => {
 		let mounted = true;
-		void listRoomHistory<AudioHistoryPayload>("audio" as NonTextRoomId).then(
+		void listRoomHistory<AudioHistoryPayload>(roomId).then(
 			(records) => {
 				if (!mounted) return;
 				const nextEntries = records.map((record) => toEntry(record));
@@ -1211,14 +1244,14 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				if (nextConversations.length > 0) {
 					setActiveConversationId(nextConversations[0].id);
 				} else {
-					setActiveConversationId(createConversationId());
+					setActiveConversationId(createConversationId(roomId));
 				}
 			},
 		);
 		return () => {
 			mounted = false;
 		};
-	}, []);
+	}, [roomId]);
 
 	useEffect(() => {
 		if (!activeConversationId && conversations.length > 0) {
@@ -1236,7 +1269,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 
 	const startNewConversation = () => {
 		setModelId("");
-		setActiveConversationId(createConversationId());
+		setActiveConversationId(createConversationId(roomId));
 		setTextInput("");
 		setMusicLyricsInput("");
 		setAudioUrlInput("");
@@ -1247,7 +1280,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const toggleTemporaryMode = () => {
 		if (!temporaryMode) {
 			setTemporaryMode(true);
-			setActiveConversationId(createConversationId());
+			setActiveConversationId(createConversationId(roomId));
 			setTextInput("");
 			setMusicLyricsInput("");
 			setAudioUrlInput("");
@@ -1263,7 +1296,9 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 			nextEntries,
 			pinnedConversationIds,
 		);
-		setActiveConversationId(remainingConversations[0]?.id ?? createConversationId());
+		setActiveConversationId(
+			remainingConversations[0]?.id ?? createConversationId(roomId),
+		);
 		setTextInput("");
 		setMusicLyricsInput("");
 		setAudioUrlInput("");
@@ -1276,7 +1311,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		if (entry.isTemporary) return;
 		await upsertRoomHistory<AudioHistoryPayload>({
 			id: entry.id,
-			roomId: "audio",
+			roomId,
 			createdAt: entry.createdAt,
 			updatedAt: entry.createdAt,
 			payload: toHistoryPayload(entry),
@@ -1296,7 +1331,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		if (updated.isTemporary) return;
 		await upsertRoomHistory<AudioHistoryPayload>({
 			id: updated.id,
-			roomId: "audio",
+			roomId,
 			createdAt: updated.createdAt,
 			updatedAt: nowIso(),
 			payload: toHistoryPayload(updated),
@@ -1345,7 +1380,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				};
 				return upsertRoomHistory<AudioHistoryPayload>({
 					id: updatedEntry.id,
-					roomId: "audio",
+					roomId,
 					createdAt: updatedEntry.createdAt,
 					updatedAt: nowIso(),
 					payload: toHistoryPayload(updatedEntry),
@@ -1383,7 +1418,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				pinnedConversationIds,
 			);
 			setActiveConversationId(
-				remainingConversations[0]?.id ?? createConversationId(),
+				remainingConversations[0]?.id ?? createConversationId(roomId),
 			);
 		}
 	};
@@ -1546,7 +1581,9 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 		if (!targetModelId || isLoading || !selectedModelEnabled) return;
 		const requestedMode = overrides?.forcedMode ?? mode;
 		const conversationId =
-			overrides?.forcedConversationId ?? activeConversationId ?? createConversationId();
+			overrides?.forcedConversationId ??
+			activeConversationId ??
+			createConversationId(roomId);
 		const lockedConversationMode = conversationModeById.get(conversationId);
 		const targetMode = lockedConversationMode ?? requestedMode;
 		const targetModeSupport =
@@ -1554,7 +1591,7 @@ export function AudioRoom({ models }: { models: GatewaySupportedModel[] }) {
 				? effectiveModeSupport
 				: intersectAudioModeSupport(
 						getModelModeSupport(allAudioModels, targetModelId, selectedProviderId),
-						AUDIO_MODE_UI_ENABLED,
+						roomModeSupport,
 					);
 		if (
 			(targetMode === "speech" && !targetModeSupport.speech) ||

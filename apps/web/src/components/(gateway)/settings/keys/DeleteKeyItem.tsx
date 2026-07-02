@@ -18,8 +18,20 @@ import { deleteApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
-export default function DeleteKeyItem({ k }: any) {
-	const [open, setOpen] = useState(false);
+export default function DeleteKeyItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
 	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -46,18 +58,19 @@ export default function DeleteKeyItem({ k }: any) {
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2 text-red-600"
-					onClick={(e) => {
-						e.preventDefault();
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<Trash2 className="mr-2" />
-					Delete
-				</button>
-			</DropdownMenuItem>
+			{trigger ? (
+				<DropdownMenuItem asChild variant="destructive">
+					<div
+						className="w-full text-left flex items-center gap-2"
+						onClick={() => {
+							setTimeout(() => setOpen(true), 0);
+						}}
+					>
+						<Trash2 className="mr-2" />
+						Delete
+					</div>
+				</DropdownMenuItem>
+			) : null}
 
 			<DialogContent>
 				<DialogHeader>

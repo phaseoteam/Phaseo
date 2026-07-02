@@ -658,7 +658,7 @@ export function RoomModelSelector({
 							New
 						</Button>
 					</div>
-					<ModelSelectorList className="max-h-[70vh] p-3">
+					<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
 						<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
 						{hasSearchValue ? (
 							<ModelSelectorGroup

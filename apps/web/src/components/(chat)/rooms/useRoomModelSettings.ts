@@ -7,6 +7,10 @@ import {
 	getOrgId,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
+	buildChatProviderOptions,
+	type ChatProviderOption,
+} from "@/components/(chat)/playground/provider-options";
+import {
 	getRoomScopedStorageKey,
 	type ChatRoomId,
 } from "@/lib/chat/rooms";
@@ -37,10 +41,7 @@ type ModelChoice = {
 	orgName: string;
 };
 
-type ProviderOption = {
-	id: string;
-	name: string;
-};
+type ProviderOption = ChatProviderOption;
 
 type UseRoomModelSettingsArgs<TParams extends Record<string, unknown>> = {
 	roomId: NonTextRoomId;
@@ -226,18 +227,7 @@ export function useRoomModelSettings<TParams extends Record<string, unknown>>({
 	}, [getProfileForModel, models]);
 
 	const providerOptions = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const model of models) {
-			if (!map.has(model.providerId)) {
-				map.set(
-					model.providerId,
-					model.providerName ?? formatOrgLabel(model.providerId),
-				);
-			}
-		}
-		return Array.from(map.entries())
-			.map(([id, name]) => ({ id, name }))
-			.sort((a, b) => a.name.localeCompare(b.name));
+		return buildChatProviderOptions(models);
 	}, [models]);
 
 	const modelSettingsChoices = useMemo(() => {

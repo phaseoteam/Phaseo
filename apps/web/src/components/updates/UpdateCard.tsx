@@ -120,7 +120,7 @@ export default function UpdateCard({
 				className
 			)}
 		>
-			<CardHeader className={cn("space-y-3 p-4", compact && "space-y-2.5 p-3")}>
+			<CardHeader className={cn("space-y-3 p-4", compact && "space-y-2 p-3")}>
 				{showHeaderMetaRow ? (
 					<div
 						className={cn(
@@ -166,9 +166,17 @@ export default function UpdateCard({
 							href={`/organisations/${encodeURIComponent(
 								avatar.organisationId
 							)}`}
-							className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50"
+							className={cn(
+								"flex shrink-0 items-center justify-center border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50",
+								compact ? "h-9 w-9 rounded-lg" : "h-10 w-10 rounded-xl"
+							)}
 						>
-							<span className="relative h-7 w-7 overflow-hidden rounded-lg">
+							<span
+								className={cn(
+									"relative overflow-hidden rounded-lg",
+									compact ? "h-6 w-6" : "h-7 w-7"
+								)}
+							>
 								<Logo
 									id={avatar.organisationId}
 									alt={avatar.name ?? avatar.organisationId}
@@ -180,7 +188,12 @@ export default function UpdateCard({
 					) : null}
 
 					<div className="min-w-0 flex-1 space-y-1">
-						<CardTitle className="text-base sm:text-lg leading-tight">
+						<CardTitle
+							className={cn(
+								"leading-tight",
+								compact ? "text-base" : "text-base sm:text-lg"
+							)}
+						>
 							<Link
 								href={link.href}
 								className="inline-flex items-start gap-1 text-zinc-900 dark:text-zinc-50"

@@ -54,7 +54,7 @@ export default function CurrentCredits({
 
 	return (
 		<div>
-			<Card>
+			<Card size="sm" className="gap-2">
 				<CardHeader className="pb-0">
 					<div className="flex items-center justify-between w-full">
 						<CardTitle>{title}</CardTitle>
@@ -74,7 +74,7 @@ export default function CurrentCredits({
 					</div>
 				</CardHeader>
 
-				<CardContent className="pt-4">
+				<CardContent className="pt-0">
 					{subtitle ? (
 						<p className="text-xs text-muted-foreground mb-2">
 							{subtitle}
