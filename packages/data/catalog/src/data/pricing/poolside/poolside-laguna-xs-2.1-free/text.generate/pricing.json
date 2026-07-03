@@ -1,8 +1,8 @@
 {
-  "key": "poolside:poolside/laguna-xs.2:free:text.generate",
+  "key": "poolside:poolside/laguna-xs-2.1:free:text.generate",
   "api_provider_id": "poolside",
   "provider_slug": "poolside",
-  "api_model_id": "poolside/laguna-xs.2:free",
+  "api_model_id": "poolside/laguna-xs-2.1:free",
   "capability_id": "text.generate",
   "rules": [
     {
@@ -15,8 +15,7 @@
       "note": "Free preview",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00Z",
-      "effective_to": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-02T00:00:00Z"
     },
     {
       "meter": "output_text_tokens",
@@ -28,8 +27,7 @@
       "note": "Free preview",
       "match": [],
       "priority": 100,
-      "effective_from": "2026-04-28T00:00:00Z",
-      "effective_to": "2026-07-09T00:00:00Z"
+      "effective_from": "2026-07-02T00:00:00Z"
     }
   ]
 }

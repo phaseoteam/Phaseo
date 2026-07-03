@@ -34,6 +34,7 @@ export type OrganisationIdList =
   | "openai"
   | "perplexity"
   | "poe"
+  | "poolside"
   | "prime-intellect"
   | "qwen"
   | "relace"
