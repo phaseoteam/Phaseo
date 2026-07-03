@@ -15,10 +15,17 @@ import type {
 	ChatServerToolConfigs,
 	ChatServerToolType,
 	ChatSettings,
+	ChatTag,
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
-import { deleteChat, getAllChats, upsertChat } from "@/lib/indexeddb/chats";
+import {
+	deleteChat,
+	getAllChatTags,
+	getAllChats,
+	upsertChat,
+	upsertChatTags,
+} from "@/lib/indexeddb/chats";
 import {
 	ChatConversation,
 	type ChatSendPayload,
@@ -32,6 +39,7 @@ import { ChatSearchDialog } from "@/components/(chat)/ChatSearchDialog";
 import { ChatRenameDialog } from "@/components/(chat)/ChatRenameDialog";
 import { ChatDeleteDialog } from "@/components/(chat)/ChatDeleteDialog";
 import { ChatNewChatDialog } from "@/components/(chat)/ChatNewChatDialog";
+import { ChatTagsDialog } from "@/components/(chat)/ChatTagsDialog";
 import {
 	coerceResponseText,
 	appendImagesToText,
@@ -94,6 +102,10 @@ type ChatPlaygroundProps = {
 	promptParam?: string | null;
 };
 
+function compareChatTags(a: ChatTag, b: ChatTag) {
+	return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+}
+
 function ChatPlaygroundContent({
 	models,
 	modelParam,
@@ -129,6 +141,10 @@ function ChatPlaygroundContent({
 	const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<ChatThread | null>(null);
+	const [tagsOpen, setTagsOpen] = useState(false);
+	const [tagsTarget, setTagsTarget] = useState<ChatThread | null>(null);
+	const [chatTags, setChatTags] = useState<ChatTag[]>([]);
+	const [activeTagId, setActiveTagId] = useState<string | null>(null);
 	const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
 	const [pendingNewChat, setPendingNewChat] = useState<{
 		modelId: string;
@@ -236,8 +252,35 @@ function ChatPlaygroundContent({
 		if (!activeThread?.modelId) return null;
 		return "responses" as UnifiedChatEndpoint;
 	}, [activeThread?.modelId]);
+	const allTags = useMemo(() => {
+		const byId = new Map<string, ChatTag>();
+		for (const tag of chatTags) {
+			byId.set(tag.id, tag);
+		}
+		for (const thread of threads) {
+			for (const tag of thread.tags ?? []) {
+				if (!byId.has(tag.id)) {
+					byId.set(tag.id, tag);
+				}
+			}
+		}
+		return Array.from(byId.values()).sort(compareChatTags);
+	}, [chatTags, threads]);
+	const activeVisibleTagId = useMemo(
+		() =>
+			activeTagId && allTags.some((tag) => tag.id === activeTagId)
+				? activeTagId
+				: null,
+		[activeTagId, allTags],
+	);
+	const visibleThreads = useMemo(() => {
+		if (!activeVisibleTagId) return threads;
+		return threads.filter((thread) =>
+			thread.tags?.some((tag) => tag.id === activeVisibleTagId),
+		);
+	}, [activeVisibleTagId, threads]);
 	const { sortedThreads, groupedThreads } = useGroupedChatThreads(
-		threads,
+		visibleThreads,
 		groupingNowMs,
 	);
 
@@ -317,10 +360,14 @@ function ChatPlaygroundContent({
 				accentColor: storedAccent,
 			});
 
-			const chats = await getAllChats("text");
+			const [chats, storedTags] = await Promise.all([
+				getAllChats("text"),
+				getAllChatTags(),
+			]);
 			const normalized = await ensureInitialThread(chats);
 			if (!mounted) return;
 			setThreads(normalized);
+			setChatTags(storedTags.sort(compareChatTags));
 
 			const initialId =
 				storedActive && normalized.some((t) => t.id === storedActive)
@@ -2796,6 +2843,41 @@ function ChatPlaygroundContent({
 		});
 	};
 
+	const handleEditTags = (thread: ChatThread) => {
+		setTagsTarget(thread);
+		setTagsOpen(true);
+	};
+
+	const handleTagsOpenChange = (open: boolean) => {
+		setTagsOpen(open);
+		if (!open) {
+			setTagsTarget(null);
+		}
+	};
+
+	const handleTagsSave = async (tags: ChatTag[]) => {
+		if (!tagsTarget) return;
+		const thread = threads.find((candidate) => candidate.id === tagsTarget.id);
+		if (!thread) return;
+		const sortedTags = [...tags].sort(compareChatTags);
+		if (sortedTags.length > 0) {
+			await upsertChatTags(sortedTags);
+			setChatTags((prev) => {
+				const byId = new Map(prev.map((tag) => [tag.id, tag]));
+				for (const tag of sortedTags) {
+					byId.set(tag.id, tag);
+				}
+				return Array.from(byId.values()).sort(compareChatTags);
+			});
+		}
+		await updateStoredThread({
+			...thread,
+			tags: sortedTags,
+			updatedAt: nowIso(),
+		});
+		handleTagsOpenChange(false);
+	};
+
 	const toggleTemporaryMode = () => {
 		if (!temporaryMode) {
 			setPreviousStoredId(activeId);
@@ -3148,7 +3230,11 @@ function ChatPlaygroundContent({
 					onSelectThread={setActiveThread}
 					onRenameThread={handleRename}
 					onPinToggle={handlePinToggle}
+					onEditTags={handleEditTags}
 					onRequestDelete={requestDeleteThread}
+					tags={allTags}
+					activeTagId={activeVisibleTagId}
+					onTagFilterChange={setActiveTagId}
 					authUser={authUser}
 					authLoading={authLoading}
 					onSignOut={handleSignOut}
@@ -3327,6 +3413,14 @@ function ChatPlaygroundContent({
 				open={deleteOpen}
 				onOpenChange={handleDeleteOpenChange}
 				onConfirm={handleDeleteThread}
+			/>
+			<ChatTagsDialog
+				key={tagsTarget?.id ?? "chat-tags"}
+				open={tagsOpen}
+				thread={tagsTarget}
+				availableTags={allTags}
+				onOpenChange={handleTagsOpenChange}
+				onSave={handleTagsSave}
 			/>
 			<ChatNewChatDialog
 				open={newChatDialogOpen}
