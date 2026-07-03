@@ -9,9 +9,16 @@ const monorepoRoot = path.join(__dirname, "..", "..");
 // Skip remote font downloads in offline or locked-down environments so builds don't fail.
 process.env.NEXT_FONT_IGNORE_FAILED_DOWNLOADS ||= "true";
 
+const configuredAllowedDevOrigins =
+  process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ["127.0.0.1"],
+  ...(configuredAllowedDevOrigins.length > 0
+    ? { allowedDevOrigins: configuredAllowedDevOrigins }
+    : {}),
   cacheComponents: true,
   env: {
     NEXT_PUBLIC_DEPLOY_TIME:
