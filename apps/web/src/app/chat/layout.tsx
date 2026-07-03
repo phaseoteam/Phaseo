@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { ChatViewportLock } from "@/app/chat/ChatViewportLock";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -9,14 +10,22 @@ export const metadata: Metadata = buildMetadata({
 	keywords: ["AI chat", "chat playground", "model comparison", "gateway chat"],
 });
 
+export const viewport: Viewport = {
+	interactiveWidget: "resizes-content",
+};
+
 export default function ChatLayout({
-    children,
+	children,
 }: {
-    children: React.ReactNode;
+	children: React.ReactNode;
 }) {
-    return (
-        <main className="box-border flex h-[100svh] min-h-0 flex-col overflow-hidden overscroll-none bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:h-dvh">
-            {children}
-        </main>
-    );
+	return (
+		<main
+			data-chat-viewport-root="true"
+			className="fixed inset-x-0 top-[var(--chat-viewport-top,0px)] box-border flex h-[var(--chat-viewport-height,100dvh)] min-h-0 flex-col overflow-hidden overscroll-none bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+		>
+			<ChatViewportLock />
+			{children}
+		</main>
+	);
 }

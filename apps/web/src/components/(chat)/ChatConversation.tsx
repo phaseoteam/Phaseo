@@ -80,6 +80,12 @@ type ChatConversationProps = {
 
 type SendGateType = "auth";
 
+function shouldFocusComposerAfterThreadChange() {
+	if (typeof window === "undefined") return false;
+	if (typeof window.matchMedia !== "function") return true;
+	return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 export function ChatConversation({
 	activeThread,
 	isSending,
@@ -173,7 +179,9 @@ export function ChatConversation({
 		const raf = requestAnimationFrame(() => {
 			setComposer("");
 			setAttachments([]);
-			textareaRef.current?.focus();
+			if (shouldFocusComposerAfterThreadChange()) {
+				textareaRef.current?.focus();
+			}
 		});
 		return () => cancelAnimationFrame(raf);
 	}, [activeThread?.id]);
