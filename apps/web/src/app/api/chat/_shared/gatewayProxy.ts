@@ -13,7 +13,6 @@ type UpstreamCause = {
 };
 
 export type ChatProxyEnvelope = {
-	baseUrl?: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
 	debug?: boolean;
@@ -219,8 +218,8 @@ function buildGatewayMissingConfigResponse(): Response {
 	);
 }
 
-function resolveGatewayBaseUrl(overrideBaseUrl?: string): string | null {
-	return normalizeGatewayBaseUrl(overrideBaseUrl) ?? configuredGatewayBaseUrl ?? null;
+function resolveGatewayBaseUrl(): string | null {
+	return configuredGatewayBaseUrl ?? null;
 }
 
 export async function forwardUpstreamResponse(args: {
@@ -262,7 +261,6 @@ export async function forwardUpstreamResponse(args: {
 }
 
 export async function proxyGatewayPost(args: {
-	baseUrl?: string;
 	path: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: unknown;
@@ -270,7 +268,7 @@ export async function proxyGatewayPost(args: {
 	stream?: boolean;
 	contentType?: string | null;
 }): Promise<Response> {
-	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
+	const gatewayBaseUrl = resolveGatewayBaseUrl();
 	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}
@@ -304,12 +302,11 @@ export async function proxyGatewayPost(args: {
 }
 
 export async function proxyGatewayGet(args: {
-	baseUrl?: string;
 	path: string;
 	appHeaders?: unknown;
 	debug?: boolean;
 }): Promise<Response> {
-	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
+	const gatewayBaseUrl = resolveGatewayBaseUrl();
 	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}

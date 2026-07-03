@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
 	const payload = await parseProxyEnvelope(request);
 
 	return proxyGatewayPost({
-		baseUrl: payload.baseUrl,
 		path: "/images/generations",
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,

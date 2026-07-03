@@ -7,7 +7,6 @@ import {
 
 type AudioAction = "speech" | "transcription" | "translation" | "music";
 type AudioRoutePayload = {
-	baseUrl?: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
 	debug?: boolean;
@@ -39,7 +38,6 @@ export async function POST(request: NextRequest) {
 	const action = isAudioAction(payload.action) ? payload.action : "speech";
 
 	return proxyGatewayPost({
-		baseUrl: payload.baseUrl,
 		path: ACTION_TO_PATH[action],
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,

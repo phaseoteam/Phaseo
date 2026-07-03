@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
 	const payload = await parseProxyEnvelope(request);
 
 	return proxyGatewayPost({
-		baseUrl: payload.baseUrl,
 		path: "/moderations",
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,
