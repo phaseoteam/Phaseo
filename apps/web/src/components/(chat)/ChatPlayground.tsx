@@ -23,6 +23,7 @@ import {
 	deleteChat,
 	getAllChatTags,
 	getAllChats,
+	normalizeChatTags,
 	upsertChat,
 	upsertChatTags,
 } from "@/lib/indexeddb/chats";
@@ -396,7 +397,7 @@ function ChatPlaygroundContent({
 			byId.set(tag.id, tag);
 		}
 		for (const thread of threads) {
-			for (const tag of thread.tags ?? []) {
+			for (const tag of normalizeChatTags(thread.tags)) {
 				if (!byId.has(tag.id)) {
 					byId.set(tag.id, tag);
 				}
@@ -414,7 +415,9 @@ function ChatPlaygroundContent({
 	const visibleThreads = useMemo(() => {
 		if (!activeVisibleTagId) return threads;
 		return threads.filter((thread) =>
-			thread.tags?.some((tag) => tag.id === activeVisibleTagId),
+			normalizeChatTags(thread.tags).some(
+				(tag) => tag.id === activeVisibleTagId,
+			),
 		);
 	}, [activeVisibleTagId, threads]);
 	const { sortedThreads, groupedThreads } = useGroupedChatThreads(
