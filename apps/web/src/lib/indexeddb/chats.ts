@@ -22,6 +22,12 @@ export type ChatMessage = {
     meta?: Record<string, unknown> | null;
 };
 
+export type ChatTag = {
+    id: string;
+    name: string;
+    color: string;
+};
+
 export type UnifiedChatEndpoint =
     | "responses"
     | "images.generations"
@@ -97,11 +103,13 @@ export type ChatThread = {
     updatedAt: string;
     messages: ChatMessage[];
     settings: ChatSettings;
+    tags?: ChatTag[];
 };
 
 const DB_NAME = "ai-stats-chat";
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const LEGACY_TEXT_STORE_NAME = "chats";
+const TAG_STORE_NAME = "chat-tags";
 const ROOM_STORE_NAMES: Record<ChatRoomId, string> = {
     text: LEGACY_TEXT_STORE_NAME,
     image: "chats-image",
@@ -134,6 +142,9 @@ function openDb(): Promise<IDBDatabase> {
                 if (!db.objectStoreNames.contains(storeName)) {
                     db.createObjectStore(storeName, { keyPath: "id" });
                 }
+            }
+            if (!db.objectStoreNames.contains(TAG_STORE_NAME)) {
+                db.createObjectStore(TAG_STORE_NAME, { keyPath: "id" });
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -189,4 +200,43 @@ export async function deleteChat(
     roomId: ChatRoomId = "text",
 ): Promise<void> {
     await withStore("readwrite", (store) => store.delete(id), roomId);
+}
+
+export async function getAllChatTags(): Promise<ChatTag[]> {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(TAG_STORE_NAME, "readonly");
+        const store = tx.objectStore(TAG_STORE_NAME);
+        const request = store.getAll();
+        request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
+        request.onsuccess = () => {
+            const result = request.result;
+            resolve(Array.isArray(result) ? (result as ChatTag[]) : []);
+        };
+    });
+}
+
+export async function upsertChatTags(tags: ChatTag[]): Promise<void> {
+    if (tags.length === 0) return;
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(TAG_STORE_NAME, "readwrite");
+        const store = tx.objectStore(TAG_STORE_NAME);
+        tx.onerror = () => reject(tx.error ?? new Error("IndexedDB error"));
+        tx.oncomplete = () => resolve();
+        for (const tag of tags) {
+            store.put(tag);
+        }
+    });
+}
+
+export async function clearChatTags(): Promise<void> {
+    const db = await openDb();
+    await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(TAG_STORE_NAME, "readwrite");
+        const store = tx.objectStore(TAG_STORE_NAME);
+        const request = store.clear();
+        request.onerror = () => reject(request.error ?? new Error("IndexedDB error"));
+        request.onsuccess = () => resolve();
+    });
 }

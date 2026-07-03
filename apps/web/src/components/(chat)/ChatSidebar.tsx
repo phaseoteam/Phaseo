@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 import { Button } from "@/components/ui/button";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -27,12 +32,13 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { ChatThread } from "@/lib/indexeddb/chats";
+import type { ChatTag, ChatThread } from "@/lib/indexeddb/chats";
 import { ChatRoomSwitcher } from "@/components/(chat)/ChatRoomSwitcher";
 import { ThemeSelector } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import {
 	ArrowUpRight,
+	ChevronRight,
 	Database,
 	Gauge,
 	LogOut,
@@ -43,6 +49,7 @@ import {
 	PinOff,
 	Search,
 	SquarePen,
+	Tag,
 	Trash2,
 	UserRound,
 } from "lucide-react";
@@ -66,7 +73,11 @@ type ChatSidebarProps = {
 	onSelectThread: (thread: ChatThread) => void;
 	onRenameThread: (thread: ChatThread) => void;
 	onPinToggle: (thread: ChatThread) => void;
+	onEditTags: (thread: ChatThread) => void;
 	onRequestDelete: (thread: ChatThread) => void;
+	tags: ChatTag[];
+	activeTagId: string | null;
+	onTagFilterChange: (tagId: string | null) => void;
 	authUser: {
 		id: string;
 		email: string | null;
@@ -167,12 +178,17 @@ export function ChatSidebar({
 	onSelectThread,
 	onRenameThread,
 	onPinToggle,
+	onEditTags,
 	onRequestDelete,
+	tags,
+	activeTagId,
+	onTagFilterChange,
 	authUser,
 	authLoading,
 	onSignOut,
 }: ChatSidebarProps) {
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
+	const [tagsOpen, setTagsOpen] = useState(true);
 	const collapsed = sidebarState === "collapsed" && !isMobile;
 	const brandLightSrc = collapsed ? "/logo_light.svg" : "/wordmark_light.svg";
 	const brandDarkSrc = collapsed ? "/logo_dark.svg" : "/wordmark_dark.svg";
@@ -194,6 +210,7 @@ export function ChatSidebar({
 		.join("")
 		.slice(0, 2)
 		.toUpperCase();
+	const activeTag = tags.find((tag) => tag.id === activeTagId) ?? null;
 	const dateThreadGroups = buildThreadDateGroups(groupedThreads);
 	const renderThreadItem = (thread: ChatThread, pinned = false) => (
 		<SidebarMenuItem key={thread.id} className="w-full overflow-hidden">
@@ -226,6 +243,10 @@ export function ChatSidebar({
 							<Pin className="mr-2 h-4 w-4" />
 						)}
 						{pinned ? "Unpin" : "Pin"}
+					</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => onEditTags(thread)}>
+						<Tag className="mr-2 h-4 w-4" />
+						Tags
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
@@ -360,8 +381,79 @@ export function ChatSidebar({
 				<SidebarSeparator className="my-0" />
 				<ScrollArea className="h-full group-data-[collapsible=icon]:hidden">
 					<SidebarGroup className="px-2 pb-2 pt-1.5">
+						{tags.length > 0 ? (
+							<Collapsible
+								open={tagsOpen}
+								onOpenChange={setTagsOpen}
+								className="border-b border-border/70 pb-2"
+							>
+								<div className="flex h-8 items-center gap-2 px-2">
+									<CollapsibleTrigger asChild>
+										<button
+											type="button"
+											className="flex h-8 min-w-0 flex-1 items-center justify-between rounded-md text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+										>
+											<span className="truncate">Tags</span>
+											<ChevronRight
+												className={cn(
+													"h-3.5 w-3.5 shrink-0 transition-transform",
+													tagsOpen && "rotate-90",
+												)}
+											/>
+										</button>
+									</CollapsibleTrigger>
+									{activeTag ? (
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											className="h-6 px-1.5 text-xs text-muted-foreground"
+											onClick={() => onTagFilterChange(null)}
+										>
+											All
+										</Button>
+									) : null}
+								</div>
+								<CollapsibleContent>
+									<SidebarMenu className="gap-0.5">
+										{tags.map((tag) => {
+											const selected = activeTagId === tag.id;
+											return (
+												<SidebarMenuItem key={tag.id}>
+													<SidebarMenuButton
+														isActive={selected}
+														onClick={() =>
+															onTagFilterChange(selected ? null : tag.id)
+														}
+														className="h-8 px-2"
+													>
+														<span
+															className="h-2.5 w-2.5 shrink-0 rounded-full"
+															style={{ backgroundColor: tag.color }}
+														/>
+														<span className="w-0 grow overflow-hidden text-ellipsis whitespace-nowrap">
+															{tag.name}
+														</span>
+													</SidebarMenuButton>
+												</SidebarMenuItem>
+											);
+										})}
+									</SidebarMenu>
+								</CollapsibleContent>
+							</Collapsible>
+						) : null}
 						<SidebarGroupLabel className="h-6 px-3 text-[13px] font-semibold text-foreground/80">
-							Chats
+							{activeTag ? (
+								<span className="flex min-w-0 items-center gap-1.5">
+									<span
+										className="h-2 w-2 shrink-0 rounded-full"
+										style={{ backgroundColor: activeTag.color }}
+									/>
+									<span className="truncate">{activeTag.name}</span>
+								</span>
+							) : (
+								"Chats"
+							)}
 						</SidebarGroupLabel>
 						<SidebarGroupContent className="overflow-hidden">
 							<SidebarMenu>
@@ -387,7 +479,7 @@ export function ChatSidebar({
 								))}
 								{threads.length === 0 && (
 									<p className="px-2 py-4 text-xs text-muted-foreground">
-										No chats yet.
+										{activeTagId ? "No chats with this tag." : "No chats yet."}
 									</p>
 								)}
 							</SidebarMenu>
