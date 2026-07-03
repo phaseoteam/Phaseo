@@ -42,13 +42,15 @@ const WEB_SEARCH_ENGINE_VALUES = ["auto", "native", "exa", "firecrawl", "paralle
 const WEB_FETCH_ENGINE_VALUES = ["auto", "native", "direct", "exa", "firecrawl", "parallel"] as const;
 
 const DATETIME_TOOL_DESCRIPTION =
-	"Get the current date and time. Optionally provide an IANA timezone (for example, Europe/London).";
+	"Get the current date and time. Optionally provide one or more IANA timezones (for example, Europe/London).";
 const DATETIME_TOOL_PARAMETERS = {
 	type: "object",
 	properties: {
-		timezone: {
-			type: "string",
-			description: "IANA timezone name (for example America/New_York, Europe/London). Defaults to UTC.",
+		timezones: {
+			type: "array",
+			items: { type: "string" },
+			description:
+				"IANA timezone names to return in one call. Use this when comparing local time with UTC or another timezone.",
 		},
 	},
 	additionalProperties: false,
@@ -308,7 +310,7 @@ type WebFetchEngine = (typeof WEB_FETCH_ENGINE_VALUES)[number];
 
 export type ServerToolConfig = {
 	enabled: boolean;
-	datetimeDefaultTimezone: string;
+	datetimeDefaultTimezones: string[];
 	webSearchEnabled: boolean;
 	webSearchEngine?: WebSearchEngine;
 	webSearchMaxResults: number;
@@ -421,12 +423,25 @@ function toNonEmptyString(value: unknown): string | null {
 	return trimmed.length > 0 ? trimmed : null;
 }
 
-function parseDatetimeToolTimezone(tool: any): string | null {
-	const timezone =
-		toNonEmptyString(tool?.parameters?.timezone) ??
-		toNonEmptyString(tool?.timezone) ??
-		null;
-	return timezone;
+function appendTimezone(timezones: string[], value: unknown): void {
+	const timezone = toNonEmptyString(value);
+	if (timezone && !timezones.includes(timezone)) {
+		timezones.push(timezone);
+	}
+}
+
+function appendTimezoneList(timezones: string[], value: unknown): void {
+	if (!Array.isArray(value)) return;
+	for (const item of value) {
+		appendTimezone(timezones, item);
+	}
+}
+
+function parseDatetimeToolTimezones(tool: any): string[] {
+	const timezones: string[] = [];
+	appendTimezone(timezones, tool?.parameters?.timezone);
+	appendTimezoneList(timezones, tool?.parameters?.timezones);
+	return timezones;
 }
 
 function readBooleanWithFallback(value: unknown, fallback: boolean): boolean {
@@ -1000,7 +1015,7 @@ export function prepareServerToolsForTextRequest(
 	const defaultAdvisorModel = toNonEmptyString(nextBody?.model) ?? undefined;
 
 	let datetimeEnabled = false;
-	let datetimeDefaultTimezone = DEFAULT_TIMEZONE;
+	let datetimeDefaultTimezones = [DEFAULT_TIMEZONE];
 	let webSearchEnabled = false;
 	let webSearchEngine: WebSearchEngine = DEFAULT_WEB_SEARCH_ENGINE;
 	let webSearchMaxResults = DEFAULT_WEB_SEARCH_MAX_RESULTS;
@@ -1036,15 +1051,18 @@ export function prepareServerToolsForTextRequest(
 
 		if (tool.type === DATETIME_SERVER_TOOL_TYPE) {
 			datetimeEnabled = true;
-			const requestedTimezone = parseDatetimeToolTimezone(tool);
-			if (requestedTimezone) {
-				if (!isValidTimezone(requestedTimezone)) {
+			const requestedTimezones = parseDatetimeToolTimezones(tool);
+			if (requestedTimezones.length > 0) {
+				const invalidTimezone = requestedTimezones.find(
+					(timezone) => !isValidTimezone(timezone),
+				);
+				if (invalidTimezone) {
 					return {
 						ok: false,
-						message: `Invalid datetime tool timezone "${requestedTimezone}". Use a valid IANA timezone name.`,
+						message: `Invalid datetime tool timezone "${invalidTimezone}". Use valid IANA timezone names.`,
 					};
 				}
-				datetimeDefaultTimezone = requestedTimezone;
+				datetimeDefaultTimezones = requestedTimezones;
 			}
 			continue;
 		}
@@ -1167,7 +1185,7 @@ export function prepareServerToolsForTextRequest(
 			body: nextBody,
 			config: {
 				enabled: false,
-				datetimeDefaultTimezone: DEFAULT_TIMEZONE,
+				datetimeDefaultTimezones: [DEFAULT_TIMEZONE],
 				webSearchEnabled: false,
 				webSearchEngine: DEFAULT_WEB_SEARCH_ENGINE,
 				webSearchMaxResults: DEFAULT_WEB_SEARCH_MAX_RESULTS,
@@ -1311,7 +1329,7 @@ export function prepareServerToolsForTextRequest(
 		body: nextBody,
 		config: {
 			enabled: datetimeEnabled || webSearchEnabled || webFetchEnabled || advisorEnabled || imageGenerationEnabled || applyPatchEnabled,
-			datetimeDefaultTimezone,
+			datetimeDefaultTimezones,
 			webSearchEnabled,
 			webSearchEngine,
 			webSearchMaxResults,
@@ -1351,9 +1369,17 @@ function parseJsonObject(value: string | undefined): Record<string, unknown> {
 	return {};
 }
 
-function readDatetimeTimezone(args: Record<string, unknown>, fallback: string): string {
-	const candidate = toNonEmptyString(args.timezone);
-	return candidate ?? fallback;
+function readDatetimeTimezones(
+	args: Record<string, unknown>,
+	fallback: string[],
+): string[] {
+	const timezones: string[] = [];
+	appendTimezoneList(timezones, args.timezones);
+	return timezones.length > 0
+		? timezones
+		: fallback.length > 0
+			? fallback
+			: [DEFAULT_TIMEZONE];
 }
 
 function extractOffsetString(date: Date, timezone: string): string {
@@ -1402,28 +1428,33 @@ function formatIsoInTimezone(date: Date, timezone: string): string {
 
 function executeDatetimeToolCall(
 	call: { id: string; arguments: string },
-	defaultTimezone: string,
+	defaultTimezones: string[],
 ): IRToolResult {
 	const args = parseJsonObject(call.arguments);
-	const timezone = readDatetimeTimezone(args, defaultTimezone);
-	if (!isValidTimezone(timezone)) {
+	const timezones = readDatetimeTimezones(args, defaultTimezones);
+	const invalidTimezone = timezones.find((timezone) => !isValidTimezone(timezone));
+	if (invalidTimezone) {
 		return {
 			toolCallId: call.id,
 			isError: true,
 			content: JSON.stringify({
 				error: "invalid_timezone",
-				timezone,
-				message: "timezone must be a valid IANA timezone name",
+				timezone: invalidTimezone,
+				timezones,
+				message: "timezones must contain valid IANA timezone names",
 			}),
 		};
 	}
 
 	const now = new Date();
+	const results = timezones.map((timezone) => ({
+		timezone,
+		datetime: formatIsoInTimezone(now, timezone),
+	}));
 	return {
 		toolCallId: call.id,
 		content: JSON.stringify({
-			datetime: formatIsoInTimezone(now, timezone),
-			timezone,
+			timezones: results,
 		}),
 	};
 }
@@ -2716,7 +2747,7 @@ export async function buildServerToolContinuation(
 			toolResults.push(
 				executeDatetimeToolCall(
 					{ id: call.id, arguments: call.arguments },
-					config.datetimeDefaultTimezone,
+					config.datetimeDefaultTimezones,
 				),
 			);
 			usage.datetimeRequests += 1;

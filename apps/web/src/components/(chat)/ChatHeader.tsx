@@ -66,6 +66,7 @@ import { cn } from "@/lib/utils";
 import type {
 	ChatResponseLayout,
 } from "@/components/(chat)/playground/chat-playground-core";
+import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type {
 	ChatModelSettings,
 	ChatThread,
@@ -140,6 +141,8 @@ const ACCENT_COLORS = [
 const CUSTOM_ACCENT_SELECT_VALUE = "custom";
 const DEFAULT_CUSTOM_ACCENT_COLOR = "#2563eb";
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8787/v1";
+const CUSTOM_API_SELECT_VALUE = "custom";
 
 function normalizeHexColor(value: string) {
 	const trimmedValue = value.trim();
@@ -283,6 +286,8 @@ export function ChatHeader({
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
+	baseUrl,
+	onBaseUrlChange,
 	onSaveSettings,
 	personalization,
 	onPersonalizationChange,
@@ -326,6 +331,9 @@ export function ChatHeader({
 	const [accentSelectValueOverride, setAccentSelectValueOverride] = useState<
 		string | null
 	>(null);
+	const [apiTargetValueOverride, setApiTargetValueOverride] = useState<
+		string | null
+	>(null);
 	const [customAccentDraft, setCustomAccentDraft] = useState(
 		() => {
 			const normalizedAccentColor = normalizeHexColor(
@@ -365,6 +373,14 @@ export function ChatHeader({
 				value: customAccentColor,
 		  }
 		: selectedPresetAccentColor;
+	const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/, "");
+	const derivedApiTargetValue =
+		normalizedBaseUrl === BASE_URL
+			? BASE_URL
+			: normalizedBaseUrl === LOCAL_API_BASE_URL
+				? LOCAL_API_BASE_URL
+				: CUSTOM_API_SELECT_VALUE;
+	const apiTargetValue = apiTargetValueOverride ?? derivedApiTargetValue;
 	useEffect(() => {
 		const isPresetAccentColor = ACCENT_COLORS.some(
 			(color) => color.value === personalization.accentColor,
@@ -1872,6 +1888,92 @@ export function ChatHeader({
 													Diagnostic settings for
 													debugging gateway issues.
 												</p>
+											</div>
+											<div className="grid gap-3 rounded-lg border border-border px-3 py-3">
+												<div className="grid gap-1">
+													<p className="text-sm font-medium">
+														API target
+													</p>
+													<p className="text-xs text-muted-foreground">
+														Choose the gateway base
+														URL used by chat
+														requests.
+													</p>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="api-target">
+														Environment
+													</Label>
+													<Select
+														value={apiTargetValue}
+														onValueChange={(value) => {
+															if (
+																value ===
+																CUSTOM_API_SELECT_VALUE
+															) {
+																setApiTargetValueOverride(
+																	CUSTOM_API_SELECT_VALUE,
+																);
+																return;
+															}
+															setApiTargetValueOverride(
+																null,
+															);
+															onBaseUrlChange(value);
+														}}
+													>
+														<SelectTrigger id="api-target">
+															<SelectValue placeholder="Select API target" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value={BASE_URL}>
+																Public API
+															</SelectItem>
+															<SelectItem
+																value={
+																	LOCAL_API_BASE_URL
+																}
+															>
+																Local API
+															</SelectItem>
+															<SelectItem
+																value={
+																	CUSTOM_API_SELECT_VALUE
+																}
+															>
+																Custom
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="api-base-url">
+														Base URL
+													</Label>
+													<Input
+														id="api-base-url"
+														value={baseUrl}
+														onChange={(event) => {
+															setApiTargetValueOverride(
+																null,
+															);
+															onBaseUrlChange(
+																event.target.value,
+															);
+														}}
+														placeholder={
+															LOCAL_API_BASE_URL
+														}
+														className="font-mono text-xs"
+													/>
+													<p className="text-xs text-muted-foreground">
+														Current target:{" "}
+														<span className="font-mono">
+															{baseUrl.trim() ||
+																BASE_URL}
+														</span>
+													</p>
+												</div>
 											</div>
 											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
 												<div>

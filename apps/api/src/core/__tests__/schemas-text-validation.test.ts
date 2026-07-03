@@ -26,7 +26,7 @@ describe("text request schema validation", () => {
 			tools: [{
 				type: "gateway:datetime",
 				parameters: {
-					timezone: "Europe/London",
+					timezones: ["Europe/London", "UTC"],
 				},
 			}],
 			tool_choice: "gateway:datetime",
@@ -175,7 +175,7 @@ describe("text request schema validation", () => {
 			tools: [{
 				type: "gateway:datetime",
 				parameters: {
-					timezone: "UTC",
+					timezones: ["UTC"],
 				},
 			}],
 			tool_choice: "gateway:datetime",
@@ -357,7 +357,7 @@ describe("text request schema validation", () => {
 			messages: [{ role: "user", content: "what time is it?" }],
 			tools: [{
 				type: "gateway:datetime",
-				parameters: { timezone: "Europe/London" },
+				parameters: { timezones: ["Europe/London", "UTC"] },
 			}],
 		});
 		expect(parsed.success).toBe(true);

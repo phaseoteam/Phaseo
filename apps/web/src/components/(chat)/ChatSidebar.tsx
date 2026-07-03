@@ -306,7 +306,7 @@ export function ChatSidebar({
 			<SidebarContent className="gap-0">
 				<ChatRoomSwitcher />
 				<SidebarSeparator className="my-0" />
-				<div className="px-2 pb-1 pt-1.5">
+				<div className="px-2 py-1.5">
 					{withCollapsedTooltip(
 						"New Chat",
 						<Button
@@ -380,7 +380,7 @@ export function ChatSidebar({
 				</div>
 				<SidebarSeparator className="my-0" />
 				<ScrollArea className="h-full group-data-[collapsible=icon]:hidden">
-					<SidebarGroup className="px-2 pb-2 pt-1.5">
+					<SidebarGroup className="px-2 pb-2 pt-3.5">
 						{tags.length > 0 ? (
 							<Collapsible
 								open={tagsOpen}
@@ -442,7 +442,7 @@ export function ChatSidebar({
 								</CollapsibleContent>
 							</Collapsible>
 						) : null}
-						<SidebarGroupLabel className="h-6 px-3 text-[13px] font-semibold text-foreground/80">
+						<SidebarGroupLabel className="h-3.5 px-3 text-[13px] font-semibold leading-none text-foreground/80">
 							{activeTag ? (
 								<span className="flex min-w-0 items-center gap-1.5">
 									<span

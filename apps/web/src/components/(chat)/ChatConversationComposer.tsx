@@ -1341,7 +1341,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 	);
 
 	return (
-		<div className="border-t border-border bg-background px-4 py-4 md:px-8">
+		<div className="border-t border-border bg-background px-4 py-[17px] md:px-8">
 			<div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
 				{sendGateType === "auth" ? (
 					<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-700/70 dark:bg-amber-950/30 dark:text-amber-100">

@@ -15,7 +15,7 @@ Server tools are in beta. Request shapes and result payloads may evolve as provi
 
 | Tool | Type | Use it for |
 | --- | --- | --- |
-| Datetime | `gateway:datetime` | Current date and time in a chosen timezone |
+| Datetime | `gateway:datetime` | Current date and time in one or more timezones |
 | Web Search | `ai-stats:web_search` | Model-directed web searches during a request |
 | Web Fetch | `ai-stats:web_fetch` | Fetching and extracting text from specific URLs |
 | Advisor | `ai-stats:advisor` | Consulting another model mid-generation |
@@ -45,7 +45,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     ],
     "tools": [
       { "type": "ai-stats:web_search" },
-      { "type": "gateway:datetime", "parameters": { "timezone": "Europe/London" } }
+      { "type": "gateway:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
     ]
   }'
 ```

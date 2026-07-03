@@ -69,10 +69,15 @@ import {
 } from "lucide-react";
 import {
 	ChatMessageMarkers,
+	ChatToolCallMarkers,
 	getComparableModelSet,
 	getRequestContextMarker,
 	type ChatMessageMarker,
 } from "@/components/(chat)/ChatMessageMarkers";
+import type {
+	ChatToolCall,
+	ChatTraceEvent,
+} from "@/components/(chat)/chatPayload";
 import { ChatMessagesEmptyState } from "@/components/(chat)/ChatMessagesEmptyState";
 import { ChatVirtualMessageList } from "@/components/(chat)/ChatVirtualMessageList";
 import { markChatUserMessageRendered } from "@/components/(chat)/playground/chat-performance";
@@ -96,6 +101,69 @@ const VIRTUALIZE_AFTER_MESSAGES = 80;
 const VIRTUAL_MESSAGE_OVERSCAN = 16;
 const ESTIMATED_MESSAGE_HEIGHT = 220;
 const EMPTY_MESSAGES: ChatThread["messages"] = [];
+
+const getReadableTextColor = (backgroundColor: string) => {
+	const hex = backgroundColor.trim().replace(/^#/, "");
+	const normalized =
+		hex.length === 3
+			? hex
+					.split("")
+					.map((char) => `${char}${char}`)
+					.join("")
+			: hex;
+	if (!/^[0-9a-f]{6}$/i.test(normalized)) return undefined;
+	const red = Number.parseInt(normalized.slice(0, 2), 16);
+	const green = Number.parseInt(normalized.slice(2, 4), 16);
+	const blue = Number.parseInt(normalized.slice(4, 6), 16);
+	const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+	return luminance > 0.58 ? "#111111" : "#ffffff";
+};
+
+const getToolCallsFromMeta = (
+	meta: Record<string, unknown> | null,
+): ChatToolCall[] => {
+	const value = meta?.tool_calls;
+	if (!Array.isArray(value)) return [];
+	return value.filter((item): item is ChatToolCall => {
+		if (!item || typeof item !== "object") return false;
+		const toolCall = item as Partial<ChatToolCall>;
+		return (
+			typeof toolCall.id === "string" &&
+			typeof toolCall.name === "string" &&
+			typeof toolCall.type === "string"
+		);
+	});
+};
+
+const getTraceEventsFromMeta = (
+	meta: Record<string, unknown> | null,
+): ChatTraceEvent[] => {
+	const value = meta?.trace_events;
+	if (!Array.isArray(value)) return [];
+	return value
+		.filter((item): item is ChatTraceEvent => {
+			if (!item || typeof item !== "object") return false;
+			const event = item as Partial<ChatTraceEvent>;
+			if (
+				typeof event.id !== "string" ||
+				typeof event.type !== "string" ||
+				typeof event.sequence !== "number"
+			) {
+				return false;
+			}
+			if (
+				event.type === "reasoning" ||
+				event.type === "response"
+			) {
+				return typeof event.text === "string";
+			}
+			return (
+				event.type === "tool_call" &&
+				typeof event.toolCallId === "string"
+			);
+		})
+		.sort((a, b) => a.sequence - b.sequence);
+};
 
 type ChatConversationMessagesProps = {
 	activeThread: ChatThread | null;
@@ -331,6 +399,7 @@ export function ChatConversationMessages({
 				(activeVariant?.meta as Record<string, unknown> | null) ??
 				(message.meta as Record<string, unknown> | null) ??
 				null;
+			const toolCalls = isUser ? [] : getToolCallsFromMeta(activeMeta);
 			const requestContext = isUser
 				? getRequestContextMarker(message.meta)
 				: null;
@@ -414,6 +483,35 @@ export function ChatConversationMessages({
 					(message.meta as any)?.reasoning_text ??
 					(message.meta as any)?.reasoning ??
 					null;
+			const traceEvents = isUser
+				? []
+				: getTraceEventsFromMeta(activeMeta);
+			const toolCallsById = new Map(
+				toolCalls.map((toolCall) => [toolCall.id, toolCall]),
+			);
+			const traceToolCallIds = new Set(
+				traceEvents
+					.filter((event) => event.type === "tool_call")
+					.map((event) => event.toolCallId),
+			);
+			const fallbackToolCalls = traceEvents.length
+				? toolCalls.filter(
+						(toolCall) => !traceToolCallIds.has(toolCall.id),
+					)
+				: toolCalls;
+			const traceHasReasoning = traceEvents.some(
+				(event) => event.type === "reasoning" && event.text.trim(),
+			);
+			const traceHasResponse = traceEvents.some(
+				(event) => event.type === "response" && event.text.trim(),
+			);
+			const stripAssistantMediaLinks = (value: string) => {
+				let next = value;
+				if (videoUrl) next = stripMarkdownLink(next, videoUrl);
+				if (audioUrl) next = stripMarkdownLink(next, audioUrl);
+				if (imageUrl) next = stripMarkdownLink(next, imageUrl);
+				return next;
+			};
 			const displayModelId = (message.modelId ?? activeThread.modelId ?? "").trim();
 			const overrideModelLabel = displayModelId
 				? activeThread.settings.modelOverridesById?.[
@@ -455,6 +553,10 @@ export function ChatConversationMessages({
 			}
 			const responseProviderLabel =
 				message.providerName?.trim() || responseProviderId || null;
+			const responseProviderHref =
+				responseProviderId && responseProviderId !== "auto"
+					? `/api-providers/${encodeURIComponent(responseProviderId)}`
+					: null;
 			const isEditing = editingId === message.id;
 			const userInlineAttachmentPreviews = isUser
 				? getInlineAttachmentPreviewsFromMeta(message.meta)
@@ -477,7 +579,10 @@ export function ChatConversationMessages({
 			const hasAccent = Boolean(accentColor);
 			const messagePanelStyle =
 				isUser && hasAccent
-					? { backgroundColor: accentColor }
+					? {
+							backgroundColor: accentColor,
+							color: getReadableTextColor(accentColor),
+						}
 					: undefined;
 
 			const messageNode = (
@@ -528,9 +633,18 @@ export function ChatConversationMessages({
 											</span>
 										)}
 										{responseProviderLabel ? (
-											<span className="pl-6 text-[11px] text-muted-foreground/80">
-												via {responseProviderLabel}
-											</span>
+											responseProviderHref ? (
+												<Link
+													href={responseProviderHref}
+													className="pl-6 text-[11px] text-muted-foreground/80 transition-colors hover:text-foreground"
+												>
+													via {responseProviderLabel}
+												</Link>
+											) : (
+												<span className="pl-6 text-[11px] text-muted-foreground/80">
+													via {responseProviderLabel}
+												</span>
+											)
 										) : null}
 									</MessageHeader>
 								)}
@@ -544,15 +658,21 @@ export function ChatConversationMessages({
 									<div
 										data-slot="message-panel"
 										className={cn(
-											"max-w-full rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
-											inSideBySideGroup
-												? "flex h-full min-h-[180px] w-full flex-col"
-												: "w-fit",
 											isUser
-												? hasAccent
-													? "text-background"
-													: "bg-foreground text-background"
-												: "border border-border bg-card text-card-foreground",
+												? cn(
+														"max-w-full rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm",
+														inSideBySideGroup
+															? "flex h-full min-h-[180px] w-full flex-col"
+															: "w-fit",
+														hasAccent
+															? ""
+															: "bg-foreground text-background",
+													)
+												: cn(
+														"w-full max-w-[min(100%,46rem)] px-0 py-1 text-sm leading-relaxed text-foreground",
+														inSideBySideGroup &&
+															"flex h-full min-h-[180px] flex-col",
+													),
 										)}
 										style={messagePanelStyle}
 									>
@@ -691,7 +811,9 @@ export function ChatConversationMessages({
 									) : null}
 								</div>
 							)
-						) : isSending && (!content || content === "Generating...") ? (
+						) : isSending &&
+							(!content || content === "Generating...") &&
+							toolCalls.length === 0 ? (
 							<div className="flex min-h-7 items-center">
 								<Shimmer
 									className="text-sm text-muted-foreground"
@@ -702,27 +824,128 @@ export function ChatConversationMessages({
 							</div>
 						) : (
 							<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-ul:pl-5 prose-ol:pl-5 prose-li:my-1">
-								{reasoningText ? (
-									<Reasoning
-										isStreaming={isPendingAssistant}
-										defaultOpen={Boolean(
-											isPendingAssistant,
-										)}
-									>
-										<ReasoningTrigger />
-										<ReasoningContent>
-										{reasoningText}
-									</ReasoningContent>
-									</Reasoning>
-								) : null}
+								{traceEvents.length ? (
+									<div className="not-prose grid gap-1.5">
+										{traceEvents.map((event) => {
+											if (event.type === "reasoning") {
+												if (!event.text.trim()) return null;
+												return (
+													<Reasoning
+														key={event.id}
+														className="mb-0"
+														isStreaming={isPendingAssistant}
+														defaultOpen={Boolean(
+															isPendingAssistant,
+														)}
+													>
+														<ReasoningTrigger />
+														<ReasoningContent className="mt-2">
+															{event.text}
+														</ReasoningContent>
+													</Reasoning>
+												);
+											}
+											if (event.type === "tool_call") {
+												const toolCall =
+													toolCallsById.get(event.toolCallId);
+												if (!toolCall) return null;
+												return (
+													<ChatToolCallMarkers
+														key={event.id}
+														compact
+														toolCalls={[toolCall]}
+														messageId={message.id}
+													/>
+												);
+											}
+											const eventText =
+												stripAssistantMediaLinks(event.text);
+											if (!eventText.trim()) return null;
+											return (
+												<div
+													key={event.id}
+													className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0"
+												>
+													<Streamdown>{eventText}</Streamdown>
+												</div>
+											);
+										})}
+										{fallbackToolCalls.length ? (
+											<ChatToolCallMarkers
+												compact
+												toolCalls={fallbackToolCalls}
+												messageId={message.id}
+											/>
+										) : null}
+										{!traceHasReasoning && reasoningText ? (
+											<Reasoning
+												className="mb-0"
+												isStreaming={isPendingAssistant}
+												defaultOpen={Boolean(
+													isPendingAssistant,
+												)}
+											>
+												<ReasoningTrigger />
+												<ReasoningContent className="mt-2">
+													{reasoningText}
+												</ReasoningContent>
+											</Reasoning>
+										) : null}
+										{!traceHasResponse &&
+										!showRequestError &&
+										contentWithoutMediaLinks ? (
+											<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0">
+												<Streamdown>
+													{contentWithoutMediaLinks}
+												</Streamdown>
+											</div>
+										) : null}
+									</div>
+								) : (
+									<>
+										<ChatToolCallMarkers
+											toolCalls={toolCalls}
+											messageId={message.id}
+										/>
+										{reasoningText ? (
+											<Reasoning
+												className="mb-1.5"
+												isStreaming={isPendingAssistant}
+												defaultOpen={Boolean(
+													isPendingAssistant,
+												)}
+											>
+												<ReasoningTrigger />
+												<ReasoningContent className="mt-2">
+													{reasoningText}
+												</ReasoningContent>
+											</Reasoning>
+										) : null}
+										{!showRequestError &&
+										contentWithoutMediaLinks ? (
+											<Streamdown>
+												{contentWithoutMediaLinks}
+											</Streamdown>
+										) : null}
+									</>
+								)}
 								{!contentWithoutMediaLinks &&
 									messageRequestError ? (
 									<p className="not-prose text-sm text-muted-foreground">
 										Request failed. Use Retry to run this message again.
 									</p>
 								) : null}
-								{!showRequestError && contentWithoutMediaLinks ? (
-									<Streamdown>{contentWithoutMediaLinks}</Streamdown>
+								{isPendingAssistant &&
+								!contentWithoutMediaLinks &&
+								!messageRequestError ? (
+									<div className="not-prose flex min-h-7 items-center">
+										<Shimmer
+											className="text-sm text-muted-foreground"
+											duration={1.4}
+										>
+											Generating final response...
+										</Shimmer>
+									</div>
 								) : null}
 								{imageUrl ? (
 									<div className="not-prose mt-3 grid gap-2">
