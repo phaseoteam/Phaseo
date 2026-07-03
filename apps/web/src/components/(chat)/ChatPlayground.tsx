@@ -37,7 +37,10 @@ import {
 	appendImagesToText,
 	extractResponseImages,
 	extractReasoningText,
+	extractResponseToolCalls,
 	extractResponseText,
+	type ChatToolCall,
+	type ChatTraceEvent,
 } from "@/components/(chat)/chatPayload";
 import {
 	buildUserMessageContent,
@@ -92,6 +95,133 @@ type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
 	modelParam?: string | null;
 	promptParam?: string | null;
+};
+
+const DATETIME_TOOL_NAMES = new Set(["gateway_datetime", "gateway:datetime"]);
+
+const getBrowserTimeZone = () => {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+	} catch {
+		return null;
+	}
+};
+
+const appendTimezone = (timezones: string[], value: unknown) => {
+	if (typeof value !== "string") return;
+	const timezone = value.trim();
+	if (timezone && !timezones.includes(timezone)) {
+		timezones.push(timezone);
+	}
+};
+
+const appendTimezoneList = (timezones: string[], value: unknown) => {
+	if (!Array.isArray(value)) return;
+	for (const item of value) {
+		appendTimezone(timezones, item);
+	}
+};
+
+const getDefaultDatetimeTimezones = () => {
+	const timezones: string[] = [];
+	appendTimezone(timezones, getBrowserTimeZone());
+	appendTimezone(timezones, "UTC");
+	return timezones.length ? timezones : ["UTC"];
+};
+
+const parseToolInput = (toolCall: ChatToolCall): Record<string, unknown> => {
+	if (toolCall.input && typeof toolCall.input === "object" && !Array.isArray(toolCall.input)) {
+		return toolCall.input as Record<string, unknown>;
+	}
+	if (toolCall.inputText) {
+		try {
+			const parsed = JSON.parse(toolCall.inputText);
+			if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+				return parsed as Record<string, unknown>;
+			}
+		} catch {
+			return {};
+		}
+	}
+	return {};
+};
+
+const isValidTimezone = (timezone: string) => {
+	try {
+		new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+const formatIsoInTimezone = (date: Date, timezone: string) => {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hourCycle: "h23",
+		timeZoneName: "shortOffset",
+	}).formatToParts(date);
+	const partMap = new Map(parts.map((part) => [part.type, part.value]));
+	const offsetName = partMap.get("timeZoneName") ?? "GMT";
+	const offset =
+		offsetName === "GMT"
+			? "+00:00"
+			: offsetName
+					.replace("GMT", "")
+					.replace(/^([+-])(\d{1,2})$/, "$10$2:00")
+					.replace(/^([+-])(\d{2})(\d{2})$/, "$1$2:$3");
+	return `${partMap.get("year") ?? "0000"}-${partMap.get("month") ?? "01"}-${partMap.get("day") ?? "01"}T${partMap.get("hour") ?? "00"}:${partMap.get("minute") ?? "00"}:${partMap.get("second") ?? "00"}.${String(date.getUTCMilliseconds()).padStart(3, "0")}${offset}`;
+};
+
+const buildClientDatetimeToolResults = (
+	toolCalls: ChatToolCall[],
+	defaultTimezones: string[],
+) => {
+	const results: Array<{ toolCallId: string; content: string }> = [];
+	for (const toolCall of toolCalls) {
+		if (!DATETIME_TOOL_NAMES.has(toolCall.name)) return null;
+		const input = parseToolInput(toolCall);
+		const timezones: string[] = [];
+		appendTimezoneList(timezones, input.timezones);
+		const resolvedTimezones = timezones.length
+			? timezones
+			: defaultTimezones.length
+				? defaultTimezones
+				: ["UTC"];
+		const invalidTimezone = resolvedTimezones.find(
+			(timezone) => !isValidTimezone(timezone),
+		);
+		if (invalidTimezone) {
+			results.push({
+				toolCallId: toolCall.id,
+				content: JSON.stringify({
+					error: "invalid_timezone",
+					timezone: invalidTimezone,
+					timezones: resolvedTimezones,
+					message: "timezones must contain valid IANA timezone names",
+				}),
+			});
+			continue;
+		}
+		const now = new Date();
+		const datetimeResults = resolvedTimezones.map((timezone) => ({
+			timezone,
+			datetime: formatIsoInTimezone(now, timezone),
+		}));
+		results.push({
+			toolCallId: toolCall.id,
+			content: JSON.stringify({
+				timezones: datetimeResults,
+			}),
+		});
+	}
+	return results.length ? results : null;
 };
 
 function ChatPlaygroundContent({
@@ -407,9 +537,18 @@ function ChatPlaygroundContent({
 	const createThread = useCallback(async () => {
 		const selectedModel = "";
 		if (activeThread) {
+			const comparisonModelId = activeThread.modelId || selectedModel;
+			const comparisonModelDisplayName =
+				comparisonModelId
+					? activeThread.settings.modelOverridesById?.[
+							comparisonModelId
+						]?.displayName?.trim() ||
+						modelDisplayNameById[comparisonModelId]
+					: undefined;
 			const changes = getChangedSettings(
 				activeThread.settings,
-				selectedModel,
+				comparisonModelId,
+				comparisonModelDisplayName,
 			);
 			if (changes.length > 0) {
 				setPendingNewChat({
@@ -426,7 +565,7 @@ function ChatPlaygroundContent({
 			systemPrompt: buildDefaultSystemPrompt(selectedModel),
 		};
 		await createThreadWithSettings(selectedModel, defaults);
-	}, [activeThread, createThreadWithSettings]);
+	}, [activeThread, createThreadWithSettings, modelDisplayNameById]);
 
 	const handleNewChatDecision = useCallback(
 		(useCurrent: boolean) => {
@@ -785,13 +924,19 @@ function ChatPlaygroundContent({
 				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
 				}
-				const tools = isUnified
+				const apiServerToolsEnabled =
+					sendPayload?.apiServerToolsEnabled ??
+					effectiveModelSettings.apiServerToolsEnabled ??
+					DEFAULT_SETTINGS.apiServerToolsEnabled;
+				const datetimeTimezones = getDefaultDatetimeTimezones();
+				const tools = isUnified && apiServerToolsEnabled
 					? buildServerToolDefinitions(
 							sendPayload?.serverTools ??
 								effectiveModelSettings.serverTools ??
 								DEFAULT_SERVER_TOOLS,
 							sendPayload?.serverToolConfigs ??
 								effectiveModelSettings.serverToolConfigs,
+							{ datetimeTimezones },
 						)
 					: [];
 				if (tools.length > 0) {
@@ -1023,6 +1168,27 @@ function ChatPlaygroundContent({
 						if (reasoningText) {
 							mergedMeta.reasoning_text = reasoningText;
 						}
+						const toolCalls = extractResponseToolCalls(data);
+						if (toolCalls.length) {
+							mergedMeta.tool_calls = toolCalls;
+						}
+						const traceEvents: ChatTraceEvent[] = [];
+						if (reasoningText) {
+							traceEvents.push({
+								id: "reasoning",
+								type: "reasoning",
+								sequence: traceEvents.length,
+								text: reasoningText,
+							});
+						}
+						for (const toolCall of toolCalls) {
+							traceEvents.push({
+								id: `tool:${toolCall.id}`,
+								type: "tool_call",
+								sequence: traceEvents.length,
+								toolCallId: toolCall.id,
+							});
+						}
 						const totalCostUsd = extractTotalCostUsd(finalUsage);
 						if (totalCostUsd) {
 							mergedMeta.total_cost_usd = totalCostUsd;
@@ -1030,6 +1196,17 @@ function ChatPlaygroundContent({
 						assistantContent = appendImagesToText(reply, images);
 						if (!assistantContent) {
 							assistantContent = "Request completed.";
+						}
+						if (assistantContent) {
+							traceEvents.push({
+								id: "response",
+								type: "response",
+								sequence: traceEvents.length,
+								text: assistantContent,
+							});
+						}
+						if (traceEvents.length) {
+							mergedMeta.trace_events = traceEvents;
 						}
 						markChatPerformance(performanceRunId, "stream-first-token");
 						if (shouldDebug) {
@@ -1083,6 +1260,153 @@ function ChatPlaygroundContent({
 				}
 
 				let buffer = "";
+				const streamToolCalls = new Map<string, ChatToolCall>();
+				const streamToolAliases = new Map<string, string>();
+				const resolveStreamToolId = (value: unknown) => {
+					if (typeof value !== "string" || !value.trim()) return null;
+					const trimmed = value.trim();
+					return streamToolAliases.get(trimmed) ?? trimmed;
+				};
+				const aliasStreamToolId = (
+					source: unknown,
+					target: string | null,
+				) => {
+					if (
+						typeof source !== "string" ||
+						!source.trim() ||
+						!target
+					) {
+						return;
+					}
+					streamToolAliases.set(source.trim(), target);
+				};
+				const upsertStreamToolCall = (toolCall: ChatToolCall) => {
+					const existing = streamToolCalls.get(toolCall.id);
+					const next: ChatToolCall = existing
+						? {
+								...existing,
+								...toolCall,
+								input: toolCall.input ?? existing.input,
+								inputText:
+									toolCall.inputText ?? existing.inputText,
+								output: toolCall.output ?? existing.output,
+								errorText:
+									toolCall.errorText ?? existing.errorText,
+								status:
+									toolCall.status === "running" &&
+									existing.status !== "running"
+										? existing.status
+										: toolCall.status,
+							}
+						: toolCall;
+					streamToolCalls.set(next.id, next);
+				};
+				const appendStreamToolArguments = (
+					id: string,
+					deltaText: string,
+				) => {
+					const existing =
+						streamToolCalls.get(id) ??
+						({
+							id,
+							type: "function_call",
+							name: "tool",
+							status: "running",
+						} satisfies ChatToolCall);
+					const inputText = `${existing.inputText ?? ""}${deltaText}`;
+					upsertStreamToolCall({
+						...existing,
+						inputText,
+						status: "running",
+					});
+				};
+				const getStreamToolCalls = () =>
+					Array.from(streamToolCalls.values());
+				const streamTraceEvents = new Map<string, ChatTraceEvent>();
+				let nextTraceSequence = 0;
+				let activeResponseTraceId: string | null = null;
+				const ensureTraceEvent = (
+					id: string,
+					create: (sequence: number) => ChatTraceEvent,
+				) => {
+					const existing = streamTraceEvents.get(id);
+					if (existing) return existing;
+					const event = create(nextTraceSequence++);
+					streamTraceEvents.set(id, event);
+					return event;
+				};
+				const upsertReasoningTrace = (text: string) => {
+					if (!text) return;
+					ensureTraceEvent("reasoning", (sequence) => ({
+						id: "reasoning",
+						type: "reasoning",
+						sequence,
+						text,
+					}));
+					const event = streamTraceEvents.get("reasoning");
+					if (event?.type === "reasoning") {
+						streamTraceEvents.set("reasoning", {
+							...event,
+							text,
+						});
+					}
+				};
+				const upsertToolTrace = (toolCallId: string) => {
+					if (!toolCallId) return;
+					activeResponseTraceId = null;
+					const id = `tool:${toolCallId}`;
+					ensureTraceEvent(id, (sequence) => ({
+						id,
+						type: "tool_call",
+						sequence,
+						toolCallId,
+					}));
+				};
+				const upsertResponseTrace = (text: string) => {
+					if (!text) return;
+					const id =
+						activeResponseTraceId ?? `response:${nextTraceSequence}`;
+					activeResponseTraceId = id;
+					ensureTraceEvent(id, (sequence) => ({
+						id,
+						type: "response",
+						sequence,
+						text,
+					}));
+					const event = streamTraceEvents.get(id);
+					if (event?.type === "response") {
+						streamTraceEvents.set(id, {
+							...event,
+							text,
+						});
+					}
+				};
+				const getTraceEvents = () =>
+					Array.from(streamTraceEvents.values()).sort(
+						(a, b) => a.sequence - b.sequence,
+					);
+				const hasPendingToolCallTrace = () => {
+					const traceEvents = getTraceEvents();
+					let lastToolSequence = -1;
+					let lastResponseSequence = -1;
+					for (const event of traceEvents) {
+						if (event.type === "tool_call") {
+							lastToolSequence = Math.max(
+								lastToolSequence,
+								event.sequence,
+							);
+						} else if (
+							event.type === "response" &&
+							event.text.trim()
+						) {
+							lastResponseSequence = Math.max(
+								lastResponseSequence,
+								event.sequence,
+							);
+						}
+					}
+					return lastToolSequence > lastResponseSequence;
+				};
 
 				if (targetAssistantId) {
 					const initialVariant = {
@@ -1171,6 +1495,28 @@ function ChatPlaygroundContent({
 				};
 				let reasoningContent = "";
 				const reasoningSummaries: Record<number, string> = {};
+				const buildStreamingMetaPartial = () => {
+					const toolCalls = getStreamToolCalls();
+					const traceEvents = getTraceEvents();
+					if (
+						!reasoningContent &&
+						toolCalls.length === 0 &&
+						traceEvents.length === 0
+					) {
+						return undefined;
+					}
+					return {
+						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
+						...(reasoningContent
+							? { reasoning_text: reasoningContent }
+							: {}),
+						...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+						...(traceEvents.length
+							? { trace_events: traceEvents }
+							: {}),
+					};
+				};
 
 				while (true) {
 					const { value, done } = await reader.read();
@@ -1228,6 +1574,7 @@ function ChatPlaygroundContent({
 								let reasoningDelta = "";
 								let reasoningUpdated = false;
 								let summaryUpdated = false;
+								let toolCallUpdated = false;
 					const summaryIndex =
 						typeof parsed?.summary_index === "number"
 							? parsed.summary_index
@@ -1274,6 +1621,101 @@ function ChatPlaygroundContent({
 								};
 								const frameType = parsed?.type ?? frameEventType;
 								if (
+									frameType === "response.output_item.added" ||
+									frameType === "response.output_item.done"
+								) {
+									const item =
+										parsed?.item &&
+										typeof parsed.item === "object"
+											? {
+													...parsed.item,
+													status:
+														parsed.item.status ??
+														(frameType ===
+														"response.output_item.added"
+															? "in_progress"
+															: "completed"),
+												}
+											: null;
+									const toolCalls = extractResponseToolCalls({
+										output: item ? [item] : [],
+									});
+									for (const toolCall of toolCalls) {
+										aliasStreamToolId(
+											parsed?.item?.id,
+											toolCall.id,
+										);
+										aliasStreamToolId(
+											parsed?.item?.call_id,
+											toolCall.id,
+										);
+										aliasStreamToolId(
+											parsed?.item_id,
+											toolCall.id,
+										);
+										upsertStreamToolCall(toolCall);
+										upsertToolTrace(toolCall.id);
+										toolCallUpdated = true;
+									}
+									if (
+										toolCalls.length === 0 &&
+										frameType ===
+											"response.output_item.done"
+									) {
+										responseText = extractResponseText({
+											output: item ? [item] : [],
+										});
+									}
+								} else if (
+									frameType ===
+									"response.function_call_arguments.delta"
+								) {
+									const resolvedId =
+										resolveStreamToolId(parsed?.item_id);
+									if (
+										resolvedId &&
+										typeof parsed?.delta === "string"
+									) {
+										appendStreamToolArguments(
+											resolvedId,
+											parsed.delta,
+										);
+										upsertToolTrace(resolvedId);
+										toolCallUpdated = true;
+									}
+								} else if (
+									frameType ===
+									"response.function_call_arguments.done"
+								) {
+									const resolvedId =
+										resolveStreamToolId(parsed?.item_id);
+									if (resolvedId) {
+										const existing =
+											streamToolCalls.get(resolvedId);
+										const toolCalls =
+											extractResponseToolCalls({
+												output: [
+													{
+														type: "function_call",
+														id: resolvedId,
+														call_id: resolvedId,
+														name:
+															parsed?.name ??
+															existing?.name,
+														arguments:
+															parsed?.arguments ??
+															existing?.inputText,
+														status: "completed",
+													},
+												],
+											});
+										for (const toolCall of toolCalls) {
+											upsertStreamToolCall(toolCall);
+											upsertToolTrace(toolCall.id);
+											toolCallUpdated = true;
+										}
+									}
+								} else if (
 									frameType === "response.output_text.delta"
 								) {
 									if (typeof parsed?.delta === "string") {
@@ -1340,10 +1782,28 @@ function ChatPlaygroundContent({
 									if (typeof parsed?.text === "string") {
 										responseText = parsed.text;
 									}
+								} else if (
+									frameType ===
+									"response.content_part.done"
+								) {
+									const partText =
+										parsed?.part?.text ??
+										parsed?.content?.text ??
+										parsed?.text;
+									if (typeof partText === "string") {
+										responseText = partText;
+									}
 								} else if (frameType === "response.completed") {
 									responseText = extractResponseText(
 										parsed?.response ?? parsed,
 									);
+									for (const toolCall of extractResponseToolCalls(
+										parsed?.response ?? parsed,
+									)) {
+										upsertStreamToolCall(toolCall);
+										upsertToolTrace(toolCall.id);
+										toolCallUpdated = true;
+									}
 									const images = extractResponseImages(
 										parsed?.response ?? parsed,
 									);
@@ -1358,6 +1818,11 @@ function ChatPlaygroundContent({
 										reasoningContent = extractReasoningText(
 											parsed?.response ?? parsed,
 										);
+										if (reasoningContent) {
+											upsertReasoningTrace(
+												reasoningContent,
+											);
+										}
 									}
 								} else {
 									const responseDelta =
@@ -1380,6 +1845,7 @@ function ChatPlaygroundContent({
 								}
 								if (summaryUpdated) {
 									reasoningContent = rebuildSummaryText();
+									upsertReasoningTrace(reasoningContent);
 									reasoningUpdated = true;
 								}
 								const hasSummary =
@@ -1393,6 +1859,7 @@ function ChatPlaygroundContent({
 										"stream-first-token",
 									);
 									assistantContent += delta;
+									upsertResponseTrace(assistantContent);
 									if (reasoningDelta && !hasSummary) {
 										if (
 											!reasoningContent.endsWith(
@@ -1401,16 +1868,9 @@ function ChatPlaygroundContent({
 										) {
 											reasoningContent += reasoningDelta;
 										}
+										upsertReasoningTrace(reasoningContent);
 									}
-									const metaPartial = reasoningContent
-										? {
-												...(compareMeta ?? {}),
-												...(finalMeta ?? {}),
-												reasoning_text:
-													reasoningContent,
-											}
-										: undefined;
-									scheduleUpdate(metaPartial);
+									scheduleUpdate(buildStreamingMetaPartial());
 								} else if (reasoningDelta && !hasSummary) {
 									if (!firstTokenAt) {
 										firstTokenAt = performance.now();
@@ -1426,17 +1886,10 @@ function ChatPlaygroundContent({
 									) {
 										reasoningContent += reasoningDelta;
 									}
-									scheduleUpdate({
-										...(compareMeta ?? {}),
-										...(finalMeta ?? {}),
-										reasoning_text: reasoningContent,
-									});
+									upsertReasoningTrace(reasoningContent);
+									scheduleUpdate(buildStreamingMetaPartial());
 								} else if (reasoningUpdated) {
-									scheduleUpdate({
-										...(compareMeta ?? {}),
-										...(finalMeta ?? {}),
-										reasoning_text: reasoningContent,
-									});
+									scheduleUpdate(buildStreamingMetaPartial());
 								} else if (
 									responseText &&
 									responseText !== assistantContent
@@ -1449,18 +1902,108 @@ function ChatPlaygroundContent({
 										"stream-first-token",
 									);
 									assistantContent = responseText;
-									const metaPartial = reasoningContent
-										? {
-												...(compareMeta ?? {}),
-												...(finalMeta ?? {}),
-												reasoning_text:
-													reasoningContent,
-											}
-										: undefined;
-									scheduleUpdate(metaPartial);
+									upsertResponseTrace(assistantContent);
+									scheduleUpdate(buildStreamingMetaPartial());
+								} else if (toolCallUpdated) {
+									scheduleUpdate(buildStreamingMetaPartial());
 								}
 						} catch {
 							// ignore malformed chunks
+						}
+					}
+				}
+
+				if (hasPendingToolCallTrace()) {
+					const toolCalls = getStreamToolCalls();
+					const toolResults = buildClientDatetimeToolResults(
+						toolCalls,
+						getDefaultDatetimeTimezones(),
+					);
+					if (toolResults) {
+						for (const result of toolResults) {
+							const toolCall = streamToolCalls.get(result.toolCallId);
+							if (!toolCall) continue;
+							upsertStreamToolCall({
+								...toolCall,
+								output: result.content,
+								status: "completed",
+							});
+						}
+						const continuationInput = [
+							...input,
+							...toolCalls.map((toolCall) => ({
+								type: "function_call",
+								call_id: toolCall.id,
+								name: toolCall.name,
+								arguments:
+									toolCall.inputText ??
+									JSON.stringify(toolCall.input ?? {}),
+							})),
+							...toolResults.map((result) => ({
+								type: "function_call_output",
+								call_id: result.toolCallId,
+								output: result.content,
+							})),
+						];
+						const continuationBody = {
+							...requestBody,
+							input: continuationInput,
+							stream: false,
+							tools: undefined,
+							tool_choice: undefined,
+						};
+						const continuationResponse = await fetch(
+							"/api/chat/text",
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									baseUrl: base,
+									requestBody: continuationBody,
+									appHeaders: APP_HEADERS,
+									debug: shouldDebug,
+								}),
+							},
+						);
+						if (continuationResponse.ok) {
+							const contentType =
+								continuationResponse.headers.get(
+									"content-type",
+								) ?? "";
+							const continuationData = contentType.includes(
+								"application/json",
+							)
+								? await continuationResponse.json()
+								: {
+										output_text:
+											await continuationResponse.text(),
+									};
+							const continuationText =
+								extractResponseText(continuationData);
+							const continuationImages = extractResponseImages(
+								continuationData,
+							);
+							const nextContent = appendImagesToText(
+								continuationText,
+								continuationImages,
+							);
+							if (nextContent) {
+								assistantContent = nextContent;
+								upsertResponseTrace(assistantContent);
+							}
+							finalUsage =
+								continuationData?.usage ??
+								continuationData?.response?.usage ??
+								finalUsage;
+							finalMeta =
+								continuationData?.meta ??
+								continuationData?.response?.meta ??
+								finalMeta;
+							finalProviderId =
+								resolvePayloadProviderId(continuationData) ??
+								finalProviderId;
 						}
 					}
 				}
@@ -1469,6 +2012,14 @@ function ChatPlaygroundContent({
 				const mergedMeta = mergeMeta(clientMeta);
 				if (reasoningContent) {
 					mergedMeta.reasoning_text = reasoningContent;
+				}
+				const toolCalls = getStreamToolCalls();
+				if (toolCalls.length) {
+					mergedMeta.tool_calls = toolCalls;
+				}
+				const traceEvents = getTraceEvents();
+				if (traceEvents.length) {
+					mergedMeta.trace_events = traceEvents;
 				}
 				const totalCostUsd = extractTotalCostUsd(finalUsage);
 				if (totalCostUsd) {

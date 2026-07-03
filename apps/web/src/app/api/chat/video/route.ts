@@ -30,6 +30,7 @@ function notImplementedYetResponse() {
 }
 
 type VideoRoutePayload = {
+	baseUrl?: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
 	debug?: boolean;
@@ -142,6 +143,7 @@ export async function POST(request: NextRequest) {
 		}
 
 		return proxyGatewayGet({
+			baseUrl: payload.baseUrl,
 			path: resolveVideoPollPath(resourceId, Boolean(payload.poll.content)),
 			appHeaders: payload.appHeaders,
 			debug: payload.debug,
@@ -149,6 +151,7 @@ export async function POST(request: NextRequest) {
 	}
 
 	return proxyGatewayPost({
+		baseUrl: payload.baseUrl,
 		path: "/videos",
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,

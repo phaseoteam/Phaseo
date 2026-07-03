@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
 	const payload = await parseProxyEnvelope(request);
 
 	return proxyGatewayPost({
+		baseUrl: payload.baseUrl,
 		path: "/embeddings",
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,

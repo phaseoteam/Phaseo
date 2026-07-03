@@ -10,6 +10,7 @@ export async function POST(request: NextRequest) {
 		(payload.requestBody as { stream?: unknown } | undefined)?.stream === true;
 
 	return proxyGatewayPost({
+		baseUrl: payload.baseUrl,
 		path: "/responses",
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,

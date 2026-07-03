@@ -170,7 +170,10 @@ function buildProxyHeaders(args: {
 	};
 }
 
-function buildGatewayUnreachableResponse(error: unknown): Response {
+function buildGatewayUnreachableResponse(
+	error: unknown,
+	baseUrl: string,
+): Response {
 	const isDevelopment = process.env.NODE_ENV !== "production";
 	const cause = getUpstreamCause(error);
 	const details = [
@@ -191,6 +194,7 @@ function buildGatewayUnreachableResponse(error: unknown): Response {
 			...(isDevelopment
 				? {
 						base_url: GATEWAY_BASE_URL,
+						effective_base_url: baseUrl,
 						cause: cause ?? undefined,
 					}
 				: {}),
@@ -213,6 +217,10 @@ function buildGatewayMissingConfigResponse(): Response {
 			headers: { "Content-Type": "application/json" },
 		},
 	);
+}
+
+function resolveGatewayBaseUrl(overrideBaseUrl?: string): string | null {
+	return normalizeGatewayBaseUrl(overrideBaseUrl) ?? configuredGatewayBaseUrl ?? null;
 }
 
 export async function forwardUpstreamResponse(args: {
@@ -254,6 +262,7 @@ export async function forwardUpstreamResponse(args: {
 }
 
 export async function proxyGatewayPost(args: {
+	baseUrl?: string;
 	path: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: unknown;
@@ -261,7 +270,8 @@ export async function proxyGatewayPost(args: {
 	stream?: boolean;
 	contentType?: string | null;
 }): Promise<Response> {
-	if (!configuredGatewayBaseUrl) {
+	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
+	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}
 
@@ -272,7 +282,7 @@ export async function proxyGatewayPost(args: {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
+		upstream = await fetch(`${gatewayBaseUrl}${args.path}`, {
 			method: "POST",
 			headers: buildProxyHeaders({
 				appHeaders: args.appHeaders,
@@ -284,7 +294,7 @@ export async function proxyGatewayPost(args: {
 			body: JSON.stringify(args.requestBody ?? {}),
 		});
 	} catch (error) {
-		return buildGatewayUnreachableResponse(error);
+		return buildGatewayUnreachableResponse(error, gatewayBaseUrl);
 	}
 
 	return forwardUpstreamResponse({
@@ -294,11 +304,13 @@ export async function proxyGatewayPost(args: {
 }
 
 export async function proxyGatewayGet(args: {
+	baseUrl?: string;
 	path: string;
 	appHeaders?: unknown;
 	debug?: boolean;
 }): Promise<Response> {
-	if (!configuredGatewayBaseUrl) {
+	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
+	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}
 
@@ -309,7 +321,7 @@ export async function proxyGatewayGet(args: {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
+		upstream = await fetch(`${gatewayBaseUrl}${args.path}`, {
 			method: "GET",
 			headers: buildProxyHeaders({
 				appHeaders: args.appHeaders,
@@ -319,7 +331,7 @@ export async function proxyGatewayGet(args: {
 			}),
 		});
 	} catch (error) {
-		return buildGatewayUnreachableResponse(error);
+		return buildGatewayUnreachableResponse(error, gatewayBaseUrl);
 	}
 
 	return forwardUpstreamResponse({

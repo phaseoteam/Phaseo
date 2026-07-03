@@ -93,10 +93,11 @@ const formatSettingValue = (value: unknown, fallback = "Default") => {
 export const getChangedSettings = (
 	settings: ChatSettings,
 	modelId: string,
+	modelDisplayName?: string,
 ): SettingChange[] => {
 	const defaults: ChatSettings = {
 		...DEFAULT_SETTINGS,
-		systemPrompt: buildDefaultSystemPrompt(modelId),
+		systemPrompt: buildDefaultSystemPrompt(modelId, modelDisplayName),
 	};
 	const changes: SettingChange[] = [];
 	const addChange = (label: string, value: string) => {
@@ -163,8 +164,13 @@ export const getChangedSettings = (
 		);
 	}
 	if (
-		(settings.systemPrompt ?? "").trim() !==
-		(defaults.systemPrompt ?? "").trim()
+		normalizeSystemPromptForComparison(settings.systemPrompt) !==
+			normalizeSystemPromptForComparison(defaults.systemPrompt) &&
+		!isGeneratedDefaultSystemPrompt(
+			settings.systemPrompt,
+			modelId,
+			modelDisplayName,
+		)
 	) {
 		addChange("System prompt", "Custom");
 	}
@@ -310,6 +316,37 @@ export function buildDefaultSystemPrompt(
 	].join("\n");
 }
 
+const normalizeSystemPromptForComparison = (prompt?: string | null) =>
+	(prompt ?? "").replace(/\r\n/g, "\n").trim();
+
+function isGeneratedDefaultSystemPrompt(
+	prompt: string | undefined,
+	modelId: string,
+	modelDisplayName?: string,
+) {
+	const normalizedPrompt = normalizeSystemPromptForComparison(prompt);
+	if (!normalizedPrompt) return false;
+	const exactDefaults = new Set([
+		normalizeSystemPromptForComparison(buildDefaultSystemPrompt(modelId)),
+		normalizeSystemPromptForComparison(
+			buildDefaultSystemPrompt(modelId, modelDisplayName),
+		),
+	]);
+	if (exactDefaults.has(normalizedPrompt)) return true;
+
+	const safeModelId = modelId || "AI model";
+	const orgLabel = formatOrgLabel(getOrgId(safeModelId));
+	const generatedPrefix = `You are ${safeModelId}, known as: `;
+	const generatedSuffix = `, a large language model from ${orgLabel}.\n\nFormatting Rules:`;
+	return (
+		normalizedPrompt.startsWith(generatedPrefix) &&
+		normalizedPrompt.includes(generatedSuffix) &&
+		normalizedPrompt.endsWith(
+			"- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**",
+		)
+	);
+}
+
 export function shouldRequestImageModalities(modelId: string) {
 	if (!modelId) return false;
 	const normalized = modelId.toLowerCase();
@@ -374,8 +411,25 @@ export function getEffectiveModelSettings(
 export function buildServerToolDefinitions(
 	serverTools?: ChatServerToolType[],
 	serverToolConfigs?: ChatServerToolConfigs,
+	options?: {
+		datetimeTimezone?: string | null;
+		datetimeTimezones?: string[];
+	},
 ): Array<Record<string, unknown>> {
 	return normalizeServerTools(serverTools).map((toolType) => {
+		if (toolType === "gateway:datetime") {
+			const timezones = [
+				...(options?.datetimeTimezones ?? []),
+				options?.datetimeTimezone ?? null,
+			].reduce<string[]>((acc, value) => {
+				const timezone = value?.trim();
+				if (timezone && !acc.includes(timezone)) acc.push(timezone);
+				return acc;
+			}, []);
+			return timezones.length
+				? { type: toolType, parameters: { timezones } }
+				: { type: toolType };
+		}
 		if (toolType !== "ai-stats:advisor") {
 			return { type: toolType };
 		}
