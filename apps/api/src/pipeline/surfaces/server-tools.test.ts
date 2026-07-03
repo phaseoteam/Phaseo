@@ -93,6 +93,24 @@ describe("prepareServerToolsForTextRequest", () => {
 		);
 	});
 
+	it("accepts a legacy singular default gateway datetime timezone", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "openai/gpt-5-nano",
+				tools: [{
+					type: "gateway:datetime",
+					parameters: { timezone: "Europe/London" },
+				}],
+			},
+			"openai.responses",
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		}
+		expect(result.config.datetimeDefaultTimezones).toEqual(["Europe/London"]);
+	});
+
 	it("rewrites AI Stats web search into a callable function tool", () => {
 		const result = prepareServerToolsForTextRequest(
 			{

@@ -439,6 +439,7 @@ function appendTimezoneList(timezones: string[], value: unknown): void {
 
 function parseDatetimeToolTimezones(tool: any): string[] {
 	const timezones: string[] = [];
+	appendTimezone(timezones, tool?.parameters?.timezone);
 	appendTimezoneList(timezones, tool?.parameters?.timezones);
 	return timezones;
 }

@@ -163,6 +163,20 @@ const isValidTimezone = (timezone: string) => {
 	}
 };
 
+const extractShortOffset = (offsetName: string) => {
+	if (offsetName === "UTC" || offsetName === "GMT") {
+		return "+00:00";
+	}
+	const match = offsetName.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/i);
+	if (!match) {
+		return "+00:00";
+	}
+	const sign = match[1];
+	const hours = String(Number(match[2])).padStart(2, "0");
+	const minutes = String(Number(match[3] ?? "0")).padStart(2, "0");
+	return `${sign}${hours}:${minutes}`;
+};
+
 const formatIsoInTimezone = (date: Date, timezone: string) => {
 	const parts = new Intl.DateTimeFormat("en-CA", {
 		timeZone: timezone,
@@ -177,13 +191,7 @@ const formatIsoInTimezone = (date: Date, timezone: string) => {
 	}).formatToParts(date);
 	const partMap = new Map(parts.map((part) => [part.type, part.value]));
 	const offsetName = partMap.get("timeZoneName") ?? "GMT";
-	const offset =
-		offsetName === "GMT"
-			? "+00:00"
-			: offsetName
-					.replace("GMT", "")
-					.replace(/^([+-])(\d{1,2})$/, "$10$2:00")
-					.replace(/^([+-])(\d{2})(\d{2})$/, "$1$2:$3");
+	const offset = extractShortOffset(offsetName);
 	return `${partMap.get("year") ?? "0000"}-${partMap.get("month") ?? "01"}-${partMap.get("day") ?? "01"}T${partMap.get("hour") ?? "00"}:${partMap.get("minute") ?? "00"}:${partMap.get("second") ?? "00"}.${String(date.getUTCMilliseconds()).padStart(3, "0")}${offset}`;
 };
 
@@ -2051,6 +2059,10 @@ function ChatPlaygroundContent({
 							finalProviderId =
 								resolvePayloadProviderId(continuationData) ??
 								finalProviderId;
+						} else {
+							throw await parseChatErrorResponse(
+								continuationResponse,
+							);
 						}
 					}
 				}

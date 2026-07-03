@@ -478,6 +478,7 @@ const FunctionToolSchema = z.object({
 const GatewayDatetimeToolSchema = z.object({
 	type: z.literal("gateway:datetime"),
 	parameters: z.object({
+		timezone: z.string().min(1).optional(),
 		timezones: z.array(z.string().min(1)).optional(),
 	}).optional(),
 });
