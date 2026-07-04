@@ -35,17 +35,24 @@ function formatMetric(
 
 type UserMessageFooterProps = {
 	copied: boolean;
+	sentAtLabel: string | null;
 	onCopy: () => void;
 	onEdit: () => void;
 };
 
 export function UserMessageFooter({
 	copied,
+	sentAtLabel,
 	onCopy,
 	onEdit,
 }: UserMessageFooterProps) {
 	return (
 		<MessageFooter className="mt-0 flex items-center gap-2 px-0 text-xs text-muted-foreground">
+			{sentAtLabel ? (
+				<span className="select-none whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
+					{sentAtLabel}
+				</span>
+			) : null}
 			<Tooltip>
 				<TooltipTrigger asChild>
 					<Button
@@ -88,12 +95,13 @@ type AssistantMessageFooterProps = {
 	activeVariantIndex: number;
 	assistantCopied: boolean;
 	costLabel: string | null;
-	generationSeconds: number | null;
+	generationDisplay: string | null;
 	isPendingAssistant: boolean;
 	latencyDisplay: number | null;
 	metadataOpen: boolean;
 	metadataProviderId: string | null;
 	metadataProviderLabel: string | null;
+	sentAtLabel: string | null;
 	onBranch: () => void;
 	onCopy: () => void;
 	onMetadataOpenChange: (open: boolean) => void;
@@ -108,12 +116,13 @@ export function AssistantMessageFooter({
 	activeVariantIndex,
 	assistantCopied,
 	costLabel,
-	generationSeconds,
+	generationDisplay,
 	isPendingAssistant,
 	latencyDisplay,
 	metadataOpen,
 	metadataProviderId,
 	metadataProviderLabel,
+	sentAtLabel,
 	onBranch,
 	onCopy,
 	onMetadataOpenChange,
@@ -250,7 +259,7 @@ export function AssistantMessageFooter({
 											Generation
 										</span>
 										<span>
-											{formatMetric(generationSeconds, " s")}
+											{formatMetric(generationDisplay)}
 										</span>
 									</div>
 									<div className="flex items-center justify-between">
@@ -271,6 +280,11 @@ export function AssistantMessageFooter({
 							</div>
 						</PopoverContent>
 					</Popover>
+					{sentAtLabel ? (
+						<span className="select-none whitespace-nowrap opacity-0 transition-opacity duration-150 group-hover/message:opacity-100 group-focus-within/message:opacity-100">
+							{sentAtLabel}
+						</span>
+					) : null}
 				</>
 			)}
 			{!isPendingAssistant && variantCount > 1 ? (

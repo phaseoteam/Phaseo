@@ -39,12 +39,13 @@ export type UnifiedChatEndpoint =
     | "embeddings";
 
 export type ChatServerToolType =
-    | "gateway:datetime"
-    | "ai-stats:web_search"
-    | "ai-stats:web_fetch"
-    | "ai-stats:advisor"
-    | "ai-stats:image_generation"
-    | "ai-stats:apply_patch";
+	| "gateway:datetime"
+	| "ai-stats:web_search"
+	| "ai-stats:web_fetch"
+	| "ai-stats:advisor"
+	| "ai-stats:image_generation"
+	| "ai-stats:fusion"
+	| "ai-stats:subagent";
 
 export type ChatAdvisorServerToolConfig = {
     name?: string;
@@ -54,11 +55,67 @@ export type ChatAdvisorServerToolConfig = {
     maxUses?: number | null;
     maxCompletionTokens?: number | null;
     temperature?: number | null;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+};
+
+export type ChatSubagentServerToolConfig = {
+    model?: string;
+    instructions?: string;
+    maxUses?: number | null;
+    maxCompletionTokens?: number | null;
+    temperature?: number | null;
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+};
+
+export type ChatFusionServerToolConfig = {
+    models?: string[];
+    judgeModel?: string;
+    maxUses?: number | null;
+};
+
+export type ChatDatetimeServerToolConfig = {
+    timezone?: string;
+};
+
+export type ChatWebSearchServerToolConfig = {
+    engine?: "auto" | "native" | "exa" | "parallel" | "firecrawl" | "perplexity";
+    searchContextSize?: "low" | "medium" | "high";
+    maxResults?: number | null;
+    maxTotalResults?: number | null;
+    maxCharacters?: number | null;
+    allowedDomains?: string;
+    excludedDomains?: string;
+    includeHighlights?: boolean;
+    includeText?: boolean;
+};
+
+export type ChatWebFetchServerToolConfig = {
+    engine?: "auto" | "native" | "direct" | "exa" | "parallel" | "firecrawl";
+    maxChars?: number | null;
+    allowedDomains?: string;
+    blockedDomains?: string;
+};
+
+export type ChatImageGenerationServerToolConfig = {
+    model?: string;
+    quality?: "auto" | "low" | "medium" | "high";
+    size?: string;
+    aspectRatio?: string;
+    background?: "auto" | "transparent" | "opaque";
+    outputFormat?: "auto" | "png" | "jpeg" | "webp";
+    outputCompression?: number | null;
+    moderation?: "auto" | "low" | "standard";
 };
 
 export type ChatServerToolConfigs = {
+    datetime?: ChatDatetimeServerToolConfig;
+    webSearch?: ChatWebSearchServerToolConfig;
+    webFetch?: ChatWebFetchServerToolConfig;
     advisor?: ChatAdvisorServerToolConfig;
+    advisors?: ChatAdvisorServerToolConfig[];
+    imageGeneration?: ChatImageGenerationServerToolConfig;
+    fusion?: ChatFusionServerToolConfig;
+    subagent?: ChatSubagentServerToolConfig;
 };
 
 export type ChatModelSettings = {
@@ -76,7 +133,7 @@ export type ChatModelSettings = {
     stream: boolean;
     providerId?: string;
     reasoningEnabled?: boolean;
-    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+    reasoningEffort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
     endpoint?: UnifiedChatEndpoint;
     webSearchEnabled?: boolean;
     apiServerToolsEnabled?: boolean;

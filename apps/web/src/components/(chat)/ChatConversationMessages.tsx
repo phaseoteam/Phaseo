@@ -102,6 +102,66 @@ const VIRTUAL_MESSAGE_OVERSCAN = 16;
 const ESTIMATED_MESSAGE_HEIGHT = 220;
 const EMPTY_MESSAGES: ChatThread["messages"] = [];
 
+function formatGenerationDuration(value: unknown): string | null {
+	if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+		return null;
+	}
+	if (value < 1000) {
+		return `${Math.round(value)} ms`;
+	}
+	const seconds = value / 1000;
+	if (seconds < 10) {
+		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
+	}
+	if (seconds < 60) {
+		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
+	}
+	return `${Math.round(seconds)} s`;
+}
+
+function formatMessageSentAt(value: string): string | null {
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return null;
+	const now = new Date();
+	const isSameDay =
+		date.getFullYear() === now.getFullYear() &&
+		date.getMonth() === now.getMonth() &&
+		date.getDate() === now.getDate();
+	const time = new Intl.DateTimeFormat("en-GB", {
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(date);
+	if (isSameDay) return time;
+	const startOfToday = new Date(
+		now.getFullYear(),
+		now.getMonth(),
+		now.getDate(),
+	).getTime();
+	const startOfMessageDay = new Date(
+		date.getFullYear(),
+		date.getMonth(),
+		date.getDate(),
+	).getTime();
+	const daysAgo = Math.round(
+		(startOfToday - startOfMessageDay) / 86_400_000,
+	);
+	if (daysAgo > 0 && daysAgo < 7) {
+		const dayName = new Intl.DateTimeFormat("en-GB", {
+			weekday: "long",
+		}).format(date);
+		return `${dayName} ${time}`;
+	}
+	const dateLabel = new Intl.DateTimeFormat("en-GB", {
+		day: "numeric",
+		month: "short",
+		...(date.getFullYear() === now.getFullYear()
+			? {}
+			: { year: "numeric" as const }),
+	}).format(date);
+	return `${dateLabel}, ${time}`;
+}
+
 const getReadableTextColor = (backgroundColor: string) => {
 	const hex = backgroundColor.trim().replace(/^#/, "");
 	const normalized =
@@ -275,6 +335,8 @@ export function ChatConversationMessages({
 	const usage = metadataVariant?.usage ?? metadataMessage?.usage ?? null;
 	const meta = metadataVariant?.meta ?? metadataMessage?.meta ?? null;
 	const totalTokens =
+		(usage as any)?.total_tokens ??
+		(usage as any)?.totalTokens ??
 		(usage as any)?.output_text_tokens ??
 		(usage as any)?.output_tokens ??
 		(usage as any)?.outputTokens ??
@@ -312,10 +374,7 @@ export function ChatConversationMessages({
 		null;
 	const latencyDisplay =
 		typeof latencyMs === "number" ? Math.round(latencyMs) : null;
-	const generationSeconds =
-		typeof generationMs === "number"
-			? Math.round(generationMs / 1000)
-			: null;
+	const generationDisplay = formatGenerationDuration(generationMs);
 	const throughputDisplay =
 		typeof throughput === "number" ? Math.round(throughput) : null;
 	const metadataProviderId =
@@ -584,13 +643,17 @@ export function ChatConversationMessages({
 							color: getReadableTextColor(accentColor),
 						}
 					: undefined;
+			const sentAtLabel = formatMessageSentAt(message.createdAt);
 
 			const messageNode = (
 						<Message
 							align={isUser ? "end" : "start"}
 							data-chat-message-id={message.id}
 							data-chat-message-role={message.role}
-							className={cn(inSideBySideGroup && "h-full")}
+							className={cn(
+								"group/message",
+								inSideBySideGroup && "h-full",
+							)}
 						>
 							<MessageContent
 								className={cn(
@@ -1042,6 +1105,7 @@ export function ChatConversationMessages({
 								{isUser ? (
 									<UserMessageFooter
 										copied={userCopied}
+										sentAtLabel={sentAtLabel}
 										onCopy={() => {
 											void handleCopyForMessage(
 												userCopyKey,
@@ -1058,12 +1122,13 @@ export function ChatConversationMessages({
 										activeVariantIndex={activeVariantIndex}
 										assistantCopied={assistantCopied}
 										costLabel={costLabel}
-										generationSeconds={generationSeconds}
+										generationDisplay={generationDisplay}
 										isPendingAssistant={isPendingAssistant}
 										latencyDisplay={latencyDisplay}
 										metadataOpen={metadataOpenId === message.id}
 										metadataProviderId={metadataProviderId}
 										metadataProviderLabel={metadataProviderLabel}
+										sentAtLabel={sentAtLabel}
 										onBranch={() => onBranchAssistant(message.id)}
 										onCopy={() => {
 											void handleCopyForMessage(
@@ -1420,7 +1485,7 @@ export function ChatConversationMessages({
 		onBranchAssistant,
 		onSelectVariant,
 		latencyDisplay,
-		generationSeconds,
+		generationDisplay,
 		throughputDisplay,
 		costLabel,
 		totalTokens,

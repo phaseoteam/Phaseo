@@ -15,5 +15,6 @@ export async function POST(request: NextRequest) {
 		appHeaders: payload.appHeaders,
 		debug: payload.debug,
 		stream: streamRequested,
+		baseUrl: payload.baseUrl,
 	});
 }
