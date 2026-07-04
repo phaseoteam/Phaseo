@@ -39,23 +39,40 @@ function makeTagId(name: string) {
 type ChatTagsDialogProps = {
 	open: boolean;
 	thread: ChatThread | null;
+	threads?: ChatThread[];
 	availableTags: ChatTag[];
 	onOpenChange: (open: boolean) => void;
 	onSave: (tags: ChatTag[]) => void;
 };
 
+function getCommonTags(threads: ChatThread[]) {
+	if (threads.length === 0) return [];
+	const [firstThread, ...remainingThreads] = threads;
+	return (firstThread.tags ?? []).filter((tag) =>
+		remainingThreads.every((thread) =>
+			(thread.tags ?? []).some((entry) => entry.id === tag.id),
+		),
+	);
+}
+
 export function ChatTagsDialog({
 	open,
 	thread,
+	threads,
 	availableTags,
 	onOpenChange,
 	onSave,
 }: ChatTagsDialogProps) {
+	const targets = useMemo(
+		() => (threads && threads.length > 0 ? threads : thread ? [thread] : []),
+		[thread, threads],
+	);
 	const [selectedTags, setSelectedTags] = useState<ChatTag[]>(
-		() => thread?.tags ?? [],
+		() => getCommonTags(targets),
 	);
 	const [name, setName] = useState("");
 	const [color, setColor] = useState(TAG_COLORS[0]);
+	const multiple = targets.length > 1;
 
 	const selectedTagIds = useMemo(
 		() => new Set(selectedTags.map((tag) => tag.id)),
@@ -92,7 +109,9 @@ export function ChatTagsDialog({
 				<DialogHeader>
 					<DialogTitle>Chat Tags</DialogTitle>
 					<DialogDescription>
-						Organise this chat with tags that can be filtered from the sidebar.
+						{multiple
+							? `Apply tags to ${targets.length} selected chats.`
+							: "Organise this chat with tags that can be filtered from the sidebar."}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4">

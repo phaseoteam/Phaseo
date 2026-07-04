@@ -55,6 +55,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
+import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
@@ -64,7 +65,11 @@ import {
 } from "@/components/(chat)/playgroundConfig";
 import { cn } from "@/lib/utils";
 import type {
+	ChatApiTarget,
 	ChatResponseLayout,
+} from "@/components/(chat)/playground/chat-playground-core";
+import {
+	LOCAL_CHAT_API_BASE_URL,
 } from "@/components/(chat)/playground/chat-playground-core";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import type {
@@ -83,6 +88,7 @@ import {
 	CircleQuestionMark,
 	Columns2,
 	Database,
+	Keyboard,
 	List,
 	MessageCircleDashed,
 	Paintbrush,
@@ -141,7 +147,6 @@ const ACCENT_COLORS = [
 const CUSTOM_ACCENT_SELECT_VALUE = "custom";
 const DEFAULT_CUSTOM_ACCENT_COLOR = "#2563eb";
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
-const LOCAL_API_BASE_URL = "http://127.0.0.1:8787/v1";
 const CUSTOM_API_SELECT_VALUE = "custom";
 
 function normalizeHexColor(value: string) {
@@ -240,6 +245,8 @@ type ChatHeaderProps = {
 	onOpenModelSettings: () => void;
 	settingsOpen: boolean;
 	onSettingsOpenChange: (open: boolean) => void;
+	apiTarget: ChatApiTarget;
+	onApiTargetChange: (value: ChatApiTarget) => void;
 	baseUrl: string;
 	onBaseUrlChange: (value: string) => void;
 	onSaveSettings: () => void;
@@ -286,6 +293,8 @@ export function ChatHeader({
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
+	apiTarget,
+	onApiTargetChange,
 	baseUrl,
 	onBaseUrlChange,
 	onSaveSettings,
@@ -314,7 +323,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<
-		"personalization" | "data-controls" | "admin"
+		"personalization" | "data-controls" | "shortcuts" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
 	const [quickFilters, setQuickFilters] = useState({
@@ -371,16 +380,18 @@ export function ChatHeader({
 		? {
 				label: "Custom",
 				value: customAccentColor,
-		  }
+			}
 		: selectedPresetAccentColor;
-	const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/, "");
-	const derivedApiTargetValue =
-		normalizedBaseUrl === BASE_URL
-			? BASE_URL
-			: normalizedBaseUrl === LOCAL_API_BASE_URL
-				? LOCAL_API_BASE_URL
-				: CUSTOM_API_SELECT_VALUE;
-	const apiTargetValue = apiTargetValueOverride ?? derivedApiTargetValue;
+	const customBaseUrl = baseUrl.trim();
+	const effectiveBaseUrl =
+		apiTarget === "default"
+			? "Server default"
+			: apiTarget === "local"
+			? LOCAL_CHAT_API_BASE_URL
+			: apiTarget === "custom" && customBaseUrl
+				? customBaseUrl
+				: BASE_URL;
+	const apiTargetValue = apiTargetValueOverride ?? apiTarget;
 	useEffect(() => {
 		const isPresetAccentColor = ACCENT_COLORS.some(
 			(color) => color.value === personalization.accentColor,
@@ -1168,6 +1179,7 @@ export function ChatHeader({
 							variant="ghost"
 							size="sm"
 							aria-label="Add model"
+							title="Add model (Ctrl/Cmd+Shift+M)"
 							className={cn(
 								"h-8 gap-1.5",
 								selectedModelIds.length === 0 ? "px-2 text-xs" : "w-8 px-0",
@@ -1367,7 +1379,9 @@ export function ChatHeader({
 							<MessageCircleDashed className="h-4 w-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Temporary chat</TooltipContent>
+					<TooltipContent>
+						Temporary chat (Ctrl/Cmd+Shift+U)
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -1419,6 +1433,18 @@ export function ChatHeader({
 									<Database className="h-4 w-4" />
 									Data Controls
 								</Button>
+								<Button
+									variant={
+										settingsTab === "shortcuts"
+											? "secondary"
+											: "ghost"
+									}
+									className="w-full justify-start gap-2"
+									onClick={() => setSettingsTab("shortcuts")}
+								>
+									<Keyboard className="h-4 w-4" />
+									Shortcuts
+								</Button>
 								{isAdmin && (
 									<Button
 										variant={
@@ -1462,6 +1488,17 @@ export function ChatHeader({
 										}}
 									>
 										Data Controls
+									</Button>
+									<Button
+										size="sm"
+										variant={
+											settingsTab === "shortcuts"
+												? "secondary"
+												: "ghost"
+										}
+										onClick={() => setSettingsTab("shortcuts")}
+									>
+										Shortcuts
 									</Button>
 									{isAdmin && (
 										<Button
@@ -1878,6 +1915,22 @@ export function ChatHeader({
 											)}
 										</div>
 									)}
+									{settingsTab === "shortcuts" && (
+										<div className="grid gap-4">
+											<div className="grid gap-1">
+												<p className="text-sm font-semibold text-foreground">
+													Keyboard shortcuts
+												</p>
+												<p className="text-xs text-muted-foreground">
+													Fast actions for chat,
+													models, and the composer.
+												</p>
+											</div>
+											<div className="rounded-xl border border-border bg-card p-3">
+												<ChatShortcutReference />
+											</div>
+										</div>
+									)}
 									{settingsTab === "admin" && isAdmin && (
 										<div className="grid gap-3">
 											<div className="grid gap-1">
@@ -1914,25 +1967,32 @@ export function ChatHeader({
 																setApiTargetValueOverride(
 																	CUSTOM_API_SELECT_VALUE,
 																);
+																onApiTargetChange("custom");
 																return;
 															}
 															setApiTargetValueOverride(
 																null,
 															);
-															onBaseUrlChange(value);
+															onApiTargetChange(
+																value as ChatApiTarget,
+															);
+															if (value !== "custom") {
+																onBaseUrlChange("");
+															}
 														}}
 													>
 														<SelectTrigger id="api-target">
 															<SelectValue placeholder="Select API target" />
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value={BASE_URL}>
+															<SelectItem value="default">
+																App default
+															</SelectItem>
+															<SelectItem value="public">
 																Public API
 															</SelectItem>
 															<SelectItem
-																value={
-																	LOCAL_API_BASE_URL
-																}
+																value="local"
 															>
 																Local API
 															</SelectItem>
@@ -1952,25 +2012,32 @@ export function ChatHeader({
 													</Label>
 													<Input
 														id="api-base-url"
-														value={baseUrl}
+														value={
+															apiTarget === "custom"
+																? baseUrl
+																: effectiveBaseUrl
+														}
 														onChange={(event) => {
 															setApiTargetValueOverride(
 																null,
 															);
+															onApiTargetChange("custom");
 															onBaseUrlChange(
 																event.target.value,
 															);
 														}}
 														placeholder={
-															LOCAL_API_BASE_URL
+															LOCAL_CHAT_API_BASE_URL
+														}
+														disabled={
+															apiTarget !== "custom"
 														}
 														className="font-mono text-xs"
 													/>
 													<p className="text-xs text-muted-foreground">
 														Current target:{" "}
 														<span className="font-mono">
-															{baseUrl.trim() ||
-																BASE_URL}
+															{effectiveBaseUrl}
 														</span>
 													</p>
 												</div>

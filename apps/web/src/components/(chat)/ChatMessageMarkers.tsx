@@ -80,9 +80,9 @@ export function getComparableModelSet(context: RequestContextMarker) {
 
 export function formatReasoningEffort(value: string | null) {
 	if (!value) return "Medium";
-	return value === "xhigh"
-		? "Extra high"
-		: value.charAt(0).toUpperCase() + value.slice(1);
+	if (value === "xhigh") return "Extra high";
+	if (value === "max") return "Max";
+	return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 export function ChatMessageMarkers({

@@ -23,6 +23,7 @@ import {
 	deleteChat,
 	getAllChatTags,
 	getAllChats,
+	normalizeChatTags,
 	upsertChat,
 	upsertChatTags,
 } from "@/lib/indexeddb/chats";
@@ -61,6 +62,7 @@ import {
 	DEFAULT_SERVER_TOOLS,
 	STORAGE_KEYS,
 	TEMP_CHAT_ID,
+	LOCAL_CHAT_API_BASE_URL,
 	buildServerToolDefinitions,
 	buildDefaultSystemPrompt,
 	buildPersonalizationPrompt,
@@ -79,6 +81,7 @@ import {
 	nowIso,
 	shouldRequestImageModalities,
 	type ChatResponseLayout,
+	type ChatApiTarget,
 	type PersonalizationSettings,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
@@ -98,11 +101,58 @@ import {
 import {
 	ChatSidebar,
 } from "@/components/(chat)/ChatSidebar";
+import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
 	modelParam?: string | null;
 	promptParam?: string | null;
+};
+
+const CHAT_SHORTCUT_OVERLAY_SELECTOR = [
+	'[data-state="open"][role="dialog"]',
+	'[data-state="open"][role="menu"]',
+	'[data-state="open"][role="listbox"]',
+	'[data-state="open"][data-radix-popper-content-wrapper]',
+].join(", ");
+
+const isChatShortcutOverlayOpen = () => {
+	if (typeof document === "undefined") return false;
+	return Boolean(document.querySelector(CHAT_SHORTCUT_OVERLAY_SELECTOR));
+};
+
+const CHAT_API_TARGETS = new Set<ChatApiTarget>([
+	"default",
+	"public",
+	"local",
+	"custom",
+]);
+
+const normalizeStoredBaseUrl = (value: string | null) =>
+	(value ?? "").trim().replace(/\/+$/, "");
+
+const inferChatApiTarget = (
+	storedTarget: string | null,
+	storedBaseUrl: string | null,
+): ChatApiTarget => {
+	if (storedTarget && CHAT_API_TARGETS.has(storedTarget as ChatApiTarget)) {
+		return storedTarget as ChatApiTarget;
+	}
+	const normalizedBaseUrl = normalizeStoredBaseUrl(storedBaseUrl);
+	if (!normalizedBaseUrl) return "default";
+	if (normalizedBaseUrl === BASE_URL) return "public";
+	if (normalizedBaseUrl === LOCAL_CHAT_API_BASE_URL) return "local";
+	return "custom";
+};
+
+const resolveChatApiBaseUrl = (
+	apiTarget: ChatApiTarget,
+	customBaseUrl: string,
+): string | undefined => {
+	if (apiTarget === "default") return undefined;
+	if (apiTarget === "local") return LOCAL_CHAT_API_BASE_URL;
+	if (apiTarget === "custom") return customBaseUrl.trim() || BASE_URL;
+	return BASE_URL;
 };
 
 const DATETIME_TOOL_NAMES = new Set(["gateway_datetime", "gateway:datetime"]);
@@ -256,7 +306,8 @@ function ChatPlaygroundContent({
 	const [, setError] = useState<string | null>(null);
 	const [requestError, setRequestError] =
 		useState<ChatRequestErrorDetails | null>(null);
-	const [baseUrl, setBaseUrl] = useState(BASE_URL);
+	const [apiTarget, setApiTarget] = useState<ChatApiTarget>("default");
+	const [baseUrl, setBaseUrl] = useState("");
 	const {
 		authLoading,
 		authUser,
@@ -273,14 +324,15 @@ function ChatPlaygroundContent({
 	const [modelSettingsTargetModelId, setModelSettingsTargetModelId] =
 		useState<string | null>(null);
 	const [modelPickerOpen, setModelPickerOpen] = useState(false);
+	const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [renameValue, setRenameValue] = useState("");
 	const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const [deleteTarget, setDeleteTarget] = useState<ChatThread | null>(null);
+	const [deleteTargets, setDeleteTargets] = useState<ChatThread[]>([]);
 	const [tagsOpen, setTagsOpen] = useState(false);
-	const [tagsTarget, setTagsTarget] = useState<ChatThread | null>(null);
+	const [tagsTargets, setTagsTargets] = useState<ChatThread[]>([]);
 	const [chatTags, setChatTags] = useState<ChatTag[]>([]);
 	const [activeTagId, setActiveTagId] = useState<string | null>(null);
 	const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
@@ -396,7 +448,7 @@ function ChatPlaygroundContent({
 			byId.set(tag.id, tag);
 		}
 		for (const thread of threads) {
-			for (const tag of thread.tags ?? []) {
+			for (const tag of normalizeChatTags(thread.tags)) {
 				if (!byId.has(tag.id)) {
 					byId.set(tag.id, tag);
 				}
@@ -414,7 +466,9 @@ function ChatPlaygroundContent({
 	const visibleThreads = useMemo(() => {
 		if (!activeVisibleTagId) return threads;
 		return threads.filter((thread) =>
-			thread.tags?.some((tag) => tag.id === activeVisibleTagId),
+			normalizeChatTags(thread.tags).some(
+				(tag) => tag.id === activeVisibleTagId,
+			),
 		);
 	}, [activeVisibleTagId, threads]);
 	const { sortedThreads, groupedThreads } = useGroupedChatThreads(
@@ -469,8 +523,11 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const storedBase =
-				window.localStorage.getItem(STORAGE_KEYS.baseUrl) ?? BASE_URL;
+			const storedBase = window.localStorage.getItem(STORAGE_KEYS.baseUrl);
+			const storedApiTarget = inferChatApiTarget(
+				window.localStorage.getItem(STORAGE_KEYS.apiTarget),
+				storedBase,
+			);
 			const storedActive = window.localStorage.getItem(
 				STORAGE_KEYS.activeChatId,
 			);
@@ -490,7 +547,12 @@ function ChatPlaygroundContent({
 				) ?? "#111111";
 			if (!mounted) return;
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
-			setBaseUrl(storedBase);
+			setApiTarget(storedApiTarget);
+			setBaseUrl(
+				storedApiTarget === "custom"
+					? normalizeStoredBaseUrl(storedBase)
+					: "",
+			);
 			setPersonalization({
 				name: storedPersonalName,
 				role: storedPersonalRole,
@@ -763,15 +825,20 @@ function ChatPlaygroundContent({
 		) => {
 			return applyMessageUpdate(thread, messageId, (message) => {
 				const variants = ensureVariants(message).map(
-					(variant, index) =>
-						index === variantIndex
-							? {
-									...variant,
-									content,
-									usage: usage ?? variant.usage ?? null,
-									meta: meta ?? variant.meta ?? null,
-								}
-							: variant,
+					(variant, index) => {
+						if (index !== variantIndex) {
+							return variant;
+						}
+						const nextMeta = meta
+							? { ...(variant.meta ?? {}), ...meta }
+							: (variant.meta ?? null);
+						return {
+							...variant,
+							content,
+							usage: usage ?? variant.usage ?? null,
+							meta: nextMeta,
+						};
+					},
 				);
 				const activeIndex = variantIndex;
 				const activeVariant = variants[activeIndex];
@@ -803,12 +870,19 @@ function ChatPlaygroundContent({
 	);
 
 	const handleSaveSettings = useCallback(() => {
-		window.localStorage.setItem(
-			STORAGE_KEYS.baseUrl,
-			baseUrl.trim() || BASE_URL,
-		);
+		window.localStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
+		if (apiTarget === "custom") {
+			const customBaseUrl = normalizeStoredBaseUrl(baseUrl);
+			if (customBaseUrl) {
+				window.localStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
+			} else {
+				window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+			}
+		} else {
+			window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+		}
 		setSettingsOpen(false);
-	}, [baseUrl]);
+	}, [apiTarget, baseUrl]);
 
 	const executeCompletion = useCallback(
 		async (
@@ -847,7 +921,10 @@ function ChatPlaygroundContent({
 				})),
 			);
 
-			const base = normalizeBaseUrl(baseUrl);
+			const resolvedBaseUrl = resolveChatApiBaseUrl(apiTarget, baseUrl);
+			const base = resolvedBaseUrl
+				? normalizeBaseUrl(resolvedBaseUrl)
+				: undefined;
 			const preparedAttachments =
 				sendPayload?.attachments?.length
 					? await prepareAttachments(sendPayload.attachments)
@@ -1126,13 +1203,31 @@ function ChatPlaygroundContent({
 				}
 			}
 
+			const getUsageNumber = (...keys: string[]) => {
+				if (!finalUsage) return null;
+				for (const key of keys) {
+					const value = finalUsage[key];
+					if (typeof value === "number" && Number.isFinite(value)) {
+						return value;
+					}
+				}
+				return null;
+			};
 			const buildClientMeta = (endAt: number) => {
 				const firstToken = firstTokenAt ?? endAt;
 				const latencyMs = Math.max(0, firstToken - requestStartedAt);
-				const generationMs = Math.max(0, endAt - firstToken);
+				const generationMs = firstTokenAt
+					? Math.max(0, endAt - firstToken)
+					: Math.max(0, endAt - requestStartedAt);
 				const totalTokens =
-					(finalUsage?.total_tokens as number | undefined) ??
-					(finalUsage?.totalTokens as number | undefined) ??
+					getUsageNumber("total_tokens", "totalTokens") ??
+					getUsageNumber(
+						"output_text_tokens",
+						"output_tokens",
+						"outputTokens",
+						"completion_tokens",
+						"completionTokens",
+					) ??
 					null;
 				const throughputTokensPerSecond =
 					totalTokens && generationMs > 0
@@ -2145,6 +2240,7 @@ function ChatPlaygroundContent({
 				if (latestThread) {
 					const errorMeta = {
 						...(compareMeta ?? {}),
+						client: buildClientMeta(performance.now()),
 						chat_request_error: nextRequestError,
 					};
 					const existingMessage = latestThread.messages.find(
@@ -2197,6 +2293,7 @@ function ChatPlaygroundContent({
 			}
 		},
 		[
+			apiTarget,
 			baseUrl,
 			isUnified,
 			personalization,
@@ -2419,17 +2516,17 @@ function ChatPlaygroundContent({
 		async (payload: ChatSendPayload) => {
 			const performanceRunId = payload.performanceRunId;
 			markChatPerformance(performanceRunId, "playground-send-received");
-			if (!activeThread || isSending) return;
+			if (!activeThread || isSending) return false;
 			const content = buildUserMessageContent(payload);
-			if (!content.trim() && payload.attachments.length === 0) return;
+			if (!content.trim() && payload.attachments.length === 0) return false;
 			if (!isAuthenticated) {
 				setError("Sign in to start chatting.");
-				return;
+				return false;
 			}
 			if (!activeThread.modelId) {
 				setError("Select a model to start chatting.");
 				setModelPickerOpen(true);
-				return;
+				return false;
 			}
 			let inlineAttachmentPreviews: Awaited<
 				ReturnType<typeof prepareInlineAttachmentPreviews>
@@ -2513,7 +2610,7 @@ function ChatPlaygroundContent({
 					"The selected model does not support this output modality. Pick a model that supports this endpoint.",
 				);
 				setModelPickerOpen(true);
-				return;
+				return true;
 			}
 			const hasAudioAttachment = payload.attachments.some((file) =>
 				file.type.startsWith("audio/"),
@@ -2526,7 +2623,7 @@ function ChatPlaygroundContent({
 					"The selected model does not support audio input. Choose an audio-input compatible model.",
 				);
 				setModelPickerOpen(true);
-				return;
+				return true;
 			}
 			const candidateModelIds = Array.from(
 				new Set([
@@ -2562,7 +2659,7 @@ function ChatPlaygroundContent({
 				);
 				setModelSettingsTargetModelId(updatedThread.modelId);
 				setModelSettingsOpen(true);
-				return;
+				return true;
 			}
 			if (enabledModelIds.length === 1) {
 				await executeCompletion(
@@ -2573,7 +2670,7 @@ function ChatPlaygroundContent({
 					undefined,
 					enabledModelIds[0],
 				);
-				return;
+				return true;
 			}
 			const compareGroupId = generateId();
 			setIsSending(true);
@@ -2594,6 +2691,7 @@ function ChatPlaygroundContent({
 			} finally {
 				setIsSending(false);
 			}
+			return true;
 		},
 		[
 			activeThread,
@@ -3351,29 +3449,37 @@ function ChatPlaygroundContent({
 	);
 
 	const handleDeleteThread = async () => {
-		if (!deleteTarget) return;
-		const threadId = deleteTarget.id;
-		await deleteChat(threadId, "text");
-		setThreads((prev) => prev.filter((thread) => thread.id !== threadId));
-		if (activeId === threadId) {
+		if (deleteTargets.length === 0) return;
+		const targetIds = new Set(deleteTargets.map((thread) => thread.id));
+		await Promise.all(
+			deleteTargets.map((thread) => deleteChat(thread.id, "text")),
+		);
+		setThreads((prev) => prev.filter((thread) => !targetIds.has(thread.id)));
+		if (activeId && targetIds.has(activeId)) {
 			const remaining = threads.filter(
-				(thread) => thread.id !== threadId,
+				(thread) => !targetIds.has(thread.id),
 			);
 			setActiveId(remaining[0]?.id ?? null);
 		}
 		setDeleteOpen(false);
-		setDeleteTarget(null);
+		setDeleteTargets([]);
 	};
 
 	const requestDeleteThread = (thread: ChatThread) => {
-		setDeleteTarget(thread);
+		setDeleteTargets([thread]);
+		setDeleteOpen(true);
+	};
+
+	const requestDeleteThreads = (targets: ChatThread[]) => {
+		if (targets.length === 0) return;
+		setDeleteTargets(targets);
 		setDeleteOpen(true);
 	};
 
 	const handleDeleteOpenChange = (open: boolean) => {
 		setDeleteOpen(open);
 		if (!open) {
-			setDeleteTarget(null);
+			setDeleteTargets([]);
 		}
 	};
 
@@ -3393,7 +3499,6 @@ function ChatPlaygroundContent({
 			...thread,
 			title: trimmed,
 			titleLocked: true,
-			updatedAt: nowIso(),
 		});
 		setRenameOpen(false);
 	};
@@ -3402,26 +3507,30 @@ function ChatPlaygroundContent({
 		await updateStoredThread({
 			...thread,
 			pinned: !thread.pinned,
-			updatedAt: nowIso(),
 		});
 	};
 
 	const handleEditTags = (thread: ChatThread) => {
-		setTagsTarget(thread);
+		setTagsTargets([thread]);
+		setTagsOpen(true);
+	};
+
+	const handleEditSelectedTags = (targets: ChatThread[]) => {
+		if (targets.length === 0) return;
+		setTagsTargets(targets);
 		setTagsOpen(true);
 	};
 
 	const handleTagsOpenChange = (open: boolean) => {
 		setTagsOpen(open);
 		if (!open) {
-			setTagsTarget(null);
+			setTagsTargets([]);
 		}
 	};
 
 	const handleTagsSave = async (tags: ChatTag[]) => {
-		if (!tagsTarget) return;
-		const thread = threads.find((candidate) => candidate.id === tagsTarget.id);
-		if (!thread) return;
+		if (tagsTargets.length === 0) return;
+		const targetIds = new Set(tagsTargets.map((target) => target.id));
 		const sortedTags = [...tags].sort(compareChatTags);
 		if (sortedTags.length > 0) {
 			await upsertChatTags(sortedTags);
@@ -3433,15 +3542,19 @@ function ChatPlaygroundContent({
 				return Array.from(byId.values()).sort(compareChatTags);
 			});
 		}
-		await updateStoredThread({
-			...thread,
-			tags: sortedTags,
-			updatedAt: nowIso(),
-		});
+		const updatedThreads = threads
+			.filter((thread) => targetIds.has(thread.id))
+			.map((thread) => ({
+				...thread,
+				tags: sortedTags,
+			}));
+		await Promise.all(
+			updatedThreads.map((thread) => updateStoredThread(thread)),
+		);
 		handleTagsOpenChange(false);
 	};
 
-	const toggleTemporaryMode = () => {
+	const toggleTemporaryMode = useCallback(() => {
 		if (!temporaryMode) {
 			setPreviousStoredId(activeId);
 			setTemporaryMode(true);
@@ -3462,7 +3575,68 @@ function ChatPlaygroundContent({
 		if (previousStoredId) {
 			setActiveId(previousStoredId);
 		}
-	};
+	}, [
+		activeId,
+		activeThread?.modelId,
+		activeThread?.settings,
+		defaultModelId,
+		previousStoredId,
+		setActiveId,
+		temporaryMode,
+	]);
+
+	useEffect(() => {
+		const handleShortcut = (event: KeyboardEvent) => {
+			const key = event.key.toLowerCase();
+			const isShortcutHelpKey =
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				(key === "/" || event.code === "Slash");
+			if (isShortcutHelpKey) {
+				if (!shortcutHelpOpen && isChatShortcutOverlayOpen()) return;
+				event.preventDefault();
+				setShortcutHelpOpen((open) => !open);
+				return;
+			}
+			const isSearchKey =
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				key === "k";
+			if (isSearchKey) {
+				if (isChatShortcutOverlayOpen()) return;
+				event.preventDefault();
+				setSearchOpen(true);
+				return;
+			}
+			if (
+				event.repeat ||
+				!(event.ctrlKey || event.metaKey) ||
+				event.altKey ||
+				!event.shiftKey ||
+				isChatShortcutOverlayOpen()
+			) {
+				return;
+			}
+			if (key === "m") {
+				event.preventDefault();
+				setModelPickerOpen(true);
+				return;
+			}
+			if (key === "c") {
+				event.preventDefault();
+				void createThread();
+				return;
+			}
+			if (key === "u") {
+				event.preventDefault();
+				toggleTemporaryMode();
+			}
+		};
+		window.addEventListener("keydown", handleShortcut);
+		return () => window.removeEventListener("keydown", handleShortcut);
+	}, [createThread, shortcutHelpOpen, toggleTemporaryMode]);
 
 	const selectedModelIds = useMemo(() => {
 		const ids: string[] = [];
@@ -3794,7 +3968,9 @@ function ChatPlaygroundContent({
 					onRenameThread={handleRename}
 					onPinToggle={handlePinToggle}
 					onEditTags={handleEditTags}
+					onEditSelectedTags={handleEditSelectedTags}
 					onRequestDelete={requestDeleteThread}
+					onRequestDeleteSelected={requestDeleteThreads}
 					tags={allTags}
 					activeTagId={activeVisibleTagId}
 					onTagFilterChange={setActiveTagId}
@@ -3818,6 +3994,8 @@ function ChatPlaygroundContent({
 					}
 					settingsOpen={settingsOpen}
 					onSettingsOpenChange={setSettingsOpen}
+					apiTarget={apiTarget}
+					onApiTargetChange={setApiTarget}
 					baseUrl={baseUrl}
 					onBaseUrlChange={setBaseUrl}
 					onSaveSettings={handleSaveSettings}
@@ -3976,14 +4154,24 @@ function ChatPlaygroundContent({
 				open={deleteOpen}
 				onOpenChange={handleDeleteOpenChange}
 				onConfirm={handleDeleteThread}
+				count={deleteTargets.length}
 			/>
 			<ChatTagsDialog
-				key={tagsTarget?.id ?? "chat-tags"}
+				key={
+					tagsOpen && tagsTargets.length > 0
+						? tagsTargets.map((thread) => thread.id).join(":")
+						: "chat-tags"
+				}
 				open={tagsOpen}
-				thread={tagsTarget}
+				thread={tagsTargets[0] ?? null}
+				threads={tagsTargets}
 				availableTags={allTags}
 				onOpenChange={handleTagsOpenChange}
 				onSave={handleTagsSave}
+			/>
+			<ChatShortcutHelpDialog
+				open={shortcutHelpOpen}
+				onOpenChange={setShortcutHelpOpen}
 			/>
 			<ChatNewChatDialog
 				open={newChatDialogOpen}

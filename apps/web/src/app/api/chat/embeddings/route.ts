@@ -12,5 +12,6 @@ export async function POST(request: NextRequest) {
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,
 		debug: payload.debug,
+		baseUrl: payload.baseUrl,
 	});
 }

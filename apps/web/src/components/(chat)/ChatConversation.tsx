@@ -37,6 +37,11 @@ export type ChatSendPayload = {
 	performanceRunId?: string | null;
 };
 
+type QueuedChatPrompt = Omit<ChatSendPayload, "performanceRunId"> & {
+	id: string;
+	threadId: string;
+};
+
 type ChatConversationProps = {
 	activeThread: ChatThread | null;
 	isSending: boolean;
@@ -55,7 +60,7 @@ type ChatConversationProps = {
 	onReasoningEnabledChange?: (enabled: boolean) => void;
 	onReasoningEffortChange?: (effort: NonNullable<ChatSettings["reasoningEffort"]>) => void;
 	presetPrompt?: string;
-	onSend: (payload: ChatSendPayload) => void;
+	onSend: (payload: ChatSendPayload) => boolean | Promise<boolean>;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
@@ -136,6 +141,10 @@ export function ChatConversation({
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
 	const audioInputRef = useRef<HTMLInputElement | null>(null);
 	const [attachments, setAttachments] = useState<File[]>([]);
+	const [queuedPrompts, setQueuedPrompts] = useState<QueuedChatPrompt[]>([]);
+	const [editingQueuedPromptIndex, setEditingQueuedPromptIndex] = useState<
+		number | null
+	>(null);
 	const [recordingSupported] = useState(() => {
 		return (
 			typeof navigator !== "undefined" &&
@@ -172,6 +181,7 @@ export function ChatConversation({
 		[attachments],
 	);
 
+	const activeThreadId = activeThread?.id ?? null;
 	const lastMessageId =
 		activeThread?.messages[activeThread.messages.length - 1]?.id ?? null;
 
@@ -179,12 +189,14 @@ export function ChatConversation({
 		const raf = requestAnimationFrame(() => {
 			setComposer("");
 			setAttachments([]);
+			setQueuedPrompts([]);
+			setEditingQueuedPromptIndex(null);
 			if (shouldFocusComposerAfterThreadChange()) {
 				textareaRef.current?.focus();
 			}
 		});
 		return () => cancelAnimationFrame(raf);
-	}, [activeThread?.id]);
+	}, [activeThreadId]);
 
 	useEffect(() => {
 		const requiresAudioInput = attachments.some((attachment) =>
@@ -417,8 +429,97 @@ export function ChatConversation({
 		});
 	}, []);
 
+	const buildQueuedPrompt = useCallback(
+		(content: string, queuedAttachments: File[]): QueuedChatPrompt | null => {
+			if (!activeThreadId) return null;
+			return {
+				id: crypto.randomUUID(),
+				threadId: activeThreadId,
+				content,
+				attachments: queuedAttachments,
+				webSearchEnabled: isUnified ? webSearchEnabled : false,
+				apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
+				serverTools: isUnified ? serverTools : [],
+				serverToolConfigs: isUnified ? serverToolConfigs : {},
+			};
+		},
+		[
+			activeThreadId,
+			apiServerToolsEnabled,
+			isUnified,
+			serverToolConfigs,
+			serverTools,
+			webSearchEnabled,
+		],
+	);
+
+	const sendPrompt = useCallback(
+		async (prompt: QueuedChatPrompt) => {
+			const performanceRunId = startChatSendPerformanceRun({
+				contentLength: prompt.content.length,
+				attachmentCount: prompt.attachments.length,
+			});
+			try {
+				return await onSend({
+					content: prompt.content,
+					attachments: prompt.attachments,
+					webSearchEnabled: prompt.webSearchEnabled,
+					apiServerToolsEnabled: prompt.apiServerToolsEnabled,
+					serverTools: prompt.serverTools,
+					serverToolConfigs: prompt.serverToolConfigs,
+					performanceRunId,
+				});
+			} catch {
+				return false;
+			}
+		},
+		[onSend],
+	);
+
+	const queueDrainInFlightRef = useRef(false);
+
+	useEffect(() => {
+		if (isSending) {
+			queueDrainInFlightRef.current = false;
+			return;
+		}
+		if (
+			queueDrainInFlightRef.current ||
+			!activeThreadId ||
+			queuedPrompts.length === 0 ||
+			(editingQueuedPromptIndex !== null && editingQueuedPromptIndex <= 0)
+		) {
+			return;
+		}
+		const nextPrompt = queuedPrompts[0];
+		if (!nextPrompt || nextPrompt.threadId !== activeThreadId) return;
+		queueDrainInFlightRef.current = true;
+		queueMicrotask(() => {
+			void (async () => {
+				const accepted = await sendPrompt(nextPrompt);
+				if (!accepted) {
+					queueDrainInFlightRef.current = false;
+					return;
+				}
+				setQueuedPrompts((prev) =>
+					prev[0]?.id === nextPrompt.id
+						? prev.slice(1)
+						: prev.filter((prompt) => prompt.id !== nextPrompt.id),
+				);
+				setEditingQueuedPromptIndex((prev) =>
+					prev === null ? null : Math.max(0, prev - 1),
+				);
+			})();
+		});
+	}, [
+		activeThreadId,
+		editingQueuedPromptIndex,
+		isSending,
+		queuedPrompts,
+		sendPrompt,
+	]);
+
 	const handleSubmit = () => {
-		if (isSending) return;
 		const text = composer.trim();
 		if (!text && attachments.length === 0) return;
 		const hasSelectedModel =
@@ -431,22 +532,65 @@ export function ChatConversation({
 			return;
 		}
 		setSendGateType(null);
-		const performanceRunId = startChatSendPerformanceRun({
-			contentLength: text.length,
-			attachmentCount: attachments.length,
-		});
-		onSend({
-			content: text,
-			attachments,
-			webSearchEnabled: isUnified ? webSearchEnabled : false,
-			apiServerToolsEnabled: isUnified ? apiServerToolsEnabled : false,
-			serverTools: isUnified ? serverTools : [],
-			serverToolConfigs: isUnified ? serverToolConfigs : {},
-			performanceRunId,
-		});
+		const nextPrompt = buildQueuedPrompt(text, attachments);
+		if (!nextPrompt) return;
+		if (isSending) {
+			setQueuedPrompts((prev) => {
+				if (editingQueuedPromptIndex === null) {
+					return [...prev, nextPrompt];
+				}
+				const next = [...prev];
+				next.splice(
+					Math.min(editingQueuedPromptIndex, next.length),
+					0,
+					nextPrompt,
+				);
+				return next;
+			});
+		} else {
+			void sendPrompt(nextPrompt);
+		}
+		setEditingQueuedPromptIndex(null);
 		setComposer("");
 		setAttachments([]);
 	};
+
+	const handleEditQueuedPrompt = (id: string) => {
+		const promptIndex = queuedPrompts.findIndex((prompt) => prompt.id === id);
+		if (promptIndex === -1) return;
+		const prompt = queuedPrompts[promptIndex];
+		setQueuedPrompts((prev) =>
+			prev.filter((candidate) => candidate.id !== id),
+		);
+		setComposer(prompt.content);
+		setAttachments(prompt.attachments);
+		setEditingQueuedPromptIndex(promptIndex);
+		requestAnimationFrame(() => {
+			textareaRef.current?.focus();
+		});
+	};
+
+	const handleReorderQueuedPrompt = useCallback(
+		(activeId: string, targetId: string) => {
+			setQueuedPrompts((prev) => {
+				const activeIndex = prev.findIndex((prompt) => prompt.id === activeId);
+				const targetIndex = prev.findIndex((prompt) => prompt.id === targetId);
+				if (
+					activeIndex === -1 ||
+					targetIndex === -1 ||
+					activeIndex === targetIndex
+				) {
+					return prev;
+				}
+				const next = [...prev];
+				const [activePrompt] = next.splice(activeIndex, 1);
+				if (!activePrompt) return prev;
+				next.splice(targetIndex, 0, activePrompt);
+				return next;
+			});
+		},
+		[],
+	);
 
 	const handleFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
 		const files = Array.from(event.target.files ?? []);
@@ -476,6 +620,13 @@ export function ChatConversation({
 	const effectiveSendGateType =
 		isAuthenticated && sendGateType === "auth" ? null : sendGateType;
 	const hasNoMessages = (activeThread?.messages.length ?? 0) === 0;
+	const promptHistory = useMemo(
+		() =>
+			(activeThread?.messages ?? [])
+				.filter((message) => message.role === "user" && message.content.trim())
+				.map((message) => message.content),
+		[activeThread?.messages],
+	);
 
 	return (
 		<main className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -561,6 +712,7 @@ export function ChatConversation({
 				sendGateType={effectiveSendGateType}
 				isSending={isSending}
 				composer={composer}
+				promptHistory={promptHistory}
 				attachments={attachments}
 				attachmentPreviewUrls={attachmentPreviewUrls}
 				placeholder={placeholder}
@@ -568,6 +720,7 @@ export function ChatConversation({
 				fileInputRef={fileInputRef}
 				audioInputRef={audioInputRef}
 				isUnified={isUnified}
+				accentColor={accentColor}
 				webSearchEnabled={webSearchEnabled}
 				onWebSearchEnabledChange={onWebSearchEnabledChange}
 				serverTools={serverTools}
@@ -593,6 +746,18 @@ export function ChatConversation({
 				onToggleRecording={toggleRecording}
 				onToggleModel={onToggleModel}
 				onSubmit={handleSubmit}
+				queuedPrompts={queuedPrompts.map((prompt) => ({
+					id: prompt.id,
+					content: prompt.content,
+					attachmentCount: prompt.attachments.length,
+				}))}
+				onRemoveQueuedPrompt={(id) =>
+					setQueuedPrompts((prev) =>
+						prev.filter((prompt) => prompt.id !== id),
+					)
+				}
+				onEditQueuedPrompt={handleEditQueuedPrompt}
+				onReorderQueuedPrompt={handleReorderQueuedPrompt}
 				onSelectEvaluationPrompt={handleSelectEvaluationPrompt}
 				onComposerChange={setComposer}
 				onRemoveAttachment={(index) =>

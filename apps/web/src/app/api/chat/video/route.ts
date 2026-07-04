@@ -30,6 +30,7 @@ function notImplementedYetResponse() {
 }
 
 type VideoRoutePayload = {
+	baseUrl?: string;
 	requestBody?: Record<string, unknown>;
 	appHeaders?: Record<string, string>;
 	debug?: boolean;
@@ -145,6 +146,7 @@ export async function POST(request: NextRequest) {
 			path: resolveVideoPollPath(resourceId, Boolean(payload.poll.content)),
 			appHeaders: payload.appHeaders,
 			debug: payload.debug,
+			baseUrl: payload.baseUrl,
 		});
 	}
 
@@ -153,5 +155,6 @@ export async function POST(request: NextRequest) {
 		requestBody: payload.requestBody ?? {},
 		appHeaders: payload.appHeaders,
 		debug: payload.debug,
+		baseUrl: payload.baseUrl,
 	});
 }
