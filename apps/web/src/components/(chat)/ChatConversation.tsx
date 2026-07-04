@@ -60,7 +60,7 @@ type ChatConversationProps = {
 	onReasoningEnabledChange?: (enabled: boolean) => void;
 	onReasoningEffortChange?: (effort: NonNullable<ChatSettings["reasoningEffort"]>) => void;
 	presetPrompt?: string;
-	onSend: (payload: ChatSendPayload) => void;
+	onSend: (payload: ChatSendPayload) => boolean | Promise<boolean>;
 	onEditMessage: (messageId: string, content: string) => void;
 	onRetryAssistant: (messageId: string) => void;
 	onBranchAssistant: (messageId: string) => void;
@@ -454,20 +454,24 @@ export function ChatConversation({
 	);
 
 	const sendPrompt = useCallback(
-		(prompt: QueuedChatPrompt) => {
+		async (prompt: QueuedChatPrompt) => {
 			const performanceRunId = startChatSendPerformanceRun({
 				contentLength: prompt.content.length,
 				attachmentCount: prompt.attachments.length,
 			});
-			onSend({
-				content: prompt.content,
-				attachments: prompt.attachments,
-				webSearchEnabled: prompt.webSearchEnabled,
-				apiServerToolsEnabled: prompt.apiServerToolsEnabled,
-				serverTools: prompt.serverTools,
-				serverToolConfigs: prompt.serverToolConfigs,
-				performanceRunId,
-			});
+			try {
+				return await onSend({
+					content: prompt.content,
+					attachments: prompt.attachments,
+					webSearchEnabled: prompt.webSearchEnabled,
+					apiServerToolsEnabled: prompt.apiServerToolsEnabled,
+					serverTools: prompt.serverTools,
+					serverToolConfigs: prompt.serverToolConfigs,
+					performanceRunId,
+				});
+			} catch {
+				return false;
+			}
 		},
 		[onSend],
 	);
@@ -491,15 +495,21 @@ export function ChatConversation({
 		if (!nextPrompt || nextPrompt.threadId !== activeThreadId) return;
 		queueDrainInFlightRef.current = true;
 		queueMicrotask(() => {
-			setQueuedPrompts((prev) =>
-				prev[0]?.id === nextPrompt.id
-					? prev.slice(1)
-					: prev.filter((prompt) => prompt.id !== nextPrompt.id),
-			);
-			setEditingQueuedPromptIndex((prev) =>
-				prev === null ? null : Math.max(0, prev - 1),
-			);
-			sendPrompt(nextPrompt);
+			void (async () => {
+				const accepted = await sendPrompt(nextPrompt);
+				if (!accepted) {
+					queueDrainInFlightRef.current = false;
+					return;
+				}
+				setQueuedPrompts((prev) =>
+					prev[0]?.id === nextPrompt.id
+						? prev.slice(1)
+						: prev.filter((prompt) => prompt.id !== nextPrompt.id),
+				);
+				setEditingQueuedPromptIndex((prev) =>
+					prev === null ? null : Math.max(0, prev - 1),
+				);
+			})();
 		});
 	}, [
 		activeThreadId,
@@ -538,7 +548,7 @@ export function ChatConversation({
 				return next;
 			});
 		} else {
-			sendPrompt(nextPrompt);
+			void sendPrompt(nextPrompt);
 		}
 		setEditingQueuedPromptIndex(null);
 		setComposer("");

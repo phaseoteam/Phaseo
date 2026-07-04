@@ -308,6 +308,7 @@ export async function handleStreamResponse(
                 next.usage ??
                 next.response?.usage ??
                 next.message?.usage ??
+                (next?.type === "message_stop" ? latestStreamUsageRaw : null) ??
                 null;
             if (includeMeta && matchedTimingFrame) {
                 attachStreamTimingMeta({

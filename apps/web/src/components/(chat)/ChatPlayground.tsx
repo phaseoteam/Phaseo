@@ -2516,17 +2516,17 @@ function ChatPlaygroundContent({
 		async (payload: ChatSendPayload) => {
 			const performanceRunId = payload.performanceRunId;
 			markChatPerformance(performanceRunId, "playground-send-received");
-			if (!activeThread || isSending) return;
+			if (!activeThread || isSending) return false;
 			const content = buildUserMessageContent(payload);
-			if (!content.trim() && payload.attachments.length === 0) return;
+			if (!content.trim() && payload.attachments.length === 0) return false;
 			if (!isAuthenticated) {
 				setError("Sign in to start chatting.");
-				return;
+				return false;
 			}
 			if (!activeThread.modelId) {
 				setError("Select a model to start chatting.");
 				setModelPickerOpen(true);
-				return;
+				return false;
 			}
 			let inlineAttachmentPreviews: Awaited<
 				ReturnType<typeof prepareInlineAttachmentPreviews>
@@ -2610,7 +2610,7 @@ function ChatPlaygroundContent({
 					"The selected model does not support this output modality. Pick a model that supports this endpoint.",
 				);
 				setModelPickerOpen(true);
-				return;
+				return true;
 			}
 			const hasAudioAttachment = payload.attachments.some((file) =>
 				file.type.startsWith("audio/"),
@@ -2623,7 +2623,7 @@ function ChatPlaygroundContent({
 					"The selected model does not support audio input. Choose an audio-input compatible model.",
 				);
 				setModelPickerOpen(true);
-				return;
+				return true;
 			}
 			const candidateModelIds = Array.from(
 				new Set([
@@ -2659,7 +2659,7 @@ function ChatPlaygroundContent({
 				);
 				setModelSettingsTargetModelId(updatedThread.modelId);
 				setModelSettingsOpen(true);
-				return;
+				return true;
 			}
 			if (enabledModelIds.length === 1) {
 				await executeCompletion(
@@ -2670,7 +2670,7 @@ function ChatPlaygroundContent({
 					undefined,
 					enabledModelIds[0],
 				);
-				return;
+				return true;
 			}
 			const compareGroupId = generateId();
 			setIsSending(true);
@@ -2691,6 +2691,7 @@ function ChatPlaygroundContent({
 			} finally {
 				setIsSending(false);
 			}
+			return true;
 		},
 		[
 			activeThread,
