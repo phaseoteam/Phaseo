@@ -220,8 +220,11 @@ function buildGatewayMissingConfigResponse(): Response {
 	);
 }
 
-function isDevelopmentLocalGatewayBaseUrl(baseUrl: string): boolean {
-	if (process.env.NODE_ENV === "production") return false;
+function isDevelopmentLocalGatewayBaseUrl(
+	baseUrl: string,
+	nodeEnv: string | undefined = process.env.NODE_ENV,
+): boolean {
+	if (nodeEnv === "production") return false;
 	try {
 		const url = new URL(baseUrl);
 		return (
@@ -235,17 +238,39 @@ function isDevelopmentLocalGatewayBaseUrl(baseUrl: string): boolean {
 	}
 }
 
-function resolveGatewayBaseUrl(requestedBaseUrl?: string): string | null {
-	const normalizedRequestedBaseUrl = normalizeGatewayBaseUrl(requestedBaseUrl);
+export function resolveGatewayBaseUrlForEnvironment(args: {
+	configuredBaseUrl?: string;
+	requestedBaseUrl?: string;
+	nodeEnv?: string;
+}): string | null {
+	const nodeEnv = args.nodeEnv ?? process.env.NODE_ENV;
+	const normalizedConfiguredBaseUrl = normalizeGatewayBaseUrl(
+		args.configuredBaseUrl,
+	);
+	if (nodeEnv === "production") {
+		return normalizedConfiguredBaseUrl ?? null;
+	}
+
+	const normalizedRequestedBaseUrl = normalizeGatewayBaseUrl(
+		args.requestedBaseUrl,
+	);
 	if (
 		normalizedRequestedBaseUrl &&
 		(normalizedRequestedBaseUrl === PUBLIC_GATEWAY_BASE_URL ||
-			normalizedRequestedBaseUrl === configuredGatewayBaseUrl ||
-			isDevelopmentLocalGatewayBaseUrl(normalizedRequestedBaseUrl))
+			normalizedRequestedBaseUrl === normalizedConfiguredBaseUrl ||
+			isDevelopmentLocalGatewayBaseUrl(normalizedRequestedBaseUrl, nodeEnv))
 	) {
 		return normalizedRequestedBaseUrl;
 	}
-	return configuredGatewayBaseUrl ?? PUBLIC_GATEWAY_BASE_URL;
+	return normalizedConfiguredBaseUrl ?? PUBLIC_GATEWAY_BASE_URL;
+}
+
+function resolveGatewayBaseUrl(requestedBaseUrl?: string): string | null {
+	return resolveGatewayBaseUrlForEnvironment({
+		configuredBaseUrl: process.env.AI_STATS_GATEWAY_URL,
+		requestedBaseUrl,
+		nodeEnv: process.env.NODE_ENV,
+	});
 }
 
 export async function forwardUpstreamResponse(args: {
