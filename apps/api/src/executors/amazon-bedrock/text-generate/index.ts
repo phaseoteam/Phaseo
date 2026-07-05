@@ -13,10 +13,6 @@ import { shouldFallbackToChatFromError, readErrorPayload } from "@executors/_sha
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
-import {
-	supportsAnthropicThinkingDisabled,
-	usesClaudeAdaptiveThinkingControls,
-} from "@core/claudeModelCapabilities";
 import type { ProviderExecutor } from "../../types";
 import {
 	bedrockConverseToIR,
@@ -357,9 +353,10 @@ async function executeBedrockOpenAI(
 	const upstreamStartMs = args.meta.upstreamStartMs ?? Date.now();
 
 	const buildPayload = (route: "chat" | "responses"): Record<string, any> => {
+		const providerId = args.providerId || "amazon-bedrock";
 		const payload = route === "responses"
-			? irToOpenAIResponses(irRequest, model, "amazon-bedrock", args.capabilityParams)
-			: irToOpenAIChat(irRequest, model, "amazon-bedrock", args.capabilityParams);
+			? irToOpenAIResponses(irRequest, model, providerId, args.capabilityParams)
+			: irToOpenAIChat(irRequest, model, providerId, args.capabilityParams);
 
 		// Stream upstream by default so non-stream callers still capture first-token latency
 		// and generation timing from the buffered stream path.
@@ -514,6 +511,20 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 	return stream;
 }
 
+function normalizeModelId(model: string | null | undefined): string {
+	return typeof model === "string" ? model.trim().toLowerCase() : "";
+}
+
+function isClaudeOpus47Model(model: string | null | undefined): boolean {
+	const normalized = normalizeModelId(model);
+	if (!normalized) return false;
+	return (
+		normalized.includes("claude-opus-4-7") ||
+		normalized.includes("claude-opus-4.7") ||
+		normalized.includes("claude-opus-4-7-v1")
+	);
+}
+
 async function irToBedrockConverse(
 	ir: IRChatRequest,
 	providerMaxOutputTokens?: number | null,
@@ -522,7 +533,7 @@ async function irToBedrockConverse(
 	const messages: any[] = [];
 	const system: any[] = [];
 	const resolvedModel = modelHint || ir.model;
-	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
+	const isOpus47 = isClaudeOpus47Model(resolvedModel);
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system" || msg.role === "developer") {
@@ -592,43 +603,33 @@ async function irToBedrockConverse(
 	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
 	const inferenceConfig: Record<string, any> = {};
 	if (typeof maxTokens === "number") inferenceConfig.maxTokens = maxTokens;
-	if (!usesAdaptiveThinkingControls && typeof ir.temperature === "number") inferenceConfig.temperature = ir.temperature;
-	if (!usesAdaptiveThinkingControls && typeof ir.topP === "number") inferenceConfig.topP = ir.topP;
+	if (!isOpus47 && typeof ir.temperature === "number") inferenceConfig.temperature = ir.temperature;
+	if (!isOpus47 && typeof ir.topP === "number") inferenceConfig.topP = ir.topP;
 	if (ir.stop) inferenceConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	if (Object.keys(inferenceConfig).length > 0) {
 		request.inferenceConfig = inferenceConfig;
 	}
 
-	if (!usesAdaptiveThinkingControls && typeof ir.topK === "number") {
+	if (!isOpus47 && typeof ir.topK === "number") {
 		request.additionalModelRequestFields = {
 			...(request.additionalModelRequestFields ?? {}),
 			top_k: ir.topK,
 		};
 	}
 
-	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
-	if (usesAdaptiveThinkingControls) {
-		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
+	if (isOpus47) {
+		request.additionalModelRequestFields = {
+			...(request.additionalModelRequestFields ?? {}),
+			thinking: { type: "adaptive", display: "summarized" },
+		};
+		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+		if (anthropicEffort) {
 			request.additionalModelRequestFields = {
 				...(request.additionalModelRequestFields ?? {}),
-				thinking: { type: "disabled" },
+				output_config: {
+					effort: anthropicEffort,
+				},
 			};
-		} else {
-			request.additionalModelRequestFields = {
-				...(request.additionalModelRequestFields ?? {}),
-				thinking: { type: "adaptive", display: "summarized" },
-			};
-			if (!reasoningDisabled) {
-				const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
-				if (anthropicEffort) {
-					request.additionalModelRequestFields = {
-						...(request.additionalModelRequestFields ?? {}),
-						output_config: {
-							effort: anthropicEffort,
-						},
-					};
-				}
-			}
 		}
 	} else if (ir.reasoning) {
 		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number" ? ir.reasoning.maxTokens : maxTokens;
@@ -848,6 +849,10 @@ function resolveBedrockTextRoute(
 ): "chat" | "responses" | "converse" {
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const wantsResponses = protocol === "openai.responses" || args.endpoint === "responses";
+
+	if (args.providerId === "amazon-bedrock-mantle") {
+		return wantsResponses ? "responses" : "chat";
+	}
 
 	if (isBedrockOpenAIModel(model)) {
 		return wantsResponses ? "responses" : "chat";

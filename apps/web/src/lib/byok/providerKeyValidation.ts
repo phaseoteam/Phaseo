@@ -149,6 +149,18 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 			'Use either a single API key string, or JSON credentials with "accessKeyId", "secretAccessKey", and "region".',
 		validator: validateBedrockCredentials,
 	},
+	"amazon-bedrock-mantle": {
+		hint: "Amazon Bedrock Mantle supports API key style credentials or IAM credentials JSON.",
+		example:
+			'{"accessKeyId":"AKIA...","secretAccessKey":"...","region":"us-east-1"}',
+		docsUrl:
+			"https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html",
+		credentialKind: "api_key_or_json",
+		formKind: "bedrock",
+		inputInstruction:
+			'Use either a single API key string, or JSON credentials with "accessKeyId", "secretAccessKey", and "region".',
+		validator: validateBedrockCredentials,
+	},
 	anthropic: {
 		hint: "Anthropic keys usually start with sk-ant-.",
 		example: "sk-ant-xxxxxxxx",
@@ -322,7 +334,7 @@ function withIndefiniteArticle(phrase: string): string {
 
 export function getProviderCredentialLabel(providerId?: string | null): string {
 	const spec = providerId ? BYOK_PROVIDER_KEY_SPECS[providerId] : undefined;
-	if (providerId === "amazon-bedrock") return "API Key / IAM Credentials";
+	if (providerId === "amazon-bedrock" || providerId === "amazon-bedrock-mantle") return "API Key / IAM Credentials";
 	if (providerId === "azure") return "Azure Deployments (JSON)";
 	if (providerId === "cloudflare") return "Cloudflare Credentials (JSON)";
 	if (providerId === "google-vertex") return "Service Account JSON";

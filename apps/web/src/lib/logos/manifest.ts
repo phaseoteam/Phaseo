@@ -26,6 +26,9 @@ export const logoManifest = {
 	"amazon-bedrock": {
 		color: "/logos/amazon-bedrock.svg",
 	},
+	"amazon-bedrock-mantle": {
+		color: "/logos/amazon-bedrock.svg",
+	},
 	aws: {
 		light: "/logos/aws_light.svg",
 		dark: "/logos/aws_dark.svg",

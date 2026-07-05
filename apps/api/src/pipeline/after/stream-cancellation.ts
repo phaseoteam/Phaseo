@@ -31,6 +31,7 @@ const SUPPORTED_STREAM_CANCELLATION = new Set<string>([
 
 const NOT_SUPPORTED_STREAM_CANCELLATION = new Set<string>([
 	"amazon-bedrock",
+	"amazon-bedrock-mantle",
 	"groq",
 	"modal",
 	"google",

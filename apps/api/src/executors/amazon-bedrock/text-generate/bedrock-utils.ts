@@ -828,7 +828,15 @@ export function resolveBedrockAuth(args: ExecutorExecuteArgs): {
 	auth: BedrockAuth;
 } {
 	const bindings = getBindings() as any;
+	const isMantle = args.providerId === "amazon-bedrock-mantle";
 	const keyInfo = resolveProviderKey(args, () => {
+		if (
+			isMantle &&
+			typeof bindings.AMAZON_BEDROCK_MANTLE_API_KEY === "string" &&
+			bindings.AMAZON_BEDROCK_MANTLE_API_KEY.trim()
+		) {
+			return bindings.AMAZON_BEDROCK_MANTLE_API_KEY;
+		}
 		if (typeof bindings.AMAZON_BEDROCK_API_KEY === "string" && bindings.AMAZON_BEDROCK_API_KEY.trim()) {
 			return bindings.AMAZON_BEDROCK_API_KEY;
 		}
@@ -843,15 +851,21 @@ export function resolveBedrockAuth(args: ExecutorExecuteArgs): {
 	if (!rawKey) throw new Error("amazon-bedrock_key_missing");
 
 	const parsed = parseBedrockCredentialMaterial(rawKey);
-	const baseUrlRaw = parsed?.baseUrl || bindings.AMAZON_BEDROCK_BASE_URL;
+	const baseUrlRaw =
+		parsed?.baseUrl ||
+		(isMantle ? bindings.AMAZON_BEDROCK_MANTLE_BASE_URL : bindings.AMAZON_BEDROCK_BASE_URL);
 	const region = (
 		parsed?.region ||
+		(isMantle ? bindings.AMAZON_BEDROCK_MANTLE_REGION : undefined) ||
 		bindings.AMAZON_BEDROCK_REGION ||
 		bindings.AWS_REGION ||
 		extractRegionFromBedrockUrl(baseUrlRaw) ||
 		"us-east-1"
 	).trim();
-	const baseUrl = String(baseUrlRaw || `https://bedrock-runtime.${region}.amazonaws.com`).replace(/\/+$/, "");
+	const defaultBaseUrl = isMantle
+		? `https://bedrock-mantle.${region}.api.aws`
+		: `https://bedrock-runtime.${region}.amazonaws.com`;
+	const baseUrl = String(baseUrlRaw || defaultBaseUrl).replace(/\/+$/, "");
 
 	return {
 		keyInfo,
@@ -877,6 +891,8 @@ export function resolveBedrockAuth(args: ExecutorExecuteArgs): {
 
 export function extractRegionFromBedrockUrl(value: string | undefined): string | null {
 	if (!value) return null;
-	const match = value.match(/bedrock-runtime[\.-]([a-z0-9-]+)\.amazonaws\.com/i);
+	const match =
+		value.match(/bedrock-runtime[\.-]([a-z0-9-]+)\.amazonaws\.com/i) ||
+		value.match(/bedrock-mantle[\.-]([a-z0-9-]+)\.api\.aws/i);
 	return match?.[1] ?? null;
 }

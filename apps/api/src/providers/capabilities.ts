@@ -18,6 +18,7 @@ const FULL_MULTIMODAL_VIDEO_PROVIDERS = new Set<string>([
 	"openai",
 	
 	"amazon-bedrock",
+	"amazon-bedrock-mantle",
 	"x-ai",
 	"xai",
 	"deepseek",

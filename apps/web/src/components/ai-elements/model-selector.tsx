@@ -191,6 +191,7 @@ export type ModelSelectorLogoProps = Omit<
     | "llama"
     | "scaleway"
     | "amazon-bedrock"
+    | "amazon-bedrock-mantle"
     | "cerebras"
     | (string & {});
 };
