@@ -35,9 +35,12 @@ export type GatewayBindings = {
     ALIBABA_CLOUD_API_KEY?: string;
     ALIBABA_BASE_URL?: string;
     ALIBABA_VIDEO_WEBHOOK_SECRET?: string;
-    AMAZON_BEDROCK_API_KEY?: string;
-    AMAZON_BEDROCK_BASE_URL?: string;
-    AMAZON_BEDROCK_REGION?: string;
+	AMAZON_BEDROCK_API_KEY?: string;
+	AMAZON_BEDROCK_BASE_URL?: string;
+	AMAZON_BEDROCK_REGION?: string;
+	AMAZON_BEDROCK_MANTLE_API_KEY?: string;
+	AMAZON_BEDROCK_MANTLE_BASE_URL?: string;
+	AMAZON_BEDROCK_MANTLE_REGION?: string;
     AWS_ACCESS_KEY_ID?: string;
     AWS_SECRET_ACCESS_KEY?: string;
     AWS_SESSION_TOKEN?: string;

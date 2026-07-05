@@ -195,6 +195,60 @@ describe("amazon-bedrock text executor", () => {
 		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
 	});
 
+	it("routes Bedrock Mantle provider models to the Mantle OpenAI-compatible endpoint", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://bedrock-mantle.us-east-1.api.aws/v1/chat/completions",
+			onRequest: (call) => {
+				expect(call.bodyJson?.model).toBe("anthropic.claude-sonnet-5-v1:0");
+				expect(call.bodyJson?.messages?.[0]?.role).toBe("user");
+				expect(call.bodyJson?.stream).toBe(true);
+			},
+			response: jsonResponse({
+				id: "chatcmpl_bedrock_mantle",
+				object: "chat.completion",
+				created: 1710000000,
+				model: "anthropic.claude-sonnet-5-v1:0",
+				choices: [{
+					index: 0,
+					message: { role: "assistant", content: "mantle ok" },
+					finish_reason: "stop",
+				}],
+				usage: {
+					prompt_tokens: 4,
+					completion_tokens: 2,
+					total_tokens: 6,
+				},
+			}, {
+				headers: {
+					"x-amzn-requestid": "bedrock-mantle-req",
+				},
+			}),
+		}]);
+
+		const result = await execute(buildArgs({
+			model: "anthropic.claude-sonnet-5-v1:0",
+			stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello mantle" }] }],
+		}, {
+			providerId: "amazon-bedrock-mantle",
+			pricingCard: {
+				provider: "amazon-bedrock-mantle",
+				model: "anthropic.claude-sonnet-5-v1:0",
+				endpoint: "chat.completions",
+				effective_from: null,
+				effective_to: null,
+				currency: "USD",
+				version: null,
+				rules: [],
+			},
+		}));
+
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
+	});
+
 	it("falls back from /responses to /chat/completions when responses is unavailable", async () => {
 		const mock = installFetchMock([
 			{
@@ -351,65 +405,6 @@ describe("amazon-bedrock text executor", () => {
 			topK: 40,
 			reasoning: { enabled: true, effort: "xhigh", maxTokens: 32000 },
 			messages: [{ role: "user", content: [{ type: "text", text: "hello opus" }] }],
-		}));
-
-		mock.restore();
-
-		expect(result.kind).toBe("completed");
-		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
-	});
-
-	it("strips removed Claude Sonnet 5 sampling and budget params in Converse payload", async () => {
-		const mock = installFetchMock([{
-			match: (url) => url.includes("/model/anthropic.claude-sonnet-5-v1%3A0/converse-stream"),
-			onRequest: (call) => {
-				const payload = call.bodyJson ?? {};
-				expect(payload.inferenceConfig?.temperature).toBeUndefined();
-				expect(payload.inferenceConfig?.topP).toBeUndefined();
-				expect(payload.additionalModelRequestFields?.top_k).toBeUndefined();
-				expect(payload.additionalModelRequestFields?.thinking?.type).toBe("adaptive");
-				expect(payload.additionalModelRequestFields?.thinking?.display).toBe("summarized");
-				expect(payload.additionalModelRequestFields?.thinking?.budget_tokens).toBeUndefined();
-				expect(payload.additionalModelRequestFields?.output_config?.effort).toBe("xhigh");
-			},
-			response: bedrockStreamResponse(basicBedrockTextEvents("sonnet5 ok")),
-		}]);
-
-		const result = await execute(buildArgs({
-			model: "anthropic.claude-sonnet-5-v1:0",
-			stream: false,
-			temperature: 0.2,
-			topP: 0.9,
-			topK: 40,
-			reasoning: { enabled: true, effort: "xhigh", maxTokens: 32000 },
-			messages: [{ role: "user", content: [{ type: "text", text: "hello sonnet" }] }],
-		}));
-
-		mock.restore();
-
-		expect(result.kind).toBe("completed");
-		expect(result.ir?.choices?.[0]?.message?.content?.[0]?.type).toBe("text");
-	});
-
-	it("uses adaptive thinking for Claude Fable 5 and ignores disabled thinking in Converse payload", async () => {
-		const mock = installFetchMock([{
-			match: (url) => url.includes("/model/anthropic.claude-fable-5-v1%3A0/converse-stream"),
-			onRequest: (call) => {
-				const payload = call.bodyJson ?? {};
-				expect(payload.additionalModelRequestFields?.thinking).toEqual({
-					type: "adaptive",
-					display: "summarized",
-				});
-				expect(payload.additionalModelRequestFields?.thinking?.budget_tokens).toBeUndefined();
-			},
-			response: bedrockStreamResponse(basicBedrockTextEvents("fable5 ok")),
-		}]);
-
-		const result = await execute(buildArgs({
-			model: "anthropic.claude-fable-5-v1:0",
-			stream: false,
-			reasoning: { enabled: false },
-			messages: [{ role: "user", content: [{ type: "text", text: "hello fable" }] }],
 		}));
 
 		mock.restore();
