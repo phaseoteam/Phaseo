@@ -1386,12 +1386,13 @@ function readDatetimeTimezones(
 ): { timezones: string[]; tooMany: boolean } {
 	const timezones: string[] = [];
 	const ok = appendTimezoneList(timezones, args.timezones);
+	if (!ok) return { timezones: [], tooMany: true };
 	const resolved = timezones.length > 0
 		? timezones
 		: fallback.length > 0
 			? fallback
 			: [DEFAULT_TIMEZONE];
-	return { timezones: resolved.slice(0, MAX_DATETIME_TIMEZONES), tooMany: !ok };
+	return { timezones: resolved.slice(0, MAX_DATETIME_TIMEZONES), tooMany: false };
 }
 
 function extractOffsetString(date: Date, timezone: string): string {
