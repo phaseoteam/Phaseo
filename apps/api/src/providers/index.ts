@@ -113,6 +113,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     "black-forest-labs": createUnsupportedAdapter("black-forest-labs", "image_only_provider"),
     // Native auth (SigV4/OAuth) is not implemented yet; route via OpenAI-compatible gateways/proxies.
     "amazon-bedrock": createOpenAICompatibleAdapter("amazon-bedrock"),
+    "amazon-bedrock-mantle": createOpenAICompatibleAdapter("amazon-bedrock-mantle"),
     "google-vertex": createOpenAICompatibleAdapter("google-vertex"),
     "google-vertex-eu": createOpenAICompatibleAdapter("google-vertex-eu"),
     meta: createOpenAICompatibleAdapter("meta"),
