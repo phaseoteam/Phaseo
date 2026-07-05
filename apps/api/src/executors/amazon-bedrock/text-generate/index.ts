@@ -13,6 +13,10 @@ import { shouldFallbackToChatFromError, readErrorPayload } from "@executors/_sha
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
+import {
+	supportsAnthropicThinkingDisabled,
+	usesClaudeAdaptiveThinkingControls,
+} from "@core/claudeModelCapabilities";
 import type { ProviderExecutor } from "../../types";
 import {
 	bedrockConverseToIR,
@@ -510,32 +514,6 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 	return stream;
 }
 
-function normalizeModelId(model: string | null | undefined): string {
-	return typeof model === "string" ? model.trim().toLowerCase() : "";
-}
-
-function usesClaudeAdaptiveThinkingControls(model: string | null | undefined): boolean {
-	const normalized = normalizeModelId(model);
-	if (!normalized) return false;
-	return (
-		normalized.includes("claude-sonnet-5") ||
-		normalized.includes("claude-fable-5") ||
-		normalized.includes("claude-mythos-5") ||
-		normalized.includes("claude-opus-4-7") ||
-		normalized.includes("claude-opus-4.7") ||
-		normalized.includes("claude-opus-4-7-v1") ||
-		normalized.includes("claude-opus-4-8") ||
-		normalized.includes("claude-opus-4.8") ||
-		normalized.includes("claude-opus-4-8-v1")
-	);
-}
-
-function supportsAnthropicThinkingDisabled(model: string | null | undefined): boolean {
-	const normalized = normalizeModelId(model);
-	if (!normalized) return false;
-	return normalized.includes("claude-sonnet-5");
-}
-
 async function irToBedrockConverse(
 	ir: IRChatRequest,
 	providerMaxOutputTokens?: number | null,
@@ -640,14 +618,16 @@ async function irToBedrockConverse(
 				...(request.additionalModelRequestFields ?? {}),
 				thinking: { type: "adaptive", display: "summarized" },
 			};
-			const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
-			if (anthropicEffort) {
-				request.additionalModelRequestFields = {
-					...(request.additionalModelRequestFields ?? {}),
-					output_config: {
-						effort: anthropicEffort,
-					},
-				};
+			if (!reasoningDisabled) {
+				const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+				if (anthropicEffort) {
+					request.additionalModelRequestFields = {
+						...(request.additionalModelRequestFields ?? {}),
+						output_config: {
+							effort: anthropicEffort,
+						},
+					};
+				}
 			}
 		}
 	} else if (ir.reasoning) {

@@ -16,6 +16,11 @@ import { createAnthropicToResponsesStreamTransformer } from "./stream-transforme
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
 import { isIRNativeToolDefinition } from "@core/nativeTools";
+import {
+	normalizeClaudeModelId,
+	supportsAnthropicThinkingDisabled,
+	usesClaudeAdaptiveThinkingControls,
+} from "@core/claudeModelCapabilities";
 
 const ANTHROPIC_FAST_MODE_BETA = "fast-mode-2026-02-01";
 const ANTHROPIC_ADVISOR_BETA = "advisor-tool-2026-03-01";
@@ -360,32 +365,8 @@ async function bufferAnthropicStreamToMessage(res: Response, upstreamStartMs: nu
 /**
  * Transform IR request to Anthropic Messages format
  */
-function normalizeModelId(model: string | null | undefined): string {
-	return typeof model === "string" ? model.trim().toLowerCase() : "";
-}
-
-function usesClaudeAdaptiveThinkingControls(model: string | null | undefined): boolean {
-	const normalized = normalizeModelId(model);
-	if (!normalized) return false;
-	return (
-		normalized.includes("claude-sonnet-5") ||
-		normalized.includes("claude-fable-5") ||
-		normalized.includes("claude-mythos-5") ||
-		normalized.includes("claude-opus-4-7") ||
-		normalized.includes("claude-opus-4.7") ||
-		normalized.includes("claude-opus-4-8") ||
-		normalized.includes("claude-opus-4.8")
-	);
-}
-
-function supportsAnthropicThinkingDisabled(model: string | null | undefined): boolean {
-	const normalized = normalizeModelId(model);
-	if (!normalized) return false;
-	return normalized.includes("claude-sonnet-5");
-}
-
 function supportsAnthropicFastMode(model: string | null | undefined): boolean {
-	const normalized = normalizeModelId(model);
+	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;
 	return (
 		normalized.includes("claude-opus-4-6") ||
@@ -522,12 +503,14 @@ export function irToAnthropicMessages(
 				type: "adaptive",
 				display: "summarized",
 			};
-			const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
-			if (anthropicEffort) {
-				request.output_config = {
-					...(request.output_config ?? {}),
-					effort: anthropicEffort,
-				};
+			if (!reasoningDisabled) {
+				const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+				if (anthropicEffort) {
+					request.output_config = {
+						...(request.output_config ?? {}),
+						effort: anthropicEffort,
+					};
+				}
 			}
 		}
 	} else if (ir.reasoning) {

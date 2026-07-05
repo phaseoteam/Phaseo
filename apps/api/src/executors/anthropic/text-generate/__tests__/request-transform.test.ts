@@ -362,6 +362,18 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.thinking?.budget_tokens).toBeUndefined();
 	});
 
+	it("omits stale Fable 5 effort when reasoning is disabled", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-fable-5",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { enabled: false, effort: "high" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.output_config).toBeUndefined();
+	});
+
 	it("uses adaptive summarized thinking for Mythos 5 and omits legacy thinking budgets", () => {
 		const request = decodeOpenAIChatRequest({
 			model: "anthropic/claude-mythos-5",
