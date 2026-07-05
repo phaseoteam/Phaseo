@@ -1,4 +1,4 @@
-import { resolveGatewayBaseUrlForEnvironment } from "./gatewayProxy";
+import { resolveGatewayBaseUrlForEnvironment } from "@/app/api/chat/_shared/gatewayProxy";
 
 describe("resolveGatewayBaseUrlForEnvironment", () => {
 	it("uses only the configured gateway in production", () => {
@@ -14,6 +14,14 @@ describe("resolveGatewayBaseUrlForEnvironment", () => {
 			resolveGatewayBaseUrlForEnvironment({
 				configuredBaseUrl: "https://private-gateway.example.com",
 				requestedBaseUrl: "http://127.0.0.1:8787/v1",
+				nodeEnv: "production",
+			}),
+		).toBe("https://private-gateway.example.com/v1");
+
+		expect(
+			resolveGatewayBaseUrlForEnvironment({
+				configuredBaseUrl: "https://private-gateway.example.com",
+				requestedBaseUrl: "https://attacker.example.com/v1",
 				nodeEnv: "production",
 			}),
 		).toBe("https://private-gateway.example.com/v1");
