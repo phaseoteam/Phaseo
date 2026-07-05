@@ -1,4 +1,13 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { checkApiProviderModelEntrySafety, checkPricingEntrySafety, isMajorError } from '@/data/validate';
+
+const DATA_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+
+function readPricingJson(relativePath: string) {
+    return JSON.parse(fs.readFileSync(path.join(DATA_ROOT, relativePath), 'utf8'));
+}
 
 describe('pricing safety checks', () => {
     test('active on gateway with no rules -> error flagged', () => {
@@ -144,6 +153,34 @@ describe('pricing safety checks', () => {
         };
         const errs = checkPricingEntrySafety(bad);
         expect(errs.some((e) => /cached_read_text_tokens price > input_text_tokens/.test(e))).toBe(true);
+    });
+
+    test('GMICloud MiniMax M3 includes cached-read pricing for high-context requests', () => {
+        const pricing = readPricingJson(
+            'pricing/gmicloud/minimax-minimax-m3/text.generate/pricing.json'
+        );
+        expect(pricing.rules).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    meter: 'cached_read_text_tokens',
+                    price_per_unit: 0.24,
+                    match: expect.arrayContaining([
+                        expect.objectContaining({
+                            path: 'input_tokens',
+                            op: 'gt',
+                            value: 512000,
+                        }),
+                    ]),
+                }),
+            ])
+        );
+    });
+
+    test('Google Vertex image model does not advertise flex pricing without executor support', () => {
+        const pricing = readPricingJson(
+            'pricing/google-vertex/google-gemini-3.1-flash-lite-image/text.generate/pricing.json'
+        );
+        expect(pricing.rules.some((rule: any) => rule?.pricing_plan === 'flex')).toBe(false);
     });
 });
 

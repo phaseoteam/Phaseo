@@ -23,6 +23,7 @@ export const IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME = "ai_stats_image_genera
 export const APPLY_PATCH_SERVER_TOOL_TYPE = "ai-stats:apply_patch";
 export const APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_apply_patch";
 const DEFAULT_TIMEZONE = "UTC";
+const MAX_DATETIME_TIMEZONES = 5;
 const DEFAULT_WEB_SEARCH_MAX_RESULTS = 5;
 const MAX_WEB_SEARCH_RESULTS = 25;
 const DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS = 25;
@@ -49,8 +50,9 @@ const DATETIME_TOOL_PARAMETERS = {
 		timezones: {
 			type: "array",
 			items: { type: "string" },
+			maxItems: MAX_DATETIME_TIMEZONES,
 			description:
-				"IANA timezone names to return in one call. Use this when comparing local time with UTC or another timezone.",
+				"IANA timezone names to return in one call. Use this when comparing local time with UTC or another timezone. Maximum 5.",
 		},
 	},
 	additionalProperties: false,
@@ -423,25 +425,27 @@ function toNonEmptyString(value: unknown): string | null {
 	return trimmed.length > 0 ? trimmed : null;
 }
 
-function appendTimezone(timezones: string[], value: unknown): void {
+function appendTimezone(timezones: string[], value: unknown): boolean {
 	const timezone = toNonEmptyString(value);
-	if (timezone && !timezones.includes(timezone)) {
-		timezones.push(timezone);
-	}
+	if (!timezone || timezones.includes(timezone)) return true;
+	if (timezones.length >= MAX_DATETIME_TIMEZONES) return false;
+	timezones.push(timezone);
+	return true;
 }
 
-function appendTimezoneList(timezones: string[], value: unknown): void {
-	if (!Array.isArray(value)) return;
+function appendTimezoneList(timezones: string[], value: unknown): boolean {
+	if (!Array.isArray(value)) return true;
 	for (const item of value) {
-		appendTimezone(timezones, item);
+		if (!appendTimezone(timezones, item)) return false;
 	}
+	return true;
 }
 
-function parseDatetimeToolTimezones(tool: any): string[] {
+function parseDatetimeToolTimezones(tool: any): { timezones: string[]; tooMany: boolean } {
 	const timezones: string[] = [];
-	appendTimezone(timezones, tool?.parameters?.timezone);
-	appendTimezoneList(timezones, tool?.parameters?.timezones);
-	return timezones;
+	const singularOk = appendTimezone(timezones, tool?.parameters?.timezone);
+	const listOk = appendTimezoneList(timezones, tool?.parameters?.timezones);
+	return { timezones, tooMany: !singularOk || !listOk };
 }
 
 function readBooleanWithFallback(value: unknown, fallback: boolean): boolean {
@@ -1051,7 +1055,14 @@ export function prepareServerToolsForTextRequest(
 
 		if (tool.type === DATETIME_SERVER_TOOL_TYPE) {
 			datetimeEnabled = true;
-			const requestedTimezones = parseDatetimeToolTimezones(tool);
+			const requested = parseDatetimeToolTimezones(tool);
+			if (requested.tooMany) {
+				return {
+					ok: false,
+					message: `Datetime tool supports at most ${MAX_DATETIME_TIMEZONES} timezones per request.`,
+				};
+			}
+			const requestedTimezones = requested.timezones;
 			if (requestedTimezones.length > 0) {
 				const invalidTimezone = requestedTimezones.find(
 					(timezone) => !isValidTimezone(timezone),
@@ -1372,14 +1383,16 @@ function parseJsonObject(value: string | undefined): Record<string, unknown> {
 function readDatetimeTimezones(
 	args: Record<string, unknown>,
 	fallback: string[],
-): string[] {
+): { timezones: string[]; tooMany: boolean } {
 	const timezones: string[] = [];
-	appendTimezoneList(timezones, args.timezones);
-	return timezones.length > 0
+	const ok = appendTimezoneList(timezones, args.timezones);
+	if (!ok) return { timezones: [], tooMany: true };
+	const resolved = timezones.length > 0
 		? timezones
 		: fallback.length > 0
 			? fallback
 			: [DEFAULT_TIMEZONE];
+	return { timezones: resolved.slice(0, MAX_DATETIME_TIMEZONES), tooMany: false };
 }
 
 function extractOffsetString(date: Date, timezone: string): string {
@@ -1431,7 +1444,19 @@ function executeDatetimeToolCall(
 	defaultTimezones: string[],
 ): IRToolResult {
 	const args = parseJsonObject(call.arguments);
-	const timezones = readDatetimeTimezones(args, defaultTimezones);
+	const requested = readDatetimeTimezones(args, defaultTimezones);
+	const timezones = requested.timezones;
+	if (requested.tooMany) {
+		return {
+			toolCallId: call.id,
+			isError: true,
+			content: JSON.stringify({
+				error: "too_many_timezones",
+				max_timezones: MAX_DATETIME_TIMEZONES,
+				message: `timezones must contain at most ${MAX_DATETIME_TIMEZONES} entries`,
+			}),
+		};
+	}
 	const invalidTimezone = timezones.find((timezone) => !isValidTimezone(timezone));
 	if (invalidTimezone) {
 		return {
@@ -1440,7 +1465,6 @@ function executeDatetimeToolCall(
 			content: JSON.stringify({
 				error: "invalid_timezone",
 				timezone: invalidTimezone,
-				timezones,
 				message: "timezones must contain valid IANA timezone names",
 			}),
 		};
