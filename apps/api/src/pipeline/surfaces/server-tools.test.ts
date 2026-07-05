@@ -111,6 +111,33 @@ describe("prepareServerToolsForTextRequest", () => {
 		expect(result.config.datetimeDefaultTimezones).toEqual(["Europe/London"]);
 	});
 
+	it("rejects gateway datetime defaults with too many timezones", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "openai/gpt-5-nano",
+				tools: [{
+					type: "gateway:datetime",
+					parameters: {
+						timezones: [
+							"UTC",
+							"Europe/London",
+							"America/New_York",
+							"Asia/Tokyo",
+							"Australia/Sydney",
+							"Pacific/Auckland",
+						],
+					},
+				}],
+			},
+			"openai.responses",
+		);
+		expect(result.ok).toBe(false);
+		if (result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to reject oversized timezone defaults");
+		}
+		expect(result.message).toContain("at most 5 timezones");
+	});
+
 	it("rewrites AI Stats web search into a callable function tool", () => {
 		const result = prepareServerToolsForTextRequest(
 			{
@@ -641,6 +668,54 @@ describe("buildServerToolContinuation", () => {
 		} finally {
 			vi.useRealTimers();
 		}
+	});
+
+	it("rejects oversized datetime tool-call timezone lists without echoing them", async () => {
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: [{
+							id: "call_datetime",
+							name: "gateway_datetime",
+							arguments: JSON.stringify({
+								timezones: [
+									"UTC",
+									"Europe/London",
+									"America/New_York",
+									"Asia/Tokyo",
+									"Australia/Sydney",
+									"Pacific/Auckland",
+								],
+							}),
+						}],
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+			},
+		);
+
+		const toolResult = continuation?.toolResults[0];
+		expect(toolResult?.isError).toBe(true);
+		const parsed = JSON.parse(String(toolResult?.content));
+		expect(parsed).toEqual({
+			error: "too_many_timezones",
+			max_timezones: 5,
+			message: "timezones must contain at most 5 entries",
+		});
+		expect(parsed).not.toHaveProperty("timezones");
 	});
 
 	it("executes AI Stats web search calls and records search usage", async () => {

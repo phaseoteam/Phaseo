@@ -124,66 +124,6 @@
       "match": [],
       "priority": 100,
       "effective_from": "2026-06-30T00:00:00Z"
-    },
-    {
-      "meter": "input_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.125,
-      "currency": "USD",
-      "pricing_plan": "flex",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
-    },
-    {
-      "meter": "input_image_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.125,
-      "currency": "USD",
-      "pricing_plan": "flex",
-      "note": null,
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
-    },
-    {
-      "meter": "input_video_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.125,
-      "currency": "USD",
-      "pricing_plan": "flex",
-      "note": "Videos are sampled at 1 frame per second, and each video frame accounts for 70 tokens.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
-    },
-    {
-      "meter": "output_text_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 0.75,
-      "currency": "USD",
-      "pricing_plan": "flex",
-      "note": "Includes response and reasoning tokens.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
-    },
-    {
-      "meter": "output_image_tokens",
-      "unit": "token",
-      "unit_size": 1000000,
-      "price_per_unit": 15,
-      "currency": "USD",
-      "pricing_plan": "flex",
-      "note": "Equivalent to $0.0168 per 1K output image using 1120 output image tokens with Flex processing.",
-      "match": [],
-      "priority": 100,
-      "effective_from": "2026-06-30T00:00:00Z"
     }
   ]
 }
