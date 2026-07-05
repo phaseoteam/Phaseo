@@ -364,10 +364,24 @@ function normalizeModelId(model: string | null | undefined): string {
 	return typeof model === "string" ? model.trim().toLowerCase() : "";
 }
 
-function isClaudeOpus47Model(model: string | null | undefined): boolean {
+function usesClaudeAdaptiveThinkingControls(model: string | null | undefined): boolean {
 	const normalized = normalizeModelId(model);
 	if (!normalized) return false;
-	return normalized.includes("claude-opus-4-7") || normalized.includes("claude-opus-4.7");
+	return (
+		normalized.includes("claude-sonnet-5") ||
+		normalized.includes("claude-fable-5") ||
+		normalized.includes("claude-mythos-5") ||
+		normalized.includes("claude-opus-4-7") ||
+		normalized.includes("claude-opus-4.7") ||
+		normalized.includes("claude-opus-4-8") ||
+		normalized.includes("claude-opus-4.8")
+	);
+}
+
+function supportsAnthropicThinkingDisabled(model: string | null | undefined): boolean {
+	const normalized = normalizeModelId(model);
+	if (!normalized) return false;
+	return normalized.includes("claude-sonnet-5");
 }
 
 function supportsAnthropicFastMode(model: string | null | undefined): boolean {
@@ -392,7 +406,7 @@ export function irToAnthropicMessages(
 	const messages: any[] = [];
 	let system: string | any[] | undefined;
 	const resolvedModel = modelHint || ir.model;
-	const isOpus47 = isClaudeOpus47Model(resolvedModel);
+	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system") {
@@ -458,8 +472,8 @@ export function irToAnthropicMessages(
 		request.inference_geo = options.inferenceGeo;
 	}
 
-	// Sampling params are rejected by Claude Opus 4.7, so omit them on that model.
-	if (!isOpus47) {
+	// Adaptive-thinking Claude models reject non-default sampling params, so omit them.
+	if (!usesAdaptiveThinkingControls) {
 		if (ir.temperature !== undefined) request.temperature = ir.temperature;
 		if (ir.topP !== undefined) request.top_p = ir.topP;
 		if (ir.topK !== undefined) request.top_k = ir.topK;
@@ -500,19 +514,21 @@ export function irToAnthropicMessages(
 	if (ir.metadata) request.metadata = ir.metadata;
 	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
 
-	if (isOpus47) {
-		// Opus 4.7 uses adaptive thinking and rejects legacy thinking budgets.
-		// Always request summarized traces to avoid empty-thinking regressions.
-		request.thinking = {
-			type: "adaptive",
-			display: "summarized",
-		};
-		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
-		if (anthropicEffort) {
-			request.output_config = {
-				...(request.output_config ?? {}),
-				effort: anthropicEffort,
+	if (usesAdaptiveThinkingControls) {
+		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
+			request.thinking = { type: "disabled" };
+		} else {
+			request.thinking = {
+				type: "adaptive",
+				display: "summarized",
 			};
+			const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+			if (anthropicEffort) {
+				request.output_config = {
+					...(request.output_config ?? {}),
+					effort: anthropicEffort,
+				};
+			}
 		}
 	} else if (ir.reasoning) {
 		const hasThinkingControl =
