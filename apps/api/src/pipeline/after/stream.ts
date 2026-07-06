@@ -215,7 +215,8 @@ export async function handleStreamResponse(
                         shapedUsage,
                         card,
                         ctx.body,
-                        tier
+                        tier,
+                        ctx.meta
                     );
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
@@ -252,7 +253,8 @@ export async function handleStreamResponse(
                         shapedUsage,
                         card,
                         ctx.body,
-                        tier
+                        tier,
+                        ctx.meta
                     );
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
@@ -510,7 +512,8 @@ export async function handleStreamResponse(
                         shapeStreamUsageForClient(usageWithToolMetrics),
                         card,
                         ctx.body,
-                        tier
+                        tier,
+                        ctx.meta
                     );
                     usageWithToolMetrics = attachToolUsageMetrics(repriced.pricedUsage, toolUsage);
                     totalCentsOverride = repriced.totalCents;
@@ -613,7 +616,8 @@ export async function handleStreamResponse(
                 shapedUsage,
                 card,
                 ctx.body,
-                tier
+                tier,
+                ctx.meta
             );
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {

@@ -55,6 +55,31 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
     return options;
 }
 
+function attachBillingTimestamps(
+    options: Record<string, unknown>,
+    meta?: PipelineContext["meta"] | null,
+): Record<string, unknown> {
+    const completedAtMs = meta?.completedAtMs ?? Date.now();
+    if (!meta) {
+        return {
+            ...options,
+            request_started_at: completedAtMs,
+            startedAtMs: completedAtMs,
+            completed_at: completedAtMs,
+            completedAtMs,
+        };
+    }
+    return {
+        ...options,
+        request_started_at: meta.startedAtMs,
+        startedAtMs: meta.startedAtMs,
+        provider_accepted_at: meta.upstreamStartMs,
+        upstreamStartMs: meta.upstreamStartMs,
+        completed_at: completedAtMs,
+        completedAtMs,
+    };
+}
+
 export async function loadProviderPricing(
     ctx: PipelineContext,
     result: RequestResult
@@ -98,7 +123,8 @@ export function calculatePricing(
     usage: any,
     card: PriceCard | null,
     body: any,
-    _tier?: string | null
+    _tier?: string | null,
+    meta?: PipelineContext["meta"] | null
 ): {
     pricedUsage: any;
     totalCents: number;
@@ -114,7 +140,10 @@ export function calculatePricing(
     if (card) {
         try {
             const pricingPlan = derivePricingPlan(body, usage);
-            const requestOptions = buildTrustedPricingRequestOptions(body, usage, pricingPlan);
+            const requestOptions = attachBillingTimestamps(
+                buildTrustedPricingRequestOptions(body, usage, pricingPlan),
+                meta,
+            );
 
             // Step 1: Calculate base pricing (provider costs)
             pricedUsage = computeBill(usageMeters ?? {}, card, requestOptions, pricingPlan);

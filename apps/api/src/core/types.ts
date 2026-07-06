@@ -67,6 +67,7 @@ export type RequestMeta = {
     returnUpstreamResponse?: boolean;
     startedAtMs?: number;
     upstreamStartMs?: number;
+    completedAtMs?: number;
     beta?: RequestBetaOptions;
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;

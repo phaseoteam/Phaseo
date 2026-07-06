@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryState } from "nuqs";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
@@ -10,27 +10,32 @@ import {
 	CostBreakdown,
 	PricingReference,
 } from "@/components/(tools)/pricing-calculator";
+import type { SelectedPricingModelConfig } from "@/components/(tools)/pricing-calculator/ModelSelector";
 import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
-const MAX_COMPARISON_MODELS = 4;
+
+function getCurrentUtcTime() {
+	return new Date().toISOString().slice(11, 16);
+}
+
+function releaseTimestamp(
+	releaseDate?: string | null,
+	announcementDate?: string | null
+): number {
+	const parsed = Date.parse(releaseDate || announcementDate || "");
+	return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
 
 type PricingModel = {
 	provider: string;
 	model: string;
 	endpoint: string;
 	display_name?: string;
+	release_date?: string | null;
+	announcement_date?: string | null;
 	pricing_plan?: string | null;
 	meters: PricingMeter[];
-};
-
-type ModelComparisonOption = {
-	key: string;
-	modelId: string;
-	displayName: string;
-	provider: string;
-	availablePricingPlans: string[];
-	metersByPlan: Record<string, PricingMeter[]>;
 };
 
 type PricingCalculatorProps = {
@@ -43,6 +48,12 @@ type PricingCalculatorProps = {
 	providersCount?: number;
 };
 
+type SelectedPricingModel = PricingModel & {
+	key: string;
+	label: string;
+	pricingPlan: string;
+};
+
 export default function PricingCalculator({
 	initialModels,
 	initialModel,
@@ -52,7 +63,6 @@ export default function PricingCalculator({
 	totalModelsCount = 500,
 	providersCount = 10,
 }: PricingCalculatorProps) {
-	// Memoize models to prevent dependency warnings
 	const models = useMemo(() => initialModels || [], [initialModels]);
 
 	const roundedTotalModelsCount = useMemo(
@@ -63,191 +73,271 @@ export default function PricingCalculator({
 	const [selectedModelId, setSelectedModelId] = useQueryState("model", {
 		defaultValue: initialModel || "",
 	});
-	const [selectedEndpoint, setSelectedEndpoint] = useQueryState("endpoint", {
+	const [, setSelectedEndpoint] = useQueryState("endpoint", {
 		defaultValue: initialEndpoint || "",
 	});
-	const [selectedProvider, setSelectedProviderState] = useQueryState(
-		"provider",
-		{
-			defaultValue: initialProvider || "",
-		}
-	);
-	const [selectedPricingPlan, setSelectedPricingPlanState] = useQueryState(
-		"plan",
-		{
-			defaultValue: initialPlan || "",
-		}
-	);
+	const [, setSelectedProvider] = useQueryState("provider", {
+		defaultValue: initialProvider || "",
+	});
+	const [, setSelectedPricingPlan] = useQueryState("plan", {
+		defaultValue: initialPlan || "",
+	});
 
+	const [selectedModelIds, setSelectedModelIds] = useState<string[]>(
+		initialModel ? [initialModel] : []
+	);
+	const [modelConfigs, setModelConfigs] = useState<
+		Record<string, SelectedPricingModelConfig>
+	>({});
 	const [meterInputs, setMeterInputs] = useState<Record<string, string>>({});
 	const [requestMultiplier, setRequestMultiplier] = useState<number>(1);
-	const [comparisonModelKeys, setComparisonModelKeys] = useState<string[]>([]);
-	const [comparisonModelPlans, setComparisonModelPlans] = useState<Record<string, string>>({});
+	const [pricingTimeUtc, setPricingTimeUtc] = useState<string>("00:00");
 
-	// Wrap setters in useCallback to prevent dependency warnings
-	const setSelectedProvider = useCallback(
-		(value: string) => {
-			setSelectedProviderState(value);
-		},
-		[setSelectedProviderState]
-	);
+	useEffect(() => {
+		setPricingTimeUtc(getCurrentUtcTime());
+	}, []);
 
-	const setSelectedPricingPlan = useCallback(
-		(value: string) => {
-			setSelectedPricingPlanState(value);
-		},
-		[setSelectedPricingPlanState]
-	);
-
-	const availableModels = useMemo(() => {
-		const modelMap = new Map<
+	const modelsByReleaseDate = useMemo(() => {
+		const unique = new Map<
 			string,
 			{
 				modelId: string;
 				displayName: string;
-				endpoints: Map<
-					string,
-					{ providers: Set<string>; pricingPlans: Set<string> }
-				>;
+				releaseDate?: string | null;
+				announcementDate?: string | null;
 			}
 		>();
-		models.forEach((m) => {
-			if (!modelMap.has(m.model)) {
-				modelMap.set(m.model, {
-					modelId: m.model,
-					displayName: m.display_name || m.model,
-					endpoints: new Map(),
+		for (const row of models) {
+			if (!unique.has(row.model)) {
+				unique.set(row.model, {
+					modelId: row.model,
+					displayName: row.display_name || row.model,
+					releaseDate: row.release_date,
+					announcementDate: row.announcement_date,
 				});
 			}
-			const entry = modelMap.get(m.model)!;
-			if (!entry.endpoints.has(m.endpoint)) {
-				entry.endpoints.set(m.endpoint, {
-					providers: new Set(),
-					pricingPlans: new Set(),
-				});
-			}
-			const ep = entry.endpoints.get(m.endpoint)!;
-			ep.providers.add(m.provider);
-			ep.pricingPlans.add(m.pricing_plan || "standard");
+		}
+		return Array.from(unique.values()).sort((a, b) => {
+			const dateDiff =
+				releaseTimestamp(b.releaseDate, b.announcementDate) -
+				releaseTimestamp(a.releaseDate, a.announcementDate);
+			if (dateDiff !== 0) return dateDiff;
+			return a.displayName.localeCompare(b.displayName);
 		});
-		return Array.from(modelMap.values()).sort((a, b) =>
-			a.displayName.localeCompare(b.displayName)
-		);
 	}, [models]);
 
-	const selectedModel = useMemo(() => {
-		return availableModels.find((m) => m.modelId === selectedModelId);
-	}, [availableModels, selectedModelId]);
+	const selectionOptions = useMemo(() => {
+		const map = new Map<
+			string,
+			Map<string, Map<string, Set<string>>>
+		>();
 
-	const availableEndpoints = useMemo(() => {
-		if (!selectedModel) return [];
-		return Array.from(selectedModel.endpoints.keys()).sort();
-	}, [selectedModel]);
+		for (const row of models) {
+			if (!map.has(row.model)) {
+				map.set(row.model, new Map());
+			}
+			const endpointMap = map.get(row.model)!;
+			if (!endpointMap.has(row.endpoint)) {
+				endpointMap.set(row.endpoint, new Map());
+			}
+			const providerMap = endpointMap.get(row.endpoint)!;
+			if (!providerMap.has(row.provider)) {
+				providerMap.set(row.provider, new Set());
+			}
+			providerMap.get(row.provider)!.add(row.pricing_plan || "standard");
+		}
 
-	const availableProviders = useMemo(() => {
-		if (!selectedModel || !selectedEndpoint) return [];
-		const ep = selectedModel.endpoints.get(selectedEndpoint);
-		if (!ep) return [];
-		return Array.from(ep.providers).sort();
-	}, [selectedModel, selectedEndpoint]);
+		return map;
+	}, [models]);
 
-	const availablePricingPlans = useMemo(() => {
-		if (!selectedModel || !selectedEndpoint || !selectedProvider) return [];
-		const filteredModels = models.filter(
-			(m) =>
-				m.model === selectedModelId &&
-				m.endpoint === selectedEndpoint &&
-				m.provider === selectedProvider
-		);
-		const plans = new Set<string>();
-		filteredModels.forEach((m) => plans.add(m.pricing_plan || "standard"));
-		return Array.from(plans).sort();
+	const getDefaultConfig = (
+		modelId: string,
+		preferred?: Partial<SelectedPricingModelConfig>
+	): SelectedPricingModelConfig | null => {
+		const endpointMap = selectionOptions.get(modelId);
+		if (!endpointMap) return null;
+
+		const endpoints = Array.from(endpointMap.keys()).sort();
+		const endpoint =
+			preferred?.endpoint && endpointMap.has(preferred.endpoint)
+				? preferred.endpoint
+				: endpoints[0] || "";
+		const providerMap = endpointMap.get(endpoint);
+		if (!providerMap) return null;
+
+		const providers = Array.from(providerMap.keys()).sort();
+		const provider =
+			preferred?.provider && providerMap.has(preferred.provider)
+				? preferred.provider
+				: providers[0] || "";
+		const plans = Array.from(providerMap.get(provider) ?? []).sort((a, b) => {
+			if (a === "standard") return -1;
+			if (b === "standard") return 1;
+			return a.localeCompare(b);
+		});
+		const pricingPlan =
+			preferred?.pricingPlan && plans.includes(preferred.pricingPlan)
+				? preferred.pricingPlan
+				: plans.includes("standard")
+					? "standard"
+					: plans[0] || "";
+
+		return { endpoint, provider, pricingPlan };
+	};
+
+	useEffect(() => {
+		if (modelsByReleaseDate.length === 0) return;
+		if (selectedModelIds.length > 0) return;
+		const initialSelection =
+			selectedModelId && selectionOptions.has(selectedModelId)
+				? selectedModelId
+				: modelsByReleaseDate[0]?.modelId;
+		if (!initialSelection) return;
+		setSelectedModelIds([initialSelection]);
 	}, [
-		models,
-		selectedModel,
-		selectedEndpoint,
-		selectedProvider,
+		modelsByReleaseDate,
 		selectedModelId,
+		selectedModelIds.length,
+		selectionOptions,
 	]);
 
 	useEffect(() => {
-		if (!selectedProvider && availableProviders.length > 0) {
-			setSelectedProvider(availableProviders[0]);
-		}
-	}, [availableProviders, selectedProvider, setSelectedProvider]);
+		if (!selectedModelId) return;
+		setSelectedModelIds((current) =>
+			current.includes(selectedModelId) ? current : [selectedModelId, ...current]
+		);
+	}, [selectedModelId]);
 
 	useEffect(() => {
-		if (availablePricingPlans.length === 0) {
-			return;
-		}
-		if (
-			!selectedPricingPlan ||
-			!availablePricingPlans.includes(selectedPricingPlan)
-		) {
-			const nextPlan = availablePricingPlans.includes("standard")
-				? "standard"
-				: availablePricingPlans[0];
-			setSelectedPricingPlan(nextPlan);
-		}
-	}, [availablePricingPlans, selectedPricingPlan, setSelectedPricingPlan]);
-
-	const effectiveProvider = useMemo(() => {
-		if (!selectedProvider && availableProviders.length === 1) {
-			return availableProviders[0];
-		}
-		return selectedProvider;
-	}, [availableProviders, selectedProvider]);
-
-	const effectivePricingPlan = useMemo(() => {
-		if (
-			!selectedPricingPlan &&
-			availablePricingPlans.includes("standard")
-		) {
-			return "standard";
-		}
-		if (!selectedPricingPlan && availablePricingPlans.length > 0) {
-			return availablePricingPlans[0];
-		}
-		return selectedPricingPlan;
-	}, [availablePricingPlans, selectedPricingPlan]);
-
-	const selectedModelData = useMemo(() => {
-		if (
-			!selectedModelId ||
-			!selectedEndpoint ||
-			!effectiveProvider ||
-			!effectivePricingPlan
-		) {
-			return null;
-		}
-		return models.find(
-			(m) =>
-				m.model === selectedModelId &&
-				m.endpoint === selectedEndpoint &&
-				m.provider === effectiveProvider &&
-				(m.pricing_plan || "standard") === effectivePricingPlan
-		);
+		if (selectedModelIds.length === 0) return;
+		setModelConfigs((current) => {
+			let changed = false;
+			const next: Record<string, SelectedPricingModelConfig> = {};
+			for (const modelId of selectedModelIds) {
+				const defaultConfig = getDefaultConfig(modelId, {
+					endpoint: current[modelId]?.endpoint || initialEndpoint,
+					provider: current[modelId]?.provider || initialProvider,
+					pricingPlan: current[modelId]?.pricingPlan || initialPlan,
+				});
+				if (!defaultConfig) continue;
+				next[modelId] = defaultConfig;
+				if (
+					current[modelId]?.endpoint !== defaultConfig.endpoint ||
+					current[modelId]?.provider !== defaultConfig.provider ||
+					current[modelId]?.pricingPlan !== defaultConfig.pricingPlan
+				) {
+					changed = true;
+				}
+			}
+			if (Object.keys(current).length !== Object.keys(next).length) {
+				changed = true;
+			}
+			return changed ? next : current;
+		});
 	}, [
-		models,
-		selectedModelId,
-		selectedEndpoint,
-		effectiveProvider,
-		effectivePricingPlan,
+		initialEndpoint,
+		initialPlan,
+		initialProvider,
+		selectedModelIds,
+		selectionOptions,
 	]);
 
-	const handleModelSelect = (modelId: string) => {
-		const nextModel = availableModels.find((model) => model.modelId === modelId);
-		const nextEndpoints = nextModel
-			? Array.from(nextModel.endpoints.keys()).sort()
-			: [];
-		const nextEndpoint = nextEndpoints.includes(selectedEndpoint)
-			? selectedEndpoint
-			: nextEndpoints[0] || "";
+	useEffect(() => {
+		const primaryModelId = selectedModelIds[0] || "";
+		const primaryConfig = primaryModelId ? modelConfigs[primaryModelId] : null;
 
-		setSelectedModelId(modelId);
-		setSelectedEndpoint(nextEndpoint);
-		setSelectedProvider("");
-		setSelectedPricingPlan("");
+		setSelectedModelId(primaryModelId);
+		setSelectedEndpoint(primaryConfig?.endpoint || "");
+		setSelectedProvider(primaryConfig?.provider || "");
+		setSelectedPricingPlan(primaryConfig?.pricingPlan || "");
+	}, [
+		modelConfigs,
+		selectedModelIds,
+		setSelectedEndpoint,
+		setSelectedModelId,
+		setSelectedPricingPlan,
+		setSelectedProvider,
+	]);
+
+	const selectedModelData = useMemo<SelectedPricingModel[]>(() => {
+		return selectedModelIds
+			.map((modelId) => {
+				const config = modelConfigs[modelId] ?? getDefaultConfig(modelId);
+				if (!config) return null;
+				const row = models.find(
+					(item) =>
+						item.model === modelId &&
+						item.endpoint === config.endpoint &&
+						item.provider === config.provider &&
+						(item.pricing_plan || "standard") === config.pricingPlan
+				);
+				if (!row) return null;
+				return {
+					...row,
+					key: modelId,
+					label: row.display_name || row.model,
+					pricingPlan: config.pricingPlan,
+				};
+			})
+			.filter((row): row is SelectedPricingModel => Boolean(row));
+	}, [modelConfigs, models, selectedModelIds, selectionOptions]);
+
+	const allSelectedMeters = useMemo(() => {
+		const map = new Map<string, PricingMeter>();
+		for (const model of selectedModelData) {
+			for (const meter of model.meters) {
+				if (!map.has(meter.meter)) {
+					map.set(meter.meter, meter);
+				}
+			}
+		}
+		return Array.from(map.values());
+	}, [selectedModelData]);
+
+	const comparisonModels = useMemo(
+		() =>
+			selectedModelData.map((model) => ({
+				key: `${model.model}:${model.provider}:${model.endpoint}:${model.pricingPlan}`,
+				label: model.label,
+				modelId: model.model,
+				provider: model.provider,
+				pricingPlan: model.pricingPlan,
+				meters: model.meters,
+			})),
+		[selectedModelData]
+	);
+
+	const handleToggleModel = (modelId: string) => {
+		setSelectedModelIds((current) => {
+			if (current.includes(modelId)) {
+				setMeterInputs({});
+				return current.filter((id) => id !== modelId);
+			}
+			const defaultConfig = getDefaultConfig(modelId);
+			if (defaultConfig) {
+				setModelConfigs((configs) => ({
+					...configs,
+					[modelId]: defaultConfig,
+				}));
+			}
+			setMeterInputs({});
+			return [...current, modelId];
+		});
+	};
+
+	const handleUpdateModelConfig = (
+		modelId: string,
+		patch: Partial<SelectedPricingModelConfig>
+	) => {
+		setModelConfigs((current) => {
+			const existing = current[modelId] ?? getDefaultConfig(modelId);
+			const next = getDefaultConfig(modelId, { ...existing, ...patch });
+			if (!next) return current;
+			return {
+				...current,
+				[modelId]: next,
+			};
+		});
 		setMeterInputs({});
 	};
 
@@ -258,386 +348,62 @@ export default function PricingCalculator({
 		}));
 	};
 
-	const handleRequestMultiplierChange = (value: number) => {
-		setRequestMultiplier(value);
-	};
-
-	const comparisonCandidates = useMemo<ModelComparisonOption[]>(() => {
-		if (!selectedEndpoint) {
-			return [];
-		}
-		const grouped = new Map<
-			string,
-			{
-				modelId: string;
-				displayName: string;
-				provider: string;
-				planMap: Map<string, PricingMeter[]>;
-			}
-		>();
-
-		for (const row of models) {
-			if (row.endpoint !== selectedEndpoint) {
-				continue;
-			}
-			const key = `${row.model}::${row.provider}`;
-			if (!grouped.has(key)) {
-				grouped.set(key, {
-					modelId: row.model,
-					displayName: row.display_name || row.model,
-					provider: row.provider,
-					planMap: new Map<string, PricingMeter[]>(),
-				});
-			}
-			const group = grouped.get(key)!;
-			group.planMap.set(row.pricing_plan || "standard", row.meters);
-		}
-
-		return Array.from(grouped.entries())
-			.map(([key, group]) => {
-				const availablePricingPlans = Array.from(group.planMap.keys()).sort((a, b) => {
-					if (a === "standard") return -1;
-					if (b === "standard") return 1;
-					return a.localeCompare(b);
-				});
-				const metersByPlan = Object.fromEntries(group.planMap.entries());
-				return {
-				key,
-				modelId: group.modelId,
-				displayName: group.displayName,
-				provider: group.provider,
-				availablePricingPlans,
-				metersByPlan,
-				};
-			})
-			.sort((a, b) => {
-				const byName = a.displayName.localeCompare(b.displayName);
-				if (byName !== 0) return byName;
-				return a.provider.localeCompare(b.provider);
-			});
-	}, [models, selectedEndpoint]);
-
-	const comparisonModelMap = useMemo(() => {
-		return new Map(comparisonCandidates.map((model) => [model.key, model]));
-	}, [comparisonCandidates]);
-
-	useEffect(() => {
-		setComparisonModelKeys((prev) => {
-			const valid = prev.filter((key) => comparisonModelMap.has(key));
-			const next = valid.slice(0, MAX_COMPARISON_MODELS);
-			if (
-				prev.length === next.length &&
-				prev.every((value, index) => value === next[index])
-			) {
-				return prev;
-			}
-			return next;
-		});
-	}, [comparisonModelMap]);
-
-	useEffect(() => {
-		setComparisonModelPlans((prev) => {
-			const next: Record<string, string> = {};
-			for (const key of comparisonModelKeys) {
-				const candidate = comparisonModelMap.get(key);
-				if (!candidate) continue;
-				if (prev[key] && candidate.availablePricingPlans.includes(prev[key])) {
-					next[key] = prev[key];
-					continue;
-				}
-				next[key] = candidate.availablePricingPlans.includes("standard")
-					? "standard"
-					: candidate.availablePricingPlans[0] || "standard";
-			}
-
-			const prevKeys = Object.keys(prev).sort();
-			const nextKeys = Object.keys(next).sort();
-			if (
-				prevKeys.length === nextKeys.length &&
-				prevKeys.every((key, idx) => key === nextKeys[idx] && prev[key] === next[key])
-			) {
-				return prev;
-			}
-			return next;
-		});
-	}, [comparisonModelKeys, comparisonModelMap]);
-
-	const toggleComparisonModel = useCallback(
-		(modelKey: string) => {
-			if (!comparisonModelMap.has(modelKey)) {
-				return;
-			}
-			setComparisonModelKeys((prev) => {
-				if (prev.includes(modelKey)) {
-					return prev.filter((key) => key !== modelKey);
-				}
-				if (prev.length >= MAX_COMPARISON_MODELS) {
-					return prev;
-				}
-				return [...prev, modelKey];
-			});
-		},
-		[comparisonModelMap]
-	);
-
-	const setComparisonModelPlan = useCallback(
-		(modelKey: string, plan: string) => {
-			setComparisonModelPlans((prev) => {
-				if (prev[modelKey] === plan) {
-					return prev;
-				}
-				return { ...prev, [modelKey]: plan };
-			});
-		},
-		[]
-	);
-
-	const setComparisonModelProvider = useCallback(
-		(modelKey: string, provider: string) => {
-			const currentModel = comparisonModelMap.get(modelKey);
-			if (!currentModel) {
-				return;
-			}
-
-			const nextKey = `${currentModel.modelId}::${provider}`;
-			if (!comparisonModelMap.has(nextKey) || nextKey === modelKey) {
-				return;
-			}
-
-			setComparisonModelKeys((prev) => {
-				const currentIndex = prev.indexOf(modelKey);
-				if (currentIndex === -1) {
-					return prev;
-				}
-
-				if (prev.includes(nextKey)) {
-					return prev.filter((key) => key !== modelKey);
-				}
-
-				const next = [...prev];
-				next[currentIndex] = nextKey;
-				return next;
-			});
-		},
-		[comparisonModelMap]
-	);
-
-	const removeSelectedModelByKey = useCallback(
-		(modelKey: string) => {
-			if (comparisonModelKeys.includes(modelKey)) {
-				setComparisonModelKeys((prev) =>
-					prev.filter((key) => key !== modelKey)
-				);
-				setComparisonModelPlans((prev) => {
-					if (!(modelKey in prev)) return prev;
-					const next = { ...prev };
-					delete next[modelKey];
-					return next;
-				});
-				return;
-			}
-
-			const nextComparisonKey = comparisonModelKeys[0];
-			if (nextComparisonKey) {
-				const nextModel = comparisonModelMap.get(nextComparisonKey);
-				if (nextModel) {
-					const nextModelMeta = availableModels.find(
-						(model) => model.modelId === nextModel.modelId
-					);
-					const nextEndpoints = nextModelMeta
-						? Array.from(nextModelMeta.endpoints.keys()).sort()
-						: [];
-					const nextEndpoint = nextEndpoints.includes(selectedEndpoint)
-						? selectedEndpoint
-						: nextEndpoints[0] || "";
-
-					setSelectedModelId(nextModel.modelId);
-					setSelectedEndpoint(nextEndpoint);
-					setSelectedProvider(nextModel.provider);
-					setSelectedPricingPlan(comparisonModelPlans[nextComparisonKey] || "");
-					setMeterInputs({});
-
-					setComparisonModelKeys((prev) =>
-						prev.filter((key) => key !== nextComparisonKey)
-					);
-					setComparisonModelPlans((prev) => {
-						if (!(nextComparisonKey in prev)) return prev;
-						const next = { ...prev };
-						delete next[nextComparisonKey];
-						return next;
-					});
-					return;
-				}
-			}
-
-			setSelectedModelId("");
-			setSelectedEndpoint("");
-			setSelectedProvider("");
-			setSelectedPricingPlan("");
-			setMeterInputs({});
-			setComparisonModelKeys([]);
-			setComparisonModelPlans({});
-		},
-		[
-			availableModels,
-			comparisonModelKeys,
-			comparisonModelMap,
-			comparisonModelPlans,
-			selectedEndpoint,
-			setSelectedProvider,
-			setSelectedPricingPlan,
-		]
-	);
-
-	const selectedComparisonModels = useMemo(() => {
-		return comparisonModelKeys
-			.map((modelKey) => comparisonModelMap.get(modelKey))
-			.filter((model): model is ModelComparisonOption => Boolean(model))
-			.map((model) => ({
-				key: model.key,
-				label: model.displayName,
-				modelId: model.modelId,
-				provider: model.provider,
-				pricingPlan:
-					comparisonModelPlans[model.key] && model.availablePricingPlans.includes(comparisonModelPlans[model.key])
-						? comparisonModelPlans[model.key]
-						: model.availablePricingPlans.includes("standard")
-							? "standard"
-							: model.availablePricingPlans[0] || "standard",
-				availablePricingPlans: model.availablePricingPlans,
-				availableProviders: comparisonCandidates
-					.filter((candidate) => candidate.modelId === model.modelId)
-					.map((candidate) => candidate.provider)
-					.sort(),
-				meters:
-					model.metersByPlan[
-						comparisonModelPlans[model.key] && model.availablePricingPlans.includes(comparisonModelPlans[model.key])
-							? comparisonModelPlans[model.key]
-							: model.availablePricingPlans.includes("standard")
-								? "standard"
-								: model.availablePricingPlans[0] || "standard"
-					] || [],
-			}));
-	}, [comparisonCandidates, comparisonModelKeys, comparisonModelMap, comparisonModelPlans]);
-
-	const selectedModelsForReference = useMemo(() => {
-		if (!selectedModelData || !selectedModelId || !effectiveProvider) {
-			return selectedComparisonModels;
-		}
-
-		const primaryModel = {
-			key: "primary",
-			label:
-				selectedModel?.displayName ||
-				selectedModelData.display_name ||
-				selectedModelId,
-			modelId: selectedModelId,
-			provider: effectiveProvider,
-			pricingPlan: effectivePricingPlan,
-			availablePricingPlans,
-			availableProviders: Array.from(
-				new Set(
-					comparisonCandidates
-						.filter((candidate) => candidate.modelId === selectedModelId)
-						.map((candidate) => candidate.provider)
-				)
-			).sort(),
-			meters: selectedModelData.meters,
-		};
-
-		const comparisonsWithoutPrimary = selectedComparisonModels.filter(
-			(model) =>
-				!(
-					model.modelId === primaryModel.modelId &&
-					model.provider === primaryModel.provider
-				)
-		);
-
-		return [primaryModel, ...comparisonsWithoutPrimary];
-	}, [
-		availablePricingPlans,
-		comparisonCandidates,
-		effectivePricingPlan,
-		effectiveProvider,
-		selectedComparisonModels,
-		selectedModel,
-		selectedModelData,
-		selectedModelId,
-	]);
-
 	return (
-		<div className="mx-auto w-full max-w-[1500px] px-4 py-8">
-			<header className="mb-6 rounded-2xl border bg-gradient-to-br from-background to-muted/20 p-4 md:p-6">
+		<div className="mx-auto w-full max-w-[1440px] px-4 py-8">
+			<header className="mb-6 rounded-xl border bg-muted/20 p-4 md:p-6">
 				<div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
 					<div className="space-y-2 max-w-4xl">
 						<h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
 							AI Pricing Calculator
 						</h1>
 						<p className="text-sm md:text-base text-muted-foreground">
-							Compare {roundedTotalModelsCount}+ models across {providersCount}+ providers and estimate costs with shared usage inputs.
+							Select one or more models, configure their provider pricing, then compare every priced meter in a tabular view.
 						</p>
 					</div>
 					<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
 						<span className="inline-flex items-center gap-1 rounded-full border bg-background/70 px-2.5 py-1">
 							<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-							Updated Daily
+							{roundedTotalModelsCount}+ models
 						</span>
 						<span className="inline-flex items-center gap-1 rounded-full border bg-background/70 px-2.5 py-1">
 							<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-							Provider + plan aware
+							{providersCount}+ providers
 						</span>
 						<span className="inline-flex items-center gap-1 rounded-full border bg-background/70 px-2.5 py-1">
 							<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-							Input, output, cached tokens
+							Time-window aware
 						</span>
 					</div>
 				</div>
 			</header>
 
 			<div className="space-y-5">
-				<div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-					<div className="xl:col-span-7 [&>*]:h-full">
+				<div className="grid grid-cols-1 2xl:grid-cols-12 gap-6 items-start">
+					<div className="2xl:col-span-8">
 						<ModelSelector
 							models={models}
-							selectedModelId={selectedModelId || ""}
-							selectedProvider={effectiveProvider || ""}
-							selectedEndpoint={selectedEndpoint || ""}
-							availableEndpoints={availableEndpoints}
-							comparisonCandidates={comparisonCandidates.map((candidate) => ({
-								key: candidate.key,
-								modelId: candidate.modelId,
-								displayName: candidate.displayName,
-								provider: candidate.provider,
-							}))}
-							comparisonModelKeys={comparisonModelKeys}
-							maxComparisonModels={MAX_COMPARISON_MODELS}
-							onModelSelect={handleModelSelect}
-							onEndpointSelect={(ep) => {
-								setSelectedEndpoint(ep);
-								setSelectedProvider("");
-								setSelectedPricingPlan("");
-							}}
-							onToggleComparisonModel={toggleComparisonModel}
-							onRemoveModelSelection={removeSelectedModelByKey}
+							selectedModelIds={selectedModelIds}
+							modelConfigs={modelConfigs}
+							onToggleModel={handleToggleModel}
+							onUpdateModelConfig={handleUpdateModelConfig}
 						/>
 					</div>
-					<div className="xl:col-span-5 [&>*]:h-full">
-						{selectedModelData ? (
+					<div className="2xl:col-span-4">
+						{allSelectedMeters.length > 0 ? (
 							<UsageInputs
-								meters={selectedModelData.meters}
+								meters={allSelectedMeters}
 								meterInputs={meterInputs}
 								requestMultiplier={requestMultiplier}
+								pricingTimeUtc={pricingTimeUtc}
 								onMeterInputChange={handleMeterInputChange}
-								onRequestMultiplierChange={
-									handleRequestMultiplierChange
-								}
+								onRequestMultiplierChange={setRequestMultiplier}
+								onPricingTimeUtcChange={setPricingTimeUtc}
 							/>
 						) : (
 							<Card>
 								<CardContent className="text-center py-12">
 									<p className="text-muted-foreground">
-										Select a model and endpoint to configure
-										usage inputs.
+										Select at least one model to configure usage inputs.
 									</p>
 								</CardContent>
 							</Card>
@@ -645,31 +411,23 @@ export default function PricingCalculator({
 					</div>
 				</div>
 
-				{selectedModelData ? (
+				{selectedModelData.length > 0 ? (
 					<>
 						<PricingReference
-							meters={selectedModelData.meters}
-							pricingPlan={selectedModelData.pricing_plan}
-							selectedModelId={selectedModelId}
-							selectedModelLabel={
-								selectedModel?.displayName ||
-								selectedModelData.display_name ||
-								selectedModelId
-							}
-							availableProviders={availableProviders.map(
-								(p) => ({ provider: p, displayName: p })
-							)}
-							selectedProvider={effectiveProvider}
-							onProviderSelect={setSelectedProvider}
-							onPricingPlanSelect={setSelectedPricingPlan}
-							comparisonModels={selectedModelsForReference}
-							onComparisonModelPricingPlanSelect={setComparisonModelPlan}
-							onComparisonModelProviderSelect={setComparisonModelProvider}
+							meters={selectedModelData[0]?.meters ?? []}
+							pricingPlan={selectedModelData[0]?.pricing_plan}
+							selectedModelId={selectedModelData[0]?.model}
+							selectedModelLabel={selectedModelData[0]?.label}
+							selectedProvider={selectedModelData[0]?.provider || ""}
+							pricingTimeUtc={pricingTimeUtc}
+							comparisonModels={comparisonModels}
 						/>
 						<CostBreakdown
-							meters={selectedModelData.meters}
+							meters={allSelectedMeters}
 							meterInputs={meterInputs}
 							requestMultiplier={requestMultiplier}
+							pricingTimeUtc={pricingTimeUtc}
+							comparisonModels={comparisonModels}
 						/>
 					</>
 				) : null}
