@@ -42,6 +42,7 @@
     "sourceful",
     "stepfun",
     "suno",
+    "tencent",
     "upstage",
     "vercel",
     "voyage",
@@ -767,6 +768,8 @@
       "openai/gpt-realtime",
       "openai/gpt-realtime-1.5",
       "openai/gpt-realtime-2",
+      "openai/gpt-realtime-2.1",
+      "openai/gpt-realtime-2.1-mini",
       "openai/gpt-realtime-mini",
       "openai/gpt-realtime-mini-2025-10-06",
       "openai/gpt-realtime-translate",
@@ -998,6 +1001,9 @@
       "suno/suno-v4.5-",
       "suno/suno-v4.5-all",
       "suno/suno-v5"
+    ],
+    "tencent": [
+      "tencent/hy3"
     ],
     "upstage": [
       "upstage/solar-pro",
@@ -1717,6 +1723,7 @@
     "akashml",
     "alibaba-cloud",
     "amazon-bedrock",
+    "amazon-bedrock-mantle",
     "anthropic",
     "arcee-ai",
     "atlascloud",
@@ -1778,6 +1785,7 @@
   ],
   "pricing": [
     "atlascloud:text.generate:meituan-longcat-2.0",
+    "atlascloud:text.generate:tencent-hy3",
     "weights-and-biases:text.generate:moonshotai-kimi-k2.7-code",
     "weights-and-biases:text.generate:moonshotai-kimi-k2.6",
     "weights-and-biases:text.generate:z-ai-glm-5.2"
@@ -2458,6 +2466,7 @@
     "novita:text.generate:qwen-qwen3.5-27b",
     "novita:text.generate:qwen-qwen3.5-35b-a3b",
     "novita:text.generate:qwen-qwen3.5-397b-a17b",
+    "novita:text.generate:tencent-hy3-free",
     "novita:text.generate:xiaomi-mimo-v2-flash",
     "novita:text.generate:xiaomi-mimo-v2.5",
     "novita:text.generate:xiaomi-mimo-v2.5-pro",
@@ -2473,6 +2482,8 @@
     "openai:audio.generate:openai-gpt-4o-mini-tts",
     "openai:audio.realtime:openai-gpt-realtime",
     "openai:audio.realtime:openai-gpt-realtime-2",
+    "openai:audio.realtime:openai-gpt-realtime-2.1",
+    "openai:audio.realtime:openai-gpt-realtime-2.1-mini",
     "openai:audio.transcription:openai-gpt-realtime-whisper",
     "openai:audio.translations:openai-gpt-realtime-translate",
     "openai:batch:openai-computer-use-preview",

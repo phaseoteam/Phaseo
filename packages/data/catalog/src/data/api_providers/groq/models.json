@@ -214,7 +214,7 @@
     "provider_api_model_id": "groq:qwen/qwen3.6-27b",
     "provider_model_slug": "qwen/qwen3.6-27b",
     "internal_model_id": "qwen/qwen3.6-27b",
-    "is_active_gateway": true,
+    "is_active_gateway": false,
     "quantization_scheme": null,
     "input_modalities": "text",
     "output_modalities": "text",

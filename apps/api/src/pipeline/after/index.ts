@@ -429,7 +429,8 @@ async function handleNonStreamResponse(
         shapedUsage,
         card,
         ctx.body,
-        tier
+        tier,
+        ctx.meta
     ));
     const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
     const pricedWithByok = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFee({
