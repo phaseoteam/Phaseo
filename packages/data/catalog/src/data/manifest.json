@@ -768,6 +768,8 @@
       "openai/gpt-realtime",
       "openai/gpt-realtime-1.5",
       "openai/gpt-realtime-2",
+      "openai/gpt-realtime-2.1",
+      "openai/gpt-realtime-2.1-mini",
       "openai/gpt-realtime-mini",
       "openai/gpt-realtime-mini-2025-10-06",
       "openai/gpt-realtime-translate",

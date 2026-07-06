@@ -1,0 +1,37 @@
+{
+  "model_id": "openai/gpt-realtime-2.1",
+  "organisation_id": "openai",
+  "name": "GPT Realtime 2.1",
+  "status": "Available",
+  "previous_model_id": "openai/gpt-realtime-2",
+  "description": "GPT Realtime 2.1 is an OpenAI realtime audio model for low-latency, multimodal speech applications.",
+  "announced_date": "2026-07-06T00:00:00",
+  "release_date": "2026-07-06T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image,audio",
+  "output_types": "text,audio",
+  "api_model_id": "openai/gpt-realtime-2.1",
+  "links": [
+    {
+      "platform": "api_reference",
+      "url": "https://developers.openai.com/api/docs/models/gpt-realtime-2.1"
+    }
+  ],
+  "details": [
+    {
+      "name": "input_context_length",
+      "value": 128000
+    },
+    {
+      "name": "output_context_length",
+      "value": 32000
+    },
+    {
+      "name": "pricing_status",
+      "value": "unknown"
+    }
+  ],
+  "benchmarks": []
+}
