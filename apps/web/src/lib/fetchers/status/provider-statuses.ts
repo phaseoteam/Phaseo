@@ -236,8 +236,8 @@ async function fetchAnthropicStatus(): Promise<ProviderStatus> {
 	}
 }
 
-async function fetchXAIStatus(): Promise<ProviderStatus> {
-	const name = "xAI";
+async function fetchSpaceXAiStatus(): Promise<ProviderStatus> {
+	const name = "SpaceXAI";
 	const statusPageUrl = "https://status.x.ai/";
 	const feedUrl = "https://status.x.ai/feed.xml";
 
@@ -279,5 +279,5 @@ export async function getProviderStatuses() {
 	"use cache";
 	cacheLife("minutes");
 	cacheTag("providers:status");
-	return Promise.all([fetchOpenAIStatus(), fetchAnthropicStatus(), fetchXAIStatus()]);
+	return Promise.all([fetchOpenAIStatus(), fetchAnthropicStatus(), fetchSpaceXAiStatus()]);
 }

@@ -1,0 +1,44 @@
+{
+  "model_id": "spacex-ai/grok-4.20-multi-agent-beta",
+  "organisation_id": "spacex-ai",
+  "name": "Grok 4.20 Multi Agent Beta",
+  "status": "Available",
+  "previous_model_id": "spacex-ai/grok-4-1-non-thinking-2025-11-17",
+  "description": "Grok 4.20 Multi Agent Beta is a variant of SpaceXAI's Grok 4.20 designed for collaborative, agent-based workflows. This entry tracks a preview release and capabilities may change before general availability.",
+  "announced_date": "2026-02-17T00:00:00",
+  "release_date": "2026-02-17T00:00:00",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "spacex-ai/grok-4.20-multi-agent-beta",
+  "links": [],
+  "details": [],
+  "benchmarks": [
+    {
+      "benchmark_id": "arena-chat-rank",
+      "score": 9,
+      "is_self_reported": false,
+      "other_info": "Arena AI chat rank via publicName=grok-4.20-multi-agent-beta-0309",
+      "source_link": "https://arena.ai/?leaderboard=",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "arena-search-rank",
+      "score": 6,
+      "is_self_reported": false,
+      "other_info": "Arena AI search rank via publicName=grok-4.20-multi-agent-beta-0309",
+      "source_link": "https://arena.ai/?leaderboard=",
+      "rank": 1
+    },
+    {
+      "benchmark_id": "nyt-connections",
+      "score": 93.4,
+      "is_self_reported": false,
+      "other_info": "940 puzzles",
+      "source_link": "https://github.com/lechmazur/nyt-connections",
+      "rank": 11
+    }
+  ]
+}

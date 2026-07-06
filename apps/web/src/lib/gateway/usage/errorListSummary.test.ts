@@ -4,18 +4,18 @@ describe("formatErrorListSummary", () => {
 	test("prefers structured provider failure diagnostics", () => {
 		expect(
 			formatErrorListSummary({
-				provider: "x-ai",
+				provider: "spacex-ai",
 				error_code: "upstream_error",
 				error_message: JSON.stringify({
 					error: "upstream_error",
 					provider_failure_diagnostics: {
 						category: "provider_access_missing",
-						provider: "x-ai",
+						provider: "spacex-ai",
 						hint: "Enable the model for this project.",
 					},
 				}),
 			}),
-		).toBe("provider_access_missing · x-ai");
+		).toBe("provider_access_missing · spacex-ai");
 	});
 
 	test("falls back to structured reason when provider failure diagnostics are absent", () => {

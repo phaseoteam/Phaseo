@@ -430,8 +430,8 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
     },
     {
         platformId: "xai",
-        platformName: "xAI",
-        providerIds: ["x-ai"],
+        platformName: "SpaceXAI",
+        providerIds: ["spacex-ai"],
         modelsEndpoint: "https://api.x.ai/v1/models",
         active: true,
     },

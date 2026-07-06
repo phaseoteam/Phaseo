@@ -129,7 +129,7 @@
       "other_info": "Listed under GitHub Copilot Free model access"
     },
     {
-      "model_id": "x-ai/grok-code-fast-1",
+      "model_id": "spacex-ai/grok-code-fast-1",
       "model_info": "Grok Code Fast 1",
       "rate_limit": "50 premium requests / month",
       "other_info": "Listed under GitHub Copilot Free model access"

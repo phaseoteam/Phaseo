@@ -78,7 +78,7 @@ export default async function PrivacyPage() {
 				</ul>
 				<p className="mt-2 text-foreground/80">
 					Third-party model providers (for example OpenAI, Anthropic,
-					Google, xAI and others) have their own privacy and data
+					Google, SpaceXAI and others) have their own privacy and data
 					handling practices. When we forward your requests to them,
 					they usually act as independent controllers of your data
 					under their own terms and policies. You should review those

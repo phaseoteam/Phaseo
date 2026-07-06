@@ -23,6 +23,7 @@ function isMissingRelationError(error: unknown): boolean {
 	return (
 		text.includes("does not exist") ||
 		text.includes("could not find table") ||
+		text.includes("could not find the table") ||
 		text.includes("relation")
 	);
 }

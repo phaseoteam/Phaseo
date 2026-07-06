@@ -1,7 +1,7 @@
 {
   "plan_id": "supergrok-basic",
   "name": "SuperGrok Basic",
-  "organisation_id": "x-ai",
+  "organisation_id": "spacex-ai",
   "description": null,
   "pricing_options": [
     {
@@ -20,7 +20,7 @@
   "features": [],
   "models": [
     {
-      "model_id": "x-ai/grok-4.1-fast",
+      "model_id": "spacex-ai/grok-4.1-fast",
       "model_info": null,
       "rate_limit": null,
       "other_info": null

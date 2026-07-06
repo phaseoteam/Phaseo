@@ -174,7 +174,7 @@ function displayStatus(status: string) {
 function getLogoId(value: string) {
 	const provider = value.trim().toLowerCase();
 	if (!provider) return "unknown";
-	if (provider === "xai") return "x-ai";
+	if (provider === "xai") return "spacex-ai";
 	return provider;
 }
 

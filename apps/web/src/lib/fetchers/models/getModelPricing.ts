@@ -304,6 +304,63 @@ export default async function getModelPricing(
         )
     `;
 
+    const providerModelSelectWithoutDataPolicy = `
+        provider_api_model_id,
+        provider_id,
+        api_model_id,
+        model_id,
+        provider_model_slug,
+        is_active_gateway,
+        routing_status,
+        input_modalities,
+        output_modalities,
+        quantization_scheme,
+        context_length,
+        max_output_tokens,
+        prompt_training_policy_override,
+        prompt_training_override_notes,
+        prompt_training_override_source_url,
+        effective_from,
+        effective_to,
+        created_at,
+        updated_at,
+        data_api_provider_model_capabilities (
+            capability_id,
+            params,
+            max_input_tokens,
+            max_output_tokens,
+            status
+        ),
+        data_api_providers (
+            api_provider_name,
+            provider_family_id,
+            offer_label,
+            offer_scope,
+            colour,
+            link,
+            country_code,
+            status,
+            routing_status,
+            residency_mode,
+            default_execution_regions,
+            default_data_regions,
+            zero_data_retention,
+            residency_source_url,
+            residency_notes,
+            regional_pricing_mode,
+            regional_pricing_uplift_percent,
+            pricing_source_url,
+            regional_pricing_notes,
+            prompt_training_policy,
+            prompt_training_notes,
+            prompt_training_source_url,
+            user_identifier_policy,
+            user_identifier_notes,
+            privacy_policy_url,
+            terms_of_service_url
+        )
+    `;
+
     const providerModelSelectLegacy = `
         provider_api_model_id,
         provider_id,
@@ -341,7 +398,7 @@ export default async function getModelPricing(
     // context_length / max_output_tokens columns on data_api_provider_models.
     let pmRows: any[] | null = null;
     let pmError: any = null;
-    let usedLegacyProviderModelSelect = false;
+    let providerModelSelectForSiblingLookup = providerModelSelect;
     const mergeProviderRowsById = (rows: any[]): any[] => {
         const byProviderApiModelId = new Map<string, any>();
         for (const row of rows) {
@@ -410,13 +467,23 @@ export default async function getModelPricing(
     }
 
     if (pmError && isMissingProviderModelColumnError(pmError)) {
-        usedLegacyProviderModelSelect = true;
-        const res = await fetchProviderRows({
-            selectClause: providerModelSelectLegacy,
+        const compatRes = await fetchProviderRows({
+            selectClause: providerModelSelectWithoutDataPolicy,
             modelIds: [modelId],
         });
-        pmRows = res.rows;
-        pmError = res.error;
+        if (compatRes.error && isMissingProviderModelColumnError(compatRes.error)) {
+            providerModelSelectForSiblingLookup = providerModelSelectLegacy;
+            const legacyRes = await fetchProviderRows({
+                selectClause: providerModelSelectLegacy,
+                modelIds: [modelId],
+            });
+            pmRows = legacyRes.rows;
+            pmError = legacyRes.error;
+        } else {
+            providerModelSelectForSiblingLookup = providerModelSelectWithoutDataPolicy;
+            pmRows = compatRes.rows;
+            pmError = compatRes.error;
+        }
     }
 
     if (pmError) throw new Error(pmError.message || "Failed to fetch provider models");
@@ -435,9 +502,7 @@ export default async function getModelPricing(
     );
     if (siblingModelIds.length > 0 && providerIdsForSiblingLookup.length > 0) {
         const siblingRes = await fetchProviderRows({
-            selectClause: usedLegacyProviderModelSelect
-                ? providerModelSelectLegacy
-                : providerModelSelect,
+            selectClause: providerModelSelectForSiblingLookup,
             modelIds: siblingModelIds,
             providerIds: providerIdsForSiblingLookup,
         });

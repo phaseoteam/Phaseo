@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { xAiQuirks } from "../../providers/x-ai/quirks";
 
-describe("xAI quirks", () => {
+describe("SpaceXAI quirks", () => {
 	describe("transformRequest", () => {
 		it("downgrades json_schema and strips unsupported fields for reasoning models", () => {
 			const request: Record<string, any> = {

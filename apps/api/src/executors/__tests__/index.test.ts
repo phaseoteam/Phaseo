@@ -347,7 +347,7 @@ describe("resolveProviderExecutor", () => {
 		expectEnabled("google-vertex", "video.generation");
 		expectDisabled("google-vertex", "music.generate");
 
-		// xAI: direct video + OpenAI-compatible image/audio.
+		// SpaceXAI: direct video + OpenAI-compatible image/audio.
 		expectEnabled("x-ai", "video.generation");
 		expectEnabled("x-ai", "images.generations");
 		expectEnabled("x-ai", "images.edits");

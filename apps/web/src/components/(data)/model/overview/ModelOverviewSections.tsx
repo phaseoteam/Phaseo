@@ -81,6 +81,34 @@ type ModelPerformancePromiseProps = {
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 };
 
+const OPTIONAL_MODEL_SECTION_TIMEOUT_MS = 2_500;
+
+function withOptionalSectionTimeout<T>(
+	promise: Promise<T>,
+	fallback: T,
+	label: string
+): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | null = null;
+	const timeoutPromise = new Promise<T>((resolve) => {
+		timeout = setTimeout(() => {
+			console.warn(`[ModelOverviewSections] ${label} timed out; using fallback.`);
+			resolve(fallback);
+		}, OPTIONAL_MODEL_SECTION_TIMEOUT_MS);
+	});
+
+	return Promise.race([promise, timeoutPromise])
+		.catch((error) => {
+			console.warn(
+				`[ModelOverviewSections] ${label} failed; using fallback.`,
+				error
+			);
+			return fallback;
+		})
+		.finally(() => {
+			if (timeout) clearTimeout(timeout);
+		});
+}
+
 function Section({
 	id,
 	children,
@@ -232,15 +260,24 @@ export async function ModelPerformanceSection({
 }: ModelSectionSharedProps &
 	ModelPerformancePromiseProps & {
 		surface?: ModelSectionSurface;
-	}) {
+}) {
 	const [performanceMetrics, pendingApiRelease, tokenTrajectory] =
 		await Promise.all([
-		performancePromise ??
-			fetchFrontendModelPerformance(modelId, 24).catch(() => null),
-		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden).catch(
-			() => null,
+		withOptionalSectionTimeout(
+			performancePromise ?? fetchFrontendModelPerformance(modelId, 24),
+			null,
+			"model performance"
 		),
-		fetchFrontendModelTokenTrajectory(modelId).catch(() => null),
+		withOptionalSectionTimeout(
+			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
+			null,
+			"pending API release state"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendModelTokenTrajectory(modelId),
+			null,
+			"token trajectory"
+		),
 	]);
 	const shouldShowPendingApiBanner =
 		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
@@ -282,9 +319,11 @@ export async function ModelUptimeSection({
 	modelId,
 	performancePromise,
 }: Pick<ModelSectionSharedProps, "modelId"> & ModelPerformancePromiseProps) {
-	const performanceMetrics =
-		(await (performancePromise ??
-			fetchFrontendModelPerformance(modelId, 24).catch(() => null))) ?? null;
+	const performanceMetrics = await withOptionalSectionTimeout(
+		performancePromise ?? fetchFrontendModelPerformance(modelId, 24),
+		null,
+		"uptime performance"
+	);
 	const showLeastStableProvider =
 		performanceMetrics?.successSeries.some(
 			(point) =>
@@ -304,7 +343,11 @@ export async function ModelAppsSection({
 	modelId,
 	includeHidden: _includeHidden,
 }: ModelSectionSharedProps) {
-	const modelApps = await fetchFrontendModelApps(modelId).catch(() => []);
+	const modelApps = await withOptionalSectionTimeout(
+		fetchFrontendModelApps(modelId),
+		[],
+		"model apps"
+	);
 
 	return (
 		<>
@@ -352,10 +395,14 @@ export async function ModelActivitySection({
 	modelId,
 	includeHidden: _includeHidden,
 }: ModelSectionSharedProps) {
-	const usageRows = await fetchFrontendModelUsageDailyBreakdown({
-		modelId,
-		days: 30,
-	}).catch(() => []);
+	const usageRows = await withOptionalSectionTimeout(
+		fetchFrontendModelUsageDailyBreakdown({
+			modelId,
+			days: 30,
+		}),
+		[],
+		"model activity"
+	);
 
 	return (
 		<>
@@ -387,11 +434,18 @@ export async function ModelQuickstartSection({
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
-	const includeInternalProviders = await isAdminViewer().catch(() => false);
-	const gatewayMetadata = await (includeInternalProviders
-		? getModelGatewayMetadataCached(modelId, includeHidden)
-		: fetchFrontendModelGatewayMetadata(modelId)
-	).catch(() => null);
+	const includeInternalProviders = await withOptionalSectionTimeout(
+		isAdminViewer(),
+		false,
+		"quickstart admin viewer check"
+	);
+	const gatewayMetadata = await withOptionalSectionTimeout(
+		includeInternalProviders
+			? getModelGatewayMetadataCached(modelId, includeHidden)
+			: fetchFrontendModelGatewayMetadata(modelId),
+		null,
+		"quickstart metadata"
+	);
 
 	const quickstartEndpoint =
 		gatewayMetadata?.activeProviders.find((p) => p.endpoint)?.endpoint ??
@@ -445,9 +499,15 @@ export async function ModelBenchmarksSection({
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
 	const [benchmarkHighlights, pendingApiRelease] = await Promise.all([
-		fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []),
-		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden).catch(
-			() => null,
+		withOptionalSectionTimeout(
+			fetchFrontendModelBenchmarkHighlights(modelId),
+			[],
+			"benchmark highlights"
+		),
+		withOptionalSectionTimeout(
+			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
+			null,
+			"benchmark pending API release state"
 		),
 	]);
 	const shouldShowPendingApiBanner =
@@ -655,9 +715,11 @@ export async function ModelCreatorModelsSection({
 	model,
 }: ModelSectionSharedProps & { model: ModelOverviewPage }) {
 	const creatorName = model.organisation?.name ?? "this creator";
-	const creatorModels = await fetchFrontendOrganisationModels(
-		model.organisation_id,
-	).catch(() => []);
+	const creatorModels = await withOptionalSectionTimeout(
+		fetchFrontendOrganisationModels(model.organisation_id),
+		[],
+		"creator models"
+	);
 	const otherModels = creatorModels
 		.filter((creatorModel) => creatorModel.model_id !== modelId)
 		.sort(

@@ -3,7 +3,7 @@ const ORGANISATION_NAME_OVERRIDES: Record<string, string> = {
 	ibm: "IBM",
 	lg: "LG",
 	openai: "OpenAI",
-	"x-ai": "xAI",
+	"spacex-ai": "SpaceXAI",
 	"z-ai": "z.AI",
 };
 

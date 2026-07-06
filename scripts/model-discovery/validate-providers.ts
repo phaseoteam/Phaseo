@@ -65,7 +65,7 @@ const EXPECTED_PLATFORM_NAMES = [
     "Together",
     "Venice",
     "Weights & Biases",
-    "xAI",
+    "SpaceXAI",
     "Xiaomi",
     "z.AI",
 ] as const;

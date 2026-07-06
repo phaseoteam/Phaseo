@@ -6,12 +6,14 @@ describe("normalizeProviderId", () => {
 		expect(normalizeProviderId("  OPENAI  ")).toBe("openai");
 		expect(normalizeProviderId("Google-AI-Studio")).toBe("google-ai-studio");
 		expect(normalizeProviderId("x-AI")).toBe("x-ai");
+		expect(normalizeProviderId("SpaceX-AI")).toBe("x-ai");
 		expect(normalizeProviderId("z-ai")).toBe("z-ai");
 	});
 
 	it("maps supported provider aliases onto canonical routing ids", () => {
 		expect(normalizeProviderId("NovitaAI")).toBe("novita");
 		expect(normalizeProviderId("novita-ai")).toBe("novita");
+		expect(normalizeProviderId("spacex-ai")).toBe("x-ai");
 	});
 
 	it("does not alias display/provider brand names", () => {

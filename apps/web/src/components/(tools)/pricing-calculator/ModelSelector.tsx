@@ -42,7 +42,7 @@ function formatProviderLabel(providerId: string): string {
 		google: "Google",
 		"google-ai-studio": "Google AI Studio",
 		"google-vertex": "Google Vertex",
-		"x-ai": "xAI",
+		"spacex-ai": "SpaceXAI",
 		aws: "AWS",
 		azure: "Azure",
 	};
