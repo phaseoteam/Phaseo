@@ -6,7 +6,7 @@ import type {
 	IRModel,
 	IROperation,
 	IRSchema
-} from "@ai-stats/oapi-core";
+} from "@phaseo/oapi-core";
 
 export const backendPhp: Backend = {
 	id: "php",
@@ -26,7 +26,7 @@ function renderClient(): string {
 		"<?php",
 		"declare(strict_types=1);",
 		"",
-		"namespace AIStats\\Gen;",
+		"namespace Phaseo\\Gen;",
 		"",
 		"class RequestException extends \\RuntimeException",
 		"{",
@@ -183,7 +183,7 @@ function renderModels(models: IRModel[]): string {
 		"<?php",
 		"declare(strict_types=1);",
 		"",
-		"namespace AIStats\\Gen;",
+		"namespace Phaseo\\Gen;",
 		""
 	];
 	for (const model of models) {
@@ -215,7 +215,7 @@ function renderOperations(operations: IROperation[]): string {
 		"<?php",
 		"declare(strict_types=1);",
 		"",
-		"namespace AIStats\\Gen;",
+		"namespace Phaseo\\Gen;",
 		""
 	];
 	for (const operation of operations) {

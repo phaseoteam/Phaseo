@@ -1,4 +1,4 @@
-# @ai-stats/devtools-core
+# @phaseo/devtools-core
 
 Core types, schemas, and utilities for Phaseo DevTools.
 
@@ -9,11 +9,11 @@ This package provides the shared TypeScript types and Zod schemas used across al
 ## Installation
 
 ```bash
-npm install @ai-stats/devtools-core
+npm install @phaseo/devtools-core
 # or
-pnpm add @ai-stats/devtools-core
+pnpm add @phaseo/devtools-core
 # or
-yarn add @ai-stats/devtools-core
+yarn add @phaseo/devtools-core
 ```
 
 ## Usage
@@ -32,13 +32,13 @@ import type {
   Metadata,
   SessionMetadata,
   Stats
-} from "@ai-stats/devtools-core";
+} from "@phaseo/devtools-core";
 ```
 
 ### Use Schemas for Validation
 
 ```typescript
-import { DevToolsEntrySchema, DevToolsConfigSchema } from "@ai-stats/devtools-core";
+import { DevToolsEntrySchema, DevToolsConfigSchema } from "@phaseo/devtools-core";
 
 // Validate an entry
 const entry = DevToolsEntrySchema.parse({
@@ -60,9 +60,9 @@ const entry = DevToolsEntrySchema.parse({
 ### Write Telemetry Data
 
 ```typescript
-import { DevToolsWriter } from "@ai-stats/devtools-core";
+import { DevToolsWriter } from "@phaseo/devtools-core";
 
-const writer = new DevToolsWriter(".ai-stats-devtools");
+const writer = new DevToolsWriter(".phaseo-devtools");
 
 // Write a single entry
 writer.writeEntry(entry);
@@ -80,7 +80,7 @@ const entries = writer.readEntries();
 ### Export to CSV
 
 ```typescript
-import { entriesToCSV } from "@ai-stats/devtools-core";
+import { entriesToCSV } from "@phaseo/devtools-core";
 
 const entries = writer.readEntries();
 const csv = entriesToCSV(entries);
@@ -146,7 +146,7 @@ The main telemetry entry structure:
 DevTools creates the following directory structure:
 
 ```
-.ai-stats-devtools/
+.phaseo-devtools/
 ├── generations.jsonl          # Main telemetry log (JSONL format)
 ├── metadata.json              # Session metadata
 └── assets/                    # Binary assets

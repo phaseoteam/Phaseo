@@ -80,7 +80,7 @@ const FIRST_PROMPT_SNIPPETS: readonly FirstPromptSnippet[] = [
 		id: "curl",
 		label: "cURL",
 		lang: "bash",
-		code: (modelId) => `curl https://api.phaseo.app/v1/responses \\
+		code: (modelId) => `curl https://api.phaseo.ai/v1/responses \\
   -H "Authorization: Bearer $PHASEO_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -92,7 +92,7 @@ const FIRST_PROMPT_SNIPPETS: readonly FirstPromptSnippet[] = [
 		id: "typescript",
 		label: "TypeScript",
 		lang: "ts",
-		code: (modelId) => `const response = await fetch("https://api.phaseo.app/v1/responses", {
+		code: (modelId) => `const response = await fetch("https://api.phaseo.ai/v1/responses", {
   method: "POST",
   headers: {
     "Authorization": \`Bearer \${process.env.PHASEO_API_KEY!}\`,
@@ -115,7 +115,7 @@ console.log(data);`,
 import requests
 
 response = requests.post(
-    "https://api.phaseo.app/v1/responses",
+    "https://api.phaseo.ai/v1/responses",
     headers={
         "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
         "Content-Type": "application/json",
@@ -132,7 +132,7 @@ print(response.json())`,
 		id: "javascript",
 		label: "JavaScript",
 		lang: "js",
-		code: (modelId) => `const response = await fetch("https://api.phaseo.app/v1/responses", {
+		code: (modelId) => `const response = await fetch("https://api.phaseo.ai/v1/responses", {
   method: "POST",
   headers: {
     Authorization: \`Bearer \${process.env.PHASEO_API_KEY}\`,
@@ -166,7 +166,7 @@ func main() {
   }\`)
   req, _ := http.NewRequest(
     "POST",
-    "https://api.phaseo.app/v1/responses",
+    "https://api.phaseo.ai/v1/responses",
     bytes.NewBuffer(body),
   )
   req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
@@ -189,7 +189,7 @@ $payload = json_encode([
   "input" => "Write a one-line welcome message for a new user.",
 ]);
 
-$ch = curl_init("https://api.phaseo.app/v1/responses");
+$ch = curl_init("https://api.phaseo.ai/v1/responses");
 curl_setopt_array($ch, [
   CURLOPT_POST => true,
   CURLOPT_HTTPHEADER => [
@@ -215,7 +215,7 @@ curl_close($ch);`,
   """;
 
 var request = java.net.http.HttpRequest.newBuilder()
-  .uri(java.net.URI.create("https://api.phaseo.app/v1/responses"))
+  .uri(java.net.URI.create("https://api.phaseo.ai/v1/responses"))
   .header("Authorization", "Bearer " + System.getenv("PHASEO_API_KEY"))
   .header("Content-Type", "application/json")
   .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body))
@@ -242,7 +242,7 @@ var body = """
 """;
 
 var response = await client.PostAsync(
-    "https://api.phaseo.app/v1/responses",
+    "https://api.phaseo.ai/v1/responses",
     new StringContent(body, Encoding.UTF8, "application/json")
 );`,
 	},
@@ -773,7 +773,7 @@ export default function HomeOpenSourceSection({
 							variant="outline"
 							className="h-10 rounded-xl px-5 text-sm font-semibold"
 						>
-								<Link href={variant === "beta" ? "/models" : "https://docs.phaseo.app/v1/quickstart"}>
+								<Link href={variant === "beta" ? "/models" : "https://docs.phaseo.ai/v1/quickstart"}>
 									{variant === "beta" ? (
 										<span className="group inline-flex items-center gap-2">
 											<span>Explore</span>
@@ -815,7 +815,7 @@ export default function HomeOpenSourceSection({
 										ariaLabel={`${currentTickerProvider.label} provider`}
 									/>
 									<ArrowRight className="h-3.25 w-3.25 text-zinc-500/80 dark:text-zinc-400/80" />
-									<TickerLogo id="ai-stats" variant="auto" />
+									<TickerLogo id="phaseo" variant="auto" />
 								</span>
 								Migration guide
 							</Link>

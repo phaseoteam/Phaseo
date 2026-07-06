@@ -40,11 +40,11 @@ export type UnifiedChatEndpoint =
 
 export type ChatServerToolType =
     | "gateway:datetime"
-    | "ai-stats:web_search"
-    | "ai-stats:web_fetch"
-    | "ai-stats:advisor"
-    | "ai-stats:image_generation"
-    | "ai-stats:apply_patch";
+    | "phaseo:web_search"
+    | "phaseo:web_fetch"
+    | "phaseo:advisor"
+    | "phaseo:image_generation"
+    | "phaseo:apply_patch";
 
 export type ChatAdvisorServerToolConfig = {
     name?: string;

@@ -7,10 +7,10 @@ info:
   version: 1.0.0
   contact:
     name: Phaseo
-    url: https://phaseo.app
+    url: https://phaseo.ai
     email: danielbutler500@gmail.com
 servers:
-  - url: https://api.phaseo.app/v1
+  - url: https://api.phaseo.ai/v1
 security:
   - BearerAuth: []
 paths:

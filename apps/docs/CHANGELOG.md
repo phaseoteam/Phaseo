@@ -1,4 +1,4 @@
-# @ai-stats/docs
+# @phaseo/docs
 
 ## 1.0.0
 

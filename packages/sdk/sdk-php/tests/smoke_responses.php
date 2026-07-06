@@ -9,7 +9,7 @@ if (!$apiKey) {
     throw new RuntimeException("PHASEO_API_KEY is required");
 }
 
-$baseUrl = getenv("PHASEO_BASE_URL") ?: "https://api.phaseo.app/v1";
+$baseUrl = getenv("PHASEO_BASE_URL") ?: "https://api.phaseo.ai/v1";
 $client = new \Phaseo\Gen\Client($baseUrl, ["Authorization" => "Bearer " . $apiKey]);
 $model = getenv("PHASEO_SMOKE_MODEL") ?: "openai/gpt-5.4-nano";
 $input = getenv("PHASEO_SMOKE_INPUT") ?: "Hi";

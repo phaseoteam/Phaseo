@@ -27,7 +27,7 @@ $tmpDir = sys_get_temp_dir() . "/phaseo-devtools-php-" . bin2hex(random_bytes(4)
 try {
     $client = new Phaseo(
         apiKey: "test",
-        basePath: "https://api.phaseo.app/v1",
+        basePath: "https://api.phaseo.ai/v1",
         enableDeprecationWarnings: false,
         devtools: Devtools::create(enabled: true, directory: $tmpDir)
     );

@@ -24,10 +24,10 @@ The gateway lets developers access models from OpenAI, Anthropic, Google, Mistra
 
 ## Useful Links
 
-- API docs: https://docs.phaseo.app/v1/api-reference/introduction
-- Product: https://phaseo.app
+- API docs: https://docs.phaseo.ai/v1/api-reference/introduction
+- Product: https://phaseo.ai
 - GitHub: https://github.com/phaseoteam/Phaseo
-- Support: https://phaseo.app/contact
+- Support: https://phaseo.ai/contact
 
 ## Contributing
 

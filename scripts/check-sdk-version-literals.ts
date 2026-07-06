@@ -83,7 +83,7 @@ async function main(): Promise<void> {
       packageJsonPath: file("packages", "sdk", "sdk-py", "package.json"),
       checks: [
         {
-          filePath: file("packages", "sdk", "sdk-py", "src", "ai_stats_devtools", "recorder.py"),
+          filePath: file("packages", "sdk", "sdk-py", "src", "phaseo_devtools", "recorder.py"),
           pattern: /^SDK_VERSION\s*=\s*"([^"]+)"/m,
           label: "SDK_VERSION constant",
         },
@@ -119,7 +119,7 @@ async function main(): Promise<void> {
       packageJsonPath: file("packages", "sdk", "sdk-java", "package.json"),
       checks: [
         {
-          filePath: file("packages", "sdk", "sdk-java", "src", "ai", "stats", "sdk", "AIStats.java"),
+          filePath: file("packages", "sdk", "sdk-java", "src", "app", "phaseo", "sdk", "Phaseo.java"),
           pattern: /new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/m,
           label: "TelemetryRecorder constructor version",
         },

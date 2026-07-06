@@ -199,11 +199,18 @@ function AppShell() {
           <div className="px-6 py-4 border-b border-sidebar-border min-h-[72px] flex items-center">
             <div className="flex items-center gap-3">
               <img
-                src={darkMode ? "/wordmark_dark.svg" : "/wordmark_light.svg"}
-                alt="Phaseo"
-                className="h-7"
+                src={darkMode ? "/logo-dark.svg" : "/logo.svg"}
+                alt=""
+                className="h-8 w-8 shrink-0"
               />
-              <div className="text-lg font-semibold">Devtools</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-medium leading-none tracking-normal">
+                  Phaseo
+                </span>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Devtools
+                </span>
+              </div>
             </div>
           </div>
 

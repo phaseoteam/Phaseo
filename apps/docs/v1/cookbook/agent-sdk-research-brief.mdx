@@ -109,9 +109,9 @@ const client = createGatewayAgentClient({
   },
   plugins: [{ id: "response-healing" }],
   gatewayTools: [
-    { type: "ai-stats:web_search", parameters: { max_results: 5 } },
+    { type: "phaseo:web_search", parameters: { max_results: 5 } },
   ],
-  toolChoice: "ai-stats:web_search",
+  toolChoice: "phaseo:web_search",
   webSearchOptions: { search_context_size: "high" },
 });
 ```
@@ -149,7 +149,7 @@ Use this recipe when:
 
 Do not use this pattern when:
 
-- the workflow already knows the exact URLs and `ai-stats:web_fetch` is enough
+- the workflow already knows the exact URLs and `phaseo:web_fetch` is enough
 - the agent needs rich local tools more than upstream-native tools
 - the output contract is loose enough that strict JSON adds more overhead than value
 

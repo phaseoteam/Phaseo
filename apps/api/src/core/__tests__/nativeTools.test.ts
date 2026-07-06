@@ -3,9 +3,9 @@ import { isIRNativeToolDefinition } from "../nativeTools";
 
 describe("isIRNativeToolDefinition", () => {
 	it("does not treat gateway-managed Phaseo tools as provider-native tools", () => {
-		expect(isIRNativeToolDefinition({ type: "ai-stats:web_search" })).toBe(false);
-		expect(isIRNativeToolDefinition({ type: "ai-stats:advisor" })).toBe(false);
-		expect(isIRNativeToolDefinition({ type: "ai-stats:apply_patch" })).toBe(false);
+		expect(isIRNativeToolDefinition({ type: "phaseo:web_search" })).toBe(false);
+		expect(isIRNativeToolDefinition({ type: "phaseo:advisor" })).toBe(false);
+		expect(isIRNativeToolDefinition({ type: "phaseo:apply_patch" })).toBe(false);
 	});
 
 	it("accepts provider-native tool definitions", () => {

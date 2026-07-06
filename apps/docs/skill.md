@@ -1,5 +1,5 @@
 ---
-name: ai-stats
+name: phaseo
 description: Use Phaseo when you need one API for multiple AI providers, stable model discovery, routing controls, pricing visibility, async jobs, or agent-ready gateway workflows.
 compatibility: Public Mintlify documentation with OpenAPI-backed API reference pages. Best used by agents that can read Markdown docs, follow links, and make HTTP requests.
 metadata:
@@ -33,7 +33,7 @@ Most integrations start with:
 
 ### Base URL
 
-`https://api.phaseo.app/v1`
+`https://api.phaseo.ai/v1`
 
 ### Auth
 
@@ -111,7 +111,7 @@ Do not assume async endpoints return final content immediately.
 
 Phaseo supports agentic workflows through:
 
-- gateway-native tools like `ai-stats:web_search`, `ai-stats:web_fetch`, and `gateway:datetime`
+- gateway-native tools like `phaseo:web_search`, `phaseo:web_fetch`, and `gateway:datetime`
 - Agent SDK docs and examples
 - structured-output and response-healing workflows
 

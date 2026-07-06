@@ -73,7 +73,7 @@ export function buildExamplePayload(
 			return {
 				model,
 				prompt: "Add a warm sunset glow to the skyline.",
-				image_url: "https://assets.phaseo.app/sample-image.png",
+				image_url: "https://assets.phaseo.ai/sample-image.png",
 			};
 		case "video.generations":
 		case "video.generation":
@@ -105,14 +105,14 @@ export function buildExamplePayload(
 		case "audio.transcription":
 			return {
 				model,
-				audio_url: "https://assets.phaseo.app/sample-audio.wav",
+				audio_url: "https://assets.phaseo.ai/sample-audio.wav",
 				language: "en",
 			};
 		case "audio.translations":
 		case "audio.translation":
 			return {
 				model,
-				audio_url: "https://assets.phaseo.app/sample-audio.wav",
+				audio_url: "https://assets.phaseo.ai/sample-audio.wav",
 				target_language: "en",
 			};
 		case "batch.create":

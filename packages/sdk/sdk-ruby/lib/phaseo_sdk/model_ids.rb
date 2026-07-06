@@ -4,1360 +4,1366 @@
 module PhaseoSdk
   module ModelIds
     # Model ID: ai21/jamba-large-1.7
-    # Model page: https://phaseo.app/models/ai21/jamba-large-1.7
+    # Model page: https://phaseo.ai/models/ai21/jamba-large-1.7
     AI21_JAMBA_LARGE_1_7 = "ai21/jamba-large-1.7"
     # Model ID: ai21/jamba-mini-2
-    # Model page: https://phaseo.app/models/ai21/jamba-mini-2
+    # Model page: https://phaseo.ai/models/ai21/jamba-mini-2
     AI21_JAMBA_MINI_2 = "ai21/jamba-mini-2"
     # Model ID: aion-labs/aion-1.0
-    # Model page: https://phaseo.app/models/aion-labs/aion-1.0
+    # Model page: https://phaseo.ai/models/aion-labs/aion-1.0
     AION_LABS_AION_1_0 = "aion-labs/aion-1.0"
     # Model ID: aion-labs/aion-1.0-mini
-    # Model page: https://phaseo.app/models/aion-labs/aion-1.0-mini
+    # Model page: https://phaseo.ai/models/aion-labs/aion-1.0-mini
     AION_LABS_AION_1_0_MINI = "aion-labs/aion-1.0-mini"
     # Model ID: aion-labs/aion-2.0
-    # Model page: https://phaseo.app/models/aion-labs/aion-2.0
+    # Model page: https://phaseo.ai/models/aion-labs/aion-2.0
     AION_LABS_AION_2_0 = "aion-labs/aion-2.0"
     # Model ID: aion-labs/aion-2.5
-    # Model page: https://phaseo.app/models/aion-labs/aion-2.5
+    # Model page: https://phaseo.ai/models/aion-labs/aion-2.5
     AION_LABS_AION_2_5 = "aion-labs/aion-2.5"
     # Model ID: aion-labs/aion-rp-llama-3.1-8b
-    # Model page: https://phaseo.app/models/aion-labs/aion-rp-llama-3.1-8b
+    # Model page: https://phaseo.ai/models/aion-labs/aion-rp-llama-3.1-8b
     AION_LABS_AION_RP_LLAMA_3_1_8B = "aion-labs/aion-rp-llama-3.1-8b"
     # Model ID: allenai/molmo-2-8b
-    # Model page: https://phaseo.app/models/allenai/molmo-2-8b
+    # Model page: https://phaseo.ai/models/allenai/molmo-2-8b
     ALLENAI_MOLMO_2_8B = "allenai/molmo-2-8b"
     # Model ID: allenai/olmo-3.1-32b
-    # Model page: https://phaseo.app/models/allenai/olmo-3.1-32b
+    # Model page: https://phaseo.ai/models/allenai/olmo-3.1-32b
     ALLENAI_OLMO_3_1_32B = "allenai/olmo-3.1-32b"
     # Model ID: anthropic/claude-fable-5
-    # Model page: https://phaseo.app/models/anthropic/claude-fable-5
+    # Model page: https://phaseo.ai/models/anthropic/claude-fable-5
     ANTHROPIC_CLAUDE_FABLE_5 = "anthropic/claude-fable-5"
     # Model ID: anthropic/claude-haiku-4.5
-    # Model page: https://phaseo.app/models/anthropic/claude-haiku-4.5
+    # Model page: https://phaseo.ai/models/anthropic/claude-haiku-4.5
     ANTHROPIC_CLAUDE_HAIKU_4_5 = "anthropic/claude-haiku-4.5"
     # Model ID: anthropic/claude-opus-4.1
-    # Model page: https://phaseo.app/models/anthropic/claude-opus-4.1
+    # Model page: https://phaseo.ai/models/anthropic/claude-opus-4.1
     ANTHROPIC_CLAUDE_OPUS_4_1 = "anthropic/claude-opus-4.1"
     # Model ID: anthropic/claude-opus-4.5
-    # Model page: https://phaseo.app/models/anthropic/claude-opus-4.5
+    # Model page: https://phaseo.ai/models/anthropic/claude-opus-4.5
     ANTHROPIC_CLAUDE_OPUS_4_5 = "anthropic/claude-opus-4.5"
     # Model ID: anthropic/claude-opus-4.6
-    # Model page: https://phaseo.app/models/anthropic/claude-opus-4.6
+    # Model page: https://phaseo.ai/models/anthropic/claude-opus-4.6
     ANTHROPIC_CLAUDE_OPUS_4_6 = "anthropic/claude-opus-4.6"
     # Model ID: anthropic/claude-opus-4.7
-    # Model page: https://phaseo.app/models/anthropic/claude-opus-4.7
+    # Model page: https://phaseo.ai/models/anthropic/claude-opus-4.7
     ANTHROPIC_CLAUDE_OPUS_4_7 = "anthropic/claude-opus-4.7"
     # Model ID: anthropic/claude-opus-4.7-fast
-    # Model page: https://phaseo.app/models/anthropic/claude-opus-4.7-fast
+    # Model page: https://phaseo.ai/models/anthropic/claude-opus-4.7-fast
     ANTHROPIC_CLAUDE_OPUS_4_7_FAST = "anthropic/claude-opus-4.7-fast"
     # Model ID: anthropic/claude-opus-4.8
-    # Model page: https://phaseo.app/models/anthropic/claude-opus-4.8
+    # Model page: https://phaseo.ai/models/anthropic/claude-opus-4.8
     ANTHROPIC_CLAUDE_OPUS_4_8 = "anthropic/claude-opus-4.8"
     # Model ID: anthropic/claude-sonnet-4.5
-    # Model page: https://phaseo.app/models/anthropic/claude-sonnet-4.5
+    # Model page: https://phaseo.ai/models/anthropic/claude-sonnet-4.5
     ANTHROPIC_CLAUDE_SONNET_4_5 = "anthropic/claude-sonnet-4.5"
     # Model ID: anthropic/claude-sonnet-4.6
-    # Model page: https://phaseo.app/models/anthropic/claude-sonnet-4.6
+    # Model page: https://phaseo.ai/models/anthropic/claude-sonnet-4.6
     ANTHROPIC_CLAUDE_SONNET_4_6 = "anthropic/claude-sonnet-4.6"
     # Model ID: anthropic/claude-sonnet-5
-    # Model page: https://phaseo.app/models/anthropic/claude-sonnet-5
+    # Model page: https://phaseo.ai/models/anthropic/claude-sonnet-5
     ANTHROPIC_CLAUDE_SONNET_5 = "anthropic/claude-sonnet-5"
     # Model ID: arcee-ai/trinity-large
-    # Model page: https://phaseo.app/models/arcee-ai/trinity-large
+    # Model page: https://phaseo.ai/models/arcee-ai/trinity-large
     ARCEE_AI_TRINITY_LARGE = "arcee-ai/trinity-large"
     # Model ID: arcee-ai/trinity-large-thinking
-    # Model page: https://phaseo.app/models/arcee-ai/trinity-large-thinking
+    # Model page: https://phaseo.ai/models/arcee-ai/trinity-large-thinking
     ARCEE_AI_TRINITY_LARGE_THINKING = "arcee-ai/trinity-large-thinking"
     # Model ID: arcee-ai/trinity-mini
-    # Model page: https://phaseo.app/models/arcee-ai/trinity-mini
+    # Model page: https://phaseo.ai/models/arcee-ai/trinity-mini
     ARCEE_AI_TRINITY_MINI = "arcee-ai/trinity-mini"
     # Model ID: baidu/ernie-4.5-21b-a3b
-    # Model page: https://phaseo.app/models/baidu/ernie-4.5-21b-a3b
+    # Model page: https://phaseo.ai/models/baidu/ernie-4.5-21b-a3b
     BAIDU_ERNIE_4_5_21B_A3B = "baidu/ernie-4.5-21b-a3b"
     # Model ID: baidu/ernie-4.5-21b-a3b-thinking
-    # Model page: https://phaseo.app/models/baidu/ernie-4.5-21b-a3b-thinking
+    # Model page: https://phaseo.ai/models/baidu/ernie-4.5-21b-a3b-thinking
     BAIDU_ERNIE_4_5_21B_A3B_THINKING = "baidu/ernie-4.5-21b-a3b-thinking"
     # Model ID: baidu/ernie-4.5-300b-a47b
-    # Model page: https://phaseo.app/models/baidu/ernie-4.5-300b-a47b
+    # Model page: https://phaseo.ai/models/baidu/ernie-4.5-300b-a47b
     BAIDU_ERNIE_4_5_300B_A47B = "baidu/ernie-4.5-300b-a47b"
     # Model ID: baidu/ernie-4.5-vl-28b-a3b
-    # Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b
+    # Model page: https://phaseo.ai/models/baidu/ernie-4.5-vl-28b-a3b
     BAIDU_ERNIE_4_5_VL_28B_A3B = "baidu/ernie-4.5-vl-28b-a3b"
     # Model ID: baidu/ernie-4.5-vl-28b-a3b-thinking
-    # Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-28b-a3b-thinking
+    # Model page: https://phaseo.ai/models/baidu/ernie-4.5-vl-28b-a3b-thinking
     BAIDU_ERNIE_4_5_VL_28B_A3B_THINKING = "baidu/ernie-4.5-vl-28b-a3b-thinking"
     # Model ID: baidu/ernie-4.5-vl-424b-a47b
-    # Model page: https://phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b
+    # Model page: https://phaseo.ai/models/baidu/ernie-4.5-vl-424b-a47b
     BAIDU_ERNIE_4_5_VL_424B_A47B = "baidu/ernie-4.5-vl-424b-a47b"
     # Model ID: black-forest-labs/flux-1-schnell
-    # Model page: https://phaseo.app/models/black-forest-labs/flux-1-schnell
+    # Model page: https://phaseo.ai/models/black-forest-labs/flux-1-schnell
     BLACK_FOREST_LABS_FLUX_1_SCHNELL = "black-forest-labs/flux-1-schnell"
     # Model ID: bytedance/seed-1.6
-    # Model page: https://phaseo.app/models/bytedance/seed-1.6
+    # Model page: https://phaseo.ai/models/bytedance/seed-1.6
     BYTEDANCE_SEED_1_6 = "bytedance/seed-1.6"
     # Model ID: bytedance/seed-1.6-250915
-    # Model page: https://phaseo.app/models/bytedance/seed-1.6-250915
+    # Model page: https://phaseo.ai/models/bytedance/seed-1.6-250915
     BYTEDANCE_SEED_1_6_250915 = "bytedance/seed-1.6-250915"
     # Model ID: bytedance/seed-1.6-flash
-    # Model page: https://phaseo.app/models/bytedance/seed-1.6-flash
+    # Model page: https://phaseo.ai/models/bytedance/seed-1.6-flash
     BYTEDANCE_SEED_1_6_FLASH = "bytedance/seed-1.6-flash"
     # Model ID: bytedance/seed-1.6-flash-250715
-    # Model page: https://phaseo.app/models/bytedance/seed-1.6-flash-250715
+    # Model page: https://phaseo.ai/models/bytedance/seed-1.6-flash-250715
     BYTEDANCE_SEED_1_6_FLASH_250715 = "bytedance/seed-1.6-flash-250715"
     # Model ID: bytedance/seed-1.8
-    # Model page: https://phaseo.app/models/bytedance/seed-1.8
+    # Model page: https://phaseo.ai/models/bytedance/seed-1.8
     BYTEDANCE_SEED_1_8 = "bytedance/seed-1.8"
     # Model ID: bytedance/seed-2.0-lite
-    # Model page: https://phaseo.app/models/bytedance/seed-2.0-lite
+    # Model page: https://phaseo.ai/models/bytedance/seed-2.0-lite
     BYTEDANCE_SEED_2_0_LITE = "bytedance/seed-2.0-lite"
     # Model ID: bytedance/seed-2.0-lite-260428
-    # Model page: https://phaseo.app/models/bytedance/seed-2.0-lite-260428
+    # Model page: https://phaseo.ai/models/bytedance/seed-2.0-lite-260428
     BYTEDANCE_SEED_2_0_LITE_260428 = "bytedance/seed-2.0-lite-260428"
     # Model ID: bytedance/seed-2.0-mini
-    # Model page: https://phaseo.app/models/bytedance/seed-2.0-mini
+    # Model page: https://phaseo.ai/models/bytedance/seed-2.0-mini
     BYTEDANCE_SEED_2_0_MINI = "bytedance/seed-2.0-mini"
     # Model ID: bytedance/seed-2.0-mini-260428
-    # Model page: https://phaseo.app/models/bytedance/seed-2.0-mini-260428
+    # Model page: https://phaseo.ai/models/bytedance/seed-2.0-mini-260428
     BYTEDANCE_SEED_2_0_MINI_260428 = "bytedance/seed-2.0-mini-260428"
     # Model ID: bytedance/seed-2.0-pro
-    # Model page: https://phaseo.app/models/bytedance/seed-2.0-pro
+    # Model page: https://phaseo.ai/models/bytedance/seed-2.0-pro
     BYTEDANCE_SEED_2_0_PRO = "bytedance/seed-2.0-pro"
     # Model ID: bytedance/seed-oss-36b-instruct
-    # Model page: https://phaseo.app/models/bytedance/seed-oss-36b-instruct
+    # Model page: https://phaseo.ai/models/bytedance/seed-oss-36b-instruct
     BYTEDANCE_SEED_OSS_36B_INSTRUCT = "bytedance/seed-oss-36b-instruct"
     # Model ID: bytedance/seed-translation
-    # Model page: https://phaseo.app/models/bytedance/seed-translation
+    # Model page: https://phaseo.ai/models/bytedance/seed-translation
     BYTEDANCE_SEED_TRANSLATION = "bytedance/seed-translation"
     # Model ID: bytedance/seedance-2.0
-    # Model page: https://phaseo.app/models/bytedance/seedance-2.0
+    # Model page: https://phaseo.ai/models/bytedance/seedance-2.0
     BYTEDANCE_SEEDANCE_2_0 = "bytedance/seedance-2.0"
     # Model ID: bytedance/seedance-2.0-fast
-    # Model page: https://phaseo.app/models/bytedance/seedance-2.0-fast
+    # Model page: https://phaseo.ai/models/bytedance/seedance-2.0-fast
     BYTEDANCE_SEEDANCE_2_0_FAST = "bytedance/seedance-2.0-fast"
     # Model ID: bytedance/seedance-2.0-mini-260615
-    # Model page: https://phaseo.app/models/bytedance/seedance-2.0-mini-260615
+    # Model page: https://phaseo.ai/models/bytedance/seedance-2.0-mini-260615
     BYTEDANCE_SEEDANCE_2_0_MINI_260615 = "bytedance/seedance-2.0-mini-260615"
     # Model ID: crofai/greg-1-mini
-    # Model page: https://phaseo.app/models/crofai/greg-1-mini
+    # Model page: https://phaseo.ai/models/crofai/greg-1-mini
     CROFAI_GREG_1_MINI = "crofai/greg-1-mini"
     # Model ID: crofai/greg-2-super
-    # Model page: https://phaseo.app/models/crofai/greg-2-super
+    # Model page: https://phaseo.ai/models/crofai/greg-2-super
     CROFAI_GREG_2_SUPER = "crofai/greg-2-super"
     # Model ID: crofai/greg-2-ultra
-    # Model page: https://phaseo.app/models/crofai/greg-2-ultra
+    # Model page: https://phaseo.ai/models/crofai/greg-2-ultra
     CROFAI_GREG_2_ULTRA = "crofai/greg-2-ultra"
     # Model ID: crofai/greg-rp
-    # Model page: https://phaseo.app/models/crofai/greg-rp
+    # Model page: https://phaseo.ai/models/crofai/greg-rp
     CROFAI_GREG_RP = "crofai/greg-rp"
     # Model ID: deepseek/deepseek-ocr
-    # Model page: https://phaseo.app/models/deepseek/deepseek-ocr
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-ocr
     DEEPSEEK_DEEPSEEK_OCR = "deepseek/deepseek-ocr"
     # Model ID: deepseek/deepseek-ocr-2
-    # Model page: https://phaseo.app/models/deepseek/deepseek-ocr-2
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-ocr-2
     DEEPSEEK_DEEPSEEK_OCR_2 = "deepseek/deepseek-ocr-2"
     # Model ID: deepseek/deepseek-prover-v2-671b
-    # Model page: https://phaseo.app/models/deepseek/deepseek-prover-v2-671b
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-prover-v2-671b
     DEEPSEEK_DEEPSEEK_PROVER_V2_671B = "deepseek/deepseek-prover-v2-671b"
     # Model ID: deepseek/deepseek-r1
-    # Model page: https://phaseo.app/models/deepseek/deepseek-r1
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-r1
     DEEPSEEK_DEEPSEEK_R1 = "deepseek/deepseek-r1"
     # Model ID: deepseek/deepseek-r1-0528
-    # Model page: https://phaseo.app/models/deepseek/deepseek-r1-0528
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-r1-0528
     DEEPSEEK_DEEPSEEK_R1_0528 = "deepseek/deepseek-r1-0528"
     # Model ID: deepseek/deepseek-r1-2025-05-28
-    # Model page: https://phaseo.app/models/deepseek/deepseek-r1-2025-05-28
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-r1-2025-05-28
     DEEPSEEK_DEEPSEEK_R1_2025_05_28 = "deepseek/deepseek-r1-2025-05-28"
     # Model ID: deepseek/deepseek-r1-turbo
-    # Model page: https://phaseo.app/models/deepseek/deepseek-r1-turbo
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-r1-turbo
     DEEPSEEK_DEEPSEEK_R1_TURBO = "deepseek/deepseek-r1-turbo"
     # Model ID: deepseek/deepseek-v3
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3
     DEEPSEEK_DEEPSEEK_V3 = "deepseek/deepseek-v3"
     # Model ID: deepseek/deepseek-v3-0324
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3-0324
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3-0324
     DEEPSEEK_DEEPSEEK_V3_0324 = "deepseek/deepseek-v3-0324"
     # Model ID: deepseek/deepseek-v3-turbo
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3-turbo
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3-turbo
     DEEPSEEK_DEEPSEEK_V3_TURBO = "deepseek/deepseek-v3-turbo"
     # Model ID: deepseek/deepseek-v3.1
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3.1
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3.1
     DEEPSEEK_DEEPSEEK_V3_1 = "deepseek/deepseek-v3.1"
     # Model ID: deepseek/deepseek-v3.1-terminus
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3.1-terminus
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3.1-terminus
     DEEPSEEK_DEEPSEEK_V3_1_TERMINUS = "deepseek/deepseek-v3.1-terminus"
     # Model ID: deepseek/deepseek-v3.2
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3.2
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3.2
     DEEPSEEK_DEEPSEEK_V3_2 = "deepseek/deepseek-v3.2"
     # Model ID: deepseek/deepseek-v3.2-exp
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3.2-exp
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3.2-exp
     DEEPSEEK_DEEPSEEK_V3_2_EXP = "deepseek/deepseek-v3.2-exp"
     # Model ID: deepseek/deepseek-v3.2-speciale
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3.2-speciale
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3.2-speciale
     DEEPSEEK_DEEPSEEK_V3_2_SPECIALE = "deepseek/deepseek-v3.2-speciale"
     # Model ID: deepseek/deepseek-v3.2-thinking
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v3.2-thinking
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v3.2-thinking
     DEEPSEEK_DEEPSEEK_V3_2_THINKING = "deepseek/deepseek-v3.2-thinking"
     # Model ID: deepseek/deepseek-v4-flash
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4-flash
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v4-flash
     DEEPSEEK_DEEPSEEK_V4_FLASH = "deepseek/deepseek-v4-flash"
     # Model ID: deepseek/deepseek-v4-pro
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v4-pro
     DEEPSEEK_DEEPSEEK_V4_PRO = "deepseek/deepseek-v4-pro"
     # Model ID: deepseek/deepseek-v4-pro-lightning
-    # Model page: https://phaseo.app/models/deepseek/deepseek-v4-pro-lightning
+    # Model page: https://phaseo.ai/models/deepseek/deepseek-v4-pro-lightning
     DEEPSEEK_DEEPSEEK_V4_PRO_LIGHTNING = "deepseek/deepseek-v4-pro-lightning"
     # Model ID: eleven-labs/eleven-flash-v2
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-flash-v2
     ELEVEN_LABS_ELEVEN_FLASH_V2 = "eleven-labs/eleven-flash-v2"
     # Model ID: eleven-labs/eleven-flash-v2.5
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-flash-v2.5
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-flash-v2.5
     ELEVEN_LABS_ELEVEN_FLASH_V2_5 = "eleven-labs/eleven-flash-v2.5"
     # Model ID: eleven-labs/eleven-monolingual-v1
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-monolingual-v1
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-monolingual-v1
     ELEVEN_LABS_ELEVEN_MONOLINGUAL_V1 = "eleven-labs/eleven-monolingual-v1"
     # Model ID: eleven-labs/eleven-multilingual-v1
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-multilingual-v1
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-multilingual-v1
     ELEVEN_LABS_ELEVEN_MULTILINGUAL_V1 = "eleven-labs/eleven-multilingual-v1"
     # Model ID: eleven-labs/eleven-multilingual-v2
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-multilingual-v2
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-multilingual-v2
     ELEVEN_LABS_ELEVEN_MULTILINGUAL_V2 = "eleven-labs/eleven-multilingual-v2"
     # Model ID: eleven-labs/eleven-turbo-v2
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-turbo-v2
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-turbo-v2
     ELEVEN_LABS_ELEVEN_TURBO_V2 = "eleven-labs/eleven-turbo-v2"
     # Model ID: eleven-labs/eleven-turbo-v2.5
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-turbo-v2.5
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-turbo-v2.5
     ELEVEN_LABS_ELEVEN_TURBO_V2_5 = "eleven-labs/eleven-turbo-v2.5"
     # Model ID: eleven-labs/eleven-v3
-    # Model page: https://phaseo.app/models/eleven-labs/eleven-v3
+    # Model page: https://phaseo.ai/models/eleven-labs/eleven-v3
     ELEVEN_LABS_ELEVEN_V3 = "eleven-labs/eleven-v3"
     # Model ID: essential-ai/rnj-1
-    # Model page: https://phaseo.app/models/essential-ai/rnj-1
+    # Model page: https://phaseo.ai/models/essential-ai/rnj-1
     ESSENTIAL_AI_RNJ_1 = "essential-ai/rnj-1"
     # Model ID: google/gemini-2.5-flash
-    # Model page: https://phaseo.app/models/google/gemini-2.5-flash
+    # Model page: https://phaseo.ai/models/google/gemini-2.5-flash
     GOOGLE_GEMINI_2_5_FLASH = "google/gemini-2.5-flash"
     # Model ID: google/gemini-2.5-flash-lite
-    # Model page: https://phaseo.app/models/google/gemini-2.5-flash-lite
+    # Model page: https://phaseo.ai/models/google/gemini-2.5-flash-lite
     GOOGLE_GEMINI_2_5_FLASH_LITE = "google/gemini-2.5-flash-lite"
     # Model ID: google/gemini-2.5-flash-lite-preview-2025-06-17
-    # Model page: https://phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-06-17
+    # Model page: https://phaseo.ai/models/google/gemini-2.5-flash-lite-preview-2025-06-17
     GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_06_17 = "google/gemini-2.5-flash-lite-preview-2025-06-17"
     # Model ID: google/gemini-2.5-flash-lite-preview-2025-09-25
-    # Model page: https://phaseo.app/models/google/gemini-2.5-flash-lite-preview-2025-09-25
+    # Model page: https://phaseo.ai/models/google/gemini-2.5-flash-lite-preview-2025-09-25
     GOOGLE_GEMINI_2_5_FLASH_LITE_PREVIEW_2025_09_25 = "google/gemini-2.5-flash-lite-preview-2025-09-25"
     # Model ID: google/gemini-2.5-pro
-    # Model page: https://phaseo.app/models/google/gemini-2.5-pro
+    # Model page: https://phaseo.ai/models/google/gemini-2.5-pro
     GOOGLE_GEMINI_2_5_PRO = "google/gemini-2.5-pro"
     # Model ID: google/gemini-3-flash-preview
-    # Model page: https://phaseo.app/models/google/gemini-3-flash-preview
+    # Model page: https://phaseo.ai/models/google/gemini-3-flash-preview
     GOOGLE_GEMINI_3_FLASH_PREVIEW = "google/gemini-3-flash-preview"
     # Model ID: google/gemini-3-pro-image
-    # Model page: https://phaseo.app/models/google/gemini-3-pro-image
+    # Model page: https://phaseo.ai/models/google/gemini-3-pro-image
     GOOGLE_GEMINI_3_PRO_IMAGE = "google/gemini-3-pro-image"
     # Model ID: google/gemini-3.1-flash-image
-    # Model page: https://phaseo.app/models/google/gemini-3.1-flash-image
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-flash-image
     GOOGLE_GEMINI_3_1_FLASH_IMAGE = "google/gemini-3.1-flash-image"
     # Model ID: google/gemini-3.1-flash-image-preview
-    # Model page: https://phaseo.app/models/google/gemini-3.1-flash-image-preview
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-flash-image-preview
     GOOGLE_GEMINI_3_1_FLASH_IMAGE_PREVIEW = "google/gemini-3.1-flash-image-preview"
     # Model ID: google/gemini-3.1-flash-lite
-    # Model page: https://phaseo.app/models/google/gemini-3.1-flash-lite
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-flash-lite
     GOOGLE_GEMINI_3_1_FLASH_LITE = "google/gemini-3.1-flash-lite"
     # Model ID: google/gemini-3.1-flash-lite-image
-    # Model page: https://phaseo.app/models/google/gemini-3.1-flash-lite-image
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-flash-lite-image
     GOOGLE_GEMINI_3_1_FLASH_LITE_IMAGE = "google/gemini-3.1-flash-lite-image"
     # Model ID: google/gemini-3.1-flash-lite-preview
-    # Model page: https://phaseo.app/models/google/gemini-3.1-flash-lite-preview
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-flash-lite-preview
     GOOGLE_GEMINI_3_1_FLASH_LITE_PREVIEW = "google/gemini-3.1-flash-lite-preview"
     # Model ID: google/gemini-3.1-flash-tts-preview
-    # Model page: https://phaseo.app/models/google/gemini-3.1-flash-tts-preview
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-flash-tts-preview
     GOOGLE_GEMINI_3_1_FLASH_TTS_PREVIEW = "google/gemini-3.1-flash-tts-preview"
     # Model ID: google/gemini-3.1-pro-preview
-    # Model page: https://phaseo.app/models/google/gemini-3.1-pro-preview
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-pro-preview
     GOOGLE_GEMINI_3_1_PRO_PREVIEW = "google/gemini-3.1-pro-preview"
     # Model ID: google/gemini-3.1-pro-preview-customtools
-    # Model page: https://phaseo.app/models/google/gemini-3.1-pro-preview-customtools
+    # Model page: https://phaseo.ai/models/google/gemini-3.1-pro-preview-customtools
     GOOGLE_GEMINI_3_1_PRO_PREVIEW_CUSTOMTOOLS = "google/gemini-3.1-pro-preview-customtools"
     # Model ID: google/gemini-3.5-flash
-    # Model page: https://phaseo.app/models/google/gemini-3.5-flash
+    # Model page: https://phaseo.ai/models/google/gemini-3.5-flash
     GOOGLE_GEMINI_3_5_FLASH = "google/gemini-3.5-flash"
     # Model ID: google/gemini-3.5-pro
-    # Model page: https://phaseo.app/models/google/gemini-3.5-pro
+    # Model page: https://phaseo.ai/models/google/gemini-3.5-pro
     GOOGLE_GEMINI_3_5_PRO = "google/gemini-3.5-pro"
     # Model ID: google/gemini-embedding-001
-    # Model page: https://phaseo.app/models/google/gemini-embedding-001
+    # Model page: https://phaseo.ai/models/google/gemini-embedding-001
     GOOGLE_GEMINI_EMBEDDING_001 = "google/gemini-embedding-001"
     # Model ID: google/gemini-embedding-2
-    # Model page: https://phaseo.app/models/google/gemini-embedding-2
+    # Model page: https://phaseo.ai/models/google/gemini-embedding-2
     GOOGLE_GEMINI_EMBEDDING_2 = "google/gemini-embedding-2"
     # Model ID: google/gemini-embedding-2-preview
-    # Model page: https://phaseo.app/models/google/gemini-embedding-2-preview
+    # Model page: https://phaseo.ai/models/google/gemini-embedding-2-preview
     GOOGLE_GEMINI_EMBEDDING_2_PREVIEW = "google/gemini-embedding-2-preview"
     # Model ID: google/gemini-robotics-er-1.6-preview
-    # Model page: https://phaseo.app/models/google/gemini-robotics-er-1.6-preview
+    # Model page: https://phaseo.ai/models/google/gemini-robotics-er-1.6-preview
     GOOGLE_GEMINI_ROBOTICS_ER_1_6_PREVIEW = "google/gemini-robotics-er-1.6-preview"
     # Model ID: google/gemma-3-27b
-    # Model page: https://phaseo.app/models/google/gemma-3-27b
+    # Model page: https://phaseo.ai/models/google/gemma-3-27b
     GOOGLE_GEMMA_3_27B = "google/gemma-3-27b"
     # Model ID: google/gemma-3n-e4b
-    # Model page: https://phaseo.app/models/google/gemma-3n-e4b
+    # Model page: https://phaseo.ai/models/google/gemma-3n-e4b
     GOOGLE_GEMMA_3N_E4B = "google/gemma-3n-e4b"
     # Model ID: google/gemma-4-26b-a4b
-    # Model page: https://phaseo.app/models/google/gemma-4-26b-a4b
+    # Model page: https://phaseo.ai/models/google/gemma-4-26b-a4b
     GOOGLE_GEMMA_4_26B_A4B = "google/gemma-4-26b-a4b"
     # Model ID: google/gemma-4-26b-a4b:free
-    # Model page: https://phaseo.app/models/google/gemma-4-26b-a4b%3Afree
+    # Model page: https://phaseo.ai/models/google/gemma-4-26b-a4b%3Afree
     GOOGLE_GEMMA_4_26B_A4B_FREE = "google/gemma-4-26b-a4b:free"
     # Model ID: google/gemma-4-31b
-    # Model page: https://phaseo.app/models/google/gemma-4-31b
+    # Model page: https://phaseo.ai/models/google/gemma-4-31b
     GOOGLE_GEMMA_4_31B = "google/gemma-4-31b"
     # Model ID: google/gemma-4-31b-it
-    # Model page: https://phaseo.app/models/google/gemma-4-31b-it
+    # Model page: https://phaseo.ai/models/google/gemma-4-31b-it
     GOOGLE_GEMMA_4_31B_IT = "google/gemma-4-31b-it"
     # Model ID: google/gemma-4-31b:free
-    # Model page: https://phaseo.app/models/google/gemma-4-31b%3Afree
+    # Model page: https://phaseo.ai/models/google/gemma-4-31b%3Afree
     GOOGLE_GEMMA_4_31B_FREE = "google/gemma-4-31b:free"
     # Model ID: google/lyria-3-clip-preview
-    # Model page: https://phaseo.app/models/google/lyria-3-clip-preview
+    # Model page: https://phaseo.ai/models/google/lyria-3-clip-preview
     GOOGLE_LYRIA_3_CLIP_PREVIEW = "google/lyria-3-clip-preview"
     # Model ID: google/lyria-3-pro-preview
-    # Model page: https://phaseo.app/models/google/lyria-3-pro-preview
+    # Model page: https://phaseo.ai/models/google/lyria-3-pro-preview
     GOOGLE_LYRIA_3_PRO_PREVIEW = "google/lyria-3-pro-preview"
     # Model ID: google/veo-2
-    # Model page: https://phaseo.app/models/google/veo-2
+    # Model page: https://phaseo.ai/models/google/veo-2
     GOOGLE_VEO_2 = "google/veo-2"
     # Model ID: google/veo-3.1-fast-preview
-    # Model page: https://phaseo.app/models/google/veo-3.1-fast-preview
+    # Model page: https://phaseo.ai/models/google/veo-3.1-fast-preview
     GOOGLE_VEO_3_1_FAST_PREVIEW = "google/veo-3.1-fast-preview"
     # Model ID: google/veo-3.1-lite-generate-preview
-    # Model page: https://phaseo.app/models/google/veo-3.1-lite-generate-preview
+    # Model page: https://phaseo.ai/models/google/veo-3.1-lite-generate-preview
     GOOGLE_VEO_3_1_LITE_GENERATE_PREVIEW = "google/veo-3.1-lite-generate-preview"
     # Model ID: google/veo-3.1-preview
-    # Model page: https://phaseo.app/models/google/veo-3.1-preview
+    # Model page: https://phaseo.ai/models/google/veo-3.1-preview
     GOOGLE_VEO_3_1_PREVIEW = "google/veo-3.1-preview"
     # Model ID: ibm/granite-4.1-8b
-    # Model page: https://phaseo.app/models/ibm/granite-4.1-8b
+    # Model page: https://phaseo.ai/models/ibm/granite-4.1-8b
     IBM_GRANITE_4_1_8B = "ibm/granite-4.1-8b"
     # Model ID: inception/mercury-2
-    # Model page: https://phaseo.app/models/inception/mercury-2
+    # Model page: https://phaseo.ai/models/inception/mercury-2
     INCEPTION_MERCURY_2 = "inception/mercury-2"
     # Model ID: inception/mercury-edit-2
-    # Model page: https://phaseo.app/models/inception/mercury-edit-2
+    # Model page: https://phaseo.ai/models/inception/mercury-edit-2
     INCEPTION_MERCURY_EDIT_2 = "inception/mercury-edit-2"
     # Model ID: inclusionai/ling-2.6-1t
-    # Model page: https://phaseo.app/models/inclusionai/ling-2.6-1t
+    # Model page: https://phaseo.ai/models/inclusionai/ling-2.6-1t
     INCLUSIONAI_LING_2_6_1T = "inclusionai/ling-2.6-1t"
     # Model ID: inclusionai/ling-flash-2.0
-    # Model page: https://phaseo.app/models/inclusionai/ling-flash-2.0
+    # Model page: https://phaseo.ai/models/inclusionai/ling-flash-2.0
     INCLUSIONAI_LING_FLASH_2_0 = "inclusionai/ling-flash-2.0"
     # Model ID: inclusionai/ring-flash-2.0
-    # Model page: https://phaseo.app/models/inclusionai/ring-flash-2.0
+    # Model page: https://phaseo.ai/models/inclusionai/ring-flash-2.0
     INCLUSIONAI_RING_FLASH_2_0 = "inclusionai/ring-flash-2.0"
     # Model ID: inflection/inflection-3-pi
-    # Model page: https://phaseo.app/models/inflection/inflection-3-pi
+    # Model page: https://phaseo.ai/models/inflection/inflection-3-pi
     INFLECTION_INFLECTION_3_PI = "inflection/inflection-3-pi"
     # Model ID: inflection/inflection-3-productivity
-    # Model page: https://phaseo.app/models/inflection/inflection-3-productivity
+    # Model page: https://phaseo.ai/models/inflection/inflection-3-productivity
     INFLECTION_INFLECTION_3_PRODUCTIVITY = "inflection/inflection-3-productivity"
     # Model ID: kwaipilot/kat-coder-exp-72b-1010
-    # Model page: https://phaseo.app/models/kwaipilot/kat-coder-exp-72b-1010
+    # Model page: https://phaseo.ai/models/kwaipilot/kat-coder-exp-72b-1010
     KWAIPILOT_KAT_CODER_EXP_72B_1010 = "kwaipilot/kat-coder-exp-72b-1010"
     # Model ID: kwaipilot/kat-coder-pro
-    # Model page: https://phaseo.app/models/kwaipilot/kat-coder-pro
+    # Model page: https://phaseo.ai/models/kwaipilot/kat-coder-pro
     KWAIPILOT_KAT_CODER_PRO = "kwaipilot/kat-coder-pro"
     # Model ID: kwaipilot/kat-coder-pro-v1
-    # Model page: https://phaseo.app/models/kwaipilot/kat-coder-pro-v1
+    # Model page: https://phaseo.ai/models/kwaipilot/kat-coder-pro-v1
     KWAIPILOT_KAT_CODER_PRO_V1 = "kwaipilot/kat-coder-pro-v1"
     # Model ID: kwaipilot/kat-coder-pro-v2
-    # Model page: https://phaseo.app/models/kwaipilot/kat-coder-pro-v2
+    # Model page: https://phaseo.ai/models/kwaipilot/kat-coder-pro-v2
     KWAIPILOT_KAT_CODER_PRO_V2 = "kwaipilot/kat-coder-pro-v2"
     # Model ID: liquid-ai/lfm-2-24b-a2b
-    # Model page: https://phaseo.app/models/liquid-ai/lfm-2-24b-a2b
+    # Model page: https://phaseo.ai/models/liquid-ai/lfm-2-24b-a2b
     LIQUID_AI_LFM_2_24B_A2B = "liquid-ai/lfm-2-24b-a2b"
     # Model ID: meituan/longcat-2.0
-    # Model page: https://phaseo.app/models/meituan/longcat-2.0
+    # Model page: https://phaseo.ai/models/meituan/longcat-2.0
     MEITUAN_LONGCAT_2_0 = "meituan/longcat-2.0"
     # Model ID: meta/llama-3-70b
-    # Model page: https://phaseo.app/models/meta/llama-3-70b
+    # Model page: https://phaseo.ai/models/meta/llama-3-70b
     META_LLAMA_3_70B = "meta/llama-3-70b"
     # Model ID: meta/llama-3-8b
-    # Model page: https://phaseo.app/models/meta/llama-3-8b
+    # Model page: https://phaseo.ai/models/meta/llama-3-8b
     META_LLAMA_3_8B = "meta/llama-3-8b"
     # Model ID: meta/llama-3-8b-lite
-    # Model page: https://phaseo.app/models/meta/llama-3-8b-lite
+    # Model page: https://phaseo.ai/models/meta/llama-3-8b-lite
     META_LLAMA_3_8B_LITE = "meta/llama-3-8b-lite"
     # Model ID: meta/llama-3.1-70b
-    # Model page: https://phaseo.app/models/meta/llama-3.1-70b
+    # Model page: https://phaseo.ai/models/meta/llama-3.1-70b
     META_LLAMA_3_1_70B = "meta/llama-3.1-70b"
     # Model ID: meta/llama-3.1-8b
-    # Model page: https://phaseo.app/models/meta/llama-3.1-8b
+    # Model page: https://phaseo.ai/models/meta/llama-3.1-8b
     META_LLAMA_3_1_8B = "meta/llama-3.1-8b"
     # Model ID: meta/llama-3.2-11b-vision
-    # Model page: https://phaseo.app/models/meta/llama-3.2-11b-vision
+    # Model page: https://phaseo.ai/models/meta/llama-3.2-11b-vision
     META_LLAMA_3_2_11B_VISION = "meta/llama-3.2-11b-vision"
     # Model ID: meta/llama-3.2-3b
-    # Model page: https://phaseo.app/models/meta/llama-3.2-3b
+    # Model page: https://phaseo.ai/models/meta/llama-3.2-3b
     META_LLAMA_3_2_3B = "meta/llama-3.2-3b"
     # Model ID: meta/llama-3.3-70b
-    # Model page: https://phaseo.app/models/meta/llama-3.3-70b
+    # Model page: https://phaseo.ai/models/meta/llama-3.3-70b
     META_LLAMA_3_3_70B = "meta/llama-3.3-70b"
     # Model ID: meta/llama-4-maverick
-    # Model page: https://phaseo.app/models/meta/llama-4-maverick
+    # Model page: https://phaseo.ai/models/meta/llama-4-maverick
     META_LLAMA_4_MAVERICK = "meta/llama-4-maverick"
     # Model ID: meta/llama-4-scout
-    # Model page: https://phaseo.app/models/meta/llama-4-scout
+    # Model page: https://phaseo.ai/models/meta/llama-4-scout
     META_LLAMA_4_SCOUT = "meta/llama-4-scout"
     # Model ID: meta/llama-guard-4-12b
-    # Model page: https://phaseo.app/models/meta/llama-guard-4-12b
+    # Model page: https://phaseo.ai/models/meta/llama-guard-4-12b
     META_LLAMA_GUARD_4_12B = "meta/llama-guard-4-12b"
     # Model ID: meta/llama-prompt-guard-2-22m
-    # Model page: https://phaseo.app/models/meta/llama-prompt-guard-2-22m
+    # Model page: https://phaseo.ai/models/meta/llama-prompt-guard-2-22m
     META_LLAMA_PROMPT_GUARD_2_22M = "meta/llama-prompt-guard-2-22m"
     # Model ID: meta/llama-prompt-guard-2-86m
-    # Model page: https://phaseo.app/models/meta/llama-prompt-guard-2-86m
+    # Model page: https://phaseo.ai/models/meta/llama-prompt-guard-2-86m
     META_LLAMA_PROMPT_GUARD_2_86M = "meta/llama-prompt-guard-2-86m"
     # Model ID: microsoft/phi-4
-    # Model page: https://phaseo.app/models/microsoft/phi-4
+    # Model page: https://phaseo.ai/models/microsoft/phi-4
     MICROSOFT_PHI_4 = "microsoft/phi-4"
     # Model ID: microsoft/phi-4-mini
-    # Model page: https://phaseo.app/models/microsoft/phi-4-mini
+    # Model page: https://phaseo.ai/models/microsoft/phi-4-mini
     MICROSOFT_PHI_4_MINI = "microsoft/phi-4-mini"
     # Model ID: minimax/hailuo-02
-    # Model page: https://phaseo.app/models/minimax/hailuo-02
+    # Model page: https://phaseo.ai/models/minimax/hailuo-02
     MINIMAX_HAILUO_02 = "minimax/hailuo-02"
     # Model ID: minimax/hailuo-2.3
-    # Model page: https://phaseo.app/models/minimax/hailuo-2.3
+    # Model page: https://phaseo.ai/models/minimax/hailuo-2.3
     MINIMAX_HAILUO_2_3 = "minimax/hailuo-2.3"
     # Model ID: minimax/hailuo-2.3-fast
-    # Model page: https://phaseo.app/models/minimax/hailuo-2.3-fast
+    # Model page: https://phaseo.ai/models/minimax/hailuo-2.3-fast
     MINIMAX_HAILUO_2_3_FAST = "minimax/hailuo-2.3-fast"
     # Model ID: minimax/m2-her
-    # Model page: https://phaseo.app/models/minimax/m2-her
+    # Model page: https://phaseo.ai/models/minimax/m2-her
     MINIMAX_M2_HER = "minimax/m2-her"
     # Model ID: minimax/minimax-m1-80k
-    # Model page: https://phaseo.app/models/minimax/minimax-m1-80k
+    # Model page: https://phaseo.ai/models/minimax/minimax-m1-80k
     MINIMAX_MINIMAX_M1_80K = "minimax/minimax-m1-80k"
     # Model ID: minimax/minimax-m2
-    # Model page: https://phaseo.app/models/minimax/minimax-m2
+    # Model page: https://phaseo.ai/models/minimax/minimax-m2
     MINIMAX_MINIMAX_M2 = "minimax/minimax-m2"
     # Model ID: minimax/minimax-m2.1
-    # Model page: https://phaseo.app/models/minimax/minimax-m2.1
+    # Model page: https://phaseo.ai/models/minimax/minimax-m2.1
     MINIMAX_MINIMAX_M2_1 = "minimax/minimax-m2.1"
     # Model ID: minimax/minimax-m2.5
-    # Model page: https://phaseo.app/models/minimax/minimax-m2.5
+    # Model page: https://phaseo.ai/models/minimax/minimax-m2.5
     MINIMAX_MINIMAX_M2_5 = "minimax/minimax-m2.5"
     # Model ID: minimax/minimax-m2.5-highspeed
-    # Model page: https://phaseo.app/models/minimax/minimax-m2.5-highspeed
+    # Model page: https://phaseo.ai/models/minimax/minimax-m2.5-highspeed
     MINIMAX_MINIMAX_M2_5_HIGHSPEED = "minimax/minimax-m2.5-highspeed"
     # Model ID: minimax/minimax-m2.7
-    # Model page: https://phaseo.app/models/minimax/minimax-m2.7
+    # Model page: https://phaseo.ai/models/minimax/minimax-m2.7
     MINIMAX_MINIMAX_M2_7 = "minimax/minimax-m2.7"
     # Model ID: minimax/minimax-m3
-    # Model page: https://phaseo.app/models/minimax/minimax-m3
+    # Model page: https://phaseo.ai/models/minimax/minimax-m3
     MINIMAX_MINIMAX_M3 = "minimax/minimax-m3"
     # Model ID: minimax/music-2.6
-    # Model page: https://phaseo.app/models/minimax/music-2.6
+    # Model page: https://phaseo.ai/models/minimax/music-2.6
     MINIMAX_MUSIC_2_6 = "minimax/music-2.6"
     # Model ID: minimax/music-2.6-free
-    # Model page: https://phaseo.app/models/minimax/music-2.6-free
+    # Model page: https://phaseo.ai/models/minimax/music-2.6-free
     MINIMAX_MUSIC_2_6_FREE = "minimax/music-2.6-free"
     # Model ID: mistral/codestral-embed
-    # Model page: https://phaseo.app/models/mistral/codestral-embed
+    # Model page: https://phaseo.ai/models/mistral/codestral-embed
     MISTRAL_CODESTRAL_EMBED = "mistral/codestral-embed"
     # Model ID: mistral/devstral-2
-    # Model page: https://phaseo.app/models/mistral/devstral-2
+    # Model page: https://phaseo.ai/models/mistral/devstral-2
     MISTRAL_DEVSTRAL_2 = "mistral/devstral-2"
     # Model ID: mistral/devstral-medium-1.0
-    # Model page: https://phaseo.app/models/mistral/devstral-medium-1.0
+    # Model page: https://phaseo.ai/models/mistral/devstral-medium-1.0
     MISTRAL_DEVSTRAL_MEDIUM_1_0 = "mistral/devstral-medium-1.0"
     # Model ID: mistral/devstral-small-1.1
-    # Model page: https://phaseo.app/models/mistral/devstral-small-1.1
+    # Model page: https://phaseo.ai/models/mistral/devstral-small-1.1
     MISTRAL_DEVSTRAL_SMALL_1_1 = "mistral/devstral-small-1.1"
     # Model ID: mistral/leanstral-1.5:free
-    # Model page: https://phaseo.app/models/mistral/leanstral-1.5%3Afree
+    # Model page: https://phaseo.ai/models/mistral/leanstral-1.5%3Afree
     MISTRAL_LEANSTRAL_1_5_FREE = "mistral/leanstral-1.5:free"
     # Model ID: mistral/magistral-medium-1.2
-    # Model page: https://phaseo.app/models/mistral/magistral-medium-1.2
+    # Model page: https://phaseo.ai/models/mistral/magistral-medium-1.2
     MISTRAL_MAGISTRAL_MEDIUM_1_2 = "mistral/magistral-medium-1.2"
     # Model ID: mistral/ministral-3-14b
-    # Model page: https://phaseo.app/models/mistral/ministral-3-14b
+    # Model page: https://phaseo.ai/models/mistral/ministral-3-14b
     MISTRAL_MINISTRAL_3_14B = "mistral/ministral-3-14b"
     # Model ID: mistral/ministral-3-3b
-    # Model page: https://phaseo.app/models/mistral/ministral-3-3b
+    # Model page: https://phaseo.ai/models/mistral/ministral-3-3b
     MISTRAL_MINISTRAL_3_3B = "mistral/ministral-3-3b"
     # Model ID: mistral/ministral-3-8b
-    # Model page: https://phaseo.app/models/mistral/ministral-3-8b
+    # Model page: https://phaseo.ai/models/mistral/ministral-3-8b
     MISTRAL_MINISTRAL_3_8B = "mistral/ministral-3-8b"
     # Model ID: mistral/mistral-embed
-    # Model page: https://phaseo.app/models/mistral/mistral-embed
+    # Model page: https://phaseo.ai/models/mistral/mistral-embed
     MISTRAL_MISTRAL_EMBED = "mistral/mistral-embed"
     # Model ID: mistral/mistral-large-2.1
-    # Model page: https://phaseo.app/models/mistral/mistral-large-2.1
+    # Model page: https://phaseo.ai/models/mistral/mistral-large-2.1
     MISTRAL_MISTRAL_LARGE_2_1 = "mistral/mistral-large-2.1"
     # Model ID: mistral/mistral-large-3
-    # Model page: https://phaseo.app/models/mistral/mistral-large-3
+    # Model page: https://phaseo.ai/models/mistral/mistral-large-3
     MISTRAL_MISTRAL_LARGE_3 = "mistral/mistral-large-3"
     # Model ID: mistral/mistral-medium-3.0
-    # Model page: https://phaseo.app/models/mistral/mistral-medium-3.0
+    # Model page: https://phaseo.ai/models/mistral/mistral-medium-3.0
     MISTRAL_MISTRAL_MEDIUM_3_0 = "mistral/mistral-medium-3.0"
     # Model ID: mistral/mistral-medium-3.1
-    # Model page: https://phaseo.app/models/mistral/mistral-medium-3.1
+    # Model page: https://phaseo.ai/models/mistral/mistral-medium-3.1
     MISTRAL_MISTRAL_MEDIUM_3_1 = "mistral/mistral-medium-3.1"
     # Model ID: mistral/mistral-medium-3.5
-    # Model page: https://phaseo.app/models/mistral/mistral-medium-3.5
+    # Model page: https://phaseo.ai/models/mistral/mistral-medium-3.5
     MISTRAL_MISTRAL_MEDIUM_3_5 = "mistral/mistral-medium-3.5"
     # Model ID: mistral/mistral-moderation
-    # Model page: https://phaseo.app/models/mistral/mistral-moderation
+    # Model page: https://phaseo.ai/models/mistral/mistral-moderation
     MISTRAL_MISTRAL_MODERATION = "mistral/mistral-moderation"
     # Model ID: mistral/mistral-moderation-2
-    # Model page: https://phaseo.app/models/mistral/mistral-moderation-2
+    # Model page: https://phaseo.ai/models/mistral/mistral-moderation-2
     MISTRAL_MISTRAL_MODERATION_2 = "mistral/mistral-moderation-2"
     # Model ID: mistral/mistral-nemo-12b
-    # Model page: https://phaseo.app/models/mistral/mistral-nemo-12b
+    # Model page: https://phaseo.ai/models/mistral/mistral-nemo-12b
     MISTRAL_MISTRAL_NEMO_12B = "mistral/mistral-nemo-12b"
     # Model ID: mistral/mistral-nemo-2407
-    # Model page: https://phaseo.app/models/mistral/mistral-nemo-2407
+    # Model page: https://phaseo.ai/models/mistral/mistral-nemo-2407
     MISTRAL_MISTRAL_NEMO_2407 = "mistral/mistral-nemo-2407"
     # Model ID: mistral/mistral-small-24b-2501
-    # Model page: https://phaseo.app/models/mistral/mistral-small-24b-2501
+    # Model page: https://phaseo.ai/models/mistral/mistral-small-24b-2501
     MISTRAL_MISTRAL_SMALL_24B_2501 = "mistral/mistral-small-24b-2501"
     # Model ID: mistral/mistral-small-3.2
-    # Model page: https://phaseo.app/models/mistral/mistral-small-3.2
+    # Model page: https://phaseo.ai/models/mistral/mistral-small-3.2
     MISTRAL_MISTRAL_SMALL_3_2 = "mistral/mistral-small-3.2"
     # Model ID: mistral/mistral-small-4
-    # Model page: https://phaseo.app/models/mistral/mistral-small-4
+    # Model page: https://phaseo.ai/models/mistral/mistral-small-4
     MISTRAL_MISTRAL_SMALL_4 = "mistral/mistral-small-4"
     # Model ID: mistral/mixtral-8x7b
-    # Model page: https://phaseo.app/models/mistral/mixtral-8x7b
+    # Model page: https://phaseo.ai/models/mistral/mixtral-8x7b
     MISTRAL_MIXTRAL_8X7B = "mistral/mixtral-8x7b"
     # Model ID: mistral/pixtral-large
-    # Model page: https://phaseo.app/models/mistral/pixtral-large
+    # Model page: https://phaseo.ai/models/mistral/pixtral-large
     MISTRAL_PIXTRAL_LARGE = "mistral/pixtral-large"
     # Model ID: mistralai/mistral-nemo
-    # Model page: https://phaseo.app/models/mistralai/mistral-nemo
+    # Model page: https://phaseo.ai/models/mistralai/mistral-nemo
     MISTRALAI_MISTRAL_NEMO = "mistralai/mistral-nemo"
     # Model ID: moonshotai/kimi-k2
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2
     MOONSHOTAI_KIMI_K2 = "moonshotai/kimi-k2"
     # Model ID: moonshotai/kimi-k2-0905
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2-0905
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2-0905
     MOONSHOTAI_KIMI_K2_0905 = "moonshotai/kimi-k2-0905"
     # Model ID: moonshotai/kimi-k2-instruct
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2-instruct
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2-instruct
     MOONSHOTAI_KIMI_K2_INSTRUCT = "moonshotai/kimi-k2-instruct"
     # Model ID: moonshotai/kimi-k2-instruct-0905
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2-instruct-0905
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2-instruct-0905
     MOONSHOTAI_KIMI_K2_INSTRUCT_0905 = "moonshotai/kimi-k2-instruct-0905"
     # Model ID: moonshotai/kimi-k2-thinking
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2-thinking
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2-thinking
     MOONSHOTAI_KIMI_K2_THINKING = "moonshotai/kimi-k2-thinking"
     # Model ID: moonshotai/kimi-k2.5
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2.5
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2.5
     MOONSHOTAI_KIMI_K2_5 = "moonshotai/kimi-k2.5"
     # Model ID: moonshotai/kimi-k2.5-lightning
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2.5-lightning
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2.5-lightning
     MOONSHOTAI_KIMI_K2_5_LIGHTNING = "moonshotai/kimi-k2.5-lightning"
     # Model ID: moonshotai/kimi-k2.6
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2.6
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2.6
     MOONSHOTAI_KIMI_K2_6 = "moonshotai/kimi-k2.6"
     # Model ID: moonshotai/kimi-k2.7-code
-    # Model page: https://phaseo.app/models/moonshotai/kimi-k2.7-code
+    # Model page: https://phaseo.ai/models/moonshotai/kimi-k2.7-code
     MOONSHOTAI_KIMI_K2_7_CODE = "moonshotai/kimi-k2.7-code"
     # Model ID: moonshotai/moonshot-v1-128k
-    # Model page: https://phaseo.app/models/moonshotai/moonshot-v1-128k
+    # Model page: https://phaseo.ai/models/moonshotai/moonshot-v1-128k
     MOONSHOTAI_MOONSHOT_V1_128K = "moonshotai/moonshot-v1-128k"
     # Model ID: moonshotai/moonshot-v1-128k-vision-preview
-    # Model page: https://phaseo.app/models/moonshotai/moonshot-v1-128k-vision-preview
+    # Model page: https://phaseo.ai/models/moonshotai/moonshot-v1-128k-vision-preview
     MOONSHOTAI_MOONSHOT_V1_128K_VISION_PREVIEW = "moonshotai/moonshot-v1-128k-vision-preview"
     # Model ID: moonshotai/moonshot-v1-32k
-    # Model page: https://phaseo.app/models/moonshotai/moonshot-v1-32k
+    # Model page: https://phaseo.ai/models/moonshotai/moonshot-v1-32k
     MOONSHOTAI_MOONSHOT_V1_32K = "moonshotai/moonshot-v1-32k"
     # Model ID: moonshotai/moonshot-v1-32k-vision-preview
-    # Model page: https://phaseo.app/models/moonshotai/moonshot-v1-32k-vision-preview
+    # Model page: https://phaseo.ai/models/moonshotai/moonshot-v1-32k-vision-preview
     MOONSHOTAI_MOONSHOT_V1_32K_VISION_PREVIEW = "moonshotai/moonshot-v1-32k-vision-preview"
     # Model ID: moonshotai/moonshot-v1-8k
-    # Model page: https://phaseo.app/models/moonshotai/moonshot-v1-8k
+    # Model page: https://phaseo.ai/models/moonshotai/moonshot-v1-8k
     MOONSHOTAI_MOONSHOT_V1_8K = "moonshotai/moonshot-v1-8k"
     # Model ID: moonshotai/moonshot-v1-8k-vision-preview
-    # Model page: https://phaseo.app/models/moonshotai/moonshot-v1-8k-vision-preview
+    # Model page: https://phaseo.ai/models/moonshotai/moonshot-v1-8k-vision-preview
     MOONSHOTAI_MOONSHOT_V1_8K_VISION_PREVIEW = "moonshotai/moonshot-v1-8k-vision-preview"
     # Model ID: morph/morph-v3-fast
-    # Model page: https://phaseo.app/models/morph/morph-v3-fast
+    # Model page: https://phaseo.ai/models/morph/morph-v3-fast
     MORPH_MORPH_V3_FAST = "morph/morph-v3-fast"
     # Model ID: morph/morph-v3-large
-    # Model page: https://phaseo.app/models/morph/morph-v3-large
+    # Model page: https://phaseo.ai/models/morph/morph-v3-large
     MORPH_MORPH_V3_LARGE = "morph/morph-v3-large"
     # Model ID: nex-agi/deepseek-v3.1-nex-n1
-    # Model page: https://phaseo.app/models/nex-agi/deepseek-v3.1-nex-n1
+    # Model page: https://phaseo.ai/models/nex-agi/deepseek-v3.1-nex-n1
     NEX_AGI_DEEPSEEK_V3_1_NEX_N1 = "nex-agi/deepseek-v3.1-nex-n1"
     # Model ID: nex-agi/nex-n2-pro
-    # Model page: https://phaseo.app/models/nex-agi/nex-n2-pro
+    # Model page: https://phaseo.ai/models/nex-agi/nex-n2-pro
     NEX_AGI_NEX_N2_PRO = "nex-agi/nex-n2-pro"
     # Model ID: nous/hermes-3-llama-3.1-405b
-    # Model page: https://phaseo.app/models/nous/hermes-3-llama-3.1-405b
+    # Model page: https://phaseo.ai/models/nous/hermes-3-llama-3.1-405b
     NOUS_HERMES_3_LLAMA_3_1_405B = "nous/hermes-3-llama-3.1-405b"
     # Model ID: nousresearch/hermes-3-llama-3.1-405b
-    # Model page: https://phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b
+    # Model page: https://phaseo.ai/models/nousresearch/hermes-3-llama-3.1-405b
     NOUSRESEARCH_HERMES_3_LLAMA_3_1_405B = "nousresearch/hermes-3-llama-3.1-405b"
     # Model ID: nousresearch/hermes-3-llama-3.1-70b
-    # Model page: https://phaseo.app/models/nousresearch/hermes-3-llama-3.1-70b
+    # Model page: https://phaseo.ai/models/nousresearch/hermes-3-llama-3.1-70b
     NOUSRESEARCH_HERMES_3_LLAMA_3_1_70B = "nousresearch/hermes-3-llama-3.1-70b"
     # Model ID: nousresearch/hermes-4-405b
-    # Model page: https://phaseo.app/models/nousresearch/hermes-4-405b
+    # Model page: https://phaseo.ai/models/nousresearch/hermes-4-405b
     NOUSRESEARCH_HERMES_4_405B = "nousresearch/hermes-4-405b"
     # Model ID: nousresearch/hermes-4-70b
-    # Model page: https://phaseo.app/models/nousresearch/hermes-4-70b
+    # Model page: https://phaseo.ai/models/nousresearch/hermes-4-70b
     NOUSRESEARCH_HERMES_4_70B = "nousresearch/hermes-4-70b"
     # Model ID: nvidia/cosmos3-super-reasoner
-    # Model page: https://phaseo.app/models/nvidia/cosmos3-super-reasoner
+    # Model page: https://phaseo.ai/models/nvidia/cosmos3-super-reasoner
     NVIDIA_COSMOS3_SUPER_REASONER = "nvidia/cosmos3-super-reasoner"
     # Model ID: nvidia/llama-3.1-nemotron-70b-instruct
-    # Model page: https://phaseo.app/models/nvidia/llama-3.1-nemotron-70b-instruct
+    # Model page: https://phaseo.ai/models/nvidia/llama-3.1-nemotron-70b-instruct
     NVIDIA_LLAMA_3_1_NEMOTRON_70B_INSTRUCT = "nvidia/llama-3.1-nemotron-70b-instruct"
     # Model ID: nvidia/llama-3.1-nemotron-ultra-253b
-    # Model page: https://phaseo.app/models/nvidia/llama-3.1-nemotron-ultra-253b
+    # Model page: https://phaseo.ai/models/nvidia/llama-3.1-nemotron-ultra-253b
     NVIDIA_LLAMA_3_1_NEMOTRON_ULTRA_253B = "nvidia/llama-3.1-nemotron-ultra-253b"
     # Model ID: nvidia/llama-3.3-nemotron-super-49b-v1.5
-    # Model page: https://phaseo.app/models/nvidia/llama-3.3-nemotron-super-49b-v1.5
+    # Model page: https://phaseo.ai/models/nvidia/llama-3.3-nemotron-super-49b-v1.5
     NVIDIA_LLAMA_3_3_NEMOTRON_SUPER_49B_V1_5 = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
     # Model ID: nvidia/nemotron-3-nano-30b-a3b
-    # Model page: https://phaseo.app/models/nvidia/nemotron-3-nano-30b-a3b
+    # Model page: https://phaseo.ai/models/nvidia/nemotron-3-nano-30b-a3b
     NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nemotron-3-nano-30b-a3b"
     # Model ID: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
-    # Model page: https://phaseo.app/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
+    # Model page: https://phaseo.ai/models/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
     NVIDIA_NEMOTRON_3_NANO_OMNI_30B_A3B_REASONING = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
     # Model ID: nvidia/nemotron-3-super-120b-a12b
-    # Model page: https://phaseo.app/models/nvidia/nemotron-3-super-120b-a12b
+    # Model page: https://phaseo.ai/models/nvidia/nemotron-3-super-120b-a12b
     NVIDIA_NEMOTRON_3_SUPER_120B_A12B = "nvidia/nemotron-3-super-120b-a12b"
     # Model ID: nvidia/nemotron-3-ultra-550b-a55b
-    # Model page: https://phaseo.app/models/nvidia/nemotron-3-ultra-550b-a55b
+    # Model page: https://phaseo.ai/models/nvidia/nemotron-3-ultra-550b-a55b
     NVIDIA_NEMOTRON_3_ULTRA_550B_A55B = "nvidia/nemotron-3-ultra-550b-a55b"
     # Model ID: nvidia/nvidia-nemotron-3-nano-30b-a3b
-    # Model page: https://phaseo.app/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
+    # Model page: https://phaseo.ai/models/nvidia/nvidia-nemotron-3-nano-30b-a3b
     NVIDIA_NVIDIA_NEMOTRON_3_NANO_30B_A3B = "nvidia/nvidia-nemotron-3-nano-30b-a3b"
     # Model ID: nvidia/nvidia-nemotron-nano-12b-v2-vl
-    # Model page: https://phaseo.app/models/nvidia/nvidia-nemotron-nano-12b-v2-vl
+    # Model page: https://phaseo.ai/models/nvidia/nvidia-nemotron-nano-12b-v2-vl
     NVIDIA_NVIDIA_NEMOTRON_NANO_12B_V2_VL = "nvidia/nvidia-nemotron-nano-12b-v2-vl"
     # Model ID: openai/babbage-002
-    # Model page: https://phaseo.app/models/openai/babbage-002
+    # Model page: https://phaseo.ai/models/openai/babbage-002
     OPENAI_BABBAGE_002 = "openai/babbage-002"
     # Model ID: openai/chat-latest
-    # Model page: https://phaseo.app/models/openai/chat-latest
+    # Model page: https://phaseo.ai/models/openai/chat-latest
     OPENAI_CHAT_LATEST = "openai/chat-latest"
     # Model ID: openai/chatgpt-4o
-    # Model page: https://phaseo.app/models/openai/chatgpt-4o
+    # Model page: https://phaseo.ai/models/openai/chatgpt-4o
     OPENAI_CHATGPT_4O = "openai/chatgpt-4o"
     # Model ID: openai/computer-use-preview
-    # Model page: https://phaseo.app/models/openai/computer-use-preview
+    # Model page: https://phaseo.ai/models/openai/computer-use-preview
     OPENAI_COMPUTER_USE_PREVIEW = "openai/computer-use-preview"
     # Model ID: openai/davinci-002
-    # Model page: https://phaseo.app/models/openai/davinci-002
+    # Model page: https://phaseo.ai/models/openai/davinci-002
     OPENAI_DAVINCI_002 = "openai/davinci-002"
     # Model ID: openai/gpt-3.5-turbo-16k
-    # Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-16k
+    # Model page: https://phaseo.ai/models/openai/gpt-3.5-turbo-16k
     OPENAI_GPT_3_5_TURBO_16K = "openai/gpt-3.5-turbo-16k"
     # Model ID: openai/gpt-3.5-turbo-2023-03-21
-    # Model page: https://phaseo.app/models/openai/gpt-3.5-turbo-2023-03-21
+    # Model page: https://phaseo.ai/models/openai/gpt-3.5-turbo-2023-03-21
     OPENAI_GPT_3_5_TURBO_2023_03_21 = "openai/gpt-3.5-turbo-2023-03-21"
     # Model ID: openai/gpt-4-2023-06-13
-    # Model page: https://phaseo.app/models/openai/gpt-4-2023-06-13
+    # Model page: https://phaseo.ai/models/openai/gpt-4-2023-06-13
     OPENAI_GPT_4_2023_06_13 = "openai/gpt-4-2023-06-13"
     # Model ID: openai/gpt-4-turbo-2023-03-14
-    # Model page: https://phaseo.app/models/openai/gpt-4-turbo-2023-03-14
+    # Model page: https://phaseo.ai/models/openai/gpt-4-turbo-2023-03-14
     OPENAI_GPT_4_TURBO_2023_03_14 = "openai/gpt-4-turbo-2023-03-14"
     # Model ID: openai/gpt-4-turbo-2023-11-06
-    # Model page: https://phaseo.app/models/openai/gpt-4-turbo-2023-11-06
+    # Model page: https://phaseo.ai/models/openai/gpt-4-turbo-2023-11-06
     OPENAI_GPT_4_TURBO_2023_11_06 = "openai/gpt-4-turbo-2023-11-06"
     # Model ID: openai/gpt-4-turbo-2024-01-25
-    # Model page: https://phaseo.app/models/openai/gpt-4-turbo-2024-01-25
+    # Model page: https://phaseo.ai/models/openai/gpt-4-turbo-2024-01-25
     OPENAI_GPT_4_TURBO_2024_01_25 = "openai/gpt-4-turbo-2024-01-25"
     # Model ID: openai/gpt-4.1
-    # Model page: https://phaseo.app/models/openai/gpt-4.1
+    # Model page: https://phaseo.ai/models/openai/gpt-4.1
     OPENAI_GPT_4_1 = "openai/gpt-4.1"
     # Model ID: openai/gpt-4.1-mini
-    # Model page: https://phaseo.app/models/openai/gpt-4.1-mini
+    # Model page: https://phaseo.ai/models/openai/gpt-4.1-mini
     OPENAI_GPT_4_1_MINI = "openai/gpt-4.1-mini"
     # Model ID: openai/gpt-4.1-nano
-    # Model page: https://phaseo.app/models/openai/gpt-4.1-nano
+    # Model page: https://phaseo.ai/models/openai/gpt-4.1-nano
     OPENAI_GPT_4_1_NANO = "openai/gpt-4.1-nano"
     # Model ID: openai/gpt-4o-2024-05-13
-    # Model page: https://phaseo.app/models/openai/gpt-4o-2024-05-13
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-2024-05-13
     OPENAI_GPT_4O_2024_05_13 = "openai/gpt-4o-2024-05-13"
     # Model ID: openai/gpt-4o-2024-08-06
-    # Model page: https://phaseo.app/models/openai/gpt-4o-2024-08-06
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-2024-08-06
     OPENAI_GPT_4O_2024_08_06 = "openai/gpt-4o-2024-08-06"
     # Model ID: openai/gpt-4o-2024-11-20
-    # Model page: https://phaseo.app/models/openai/gpt-4o-2024-11-20
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-2024-11-20
     OPENAI_GPT_4O_2024_11_20 = "openai/gpt-4o-2024-11-20"
     # Model ID: openai/gpt-4o-mini
-    # Model page: https://phaseo.app/models/openai/gpt-4o-mini
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-mini
     OPENAI_GPT_4O_MINI = "openai/gpt-4o-mini"
     # Model ID: openai/gpt-4o-mini-transcribe
-    # Model page: https://phaseo.app/models/openai/gpt-4o-mini-transcribe
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-mini-transcribe
     OPENAI_GPT_4O_MINI_TRANSCRIBE = "openai/gpt-4o-mini-transcribe"
     # Model ID: openai/gpt-4o-mini-tts
-    # Model page: https://phaseo.app/models/openai/gpt-4o-mini-tts
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-mini-tts
     OPENAI_GPT_4O_MINI_TTS = "openai/gpt-4o-mini-tts"
     # Model ID: openai/gpt-4o-transcribe
-    # Model page: https://phaseo.app/models/openai/gpt-4o-transcribe
+    # Model page: https://phaseo.ai/models/openai/gpt-4o-transcribe
     OPENAI_GPT_4O_TRANSCRIBE = "openai/gpt-4o-transcribe"
     # Model ID: openai/gpt-5
-    # Model page: https://phaseo.app/models/openai/gpt-5
+    # Model page: https://phaseo.ai/models/openai/gpt-5
     OPENAI_GPT_5 = "openai/gpt-5"
     # Model ID: openai/gpt-5-chat
-    # Model page: https://phaseo.app/models/openai/gpt-5-chat
+    # Model page: https://phaseo.ai/models/openai/gpt-5-chat
     OPENAI_GPT_5_CHAT = "openai/gpt-5-chat"
     # Model ID: openai/gpt-5-codex
-    # Model page: https://phaseo.app/models/openai/gpt-5-codex
+    # Model page: https://phaseo.ai/models/openai/gpt-5-codex
     OPENAI_GPT_5_CODEX = "openai/gpt-5-codex"
     # Model ID: openai/gpt-5-mini
-    # Model page: https://phaseo.app/models/openai/gpt-5-mini
+    # Model page: https://phaseo.ai/models/openai/gpt-5-mini
     OPENAI_GPT_5_MINI = "openai/gpt-5-mini"
     # Model ID: openai/gpt-5-nano
-    # Model page: https://phaseo.app/models/openai/gpt-5-nano
+    # Model page: https://phaseo.ai/models/openai/gpt-5-nano
     OPENAI_GPT_5_NANO = "openai/gpt-5-nano"
     # Model ID: openai/gpt-5-pro
-    # Model page: https://phaseo.app/models/openai/gpt-5-pro
+    # Model page: https://phaseo.ai/models/openai/gpt-5-pro
     OPENAI_GPT_5_PRO = "openai/gpt-5-pro"
     # Model ID: openai/gpt-5.1
-    # Model page: https://phaseo.app/models/openai/gpt-5.1
+    # Model page: https://phaseo.ai/models/openai/gpt-5.1
     OPENAI_GPT_5_1 = "openai/gpt-5.1"
     # Model ID: openai/gpt-5.1-chat
-    # Model page: https://phaseo.app/models/openai/gpt-5.1-chat
+    # Model page: https://phaseo.ai/models/openai/gpt-5.1-chat
     OPENAI_GPT_5_1_CHAT = "openai/gpt-5.1-chat"
     # Model ID: openai/gpt-5.1-codex
-    # Model page: https://phaseo.app/models/openai/gpt-5.1-codex
+    # Model page: https://phaseo.ai/models/openai/gpt-5.1-codex
     OPENAI_GPT_5_1_CODEX = "openai/gpt-5.1-codex"
     # Model ID: openai/gpt-5.1-codex-max
-    # Model page: https://phaseo.app/models/openai/gpt-5.1-codex-max
+    # Model page: https://phaseo.ai/models/openai/gpt-5.1-codex-max
     OPENAI_GPT_5_1_CODEX_MAX = "openai/gpt-5.1-codex-max"
     # Model ID: openai/gpt-5.1-codex-mini
-    # Model page: https://phaseo.app/models/openai/gpt-5.1-codex-mini
+    # Model page: https://phaseo.ai/models/openai/gpt-5.1-codex-mini
     OPENAI_GPT_5_1_CODEX_MINI = "openai/gpt-5.1-codex-mini"
     # Model ID: openai/gpt-5.2
-    # Model page: https://phaseo.app/models/openai/gpt-5.2
+    # Model page: https://phaseo.ai/models/openai/gpt-5.2
     OPENAI_GPT_5_2 = "openai/gpt-5.2"
     # Model ID: openai/gpt-5.2-chat
-    # Model page: https://phaseo.app/models/openai/gpt-5.2-chat
+    # Model page: https://phaseo.ai/models/openai/gpt-5.2-chat
     OPENAI_GPT_5_2_CHAT = "openai/gpt-5.2-chat"
     # Model ID: openai/gpt-5.2-codex
-    # Model page: https://phaseo.app/models/openai/gpt-5.2-codex
+    # Model page: https://phaseo.ai/models/openai/gpt-5.2-codex
     OPENAI_GPT_5_2_CODEX = "openai/gpt-5.2-codex"
     # Model ID: openai/gpt-5.2-pro
-    # Model page: https://phaseo.app/models/openai/gpt-5.2-pro
+    # Model page: https://phaseo.ai/models/openai/gpt-5.2-pro
     OPENAI_GPT_5_2_PRO = "openai/gpt-5.2-pro"
     # Model ID: openai/gpt-5.3-chat
-    # Model page: https://phaseo.app/models/openai/gpt-5.3-chat
+    # Model page: https://phaseo.ai/models/openai/gpt-5.3-chat
     OPENAI_GPT_5_3_CHAT = "openai/gpt-5.3-chat"
     # Model ID: openai/gpt-5.3-codex
-    # Model page: https://phaseo.app/models/openai/gpt-5.3-codex
+    # Model page: https://phaseo.ai/models/openai/gpt-5.3-codex
     OPENAI_GPT_5_3_CODEX = "openai/gpt-5.3-codex"
     # Model ID: openai/gpt-5.4
-    # Model page: https://phaseo.app/models/openai/gpt-5.4
+    # Model page: https://phaseo.ai/models/openai/gpt-5.4
     OPENAI_GPT_5_4 = "openai/gpt-5.4"
     # Model ID: openai/gpt-5.4-mini
-    # Model page: https://phaseo.app/models/openai/gpt-5.4-mini
+    # Model page: https://phaseo.ai/models/openai/gpt-5.4-mini
     OPENAI_GPT_5_4_MINI = "openai/gpt-5.4-mini"
     # Model ID: openai/gpt-5.4-nano
-    # Model page: https://phaseo.app/models/openai/gpt-5.4-nano
+    # Model page: https://phaseo.ai/models/openai/gpt-5.4-nano
     OPENAI_GPT_5_4_NANO = "openai/gpt-5.4-nano"
     # Model ID: openai/gpt-5.4-pro
-    # Model page: https://phaseo.app/models/openai/gpt-5.4-pro
+    # Model page: https://phaseo.ai/models/openai/gpt-5.4-pro
     OPENAI_GPT_5_4_PRO = "openai/gpt-5.4-pro"
     # Model ID: openai/gpt-5.5
-    # Model page: https://phaseo.app/models/openai/gpt-5.5
+    # Model page: https://phaseo.ai/models/openai/gpt-5.5
     OPENAI_GPT_5_5 = "openai/gpt-5.5"
     # Model ID: openai/gpt-5.5-pro
-    # Model page: https://phaseo.app/models/openai/gpt-5.5-pro
+    # Model page: https://phaseo.ai/models/openai/gpt-5.5-pro
     OPENAI_GPT_5_5_PRO = "openai/gpt-5.5-pro"
     # Model ID: openai/gpt-image-1
-    # Model page: https://phaseo.app/models/openai/gpt-image-1
+    # Model page: https://phaseo.ai/models/openai/gpt-image-1
     OPENAI_GPT_IMAGE_1 = "openai/gpt-image-1"
     # Model ID: openai/gpt-image-1-mini
-    # Model page: https://phaseo.app/models/openai/gpt-image-1-mini
+    # Model page: https://phaseo.ai/models/openai/gpt-image-1-mini
     OPENAI_GPT_IMAGE_1_MINI = "openai/gpt-image-1-mini"
     # Model ID: openai/gpt-image-1.5
-    # Model page: https://phaseo.app/models/openai/gpt-image-1.5
+    # Model page: https://phaseo.ai/models/openai/gpt-image-1.5
     OPENAI_GPT_IMAGE_1_5 = "openai/gpt-image-1.5"
     # Model ID: openai/gpt-image-2
-    # Model page: https://phaseo.app/models/openai/gpt-image-2
+    # Model page: https://phaseo.ai/models/openai/gpt-image-2
     OPENAI_GPT_IMAGE_2 = "openai/gpt-image-2"
     # Model ID: openai/gpt-oss-120b
-    # Model page: https://phaseo.app/models/openai/gpt-oss-120b
+    # Model page: https://phaseo.ai/models/openai/gpt-oss-120b
     OPENAI_GPT_OSS_120B = "openai/gpt-oss-120b"
     # Model ID: openai/gpt-oss-20b
-    # Model page: https://phaseo.app/models/openai/gpt-oss-20b
+    # Model page: https://phaseo.ai/models/openai/gpt-oss-20b
     OPENAI_GPT_OSS_20B = "openai/gpt-oss-20b"
     # Model ID: openai/gpt-oss-safeguard-20b
-    # Model page: https://phaseo.app/models/openai/gpt-oss-safeguard-20b
+    # Model page: https://phaseo.ai/models/openai/gpt-oss-safeguard-20b
     OPENAI_GPT_OSS_SAFEGUARD_20B = "openai/gpt-oss-safeguard-20b"
     # Model ID: openai/o1
-    # Model page: https://phaseo.app/models/openai/o1
+    # Model page: https://phaseo.ai/models/openai/o1
     OPENAI_O1 = "openai/o1"
     # Model ID: openai/o1-mini
-    # Model page: https://phaseo.app/models/openai/o1-mini
+    # Model page: https://phaseo.ai/models/openai/o1-mini
     OPENAI_O1_MINI = "openai/o1-mini"
     # Model ID: openai/o1-pro
-    # Model page: https://phaseo.app/models/openai/o1-pro
+    # Model page: https://phaseo.ai/models/openai/o1-pro
     OPENAI_O1_PRO = "openai/o1-pro"
     # Model ID: openai/o3
-    # Model page: https://phaseo.app/models/openai/o3
+    # Model page: https://phaseo.ai/models/openai/o3
     OPENAI_O3 = "openai/o3"
     # Model ID: openai/o3-deep-research
-    # Model page: https://phaseo.app/models/openai/o3-deep-research
+    # Model page: https://phaseo.ai/models/openai/o3-deep-research
     OPENAI_O3_DEEP_RESEARCH = "openai/o3-deep-research"
     # Model ID: openai/o3-mini
-    # Model page: https://phaseo.app/models/openai/o3-mini
+    # Model page: https://phaseo.ai/models/openai/o3-mini
     OPENAI_O3_MINI = "openai/o3-mini"
     # Model ID: openai/o3-pro
-    # Model page: https://phaseo.app/models/openai/o3-pro
+    # Model page: https://phaseo.ai/models/openai/o3-pro
     OPENAI_O3_PRO = "openai/o3-pro"
     # Model ID: openai/o4-mini
-    # Model page: https://phaseo.app/models/openai/o4-mini
+    # Model page: https://phaseo.ai/models/openai/o4-mini
     OPENAI_O4_MINI = "openai/o4-mini"
     # Model ID: openai/o4-mini-deep-research
-    # Model page: https://phaseo.app/models/openai/o4-mini-deep-research
+    # Model page: https://phaseo.ai/models/openai/o4-mini-deep-research
     OPENAI_O4_MINI_DEEP_RESEARCH = "openai/o4-mini-deep-research"
     # Model ID: openai/omni-moderation
-    # Model page: https://phaseo.app/models/openai/omni-moderation
+    # Model page: https://phaseo.ai/models/openai/omni-moderation
     OPENAI_OMNI_MODERATION = "openai/omni-moderation"
     # Model ID: openai/sora-2
-    # Model page: https://phaseo.app/models/openai/sora-2
+    # Model page: https://phaseo.ai/models/openai/sora-2
     OPENAI_SORA_2 = "openai/sora-2"
     # Model ID: openai/sora-2-pro
-    # Model page: https://phaseo.app/models/openai/sora-2-pro
+    # Model page: https://phaseo.ai/models/openai/sora-2-pro
     OPENAI_SORA_2_PRO = "openai/sora-2-pro"
     # Model ID: openai/text-embedding-3-large
-    # Model page: https://phaseo.app/models/openai/text-embedding-3-large
+    # Model page: https://phaseo.ai/models/openai/text-embedding-3-large
     OPENAI_TEXT_EMBEDDING_3_LARGE = "openai/text-embedding-3-large"
     # Model ID: openai/text-embedding-3-small
-    # Model page: https://phaseo.app/models/openai/text-embedding-3-small
+    # Model page: https://phaseo.ai/models/openai/text-embedding-3-small
     OPENAI_TEXT_EMBEDDING_3_SMALL = "openai/text-embedding-3-small"
     # Model ID: openai/text-embedding-ada-002
-    # Model page: https://phaseo.app/models/openai/text-embedding-ada-002
+    # Model page: https://phaseo.ai/models/openai/text-embedding-ada-002
     OPENAI_TEXT_EMBEDDING_ADA_002 = "openai/text-embedding-ada-002"
     # Model ID: openai/whisper-1
-    # Model page: https://phaseo.app/models/openai/whisper-1
+    # Model page: https://phaseo.ai/models/openai/whisper-1
     OPENAI_WHISPER_1 = "openai/whisper-1"
+    # Model ID: phaseo/free
+    # Model page: https://phaseo.ai/models/phaseo/free
+    PHASEO_FREE = "phaseo/free"
     # Model ID: poolside/laguna-m.1:free
-    # Model page: https://phaseo.app/models/poolside/laguna-m.1%3Afree
+    # Model page: https://phaseo.ai/models/poolside/laguna-m.1%3Afree
     POOLSIDE_LAGUNA_M_1_FREE = "poolside/laguna-m.1:free"
+    # Model ID: poolside/laguna-xs-2.1:free
+    # Model page: https://phaseo.ai/models/poolside/laguna-xs-2.1%3Afree
+    POOLSIDE_LAGUNA_XS_2_1_FREE = "poolside/laguna-xs-2.1:free"
     # Model ID: poolside/laguna-xs.2:free
-    # Model page: https://phaseo.app/models/poolside/laguna-xs.2%3Afree
+    # Model page: https://phaseo.ai/models/poolside/laguna-xs.2%3Afree
     POOLSIDE_LAGUNA_XS_2_FREE = "poolside/laguna-xs.2:free"
     # Model ID: qwen/qvq-max
-    # Model page: https://phaseo.app/models/qwen/qvq-max
+    # Model page: https://phaseo.ai/models/qwen/qvq-max
     QWEN_QVQ_MAX = "qwen/qvq-max"
     # Model ID: qwen/qwen-3.6-plus
-    # Model page: https://phaseo.app/models/qwen/qwen-3.6-plus
+    # Model page: https://phaseo.ai/models/qwen/qwen-3.6-plus
     QWEN_QWEN_3_6_PLUS = "qwen/qwen-3.6-plus"
     # Model ID: qwen/qwen-flash
-    # Model page: https://phaseo.app/models/qwen/qwen-flash
+    # Model page: https://phaseo.ai/models/qwen/qwen-flash
     QWEN_QWEN_FLASH = "qwen/qwen-flash"
     # Model ID: qwen/qwen-flash-character
-    # Model page: https://phaseo.app/models/qwen/qwen-flash-character
+    # Model page: https://phaseo.ai/models/qwen/qwen-flash-character
     QWEN_QWEN_FLASH_CHARACTER = "qwen/qwen-flash-character"
     # Model ID: qwen/qwen-max
-    # Model page: https://phaseo.app/models/qwen/qwen-max
+    # Model page: https://phaseo.ai/models/qwen/qwen-max
     QWEN_QWEN_MAX = "qwen/qwen-max"
     # Model ID: qwen/qwen-mt-flash
-    # Model page: https://phaseo.app/models/qwen/qwen-mt-flash
+    # Model page: https://phaseo.ai/models/qwen/qwen-mt-flash
     QWEN_QWEN_MT_FLASH = "qwen/qwen-mt-flash"
     # Model ID: qwen/qwen-mt-lite
-    # Model page: https://phaseo.app/models/qwen/qwen-mt-lite
+    # Model page: https://phaseo.ai/models/qwen/qwen-mt-lite
     QWEN_QWEN_MT_LITE = "qwen/qwen-mt-lite"
     # Model ID: qwen/qwen-mt-plus
-    # Model page: https://phaseo.app/models/qwen/qwen-mt-plus
+    # Model page: https://phaseo.ai/models/qwen/qwen-mt-plus
     QWEN_QWEN_MT_PLUS = "qwen/qwen-mt-plus"
     # Model ID: qwen/qwen-mt-turbo
-    # Model page: https://phaseo.app/models/qwen/qwen-mt-turbo
+    # Model page: https://phaseo.ai/models/qwen/qwen-mt-turbo
     QWEN_QWEN_MT_TURBO = "qwen/qwen-mt-turbo"
     # Model ID: qwen/qwen-plus-2025-01-25
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-2025-01-25
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-2025-01-25
     QWEN_QWEN_PLUS_2025_01_25 = "qwen/qwen-plus-2025-01-25"
     # Model ID: qwen/qwen-plus-2025-04-28
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-2025-04-28
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-2025-04-28
     QWEN_QWEN_PLUS_2025_04_28 = "qwen/qwen-plus-2025-04-28"
     # Model ID: qwen/qwen-plus-2025-07-14
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-2025-07-14
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-2025-07-14
     QWEN_QWEN_PLUS_2025_07_14 = "qwen/qwen-plus-2025-07-14"
     # Model ID: qwen/qwen-plus-2025-07-28
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-2025-07-28
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-2025-07-28
     QWEN_QWEN_PLUS_2025_07_28 = "qwen/qwen-plus-2025-07-28"
     # Model ID: qwen/qwen-plus-2025-09-11
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-2025-09-11
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-2025-09-11
     QWEN_QWEN_PLUS_2025_09_11 = "qwen/qwen-plus-2025-09-11"
     # Model ID: qwen/qwen-plus-2025-12-01
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-2025-12-01
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-2025-12-01
     QWEN_QWEN_PLUS_2025_12_01 = "qwen/qwen-plus-2025-12-01"
     # Model ID: qwen/qwen-plus-character
-    # Model page: https://phaseo.app/models/qwen/qwen-plus-character
+    # Model page: https://phaseo.ai/models/qwen/qwen-plus-character
     QWEN_QWEN_PLUS_CHARACTER = "qwen/qwen-plus-character"
     # Model ID: qwen/qwen-turbo-2024-11-01
-    # Model page: https://phaseo.app/models/qwen/qwen-turbo-2024-11-01
+    # Model page: https://phaseo.ai/models/qwen/qwen-turbo-2024-11-01
     QWEN_QWEN_TURBO_2024_11_01 = "qwen/qwen-turbo-2024-11-01"
     # Model ID: qwen/qwen-turbo-2025-04-28
-    # Model page: https://phaseo.app/models/qwen/qwen-turbo-2025-04-28
+    # Model page: https://phaseo.ai/models/qwen/qwen-turbo-2025-04-28
     QWEN_QWEN_TURBO_2025_04_28 = "qwen/qwen-turbo-2025-04-28"
     # Model ID: qwen/qwen-vl-max-2025-04-08
-    # Model page: https://phaseo.app/models/qwen/qwen-vl-max-2025-04-08
+    # Model page: https://phaseo.ai/models/qwen/qwen-vl-max-2025-04-08
     QWEN_QWEN_VL_MAX_2025_04_08 = "qwen/qwen-vl-max-2025-04-08"
     # Model ID: qwen/qwen-vl-max-2025-08-13
-    # Model page: https://phaseo.app/models/qwen/qwen-vl-max-2025-08-13
+    # Model page: https://phaseo.ai/models/qwen/qwen-vl-max-2025-08-13
     QWEN_QWEN_VL_MAX_2025_08_13 = "qwen/qwen-vl-max-2025-08-13"
     # Model ID: qwen/qwen-vl-plus-2025-01-25
-    # Model page: https://phaseo.app/models/qwen/qwen-vl-plus-2025-01-25
+    # Model page: https://phaseo.ai/models/qwen/qwen-vl-plus-2025-01-25
     QWEN_QWEN_VL_PLUS_2025_01_25 = "qwen/qwen-vl-plus-2025-01-25"
     # Model ID: qwen/qwen-vl-plus-2025-05-07
-    # Model page: https://phaseo.app/models/qwen/qwen-vl-plus-2025-05-07
+    # Model page: https://phaseo.ai/models/qwen/qwen-vl-plus-2025-05-07
     QWEN_QWEN_VL_PLUS_2025_05_07 = "qwen/qwen-vl-plus-2025-05-07"
     # Model ID: qwen/qwen-vl-plus-2025-08-15
-    # Model page: https://phaseo.app/models/qwen/qwen-vl-plus-2025-08-15
+    # Model page: https://phaseo.ai/models/qwen/qwen-vl-plus-2025-08-15
     QWEN_QWEN_VL_PLUS_2025_08_15 = "qwen/qwen-vl-plus-2025-08-15"
     # Model ID: qwen/qwen2.5-14b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-14b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-14b
     QWEN_QWEN2_5_14B = "qwen/qwen2.5-14b"
     # Model ID: qwen/qwen2.5-14b-1m
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-14b-1m
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-14b-1m
     QWEN_QWEN2_5_14B_1M = "qwen/qwen2.5-14b-1m"
     # Model ID: qwen/qwen2.5-32b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-32b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-32b
     QWEN_QWEN2_5_32B = "qwen/qwen2.5-32b"
     # Model ID: qwen/qwen2.5-72b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-72b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-72b
     QWEN_QWEN2_5_72B = "qwen/qwen2.5-72b"
     # Model ID: qwen/qwen2.5-7b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-7b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-7b
     QWEN_QWEN2_5_7B = "qwen/qwen2.5-7b"
     # Model ID: qwen/qwen2.5-7b-1m
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-7b-1m
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-7b-1m
     QWEN_QWEN2_5_7B_1M = "qwen/qwen2.5-7b-1m"
     # Model ID: qwen/qwen2.5-coder-7b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-coder-7b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-coder-7b
     QWEN_QWEN2_5_CODER_7B = "qwen/qwen2.5-coder-7b"
     # Model ID: qwen/qwen2.5-vl-32b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-vl-32b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-vl-32b
     QWEN_QWEN2_5_VL_32B = "qwen/qwen2.5-vl-32b"
     # Model ID: qwen/qwen2.5-vl-32b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-vl-32b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-vl-32b-instruct
     QWEN_QWEN2_5_VL_32B_INSTRUCT = "qwen/qwen2.5-vl-32b-instruct"
     # Model ID: qwen/qwen2.5-vl-72b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-vl-72b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-vl-72b
     QWEN_QWEN2_5_VL_72B = "qwen/qwen2.5-vl-72b"
     # Model ID: qwen/qwen2.5-vl-72b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-vl-72b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-vl-72b-instruct
     QWEN_QWEN2_5_VL_72B_INSTRUCT = "qwen/qwen2.5-vl-72b-instruct"
     # Model ID: qwen/qwen2.5-vl-7b
-    # Model page: https://phaseo.app/models/qwen/qwen2.5-vl-7b
+    # Model page: https://phaseo.ai/models/qwen/qwen2.5-vl-7b
     QWEN_QWEN2_5_VL_7B = "qwen/qwen2.5-vl-7b"
     # Model ID: qwen/qwen3-0.6b
-    # Model page: https://phaseo.app/models/qwen/qwen3-0.6b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-0.6b
     QWEN_QWEN3_0_6B = "qwen/qwen3-0.6b"
     # Model ID: qwen/qwen3-1.7b
-    # Model page: https://phaseo.app/models/qwen/qwen3-1.7b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-1.7b
     QWEN_QWEN3_1_7B = "qwen/qwen3-1.7b"
     # Model ID: qwen/qwen3-14b
-    # Model page: https://phaseo.app/models/qwen/qwen3-14b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-14b
     QWEN_QWEN3_14B = "qwen/qwen3-14b"
     # Model ID: qwen/qwen3-235b-a22b-2507
-    # Model page: https://phaseo.app/models/qwen/qwen3-235b-a22b-2507
+    # Model page: https://phaseo.ai/models/qwen/qwen3-235b-a22b-2507
     QWEN_QWEN3_235B_A22B_2507 = "qwen/qwen3-235b-a22b-2507"
     # Model ID: qwen/qwen3-235b-a22b-instruct-2507
-    # Model page: https://phaseo.app/models/qwen/qwen3-235b-a22b-instruct-2507
+    # Model page: https://phaseo.ai/models/qwen/qwen3-235b-a22b-instruct-2507
     QWEN_QWEN3_235B_A22B_INSTRUCT_2507 = "qwen/qwen3-235b-a22b-instruct-2507"
     # Model ID: qwen/qwen3-235b-a22b-thinking-2507
-    # Model page: https://phaseo.app/models/qwen/qwen3-235b-a22b-thinking-2507
+    # Model page: https://phaseo.ai/models/qwen/qwen3-235b-a22b-thinking-2507
     QWEN_QWEN3_235B_A22B_THINKING_2507 = "qwen/qwen3-235b-a22b-thinking-2507"
     # Model ID: qwen/qwen3-30b-a3b
-    # Model page: https://phaseo.app/models/qwen/qwen3-30b-a3b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-30b-a3b
     QWEN_QWEN3_30B_A3B = "qwen/qwen3-30b-a3b"
     # Model ID: qwen/qwen3-30b-a3b-2507
-    # Model page: https://phaseo.app/models/qwen/qwen3-30b-a3b-2507
+    # Model page: https://phaseo.ai/models/qwen/qwen3-30b-a3b-2507
     QWEN_QWEN3_30B_A3B_2507 = "qwen/qwen3-30b-a3b-2507"
     # Model ID: qwen/qwen3-30b-a3b-instruct-2507
-    # Model page: https://phaseo.app/models/qwen/qwen3-30b-a3b-instruct-2507
+    # Model page: https://phaseo.ai/models/qwen/qwen3-30b-a3b-instruct-2507
     QWEN_QWEN3_30B_A3B_INSTRUCT_2507 = "qwen/qwen3-30b-a3b-instruct-2507"
     # Model ID: qwen/qwen3-30b-a3b-thinking-2507
-    # Model page: https://phaseo.app/models/qwen/qwen3-30b-a3b-thinking-2507
+    # Model page: https://phaseo.ai/models/qwen/qwen3-30b-a3b-thinking-2507
     QWEN_QWEN3_30B_A3B_THINKING_2507 = "qwen/qwen3-30b-a3b-thinking-2507"
     # Model ID: qwen/qwen3-32b
-    # Model page: https://phaseo.app/models/qwen/qwen3-32b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-32b
     QWEN_QWEN3_32B = "qwen/qwen3-32b"
     # Model ID: qwen/qwen3-4b
-    # Model page: https://phaseo.app/models/qwen/qwen3-4b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-4b
     QWEN_QWEN3_4B = "qwen/qwen3-4b"
     # Model ID: qwen/qwen3-8b
-    # Model page: https://phaseo.app/models/qwen/qwen3-8b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-8b
     QWEN_QWEN3_8B = "qwen/qwen3-8b"
     # Model ID: qwen/qwen3-coder
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder
     QWEN_QWEN3_CODER = "qwen/qwen3-coder"
     # Model ID: qwen/qwen3-coder-30b-a3b
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder-30b-a3b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder-30b-a3b
     QWEN_QWEN3_CODER_30B_A3B = "qwen/qwen3-coder-30b-a3b"
     # Model ID: qwen/qwen3-coder-480b-a35b
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder-480b-a35b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder-480b-a35b
     QWEN_QWEN3_CODER_480B_A35B = "qwen/qwen3-coder-480b-a35b"
     # Model ID: qwen/qwen3-coder-flash
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder-flash
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder-flash
     QWEN_QWEN3_CODER_FLASH = "qwen/qwen3-coder-flash"
     # Model ID: qwen/qwen3-coder-next
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder-next
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder-next
     QWEN_QWEN3_CODER_NEXT = "qwen/qwen3-coder-next"
     # Model ID: qwen/qwen3-coder-plus-2025-07-22
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder-plus-2025-07-22
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder-plus-2025-07-22
     QWEN_QWEN3_CODER_PLUS_2025_07_22 = "qwen/qwen3-coder-plus-2025-07-22"
     # Model ID: qwen/qwen3-coder-plus-2025-09-23
-    # Model page: https://phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23
+    # Model page: https://phaseo.ai/models/qwen/qwen3-coder-plus-2025-09-23
     QWEN_QWEN3_CODER_PLUS_2025_09_23 = "qwen/qwen3-coder-plus-2025-09-23"
     # Model ID: qwen/qwen3-embedding-8b
-    # Model page: https://phaseo.app/models/qwen/qwen3-embedding-8b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-embedding-8b
     QWEN_QWEN3_EMBEDDING_8B = "qwen/qwen3-embedding-8b"
     # Model ID: qwen/qwen3-max
-    # Model page: https://phaseo.app/models/qwen/qwen3-max
+    # Model page: https://phaseo.ai/models/qwen/qwen3-max
     QWEN_QWEN3_MAX = "qwen/qwen3-max"
     # Model ID: qwen/qwen3-max-2025-09-23
-    # Model page: https://phaseo.app/models/qwen/qwen3-max-2025-09-23
+    # Model page: https://phaseo.ai/models/qwen/qwen3-max-2025-09-23
     QWEN_QWEN3_MAX_2025_09_23 = "qwen/qwen3-max-2025-09-23"
     # Model ID: qwen/qwen3-max-2026-01-23
-    # Model page: https://phaseo.app/models/qwen/qwen3-max-2026-01-23
+    # Model page: https://phaseo.ai/models/qwen/qwen3-max-2026-01-23
     QWEN_QWEN3_MAX_2026_01_23 = "qwen/qwen3-max-2026-01-23"
     # Model ID: qwen/qwen3-max-preview
-    # Model page: https://phaseo.app/models/qwen/qwen3-max-preview
+    # Model page: https://phaseo.ai/models/qwen/qwen3-max-preview
     QWEN_QWEN3_MAX_PREVIEW = "qwen/qwen3-max-preview"
     # Model ID: qwen/qwen3-max-thinking
-    # Model page: https://phaseo.app/models/qwen/qwen3-max-thinking
+    # Model page: https://phaseo.ai/models/qwen/qwen3-max-thinking
     QWEN_QWEN3_MAX_THINKING = "qwen/qwen3-max-thinking"
     # Model ID: qwen/qwen3-next-80b
-    # Model page: https://phaseo.app/models/qwen/qwen3-next-80b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-next-80b
     QWEN_QWEN3_NEXT_80B = "qwen/qwen3-next-80b"
     # Model ID: qwen/qwen3-next-80b-a3b
-    # Model page: https://phaseo.app/models/qwen/qwen3-next-80b-a3b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-next-80b-a3b
     QWEN_QWEN3_NEXT_80B_A3B = "qwen/qwen3-next-80b-a3b"
     # Model ID: qwen/qwen3-next-80b-a3b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen3-next-80b-a3b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen3-next-80b-a3b-instruct
     QWEN_QWEN3_NEXT_80B_A3B_INSTRUCT = "qwen/qwen3-next-80b-a3b-instruct"
     # Model ID: qwen/qwen3-next-80b-a3b-thinking
-    # Model page: https://phaseo.app/models/qwen/qwen3-next-80b-a3b-thinking
+    # Model page: https://phaseo.ai/models/qwen/qwen3-next-80b-a3b-thinking
     QWEN_QWEN3_NEXT_80B_A3B_THINKING = "qwen/qwen3-next-80b-a3b-thinking"
     # Model ID: qwen/qwen3-omni-30b-a3b-thinking
-    # Model page: https://phaseo.app/models/qwen/qwen3-omni-30b-a3b-thinking
+    # Model page: https://phaseo.ai/models/qwen/qwen3-omni-30b-a3b-thinking
     QWEN_QWEN3_OMNI_30B_A3B_THINKING = "qwen/qwen3-omni-30b-a3b-thinking"
     # Model ID: qwen/qwen3-reranker
-    # Model page: https://phaseo.app/models/qwen/qwen3-reranker
+    # Model page: https://phaseo.ai/models/qwen/qwen3-reranker
     QWEN_QWEN3_RERANKER = "qwen/qwen3-reranker"
     # Model ID: qwen/qwen3-vl-235b-a22b
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-235b-a22b
     QWEN_QWEN3_VL_235B_A22B = "qwen/qwen3-vl-235b-a22b"
     # Model ID: qwen/qwen3-vl-235b-a22b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-235b-a22b-instruct
     QWEN_QWEN3_VL_235B_A22B_INSTRUCT = "qwen/qwen3-vl-235b-a22b-instruct"
     # Model ID: qwen/qwen3-vl-235b-a22b-thinking
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-235b-a22b-thinking
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-235b-a22b-thinking
     QWEN_QWEN3_VL_235B_A22B_THINKING = "qwen/qwen3-vl-235b-a22b-thinking"
     # Model ID: qwen/qwen3-vl-30b-a3b
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-30b-a3b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-30b-a3b
     QWEN_QWEN3_VL_30B_A3B = "qwen/qwen3-vl-30b-a3b"
     # Model ID: qwen/qwen3-vl-30b-a3b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-30b-a3b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-30b-a3b-instruct
     QWEN_QWEN3_VL_30B_A3B_INSTRUCT = "qwen/qwen3-vl-30b-a3b-instruct"
     # Model ID: qwen/qwen3-vl-30b-a3b-thinking
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-30b-a3b-thinking
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-30b-a3b-thinking
     QWEN_QWEN3_VL_30B_A3B_THINKING = "qwen/qwen3-vl-30b-a3b-thinking"
     # Model ID: qwen/qwen3-vl-32b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-32b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-32b-instruct
     QWEN_QWEN3_VL_32B_INSTRUCT = "qwen/qwen3-vl-32b-instruct"
     # Model ID: qwen/qwen3-vl-32b-thinking
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-32b-thinking
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-32b-thinking
     QWEN_QWEN3_VL_32B_THINKING = "qwen/qwen3-vl-32b-thinking"
     # Model ID: qwen/qwen3-vl-8b
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-8b
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-8b
     QWEN_QWEN3_VL_8B = "qwen/qwen3-vl-8b"
     # Model ID: qwen/qwen3-vl-8b-instruct
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-8b-instruct
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-8b-instruct
     QWEN_QWEN3_VL_8B_INSTRUCT = "qwen/qwen3-vl-8b-instruct"
     # Model ID: qwen/qwen3-vl-flash-2025-10-15
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-flash-2025-10-15
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-flash-2025-10-15
     QWEN_QWEN3_VL_FLASH_2025_10_15 = "qwen/qwen3-vl-flash-2025-10-15"
     # Model ID: qwen/qwen3-vl-flash-2026-01-22
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-flash-2026-01-22
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-flash-2026-01-22
     QWEN_QWEN3_VL_FLASH_2026_01_22 = "qwen/qwen3-vl-flash-2026-01-22"
     # Model ID: qwen/qwen3-vl-plus-2025-09-23
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-plus-2025-09-23
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-plus-2025-09-23
     QWEN_QWEN3_VL_PLUS_2025_09_23 = "qwen/qwen3-vl-plus-2025-09-23"
     # Model ID: qwen/qwen3-vl-plus-2025-12-19
-    # Model page: https://phaseo.app/models/qwen/qwen3-vl-plus-2025-12-19
+    # Model page: https://phaseo.ai/models/qwen/qwen3-vl-plus-2025-12-19
     QWEN_QWEN3_VL_PLUS_2025_12_19 = "qwen/qwen3-vl-plus-2025-12-19"
     # Model ID: qwen/qwen3.5-122b-a10b
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-122b-a10b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-122b-a10b
     QWEN_QWEN3_5_122B_A10B = "qwen/qwen3.5-122b-a10b"
     # Model ID: qwen/qwen3.5-27b
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-27b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-27b
     QWEN_QWEN3_5_27B = "qwen/qwen3.5-27b"
     # Model ID: qwen/qwen3.5-35b-a3b
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-35b-a3b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-35b-a3b
     QWEN_QWEN3_5_35B_A3B = "qwen/qwen3.5-35b-a3b"
     # Model ID: qwen/qwen3.5-397b-a17b
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-397b-a17b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-397b-a17b
     QWEN_QWEN3_5_397B_A17B = "qwen/qwen3.5-397b-a17b"
     # Model ID: qwen/qwen3.5-4b
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-4b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-4b
     QWEN_QWEN3_5_4B = "qwen/qwen3.5-4b"
     # Model ID: qwen/qwen3.5-9b
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-9b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-9b
     QWEN_QWEN3_5_9B = "qwen/qwen3.5-9b"
     # Model ID: qwen/qwen3.5-flash
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-flash
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-flash
     QWEN_QWEN3_5_FLASH = "qwen/qwen3.5-flash"
     # Model ID: qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19
     QWEN_QWEN3_5_LIVETRANSLATE_FLASH_REALTIME_2026_05_19 = "qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19"
     # Model ID: qwen/qwen3.5-plus
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-plus
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-plus
     QWEN_QWEN3_5_PLUS = "qwen/qwen3.5-plus"
     # Model ID: qwen/qwen3.5-plus-2026-04-20
-    # Model page: https://phaseo.app/models/qwen/qwen3.5-plus-2026-04-20
+    # Model page: https://phaseo.ai/models/qwen/qwen3.5-plus-2026-04-20
     QWEN_QWEN3_5_PLUS_2026_04_20 = "qwen/qwen3.5-plus-2026-04-20"
     # Model ID: qwen/qwen3.6-27b
-    # Model page: https://phaseo.app/models/qwen/qwen3.6-27b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.6-27b
     QWEN_QWEN3_6_27B = "qwen/qwen3.6-27b"
     # Model ID: qwen/qwen3.6-35b-a3b
-    # Model page: https://phaseo.app/models/qwen/qwen3.6-35b-a3b
+    # Model page: https://phaseo.ai/models/qwen/qwen3.6-35b-a3b
     QWEN_QWEN3_6_35B_A3B = "qwen/qwen3.6-35b-a3b"
     # Model ID: qwen/qwen3.6-max-preview
-    # Model page: https://phaseo.app/models/qwen/qwen3.6-max-preview
+    # Model page: https://phaseo.ai/models/qwen/qwen3.6-max-preview
     QWEN_QWEN3_6_MAX_PREVIEW = "qwen/qwen3.6-max-preview"
     # Model ID: qwen/qwen3.6-plus
-    # Model page: https://phaseo.app/models/qwen/qwen3.6-plus
+    # Model page: https://phaseo.ai/models/qwen/qwen3.6-plus
     QWEN_QWEN3_6_PLUS = "qwen/qwen3.6-plus"
     # Model ID: qwen/qwen3.7-max
-    # Model page: https://phaseo.app/models/qwen/qwen3.7-max
+    # Model page: https://phaseo.ai/models/qwen/qwen3.7-max
     QWEN_QWEN3_7_MAX = "qwen/qwen3.7-max"
     # Model ID: qwen/qwen3.7-max-2026-05-17
-    # Model page: https://phaseo.app/models/qwen/qwen3.7-max-2026-05-17
+    # Model page: https://phaseo.ai/models/qwen/qwen3.7-max-2026-05-17
     QWEN_QWEN3_7_MAX_2026_05_17 = "qwen/qwen3.7-max-2026-05-17"
     # Model ID: qwen/qwen3.7-plus
-    # Model page: https://phaseo.app/models/qwen/qwen3.7-plus
+    # Model page: https://phaseo.ai/models/qwen/qwen3.7-plus
     QWEN_QWEN3_7_PLUS = "qwen/qwen3.7-plus"
     # Model ID: qwen/qwen3.7-plus-2026-05-26
-    # Model page: https://phaseo.app/models/qwen/qwen3.7-plus-2026-05-26
+    # Model page: https://phaseo.ai/models/qwen/qwen3.7-plus-2026-05-26
     QWEN_QWEN3_7_PLUS_2026_05_26 = "qwen/qwen3.7-plus-2026-05-26"
     # Model ID: qwen/qwq-32b
-    # Model page: https://phaseo.app/models/qwen/qwq-32b
+    # Model page: https://phaseo.ai/models/qwen/qwq-32b
     QWEN_QWQ_32B = "qwen/qwq-32b"
     # Model ID: qwen/qwq-plus
-    # Model page: https://phaseo.app/models/qwen/qwq-plus
+    # Model page: https://phaseo.ai/models/qwen/qwq-plus
     QWEN_QWQ_PLUS = "qwen/qwq-plus"
     # Model ID: qwen/text-embedding-v3
-    # Model page: https://phaseo.app/models/qwen/text-embedding-v3
+    # Model page: https://phaseo.ai/models/qwen/text-embedding-v3
     QWEN_TEXT_EMBEDDING_V3 = "qwen/text-embedding-v3"
     # Model ID: qwen/text-embedding-v4
-    # Model page: https://phaseo.app/models/qwen/text-embedding-v4
+    # Model page: https://phaseo.ai/models/qwen/text-embedding-v4
     QWEN_TEXT_EMBEDDING_V4 = "qwen/text-embedding-v4"
     # Model ID: qwen/wan2.7-t2v
-    # Model page: https://phaseo.app/models/qwen/wan2.7-t2v
+    # Model page: https://phaseo.ai/models/qwen/wan2.7-t2v
     QWEN_WAN2_7_T2V = "qwen/wan2.7-t2v"
     # Model ID: stepfun/step-3.5-flash
-    # Model page: https://phaseo.app/models/stepfun/step-3.5-flash
+    # Model page: https://phaseo.ai/models/stepfun/step-3.5-flash
     STEPFUN_STEP_3_5_FLASH = "stepfun/step-3.5-flash"
     # Model ID: stepfun/step-3.7-flash
-    # Model page: https://phaseo.app/models/stepfun/step-3.7-flash
+    # Model page: https://phaseo.ai/models/stepfun/step-3.7-flash
     STEPFUN_STEP_3_7_FLASH = "stepfun/step-3.7-flash"
     # Model ID: tencent/hunyuan-a13b-instruct
-    # Model page: https://phaseo.app/models/tencent/hunyuan-a13b-instruct
+    # Model page: https://phaseo.ai/models/tencent/hunyuan-a13b-instruct
     TENCENT_HUNYUAN_A13B_INSTRUCT = "tencent/hunyuan-a13b-instruct"
     # Model ID: tencent/hy3-preview
-    # Model page: https://phaseo.app/models/tencent/hy3-preview
+    # Model page: https://phaseo.ai/models/tencent/hy3-preview
     TENCENT_HY3_PREVIEW = "tencent/hy3-preview"
     # Model ID: venice/venice-uncensored
-    # Model page: https://phaseo.app/models/venice/venice-uncensored
+    # Model page: https://phaseo.ai/models/venice/venice-uncensored
     VENICE_VENICE_UNCENSORED = "venice/venice-uncensored"
     # Model ID: venice/venice-uncensored-1.1
-    # Model page: https://phaseo.app/models/venice/venice-uncensored-1.1
+    # Model page: https://phaseo.ai/models/venice/venice-uncensored-1.1
     VENICE_VENICE_UNCENSORED_1_1 = "venice/venice-uncensored-1.1"
     # Model ID: voyage/rerank-1
-    # Model page: https://phaseo.app/models/voyage/rerank-1
+    # Model page: https://phaseo.ai/models/voyage/rerank-1
     VOYAGE_RERANK_1 = "voyage/rerank-1"
     # Model ID: voyage/rerank-2
-    # Model page: https://phaseo.app/models/voyage/rerank-2
+    # Model page: https://phaseo.ai/models/voyage/rerank-2
     VOYAGE_RERANK_2 = "voyage/rerank-2"
     # Model ID: voyage/rerank-2-lite
-    # Model page: https://phaseo.app/models/voyage/rerank-2-lite
+    # Model page: https://phaseo.ai/models/voyage/rerank-2-lite
     VOYAGE_RERANK_2_LITE = "voyage/rerank-2-lite"
     # Model ID: voyage/rerank-lite-1
-    # Model page: https://phaseo.app/models/voyage/rerank-lite-1
+    # Model page: https://phaseo.ai/models/voyage/rerank-lite-1
     VOYAGE_RERANK_LITE_1 = "voyage/rerank-lite-1"
     # Model ID: voyage/voyage-01
-    # Model page: https://phaseo.app/models/voyage/voyage-01
+    # Model page: https://phaseo.ai/models/voyage/voyage-01
     VOYAGE_VOYAGE_01 = "voyage/voyage-01"
     # Model ID: voyage/voyage-02
-    # Model page: https://phaseo.app/models/voyage/voyage-02
+    # Model page: https://phaseo.ai/models/voyage/voyage-02
     VOYAGE_VOYAGE_02 = "voyage/voyage-02"
     # Model ID: voyage/voyage-2
-    # Model page: https://phaseo.app/models/voyage/voyage-2
+    # Model page: https://phaseo.ai/models/voyage/voyage-2
     VOYAGE_VOYAGE_2 = "voyage/voyage-2"
     # Model ID: voyage/voyage-3
-    # Model page: https://phaseo.app/models/voyage/voyage-3
+    # Model page: https://phaseo.ai/models/voyage/voyage-3
     VOYAGE_VOYAGE_3 = "voyage/voyage-3"
     # Model ID: voyage/voyage-3-large
-    # Model page: https://phaseo.app/models/voyage/voyage-3-large
+    # Model page: https://phaseo.ai/models/voyage/voyage-3-large
     VOYAGE_VOYAGE_3_LARGE = "voyage/voyage-3-large"
     # Model ID: voyage/voyage-3-lite
-    # Model page: https://phaseo.app/models/voyage/voyage-3-lite
+    # Model page: https://phaseo.ai/models/voyage/voyage-3-lite
     VOYAGE_VOYAGE_3_LITE = "voyage/voyage-3-lite"
     # Model ID: voyage/voyage-3.5
-    # Model page: https://phaseo.app/models/voyage/voyage-3.5
+    # Model page: https://phaseo.ai/models/voyage/voyage-3.5
     VOYAGE_VOYAGE_3_5 = "voyage/voyage-3.5"
     # Model ID: voyage/voyage-3.5-lite
-    # Model page: https://phaseo.app/models/voyage/voyage-3.5-lite
+    # Model page: https://phaseo.ai/models/voyage/voyage-3.5-lite
     VOYAGE_VOYAGE_3_5_LITE = "voyage/voyage-3.5-lite"
     # Model ID: voyage/voyage-4
-    # Model page: https://phaseo.app/models/voyage/voyage-4
+    # Model page: https://phaseo.ai/models/voyage/voyage-4
     VOYAGE_VOYAGE_4 = "voyage/voyage-4"
     # Model ID: voyage/voyage-4-large
-    # Model page: https://phaseo.app/models/voyage/voyage-4-large
+    # Model page: https://phaseo.ai/models/voyage/voyage-4-large
     VOYAGE_VOYAGE_4_LARGE = "voyage/voyage-4-large"
     # Model ID: voyage/voyage-4-lite
-    # Model page: https://phaseo.app/models/voyage/voyage-4-lite
+    # Model page: https://phaseo.ai/models/voyage/voyage-4-lite
     VOYAGE_VOYAGE_4_LITE = "voyage/voyage-4-lite"
     # Model ID: voyage/voyage-code-2
-    # Model page: https://phaseo.app/models/voyage/voyage-code-2
+    # Model page: https://phaseo.ai/models/voyage/voyage-code-2
     VOYAGE_VOYAGE_CODE_2 = "voyage/voyage-code-2"
     # Model ID: voyage/voyage-code-3
-    # Model page: https://phaseo.app/models/voyage/voyage-code-3
+    # Model page: https://phaseo.ai/models/voyage/voyage-code-3
     VOYAGE_VOYAGE_CODE_3 = "voyage/voyage-code-3"
     # Model ID: voyage/voyage-context-3
-    # Model page: https://phaseo.app/models/voyage/voyage-context-3
+    # Model page: https://phaseo.ai/models/voyage/voyage-context-3
     VOYAGE_VOYAGE_CONTEXT_3 = "voyage/voyage-context-3"
     # Model ID: voyage/voyage-finance-2
-    # Model page: https://phaseo.app/models/voyage/voyage-finance-2
+    # Model page: https://phaseo.ai/models/voyage/voyage-finance-2
     VOYAGE_VOYAGE_FINANCE_2 = "voyage/voyage-finance-2"
     # Model ID: voyage/voyage-large-2
-    # Model page: https://phaseo.app/models/voyage/voyage-large-2
+    # Model page: https://phaseo.ai/models/voyage/voyage-large-2
     VOYAGE_VOYAGE_LARGE_2 = "voyage/voyage-large-2"
     # Model ID: voyage/voyage-large-2-instruct
-    # Model page: https://phaseo.app/models/voyage/voyage-large-2-instruct
+    # Model page: https://phaseo.ai/models/voyage/voyage-large-2-instruct
     VOYAGE_VOYAGE_LARGE_2_INSTRUCT = "voyage/voyage-large-2-instruct"
     # Model ID: voyage/voyage-law-2
-    # Model page: https://phaseo.app/models/voyage/voyage-law-2
+    # Model page: https://phaseo.ai/models/voyage/voyage-law-2
     VOYAGE_VOYAGE_LAW_2 = "voyage/voyage-law-2"
     # Model ID: voyage/voyage-lite-01
-    # Model page: https://phaseo.app/models/voyage/voyage-lite-01
+    # Model page: https://phaseo.ai/models/voyage/voyage-lite-01
     VOYAGE_VOYAGE_LITE_01 = "voyage/voyage-lite-01"
     # Model ID: voyage/voyage-lite-01-instruct
-    # Model page: https://phaseo.app/models/voyage/voyage-lite-01-instruct
+    # Model page: https://phaseo.ai/models/voyage/voyage-lite-01-instruct
     VOYAGE_VOYAGE_LITE_01_INSTRUCT = "voyage/voyage-lite-01-instruct"
     # Model ID: voyage/voyage-lite-02-instruct
-    # Model page: https://phaseo.app/models/voyage/voyage-lite-02-instruct
+    # Model page: https://phaseo.ai/models/voyage/voyage-lite-02-instruct
     VOYAGE_VOYAGE_LITE_02_INSTRUCT = "voyage/voyage-lite-02-instruct"
     # Model ID: voyage/voyage-multilingual-2
-    # Model page: https://phaseo.app/models/voyage/voyage-multilingual-2
+    # Model page: https://phaseo.ai/models/voyage/voyage-multilingual-2
     VOYAGE_VOYAGE_MULTILINGUAL_2 = "voyage/voyage-multilingual-2"
     # Model ID: voyage/voyage-multimodal-3
-    # Model page: https://phaseo.app/models/voyage/voyage-multimodal-3
+    # Model page: https://phaseo.ai/models/voyage/voyage-multimodal-3
     VOYAGE_VOYAGE_MULTIMODAL_3 = "voyage/voyage-multimodal-3"
     # Model ID: voyage/voyage-multimodal-3.5
-    # Model page: https://phaseo.app/models/voyage/voyage-multimodal-3.5
+    # Model page: https://phaseo.ai/models/voyage/voyage-multimodal-3.5
     VOYAGE_VOYAGE_MULTIMODAL_3_5 = "voyage/voyage-multimodal-3.5"
     # Model ID: x-ai/grok-4.20-beta-0309
-    # Model page: https://phaseo.app/models/x-ai/grok-4.20-beta-0309
+    # Model page: https://phaseo.ai/models/x-ai/grok-4.20-beta-0309
     X_AI_GROK_4_20_BETA_0309 = "x-ai/grok-4.20-beta-0309"
     # Model ID: x-ai/grok-4.20-multi-agent-beta-0309
-    # Model page: https://phaseo.app/models/x-ai/grok-4.20-multi-agent-beta-0309
+    # Model page: https://phaseo.ai/models/x-ai/grok-4.20-multi-agent-beta-0309
     X_AI_GROK_4_20_MULTI_AGENT_BETA_0309 = "x-ai/grok-4.20-multi-agent-beta-0309"
     # Model ID: x-ai/grok-4.3
-    # Model page: https://phaseo.app/models/x-ai/grok-4.3
+    # Model page: https://phaseo.ai/models/x-ai/grok-4.3
     X_AI_GROK_4_3 = "x-ai/grok-4.3"
     # Model ID: x-ai/grok-build-0.1
-    # Model page: https://phaseo.app/models/x-ai/grok-build-0.1
+    # Model page: https://phaseo.ai/models/x-ai/grok-build-0.1
     X_AI_GROK_BUILD_0_1 = "x-ai/grok-build-0.1"
     # Model ID: x-ai/grok-code-fast-1
-    # Model page: https://phaseo.app/models/x-ai/grok-code-fast-1
+    # Model page: https://phaseo.ai/models/x-ai/grok-code-fast-1
     X_AI_GROK_CODE_FAST_1 = "x-ai/grok-code-fast-1"
     # Model ID: x-ai/grok-imagine-image
-    # Model page: https://phaseo.app/models/x-ai/grok-imagine-image
+    # Model page: https://phaseo.ai/models/x-ai/grok-imagine-image
     X_AI_GROK_IMAGINE_IMAGE = "x-ai/grok-imagine-image"
     # Model ID: x-ai/grok-imagine-image-quality
-    # Model page: https://phaseo.app/models/x-ai/grok-imagine-image-quality
+    # Model page: https://phaseo.ai/models/x-ai/grok-imagine-image-quality
     X_AI_GROK_IMAGINE_IMAGE_QUALITY = "x-ai/grok-imagine-image-quality"
     # Model ID: x-ai/grok-imagine-video
-    # Model page: https://phaseo.app/models/x-ai/grok-imagine-video
+    # Model page: https://phaseo.ai/models/x-ai/grok-imagine-video
     X_AI_GROK_IMAGINE_VIDEO = "x-ai/grok-imagine-video"
     # Model ID: x-ai/grok-tts
-    # Model page: https://phaseo.app/models/x-ai/grok-tts
+    # Model page: https://phaseo.ai/models/x-ai/grok-tts
     X_AI_GROK_TTS = "x-ai/grok-tts"
     # Model ID: xiaomi/mimo-v2-flash
-    # Model page: https://phaseo.app/models/xiaomi/mimo-v2-flash
+    # Model page: https://phaseo.ai/models/xiaomi/mimo-v2-flash
     XIAOMI_MIMO_V2_FLASH = "xiaomi/mimo-v2-flash"
     # Model ID: xiaomi/mimo-v2.5
-    # Model page: https://phaseo.app/models/xiaomi/mimo-v2.5
+    # Model page: https://phaseo.ai/models/xiaomi/mimo-v2.5
     XIAOMI_MIMO_V2_5 = "xiaomi/mimo-v2.5"
     # Model ID: xiaomi/mimo-v2.5-pro
-    # Model page: https://phaseo.app/models/xiaomi/mimo-v2.5-pro
+    # Model page: https://phaseo.ai/models/xiaomi/mimo-v2.5-pro
     XIAOMI_MIMO_V2_5_PRO = "xiaomi/mimo-v2.5-pro"
     # Model ID: xiaomi/mimo-v2.5-tts:free
-    # Model page: https://phaseo.app/models/xiaomi/mimo-v2.5-tts%3Afree
+    # Model page: https://phaseo.ai/models/xiaomi/mimo-v2.5-tts%3Afree
     XIAOMI_MIMO_V2_5_TTS_FREE = "xiaomi/mimo-v2.5-tts:free"
     # Model ID: z-ai/glm-4-32b
-    # Model page: https://phaseo.app/models/z-ai/glm-4-32b
+    # Model page: https://phaseo.ai/models/z-ai/glm-4-32b
     Z_AI_GLM_4_32B = "z-ai/glm-4-32b"
     # Model ID: z-ai/glm-4-7-flash:free
-    # Model page: https://phaseo.app/models/z-ai/glm-4-7-flash%3Afree
+    # Model page: https://phaseo.ai/models/z-ai/glm-4-7-flash%3Afree
     Z_AI_GLM_4_7_FLASH_FREE = "z-ai/glm-4-7-flash:free"
     # Model ID: z-ai/glm-4.5
-    # Model page: https://phaseo.app/models/z-ai/glm-4.5
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.5
     Z_AI_GLM_4_5 = "z-ai/glm-4.5"
     # Model ID: z-ai/glm-4.5-air
-    # Model page: https://phaseo.app/models/z-ai/glm-4.5-air
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.5-air
     Z_AI_GLM_4_5_AIR = "z-ai/glm-4.5-air"
     # Model ID: z-ai/glm-4.5-air-x
-    # Model page: https://phaseo.app/models/z-ai/glm-4.5-air-x
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.5-air-x
     Z_AI_GLM_4_5_AIR_X = "z-ai/glm-4.5-air-x"
     # Model ID: z-ai/glm-4.5-x
-    # Model page: https://phaseo.app/models/z-ai/glm-4.5-x
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.5-x
     Z_AI_GLM_4_5_X = "z-ai/glm-4.5-x"
     # Model ID: z-ai/glm-4.5v
-    # Model page: https://phaseo.app/models/z-ai/glm-4.5v
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.5v
     Z_AI_GLM_4_5V = "z-ai/glm-4.5v"
     # Model ID: z-ai/glm-4.6
-    # Model page: https://phaseo.app/models/z-ai/glm-4.6
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.6
     Z_AI_GLM_4_6 = "z-ai/glm-4.6"
     # Model ID: z-ai/glm-4.6v
-    # Model page: https://phaseo.app/models/z-ai/glm-4.6v
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.6v
     Z_AI_GLM_4_6V = "z-ai/glm-4.6v"
     # Model ID: z-ai/glm-4.6v-flash
-    # Model page: https://phaseo.app/models/z-ai/glm-4.6v-flash
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.6v-flash
     Z_AI_GLM_4_6V_FLASH = "z-ai/glm-4.6v-flash"
     # Model ID: z-ai/glm-4.7
-    # Model page: https://phaseo.app/models/z-ai/glm-4.7
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.7
     Z_AI_GLM_4_7 = "z-ai/glm-4.7"
     # Model ID: z-ai/glm-4.7-flash
-    # Model page: https://phaseo.app/models/z-ai/glm-4.7-flash
+    # Model page: https://phaseo.ai/models/z-ai/glm-4.7-flash
     Z_AI_GLM_4_7_FLASH = "z-ai/glm-4.7-flash"
     # Model ID: z-ai/glm-5
-    # Model page: https://phaseo.app/models/z-ai/glm-5
+    # Model page: https://phaseo.ai/models/z-ai/glm-5
     Z_AI_GLM_5 = "z-ai/glm-5"
     # Model ID: z-ai/glm-5-code
-    # Model page: https://phaseo.app/models/z-ai/glm-5-code
+    # Model page: https://phaseo.ai/models/z-ai/glm-5-code
     Z_AI_GLM_5_CODE = "z-ai/glm-5-code"
     # Model ID: z-ai/glm-5-turbo
-    # Model page: https://phaseo.app/models/z-ai/glm-5-turbo
+    # Model page: https://phaseo.ai/models/z-ai/glm-5-turbo
     Z_AI_GLM_5_TURBO = "z-ai/glm-5-turbo"
     # Model ID: z-ai/glm-5.1
-    # Model page: https://phaseo.app/models/z-ai/glm-5.1
+    # Model page: https://phaseo.ai/models/z-ai/glm-5.1
     Z_AI_GLM_5_1 = "z-ai/glm-5.1"
     # Model ID: z-ai/glm-5.2
-    # Model page: https://phaseo.app/models/z-ai/glm-5.2
+    # Model page: https://phaseo.ai/models/z-ai/glm-5.2
     Z_AI_GLM_5_2 = "z-ai/glm-5.2"
     # Model ID: z-ai/glm-5v-turbo
-    # Model page: https://phaseo.app/models/z-ai/glm-5v-turbo
+    # Model page: https://phaseo.ai/models/z-ai/glm-5v-turbo
     Z_AI_GLM_5V_TURBO = "z-ai/glm-5v-turbo"
     # Model ID: zai-org/glm-4.5-air
-    # Model page: https://phaseo.app/models/zai-org/glm-4.5-air
+    # Model page: https://phaseo.ai/models/zai-org/glm-4.5-air
     ZAI_ORG_GLM_4_5_AIR = "zai-org/glm-4.5-air"
     # Model ID: zai/glm-5
-    # Model page: https://phaseo.app/models/zai/glm-5
+    # Model page: https://phaseo.ai/models/zai/glm-5
     ZAI_GLM_5 = "zai/glm-5"
     # Deprecated alias for deepseek/deepseek-v4; use DEEPSEEK_DEEPSEEK_V4_PRO. Remove in the next major SDK release.
     DEEPSEEK_DEEPSEEK_V4 = DEEPSEEK_DEEPSEEK_V4_PRO
@@ -1643,7 +1649,9 @@ module PhaseoSdk
     ModelIds::OPENAI_TEXT_EMBEDDING_3_SMALL,
     ModelIds::OPENAI_TEXT_EMBEDDING_ADA_002,
     ModelIds::OPENAI_WHISPER_1,
+    ModelIds::PHASEO_FREE,
     ModelIds::POOLSIDE_LAGUNA_M_1_FREE,
+    ModelIds::POOLSIDE_LAGUNA_XS_2_1_FREE,
     ModelIds::POOLSIDE_LAGUNA_XS_2_FREE,
     ModelIds::QWEN_QVQ_MAX,
     ModelIds::QWEN_QWEN_3_6_PLUS,

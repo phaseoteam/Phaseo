@@ -14,7 +14,7 @@ public class SmokeResponsesSdk {
 
         String baseUrl = System.getenv("PHASEO_BASE_URL");
         if (baseUrl == null || baseUrl.isEmpty()) {
-            baseUrl = "https://api.phaseo.app/v1";
+            baseUrl = "https://api.phaseo.ai/v1";
         }
 
         String model = System.getenv("PHASEO_SMOKE_MODEL");

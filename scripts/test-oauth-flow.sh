@@ -14,8 +14,8 @@ echo "=============================="
 echo ""
 
 # Configuration
-API_BASE_URL="${API_BASE_URL:-https://gateway.aistats.ai}"
-WEB_BASE_URL="${WEB_BASE_URL:-https://gateway.aistats.ai}"
+API_BASE_URL="${API_BASE_URL:-https://api.phaseo.ai}"
+WEB_BASE_URL="${WEB_BASE_URL:-https://phaseo.ai}"
 API_KEY="${API_KEY:-}"
 
 # Colors

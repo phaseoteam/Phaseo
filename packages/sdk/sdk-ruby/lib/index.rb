@@ -51,7 +51,7 @@ module PhaseoSdk
 
     def initialize(
       api_key: nil,
-      base_path: "https://api.phaseo.app/v1",
+      base_path: "https://api.phaseo.ai/v1",
       enable_deprecation_warnings: true,
       warnings_as_errors: false,
       logger: nil,

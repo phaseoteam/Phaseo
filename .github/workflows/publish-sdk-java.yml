@@ -65,7 +65,7 @@ jobs:
           node - <<'NODE'
           const fs = require("node:fs");
           const version = process.env.VERSION;
-          const filePath = "packages/sdk/sdk-java/src/ai/stats/sdk/AIStats.java";
+          const filePath = "packages/sdk/sdk-java/src/app/phaseo/sdk/Phaseo.java";
           const source = fs.readFileSync(filePath, "utf8");
           const match = source.match(/new TelemetryRecorder\(devtoolsConfig,\s*"([^"]+)"\)/);
           if (!match) {
@@ -112,7 +112,7 @@ jobs:
           version = os.environ["VERSION"]
           pom = Path("packages/sdk/sdk-java/pom.xml")
           source = pom.read_text(encoding="utf-8")
-          pattern = re.compile(r"(<artifactId>ai-stats-sdk</artifactId>\s*[\r\n]+\s*<version>)([^<]+)(</version>)", re.MULTILINE)
+          pattern = re.compile(r"(<artifactId>phaseo-sdk</artifactId>\s*[\r\n]+\s*<version>)([^<]+)(</version>)", re.MULTILINE)
           updated, count = pattern.subn(rf"\1{version}\3", source, count=1)
           if count != 1:
             raise SystemExit("Unable to set version in pom.xml")

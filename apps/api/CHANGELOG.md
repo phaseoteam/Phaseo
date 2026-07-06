@@ -1,4 +1,4 @@
-# @ai-stats/gateway-api
+# @phaseo/gateway-api
 
 ## 1.1.0
 

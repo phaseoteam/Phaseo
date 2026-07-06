@@ -3,12 +3,12 @@ title: "Image Generation"
 description: "Let models create images through A Phaseo server tool."
 ---
 
-Use `ai-stats:image_generation` when the model should be able to create an image while it is answering. Phaseo exposes a managed tool to the model, executes the image request server-side, and feeds the image result back into the model loop.
+Use `phaseo:image_generation` when the model should be able to create an image while it is answering. Phaseo exposes a managed tool to the model, executes the image request server-side, and feeds the image result back into the model loop.
 
 ## Request
 
 ```bash
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -16,7 +16,7 @@ curl https://api.phaseo.app/v1/responses \
     "input": "Design a wide product concept image for a compact desktop synthesizer.",
     "tools": [
       {
-        "type": "ai-stats:image_generation",
+        "type": "phaseo:image_generation",
         "parameters": {
           "model": "openai/gpt-image-2",
           "quality": "high",

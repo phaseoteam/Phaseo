@@ -1,5 +1,5 @@
 {
-  "name": "@ai-stats/devtools",
+  "name": "@phaseo/devtools",
   "version": "0.2.1",
   "description": "Devtools for Phaseo SDK - enables telemetry capture and debugging",
   "type": "module",
@@ -23,11 +23,11 @@
   "sideEffects": false,
   "scripts": {
     "clean": "rimraf dist",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm --filter @phaseo/devtools-core build && tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch"
   },
   "dependencies": {
-    "@ai-stats/devtools-core": "workspace:*"
+    "@phaseo/devtools-core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
@@ -36,7 +36,7 @@
     "typescript": "^6.0.3"
   },
   "keywords": [
-    "ai-stats",
+    "phaseo",
     "devtools",
     "debugging",
     "telemetry",

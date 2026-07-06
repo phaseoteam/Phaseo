@@ -18,7 +18,7 @@ func main() {
 	}
 	baseURL := os.Getenv("PHASEO_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://api.phaseo.app/v1"
+		baseURL = "https://api.phaseo.ai/v1"
 	}
 
 	client := phaseo.NewPhaseo(apiKey, baseURL)

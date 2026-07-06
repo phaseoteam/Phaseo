@@ -1,4 +1,4 @@
-# @ai-stats/devtools
+# @phaseo/devtools
 
 Devtools for Phaseo SDK - enables telemetry capture and debugging for your AI applications.
 
@@ -36,11 +36,11 @@ npx @phaseo/devtools-viewer
 Or install the standalone devtools package:
 
 ```bash
-npm install @ai-stats/devtools
+npm install @phaseo/devtools
 # or
-pnpm add @ai-stats/devtools
+pnpm add @phaseo/devtools
 # or
-yarn add @ai-stats/devtools
+yarn add @phaseo/devtools
 ```
 
 ## Usage
@@ -48,12 +48,12 @@ yarn add @ai-stats/devtools
 ### Basic Setup
 
 ```typescript
-import { AIStats } from '@phaseo/sdk';
-import { createAIStatsDevtools } from '@ai-stats/devtools';
+import { Phaseo } from '@phaseo/sdk';
+import { createPhaseoDevtools } from '@phaseo/devtools';
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools()
+  devtools: createPhaseoDevtools()
 });
 
 // Now all your API calls will be captured automatically
@@ -66,12 +66,12 @@ const response = await client.chat.completions.create({
 ### Custom Configuration
 
 ```typescript
-import { AIStats } from '@phaseo/sdk';
-import { createAIStatsDevtools } from '@ai-stats/devtools';
+import { Phaseo } from '@phaseo/sdk';
+import { createPhaseoDevtools } from '@phaseo/devtools';
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools({
+  devtools: createPhaseoDevtools({
     // Custom directory for devtools data
     directory: './my-devtools-data',
 
@@ -99,9 +99,9 @@ PHASEO_DEVTOOLS=true
 PHASEO_DEVTOOLS_DIR=./custom-dir
 
 # Then in your code:
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools()
+  devtools: createPhaseoDevtools()
 });
 ```
 
@@ -140,7 +140,7 @@ All data is stored **locally on your machine** and never sent to external server
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `directory` | string | `.ai-stats-devtools` | Directory to store captured data |
+| `directory` | string | `.phaseo-devtools` | Directory to store captured data |
 | `flushIntervalMs` | number | `1000` | How often to flush data to disk (ms) |
 | `maxQueueSize` | number | `1000` | Max entries before forcing flush |
 | `captureHeaders` | boolean | `false` | Whether to capture HTTP headers |
@@ -152,36 +152,36 @@ The devtools pattern works across all Phaseo SDKs:
 
 ### TypeScript/JavaScript
 ```typescript
-import { AIStats } from '@phaseo/sdk';
-import { createAIStatsDevtools } from '@ai-stats/devtools';
+import { Phaseo } from '@phaseo/sdk';
+import { createPhaseoDevtools } from '@phaseo/devtools';
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools()
+  devtools: createPhaseoDevtools()
 });
 ```
 
 ### Python
 ```python
-from ai_stats import AIStats
-from ai_stats.devtools import create_ai_stats_devtools
+from phaseo import Phaseo
+from phaseo.devtools import create_phaseo_devtools
 
-client = AIStats(
+client = Phaseo(
     api_key=os.environ["PHASEO_API_KEY"],
-    devtools=create_ai_stats_devtools()
+    devtools=create_phaseo_devtools()
 )
 ```
 
 ### Go
 ```go
 import (
-    "github.com/ai-stats/ai-stats-go"
-    "github.com/ai-stats/ai-stats-go/devtools"
+    "github.com/phaseo/phaseo-go"
+    "github.com/phaseo/phaseo-go/devtools"
 )
 
-client := aistats.NewClient(
-    aistats.WithAPIKey(os.Getenv("PHASEO_API_KEY")),
-    aistats.WithDevtools(devtools.CreateAIStatsDevtools()),
+client := phaseo.NewClient(
+    phaseo.WithAPIKey(os.Getenv("PHASEO_API_KEY")),
+    phaseo.WithDevtools(devtools.CreatePhaseoDevtools()),
 )
 ```
 
@@ -193,6 +193,6 @@ MIT
 
 ## Links
 
-- [Documentation](https://docs.ai-stats.org)
+- [Documentation](https://docs.phaseo.ai/v1)
 - [GitHub Repository](https://github.com/phaseoteam/Phaseo)
-- [Phaseo Dashboard](https://ai-stats.org)
+- [Phaseo Dashboard](https://phaseo.ai)

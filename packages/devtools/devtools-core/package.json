@@ -1,5 +1,5 @@
 {
-  "name": "@ai-stats/devtools-core",
+  "name": "@phaseo/devtools-core",
   "description": "Core types and schemas for Phaseo DevTools",
   "version": "0.1.0",
   "type": "module",

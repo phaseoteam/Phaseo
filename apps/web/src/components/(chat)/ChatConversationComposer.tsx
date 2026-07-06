@@ -133,7 +133,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-web-search",
 		label: "Web Search",
-		toolType: "ai-stats:web_search",
+		toolType: "phaseo:web_search",
 		description: "Model-directed web searches",
 		keywords: ["server", "tool", "web", "search", "grounding", "current"],
 		icon: Search,
@@ -141,7 +141,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-web-fetch",
 		label: "Web Fetch",
-		toolType: "ai-stats:web_fetch",
+		toolType: "phaseo:web_fetch",
 		description: "Fetch and read URLs",
 		keywords: ["server", "tool", "web", "fetch", "url", "page"],
 		icon: FileSearch,
@@ -149,7 +149,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-advisor",
 		label: "Advisor",
-		toolType: "ai-stats:advisor",
+		toolType: "phaseo:advisor",
 		description: "Consult another model",
 		keywords: ["server", "tool", "advisor", "review", "second", "model"],
 		icon: MessageSquare,
@@ -157,7 +157,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-image-generation",
 		label: "Image Generation",
-		toolType: "ai-stats:image_generation",
+		toolType: "phaseo:image_generation",
 		description: "Create images mid-request",
 		keywords: ["server", "tool", "image", "generation", "create"],
 		icon: ImagePlus,
@@ -165,7 +165,7 @@ const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-apply-patch",
 		label: "Apply Patch",
-		toolType: "ai-stats:apply_patch",
+		toolType: "phaseo:apply_patch",
 		description: "Return patch operations",
 		keywords: ["server", "tool", "apply", "patch", "code"],
 		icon: FileCode,
@@ -472,7 +472,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		activeInlineTools.length > 0 ||
 		promptNeedsExpandedComposer;
 	const advisorConfig = serverToolConfigs.advisor ?? {};
-	const advisorEnabled = enabledServerToolSet.has("ai-stats:advisor");
+	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const updateAdvisorConfig = useCallback(
 		(partial: Partial<ChatAdvisorServerToolConfig>) => {
 			onServerToolConfigsChange?.({

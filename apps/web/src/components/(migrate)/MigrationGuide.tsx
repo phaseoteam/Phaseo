@@ -130,32 +130,32 @@ const DOC_LINKS = [
         {
                 label: "API Reference",
                 description: "Endpoints, auth, and error formats.",
-                href: "https://docs.phaseo.app/v1/api-reference/introduction",
+                href: "https://docs.phaseo.ai/v1/api-reference/introduction",
 	},
 	{
 		label: "Quickstart",
 		description: "Make your first Gateway call in minutes.",
-		href: "https://docs.phaseo.app/v1/quickstart",
+		href: "https://docs.phaseo.ai/v1/quickstart",
 	},
 	{
 		label: "Tool Calling",
 		description: "Tools, tool_choice, and function routing.",
-		href: "https://docs.phaseo.app/v1/guides/tool-calling",
+		href: "https://docs.phaseo.ai/v1/guides/tool-calling",
 	},
         {
                 label: "Structured Outputs",
                 description: "Schema-locked responses with constraints.",
-                href: "https://docs.phaseo.app/v1/guides/structured-outputs",
+                href: "https://docs.phaseo.ai/v1/guides/structured-outputs",
         },
         {
                 label: "Feature Parity Matrix",
                 description: "Gateway migration parity by surface and competitor.",
-                href: "https://docs.phaseo.app/v1/migration-guides/feature-parity-matrix",
+                href: "https://docs.phaseo.ai/v1/migration-guides/feature-parity-matrix",
         },
         {
                 label: "Gateway Parity Review",
                 description: "Repo-grounded review of proven and still-open parity areas.",
-                href: "https://docs.phaseo.app/v1/migration-guides/gateway-parity-review",
+                href: "https://docs.phaseo.ai/v1/migration-guides/gateway-parity-review",
         },
 ] as const;
 

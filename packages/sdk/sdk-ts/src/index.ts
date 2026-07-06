@@ -52,7 +52,7 @@ export type ModelIdLiteral = KnownModelId;
  * Model identifier in `provider/model` format (for example: `openai/gpt-5.4`).
  *
  * Model page URL pattern:
- * `https://phaseo.app/models/{provider/model}`
+ * `https://phaseo.ai/models/{provider/model}`
  */
 // Allow new server-side models before a package release while preserving known-ID autocomplete.
 export type ModelId = KnownModelId | (string & {});
@@ -238,7 +238,7 @@ export type ChatCompletionsParams = Omit<ChatCompletionsRequest, "model" | "mess
   messages: ChatMessageInput[];
 };
 
-const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+const DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
 
 function trimTrailingSlashes(value: string): string {
   let end = value.length;

@@ -1,4 +1,4 @@
-# @ai-stats/web
+# @phaseo/web
 
 ## 1.0.0
 

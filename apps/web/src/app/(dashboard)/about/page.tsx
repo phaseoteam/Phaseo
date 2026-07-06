@@ -184,7 +184,7 @@ export default function AboutPage() {
 							</Link>
 						</Button>
 						<Button asChild variant="ghost" className="h-10 sm:px-3">
-							<Link href="https://phaseo.app" target="_blank" rel="noopener noreferrer">
+							<Link href="https://phaseo.ai" target="_blank" rel="noopener noreferrer">
 								<BookOpen className="mr-2 h-4 w-4" />
 								Documentation
 							</Link>
@@ -391,7 +391,7 @@ export default function AboutPage() {
 							</p>
 						</CardHeader>
 							<CardContent className="grid gap-3">
-								<ResourceButton href="https://docs.phaseo.app/v1/changelog" label="Announcements" external />
+								<ResourceButton href="https://docs.phaseo.ai/v1/changelog" label="Announcements" external />
 								<ResourceButton href="/updates/models" label="Model Updates" />
 								<ResourceButton href="/settings/usage" label="Gateway Usage" />
 								<ResourceButton href="/roadmap" label="Roadmap" />

@@ -18,7 +18,7 @@ import type { GatewayHeroVariant } from "@/lib/statsig/shared";
 import { WordRotate } from "@/components/ui/word-rotate";
 
 const SALES_HREF = "/sign-up";
-const DOCS_HREF = "https://docs.phaseo.app/v1/quickstart";
+const DOCS_HREF = "https://docs.phaseo.ai/v1/quickstart";
 
 type GatewayHeroStats = {
 	tokens24h: number;

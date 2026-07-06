@@ -41,7 +41,7 @@ This will:
 1. Open Raycast
 2. Search for "Phaseo"
 3. Press `⌘ + ,` to open preferences
-4. Enter your API key from [api.phaseo.app](https://api.phaseo.app)
+4. Enter your API key from [api.phaseo.ai](https://api.phaseo.ai)
 
 ## Testing
 
@@ -82,7 +82,7 @@ The built extension will be in the `dist/` directory.
 
 ### "API key is required" Error
 - Make sure you've configured your API key in Raycast preferences
-- The key should start with `aistats_`
+- The key should start with `phaseo_v1_sk_`
 
 ### "Failed to load models/organisations/providers" Error
 - Check your internet connection

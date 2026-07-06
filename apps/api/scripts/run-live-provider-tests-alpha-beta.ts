@@ -118,14 +118,14 @@ function printUsage() {
     console.log("Run live provider tests for non-Ready providers (Alpha/Beta) using the existing harness.");
     console.log("");
     console.log("Usage:");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider:alpha-beta");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider:alpha-beta -- --statuses Alpha,Beta");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider:alpha-beta -- --provider baseten");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider:alpha-beta -- --scenarios chat_nonstream_hi,chat_stream_hi");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --statuses Alpha,Beta");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --provider baseten");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- --scenarios chat_nonstream_hi,chat_stream_hi");
     console.log("");
     console.log("Additional flags for run-live-provider-tests.ts can be passed after '--'.");
     console.log("Example:");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:provider:alpha-beta -- -- --gateway-url http://127.0.0.1:8787/v1 --allow-transient-failures");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider:alpha-beta -- -- --gateway-url http://127.0.0.1:8787/v1 --allow-transient-failures");
 }
 
 function loadCatalogProviders(

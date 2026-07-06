@@ -14,7 +14,7 @@ import (
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
 record, err := client.GetGeneration(context.Background(), "G-01ABC...")
 if err != nil {
   panic(err)

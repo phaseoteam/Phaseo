@@ -218,7 +218,7 @@ export const APP_HEADERS = {
 	"x-app-id": "phaseo-chat",
 	"x-app-name": "Phaseo Chat",
 	"x-title": "Phaseo Chat",
-	"http-referer": "https://phaseo.app/chat",
+	"http-referer": "https://phaseo.ai/chat",
 };
 
 export const TEMP_CHAT_ID = "temp-chat";
@@ -278,7 +278,7 @@ export function normalizeBaseUrl(baseUrl: string) {
 
 export function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
-	return org || "ai-stats";
+	return org || "phaseo";
 }
 
 export function formatModelLabel(modelId: string) {
@@ -430,7 +430,7 @@ export function buildServerToolDefinitions(
 				? { type: toolType, parameters: { timezones } }
 				: { type: toolType };
 		}
-		if (toolType !== "ai-stats:advisor") {
+		if (toolType !== "phaseo:advisor") {
 			return { type: toolType };
 		}
 		const advisor = serverToolConfigs?.advisor;

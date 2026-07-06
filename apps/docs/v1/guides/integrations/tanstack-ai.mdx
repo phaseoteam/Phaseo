@@ -19,7 +19,7 @@ import { openaiCompatible } from "@tanstack/ai-openai/compatible";
 
 const phaseo = openaiCompatible({
 	name: "phaseo",
-	baseURL: "https://api.phaseo.app/v1",
+	baseURL: "https://api.phaseo.ai/v1",
 	apiKey: process.env.PHASEO_API_KEY!,
 	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
 });

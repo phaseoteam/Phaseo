@@ -3,7 +3,7 @@ title: "Advisor Server Tool"
 description: "Let one model consult another model mid-generation."
 ---
 
-Use `ai-stats:advisor` when the main model should be able to ask another model for a review, plan, sanity check, or specialist opinion before it finishes.
+Use `phaseo:advisor` when the main model should be able to ask another model for a review, plan, sanity check, or specialist opinion before it finishes.
 
 The main model calls Advisor like any other tool. Phaseo runs the Advisor model server-side and returns the advice as the tool result. The main model then writes the final response.
 
@@ -14,7 +14,7 @@ Advisor is gateway-managed across supported text models. It is not converted int
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -24,7 +24,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     ],
     "tools": [
       {
-        "type": "ai-stats:advisor",
+        "type": "phaseo:advisor",
         "parameters": {
           "model": "anthropic/claude-opus-4-8",
           "max_uses": 1,
@@ -41,7 +41,7 @@ You can pin the Advisor model in the tool definition:
 
 ```json
 {
-  "type": "ai-stats:advisor",
+  "type": "phaseo:advisor",
   "parameters": {
     "model": "anthropic/claude-opus-4-8"
   }
@@ -54,7 +54,7 @@ If `parameters.model` is omitted, the tool call may provide `model`. If neither 
 
 ```json
 {
-  "type": "ai-stats:advisor",
+  "type": "phaseo:advisor",
   "parameters": {
     "name": "reviewer",
     "model": "anthropic/claude-opus-4-8",
@@ -103,13 +103,13 @@ When `forward_transcript` is `true`, Phaseo can execute a transcript-only Adviso
 
 ## Multiple advisors
 
-Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a distinct internal tool, such as `ai_stats_advisor_security_reviewer` or `ai_stats_advisor_architect`.
+Add one `phaseo:advisor` entry per advisor. Each named advisor becomes a distinct internal tool, such as `phaseo_advisor_security_reviewer` or `phaseo_advisor_architect`.
 
 ```json
 {
   "tools": [
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "security-reviewer",
         "model": "anthropic/claude-opus-4-8",
@@ -117,7 +117,7 @@ Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a disti
       }
     },
     {
-      "type": "ai-stats:advisor",
+      "type": "phaseo:advisor",
       "parameters": {
         "name": "architect",
         "model": "openai/gpt-5",
@@ -128,7 +128,7 @@ Add one `ai-stats:advisor` entry per advisor. Each named advisor becomes a disti
 }
 ```
 
-At most one Advisor entry may omit `name`. If you force `tool_choice: "ai-stats:advisor"` with multiple advisors, Phaseo maps that alias to the first configured Advisor.
+At most one Advisor entry may omit `name`. If you force `tool_choice: "phaseo:advisor"` with multiple advisors, Phaseo maps that alias to the first configured Advisor.
 
 ## What the tool returns
 

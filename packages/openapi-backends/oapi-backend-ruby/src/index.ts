@@ -6,7 +6,7 @@ import type {
 	IRModel,
 	IROperation,
 	IRSchema
-} from "@ai-stats/oapi-core";
+} from "@phaseo/oapi-core";
 
 export const backendRuby: Backend = {
 	id: "ruby",

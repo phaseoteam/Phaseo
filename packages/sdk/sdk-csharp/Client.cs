@@ -79,7 +79,7 @@ namespace PhaseoSdk
 
         public Phaseo(
             string? apiKey = null,
-            string basePath = "https://api.phaseo.app/v1",
+            string basePath = "https://api.phaseo.ai/v1",
             bool enableDeprecationWarnings = true,
             bool warningsAsErrors = false,
             PhaseoLogger? logger = null,
@@ -94,7 +94,7 @@ namespace PhaseoSdk
             }
 
             var headers = new Dictionary<string, string> { { "Authorization", $"Bearer {apiKey}" } };
-            _basePath = string.IsNullOrWhiteSpace(basePath) ? "https://api.phaseo.app/v1" : basePath.TrimEnd('/');
+            _basePath = string.IsNullOrWhiteSpace(basePath) ? "https://api.phaseo.ai/v1" : basePath.TrimEnd('/');
             _client = new global::Phaseo.Gen.Client(_basePath, httpClient, headers: headers);
             _enableDeprecationWarnings = enableDeprecationWarnings;
             _warningsAsErrors = warningsAsErrors;

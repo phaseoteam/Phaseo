@@ -113,7 +113,7 @@ int main() {
   const char *base_url_env = std::getenv("PHASEO_BASE_URL");
   std::string base_url = base_url_env && std::string(base_url_env).size()
                              ? base_url_env
-                             : "https://api.phaseo.app/v1";
+                             : "https://api.phaseo.ai/v1";
   std::string model = env_or_default("PHASEO_SMOKE_MODEL", "openai/gpt-5.4-nano");
   std::string input = env_or_default("PHASEO_SMOKE_INPUT", "Hi");
   int max_output_tokens = std::atoi(env_or_default("PHASEO_SMOKE_MAX_OUTPUT_TOKENS", "32").c_str());

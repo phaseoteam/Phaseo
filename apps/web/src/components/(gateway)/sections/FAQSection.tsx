@@ -126,7 +126,7 @@ export function FAQSection() {
 						Common questions about Phaseo Gateway.
 						Cannot find an answer?{" "}
 						<a
-							href="mailto:support@phaseo.app"
+							href="mailto:support@phaseo.ai"
 							className="font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 						>
 							Reach out to our team

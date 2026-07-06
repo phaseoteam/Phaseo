@@ -345,7 +345,7 @@ export default function ProviderModelsClient({
 									<a href="/contribute">Contribute</a>
 								</Button>
 								<Button variant="outline" asChild>
-									<a href="https://phaseo.app">Learn more</a>
+									<a href="https://phaseo.ai">Learn more</a>
 								</Button>
 							</div>
 						</EmptyContent>

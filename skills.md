@@ -23,14 +23,14 @@ An agent following this file should have enough information to implement:
 
 ## Canonical Gateway Contract
 
-- Base URL: `https://api.phaseo.app/v1`
+- Base URL: `https://api.phaseo.ai/v1`
 - Auth header: `Authorization: Bearer <PHASEO_API_KEY or OAuth access token>`
 - Optional attribution:
   - `x-title: <app-name>`
   - `http-referer: <origin-url>`
 - OpenAPI source of truth:
   - Repo copy: `apps/docs/openapi/v1/openapi.yaml`
-  - Docs: `https://phaseo.app`
+  - Docs: `https://phaseo.ai`
 
 ## SDK Coverage + Fallback Rule
 
@@ -41,10 +41,10 @@ Agents should support published and unpublished/preview SDK conditions.
 All of these SDKs exist and should be considered valid integration targets:
 
 - TypeScript/JavaScript:
-  - package: `@ai-stats/sdk`
+  - package: `@phaseo/sdk`
   - local path: `packages/sdk/sdk-ts`
 - Python:
-  - package: `ai-stats-py-sdk`
+  - package: `phaseo`
   - local path: `packages/sdk/sdk-py`
 - Go:
   - module: `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go`
@@ -53,19 +53,19 @@ All of these SDKs exist and should be considered valid integration targets:
   - package: `AI.Stats.Sdk`
   - local path: `packages/sdk/sdk-csharp`
 - Java:
-  - artifact: `app.phaseo:ai-stats-sdk`
+  - artifact: `app.phaseo:phaseo-sdk`
   - local path: `packages/sdk/sdk-java`
 - PHP:
-  - package: `ai-stats/php-sdk`
+  - package: `phaseo/php-sdk`
   - local path: `packages/sdk/sdk-php`
 - Ruby:
   - gem: `ai_stats_sdk`
   - local path: `packages/sdk/sdk-ruby`
 - Rust:
-  - crate: `ai-stats-rust-sdk`
+  - crate: `phaseo`
   - local path: `packages/sdk/sdk-rust`
 - C++:
-  - preview package: `@ai-stats/cpp-sdk`
+  - preview package: `@phaseo/cpp-sdk`
   - local path: `packages/sdk/sdk-cpp`
 
 ### SDK Selection Guidance
@@ -378,7 +378,7 @@ At integration boundary, normalize to:
 
 ## Definition of Done
 
-- Integration uses external gateway contract (`https://api.phaseo.app/v1`) correctly.
+- Integration uses external gateway contract (`https://api.phaseo.ai/v1`) correctly.
 - All in-scope control + generation surfaces are wired behind one coherent client layer.
 - Chat app supports model discovery + Responses API conversation continuity.
 - Async surfaces (video/music) include creation + polling and terminal handling.

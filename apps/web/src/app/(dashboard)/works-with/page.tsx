@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import apps from "@/data/works-with-ai-stats.json";
+import apps from "@/data/works-with-phaseo.json";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata = buildMetadata({
@@ -185,11 +185,11 @@ export default function WorksWithPage() {
 							<li>Fork this repository.</li>
 							<li>
 								Add your app entry to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-ai-stats.json</code>.
+								<code className="rounded bg-zinc-100 px-1 py-0.5">packages/data/catalog/src/data/works-with-phaseo.json</code>.
 							</li>
 							<li>
 								Add your logo to{" "}
-								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-ai-stats/&lt;your-app-name&gt;/logo.png</code>.
+								<code className="rounded bg-zinc-100 px-1 py-0.5">apps/web/public/works-with-phaseo/&lt;your-app-name&gt;/logo.png</code>.
 							</li>
 							<li>Submit a pull request.</li>
 						</ol>
@@ -202,11 +202,11 @@ export default function WorksWithPage() {
   "name": "Your App Name",
   "description": "A brief description of your app (1-2 sentences, max 300 characters)",
   "url": "https://your-app-url.com",
-  "docs": "https://your-app-url.com/docs/ai-stats",
+  "docs": "https://your-app-url.com/docs/phaseo",
   "tags": ["chat"],
   "open_source": "https://github.com/you/your-app",
   "date_added": "2026-01-28",
-  "logo": "/works-with-ai-stats/your-app-name/logo.png"
+  "logo": "/works-with-phaseo/your-app-name/logo.png"
 }`}
 						</pre>
 					</div>

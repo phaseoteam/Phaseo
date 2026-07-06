@@ -522,7 +522,7 @@ importers:
         specifier: ^4.94.0
         version: 4.94.0(@cloudflare/workers-types@4.20260523.1)
 
-  packages/cli/aistats:
+  packages/cli/phaseo:
     devDependencies:
       '@types/node':
         specifier: ^25.6.0
@@ -538,7 +538,7 @@ importers:
 
   packages/devtools/devtools:
     dependencies:
-      '@ai-stats/devtools-core':
+      '@phaseo/devtools-core':
         specifier: workspace:*
         version: link:../devtools-core
     devDependencies:
@@ -711,7 +711,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-cpp:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -724,7 +724,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-csharp:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -737,7 +737,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-go:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -750,7 +750,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-java:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -763,7 +763,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-php:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -776,7 +776,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-python:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -789,7 +789,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-ruby:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -802,7 +802,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-rust:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
     devDependencies:
@@ -815,7 +815,7 @@ importers:
 
   packages/openapi-backends/oapi-backend-ts:
     dependencies:
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../../openapi/oapi-core
       prettier:
@@ -834,34 +834,34 @@ importers:
 
   packages/openapi/oapi-cli:
     dependencies:
-      '@ai-stats/oapi-backend-cpp':
+      '@phaseo/oapi-backend-cpp':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-cpp
-      '@ai-stats/oapi-backend-csharp':
+      '@phaseo/oapi-backend-csharp':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-csharp
-      '@ai-stats/oapi-backend-go':
+      '@phaseo/oapi-backend-go':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-go
-      '@ai-stats/oapi-backend-java':
+      '@phaseo/oapi-backend-java':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-java
-      '@ai-stats/oapi-backend-php':
+      '@phaseo/oapi-backend-php':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-php
-      '@ai-stats/oapi-backend-python':
+      '@phaseo/oapi-backend-python':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-python
-      '@ai-stats/oapi-backend-ruby':
+      '@phaseo/oapi-backend-ruby':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-ruby
-      '@ai-stats/oapi-backend-rust':
+      '@phaseo/oapi-backend-rust':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-rust
-      '@ai-stats/oapi-backend-ts':
+      '@phaseo/oapi-backend-ts':
         specifier: workspace:*
         version: link:../../openapi-backends/oapi-backend-ts
-      '@ai-stats/oapi-core':
+      '@phaseo/oapi-core':
         specifier: workspace:*
         version: link:../oapi-core
     devDependencies:

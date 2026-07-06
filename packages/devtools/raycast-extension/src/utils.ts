@@ -1,7 +1,7 @@
 import type { Model, Organisation, Provider } from "./types";
 
 // Base URL for Phaseo website
-const PHASEO_BASE_URL = "https://phaseo.app";
+const PHASEO_BASE_URL = "https://phaseo.ai";
 
 // Date formatting
 export function formatDate(dateString: string | null): string {

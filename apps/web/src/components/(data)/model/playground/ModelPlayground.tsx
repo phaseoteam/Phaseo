@@ -60,7 +60,7 @@ const PLAYGROUND_APP_HEADERS = {
 	"x-app-id": "phaseo-playground",
 	"x-app-name": "Phaseo Playground",
 	"x-title": "Phaseo Playground",
-	"http-referer": "https://phaseo.app/models",
+	"http-referer": "https://phaseo.ai/models",
 };
 
 type ModelPlaygroundProps = {
@@ -1312,7 +1312,7 @@ response = client.messages.create(
 print(response)`,
 		},
 		{
-			id: "aistats-typescript",
+			id: "phaseo-typescript",
 			label: "TypeScript",
 			category: "Phaseo SDK",
 			description: "Official Phaseo SDK for TypeScript.",
@@ -1331,7 +1331,7 @@ ${payloadJsonNode}
 console.log(response);`,
 		},
 		{
-			id: "aistats-python",
+			id: "phaseo-python",
 			label: "Python",
 			category: "Phaseo SDK",
 			description: "Official Phaseo SDK for Python.",
@@ -1348,7 +1348,7 @@ response = client.generate_response(payload)
 print(response)`,
 		},
 		{
-			id: "aistats-go",
+			id: "phaseo-go",
 			label: "Go",
 			category: "Phaseo SDK",
 			description: "Official Phaseo SDK for Go.",
@@ -1361,11 +1361,11 @@ import (
     "context"
     "encoding/json"
     "fmt"
-    aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+    phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-    client, err := aistats.NewPhaseoFromEnv()
+    client, err := phaseo.NewPhaseoFromEnv()
     if err != nil {
         panic(err)
     }
@@ -1385,7 +1385,7 @@ func main() {
 }`,
 		},
 		{
-			id: "aistats-csharp",
+			id: "phaseo-csharp",
 			label: "C#",
 			category: "Phaseo SDK",
 			description: "Official Phaseo SDK for C#.",
@@ -1393,7 +1393,7 @@ func main() {
 			installCommand: "dotnet add package Phaseo.Sdk",
 			code: `using System.Collections.Generic;
 using System.Text.Json;
-using AiStatsSdk;
+using PhaseoSdk;
 
 var client = new Phaseo();
 var payload = JsonSerializer.Deserialize<Dictionary<string, object>>("""
@@ -1412,16 +1412,16 @@ Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
 }));`,
 		},
 		{
-			id: "aistats-php",
+			id: "phaseo-php",
 			label: "PHP",
 			category: "Phaseo SDK",
 			description: "Official Phaseo SDK for PHP.",
 			lang: "php",
-			installCommand: "composer require ai-stats/php-sdk",
+			installCommand: "composer require phaseo/sdk",
 			code: `<?php
 require "vendor/autoload.php";
 
-use AIStats\\Sdk\\AIStats;
+use Phaseo\\Sdk\\Phaseo;
 
 $client = new Phaseo(apiKey: getenv("PHASEO_API_KEY"));
 $payload = json_decode(<<<'JSON'
@@ -1439,7 +1439,7 @@ $response = $client->rawClient()->request(
 echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`,
 		},
 		{
-			id: "aistats-ruby",
+			id: "phaseo-ruby",
 			label: "Ruby",
 			category: "Phaseo SDK",
 			description: "Official Phaseo SDK for Ruby.",
@@ -1541,7 +1541,7 @@ export default function ModelPlayground({
 	const [selectedCodeCategory, setSelectedCodeCategory] =
 		useState<PlaygroundCodeSnippet["category"]>("Phaseo SDK");
 	const [selectedCodeSnippetId, setSelectedCodeSnippetId] = useState(
-		"aistats-typescript",
+		"phaseo-typescript",
 	);
 
 	const trimmedPrompt = prompt.trim();

@@ -41,12 +41,12 @@ import OpenAI from "openai";
 
 const after = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  baseURL: "https://api.phaseo.ai/v1",
 });
 ```
 
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl -s "https://api.phaseo.ai/v1/chat/completions" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -65,14 +65,14 @@ If your current setup uses unprefixed aliases such as `gpt-4o`, normalize them a
 If your current gateway layer also centralizes request defaults or provider restrictions, map that behavior into [Presets](../guides/presets) and [Routing and Fallbacks](../guides/routing-and-fallbacks) during the migration instead of re-implementing it per caller.
 
 ```bash
-curl -s "https://api.phaseo.app/v1/models" \
+curl -s "https://api.phaseo.ai/v1/models" \
   -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
 ```
 
 ## 4) LLMGateway migration checklist
 
 - All `LLM_GATEWAY_*` env vars mapped or removed.
-- Base URL updated to `https://api.phaseo.app/v1`.
+- Base URL updated to `https://api.phaseo.ai/v1`.
 - `PHASEO_API_KEY` configured in all deployment environments.
 - Production model IDs verified against `/v1/models`.
 - One non-streaming and one streaming request validated in staging.
@@ -90,8 +90,8 @@ curl -s "https://api.phaseo.app/v1/models" \
 ## Validation commands
 
 ```bash
-curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.ai/v1/health"
+curl -s "https://api.phaseo.ai/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
 Then:

@@ -18,7 +18,7 @@ By the end, you should have:
 Make sure you have the following in place:
 
 - A Phaseo account with Gateway access.
-- An API key from the [dashboard](https://phaseo.app/gateway/keys).
+- An API key from the [dashboard](https://phaseo.ai/gateway/keys).
 - An HTTP client, OpenAI-compatible SDK, or Phaseo SDK.
 - A supported model ID, such as `google/gemma-3-27b:free` for a zero-credit start.
 
@@ -67,7 +67,7 @@ Start with the request shape your app is most likely to keep. This example uses 
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,7 +84,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -103,7 +103,7 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="YOUR_API_KEY",
-    base_url="https://api.phaseo.app/v1",
+    base_url="https://api.phaseo.ai/v1",
 )
 
 response = client.chat.completions.create(
@@ -124,11 +124,11 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
 
   response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
     "model": "google/gemma-3-27b:free",
@@ -146,7 +146,7 @@ func main() {
 ```
 
 ```csharp C#
-using AiStatsSdk;
+using PhaseoSdk;
 using System.Collections.Generic;
 
 var client = new Phaseo("YOUR_API_KEY");
@@ -168,7 +168,7 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Phaseo;
+use Phaseo\Sdk\Phaseo;
 
 $client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
@@ -209,7 +209,7 @@ Store your API key in environment variables for different environments:
 ```bash
 # .env.local
 PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
-PHASEO_BASE_URL="https://api.phaseo.app/v1"
+PHASEO_BASE_URL="https://api.phaseo.ai/v1"
 ```
 
 When making requests, send the key in the `Authorization` header:

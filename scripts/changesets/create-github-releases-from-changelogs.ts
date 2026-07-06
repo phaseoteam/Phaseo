@@ -17,7 +17,7 @@ type ChangeBucket = "major" | "minor" | "patch" | "other";
 const PACKAGES: PackageConfig[] = [
     // Gateway API
     {
-        name: "@ai-stats/gateway-api",
+        name: "@phaseo/gateway-api",
         manifestPath: "apps/api/package.json",
         manifestType: "npm",
         changelogPath: "apps/api/CHANGELOG.md",
@@ -25,9 +25,9 @@ const PACKAGES: PackageConfig[] = [
     // SDKs
     {
         name: "@phaseo/ai-sdk-provider",
-        manifestPath: "packages/integrations/ai-sdk-ai-stats/package.json",
+        manifestPath: "packages/integrations/ai-sdk-phaseo/package.json",
         manifestType: "npm",
-        changelogPath: "packages/integrations/ai-sdk-ai-stats/CHANGELOG.md",
+        changelogPath: "packages/integrations/ai-sdk-phaseo/CHANGELOG.md",
     },
     {
         name: "@phaseo/sdk",
@@ -48,49 +48,49 @@ const PACKAGES: PackageConfig[] = [
         changelogPath: "packages/devtools/devtools-viewer/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/py-sdk",
+        name: "@phaseo/py-sdk",
         manifestPath: "packages/sdk/sdk-py/pyproject.toml",
         manifestType: "pyproject",
         changelogPath: "packages/sdk/sdk-py/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/go-sdk",
+        name: "@phaseo/go-sdk",
         manifestPath: "packages/sdk/sdk-go/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-go/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/csharp-sdk",
+        name: "@phaseo/csharp-sdk",
         manifestPath: "packages/sdk/sdk-csharp/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-csharp/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/php-sdk",
+        name: "@phaseo/php-sdk",
         manifestPath: "packages/sdk/sdk-php/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-php/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/ruby-sdk",
+        name: "@phaseo/ruby-sdk",
         manifestPath: "packages/sdk/sdk-ruby/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-ruby/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/java-sdk",
+        name: "@phaseo/java-sdk",
         manifestPath: "packages/sdk/sdk-java/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-java/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/rust-sdk",
+        name: "@phaseo/rust-sdk",
         manifestPath: "packages/sdk/sdk-rust/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-rust/CHANGELOG.md",
     },
     {
-        name: "@ai-stats/cpp-sdk",
+        name: "@phaseo/cpp-sdk",
         manifestPath: "packages/sdk/sdk-cpp/package.json",
         manifestType: "npm",
         changelogPath: "packages/sdk/sdk-cpp/CHANGELOG.md",

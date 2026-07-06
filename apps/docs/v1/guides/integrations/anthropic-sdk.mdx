@@ -16,7 +16,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
 	apiKey: process.env.PHASEO_API_KEY,
-	baseURL: "https://api.phaseo.app",
+	baseURL: "https://api.phaseo.ai",
 });
 
 const message = await client.messages.create({
@@ -40,7 +40,7 @@ from anthropic import Anthropic
 
 client = Anthropic(
     api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app",
+    base_url="https://api.phaseo.ai",
 )
 
 message = client.messages.create(
@@ -54,7 +54,7 @@ print(message.content)
 
 ## Notes
 
-- Use the root host `https://api.phaseo.app`; Anthropic clients append `/v1/messages`.
+- Use the root host `https://api.phaseo.ai`; Anthropic clients append `/v1/messages`.
 - Use [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) for endpoint details.
 - Native Anthropic tool shapes can work where Phaseo supports them, but cross-provider server tools should use Phaseo tool names.
 - If a workflow depends on streamed tool loops, test it before production rollout because Anthropic-compatible clients are stricter about tool event ordering.

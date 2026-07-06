@@ -42,7 +42,7 @@ describe("irToAnthropicMessages service controls", () => {
 					type: "web_fetch_20260209",
 					name: "web_fetch",
 					max_content_tokens: 9000,
-					allowed_domains: ["docs.phaseo.app"],
+					allowed_domains: ["docs.phaseo.ai"],
 				},
 			},
 		];
@@ -54,7 +54,7 @@ describe("irToAnthropicMessages service controls", () => {
 				type: "web_fetch_20260209",
 				name: "web_fetch",
 				max_content_tokens: 9000,
-				allowed_domains: ["docs.phaseo.app"],
+				allowed_domains: ["docs.phaseo.ai"],
 			},
 		]);
 		expect(payload.tool_choice).toEqual({ type: "tool", name: "web_fetch" });
@@ -153,7 +153,7 @@ describe("irToAnthropicMessages service controls", () => {
 					{
 						type: "web_search_tool_result",
 						tool_use_id: "srvu_123",
-						content: [{ type: "web_search_result", title: "Phaseo", url: "https://phaseo.app" }],
+						content: [{ type: "web_search_result", title: "Phaseo", url: "https://phaseo.ai" }],
 					},
 				],
 				stop_reason: "end_turn",
@@ -180,7 +180,7 @@ describe("irToAnthropicMessages service controls", () => {
 				block: {
 					type: "web_search_tool_result",
 					tool_use_id: "srvu_123",
-					content: [{ type: "web_search_result", title: "Phaseo", url: "https://phaseo.app" }],
+					content: [{ type: "web_search_result", title: "Phaseo", url: "https://phaseo.ai" }],
 				},
 			},
 		]);

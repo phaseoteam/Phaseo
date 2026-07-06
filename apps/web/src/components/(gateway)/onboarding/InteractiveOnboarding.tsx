@@ -105,7 +105,7 @@ function buildModelsCode(): RestCodeExample {
 	return {
 		method: "GET",
 		endpoint: "/v1/models",
-		code: `curl "https://api.phaseo.app/v1/models?endpoints=chat/completions" \\
+		code: `curl "https://api.phaseo.ai/v1/models?endpoints=chat/completions" \\
   -H "Authorization: Bearer $PHASEO_API_KEY"`,
 	};
 }
@@ -122,7 +122,7 @@ function buildKeyCode(keyName: string): RestCodeExample {
 	return {
 		method: "POST",
 		endpoint: "/v1/keys",
-		code: `curl https://api.phaseo.app/v1/keys \\
+		code: `curl https://api.phaseo.ai/v1/keys \\
   -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \\
   -H "Content-Type: application/json" \\
   -d '${payload}'`,
@@ -147,7 +147,7 @@ function buildRequestCode(
 	return {
 		method: "POST",
 		endpoint: "/v1/chat/completions",
-		code: `curl https://api.phaseo.app/v1/chat/completions \\
+		code: `curl https://api.phaseo.ai/v1/chat/completions \\
   -H "Authorization: Bearer ${keyPreview || "$PHASEO_API_KEY"}" \\
   -H "Content-Type: application/json" \\
   -d '${payload}'`,

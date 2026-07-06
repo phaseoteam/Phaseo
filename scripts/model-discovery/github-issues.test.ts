@@ -47,7 +47,7 @@ const hfKey = testingExports.issueKeyForGroup(hfEntry);
 assert.equal(testingExports.issueKeyForGroup({ source: "provider-api", providerId: providerEntry.providerId, action: providerEntry.action }), providerKey);
 assert.notEqual(testingExports.issueKeyForGroup(providerDeleteEntry), providerKey);
 assert.notEqual(hfKey, providerKey);
-assert.match(testingExports.markerForKey(providerKey), /^ai-stats-upstream-discovery:/);
+assert.match(testingExports.markerForKey(providerKey), /^phaseo-upstream-discovery:/);
 
 const grouped = testingExports.groupUpstreamIssueEntries([providerEntry, providerSiblingEntry, providerDeleteEntry, hfEntry]);
 assert.equal(grouped.length, 3);
@@ -66,7 +66,7 @@ const body = testingExports.buildIssueBody({
         providerSiblingEntry,
     ],
 });
-assert.match(body, /Tracking key: `ai-stats-upstream-discovery:/);
+assert.match(body, /Tracking key: `phaseo-upstream-discovery:/);
 assert.match(body, /Source: provider API/);
 assert.match(body, /provider API model additions/);
 assert.match(body, /Models in this signal: 2/);
@@ -203,7 +203,7 @@ async function main(): Promise<void> {
     assert.equal(issueTitle, "[upstream-discovery] OpenAI: provider model additions");
     assert.match(issueBody, /Latest action: additions/);
     assert.match(issueBody, /Models in this signal: 2/);
-    assert.deepEqual((requests.find((request) => request.url.endsWith("/repos/phaseoteam/Phaseo/issues") && request.method === "POST")?.body as { labels?: string[] })?.labels, ["ai-stats-upstream-discovery"]);
+    assert.deepEqual((requests.find((request) => request.url.endsWith("/repos/phaseoteam/Phaseo/issues") && request.method === "POST")?.body as { labels?: string[] })?.labels, ["phaseo-upstream-discovery"]);
 
     const secondProviderSync = await syncUpstreamDiscoveryIssues([{ ...providerEntry, ts: "2026-05-28T12:15:00.000Z" }], {
         token: "test-token",
@@ -219,7 +219,7 @@ async function main(): Promise<void> {
             (request) =>
                 request.url.endsWith("/repos/phaseoteam/Phaseo/issues/123") &&
                 request.method === "PATCH" &&
-                (request.body as { labels?: string[] })?.labels?.includes("ai-stats-upstream-discovery")
+                (request.body as { labels?: string[] })?.labels?.includes("phaseo-upstream-discovery")
         )
     );
 
@@ -268,7 +268,7 @@ async function main(): Promise<void> {
                         html_url: "https://github.com/phaseoteam/Phaseo/issues/777",
                         state: "open",
                         body: `<!-- ${testingExports.legacyMarkerForKey(legacyKey)} -->`,
-                        labels: ["ai-stats-upstream-discovery"],
+                        labels: ["phaseo-upstream-discovery"],
                     },
                 ],
             });
@@ -282,7 +282,7 @@ async function main(): Promise<void> {
                 html_url: "https://github.com/phaseoteam/Phaseo/issues/777",
                 state: "open",
                 body: `<!-- ${testingExports.legacyMarkerForKey(legacyKey)} -->`,
-                labels: ["ai-stats-upstream-discovery"],
+                labels: ["phaseo-upstream-discovery"],
             });
         }
         if (url.endsWith("/repos/phaseoteam/Phaseo/issues/777") && method === "PATCH") {
@@ -360,7 +360,7 @@ async function main(): Promise<void> {
         commentInjectionRequests.some(
             (request) =>
                 request.url.includes("/search/issues") &&
-                request.url.includes(encodeURIComponent(`in:body label:ai-stats-upstream-discovery "${commentInjectionMarker}"`))
+                request.url.includes(encodeURIComponent(`in:body label:phaseo-upstream-discovery "${commentInjectionMarker}"`))
         )
     );
     assert.ok(commentInjectionRequests.some((request) => request.url.endsWith("/repos/phaseoteam/Phaseo/issues/900") && request.method === "GET"));

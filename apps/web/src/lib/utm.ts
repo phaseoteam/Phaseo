@@ -6,7 +6,7 @@ export interface UTMOptions {
 	term?: string;
 }
 
-const DEFAULT_SOURCE = "ai-stats";
+const DEFAULT_SOURCE = "phaseo";
 const DEFAULT_MEDIUM = "referral";
 
 export function withUTM(url: string, options: UTMOptions): string {

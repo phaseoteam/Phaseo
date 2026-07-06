@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import path from "node:path";
 import fs from "node:fs/promises";
-import { loadOpenApi, buildIR, stringifyIR } from "@ai-stats/oapi-core";
-import { backendTs } from "@ai-stats/oapi-backend-ts";
+import { loadOpenApi, buildIR, stringifyIR } from "@phaseo/oapi-core";
+import { backendTs } from "@phaseo/oapi-backend-ts";
 
 const args = process.argv.slice(2);
 const command = args[0];

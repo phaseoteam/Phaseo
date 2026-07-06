@@ -13,7 +13,7 @@ npm install @phaseo/sdk
 ```
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
+import { Phaseo, createPhaseoDevtools } from '@phaseo/sdk';
 ```
 
 ### Option 2: Standalone Package
@@ -21,12 +21,12 @@ import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
 Install the devtools as a separate package:
 
 ```bash
-npm install @phaseo/sdk @ai-stats/devtools
+npm install @phaseo/sdk @phaseo/devtools
 ```
 
 ```typescript
-import { AIStats } from '@phaseo/sdk';
-import { createAIStatsDevtools } from '@ai-stats/devtools';
+import { Phaseo } from '@phaseo/sdk';
+import { createPhaseoDevtools } from '@phaseo/devtools';
 ```
 
 Both approaches work identically - choose whichever fits your project structure better.
@@ -38,11 +38,11 @@ Both approaches work identically - choose whichever fits your project structure 
 Add one line to your Phaseo client initialization:
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
+import { Phaseo, createPhaseoDevtools } from '@phaseo/sdk';
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools()  // ← Add this line
+  devtools: createPhaseoDevtools()  // ← Add this line
 });
 ```
 
@@ -135,11 +135,11 @@ Every API call captures:
 Customize the devtools behavior:
 
 ```typescript
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools({
+  devtools: createPhaseoDevtools({
     // Where to store telemetry data
-    directory: '.ai-stats-devtools',  // default
+    directory: '.phaseo-devtools',  // default
 
     // How often to flush data to disk (ms)
     flushIntervalMs: 1000,  // default: 1 second
@@ -181,10 +181,10 @@ tsx app.ts
 ### Development Only
 
 ```typescript
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
   devtools: process.env.NODE_ENV !== 'production'
-    ? createAIStatsDevtools()
+    ? createPhaseoDevtools()
     : undefined
 });
 ```
@@ -192,9 +192,9 @@ const client = new AIStats({
 ### Custom Directory Per Environment
 
 ```typescript
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools({
+  devtools: createPhaseoDevtools({
     directory: `.devtools-${process.env.NODE_ENV}`
   })
 });
@@ -203,9 +203,9 @@ const client = new AIStats({
 ### Debug Mode with Headers
 
 ```typescript
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools({
+  devtools: createPhaseoDevtools({
     captureHeaders: process.env.DEBUG === 'true',
     flushIntervalMs: 500  // Faster flushing in debug mode
   })
@@ -265,10 +265,10 @@ Devtools is designed for zero impact on your application:
 
 ## Data Storage
 
-Telemetry data is stored locally in `.ai-stats-devtools/`:
+Telemetry data is stored locally in `.phaseo-devtools/`:
 
 ```
-.ai-stats-devtools/
+.phaseo-devtools/
 ├── session.json          # Session metadata
 ├── entries.jsonl         # All captured requests (JSONL format)
 └── assets/               # Binary assets
@@ -300,9 +300,9 @@ Export your telemetry data:
 # Click the 💾 icon in the generations list
 
 # Or programmatically:
-import { DevToolsWriter, entriesToCSV } from '@ai-stats/devtools';
+import { DevToolsWriter, entriesToCSV } from '@phaseo/devtools';
 
-const writer = new DevToolsWriter('.ai-stats-devtools');
+const writer = new DevToolsWriter('.phaseo-devtools');
 const entries = writer.readEntries();
 
 // Export to CSV
@@ -320,7 +320,7 @@ fs.writeFileSync('telemetry.json', json);
 
 1. Check devtools is enabled:
    ```typescript
-   devtools: createAIStatsDevtools()  // ✓
+   devtools: createPhaseoDevtools()  // ✓
    devtools: undefined                 // ✗
    ```
 
@@ -332,7 +332,7 @@ fs.writeFileSync('telemetry.json', json);
 
 3. Check directory permissions:
    ```bash
-   ls -la .ai-stats-devtools/
+   ls -la .phaseo-devtools/
    # Should have entries.jsonl with recent timestamp
    ```
 
@@ -341,25 +341,25 @@ fs.writeFileSync('telemetry.json', json);
 1. Make sure you've made at least one API call
 2. Check the data directory matches:
    ```bash
-   npx @phaseo/devtools-viewer --dir .ai-stats-devtools
+   npx @phaseo/devtools-viewer --dir .phaseo-devtools
    ```
 3. Verify entries.jsonl exists and has content:
    ```bash
-   cat .ai-stats-devtools/entries.jsonl
+   cat .phaseo-devtools/entries.jsonl
    ```
 
 ### Performance issues?
 
 1. Increase flush interval:
    ```typescript
-   devtools: createAIStatsDevtools({
+   devtools: createPhaseoDevtools({
      flushIntervalMs: 5000  // Flush every 5s instead of 1s
    })
    ```
 
 2. Reduce queue size:
    ```typescript
-   devtools: createAIStatsDevtools({
+   devtools: createPhaseoDevtools({
      maxQueueSize: 100  // Flush more frequently
    })
    ```
@@ -368,15 +368,15 @@ fs.writeFileSync('telemetry.json', json);
    ```typescript
    devtools: process.env.NODE_ENV === 'production'
      ? undefined
-     : createAIStatsDevtools()
+     : createPhaseoDevtools()
    ```
 
 ## Next Steps
 
 - Check out the [examples directory](../../sdk/sdk-ts/examples/) for more usage patterns
 - Read the [cross-language guide](./CROSS_LANGUAGE.md) for Python, Go, and other languages
-- Explore the [API documentation](https://docs.ai-stats.org) for advanced features
-- Join our [Discord](https://discord.gg/ai-stats) for support and discussion
+- Explore the [API documentation](https://docs.phaseo.ai/v1) for advanced features
+- Join our [Discord](https://discord.gg/aQyywCvgZ5) for support and discussion
 
 ## Comparison to Other Tools
 

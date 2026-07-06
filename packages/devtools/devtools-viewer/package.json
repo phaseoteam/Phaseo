@@ -6,8 +6,7 @@
   "private": false,
   "license": "MIT",
   "bin": {
-    "phaseo-devtools": "./dist/cli/index.js",
-    "ai-stats-devtools": "./dist/cli/index.js"
+    "phaseo-devtools": "./dist/cli/index.js"
   },
   "main": "./dist/server/index.js",
   "types": "./dist/server/index.d.ts",
@@ -23,7 +22,7 @@
     "build:ui": "vite build",
     "build": "pnpm run build:ui && pnpm run build:server",
     "prepublishOnly": "pnpm run build",
-    "dev:server": "pnpm exec tsx watch src/server/index.ts -- --start --port 4984 --dir ../../../.ai-stats-devtools",
+    "dev:server": "pnpm exec tsx watch src/server/index.ts -- --start --port 4984 --dir ../../../.phaseo-devtools",
     "dev:ui": "pnpm exec wait-on tcp:4984 && vite --port 4983",
     "dev": "node dev-start.mjs",
     "dev:old": "concurrently \"pnpm run dev:server\" \"pnpm run dev:ui\"",

@@ -52,7 +52,7 @@ export default function Hero({ metadata }: HeroProps) {
 
 					<div className="flex-shrink-0 ml-6">
 						<Link
-							href={`https://phaseo.app/`}
+							href={`https://phaseo.ai/`}
 							aria-label={`Read the docs (v${DOCS_VERSION})`}
 							className="inline-flex items-center"
 						>

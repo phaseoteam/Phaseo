@@ -28,17 +28,17 @@ $tempCa = $tempDir . DIRECTORY_SEPARATOR . "ca.pem";
 file_put_contents($tempCa, "dummy");
 
 putenv("PHASEO_CA_BUNDLE=" . $tempCa);
-$clientFromEnv = new Client("https://api.phaseo.app/v1");
+$clientFromEnv = new Client("https://api.phaseo.ai/v1");
 $resolvedEnv = read_private($clientFromEnv, "caBundlePath");
 assert_true(is_string($resolvedEnv) && $resolvedEnv !== "", "expected CA bundle resolved from PHASEO_CA_BUNDLE");
 assert_true(str_ends_with(str_replace("\\", "/", $resolvedEnv), "/ca.pem"), "expected resolved CA path to end with ca.pem");
 
-$clientExplicit = new Client("https://api.phaseo.app/v1", [], $tempCa, false);
+$clientExplicit = new Client("https://api.phaseo.ai/v1", [], $tempCa, false);
 assert_true(read_private($clientExplicit, "verifyTls") === false, "expected verifyTls false when explicitly disabled");
 
 $invalidThrows = false;
 try {
-    new Client("https://api.phaseo.app/v1", [], $tempDir . DIRECTORY_SEPARATOR . "missing-ca.pem");
+    new Client("https://api.phaseo.ai/v1", [], $tempDir . DIRECTORY_SEPARATOR . "missing-ca.pem");
 } catch (InvalidArgumentException $e) {
     $invalidThrows = str_contains($e->getMessage(), "caBundlePath");
 }

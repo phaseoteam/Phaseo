@@ -10,7 +10,7 @@ import { handlePasswordSignIn, forgotPasswordAction } from "@/app/(auth)/sign-in
 import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 import { Eye, EyeOff } from "lucide-react";
 
-const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
 
 function SubmitButton() {
 	const { pending } = useFormStatus();

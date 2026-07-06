@@ -221,9 +221,9 @@ function printSuiteList() {
     }
     console.log("");
     console.log("Examples:");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:targeted -- --suite gpt54-nano-text");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:targeted -- --suite embeddings-moderation,audio-images");
-    console.log("  pnpm --filter @ai-stats/gateway-api test:live:targeted -- --from deepseek-v4-flash");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:targeted -- --suite gpt54-nano-text");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:targeted -- --suite embeddings-moderation,audio-images");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:targeted -- --from deepseek-v4-flash");
 }
 
 function runPnpmScript(cwd: string, script: string, extraEnv: Record<string, string>): Promise<number> {

@@ -530,8 +530,8 @@ export function ChatConversationMessages({
 				(displayModelId
 					? isInternalModelId(displayModelId)
 						? getOrgId(displayModelId)
-						: "ai-stats"
-					: "ai-stats");
+						: "phaseo"
+					: "phaseo");
 			const orgName = orgNameById[orgId] ?? orgId;
 			const modelLink =
 				(displayModelId ? modelLinkById[displayModelId] : undefined) ??

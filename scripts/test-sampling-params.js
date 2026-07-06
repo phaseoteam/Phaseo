@@ -255,7 +255,7 @@ async function main() {
 	const commonHeaders = {
 		"Content-Type": "application/json",
 		Authorization: `Bearer ${args.apiKey}`,
-		"X-AIStats-Strictness": args.strictness,
+		"X-Phaseo-Strictness": args.strictness,
 		"x-gateway-debug": "1",
 	};
 

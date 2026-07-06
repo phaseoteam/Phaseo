@@ -6,9 +6,9 @@ This document explains the complete devtools architecture and how it works acros
 
 Phaseo Devtools provides a comprehensive debugging and monitoring solution for AI applications. It consists of three main components:
 
-1. **@ai-stats/devtools-core** - Core telemetry capture and storage
+1. **@phaseo/devtools-core** - Core telemetry capture and storage
 2. **@phaseo/devtools-viewer** - Web-based visualization UI
-3. **@ai-stats/devtools** - Hook pattern for SDK integration
+3. **@phaseo/devtools** - Hook pattern for SDK integration
 
 ## Architecture Diagram
 
@@ -16,11 +16,11 @@ Phaseo Devtools provides a comprehensive debugging and monitoring solution for A
 ┌─────────────────────────────────────────────────────────────┐
 │                     User Application                        │
 │                                                             │
-│  import { AIStats } from '@phaseo/sdk';                   │
-│  import { createAIStatsDevtools } from '@ai-stats/devtools';│
+│  import { Phaseo } from '@phaseo/sdk';                   │
+│  import { createPhaseoDevtools } from '@phaseo/devtools';│
 │                                                             │
-│  const client = new AIStats({                               │
-│    devtools: createAIStatsDevtools()                        │
+│  const client = new Phaseo({                               │
+│    devtools: createPhaseoDevtools()                        │
 │  });                                                        │
 └────────────────────┬────────────────────────────────────────┘
                      │
@@ -40,11 +40,11 @@ Phaseo Devtools provides a comprehensive debugging and monitoring solution for A
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                @ai-stats/devtools-core                      │
+│                @phaseo/devtools-core                      │
 │                                                             │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │              DevToolsWriter                          │  │
-│  │  • Writes to .ai-stats-devtools/                     │  │
+│  │  • Writes to .phaseo-devtools/                     │  │
 │  │  • JSONL format (append-only)                        │  │
 │  │  • Session metadata                                  │  │
 │  │  • Binary asset storage                              │  │
@@ -60,7 +60,7 @@ Phaseo Devtools provides a comprehensive debugging and monitoring solution for A
                             │
                             ▼
                      File System
-                 .ai-stats-devtools/
+                 .phaseo-devtools/
                  ├── session.json
                  ├── entries.jsonl
                  └── assets/
@@ -93,7 +93,7 @@ Phaseo Devtools provides a comprehensive debugging and monitoring solution for A
 
 ## Component Details
 
-### 1. @ai-stats/devtools-core
+### 1. @phaseo/devtools-core
 
 **Purpose**: Core telemetry capture and storage engine
 
@@ -111,7 +111,7 @@ Phaseo Devtools provides a comprehensive debugging and monitoring solution for A
 
 **Data Flow**:
 ```typescript
-DevToolsEntry → DevToolsWriter → .ai-stats-devtools/entries.jsonl
+DevToolsEntry → DevToolsWriter → .phaseo-devtools/entries.jsonl
 ```
 
 ### 2. @phaseo/devtools-viewer
@@ -139,12 +139,12 @@ DevToolsEntry → DevToolsWriter → .ai-stats-devtools/entries.jsonl
 File System → Express API → React UI (polling)
 ```
 
-### 3. @ai-stats/devtools
+### 3. @phaseo/devtools
 
 **Purpose**: Hook pattern for SDK integration (NEW)
 
 **Key Files**:
-- `src/index.ts` - createAIStatsDevtools() function
+- `src/index.ts` - createPhaseoDevtools() function
 - `README.md` - Installation and usage guide
 - `GETTING_STARTED.md` - Step-by-step tutorial
 - `CROSS_LANGUAGE.md` - Multi-language examples
@@ -158,12 +158,12 @@ File System → Express API → React UI (polling)
 
 **Usage Pattern**:
 ```typescript
-import { AIStats, createAIStatsDevtools } from '@phaseo/sdk';
+import { Phaseo, createPhaseoDevtools } from '@phaseo/sdk';
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools({
-    directory: '.ai-stats-devtools',
+  devtools: createPhaseoDevtools({
+    directory: '.phaseo-devtools',
     flushIntervalMs: 1000,
     captureHeaders: false,
     saveAssets: true
@@ -176,7 +176,7 @@ const client = new AIStats({
 **Purpose**: TypeScript SDK with built-in telemetry
 
 **Key Files**:
-- `src/index.ts` - AIStats client class
+- `src/index.ts` - Phaseo client class
 - `src/devtools/telemetry.ts` - TelemetryCapture class
 - `src/devtools/index.ts` - Devtools exports
 
@@ -190,7 +190,7 @@ const client = new AIStats({
 
 **Integration Flow**:
 ```typescript
-AIStats constructor → TelemetryCapture → DevToolsWriter
+Phaseo constructor → TelemetryCapture → DevToolsWriter
 ```
 
 ## Data Format
@@ -284,20 +284,20 @@ The architecture is designed for multi-language support:
 
 | Language | Status | Package |
 |----------|--------|---------|
-| TypeScript | ✅ Complete | `@phaseo/sdk`, `@ai-stats/devtools` |
-| Python | 🚧 Planned | `ai-stats[devtools]` |
-| Go | 🚧 Planned | `github.com/ai-stats/ai-stats-go/devtools` |
-| C# | 🚧 Planned | `AIStats.Devtools` |
-| Ruby | 🚧 Planned | `ai_stats-devtools` |
-| PHP | 🚧 Planned | `ai-stats/devtools` |
-| Rust | 🚧 Planned | `ai-stats-devtools` |
+| TypeScript | ✅ Complete | `@phaseo/sdk`, `@phaseo/devtools` |
+| Python | 🚧 Planned | `phaseo[devtools]` |
+| Go | 🚧 Planned | `github.com/phaseo/phaseo-go/devtools` |
+| C# | 🚧 Planned | `Phaseo.Devtools` |
+| Ruby | 🚧 Planned | `phaseo-devtools` |
+| PHP | 🚧 Planned | `phaseo/devtools` |
+| Rust | 🚧 Planned | `phaseo-devtools` |
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PHASEO_DEVTOOLS` | `NODE_ENV !== 'production'` | Enable/disable devtools |
-| `PHASEO_DEVTOOLS_DIR` | `.ai-stats-devtools` | Data directory path |
+| `PHASEO_DEVTOOLS_DIR` | `.phaseo-devtools` | Data directory path |
 | `NODE_ENV` | - | Auto-disable in production |
 
 ## Security & Privacy
@@ -359,9 +359,9 @@ The architecture is designed for multi-language support:
 To add devtools to a new language SDK:
 
 1. Implement `TelemetryCapture` equivalent
-2. Write to `.ai-stats-devtools/entries.jsonl`
+2. Write to `.phaseo-devtools/entries.jsonl`
 3. Follow the DevToolsEntry schema
-4. Add `createAIStatsDevtools()` helper
+4. Add `createPhaseoDevtools()` helper
 5. Respect environment variables
 6. Test with existing viewer
 

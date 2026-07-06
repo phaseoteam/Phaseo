@@ -590,7 +590,7 @@ describe("runTextGeneratePipeline server tools", () => {
 							toolCalls: [
 								{
 									id: "call_web_search",
-									name: "ai_stats_web_search",
+									name: "phaseo_web_search",
 									arguments:
 										'{"query":"latest gateway reliability patterns","max_results":2,"include_text":true}',
 								},
@@ -624,7 +624,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					toolCalls: [
 						{
 							id: "call_web_search",
-							name: "ai_stats_web_search",
+							name: "phaseo_web_search",
 							arguments:
 								'{"query":"latest gateway reliability patterns","max_results":2,"include_text":true}',
 						},
@@ -754,18 +754,18 @@ describe("runTextGeneratePipeline server tools", () => {
 		const args = createArgs();
 		args.pre.ctx.body.tools = [
 			{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: { max_results: 2, include_text: true },
 			},
 		];
 		args.pre.ctx.rawBody.tools = [
 			{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: { max_results: 2, include_text: true },
 			},
 		];
-		args.pre.ctx.body.tool_choice = "ai-stats:web_search";
-		args.pre.ctx.rawBody.tool_choice = "ai-stats:web_search";
+		args.pre.ctx.body.tool_choice = "phaseo:web_search";
+		args.pre.ctx.rawBody.tool_choice = "phaseo:web_search";
 
 		const response = await runTextGeneratePipeline(args);
 
@@ -826,7 +826,7 @@ describe("runTextGeneratePipeline server tools", () => {
 		expect(followUpRequest.messages).toHaveLength(3);
 		expect(followUpRequest.messages[1]).toMatchObject({
 			role: "assistant",
-			toolCalls: [{ id: "call_web_search", name: "ai_stats_web_search" }],
+			toolCalls: [{ id: "call_web_search", name: "phaseo_web_search" }],
 		});
 		expect(followUpRequest.messages[2]).toMatchObject({
 			role: "tool",
@@ -855,7 +855,7 @@ describe("runTextGeneratePipeline server tools", () => {
 							toolCalls: [
 								{
 									id: "call_web_fetch",
-									name: "ai_stats_web_fetch",
+									name: "phaseo_web_fetch",
 									arguments:
 										'{"url":"https://example.com/spec","max_chars":4000}',
 								},
@@ -878,7 +878,7 @@ describe("runTextGeneratePipeline server tools", () => {
 					toolCalls: [
 						{
 							id: "call_web_fetch",
-							name: "ai_stats_web_fetch",
+							name: "phaseo_web_fetch",
 							arguments:
 								'{"url":"https://example.com/spec","max_chars":4000}',
 						},
@@ -993,18 +993,18 @@ describe("runTextGeneratePipeline server tools", () => {
 		const args = createArgs({ stream: true });
 		args.pre.ctx.body.tools = [
 			{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: { max_chars: 4000 },
 			},
 		];
 		args.pre.ctx.rawBody.tools = [
 			{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: { max_chars: 4000 },
 			},
 		];
-		args.pre.ctx.body.tool_choice = "ai-stats:web_fetch";
-		args.pre.ctx.rawBody.tool_choice = "ai-stats:web_fetch";
+		args.pre.ctx.body.tool_choice = "phaseo:web_fetch";
+		args.pre.ctx.rawBody.tool_choice = "phaseo:web_fetch";
 
 		const response = await runTextGeneratePipeline(args);
 

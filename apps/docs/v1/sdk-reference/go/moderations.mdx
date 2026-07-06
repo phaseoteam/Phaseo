@@ -14,7 +14,7 @@ import (
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
 resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
   "model": "openai/omni-moderation-latest",
   "input": "some text to classify",

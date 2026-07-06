@@ -36,7 +36,7 @@ def load_local_env() -> None:
 
 load_local_env()
 
-BASE_URL = os.getenv("PHASEO_BASE_URL") or "https://api.phaseo.app/v1".rstrip("/")
+BASE_URL = os.getenv("PHASEO_BASE_URL") or "https://api.phaseo.ai/v1".rstrip("/")
 API_KEY = os.getenv("PHASEO_API_KEY") or ""
 DEFAULT_MODEL = os.getenv("PHASEO_MODEL") or os.getenv("PHASEO_MODEL") or "openai/gpt-5-nano-2025-08-07"
 APP_TITLE = os.getenv("PHASEO_APP_TITLE") or os.getenv("PHASEO_APP_TITLE") or "Phaseo Python Quickstart"

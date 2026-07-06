@@ -15,7 +15,7 @@ import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  // baseUrl: "https://api.phaseo.app/v1",
+  // baseUrl: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.responses.create({
@@ -165,7 +165,7 @@ const client = new Phaseo({
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Devtools
 

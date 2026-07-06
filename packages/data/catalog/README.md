@@ -1,4 +1,4 @@
-# @ai-stats/data-catalog
+# @phaseo/data-catalog
 
 Canonical Phaseo data lives in `src/data`.
 

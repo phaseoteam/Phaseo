@@ -115,11 +115,11 @@ function getRoutedModelId(row: RequestRow): string | null {
 }
 
 const PHASEO_CHAT_APP_KEYS = new Set([
-	"phaseo-chat@phaseo.app",
-	"https://phaseo.app/chat",
-	"phaseo-chat@phaseo.app",
-	"phaseo-chat@phaseo.app",
-	"https://phaseo.app/chat",
+	"phaseo-chat@phaseo.ai",
+	"https://phaseo.ai/chat",
+	"phaseo-chat@phaseo.ai",
+	"phaseo-chat@phaseo.ai",
+	"https://phaseo.ai/chat",
 ]);
 
 function isPhaseoChatApp(row: RequestRow): boolean {
@@ -823,7 +823,7 @@ export default function UnifiedRequestsTable({
 											href={appHref}
 											visual={
 												isPhaseoChatApp(row) ? (
-													<Logo id="ai-stats" width={16} height={16} />
+													<Logo id="phaseo" width={16} height={16} />
 												) : (
 													<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
 														{row.app_image_url ? (
@@ -865,7 +865,7 @@ export default function UnifiedRequestsTable({
 												>
 													{isPhaseoChatApp(row) ? (
 														<Logo
-															id="ai-stats"
+															id="phaseo"
 															width={14}
 															height={14}
 															className="flex-shrink-0"
@@ -1430,7 +1430,7 @@ export default function UnifiedRequestsTable({
 														href={appHref}
 														visual={
 															isPhaseoChatApp(row) ? (
-																<Logo id="ai-stats" width={16} height={16} />
+																<Logo id="phaseo" width={16} height={16} />
 															) : (
 																<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
 																	{row.app_image_url ? (
@@ -1472,7 +1472,7 @@ export default function UnifiedRequestsTable({
 															>
 																{isPhaseoChatApp(row) ? (
 																	<Logo
-																		id="ai-stats"
+																		id="phaseo"
 																		width={14}
 																		height={14}
 																		className="flex-shrink-0"

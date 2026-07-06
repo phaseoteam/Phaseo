@@ -64,9 +64,9 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Build and pack
         run: |
-          dotnet test packages/sdk/sdk-csharp/tests/AIStats.Sdk.Tests/AIStats.Sdk.Tests.csproj -c Release
-          dotnet build packages/sdk/sdk-csharp/AIStats.Sdk.csproj -c Release
-          dotnet pack packages/sdk/sdk-csharp/AIStats.Sdk.csproj -c Release -o artifacts/csharp
+          dotnet test packages/sdk/sdk-csharp/tests/Phaseo.Sdk.Tests/Phaseo.Sdk.Tests.csproj -c Release
+          dotnet build packages/sdk/sdk-csharp/Phaseo.Sdk.csproj -c Release
+          dotnet pack packages/sdk/sdk-csharp/Phaseo.Sdk.csproj -c Release -o artifacts/csharp
       - name: Check NuGet trusted publishing user (optional override)
         if: inputs.checkSecrets
         shell: bash
@@ -151,7 +151,7 @@ jobs:
         working-directory: packages/sdk/sdk-ruby
         run: |
           ruby tests/lifecycle_test.rb
-          gem build ai_stats_sdk.gemspec
+          gem build phaseo_sdk.gemspec
       - name: Check RubyGems secret
         if: inputs.checkSecrets
         env:

@@ -17,7 +17,7 @@ from langfuse.openai import openai
 
 client = openai.OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    base_url="https://api.phaseo.ai/v1",
 )
 
 response = client.responses.create(
@@ -48,7 +48,7 @@ If your framework emits OpenTelemetry spans, Phaseo does not require a special e
 ## Notes
 
 - Do not send Phaseo API keys to observability tools as attributes.
-- If the observability library wraps the OpenAI SDK, configure the wrapped client with `base_url: "https://api.phaseo.app/v1"`.
+- If the observability library wraps the OpenAI SDK, configure the wrapped client with `base_url: "https://api.phaseo.ai/v1"`.
 - For LangChain traces, pair the tracing callback with the Phaseo `ChatOpenAI` configuration.
 
 ## Related

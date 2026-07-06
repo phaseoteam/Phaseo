@@ -722,7 +722,7 @@ function insertDescription(model, description) {
 async function loadOpenRouterModels() {
 	const response = await fetch(OPENROUTER_MODELS_URL, {
 		headers: {
-			"User-Agent": "ai-stats-model-description-sync/1.0",
+			"User-Agent": "phaseo-model-description-sync/1.0",
 		},
 	});
 	if (!response.ok) {

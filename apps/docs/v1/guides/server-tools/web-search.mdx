@@ -3,7 +3,7 @@ title: "Web Search Server Tool"
 description: "Let models search the web during a request."
 ---
 
-Use `ai-stats:web_search` when the model needs current or source-backed information. The model decides when to search, writes the query, and can search multiple times in one request.
+Use `phaseo:web_search` when the model needs current or source-backed information. The model decides when to search, writes the query, and can search multiple times in one request.
 
 Phaseo returns URLs, titles, snippets, highlights, and optional page text to the model so it can write a grounded response.
 
@@ -13,7 +13,7 @@ Google native web search is not enabled in Phaseo server tools yet. Use managed 
 
 ## How it works
 
-1. Add `{ "type": "ai-stats:web_search" }` to `tools`.
+1. Add `{ "type": "phaseo:web_search" }` to `tools`.
 2. The model decides whether it needs a search and emits a query.
 3. Phaseo executes the search using the configured engine.
 4. Results are returned to the model as tool context.
@@ -22,7 +22,7 @@ Google native web search is not enabled in Phaseo server tools yet. Use managed 
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -31,7 +31,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       { "role": "user", "content": "What were the major AI announcements this week?" }
     ],
     "tools": [
-      { "type": "ai-stats:web_search" }
+      { "type": "phaseo:web_search" }
     ]
   }'
 ```
@@ -40,7 +40,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ```json
 {
-  "type": "ai-stats:web_search",
+  "type": "phaseo:web_search",
   "parameters": {
     "engine": "exa",
     "max_results": 5,
@@ -87,9 +87,9 @@ Use `allowed_domains` when the answer must come from a controlled source set:
 
 ```json
 {
-  "type": "ai-stats:web_search",
+  "type": "phaseo:web_search",
   "parameters": {
-    "allowed_domains": ["docs.phaseo.app", "github.com"]
+    "allowed_domains": ["docs.phaseo.ai", "github.com"]
   }
 }
 ```
@@ -107,7 +107,7 @@ The same tool shape works with `/v1/responses`:
   "model": "openai/gpt-5-nano",
   "input": "Find the latest release notes for Phaseo.",
   "tools": [
-    { "type": "ai-stats:web_search", "parameters": { "max_results": 4 } }
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
   ]
 }
 ```

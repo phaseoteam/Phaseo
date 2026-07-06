@@ -31,7 +31,7 @@ The response is a standard `list` envelope. Each item includes:
 You can filter models by supported batch parameter with the `params` query parameter. Repeat it or pass a comma-separated list. The filter accepts canonical names and aliases from `supported_parameters_detail`, so `params=request_endpoint` can match models whose canonical parameter is `endpoint`, and `params=window` can match `completion_window`.
 
 ```bash
-curl "https://api.phaseo.app/v1/batches/models?params=request_endpoint,window" \
+curl "https://api.phaseo.ai/v1/batches/models?params=request_endpoint,window" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 

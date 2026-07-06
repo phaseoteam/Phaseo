@@ -41,25 +41,25 @@ const productLinks = [
 
 const developerLinks = [
 	{
-		href: "https://docs.phaseo.app/v1",
+		href: "https://docs.phaseo.ai/v1",
 		label: "Documentation",
 		icon: BookOpenText,
 		external: true,
 	},
 	{
-		href: "https://docs.phaseo.app/v1/api-reference/introduction",
+		href: "https://docs.phaseo.ai/v1/api-reference/introduction",
 		label: "API Reference",
 		icon: Code2,
 		external: true,
 	},
 	{
-		href: "https://docs.phaseo.app/v1/quickstart",
+		href: "https://docs.phaseo.ai/v1/quickstart",
 		label: "Quickstart",
 		icon: Sparkles,
 		external: true,
 	},
 	{
-		href: "https://docs.phaseo.app/v1/sdk-reference/typescript/overview",
+		href: "https://docs.phaseo.ai/v1/sdk-reference/typescript/overview",
 		label: "SDKs",
 		icon: GitBranch,
 		external: true,
@@ -115,13 +115,13 @@ const connectLinks = [
 
 const featuredLinks = [
 	{
-		href: "https://docs.phaseo.app/v1",
+		href: "https://docs.phaseo.ai/v1",
 		label: "Read the docs",
 		icon: BookOpenText,
 		external: true,
 	},
 	{
-		href: "https://status.phaseo.app/",
+		href: "https://status.phaseo.ai/",
 		label: "Check status",
 		icon: Activity,
 		external: true,

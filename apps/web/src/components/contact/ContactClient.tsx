@@ -288,7 +288,7 @@ function TawkSupportLauncher({
 			"",
 		].join("\n");
 
-		return `mailto:support@phaseo.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+		return `mailto:support@phaseo.ai?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 	}, [defaultInternalId, issueLabel, tierLabel, userEmail]);
 	const openChat = () => {
 		if (!canStartChat) return;

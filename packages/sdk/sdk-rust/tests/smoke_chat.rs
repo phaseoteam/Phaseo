@@ -41,7 +41,7 @@ impl Transport for HttpTransport {
 fn smoke_chat() {
     let api_key = std::env::var("PHASEO_API_KEY").expect("PHASEO_API_KEY is required");
     let base_url = std::env::var("PHASEO_BASE_URL")
-        .unwrap_or_else(|_| "https://api.phaseo.app/v1".to_string());
+        .unwrap_or_else(|_| "https://api.phaseo.ai/v1".to_string());
     let model = std::env::var("PHASEO_SMOKE_MODEL")
         .unwrap_or_else(|_| "openai/gpt-5.4-nano".to_string());
     let input = std::env::var("PHASEO_SMOKE_INPUT").unwrap_or_else(|_| "Hi".to_string());

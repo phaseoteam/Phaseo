@@ -21,7 +21,7 @@ Use this example for the fastest zero-credit smoke test with the Responses API.
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -65,11 +65,11 @@ import (
   "context"
   "fmt"
 
-  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client := aistats.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
   input := map[string]interface{}{
     "role": "user",
     "content": []map[string]interface{}{
@@ -80,7 +80,7 @@ func main() {
     },
   }
 
-  response, err := client.GenerateResponse(context.Background(), aistats.ResponsesRequest{
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
     Model: "google/gemma-3-27b:free",
     Input: &input,
   })
@@ -93,7 +93,7 @@ func main() {
 ```
 
 ```csharp C# SDK
-using AiStatsSdk;
+using PhaseoSdk;
 using System.Collections.Generic;
 
 var client = new Phaseo("YOUR_API_KEY");
@@ -111,7 +111,7 @@ Console.WriteLine(response);
 <?php
 require 'vendor/autoload.php';
 
-use AIStats\Sdk\Phaseo;
+use Phaseo\Sdk\Phaseo;
 
 $client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
@@ -165,7 +165,7 @@ System.out.println(String.valueOf(response));
 Use this when you want an OpenAI-compatible chat request against a paid model.
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -179,7 +179,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 Use this when your app needs a generated image from a prompt.
 
 ```bash
-curl https://api.phaseo.app/v1/images/generations \
+curl https://api.phaseo.ai/v1/images/generations \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

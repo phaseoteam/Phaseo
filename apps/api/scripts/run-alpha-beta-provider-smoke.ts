@@ -219,9 +219,9 @@ function printUsage() {
     console.log("Quick Alpha/Beta provider smoke test (non-stream + stream) with internal override.");
     console.log("");
     console.log("Usage:");
-    console.log("  pnpm --filter @ai-stats/gateway-api exec tsx scripts/run-alpha-beta-provider-smoke.ts");
-    console.log("  pnpm --filter @ai-stats/gateway-api exec tsx scripts/run-alpha-beta-provider-smoke.ts --providers atlascloud,deepinfra");
-    console.log("  pnpm --filter @ai-stats/gateway-api exec tsx scripts/run-alpha-beta-provider-smoke.ts --statuses alpha,beta --timeout-ms 15000");
+    console.log("  pnpm --filter @phaseo/gateway-api exec tsx scripts/run-alpha-beta-provider-smoke.ts");
+    console.log("  pnpm --filter @phaseo/gateway-api exec tsx scripts/run-alpha-beta-provider-smoke.ts --providers atlascloud,deepinfra");
+    console.log("  pnpm --filter @phaseo/gateway-api exec tsx scripts/run-alpha-beta-provider-smoke.ts --statuses alpha,beta --timeout-ms 15000");
 }
 
 function normalizeGatewayUrl(value: string): string {

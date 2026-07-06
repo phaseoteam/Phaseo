@@ -757,11 +757,11 @@ async function upsertAutomation(
 
 async function main(): Promise<void> {
 	const apiKey = requiredEnv("RESEND_API_KEY");
-	const fromEmail = env("RESEND_FROM_EMAIL", "Phaseo <noreply@phaseo.app>");
-	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "daniel@phaseo.app");
+	const fromEmail = env("RESEND_FROM_EMAIL", "Phaseo <noreply@phaseo.ai>");
+	const replyToEmail = env("RESEND_ONBOARDING_REPLY_TO_EMAIL", "daniel@phaseo.ai");
 	const dashboardUrl = env(
 		"RESEND_ONBOARDING_DASHBOARD_URL",
-		env("NEXT_PUBLIC_WEBSITE_URL", "https://www.aistats.com"),
+		env("NEXT_PUBLIC_WEBSITE_URL", "https://phaseo.ai"),
 	);
 	const purchaseWindow = env("RESEND_ONBOARDING_PURCHASE_WINDOW", "3 days");
 	const checkoutTimeout = env("RESEND_CHECKOUT_ABANDONED_TIMEOUT", "24 hours");

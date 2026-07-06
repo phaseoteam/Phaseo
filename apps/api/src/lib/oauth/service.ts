@@ -9,12 +9,12 @@ const REFRESH_TOKEN_TTL_SECONDS = 90 * 24 * 60 * 60;
 const DEVICE_CODE_TTL_SECONDS = 10 * 60;
 const AUTH_CODE_TTL_SECONDS = 10 * 60;
 const DEFAULT_DEVICE_INTERVAL_SECONDS = 5;
-const DEFAULT_WEB_BASE_URL = "https://ai-stats.com";
-const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
-const ACCESS_TOKEN_AUDIENCE = "ai-stats-api";
+const DEFAULT_WEB_BASE_URL = "https://phaseo.ai";
+const DEFAULT_API_BASE_URL = "https://api.phaseo.ai";
+const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
-export const CLI_CLIENT_ID = "aistats_cli";
+export const CLI_CLIENT_ID = "phaseo_cli";
 
 export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
@@ -224,12 +224,12 @@ async function getSigningMaterial() {
 			privateKey: keyPair.privateKey,
 			publicJwk: {
 				...publicJwk,
-				kid: "aistats-oauth-dev",
+				kid: "phaseo-oauth-dev",
 				alg: "RS256",
 				use: "sig",
 				key_ops: ["verify"],
 			} as JsonWebKey,
-			kid: "aistats-oauth-dev",
+			kid: "phaseo-oauth-dev",
 		};
 	}
 
@@ -604,7 +604,7 @@ export function verificationUriFor(userCode?: string): string {
 export function authorizationConsentUrl(params: URLSearchParams): string {
 	const url = new URL(`${getWebBaseUrl()}/oauth/consent`);
 	params.forEach((value, key) => url.searchParams.set(key, value));
-	url.searchParams.set("aistats_oauth", "1");
+	url.searchParams.set("phaseo_oauth", "1");
 	return url.toString();
 }
 

@@ -23,7 +23,7 @@ use Phaseo\Sdk\Phaseo;
 
 $client = new Phaseo(
     apiKey: getenv('PHASEO_API_KEY') ?: null,
-    basePath: getenv('PHASEO_BASE_URL') ?: 'https://api.phaseo.app/v1',
+    basePath: getenv('PHASEO_BASE_URL') ?: 'https://api.phaseo.ai/v1',
 );
 
 $response = $client->createResponse([
@@ -104,7 +104,7 @@ Disabling TLS verification (`verifyTls: false`) should only be used for local de
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 - `PHASEO_CA_BUNDLE` (optional TLS override)
 
 ## Regeneration and local checks

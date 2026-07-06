@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const app = new Hono();
 
 // Configuration
-const DEFAULT_DEVTOOLS_DIR = ".ai-stats-devtools";
+const DEFAULT_DEVTOOLS_DIR = ".phaseo-devtools";
 const BASE_PORT = parseInt(process.env.PORT || "4983", 10);
 const getArgValue = (flag: string) => {
   const idx = process.argv.indexOf(flag);
@@ -43,7 +43,7 @@ function getGatewayRequestId(entry: DevToolsEntry): string | undefined {
   const responseRecord = response as Record<string, unknown>;
   const metadata = responseRecord.metadata;
   if (metadata && typeof metadata === "object") {
-    const gatewayId = (metadata as Record<string, unknown>).aistats_request_id;
+    const gatewayId = (metadata as Record<string, unknown>).phaseo_request_id;
     if (typeof gatewayId === "string" && gatewayId.trim().length > 0) {
       return gatewayId;
     }

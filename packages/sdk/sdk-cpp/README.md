@@ -45,7 +45,7 @@ int main() {
 
   std::string base_url = std::getenv("PHASEO_BASE_URL")
       ? std::getenv("PHASEO_BASE_URL")
-      : "https://api.phaseo.app/v1";
+      : "https://api.phaseo.ai/v1";
 
   CurlTransport transport;
   Client client(base_url, &transport);
@@ -64,7 +64,7 @@ Use `packages/sdk/sdk-cpp/tests/smoke_chat.cpp` and `packages/sdk/sdk-cpp/tests/
 ## Environment variables
 
 - `PHASEO_API_KEY` (required)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Regeneration and local checks
 

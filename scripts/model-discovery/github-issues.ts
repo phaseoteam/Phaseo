@@ -75,7 +75,7 @@ type GitHubIssueClient = {
 const MAX_RECENT_EVENTS = 20;
 const DEFAULT_GITHUB_API_BASE_URL = "https://api.github.com";
 const DEFAULT_GITHUB_REQUEST_TIMEOUT_MS = 30_000;
-const MANAGED_ISSUE_LABEL = "ai-stats-upstream-discovery";
+const MANAGED_ISSUE_LABEL = "phaseo-upstream-discovery";
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -174,7 +174,7 @@ function issueKeyForGroup(input: Pick<UpstreamDiscoveryIssueEntry, "source" | "p
 }
 
 function markerForKey(key: string): string {
-    return `ai-stats-upstream-discovery:${key}`;
+    return `phaseo-upstream-discovery:${key}`;
 }
 
 function legacyProviderIssueKeyForGroup(input: Pick<UpstreamDiscoveryIssueEntry, "providerId" | "action">): string {
@@ -183,7 +183,7 @@ ${input.action}`).toString("base64url");
 }
 
 function legacyMarkerForKey(key: string): string {
-    return `ai-stats-model-discovery:${key}`;
+    return `phaseo-model-discovery:${key}`;
 }
 
 function actionNoun(action: UpstreamDiscoveryIssueAction): string {

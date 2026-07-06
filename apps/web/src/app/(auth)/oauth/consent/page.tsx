@@ -34,7 +34,7 @@ const FIRST_PARTY_CLIENTS: Record<
 		logo_url: string | null;
 	}
 > = {
-	aistats_cli: {
+	phaseo_cli: {
 		name: "Phaseo CLI",
 		description:
 			"Official first-party Phaseo command line interface for signing in, managing workspaces, and creating keys.",

@@ -26,7 +26,7 @@ These detail maps expose structured constraints such as allowed durations, resol
 You can filter models by supported parameter with the `params` query parameter. Repeat it or pass a comma-separated list. The filter accepts canonical names and aliases from `supported_parameters_detail`, so `params=size` can match models whose canonical parameter is `resolution`, and `params=duration_seconds` can match `duration`.
 
 ```bash
-curl "https://api.phaseo.app/v1/videos/models?params=size,duration_seconds" \
+curl "https://api.phaseo.ai/v1/videos/models?params=size,duration_seconds" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 

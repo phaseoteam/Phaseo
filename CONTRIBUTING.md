@@ -25,9 +25,9 @@ pnpm dev
 Useful scoped commands:
 
 ```bash
-pnpm --filter @ai-stats/web dev
-pnpm --filter @ai-stats/gateway-api dev
-pnpm --filter @ai-stats/docs dev
+pnpm --filter @phaseo/web dev
+pnpm --filter @phaseo/gateway-api dev
+pnpm --filter @phaseo/docs dev
 ```
 
 ## Quality bar before requesting review

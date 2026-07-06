@@ -15,7 +15,7 @@ export default async function TermsPage() {
 		<main className="container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
 			<header className="space-y-3">
 				<p className="text-xs text-muted-foreground/80">
-					Last updated: 15 November 2025
+					Last updated: 7 July 2026
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
 					Terms of Service
@@ -127,10 +127,10 @@ export default async function TermsPage() {
 					If you believe your account or keys have been compromised,
 					you must notify us promptly at{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					. You should also immediately rotate any affected keys in
 					your own systems. We are not responsible for losses arising
@@ -233,10 +233,10 @@ export default async function TermsPage() {
 					To request a refund of unused Credits within the 24-hour
 					window, email{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					. This voluntary policy does not affect any mandatory
 					consumer rights you may have under applicable law.
@@ -427,10 +427,10 @@ export default async function TermsPage() {
 					You may stop using the Service at any time. You can request
 					closure of your account by contacting us at{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					.
 				</p>
@@ -751,10 +751,10 @@ export default async function TermsPage() {
 					<li>
 						Email:{" "}
 						<a
-							href="mailto:support@phaseo.app"
+							href="mailto:support@phaseo.ai"
 							className="text-primary underline"
 						>
-							support@phaseo.app
+							support@phaseo.ai
 						</a>
 					</li>
 				</ul>

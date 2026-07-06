@@ -17,7 +17,7 @@ Phaseo Gateway provides OpenAI-compatible endpoints, making migration straightfo
 
 ## Prerequisites
 
--   A Phaseo account and API key (get one at [Gateway Keys](https://phaseo.app/gateway/keys))
+-   A Phaseo account and API key (get one at [Gateway Keys](https://phaseo.ai/gateway/keys))
 -   Existing OpenAI SDK code
 
 ## Migration Steps
@@ -39,7 +39,7 @@ curl https://api.openai.com/v1/chat/completions \
 
 # After (Phaseo)
 
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
  -H "Authorization: Bearer your-phaseo-key" \
  -H "Content-Type: application/json" \
  -d '{
@@ -58,7 +58,7 @@ client = openai.OpenAI(api_key="sk-your-openai-key")
 # After
 client = openai.OpenAI(
     api_key="your-phaseo-key",
-    base_url="https://api.phaseo.app/v1"
+    base_url="https://api.phaseo.ai/v1"
 )
 
 response = client.chat.completions.create(
@@ -78,7 +78,7 @@ const client = new OpenAI({
 // After
 const client = new OpenAI({
 	apiKey: "your-phaseo-key",
-	baseURL: "https://api.phaseo.app/v1",
+	baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({

@@ -23,7 +23,7 @@ require "phaseo_sdk"
 
 client = PhaseoSdk::Phaseo.new(
   api_key: ENV.fetch("PHASEO_API_KEY"),
-  base_path: ENV.fetch("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+  base_path: ENV.fetch("PHASEO_BASE_URL", "https://api.phaseo.ai/v1")
 )
 
 response = client.create_response(
@@ -90,7 +90,7 @@ puts resource_socket_url
 ## Environment variables
 
 - `PHASEO_API_KEY` (required unless passed in code)
-- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.app/v1`)
+- `PHASEO_BASE_URL` (optional, defaults to `https://api.phaseo.ai/v1`)
 
 ## Regeneration and local checks
 

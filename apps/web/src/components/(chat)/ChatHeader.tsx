@@ -272,7 +272,7 @@ type ChatHeaderProps = {
 
 function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
-	return org || "ai-stats";
+	return org || "phaseo";
 }
 
 export function ChatHeader({

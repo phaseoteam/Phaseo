@@ -6,7 +6,7 @@ import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
-const FALLBACK_HOST = "phaseo.app";
+const FALLBACK_HOST = "phaseo.ai";
 const ASSET_BASE_URL =
 	process.env.NEXT_PUBLIC_WEBSITE_URL ??
 	process.env.WEBSITE_URL ??

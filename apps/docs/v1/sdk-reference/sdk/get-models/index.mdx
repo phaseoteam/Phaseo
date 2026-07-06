@@ -9,7 +9,7 @@ Use one of these patterns to keep model IDs current.
 ## Option 1: Fetch from the Gateway API
 
 ```ts
-const response = await fetch("https://api.phaseo.app/v1/models", {
+const response = await fetch("https://api.phaseo.ai/v1/models", {
   method: "GET",
   headers: {
     Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
@@ -17,7 +17,7 @@ const response = await fetch("https://api.phaseo.app/v1/models", {
 });
 
 const filteredResponse = await fetch(
-  "https://api.phaseo.app/v1/models?provider=anthropic&status=active,deprecated&availability=all",
+  "https://api.phaseo.ai/v1/models?provider=anthropic&status=active,deprecated&availability=all",
   {
     headers: {
       Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,

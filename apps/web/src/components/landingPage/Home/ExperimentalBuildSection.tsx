@@ -15,7 +15,7 @@ const ACTIONS = [
 	{
 		title: "Read the quickstart",
 		body: "Understand the unified request shape and drop-in migration path.",
-		href: "https://docs.phaseo.app/v1/quickstart",
+		href: "https://docs.phaseo.ai/v1/quickstart",
 		icon: BookOpen,
 	},
 	{

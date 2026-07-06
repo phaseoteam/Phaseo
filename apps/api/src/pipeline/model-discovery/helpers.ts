@@ -1190,7 +1190,7 @@ export function shouldNotifyConfiguredModelCoverage(): boolean {
 }
 
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.ai/png_logo_dark.png";
 
 export function buildDiscordMessage(args: {
 	modelChanges: ProviderChange[];

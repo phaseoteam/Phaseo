@@ -9,8 +9,8 @@ Most integrations work by pointing an OpenAI-compatible or Anthropic-compatible 
 
 | Client style | Base URL |
 | --- | --- |
-| OpenAI-compatible clients | `https://api.phaseo.app/v1` |
-| Anthropic-compatible clients | `https://api.phaseo.app` |
+| OpenAI-compatible clients | `https://api.phaseo.ai/v1` |
+| Anthropic-compatible clients | `https://api.phaseo.ai` |
 
 Use model ids from the [Models endpoint](../../api-reference/endpoint/models.mdx). For new OpenAI-style apps, prefer [Responses](../../api-reference/endpoint/responses.mdx). For older libraries, [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) is usually the safest path.
 
@@ -81,6 +81,6 @@ Use model ids from the [Models endpoint](../../api-reference/endpoint/models.mdx
 
 - Set `PHASEO_API_KEY` once and map it to the environment variable expected by the client.
 - Keep the model id unchanged, for example `openai/gpt-5-nano`.
-- Use `https://api.phaseo.app/v1` for OpenAI-compatible libraries unless the tool explicitly asks for the root host.
-- Use `https://api.phaseo.app` for Anthropic-compatible SDKs and tools that append `/v1/messages`.
+- Use `https://api.phaseo.ai/v1` for OpenAI-compatible libraries unless the tool explicitly asks for the root host.
+- Use `https://api.phaseo.ai` for Anthropic-compatible SDKs and tools that append `/v1/messages`.
 - Test streaming and tool calling in staging before moving agent traffic over.

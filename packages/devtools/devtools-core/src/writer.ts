@@ -11,7 +11,7 @@ export class DevToolsWriter {
   private readonly metadataFile: string;
   private readonly assetsDir: string;
 
-  constructor(directory: string = ".ai-stats-devtools") {
+  constructor(directory: string = ".phaseo-devtools") {
     this.directory = directory;
     this.generationsFile = path.join(directory, "generations.jsonl");
     this.metadataFile = path.join(directory, "metadata.json");

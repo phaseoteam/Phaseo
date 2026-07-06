@@ -159,8 +159,8 @@ export function GenerationsList({ selectedId, onSelect }: GenerationsListProps) 
         <div className="mt-6 rounded-xl border border-border/60 bg-card/80 p-4 text-left text-xs max-w-xs">
           <div className="font-medium mb-2">Quick Start:</div>
           <code className="block text-[10px] bg-muted/60 p-2 rounded">
-            import {"{"} AIStats {"}"} from '@phaseo/sdk'<br/>
-            const client = new AIStats()
+            import {"{"} Phaseo {"}"} from '@phaseo/sdk'<br/>
+            const client = new Phaseo()
           </code>
         </div>
       </div>
@@ -185,7 +185,7 @@ export function GenerationsList({ selectedId, onSelect }: GenerationsListProps) 
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `ai-stats-devtools-${Date.now()}.json`;
+                a.download = `phaseo-devtools-${Date.now()}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
               }}

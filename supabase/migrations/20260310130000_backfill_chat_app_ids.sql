@@ -73,14 +73,14 @@ upserted as (
   )
   select
     t.team_id,
-    'https://phaseo.app/chat',
+    'https://phaseo.ai/chat',
     'Phaseo Chat',
-    'https://phaseo.app/chat',
+    'https://phaseo.ai/chat',
     true,
     now(),
     now(),
     jsonb_build_object(
-      'identityUrl', 'https://phaseo.app/chat',
+      'identityUrl', 'https://phaseo.ai/chat',
       'managed', true
     )
   from teams_using_chat t
@@ -101,7 +101,7 @@ from public.keys k,
      public.api_apps aa
 where gr.key_id = k.id
   and aa.team_id = gr.team_id
-  and aa.app_key = 'https://phaseo.app/chat'
+  and aa.app_key = 'https://phaseo.ai/chat'
   and k.name = '__chat_route_managed_key__'
   and (gr.app_id is null or gr.app_id <> aa.id);
 commit;

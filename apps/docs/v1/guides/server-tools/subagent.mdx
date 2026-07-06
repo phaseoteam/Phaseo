@@ -3,14 +3,14 @@ title: "Subagent Server Tool"
 description: "Let the main model delegate focused work to a worker model."
 ---
 
-Use `ai-stats:subagent` when the main model should hand off a self-contained task to a smaller or faster worker model during the same request.
+Use `phaseo:subagent` when the main model should hand off a self-contained task to a smaller or faster worker model during the same request.
 
 The main model calls the Subagent tool with a task description. Phaseo runs the worker model server-side, returns the worker result as tool context, and lets the main model finish the answer.
 
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -20,7 +20,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     ],
     "tools": [
       {
-        "type": "ai-stats:subagent",
+        "type": "phaseo:subagent",
         "parameters": {
           "model": "openai/gpt-5-nano",
           "instructions": "Return concise findings for the main model. Do not address the end user directly.",
@@ -36,7 +36,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ```json
 {
-  "type": "ai-stats:subagent",
+  "type": "phaseo:subagent",
   "parameters": {
     "model": "openai/gpt-5-nano",
     "instructions": "You are a fast, focused worker. Complete only the delegated task.",

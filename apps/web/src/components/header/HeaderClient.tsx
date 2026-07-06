@@ -125,7 +125,7 @@ export default function HeaderClient({
 		{ href: "/apps", label: "Apps", icon: AppWindow },
 		{ href: "/rankings", label: "Rankings", icon: Trophy },
 	];
-	const docsHref = "https://docs.phaseo.app/v1";
+	const docsHref = "https://docs.phaseo.ai/v1";
 
 	if (variant === "mobile") {
 		if (!isLoggedIn) {

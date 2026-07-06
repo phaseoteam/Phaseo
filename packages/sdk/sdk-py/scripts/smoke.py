@@ -7,7 +7,7 @@ def main() -> None:
     if not api_key:
         raise RuntimeError("Set PHASEO_API_KEY")
 
-    client = Phaseo(api_key=api_key, base_url=os.environ.get("PHASEO_BASE_URL", "https://api.phaseo.app/v1"))
+    client = Phaseo(api_key=api_key, base_url=os.environ.get("PHASEO_BASE_URL", "https://api.phaseo.ai/v1"))
     model = os.environ.get("PHASEO_SMOKE_MODEL", "openai/gpt-5.4-nano")
     input_text = os.environ.get("PHASEO_SMOKE_INPUT", "Hi")
     request = {

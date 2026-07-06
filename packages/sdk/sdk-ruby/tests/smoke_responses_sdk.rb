@@ -4,7 +4,7 @@ require_relative "../lib/index"
 api_key = ENV["PHASEO_API_KEY"]
 raise "PHASEO_API_KEY is required" if api_key.nil? || api_key.empty?
 
-base_url = ENV["PHASEO_BASE_URL"] || "https://api.phaseo.app/v1"
+base_url = ENV["PHASEO_BASE_URL"] || "https://api.phaseo.ai/v1"
 model = ENV["PHASEO_SMOKE_MODEL"] || "openai/gpt-5.4-nano"
 input = ENV["PHASEO_SMOKE_INPUT"] || "Hi"
 max_output_tokens = (ENV["PHASEO_SMOKE_MAX_OUTPUT_TOKENS"] || "32").to_i

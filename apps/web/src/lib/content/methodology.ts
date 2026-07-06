@@ -23,8 +23,8 @@ const LAST_UPDATED = "2026-06-07";
 
 export const METHODOLOGY_ENTRIES: MethodologyEntry[] = [
 	{
-		path: "/how-ai-stats-calculates-model-pricing",
-		slug: "how-ai-stats-calculates-model-pricing",
+		path: "/how-phaseo-calculates-model-pricing",
+		slug: "how-phaseo-calculates-model-pricing",
 		shortTitle: "Model pricing",
 		title: "How Phaseo calculates model pricing",
 		description:
@@ -82,8 +82,8 @@ export const METHODOLOGY_ENTRIES: MethodologyEntry[] = [
 		],
 	},
 	{
-		path: "/how-ai-stats-measures-latency-throughput",
-		slug: "how-ai-stats-measures-latency-throughput",
+		path: "/how-phaseo-measures-latency-throughput",
+		slug: "how-phaseo-measures-latency-throughput",
 		shortTitle: "Latency and throughput",
 		title: "How Phaseo measures latency and throughput",
 		description:
@@ -141,8 +141,8 @@ export const METHODOLOGY_ENTRIES: MethodologyEntry[] = [
 		],
 	},
 	{
-		path: "/how-ai-stats-normalises-ai-benchmarks",
-		slug: "how-ai-stats-normalises-ai-benchmarks",
+		path: "/how-phaseo-normalises-ai-benchmarks",
+		slug: "how-phaseo-normalises-ai-benchmarks",
 		shortTitle: "Benchmark normalisation",
 		title: "How Phaseo normalises AI benchmarks",
 		description:
@@ -200,8 +200,8 @@ export const METHODOLOGY_ENTRIES: MethodologyEntry[] = [
 		],
 	},
 	{
-		path: "/how-ai-stats-tracks-provider-availability",
-		slug: "how-ai-stats-tracks-provider-availability",
+		path: "/how-phaseo-tracks-provider-availability",
+		slug: "how-phaseo-tracks-provider-availability",
 		shortTitle: "Provider availability",
 		title: "How Phaseo tracks provider availability",
 		description:

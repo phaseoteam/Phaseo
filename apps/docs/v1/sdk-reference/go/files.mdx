@@ -12,7 +12,7 @@ import (
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
-client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+client := phaseo.New(apiKey, "https://api.phaseo.ai/v1")
 
 file, err := client.RetrieveFile(context.Background(), "file_123")
 if err != nil {

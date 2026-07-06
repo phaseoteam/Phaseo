@@ -15,7 +15,7 @@ You will:
 
 ## 1. Create an API key
 
-1. Open the [Phaseo Dashboard](https://phaseo.app/gateway/keys).
+1. Open the [Phaseo Dashboard](https://phaseo.ai/gateway/keys).
 2. Create a key under **Gateway -> Keys**.
 3. Copy it once and store it securely.
 
@@ -43,7 +43,7 @@ Requests to `:free` models do not require deposited credits. Paid models still r
 
 <CodeGroup>
 ```bash cURL
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -54,7 +54,7 @@ curl https://api.phaseo.app/v1/responses \
 ```
 
 ```javascript JavaScript
-const response = await fetch("https://api.phaseo.app/v1/responses", {
+const response = await fetch("https://api.phaseo.ai/v1/responses", {
   method: "POST",
   headers: {
     Authorization: "Bearer YOUR_API_KEY",
@@ -133,7 +133,7 @@ import (
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.ai/v1")
   input := map[string]interface{}{
     "role": "user",
     "content": []map[string]interface{}{
@@ -296,7 +296,7 @@ Video generation is async. Create a job first, then poll or subscribe for the re
 
 ```bash
 # Create
-curl https://api.phaseo.app/v1/videos \
+curl https://api.phaseo.ai/v1/videos \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -305,7 +305,7 @@ curl https://api.phaseo.app/v1/videos \
   }'
 
 # Poll status
-curl https://api.phaseo.app/v1/videos/VIDEO_ID \
+curl https://api.phaseo.ai/v1/videos/VIDEO_ID \
   -H "Authorization: Bearer YOUR_API_KEY"
 ```
 
@@ -323,7 +323,7 @@ curl https://api.phaseo.app/v1/videos/VIDEO_ID \
 	<Card title="Examples" icon="code" href="./guides/examples">
 		More complete request samples for common workflows.
 	</Card>
-	<Card title="Support" icon="message-circle" href="https://phaseo.app/help">
+	<Card title="Support" icon="message-circle" href="https://phaseo.ai/help">
 		Get help with debugging, routing, and model behavior.
 	</Card>
 </Columns>

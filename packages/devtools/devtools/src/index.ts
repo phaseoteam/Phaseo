@@ -6,23 +6,23 @@
  *
  * @example Basic usage
  * ```typescript
- * import { AIStats } from '@phaseo/sdk';
- * import { createAIStatsDevtools } from '@ai-stats/devtools';
+ * import { Phaseo } from '@phaseo/sdk';
+ * import { createPhaseoDevtools } from '@phaseo/devtools';
  *
- * const client = new AIStats({
+ * const client = new Phaseo({
  *   apiKey: process.env.PHASEO_API_KEY,
- *   devtools: createAIStatsDevtools()
+ *   devtools: createPhaseoDevtools()
  * });
  * ```
  *
  * @example With custom options
  * ```typescript
- * import { AIStats } from '@phaseo/sdk';
- * import { createAIStatsDevtools } from '@ai-stats/devtools';
+ * import { Phaseo } from '@phaseo/sdk';
+ * import { createPhaseoDevtools } from '@phaseo/devtools';
  *
- * const client = new AIStats({
+ * const client = new Phaseo({
  *   apiKey: process.env.PHASEO_API_KEY,
- *   devtools: createAIStatsDevtools({
+ *   devtools: createPhaseoDevtools({
  *     directory: './my-devtools-data',
  *     flushIntervalMs: 2000,
  *     captureHeaders: true
@@ -34,19 +34,19 @@
  * ```typescript
  * // Enable via environment variable
  * // Set PHASEO_DEVTOOLS=true in your environment
- * const client = new AIStats({
+ * const client = new Phaseo({
  *   apiKey: process.env.PHASEO_API_KEY,
- *   devtools: createAIStatsDevtools()
+ *   devtools: createPhaseoDevtools()
  * });
  * ```
  */
 
-import type { DevToolsConfig } from "@ai-stats/devtools-core";
+import type { DevToolsConfig } from "@phaseo/devtools-core";
 
 /**
  * Creates a devtools configuration that enables telemetry capture for debugging.
  *
- * This function returns a configuration object that can be passed to the AIStats
+ * This function returns a configuration object that can be passed to the Phaseo
  * constructor to enable automatic capture of all API requests and responses.
  * The captured data is stored locally and can be viewed using the devtools viewer.
  *
@@ -54,10 +54,10 @@ import type { DevToolsConfig } from "@ai-stats/devtools-core";
  * can be explicitly controlled via the PHASEO_DEVTOOLS environment variable.
  *
  * @param options - Optional devtools configuration
- * @returns DevToolsConfig object to pass to AIStats constructor
+ * @returns DevToolsConfig object to pass to Phaseo constructor
  */
-export function createAIStatsDevtools(options?: {
-  /** Directory to store devtools data (default: .ai-stats-devtools) */
+export function createPhaseoDevtools(options?: {
+  /** Directory to store devtools data (default: .phaseo-devtools) */
   directory?: string;
   /** How often to flush data to disk in ms (default: 1000) */
   flushIntervalMs?: number;
@@ -91,6 +91,6 @@ export type {
   CostInfo,
   ProviderAttempt,
   Metadata
-} from "@ai-stats/devtools-core";
+} from "@phaseo/devtools-core";
 
-export { DevToolsWriter, entriesToCSV } from "@ai-stats/devtools-core";
+export { DevToolsWriter, entriesToCSV } from "@phaseo/devtools-core";

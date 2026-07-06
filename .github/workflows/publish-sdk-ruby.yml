@@ -24,7 +24,7 @@ jobs:
             exit 1
           fi
 
-      - name: Create GitHub App token (AI Stats Bot)
+      - name: Create GitHub App token (Phaseo Bot)
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
         with:
@@ -106,13 +106,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ruby -e "f='packages/sdk/sdk-ruby/lib/ai_stats_sdk/version.rb'; s=File.read(f); s=s.gsub(/VERSION\\s*=\\s*\"[^\"]+\"/, 'VERSION = \"' + ENV.fetch('VERSION') + '\"'); File.write(f,s)"
+          ruby -e "f='packages/sdk/sdk-ruby/lib/phaseo_sdk/version.rb'; s=File.read(f); s=s.gsub(/VERSION\\s*=\\s*\"[^\"]+\"/, 'VERSION = \"' + ENV.fetch('VERSION') + '\"'); File.write(f,s)"
 
       - name: Build gem
         working-directory: packages/sdk/sdk-ruby
         run: |
           ruby tests/lifecycle_test.rb
-          gem build ai_stats_sdk.gemspec
+          gem build phaseo_sdk.gemspec
 
       - name: Create and push SDK tag
         env:
@@ -149,4 +149,4 @@ jobs:
           :rubygems_api_key: ${RUBYGEMS_API_KEY}
           EOF
           chmod 0600 ~/.gem/credentials
-          gem push packages/sdk/sdk-ruby/ai_stats_sdk-${{ steps.version.outputs.value }}.gem
+          gem push packages/sdk/sdk-ruby/phaseo_sdk-${{ steps.version.outputs.value }}.gem

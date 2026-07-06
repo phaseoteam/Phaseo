@@ -104,7 +104,7 @@ async function main() {
   // Start API server
   log(colors.blue, 'SERVER', `Starting API server on port ${API_PORT}...`);
 
-  const serverArgs = ['exec', 'tsx', 'watch', 'src/server/index.ts', '--', '--start', '--port', String(API_PORT), '--dir', '../../../.ai-stats-devtools'];
+  const serverArgs = ['exec', 'tsx', 'watch', 'src/server/index.ts', '--', '--start', '--port', String(API_PORT), '--dir', '../../../.phaseo-devtools'];
   const serverProcess = spawn('pnpm', serverArgs, {
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: true,

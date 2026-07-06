@@ -9,7 +9,7 @@
   <packaging>jar</packaging>
   <name>Phaseo Java SDK</name>
   <description>Official Phaseo Gateway SDK for Java.</description>
-  <url>https://phaseo.app</url>
+  <url>https://phaseo.ai</url>
 
   <licenses>
     <license>
@@ -24,7 +24,7 @@
       <name>Phaseo</name>
       <email>danielbutler500@gmail.com</email>
       <organization>Phaseo</organization>
-      <organizationUrl>https://phaseo.app</organizationUrl>
+      <organizationUrl>https://phaseo.ai</organizationUrl>
     </developer>
   </developers>
 

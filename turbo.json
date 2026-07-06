@@ -6,7 +6,7 @@
 			"dependsOn": ["^build"],
 			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"]
 		},
-		"@ai-stats/web#build": {
+		"@phaseo/web#build": {
 			"dependsOn": ["^build"],
 			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"],
 			"inputs": [

@@ -14,7 +14,7 @@ describe("internal model discord notifier", () => {
 				{
 					modelId: "anthropic/claude-mythos-preview",
 					modelName: "Claude Mythos Preview",
-					modelUrl: "https://phaseo.app/models/anthropic/claude-mythos-preview",
+					modelUrl: "https://phaseo.ai/models/anthropic/claude-mythos-preview",
 					creatorName: "Anthropic",
 					creatorColor: "#cc785c",
 				},
@@ -32,20 +32,20 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds).toHaveLength(1);
 		expect(payload.embeds[0].title).toBe("Anthropic: Claude Mythos Preview");
 		expect(payload.embeds[0].url).toBe(
-			"https://phaseo.app/models/anthropic/claude-mythos-preview"
+			"https://phaseo.ai/models/anthropic/claude-mythos-preview"
 		);
 		expect(payload.embeds[0].description).toContain("Model ID: `anthropic/claude-mythos-preview`");
-		expect(payload.embeds[0].description).toContain("[View Model](https://phaseo.app/models/anthropic/claude-mythos-preview)");
+		expect(payload.embeds[0].description).toContain("[View Model](https://phaseo.ai/models/anthropic/claude-mythos-preview)");
 		expect(payload.embeds[0].footer.text).toBe("Phaseo | 10 Apr 2026");
 		expect(payload.embeds[0].color).toBe(0xcc785c);
-		expect(payload.avatar_url).toBe("https://phaseo.app/png_logo_light.png");
+		expect(payload.avatar_url).toBe("https://phaseo.ai/png_logo_light.png");
 	});
 
 	it("builds multi-model payload as model cards with one overflow card", () => {
 		const models = Array.from({ length: 15 }, (_, index) => ({
 			modelId: `openai/model-${index + 1}`,
 			modelName: `Model ${index + 1}`,
-			modelUrl: `https://phaseo.app/models/openai/model-${index + 1}`,
+			modelUrl: `https://phaseo.ai/models/openai/model-${index + 1}`,
 			creatorName: "OpenAI",
 		}));
 
@@ -58,7 +58,7 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds[0].title).toBe("OpenAI: Model 1");
 		expect(payload.embeds[1].title).toBe("OpenAI: Model 2");
 		expect(payload.embeds[2].title).toBe("+13 more models");
-		expect(payload.embeds[2].description).toContain("[View Models](https://phaseo.app/models)");
+		expect(payload.embeds[2].description).toContain("[View Models](https://phaseo.ai/models)");
 	});
 
 	it("filters duplicate and previously announced models", () => {
@@ -66,17 +66,17 @@ describe("internal model discord notifier", () => {
 			{
 				modelId: "voyage/voyage-3",
 				modelName: "Voyage 3",
-				modelUrl: "https://phaseo.app/models/voyage/voyage-3",
+				modelUrl: "https://phaseo.ai/models/voyage/voyage-3",
 			},
 			{
 				modelId: "voyage/voyage-3",
 				modelName: "Voyage 3 Duplicate",
-				modelUrl: "https://phaseo.app/models/voyage/voyage-3",
+				modelUrl: "https://phaseo.ai/models/voyage/voyage-3",
 			},
 			{
 				modelId: "voyage/voyage-4",
 				modelName: "Voyage 4",
-				modelUrl: "https://phaseo.app/models/voyage/voyage-4",
+				modelUrl: "https://phaseo.ai/models/voyage/voyage-4",
 			},
 		];
 		const announced = {
@@ -101,7 +101,7 @@ describe("internal model discord notifier", () => {
 				{
 					modelId: "voyage/voyage-4",
 					modelName: "Voyage 4",
-					modelUrl: "https://phaseo.app/models/voyage/voyage-4",
+					modelUrl: "https://phaseo.ai/models/voyage/voyage-4",
 				},
 			],
 			null
@@ -127,7 +127,7 @@ describe("internal model discord notifier", () => {
 			{
 				modelId: "voyage/voyage-3",
 				modelName: "Voyage 3",
-				modelUrl: "https://phaseo.app/models/voyage/voyage-3",
+				modelUrl: "https://phaseo.ai/models/voyage/voyage-3",
 				creatorName: "Voyage",
 				creatorColor: "#1A2B3C",
 			},
@@ -165,7 +165,7 @@ describe("internal model discord notifier", () => {
 				{
 					modelId: "voyage/voyage-4",
 					modelName: "Voyage 4",
-					modelUrl: "https://phaseo.app/models/voyage/voyage-4",
+					modelUrl: "https://phaseo.ai/models/voyage/voyage-4",
 				},
 			],
 			null

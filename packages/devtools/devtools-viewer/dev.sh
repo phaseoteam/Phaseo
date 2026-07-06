@@ -15,8 +15,8 @@ if [ ! -d "node_modules" ]; then
     echo ""
 fi
 
-# Check if .ai-stats-devtools directory exists
-DEVTOOLS_DIR="../../../.ai-stats-devtools"
+# Check if .phaseo-devtools directory exists
+DEVTOOLS_DIR="../../../.phaseo-devtools"
 if [ ! -d "$DEVTOOLS_DIR" ]; then
     echo "⚠️  No devtools data directory found at $DEVTOOLS_DIR"
     echo "📁 Creating sample directory..."

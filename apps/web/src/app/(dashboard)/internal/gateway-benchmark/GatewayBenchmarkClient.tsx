@@ -40,7 +40,7 @@ type CompareResponse = {
 };
 
 type LiveTarget =
-	| "ai-stats"
+	| "phaseo"
 	| "openrouter"
 	| "llmgateway"
 	| "vercel-ai-gateway";
@@ -93,7 +93,7 @@ function getSummary(data: CompareResponse | null, target: CompareSummary["target
 
 function targetLabel(target: CompareSummary["target"]): string {
 	switch (target) {
-		case "ai-stats":
+		case "phaseo":
 			return "Phaseo Gateway";
 		case "openrouter":
 			return "OpenRouter";
@@ -372,7 +372,7 @@ export default function GatewayBenchmarkClient() {
 	const [runs, setRuns] = useState("5");
 	const [maxCompletionTokens, setMaxCompletionTokens] = useState("64");
 	const [endpoint, setEndpoint] = useState<"chat_completions" | "responses">("chat_completions");
-	const [gatewayBaseUrl, setGatewayBaseUrl] = useState("https://api.phaseo.app/v1");
+	const [gatewayBaseUrl, setGatewayBaseUrl] = useState("https://api.phaseo.ai/v1");
 	const [openRouterBaseUrl, setOpenRouterBaseUrl] = useState("https://openrouter.ai/api/v1");
 	const [llmGatewayBaseUrl, setLlmGatewayBaseUrl] = useState("https://api.llmgateway.io/v1");
 	const [vercelAiGatewayBaseUrl, setVercelAiGatewayBaseUrl] = useState("https://ai-gateway.vercel.sh/v1");
@@ -382,13 +382,13 @@ export default function GatewayBenchmarkClient() {
 	const [isStreaming, setIsStreaming] = useState(false);
 	const [isSummarizing, setIsSummarizing] = useState(false);
 	const [livePanes, setLivePanes] = useState<Record<LiveTarget, LivePaneState>>({
-		"ai-stats": { ...EMPTY_LIVE_PANE },
+		"phaseo": { ...EMPTY_LIVE_PANE },
 		openrouter: { ...EMPTY_LIVE_PANE },
 		llmgateway: { ...EMPTY_LIVE_PANE },
 		"vercel-ai-gateway": { ...EMPTY_LIVE_PANE },
 	});
 
-	const phaseoSummary = getSummary(data, "ai-stats");
+	const phaseoSummary = getSummary(data, "phaseo");
 	const openRouterSummary = getSummary(data, "openrouter");
 	const llmGatewaySummary = getSummary(data, "llmgateway");
 	const vercelAiGatewaySummary = getSummary(data, "vercel-ai-gateway");
@@ -436,7 +436,7 @@ export default function GatewayBenchmarkClient() {
 
 	const runLiveCompare = async () => {
 		setLivePanes({
-			"ai-stats": { ...EMPTY_LIVE_PANE },
+			"phaseo": { ...EMPTY_LIVE_PANE },
 			openrouter: { ...EMPTY_LIVE_PANE },
 			llmgateway: { ...EMPTY_LIVE_PANE },
 			"vercel-ai-gateway": { ...EMPTY_LIVE_PANE },
@@ -637,7 +637,7 @@ export default function GatewayBenchmarkClient() {
 						<LiveStreamPane
 							label="Phaseo Gateway"
 							baseUrl={`${gatewayBaseUrl} ${endpoint === "responses" ? "/responses" : "/chat/completions"}`}
-							state={livePanes["ai-stats"]}
+							state={livePanes["phaseo"]}
 						/>
 					<LiveStreamPane
 						label="OpenRouter"
@@ -776,7 +776,7 @@ export default function GatewayBenchmarkClient() {
 
 					<div className="grid gap-4">
 						{Array.from({ length: data.config.runs }, (_, index) => index + 1).map((run) => {
-							const phaseo = data.results.find((result) => result.target === "ai-stats" && result.run === run);
+							const phaseo = data.results.find((result) => result.target === "phaseo" && result.run === run);
 							const openrouter = data.results.find((result) => result.target === "openrouter" && result.run === run);
 							const llmgateway = data.results.find((result) => result.target === "llmgateway" && result.run === run);
 							const vercelAiGateway = data.results.find(
@@ -809,7 +809,7 @@ export default function GatewayBenchmarkClient() {
 														<div>Total: {formatMs(result.totalMs)}</div>
 													</div>
 													<Timeline result={result} maxValue={maxValue} />
-													{result.target === "ai-stats" ? (
+													{result.target === "phaseo" ? (
 														<GatewayStageTable breakdown={result.gatewayStageBreakdown} />
 													) : null}
 													<FramePreview result={result} />

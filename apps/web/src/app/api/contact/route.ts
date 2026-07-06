@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 const MAX_ATTACHMENTS = 3;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DEFAULT_SUPPORT_INBOX_EMAIL = "support@phaseo.com";
+const DEFAULT_SUPPORT_INBOX_EMAIL = "support@phaseo.ai";
 
 const supportTicketSchema = z.object({
 	name: z.string().trim().min(2, "Enter your name"),
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
 	const fromEmail =
 		getRequiredEnv("RESEND_SUPPORT_FROM_EMAIL") ??
 		getRequiredEnv("RESEND_FROM_EMAIL") ??
-		"Phaseo Support <noreply@phaseo.app>";
+		"Phaseo Support <noreply@phaseo.ai>";
 
 	if (!resendApiKey) {
 		return NextResponse.json(

@@ -41,7 +41,7 @@ insert into public.oauth_clients (
   beta_status,
   status
 ) values (
-  'aistats_cli',
+  'phaseo_cli',
   'Phaseo CLI',
   'Official first-party Phaseo command line interface.',
   'public',

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import AIStats from "../packages/sdk/sdk-ts/dist/index.js";
+import Phaseo from "../packages/sdk/sdk-ts/dist/index.js";
 
 type CliOptions = {
 	models: string[];
@@ -14,7 +14,7 @@ type CliOptions = {
 type LoadedEnv = Record<string, string>;
 
 const DEFAULT_MODELS = ["poolside/laguna-xs.2:free", "poolside/laguna-m.1:free"];
-const DEFAULT_BASE_URL = "https://api.phaseo.app/v1";
+const DEFAULT_BASE_URL = "https://api.phaseo.ai/v1";
 const DEFAULT_COUNT = 5;
 const DEFAULT_MAX_OUTPUT_TOKENS = 160;
 const DEFAULT_DELAY_MS = 750;
@@ -45,7 +45,7 @@ async function main() {
 			DEFAULT_BASE_URL,
 	);
 
-	const client = new AIStats({
+	const client = new Phaseo({
 		apiKey,
 		baseUrl,
 	});

@@ -110,7 +110,7 @@ export function extractClipboardFiles(clipboardData: DataTransfer | null) {
 
 export function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
-	return org || "ai-stats";
+	return org || "phaseo";
 }
 
 export function formatModelLabel(modelId: string) {

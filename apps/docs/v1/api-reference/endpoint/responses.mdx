@@ -8,16 +8,16 @@ openapi: "POST /responses"
 `/v1/responses` supports regular function tools and these gateway-managed server tools:
 
 - `gateway:datetime`
-- `ai-stats:web_search`
-- `ai-stats:web_fetch`
-- `ai-stats:advisor`
-- `ai-stats:image_generation`
-- `ai-stats:apply_patch`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
 
 ### Datetime example
 
 ```bash
-curl https://api.phaseo.app/v1/responses \
+curl https://api.phaseo.ai/v1/responses \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -39,11 +39,11 @@ curl https://api.phaseo.app/v1/responses \
 When a server tool is used, usage includes the matching `usage.server_tool_use.*` counters.
 
 - `gateway:datetime` -> `datetime_requests`
-- `ai-stats:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `ai-stats:web_fetch` -> `web_fetch_requests`
-- `ai-stats:advisor` -> `advisor_requests`
-- `ai-stats:image_generation` -> `image_generation_requests`
-- `ai-stats:apply_patch` -> `apply_patch_requests`
+- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
+- `phaseo:web_fetch` -> `web_fetch_requests`
+- `phaseo:advisor` -> `advisor_requests`
+- `phaseo:image_generation` -> `image_generation_requests`
+- `phaseo:apply_patch` -> `apply_patch_requests`
 
 ## Streaming note
 

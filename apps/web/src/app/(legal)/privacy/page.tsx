@@ -15,7 +15,7 @@ export default async function PrivacyPage() {
 		<main className="container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
 			<header className="space-y-3">
 				<p className="text-xs text-muted-foreground/80">
-					Last updated: 15 November 2025
+					Last updated: 7 July 2026
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">
 					Privacy Policy
@@ -524,10 +524,10 @@ export default async function PrivacyPage() {
 					account (settings, profile and API keys), or by contacting
 					us at{" "}
 					<a
-						href="mailto:privacy@phaseo.app"
+						href="mailto:privacy@phaseo.ai"
 						className="text-primary underline"
 					>
-						privacy@phaseo.app
+						privacy@phaseo.ai
 					</a>
 					. We may ask you to verify your identity before responding
 					to a request.
@@ -577,10 +577,10 @@ export default async function PrivacyPage() {
 					suspect compromise. If you believe your account has been
 					compromised, please contact us immediately at{" "}
 					<a
-						href="mailto:support@phaseo.app"
+						href="mailto:support@phaseo.ai"
 						className="text-primary underline"
 					>
-						support@phaseo.app
+						support@phaseo.ai
 					</a>
 					.
 				</p>
@@ -638,19 +638,19 @@ export default async function PrivacyPage() {
 					<li>
 						Email:{" "}
 						<a
-							href="mailto:privacy@phaseo.app"
+							href="mailto:privacy@phaseo.ai"
 							className="text-primary underline"
 						>
-							privacy@phaseo.app
+							privacy@phaseo.ai
 						</a>
 					</li>
 					<li>
 						Support:{" "}
 						<a
-							href="mailto:support@phaseo.app"
+							href="mailto:support@phaseo.ai"
 							className="text-primary underline"
 						>
-							support@phaseo.app
+							support@phaseo.ai
 						</a>
 					</li>
 				</ul>

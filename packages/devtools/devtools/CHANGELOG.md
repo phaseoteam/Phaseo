@@ -2,7 +2,7 @@
 
 ## 0.2.1
 
-All notable changes to `@ai-stats/devtools` will be documented in this file.
+All notable changes to `@phaseo/devtools` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -11,21 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial release of `@ai-stats/devtools` package
-- `createAIStatsDevtools()` function for SDK integration
+- Initial release of `@phaseo/devtools` package
+- `createPhaseoDevtools()` function for SDK integration
 - OpenRouter-inspired hook pattern for telemetry capture
-- Standalone package installable as `@ai-stats/devtools`
+- Standalone package installable as `@phaseo/devtools`
 - Cross-language design for TypeScript, Python, Go, C#, Ruby, PHP, Rust
 - Comprehensive documentation:
   - README with installation and usage
   - GETTING_STARTED guide with step-by-step instructions
   - CROSS_LANGUAGE guide showing patterns for all languages
-- Built on `@ai-stats/devtools-core` for data capture
+- Built on `@phaseo/devtools-core` for data capture
 - Compatible with `@phaseo/devtools-viewer` for visualization
 
 ### Features
 
-- **Simple Integration**: Enable with one line: `devtools: createAIStatsDevtools()`
+- **Simple Integration**: Enable with one line: `devtools: createPhaseoDevtools()`
 - **Flexible Configuration**: Customize directory, flush interval, headers, assets
 - **Environment Control**: Use `PHASEO_DEVTOOLS` and `PHASEO_DEVTOOLS_DIR` env vars
 - **Zero Performance Impact**: Async capture, < 5ms overhead per request
@@ -40,20 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 
-None - this is a new package. The old pattern (`devtools: { enabled: true }`) still works but the new `createAIStatsDevtools()` pattern is recommended.
+None - this is a new package. The old pattern (`devtools: { enabled: true }`) still works but the new `createPhaseoDevtools()` pattern is recommended.
 
 ### Migration from Old Pattern
 
 **Before:**
 
 ```typescript
-import { AIStats } from "@phaseo/sdk";
+import { Phaseo } from "@phaseo/sdk";
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
   devtools: {
     enabled: true,
-    directory: ".ai-stats-devtools",
+    directory: ".phaseo-devtools",
     flushIntervalMs: 1000,
   },
 });
@@ -62,12 +62,12 @@ const client = new AIStats({
 **After:**
 
 ```typescript
-import { AIStats, createAIStatsDevtools } from "@phaseo/sdk";
+import { Phaseo, createPhaseoDevtools } from "@phaseo/sdk";
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools({
-    directory: ".ai-stats-devtools",
+  devtools: createPhaseoDevtools({
+    directory: ".phaseo-devtools",
     flushIntervalMs: 1000,
   }),
 });
@@ -76,12 +76,12 @@ const client = new AIStats({
 Or using the standalone package:
 
 ```typescript
-import { AIStats } from "@phaseo/sdk";
-import { createAIStatsDevtools } from "@ai-stats/devtools";
+import { Phaseo } from "@phaseo/sdk";
+import { createPhaseoDevtools } from "@phaseo/devtools";
 
-const client = new AIStats({
+const client = new Phaseo({
   apiKey: process.env.PHASEO_API_KEY,
-  devtools: createAIStatsDevtools(),
+  devtools: createPhaseoDevtools(),
 });
 ```
 
@@ -89,12 +89,12 @@ const client = new AIStats({
 
 ### Planned
 
-- Python implementation (`ai-stats[devtools]`)
-- Go implementation (`github.com/ai-stats/ai-stats-go/devtools`)
-- C# implementation (`AIStats.Devtools`)
-- Ruby implementation (`ai_stats-devtools`)
-- PHP implementation (`ai-stats/devtools`)
-- Rust implementation (`ai-stats-devtools`)
+- Python implementation (`phaseo[devtools]`)
+- Go implementation (`github.com/phaseo/phaseo-go/devtools`)
+- C# implementation (`Phaseo.Devtools`)
+- Ruby implementation (`phaseo-devtools`)
+- PHP implementation (`phaseo/devtools`)
+- Rust implementation (`phaseo-devtools`)
 
 ### Ideas
 

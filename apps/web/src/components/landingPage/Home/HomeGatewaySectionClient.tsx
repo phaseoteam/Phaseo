@@ -33,8 +33,8 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const BASE_URL = "https://api.phaseo.app/v1";
-const DOCS_HREF = "https://docs.phaseo.app/v1/quickstart";
+const BASE_URL = "https://api.phaseo.ai/v1";
+const DOCS_HREF = "https://docs.phaseo.ai/v1/quickstart";
 
 const FALLBACK_MODEL_OPTIONS = [
 	{

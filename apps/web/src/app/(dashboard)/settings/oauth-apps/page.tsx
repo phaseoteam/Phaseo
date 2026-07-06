@@ -129,7 +129,7 @@ async function OAuthAppsContent() {
 				actions={
 					<>
 						<Link
-							href="https://docs.phaseo.app/v1/guides/oauth-quickstart"
+							href="https://docs.phaseo.ai/v1/guides/oauth-quickstart"
 							target="_blank"
 							rel="noopener noreferrer"
 						>

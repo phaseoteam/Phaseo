@@ -53,7 +53,7 @@ describe("OAuth service helpers", () => {
 
 	it("allows first-party CLI loopback redirects for PKCE login", () => {
 		const cliClient = {
-			id: "aistats_cli",
+			id: "phaseo_cli",
 			redirect_uris: [],
 		} as any;
 		const thirdPartyClient = {

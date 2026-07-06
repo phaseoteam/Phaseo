@@ -39,7 +39,7 @@ const nextConfig = {
           {
             key: "Link",
             value:
-              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://docs.phaseo.app/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
+              '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", <https://docs.phaseo.ai/v1/api-reference/introduction>; rel="service-doc"; type="text/html", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"',
           },
           {
             key: "Vary",
@@ -59,6 +59,26 @@ const nextConfig = {
       {
         source: "/announcements/:slug*",
         destination: "/blog/:slug*",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-calculates-model-pricing",
+        destination: "/how-phaseo-calculates-model-pricing",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-measures-latency-throughput",
+        destination: "/how-phaseo-measures-latency-throughput",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-normalises-ai-benchmarks",
+        destination: "/how-phaseo-normalises-ai-benchmarks",
+        permanent: true,
+      },
+      {
+        source: "/how-ai-stats-tracks-provider-availability",
+        destination: "/how-phaseo-tracks-provider-availability",
         permanent: true,
       },
     ];

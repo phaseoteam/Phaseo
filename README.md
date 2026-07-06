@@ -4,9 +4,9 @@
   <p><strong>Unified AI gateway and model intelligence for teams building with AI APIs.</strong></p>
 
   <p>
-    <a href="https://phaseo.app">Website</a>
+    <a href="https://phaseo.ai">Website</a>
     &middot;
-    <a href="https://docs.phaseo.app/v1">Docs</a>
+    <a href="https://docs.phaseo.ai/v1">Docs</a>
     &middot;
     <a href="https://github.com/phaseoteam/Phaseo/issues">Issues</a>
     &middot;
@@ -21,9 +21,9 @@
 </div>
 
 <p align="center">
-  <code>pnpm add @ai-stats/sdk</code>
+  <code>pnpm add @phaseo/sdk</code>
   &nbsp;&nbsp;|&nbsp;&nbsp;
-  <code>pip install ai-stats-py-sdk</code>
+  <code>pip install phaseo</code>
 </p>
 
 Phaseo combines a production AI gateway with the model, provider, pricing, benchmark, and reliability data teams need when choosing what to run in production.
@@ -43,10 +43,10 @@ Phaseo keeps those decisions in one place: the gateway handles requests, while t
 
 ## Quickstart
 
-Create an API key at `https://phaseo.app`, then call the gateway:
+Create an API key at `https://phaseo.ai`, then call the gateway:
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -62,7 +62,7 @@ import OpenAI from "openai";
 
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  baseURL: "https://api.phaseo.ai/v1",
 });
 
 const response = await client.chat.completions.create({
@@ -93,15 +93,15 @@ console.log(response.choices[0]?.message?.content);
 | Model and provider catalog | Available | Model metadata, pricing, providers, capabilities, and benchmark context. |
 | Web dashboard | Available | Usage, keys, routing, apps, settings, model pages, and internal tools. |
 | Docs | Available | Guides, API reference, SDK examples, cookbook, and changelog. |
-| SDKs | In progress | Current package names remain `@ai-stats/*` / `ai-stats-*` until the Phaseo package migration is completed. |
+| SDKs | Available | Public SDK package names, examples, and docs now use Phaseo names across TypeScript, Python, Go, C#, PHP, Ruby, Java, C++, Rust, and Agent SDKs. |
 
 ## Local Development
 
 ```bash
 pnpm install
-pnpm --filter @ai-stats/web dev
-pnpm --filter @ai-stats/gateway-api dev
-pnpm --filter @ai-stats/docs dev
+pnpm --filter @phaseo/web dev
+pnpm --filter @phaseo/gateway-api dev
+pnpm --filter @phaseo/docs dev
 ```
 
 Common checks:
@@ -117,16 +117,16 @@ pnpm docs:build
 
 ## Resources
 
-- Website: https://phaseo.app
-- Docs: https://docs.phaseo.app/v1
-- API reference: https://docs.phaseo.app/v1/api-reference/introduction
+- Website: https://phaseo.ai
+- Docs: https://docs.phaseo.ai/v1
+- API reference: https://docs.phaseo.ai/v1/api-reference/introduction
 - Issues: https://github.com/phaseoteam/Phaseo/issues
 - Good first issues: https://github.com/phaseoteam/Phaseo/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
 - Discord: https://discord.gg/aQyywCvgZ5
 
-## Package Migration Note
+## Rebrand Compatibility Note
 
-The product is now Phaseo, but package names are being migrated separately. Until the Phaseo package names are reserved and published, install commands may still use `@ai-stats/*`, `ai-stats-*`, and related legacy package identifiers. Existing API keys and current package names are expected to keep working during the migration.
+Phaseo package names and documentation are now the primary public surface. New API keys use the `phaseo_v1_sk_...` prefix. Existing `aistats_...` keys remain accepted during the compatibility window and are scheduled to stop working on 1 January 2027.
 
 ## Contributing
 
@@ -134,7 +134,7 @@ Contributions are welcome across the gateway, web app, docs, SDKs, examples, and
 
 ## Security
 
-Report vulnerabilities privately through GitHub Security Advisories or `security@phaseo.app`.
+Report vulnerabilities privately through GitHub Security Advisories or `security@phaseo.ai`.
 
 ## License
 

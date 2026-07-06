@@ -10,18 +10,18 @@ import { getBindings } from "@/runtime/env";
 
 export const DATETIME_SERVER_TOOL_TYPE = "gateway:datetime";
 export const DATETIME_SERVER_TOOL_FUNCTION_NAME = "gateway_datetime";
-export const WEB_SEARCH_SERVER_TOOL_TYPE = "ai-stats:web_search";
+export const WEB_SEARCH_SERVER_TOOL_TYPE = "phaseo:web_search";
 export const GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE = "gateway:web_search";
-export const WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_web_search";
-export const WEB_FETCH_SERVER_TOOL_TYPE = "ai-stats:web_fetch";
+export const WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME = "phaseo_web_search";
+export const WEB_FETCH_SERVER_TOOL_TYPE = "phaseo:web_fetch";
 export const GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE = "gateway:web_fetch";
-export const WEB_FETCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_web_fetch";
-export const ADVISOR_SERVER_TOOL_TYPE = "ai-stats:advisor";
-export const ADVISOR_SERVER_TOOL_FUNCTION_NAME = "ai_stats_advisor";
-export const IMAGE_GENERATION_SERVER_TOOL_TYPE = "ai-stats:image_generation";
-export const IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME = "ai_stats_image_generation";
-export const APPLY_PATCH_SERVER_TOOL_TYPE = "ai-stats:apply_patch";
-export const APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME = "ai_stats_apply_patch";
+export const WEB_FETCH_SERVER_TOOL_FUNCTION_NAME = "phaseo_web_fetch";
+export const ADVISOR_SERVER_TOOL_TYPE = "phaseo:advisor";
+export const ADVISOR_SERVER_TOOL_FUNCTION_NAME = "phaseo_advisor";
+export const IMAGE_GENERATION_SERVER_TOOL_TYPE = "phaseo:image_generation";
+export const IMAGE_GENERATION_SERVER_TOOL_FUNCTION_NAME = "phaseo_image_generation";
+export const APPLY_PATCH_SERVER_TOOL_TYPE = "phaseo:apply_patch";
+export const APPLY_PATCH_SERVER_TOOL_FUNCTION_NAME = "phaseo_apply_patch";
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_WEB_SEARCH_MAX_RESULTS = 5;
 const MAX_WEB_SEARCH_RESULTS = 25;
@@ -1158,7 +1158,7 @@ export function prepareServerToolsForTextRequest(
 			if (protocol !== "openai.responses") {
 				return {
 					ok: false,
-					message: "ai-stats:apply_patch is only supported on the Responses API.",
+					message: "phaseo:apply_patch is only supported on the Responses API.",
 				};
 			}
 			applyPatchEnabled = true;
@@ -2333,7 +2333,7 @@ async function executeWebFetchToolCall(
 				method: "GET",
 				headers: {
 					Accept: "text/html,text/plain,application/json;q=0.9,*/*;q=0.8",
-					"User-Agent": "Phaseo-Gateway/1.0 (+https://phaseo.app)",
+					"User-Agent": "Phaseo-Gateway/1.0 (+https://phaseo.ai)",
 				},
 				redirect: "manual",
 			});

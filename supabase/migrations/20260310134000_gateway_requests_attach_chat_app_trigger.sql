@@ -12,7 +12,7 @@ set search_path = public
 as $$
 declare
   v_key_name text;
-  v_chat_app_key constant text := 'https://phaseo.app/chat';
+  v_chat_app_key constant text := 'https://phaseo.ai/chat';
   v_app_id uuid;
 begin
   if new.app_id is not null then
@@ -82,6 +82,6 @@ from public.keys k,
 where gr.key_id = k.id
   and k.name = '__chat_route_managed_key__'
   and aa.team_id = gr.team_id
-  and aa.app_key = 'https://phaseo.app/chat'
+  and aa.app_key = 'https://phaseo.ai/chat'
   and (gr.app_id is null or gr.app_id <> aa.id);
 commit;

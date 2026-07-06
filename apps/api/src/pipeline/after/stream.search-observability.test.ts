@@ -308,13 +308,13 @@ describe("handleStreamResponse search observability", () => {
 					tools: [
 						{
 							type: "function",
-							function: { name: "ai_stats_web_search" },
+							function: { name: "phaseo_web_search" },
 						},
 					],
 				},
 				rawBody: {
 					model: "openai/gpt-5.4",
-					tools: [{ type: "ai-stats:web_search" }],
+					tools: [{ type: "phaseo:web_search" }],
 				},
 				searchObservability: {
 					usedNativeWebSearch: false,

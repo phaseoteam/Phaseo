@@ -68,7 +68,7 @@ import {
 } from "@/components/(data)/model/pricing/providerGatewayStatus";
 
 const PROVIDER_STATUSES_DOCS_HREF =
-	"https://docs.phaseo.app/v1/guides/provider-statuses";
+	"https://docs.phaseo.ai/v1/guides/provider-statuses";
 
 function hasObservedValue(value: number | null | undefined): value is number {
 	return typeof value === "number" && Number.isFinite(value) && value > 0;

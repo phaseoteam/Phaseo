@@ -59,7 +59,7 @@ const lookupDocs = defineTool({
   async execute(input: { slug: string }) {
     return {
       slug: input.slug,
-      url: `https://phaseo.app/v1/${input.slug}`,
+      url: `https://docs.phaseo.ai/v1/${input.slug}`,
     };
   },
 });

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 
 const releaseMessage = "Introducing Phaseo Gateway";
-const docsLink = "https://docs.phaseo.app/v1";
+const docsLink = "https://docs.phaseo.ai/v1";
 const showHeaderAnnouncement = false;
 
 export default function Header() {

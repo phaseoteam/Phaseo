@@ -15,7 +15,7 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		VIDEO_DOWNLOAD_SIGNING_SECRET: "test-video-download-secret",
 		KEY_PEPPER: "test-key-pepper",
-		GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.app",
+		GATEWAY_PUBLIC_BASE_URL: "https://api.phaseo.ai",
 		ASYNC_WEBHOOK_DELIVERY_TIMEOUT_MS: "1000",
 	}),
 }));
@@ -80,7 +80,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			kind: "batch",
 			internalId: "batch_123",
 			phase: "completed",
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(ok).toBe(false);
@@ -173,7 +173,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			kind: "video",
 			internalId: "video_timeout_123",
 			phase: "completed",
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 		await abortListenerAttachedPromise;
 		await vi.advanceTimersByTimeAsync(1_000);
@@ -237,7 +237,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			kind: "video",
 			internalId: "video_123",
 			phase: "completed",
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(ok).toBe(true);
@@ -309,7 +309,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			internalId: "video_progress_123",
 			phase: "progress",
 			progress: 52,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 		const second = await dispatchAsyncWebhookEvent({
 			workspaceId: "ws_123",
@@ -317,7 +317,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			internalId: "video_progress_123",
 			phase: "progress",
 			progress: 54,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(first).toBe(true);
@@ -417,7 +417,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			phase: "progress",
 			progress: 54,
 			force: true,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(ok).toBe(true);
@@ -516,7 +516,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			internalId: "batch_123",
 			phase: "completed",
 			force: true,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(ok).toBe(true);
@@ -617,7 +617,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			internalId: "batch_final_retry",
 			phase: "completed",
 			force: true,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(ok).toBe(false);
@@ -739,7 +739,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		const summary = await runAsyncWebhookRetriesJob({
 			limitPerKind: 1,
 			maxDeliveries: 1,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -850,7 +850,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		const summary = await runAsyncWebhookRetriesJob({
 			limitPerKind: 1,
 			maxDeliveries: 1,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(globalThis.fetch).not.toHaveBeenCalled();
@@ -986,7 +986,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			limitPerKind: 1,
 			maxDeliveries: 1,
 			maxPagesPerKind: 2,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(listAsyncOperationsMock).toHaveBeenCalledWith({
@@ -1063,7 +1063,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		const summary = await runAsyncWebhookRetriesJob({
 			limitPerKind: 10,
 			maxDeliveries: 1,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			now: "2026-05-03T10:04:59.000Z",
 		});
 
@@ -1210,7 +1210,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		const summary = await runAsyncWebhookRetriesJob({
 			limitPerKind: 10,
 			maxDeliveries: 1,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(summary).toMatchObject({
@@ -1298,7 +1298,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 		const summary = await runAsyncWebhookRetriesJob({
 			limitPerKind: 10,
 			maxDeliveries: 1,
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 			now: "2026-05-03T10:04:00.000Z",
 		});
 
@@ -1368,7 +1368,7 @@ describe("dispatchAsyncWebhookEvent retries", () => {
 			kind: "video",
 			internalId: "video_permanent_failure",
 			phase: "completed",
-			baseUrl: "https://api.phaseo.app",
+			baseUrl: "https://api.phaseo.ai",
 		});
 
 		expect(ok).toBe(false);

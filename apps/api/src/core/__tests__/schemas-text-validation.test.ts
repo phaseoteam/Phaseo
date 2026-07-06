@@ -40,13 +40,13 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "find recent AI news" }],
 			tools: [{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: {
 					max_results: 5,
 					include_highlights: true,
 				},
 			}],
-			tool_choice: "ai-stats:web_search",
+			tool_choice: "phaseo:web_search",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -57,14 +57,14 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "find recent AI news" }],
 			tools: [{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: {
 					engine: "native",
 					max_characters: 2048,
 					user_location: { type: "approximate", country: "US" },
 				},
 			}],
-			tool_choice: "ai-stats:web_search",
+			tool_choice: "phaseo:web_search",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -75,12 +75,12 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "fetch this page" }],
 			tools: [{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: {
 					max_chars: 8000,
 				},
 			}],
-			tool_choice: "ai-stats:web_fetch",
+			tool_choice: "phaseo:web_fetch",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -91,7 +91,7 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "review this plan" }],
 			tools: [{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "reviewer",
 					model: "claude-opus-4-8",
@@ -103,7 +103,7 @@ describe("text request schema validation", () => {
 					temperature: 0.2,
 				},
 			}],
-			tool_choice: "ai-stats:advisor",
+			tool_choice: "phaseo:advisor",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -114,7 +114,7 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "make an image" }],
 			tools: [{
-				type: "ai-stats:image_generation",
+				type: "phaseo:image_generation",
 				parameters: {
 					model: "openai/gpt-image-2",
 					quality: "high",
@@ -123,7 +123,7 @@ describe("text request schema validation", () => {
 					output_compression: 80,
 				},
 			}],
-			tool_choice: "ai-stats:image_generation",
+			tool_choice: "phaseo:image_generation",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -134,10 +134,10 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			messages: [{ role: "user", content: "propose a patch" }],
 			tools: [{
-				type: "ai-stats:apply_patch",
+				type: "phaseo:apply_patch",
 				parameters: { engine: "auto" },
 			}],
-			tool_choice: "ai-stats:apply_patch",
+			tool_choice: "phaseo:apply_patch",
 		});
 
 		expect(parsed.success).toBe(false);
@@ -189,13 +189,13 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			input: "find recent AI news",
 			tools: [{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: {
 					max_results: 4,
 					include_text: false,
 				},
 			}],
-			tool_choice: "ai-stats:web_search",
+			tool_choice: "phaseo:web_search",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -206,12 +206,12 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			input: "fetch this page",
 			tools: [{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: {
 					max_chars: 12000,
 				},
 			}],
-			tool_choice: "ai-stats:web_fetch",
+			tool_choice: "phaseo:web_fetch",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -222,7 +222,7 @@ describe("text request schema validation", () => {
 			model: "gpt-4.1",
 			input: "review this plan",
 			tools: [{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "architect",
 					instructions: "Focus on system design tradeoffs.",
@@ -231,7 +231,7 @@ describe("text request schema validation", () => {
 					max_completion_tokens: 1600,
 				},
 			}],
-			tool_choice: { type: "tool", name: "ai-stats:advisor" },
+			tool_choice: { type: "tool", name: "phaseo:advisor" },
 		});
 
 		expect(parsed.success).toBe(true);
@@ -243,18 +243,18 @@ describe("text request schema validation", () => {
 			input: "create an image and propose a patch",
 			tools: [
 				{
-					type: "ai-stats:image_generation",
+					type: "phaseo:image_generation",
 					parameters: {
 						model: "openai/gpt-image-2",
 						size: "1024x1024",
 					},
 				},
 				{
-					type: "ai-stats:apply_patch",
+					type: "phaseo:apply_patch",
 					parameters: { engine: "auto" },
 				},
 			],
-			tool_choice: "ai-stats:apply_patch",
+			tool_choice: "phaseo:apply_patch",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -393,7 +393,7 @@ describe("text request schema validation", () => {
 			max_tokens: 128,
 			messages: [{ role: "user", content: "find recent AI news" }],
 			tools: [{
-				type: "ai-stats:web_search",
+				type: "phaseo:web_search",
 				parameters: { max_results: 3 },
 			}],
 		});
@@ -422,7 +422,7 @@ describe("text request schema validation", () => {
 			max_tokens: 128,
 			messages: [{ role: "user", content: "fetch this page" }],
 			tools: [{
-				type: "ai-stats:web_fetch",
+				type: "phaseo:web_fetch",
 				parameters: { max_chars: 4000 },
 			}],
 		});
@@ -435,7 +435,7 @@ describe("text request schema validation", () => {
 			max_tokens: 128,
 			messages: [{ role: "user", content: "make an image" }],
 			tools: [{
-				type: "ai-stats:image_generation",
+				type: "phaseo:image_generation",
 				parameters: {
 					model: "openai/gpt-image-2",
 					aspect_ratio: "1:1",
@@ -450,14 +450,14 @@ describe("text request schema validation", () => {
 			model: "anthropic/claude-sonnet-4.6",
 			messages: [{ role: "user", content: "plan this refactor" }],
 			tools: [{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					model: "claude-opus-4-8",
 					max_uses: 2,
 					max_tokens: 1400,
 				},
 			}],
-			tool_choice: "ai-stats:advisor",
+			tool_choice: "phaseo:advisor",
 		});
 
 		expect(parsed.success).toBe(true);
@@ -467,12 +467,12 @@ describe("text request schema validation", () => {
 		const parsed = AnthropicMessagesSchema.safeParse({
 			model: "claude-sonnet-4.6",
 			max_tokens: 1024,
-			messages: [{ role: "user", content: "read https://docs.phaseo.app" }],
+			messages: [{ role: "user", content: "read https://docs.phaseo.ai" }],
 			tools: [{
 				type: "web_fetch_20260209",
 				name: "web_fetch",
 				max_content_tokens: 9000,
-				allowed_domains: ["docs.phaseo.app"],
+				allowed_domains: ["docs.phaseo.ai"],
 			}],
 			tool_choice: { type: "tool", name: "web_fetch" },
 		});
@@ -486,7 +486,7 @@ describe("text request schema validation", () => {
 			max_tokens: 1024,
 			messages: [{ role: "user", content: "plan this refactor" }],
 			tools: [{
-				type: "ai-stats:advisor",
+				type: "phaseo:advisor",
 				parameters: {
 					name: "reviewer",
 					model: "claude-opus-4-8",
@@ -498,7 +498,7 @@ describe("text request schema validation", () => {
 					temperature: 0.2,
 				},
 			}],
-			tool_choice: { type: "tool", name: "ai-stats:advisor" },
+			tool_choice: { type: "tool", name: "phaseo:advisor" },
 		});
 		expect(phaseoParsed.success).toBe(true);
 

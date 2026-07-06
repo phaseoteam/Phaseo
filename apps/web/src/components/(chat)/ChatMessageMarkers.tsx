@@ -117,7 +117,7 @@ export function ChatMessageMarkers({
 const formatToolLabel = (toolCall: ChatToolCall) => {
 	const raw = toolCall.name || toolCall.type || "tool";
 	return raw
-		.replace(/^ai-stats:/, "")
+		.replace(/^(?:phaseo|ai-stats):/, "")
 		.replace(/^gateway:/, "")
 		.replace(/[_-]+/g, " ")
 		.replace(/\s+/g, " ")

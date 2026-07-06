@@ -38,7 +38,7 @@ final class FakeBatchClient extends \Phaseo\Gen\Client
 
 $client = new Phaseo(
     apiKey: "test",
-    basePath: "https://api.phaseo.app/v1",
+    basePath: "https://api.phaseo.ai/v1",
     enableDeprecationWarnings: false
 );
 
@@ -74,11 +74,11 @@ $response = $client->cancelBatch("batch_123");
 assert_true(($response["id"] ?? null) === "batch_123", "expected batch id");
 assert_true(($response["status"] ?? null) === "cancelling", "expected cancelling status");
 assert_true(
-    $client->getBatchWebSocketUrl("batch_123", 1500, false) === "wss://api.phaseo.app/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
+    $client->getBatchWebSocketUrl("batch_123", 1500, false) === "wss://api.phaseo.ai/v1/async/batch/batch_123/ws?interval_ms=1500&close_on_terminal=false",
     "expected batch websocket URL"
 );
 assert_true(
-    $client->getAsyncJobWebSocketUrl("video", "video 123", 1500, false) === "wss://api.phaseo.app/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
+    $client->getAsyncJobWebSocketUrl("video", "video 123", 1500, false) === "wss://api.phaseo.ai/v1/async/video/video%20123/ws?interval_ms=1500&close_on_terminal=false",
     "expected generic async job websocket URL"
 );
 assert_true($fake->calls === [

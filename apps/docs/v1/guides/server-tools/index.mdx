@@ -16,12 +16,12 @@ Server tools are in beta. Request shapes and result payloads may evolve as provi
 | Tool | Type | Use it for |
 | --- | --- | --- |
 | Datetime | `gateway:datetime` | Current date and time in one or more timezones |
-| Web Search | `ai-stats:web_search` | Model-directed web searches during a request |
-| Web Fetch | `ai-stats:web_fetch` | Fetching and extracting text from specific URLs |
-| Advisor | `ai-stats:advisor` | Consulting another model mid-generation |
-| Subagent | `ai-stats:subagent` | Delegating focused work to a worker model |
+| Web Search | `phaseo:web_search` | Model-directed web searches during a request |
+| Web Fetch | `phaseo:web_fetch` | Fetching and extracting text from specific URLs |
+| Advisor | `phaseo:advisor` | Consulting another model mid-generation |
+| Subagent | `phaseo:subagent` | Delegating focused work to a worker model |
 | Fusion | Advisor workflow | Consulting several advisor models and an optional judge |
-| Image Generation | `ai-stats:image_generation` | Creating images from the model tool loop |
+| Image Generation | `phaseo:image_generation` | Creating images from the model tool loop |
 
 ## How server tools work
 
@@ -35,7 +35,7 @@ Server tools can be used alongside your own function tools. Phaseo executes only
 ## Quick start
 
 ```bash
-curl https://api.phaseo.app/v1/chat/completions \
+curl https://api.phaseo.ai/v1/chat/completions \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -44,7 +44,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
     "tools": [
-      { "type": "ai-stats:web_search" },
+      { "type": "phaseo:web_search" },
       { "type": "gateway:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
     ]
   }'
@@ -59,7 +59,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
   "tools": [
-    { "type": "ai-stats:web_search", "parameters": { "max_results": 3 } },
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
     {
       "type": "function",
       "function": {
@@ -79,7 +79,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-If the model calls `ai-stats:web_search`, Phaseo executes that call automatically. If it calls `save_research_item`, your application receives the function call and must return the function result in a follow-up request.
+If the model calls `phaseo:web_search`, Phaseo executes that call automatically. If it calls `save_research_item`, your application receives the function call and must return the function result in a follow-up request.
 
 ## Supported endpoints
 

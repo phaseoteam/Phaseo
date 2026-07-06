@@ -10,7 +10,7 @@ import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
-const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
 
 type PasswordChecks = {
 	hasLower: boolean;

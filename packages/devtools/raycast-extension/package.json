@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "ai-stats",
+  "name": "phaseo",
   "version": "0.1.1",
   "private": true,
   "title": "Phaseo",
@@ -38,8 +38,8 @@
       "type": "password",
       "required": true,
       "title": "API Key",
-      "description": "Your Phaseo API key from api.phaseo.app",
-      "placeholder": "aistats_..."
+      "description": "Your Phaseo API key from api.phaseo.ai",
+      "placeholder": "phaseo_v1_sk_..."
     },
     {
       "name": "apiUrl",
@@ -47,8 +47,8 @@
       "required": false,
       "title": "API URL",
       "description": "Custom API URL (optional)",
-      "default": "https://api.phaseo.app/v1",
-      "placeholder": "https://api.phaseo.app/v1"
+      "default": "https://api.phaseo.ai/v1",
+      "placeholder": "https://api.phaseo.ai/v1"
     }
   ],
   "dependencies": {

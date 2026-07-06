@@ -128,7 +128,7 @@ export function getInstallationCode(language: string): string {
 		case "agent-sdk-csharp":
 			return "dotnet add package Phaseo.Sdk\ndotnet add package Phaseo.AgentSdk";
 		case "agent-sdk-php":
-			return "composer require ai-stats/php-sdk ai-stats/agent-sdk-php";
+			return "composer require phaseo/sdk phaseo/agent-sdk";
 		case "agent-sdk-ruby":
 			return "gem install phaseo_sdk phaseo_agent_sdk";
 		case "typescript-sdk":
@@ -140,7 +140,7 @@ export function getInstallationCode(language: string): string {
 		case "csharp-sdk":
 			return "dotnet add package Phaseo.Sdk";
 		case "php-sdk":
-			return "composer require ai-stats/php-sdk";
+			return "composer require phaseo/sdk";
 		case "ruby-sdk":
 			return "gem install phaseo_sdk";
 		case "openai-python":

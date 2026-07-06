@@ -177,7 +177,7 @@ const STREAMING_SNIPPET_LANGUAGES = new Set([
 	"php-sdk",
 	"ruby-sdk",
 ]);
-const DOCS_BASE_URL = "https://docs.phaseo.app/v1";
+const DOCS_BASE_URL = "https://docs.phaseo.ai/v1";
 const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
 const STREAMING_DOCS_HREF = `${DOCS_BASE_URL}/guides/streaming`;
 const ENDPOINT_DOCS_BY_VALUE: Partial<Record<string, { label: string; href: string }>> = {
@@ -892,22 +892,22 @@ import (
   "context"
   "fmt"
 
-  aistatsagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
 )
 
 func main() {
-  client, err := aistatsagent.CreateGatewayAgentClient(aistatsagent.GatewayAgentClientOptions{})
+  client, err := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
   if err != nil {
     panic(err)
   }
 
-  agent := aistatsagent.CreateAgent(aistatsagent.AgentDefinition{
+  agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
     ID:           "quickstart-agent",
     Model:        "${model}",
     Instructions: "Answer concisely and helpfully.",
   })
 
-  result, err := agent.Run(context.Background(), aistatsagent.RunOptions{
+  result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
     Input:  ${aiSdkPromptLiteral},
     Client: client,
   })
@@ -942,8 +942,8 @@ Console.WriteLine(result.Output);`
 		? `<?php
 require "vendor/autoload.php";
 
-use AIStats\\AgentSdk\\AgentDefinition;
-use AIStats\\AgentSdk\\AgentSdk;
+use Phaseo\\AgentSdk\\AgentDefinition;
+use Phaseo\\AgentSdk\\AgentSdk;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
     id: "quickstart-agent",
@@ -1087,22 +1087,22 @@ import (
   "encoding/json"
   "fmt"
 
-  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client, err := aistats.NewPhaseoFromEnv()
+  client, err := phaseo.NewPhaseoFromEnv()
   if err != nil {
     panic(err)
   }
 
   payloadJSON := \`${rawSdkPayloadJson}\`
-  var payload aistats.ChatCompletionsRequest
+  var payload phaseo.ChatCompletionsRequest
   if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
     panic(err)
   }
 
-  ${shouldStream ? `err = client.StreamChat(context.Background(), payload, func(chunk aistats.StreamChunk) error {
+  ${shouldStream ? `err = client.StreamChat(context.Background(), payload, func(chunk phaseo.StreamChunk) error {
     if chunk.Text != "" {
       fmt.Print(chunk.Text)
     }
@@ -1133,22 +1133,22 @@ import (
   "encoding/json"
   "fmt"
 
-  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client, err := aistats.NewPhaseoFromEnv()
+  client, err := phaseo.NewPhaseoFromEnv()
   if err != nil {
     panic(err)
   }
 
   payloadJSON := \`${rawSdkPayloadJson}\`
-  var payload aistats.ResponsesRequest
+  var payload phaseo.ResponsesRequest
   if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
     panic(err)
   }
 
-  ${shouldStream ? `err = client.StreamResponses(context.Background(), payload, func(chunk aistats.StreamChunk) error {
+  ${shouldStream ? `err = client.StreamResponses(context.Background(), payload, func(chunk phaseo.StreamChunk) error {
     if chunk.Text != "" {
       fmt.Print(chunk.Text)
     }
@@ -1178,11 +1178,11 @@ import (
   "encoding/json"
   "fmt"
 
-  aistats "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go"
 )
 
 func main() {
-  client, err := aistats.NewPhaseoFromEnv()
+  client, err := phaseo.NewPhaseoFromEnv()
   if err != nil {
     panic(err)
   }
@@ -1193,7 +1193,7 @@ func main() {
     panic(err)
   }
 
-  ${shouldStream ? `err = client.StreamMessages(context.Background(), payload, func(chunk aistats.StreamChunk) error {
+  ${shouldStream ? `err = client.StreamMessages(context.Background(), payload, func(chunk phaseo.StreamChunk) error {
     if chunk.Text != "" {
       fmt.Print(chunk.Text)
     }
@@ -1219,7 +1219,7 @@ func main() {
 
 	const csharpSdkUsage = `using System.Collections.Generic;
 using System.Text.Json;
-using AiStatsSdk;
+using PhaseoSdk;
 
 var client = new Phaseo();
 var payload = JsonSerializer.Deserialize<Dictionary<string, object>>("""
@@ -1258,7 +1258,7 @@ Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
 	const phpSdkUsage = `<?php
 require 'vendor/autoload.php';
 
-use AIStats\\Sdk\\AIStats;
+use Phaseo\\Sdk\\Phaseo;
 
 $client = new Phaseo(apiKey: getenv('PHASEO_API_KEY'));
 $payload = json_decode(<<<'JSON'

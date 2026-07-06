@@ -4,26 +4,26 @@
 
 ## Core product pages
 
-- [Models](https://phaseo.app/models): Browse AI models by provider, capability, modality, pricing, and gateway status.
-- [API Providers](https://phaseo.app/api-providers): Compare providers by model coverage, modality support, and usage signals.
-- [Rankings](https://phaseo.app/rankings): Usage, latency, throughput, and cost rankings across tracked models.
-- [Pricing](https://phaseo.app/pricing): Gateway pricing, credit fees, and cost guidance.
-- [Docs](https://phaseo.app/v1): Developer documentation for the gateway and API.
-- [Docs LLM index](https://phaseo.app/llms.txt): Documentation index for AI tools and answer engines.
+- [Models](https://phaseo.ai/models): Browse AI models by provider, capability, modality, pricing, and gateway status.
+- [API Providers](https://phaseo.ai/api-providers): Compare providers by model coverage, modality support, and usage signals.
+- [Rankings](https://phaseo.ai/rankings): Usage, latency, throughput, and cost rankings across tracked models.
+- [Pricing](https://phaseo.ai/pricing): Gateway pricing, credit fees, and cost guidance.
+- [Docs](https://docs.phaseo.ai/v1): Developer documentation for the gateway and API.
+- [Docs LLM index](https://phaseo.ai/llms.txt): Documentation index for AI tools and answer engines.
 
 ## Data and methodology
 
-- [Pricing calculator](https://phaseo.app/tools/pricing-calculator)
-- [Model database](https://phaseo.app/models)
-- [Provider database](https://phaseo.app/api-providers)
-- [Benchmarks](https://phaseo.app/benchmarks)
-- [Methodology hub](https://phaseo.app/methodology)
-- [How Phaseo calculates model pricing](https://phaseo.app/how-ai-stats-calculates-model-pricing)
-- [How Phaseo measures latency and throughput](https://phaseo.app/how-ai-stats-measures-latency-throughput)
-- [How Phaseo normalises AI benchmarks](https://phaseo.app/how-ai-stats-normalises-ai-benchmarks)
-- [How Phaseo tracks provider availability](https://phaseo.app/how-ai-stats-tracks-provider-availability)
+- [Pricing calculator](https://phaseo.ai/tools/pricing-calculator)
+- [Model database](https://phaseo.ai/models)
+- [Provider database](https://phaseo.ai/api-providers)
+- [Benchmarks](https://phaseo.ai/benchmarks)
+- [Methodology hub](https://phaseo.ai/methodology)
+- [How Phaseo calculates model pricing](https://phaseo.ai/how-phaseo-calculates-model-pricing)
+- [How Phaseo measures latency and throughput](https://phaseo.ai/how-phaseo-measures-latency-throughput)
+- [How Phaseo normalises AI benchmarks](https://phaseo.ai/how-phaseo-normalises-ai-benchmarks)
+- [How Phaseo tracks provider availability](https://phaseo.ai/how-phaseo-tracks-provider-availability)
 
 ## API
 
-- [Quickstart](https://phaseo.app/v1/quickstart)
-- [API reference](https://phaseo.app/v1/api-reference/introduction)
+- [Quickstart](https://docs.phaseo.ai/v1/quickstart)
+- [API reference](https://docs.phaseo.ai/v1/api-reference/introduction)

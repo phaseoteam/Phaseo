@@ -15,10 +15,10 @@ go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
 ## 2. Define small runtime tools
 
 ```go
-statusTool := aistatsagent.DefineTool(aistatsagent.Tool{
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
   ID:          "read-status",
   Description: "Read the current service status page summary.",
-  Execute: func(input any, ctx aistatsagent.RuntimeContext) (any, error) {
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
     return map[string]any{
       "status": "degraded",
       "summary": "Latency is elevated on one provider route.",
@@ -30,20 +30,20 @@ statusTool := aistatsagent.DefineTool(aistatsagent.Tool{
 ## 3. Create the agent
 
 ```go
-agent := aistatsagent.CreateAgent(aistatsagent.AgentDefinition{
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
   ID:           "ops-runbook-agent",
   Model:        "openai/gpt-5.4-nano",
   Instructions: "Use tools when helpful and answer briefly.",
-  Tools:        []aistatsagent.Tool{statusTool},
+  Tools:        []phaseoagent.Tool{statusTool},
 })
 ```
 
 ## 4. Run one bounded troubleshooting turn
 
 ```go
-client, _ := aistatsagent.CreateGatewayAgentClient(aistatsagent.GatewayAgentClientOptions{})
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
 
-result, err := agent.Run(context.Background(), aistatsagent.RunOptions{
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
   Input:  "What is happening with provider latency right now?",
   Client: client,
 })

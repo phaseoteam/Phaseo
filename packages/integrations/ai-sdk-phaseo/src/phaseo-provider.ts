@@ -16,7 +16,7 @@ import type { PhaseoSettings, PhaseoModelSettings } from './phaseo-settings.js';
 /**
  * Default base URL for the Phaseo Gateway API
  */
-const DEFAULT_BASE_URL = 'https://api.phaseo.app/v1';
+const DEFAULT_BASE_URL = 'https://api.phaseo.ai/v1';
 
 export type PhaseoProvider = ProviderV3 & ((
   modelId: string,

@@ -42,7 +42,7 @@ const CANONICAL_CHAT_APP_HEADERS: Record<string, string> = {
 	"x-app-id": "phaseo-chat",
 	"x-app-name": "Phaseo Chat",
 	"x-title": "Phaseo Chat",
-	"http-referer": "https://phaseo.app/chat",
+	"http-referer": "https://phaseo.ai/chat",
 };
 
 function sanitizeAppHeaders(input: unknown): Record<string, string> {

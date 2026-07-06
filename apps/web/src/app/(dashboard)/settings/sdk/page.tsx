@@ -13,7 +13,7 @@ type Sdk = {
 	stage?: "alpha";
 };
 
-const DOCS_BASE = "https://docs.phaseo.app/v1";
+const DOCS_BASE = "https://docs.phaseo.ai/v1";
 
 const SDKS: Sdk[] = [
 	{

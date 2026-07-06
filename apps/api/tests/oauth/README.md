@@ -300,5 +300,5 @@ describe('New OAuth Feature', () => {
 Issues with tests?
 
 - Check logs: `npm run test:oauth -- --reporter=verbose`
-- Discord: [#engineering](https://discord.gg/aistats)
-- Email: dev@aistats.ai
+- Discord: [#engineering](https://discord.gg/aQyywCvgZ5)
+- Email: dev@phaseo.ai

@@ -77,8 +77,8 @@ const HUGGING_FACE_API_ORIGIN = "https://huggingface.co";
 const HUGGING_FACE_MODELS_API_PATH = "/api/models";
 const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
-const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
-const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
+const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.ai/png_logo_light.png";
+const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.ai/png_logo_dark.png";
 
 function nowIso(): string {
     return new Date().toISOString();
@@ -676,7 +676,7 @@ function displayModelName(snapshot: ModelFileSnapshot): string {
     return parts.length >= 2 ? parts[parts.length - 2] : snapshot.filePath;
 }
 
-const MODEL_DETAILS_BASE_URL = "https://phaseo.app";
+const MODEL_DETAILS_BASE_URL = "https://phaseo.ai";
 const HUGGING_FACE_BASE_URL = "https://huggingface.co";
 
 function appendBoundedLines(lines: string[], values: string[], maxItems = 40): void {

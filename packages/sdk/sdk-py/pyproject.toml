@@ -27,8 +27,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://phaseo.app"
-Documentation = "https://phaseo.app"
+Homepage = "https://phaseo.ai"
+Documentation = "https://phaseo.ai"
 Repository = "https://github.com/phaseoteam/Phaseo"
 Issues = "https://github.com/phaseoteam/Phaseo/issues"
 

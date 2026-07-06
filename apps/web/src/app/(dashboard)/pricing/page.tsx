@@ -506,7 +506,7 @@ export default function PricingPage() {
 						{" "}and review{" "}
 						<Link
 							className="underline underline-offset-4"
-							href="/how-ai-stats-calculates-model-pricing"
+							href="/how-phaseo-calculates-model-pricing"
 						>
 							how Phaseo calculates model pricing
 						</Link>

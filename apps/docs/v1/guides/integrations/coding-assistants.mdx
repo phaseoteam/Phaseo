@@ -12,7 +12,7 @@ Use these values unless the tool asks for a different field name:
 | Setting | Value |
 | --- | --- |
 | Provider type | OpenAI Compatible |
-| Base URL | `https://api.phaseo.app/v1` |
+| Base URL | `https://api.phaseo.ai/v1` |
 | API key | Your Phaseo API key |
 | Model | A Phaseo model id, such as `openai/gpt-5-nano` |
 
@@ -20,7 +20,7 @@ For Anthropic-compatible tools, use:
 
 | Setting | Value |
 | --- | --- |
-| Base URL | `https://api.phaseo.app` |
+| Base URL | `https://api.phaseo.ai` |
 | Auth token | Your Phaseo API key |
 | Model | A Phaseo model id, such as `anthropic/claude-sonnet-4.5` |
 
@@ -33,7 +33,7 @@ Cursor supports custom OpenAI-compatible endpoints through its OpenAI API key se
 3. Enable or add the `OpenAI API Key` entry.
 4. Paste your Phaseo API key.
 5. Enable `Override OpenAI Base URL`.
-6. Set the base URL to `https://api.phaseo.app/v1`.
+6. Set the base URL to `https://api.phaseo.ai/v1`.
 7. Add a custom model using A Phaseo model id, for example `openai/gpt-5-nano`.
 8. Enable the model and verify it from the Cursor model picker.
 
@@ -47,7 +47,7 @@ VS Code supports adding models through the Language Models editor when the OpenA
 2. Run `Chat: Manage Language Models`.
 3. Choose `OpenAI Compatible` or `OAI Compatible`.
 4. Enter your Phaseo API key.
-5. Set the endpoint or base URL to `https://api.phaseo.app/v1`.
+5. Set the endpoint or base URL to `https://api.phaseo.ai/v1`.
 6. Add A Phaseo model id, for example `openai/gpt-5-nano`.
 7. Select the new model from the chat model picker.
 
@@ -67,7 +67,7 @@ models:
     provider: openai
     model: openai/gpt-5-nano
     apiKey: ${{ secrets.PHASEO_API_KEY }}
-    apiBase: https://api.phaseo.app/v1
+    apiBase: https://api.phaseo.ai/v1
     roles:
       - chat
       - edit
@@ -82,7 +82,7 @@ These tools expose similar provider settings.
 
 1. Open the extension settings.
 2. Choose `OpenAI Compatible` as the provider.
-3. Set the base URL to `https://api.phaseo.app/v1`.
+3. Set the base URL to `https://api.phaseo.ai/v1`.
 4. Paste your Phaseo API key.
 5. Enter A Phaseo model id.
 6. Save and run a small chat request before using file-editing tools.
@@ -92,7 +92,7 @@ These tools expose similar provider settings.
 Set OpenAI-compatible environment variables and pass the model on launch:
 
 ```bash
-export OPENAI_API_BASE="https://api.phaseo.app/v1"
+export OPENAI_API_BASE="https://api.phaseo.ai/v1"
 export OPENAI_API_KEY="your_phaseo_api_key"
 aider --model openai/openai/gpt-5-nano
 ```
@@ -109,7 +109,7 @@ model_provider = "phaseo"
 
 [model_providers.phaseo]
 name = "Phaseo"
-base_url = "https://api.phaseo.app/v1"
+base_url = "https://api.phaseo.ai/v1"
 env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
@@ -125,7 +125,7 @@ Use the dedicated [OpenCode guide](./opencode.mdx) when you want OpenCode to cal
 Use the dedicated [Claude Code guide](./claude-code.mdx). Claude Code uses Anthropic-compatible gateway environment variables:
 
 ```bash
-export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_BASE_URL="https://api.phaseo.ai"
 export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
 export ANTHROPIC_API_KEY=""
 ```
@@ -146,7 +146,7 @@ Use the same base URL and API key settings as [LangChain](./langchain.mdx). If t
 
 ```bash
 export OPENAI_API_KEY="your_phaseo_api_key"
-export OPENAI_BASE_URL="https://api.phaseo.app/v1"
+export OPENAI_BASE_URL="https://api.phaseo.ai/v1"
 ```
 
 Then pass A Phaseo model id in the tool's model field.
