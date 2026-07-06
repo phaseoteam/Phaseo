@@ -2,9 +2,9 @@
   "model_id": "openai/gpt-realtime-2.1",
   "organisation_id": "openai",
   "name": "GPT Realtime 2.1",
-  "status": "Rumoured",
+  "status": "Available",
   "previous_model_id": "openai/gpt-realtime-2",
-  "description": "GPT Realtime 2.1 is an OpenAI realtime audio model for low-latency, multimodal speech applications.",
+  "description": "GPT Realtime 2.1 updates GPT Realtime 2 with improved alphanumeric recognition, silence and noise handling, interruption behavior, configurable reasoning effort, instruction following, and tool use for complex voice-agent workflows.",
   "announced_date": "2026-07-06T00:00:00",
   "release_date": "2026-07-06T00:00:00",
   "deprecation_date": null,
@@ -29,8 +29,12 @@
       "value": 32000
     },
     {
-      "name": "pricing_status",
-      "value": "unknown"
+      "name": "knowledge_cutoff",
+      "value": "2024-09-30T00:00:00"
+    },
+    {
+      "name": "reasoning_effort",
+      "value": "configurable"
     }
   ],
   "benchmarks": []
