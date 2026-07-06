@@ -307,6 +307,23 @@ function firstNonEmptyString(
 	return null;
 }
 
+function applyApiVariantModelName(baseName: string, modelId: string): string {
+	const normalizedModelId = String(modelId ?? "").trim().toLowerCase();
+	if (normalizedModelId.endsWith(":free")) {
+		const trimmedName = baseName.trim();
+		if (/\(\s*free\s*\)$/i.test(trimmedName)) {
+			return trimmedName.replace(/\(\s*free\s*\)$/i, "(Free)");
+		}
+		if (/\s+free$/i.test(trimmedName)) {
+			return trimmedName.replace(/\s+free$/i, " (Free)");
+		}
+		if (!/\bfree\b/i.test(trimmedName)) {
+			return `${trimmedName} (Free)`;
+		}
+	}
+	return baseName;
+}
+
 function buildCanonicalModelLookupCandidates(value: string): string[] {
 	const normalized = String(value ?? "").trim();
 	if (!normalized) return [];
@@ -776,7 +793,6 @@ function normalizeModelTailForDedup(modelId: string): string {
 		.replace(/-\d{4}-\d{2}$/g, "")
 		.replace(/-\d{4}$/g, "")
 		.replace(/-latest$/g, "")
-		.replace(/-preview$/g, "")
 		.replace(/-stable$/g, "")
 		.replace(/-+/g, "-")
 		.replace(/^-|-$/g, "");
@@ -960,6 +976,7 @@ function withGatewayMetadata(
 				modelId.split("/").slice(-1)[0],
 				modelId,
 			) ?? modelId;
+		const displayName = applyApiVariantModelName(fallbackName, modelId);
 		const fallbackOrganisationId =
 			firstNonEmptyString(
 				model?.organisation_id,
@@ -969,7 +986,7 @@ function withGatewayMetadata(
 
 		const compactModel: ModelsPageModel = {
 			model_id: modelId,
-			name: fallbackName,
+			name: displayName,
 			organisation_id: fallbackOrganisationId,
 			organisation_name:
 				normalizeOrganisationDisplayName(
