@@ -319,6 +319,74 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.output_config?.effort).toBe("high");
 	});
 
+	it("uses adaptive summarized thinking for Sonnet 5 and omits legacy thinking budgets", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-sonnet-5",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "xhigh", max_tokens: 32000, enabled: true },
+			temperature: 0.2,
+			top_p: 0.8,
+		} as any);
+		(request as any).topK = 20;
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.thinking?.budget_tokens).toBeUndefined();
+		expect(payload.output_config?.effort).toBe("xhigh");
+		expect(payload.temperature).toBeUndefined();
+		expect(payload.top_p).toBeUndefined();
+		expect(payload.top_k).toBeUndefined();
+	});
+
+	it("uses the Sonnet 5 disabled thinking control when reasoning is disabled", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-sonnet-5",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { enabled: false },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "disabled" });
+		expect(payload.output_config).toBeUndefined();
+	});
+
+	it("keeps adaptive summarized thinking for Fable 5 when reasoning is explicitly disabled", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-fable-5",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { enabled: false },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.thinking?.budget_tokens).toBeUndefined();
+	});
+
+	it("omits stale Fable 5 effort when reasoning is disabled", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-fable-5",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { enabled: false, effort: "high" },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.output_config).toBeUndefined();
+	});
+
+	it("uses adaptive summarized thinking for Mythos 5 and omits legacy thinking budgets", () => {
+		const request = decodeOpenAIChatRequest({
+			model: "anthropic/claude-mythos-5",
+			messages: [{ role: "user", content: "Hello" }],
+			reasoning: { effort: "high", max_tokens: 32000, enabled: true },
+		} as any);
+
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.thinking?.budget_tokens).toBeUndefined();
+		expect(payload.output_config?.effort).toBe("high");
+	});
+
 	it("keeps adaptive summarized thinking for Opus 4.7 even when reasoning is explicitly disabled", () => {
 		const request = decodeOpenAIChatRequest({
 			model: "anthropic/claude-opus-4.7",

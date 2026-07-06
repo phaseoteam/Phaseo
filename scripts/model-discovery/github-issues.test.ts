@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
+    syncProviderChangeIssues,
     syncUpstreamDiscoveryIssues,
     testingExports,
     type UpstreamDiscoveryIssueEntry,
@@ -71,7 +72,7 @@ assert.match(body, /provider API model additions/);
 assert.match(body, /Models in this signal: 2/);
 assert.match(body, /`gpt-5\.4-preview`/);
 assert.match(body, /workflow run/);
-assert.match(body, /Unknown upstream models are intentionally included/);
+assert.doesNotMatch(body, /Unknown upstream models are intentionally included/);
 
 const hfBody = testingExports.buildIssueBody({
     group: hfAdditionGroup,
@@ -117,6 +118,7 @@ async function main(): Promise<void> {
     let issueBody = "";
     let issueTitle = "";
     let nextIssueNumber = 123;
+    const issueStore = new Map<number, { title: string; body: string; labels: string[] }>();
     const requestImpl: typeof fetch = async (input, init) => {
         const url = String(input);
         const method = init?.method ?? "GET";
@@ -133,20 +135,52 @@ async function main(): Promise<void> {
             issueTitle = parsedBody.title;
             const issueNumber = nextIssueNumber;
             nextIssueNumber += 1;
-            return Response.json({ number: issueNumber, html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`, state: "open" });
+            issueStore.set(issueNumber, {
+                title: parsedBody.title,
+                body: parsedBody.body,
+                labels: Array.isArray(parsedBody.labels) ? parsedBody.labels : [],
+            });
+            return Response.json({
+                number: issueNumber,
+                html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`,
+                state: "open",
+                title: parsedBody.title,
+                body: parsedBody.body,
+                labels: parsedBody.labels,
+            });
         }
 
         const issueMatch = url.match(/\/repos\/AI-Stats\/AI-Stats\/issues\/(\d+)$/);
         if (issueMatch && method === "GET") {
             const issueNumber = Number(issueMatch[1]);
-            return Response.json({ number: issueNumber, html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`, state: "open" });
+            const existing = issueStore.get(issueNumber);
+            return Response.json({
+                number: issueNumber,
+                html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`,
+                state: "open",
+                title: existing?.title,
+                body: existing?.body,
+                labels: existing?.labels ?? [],
+            });
         }
 
         if (issueMatch && method === "PATCH") {
             const issueNumber = Number(issueMatch[1]);
             issueBody = parsedBody.body;
             issueTitle = parsedBody.title;
-            return Response.json({ number: issueNumber, html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`, state: "open" });
+            issueStore.set(issueNumber, {
+                title: parsedBody.title,
+                body: parsedBody.body,
+                labels: Array.isArray(parsedBody.labels) ? parsedBody.labels : [],
+            });
+            return Response.json({
+                number: issueNumber,
+                html_url: `https://github.com/AI-Stats/AI-Stats/issues/${issueNumber}`,
+                state: "open",
+                title: parsedBody.title,
+                body: parsedBody.body,
+                labels: parsedBody.labels,
+            });
         }
 
         if (/\/repos\/AI-Stats\/AI-Stats\/issues\/\d+\/comments$/.test(url) && method === "POST") {
@@ -169,6 +203,7 @@ async function main(): Promise<void> {
     assert.equal(issueTitle, "[upstream-discovery] OpenAI: provider model additions");
     assert.match(issueBody, /Latest action: additions/);
     assert.match(issueBody, /Models in this signal: 2/);
+    assert.deepEqual((requests.find((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST")?.body as { labels?: string[] })?.labels, ["ai-stats-upstream-discovery"]);
 
     const secondProviderSync = await syncUpstreamDiscoveryIssues([{ ...providerEntry, ts: "2026-05-28T12:15:00.000Z" }], {
         token: "test-token",
@@ -179,30 +214,41 @@ async function main(): Promise<void> {
     });
     assert.deepEqual(secondProviderSync, { created: 0, updated: 1, skipped: false });
     assert.ok(requests.some((request) => /\/issues\/123\/comments$/.test(request.url) && request.method === "POST"));
+    assert.ok(
+        requests.some(
+            (request) =>
+                request.url.endsWith("/repos/AI-Stats/AI-Stats/issues/123") &&
+                request.method === "PATCH" &&
+                (request.body as { labels?: string[] })?.labels?.includes("ai-stats-upstream-discovery")
+        )
+    );
 
     requests.length = 0;
-    const hfSync = await syncUpstreamDiscoveryIssues([hfEntry], {
-        token: "test-token",
-        repository: "AI-Stats/AI-Stats",
-        statePath,
-        requestImpl,
-        logger,
+    await withEnv({ MODEL_DISCOVERY_HF_GITHUB_ISSUES: "true" }, async () => {
+        const hfSync = await syncUpstreamDiscoveryIssues([hfEntry], {
+            token: "test-token",
+            repository: "AI-Stats/AI-Stats",
+            statePath,
+            requestImpl,
+            logger,
+        });
+        assert.deepEqual(hfSync, { created: 1, updated: 0, skipped: false });
+        assert.equal(issueTitle, "[upstream-discovery] Hugging Face: model additions for openai");
+        assert.match(issueBody, /Source: Hugging Face/);
+        assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
     });
-    assert.deepEqual(hfSync, { created: 1, updated: 0, skipped: false });
-    assert.equal(issueTitle, "[upstream-discovery] Hugging Face: model additions for openai");
-    assert.match(issueBody, /Source: Hugging Face/);
-    assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
 
     requests.length = 0;
-    const unknownProviderSync = await syncUpstreamDiscoveryIssues([{ ...providerEntry, modelId: "brand-new-unknown-upstream-model" }], {
+    const unknownProviderSync = await syncProviderChangeIssues([{ ...providerEntry, modelId: "brand-new-unknown-upstream-model" }], {
         token: "test-token",
         repository: "AI-Stats/AI-Stats",
         statePath: path.join(tempDir, "unknown-state.json"),
         requestImpl,
         logger,
+        knownModelIdsByProvider: new Map([[providerEntry.providerId, new Set([providerEntry.modelId])]]),
     });
-    assert.deepEqual(unknownProviderSync, { created: 1, updated: 0, skipped: false });
-    assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
+    assert.deepEqual(unknownProviderSync, { created: 0, updated: 0, skipped: false });
+    assert.ok(!requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
 
 
     const legacyRequests: Array<{ url: string; method: string; body?: unknown }> = [];
@@ -215,13 +261,39 @@ async function main(): Promise<void> {
         legacyRequests.push({ url, method, body: parsedBody });
 
         if (url.includes("/search/issues") && url.includes(encodeURIComponent(testingExports.legacyMarkerForKey(legacyKey)))) {
-            return Response.json({ items: [{ number: 777, html_url: "https://github.com/AI-Stats/AI-Stats/issues/777", state: "open" }] });
+            return Response.json({
+                items: [
+                    {
+                        number: 777,
+                        html_url: "https://github.com/AI-Stats/AI-Stats/issues/777",
+                        state: "open",
+                        body: `<!-- ${testingExports.legacyMarkerForKey(legacyKey)} -->`,
+                        labels: ["ai-stats-upstream-discovery"],
+                    },
+                ],
+            });
         }
         if (url.includes("/search/issues")) {
             return Response.json({ items: [] });
         }
+        if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && method === "GET") {
+            return Response.json({
+                number: 777,
+                html_url: "https://github.com/AI-Stats/AI-Stats/issues/777",
+                state: "open",
+                body: `<!-- ${testingExports.legacyMarkerForKey(legacyKey)} -->`,
+                labels: ["ai-stats-upstream-discovery"],
+            });
+        }
         if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && method === "PATCH") {
-            return Response.json({ number: 777, html_url: "https://github.com/AI-Stats/AI-Stats/issues/777", state: "open" });
+            return Response.json({
+                number: 777,
+                html_url: "https://github.com/AI-Stats/AI-Stats/issues/777",
+                state: "open",
+                title: parsedBody.title,
+                body: parsedBody.body,
+                labels: parsedBody.labels,
+            });
         }
         if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/777/comments") && method === "POST") {
             return Response.json({ id: 778 });
@@ -238,6 +310,62 @@ async function main(): Promise<void> {
     assert.deepEqual(legacySync, { created: 0, updated: 1, skipped: false });
     assert.ok(legacyRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues/777") && request.method === "PATCH"));
     assert.ok(!legacyRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
+
+    const commentInjectionRequests: Array<{ url: string; method: string; body?: unknown }> = [];
+    const commentInjectionMarker = testingExports.markerForKey(providerKey);
+    const commentInjectionSync = await syncUpstreamDiscoveryIssues([providerEntry], {
+        token: "test-token",
+        repository: "AI-Stats/AI-Stats",
+        statePath: path.join(tempDir, "comment-injection.json"),
+        requestImpl: async (input, init) => {
+            const url = String(input);
+            const method = init?.method ?? "GET";
+            const bodyText = typeof init?.body === "string" ? init.body : undefined;
+            const parsedBody = bodyText ? JSON.parse(bodyText) : undefined;
+            commentInjectionRequests.push({ url, method, body: parsedBody });
+
+            if (url.includes("/search/issues")) {
+                return Response.json({
+                    items: [{ number: 900, html_url: "https://github.com/AI-Stats/AI-Stats/issues/900", state: "open" }],
+                });
+            }
+            if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/900") && method === "GET") {
+                return Response.json({
+                    number: 900,
+                    html_url: "https://github.com/AI-Stats/AI-Stats/issues/900",
+                    state: "open",
+                    body: "attacker comment matched search, but issue body is unrelated",
+                    labels: [],
+                });
+            }
+            if (url.endsWith("/repos/AI-Stats/AI-Stats/issues") && method === "POST") {
+                return Response.json({
+                    number: 901,
+                    html_url: "https://github.com/AI-Stats/AI-Stats/issues/901",
+                    state: "open",
+                    title: parsedBody.title,
+                    body: parsedBody.body,
+                    labels: parsedBody.labels,
+                });
+            }
+            if (url.endsWith("/repos/AI-Stats/AI-Stats/issues/900") && method === "PATCH") {
+                return new Response("unexpected overwrite", { status: 500 });
+            }
+            return new Response("not found", { status: 404 });
+        },
+        logger,
+    });
+    assert.deepEqual(commentInjectionSync, { created: 1, updated: 0, skipped: false });
+    assert.ok(
+        commentInjectionRequests.some(
+            (request) =>
+                request.url.includes("/search/issues") &&
+                request.url.includes(encodeURIComponent(`in:body label:ai-stats-upstream-discovery "${commentInjectionMarker}"`))
+        )
+    );
+    assert.ok(commentInjectionRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues/900") && request.method === "GET"));
+    assert.ok(!commentInjectionRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues/900") && request.method === "PATCH"));
+    assert.ok(commentInjectionRequests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
 
     const originalConsoleError = console.error;
     const originalConsoleLog = console.log;
@@ -290,26 +418,28 @@ async function main(): Promise<void> {
         });
         assert.deepEqual(providerSync, { created: 0, updated: 0, skipped: true });
 
-        const allowedHfSync = await syncUpstreamDiscoveryIssues([hfEntry], {
-            token: "test-token",
-            repository: "AI-Stats/AI-Stats",
-            statePath: path.join(tempDir, "provider-disabled-hf-allowed.json"),
-            requestImpl,
-            logger,
-        });
-        assert.deepEqual(allowedHfSync, { created: 1, updated: 0, skipped: false });
+        await withEnv({ MODEL_DISCOVERY_HF_GITHUB_ISSUES: "true" }, async () => {
+            const allowedHfSync = await syncUpstreamDiscoveryIssues([hfEntry], {
+                token: "test-token",
+                repository: "AI-Stats/AI-Stats",
+                statePath: path.join(tempDir, "provider-disabled-hf-allowed.json"),
+                requestImpl,
+                logger,
+            });
+            assert.deepEqual(allowedHfSync, { created: 1, updated: 0, skipped: false });
 
-        requests.length = 0;
-        const mixedSourceSync = await syncUpstreamDiscoveryIssues([providerEntry, hfEntry], {
-            token: "test-token",
-            repository: "AI-Stats/AI-Stats",
-            statePath: path.join(tempDir, "provider-disabled-mixed.json"),
-            requestImpl,
-            logger,
+            requests.length = 0;
+            const mixedSourceSync = await syncUpstreamDiscoveryIssues([providerEntry, hfEntry], {
+                token: "test-token",
+                repository: "AI-Stats/AI-Stats",
+                statePath: path.join(tempDir, "provider-disabled-mixed.json"),
+                requestImpl,
+                logger,
+            });
+            assert.deepEqual(mixedSourceSync, { created: 1, updated: 0, skipped: false });
+            assert.equal(issueTitle, "[upstream-discovery] Hugging Face: model additions for openai");
+            assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
         });
-        assert.deepEqual(mixedSourceSync, { created: 1, updated: 0, skipped: false });
-        assert.equal(issueTitle, "[upstream-discovery] Hugging Face: model additions for openai");
-        assert.ok(requests.some((request) => request.url.endsWith("/repos/AI-Stats/AI-Stats/issues") && request.method === "POST"));
     });
 
     await withEnv({ MODEL_DISCOVERY_HF_GITHUB_ISSUES: "false" }, async () => {

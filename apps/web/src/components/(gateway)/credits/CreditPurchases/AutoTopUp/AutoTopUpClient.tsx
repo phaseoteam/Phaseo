@@ -273,7 +273,7 @@ export default function AutoTopUpClient({
 	const Container = embedded ? "div" : Card;
 
 	return (
-		<Container className={embedded ? "space-y-4" : undefined}>
+		<Container className={embedded ? "space-y-3" : undefined}>
 			<CardHeader
 				className={cn(
 					"flex flex-row items-center justify-between pb-0",
@@ -313,7 +313,7 @@ export default function AutoTopUpClient({
 
 			<Separator className={embedded ? "" : "my-4"} />
 
-			<CardContent className={cn("space-y-4", embedded && "p-0")}>
+			<CardContent className={cn("space-y-3", embedded && "p-0")}>
 				<Dialog open={open} onOpenChange={setOpen}>
 					<DialogTrigger asChild>
 						<Button variant="outline" className="w-full">
@@ -609,14 +609,14 @@ export default function AutoTopUpClient({
 				</Dialog>
 
 				{/* Summary row */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-					<div className="rounded-lg border p-3">
+				<div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+					<div className="rounded-lg border p-2.5">
 						<div className="text-xs text-zinc-500">Triggers at</div>
 						<div className="font-medium">
 							{minBefore === "" ? "—" : fmtUSD(Number(minBefore))}
 						</div>
 					</div>
-					<div className="rounded-lg border p-3">
+					<div className="rounded-lg border p-2.5">
 						<div className="text-xs text-zinc-500">
 							Top-up amount
 						</div>

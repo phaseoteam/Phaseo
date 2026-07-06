@@ -1071,12 +1071,6 @@ export type CreateAnthropicMessageParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    cache_control?: {
-      scope?: string;
-      ttl?: string;
-      type?: string;
-      [key: string]: unknown;
-    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -1117,7 +1111,6 @@ export type CreateAnthropicMessageParams = {
       [key: string]: unknown;
     };
     model: string;
-    prompt_cache_retention?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -1183,7 +1176,7 @@ export type CreateAnthropicMessageParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -2002,12 +1995,6 @@ export type CreateChatCompletionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
-    cache_control?: {
-      scope?: string;
-      ttl?: string;
-      type?: string;
-      [key: string]: unknown;
-    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -2115,7 +2102,6 @@ export type CreateChatCompletionParams = {
     parallel_tool_calls?: boolean;
     presence_penalty?: number;
     prompt_cache_key?: string | null;
-    prompt_cache_retention?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -2181,7 +2167,7 @@ export type CreateChatCompletionParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -3194,12 +3180,6 @@ export type CreateResponseParams = {
   headers?: Record<string, never>;
   body?: {
     background?: boolean;
-    cache_control?: {
-      scope?: string;
-      ttl?: string;
-      type?: string;
-      [key: string]: unknown;
-    };
     debug?: {
       enabled?: boolean;
       return_upstream_request?: boolean;
@@ -3242,7 +3222,6 @@ export type CreateResponseParams = {
     parallel_tool_calls?: boolean;
     previous_response_id?: string;
     prompt_cache_key?: string | null;
-    prompt_cache_retention?: string;
     provider?: {
       allow_fallbacks?: boolean | null;
       data_collection?: "allow" | "deny" | null;
@@ -3308,7 +3287,7 @@ export type CreateResponseParams = {
       };
     };
     reasoning?: {
-      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
       enabled?: boolean;
       max_tokens?: number;
       summary?: "auto" | "concise" | "detailed";
@@ -6873,6 +6852,7 @@ export type ListDataModelsParams = {
       | "openai"
       | "perplexity"
       | "poe"
+      | "poolside"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -6921,6 +6901,7 @@ export type ListDataModelsParams = {
       | "openai"
       | "perplexity"
       | "poe"
+      | "poolside"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -7124,6 +7105,7 @@ export type ListModelsParams = {
       | "openai"
       | "perplexity"
       | "poe"
+      | "poolside"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -7172,6 +7154,7 @@ export type ListModelsParams = {
       | "openai"
       | "perplexity"
       | "poe"
+      | "poolside"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -7715,6 +7698,7 @@ export type ListTeamModelsParams = {
       | "openai"
       | "perplexity"
       | "poe"
+      | "poolside"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -7763,6 +7747,7 @@ export type ListTeamModelsParams = {
       | "openai"
       | "perplexity"
       | "poe"
+      | "poolside"
       | "prime-intellect"
       | "qwen"
       | "relace"
@@ -8960,47 +8945,6 @@ export async function openAsyncJobWebSocket(
 ): Promise<unknown> {
   const { path, query, headers, body } = args;
   const resolvedPath = `/async/${encodeURIComponent(String(path?.kind))}/${encodeURIComponent(String(path?.id))}/ws`;
-  return client.request<unknown>({
-    method: "GET",
-    path: resolvedPath,
-    query,
-    headers,
-    body,
-  });
-}
-
-export type OpenResponsesWebSocketParams = {
-  path?: Record<string, never>;
-  query?: Record<string, never>;
-  headers?: Record<string, never>;
-  body?: never;
-};
-
-/**
- * Opens a persistent websocket session for OpenAI Responses WebSocket mode.
- * This route is currently experimental on AI Stats Gateway and is not
- * recommended for production workloads.
- *
- * WebSocket handshake uses HTTP GET upgrade semantics and returns `101 Switching Protocols`
- * on success (not `200`).
- *
- * This endpoint is OpenAI-only, requires `openai/<model>` format, and accepts
- * `response.create` websocket messages.
- * The gateway enforces `store=false`, allows one in-flight response per connection,
- * and forwards OpenAI Responses streaming events back to the client.
- *
- * After upgrade, runtime failures are emitted as websocket `error` events
- * (for example `invalid_response_create`, `openai_routing_failed`,
- * `response_already_in_flight`, `model_mismatch`, `upstream_websocket_*`)
- * rather than additional HTTP response codes.
- *
- */
-export async function openResponsesWebSocket(
-  client: Client,
-  args: OpenResponsesWebSocketParams = {},
-): Promise<unknown> {
-  const { path, query, headers, body } = args;
-  const resolvedPath = "/responses/ws";
   return client.request<unknown>({
     method: "GET",
     path: resolvedPath,

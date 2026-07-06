@@ -100,7 +100,7 @@ Supported request shape:
     {
       "type": "gateway:datetime",
       "parameters": {
-        "timezone": "Europe/London"
+        "timezones": ["Europe/London", "UTC"]
       }
     }
   ]
@@ -109,9 +109,8 @@ Supported request shape:
 
 Notes:
 
-- `parameters.timezone` is optional and must be a valid IANA timezone.
-- `timezone` can also be provided as a top-level shortcut on the tool object.
-- The result contains ISO datetime plus the resolved timezone.
+- `parameters.timezones` is optional and can request up to 5 valid IANA timezones in one call.
+- The result contains a `timezones` array with ISO datetime plus the resolved timezone for each requested zone.
 - Usage includes `usage.server_tool_use.datetime_requests`.
 - Prefer `tool_choice: "auto"` so the model can decide when to call it.
 

@@ -97,6 +97,23 @@ export interface APIProvider {
         | null;
     prompt_training_notes?: string | null;
     prompt_training_source_url?: string | null;
+    data_policy_tier?:
+        | "unknown"
+        | "private"
+        | "logs"
+        | "trains"
+        | null;
+    data_policy_confidence?:
+        | "unknown"
+        | "confirmed"
+        | "maybe"
+        | null;
+    data_policy_contract_mode?:
+        | "none"
+        | "customer_agreement"
+        | "enterprise_agreement"
+        | null;
+    data_policy_contract_notes?: string | null;
     user_identifier_policy?:
         | "unknown"
         | "sent"

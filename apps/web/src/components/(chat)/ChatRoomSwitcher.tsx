@@ -8,8 +8,12 @@ import {
 	BadgeCheck,
 	ChevronsUpDown,
 	ImageIcon,
+	Mic,
 	MessageSquareText,
+	Music2,
+	Radio,
 	Sparkles,
+	Subtitles,
 	Video,
 } from "lucide-react";
 import { CHAT_ROOMS, type ChatRoomId } from "@/lib/chat/rooms";
@@ -33,17 +37,21 @@ const ICONS: Record<ChatRoomId, ComponentType<{ className?: string }>> = {
 	image: ImageIcon,
 	video: Video,
 	audio: AudioLines,
+	speech: Mic,
+	"speech-to-text": Subtitles,
+	music: Music2,
+	realtime: Radio,
 	moderation: BadgeCheck,
 	embeddings: Sparkles,
 };
 
-const DISABLED_ROOMS = new Set<ChatRoomId>(["video"]);
+const DISABLED_ROOMS = new Set<ChatRoomId>(["video", "realtime"]);
 
 function isRoomActive(pathname: string, route: string): boolean {
 	if (route === "/chat") {
 		return pathname === "/chat";
 	}
-	return pathname.startsWith(route);
+	return pathname === route || pathname.startsWith(`${route}/`);
 }
 
 export function ChatRoomSwitcher() {

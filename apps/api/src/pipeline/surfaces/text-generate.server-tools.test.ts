@@ -81,13 +81,13 @@ function createPre() {
 			rawBody: {
 				model: "openai/gpt-5.4-nano",
 				messages: [{ role: "user", content: "What time is it?" }],
-				tools: [{ type: "gateway:datetime", parameters: { timezone: "UTC" } }],
+				tools: [{ type: "gateway:datetime", parameters: { timezones: ["UTC"] } }],
 				tool_choice: "gateway:datetime",
 			},
 			body: {
 				model: "openai/gpt-5.4-nano",
 				messages: [{ role: "user", content: "What time is it?" }],
-				tools: [{ type: "gateway:datetime", parameters: { timezone: "UTC" } }],
+				tools: [{ type: "gateway:datetime", parameters: { timezones: ["UTC"] } }],
 				tool_choice: "gateway:datetime",
 			},
 			model: "openai/gpt-5.4-nano",
@@ -158,7 +158,7 @@ describe("runTextGeneratePipeline server tools", () => {
 			body,
 			config: {
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: false,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -203,7 +203,7 @@ describe("runTextGeneratePipeline server tools", () => {
 								{
 									id: "call_datetime",
 									name: "gateway_datetime",
-									arguments: "{\"timezone\":\"UTC\"}",
+									arguments: "{\"timezones\":[\"UTC\"]}",
 								},
 							],
 						},
@@ -236,14 +236,14 @@ describe("runTextGeneratePipeline server tools", () => {
 						{
 							id: "call_datetime",
 							name: "gateway_datetime",
-							arguments: "{\"timezone\":\"UTC\"}",
+							arguments: "{\"timezones\":[\"UTC\"]}",
 						},
 					],
 				},
 				toolResults: [
 					{
 						toolCallId: "call_datetime",
-						content: "{\"datetime\":\"2026-05-09T12:00:00.000+00:00\",\"timezone\":\"UTC\"}",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
 					},
 				],
 				usage: {
@@ -422,7 +422,7 @@ describe("runTextGeneratePipeline server tools", () => {
 								{
 									id: "call_datetime",
 									name: "gateway_datetime",
-									arguments: "{\"timezone\":\"UTC\"}",
+									arguments: "{\"timezones\":[\"UTC\"]}",
 								},
 							],
 						},
@@ -444,14 +444,14 @@ describe("runTextGeneratePipeline server tools", () => {
 						{
 							id: "call_datetime",
 							name: "gateway_datetime",
-							arguments: "{\"timezone\":\"UTC\"}",
+							arguments: "{\"timezones\":[\"UTC\"]}",
 						},
 					],
 				},
 				toolResults: [
 					{
 						toolCallId: "call_datetime",
-						content: "{\"datetime\":\"2026-05-09T12:00:00.000+00:00\",\"timezone\":\"UTC\"}",
+						content: "{\"timezones\":[{\"timezone\":\"UTC\",\"datetime\":\"2026-05-09T12:00:00.000+00:00\"}]}",
 					},
 				],
 				usage: {

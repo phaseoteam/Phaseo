@@ -31,17 +31,17 @@ export default async function DatabaseStats() {
 
 	const stats = [
 		{
-			label: "Tracked models",
+			label: "Models",
 			value: formatStat(roundDisplayValue(data.models ?? 0, 25)),
 			route: "/models",
 		},
 		{
-			label: "Tracked providers",
+			label: "Providers",
 			value: formatStat(roundDisplayValue(data.api_providers ?? 0, 5)),
 			route: "/api-providers",
 		},
 		{
-			label: "Monthly tokens",
+			label: "Monthly Tokens",
 			value: `${formatCompact(monthlyTokenTotal ?? 0)}+`,
 			route: "/",
 		},
@@ -53,13 +53,13 @@ export default async function DatabaseStats() {
 				<Link
 					key={stat.label}
 					href={stat.route}
-					className="group rounded-[24px] border border-zinc-200/70 bg-white/92 px-5 py-5 text-center transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800/70 dark:bg-zinc-950/80 dark:hover:border-zinc-700"
+					className="group rounded-[20px] border border-zinc-200/70 bg-white/92 px-4 py-3.5 text-center transition-colors duration-200 hover:border-zinc-300 dark:border-zinc-800/70 dark:bg-zinc-950/80 dark:hover:border-zinc-700"
 				>
-					<div className="flex flex-col items-center justify-center gap-2">
+					<div className="flex flex-col items-center justify-center gap-1.5">
 						<p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
 							{stat.label}
 						</p>
-						<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-[2rem]">
+						<p className="text-2xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50 sm:text-[1.75rem]">
 							{stat.value}
 						</p>
 

@@ -48,6 +48,79 @@ def test_chat_completions_returns_payload(monkeypatch):
     assert response["pricing_lines"] == [{"provider": "openai", "cost_usd": 0.0025}]
 
 
+def test_stream_chat_parses_text_and_usage(monkeypatch):
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+
+    def fake_stream_text(request):
+        assert request["model"] == "openai/gpt-5-nano"
+        yield 'data: {"choices":[{"delta":{"content":"hel"}}]}'
+        yield (
+            'data: {"choices":[{"delta":{"content":"lo"}}],'
+            '"usage":{"completion_tokens_details":{"reasoning_tokens":7}}}'
+        )
+        yield "data: [DONE]"
+
+    monkeypatch.setattr(client, "stream_text", fake_stream_text)
+
+    text = ""
+    reasoning_tokens = None
+    for chunk in client.stream_chat(
+        {"model": "openai/gpt-5-nano", "messages": [{"role": "user", "content": "hi"}]}
+    ):
+        text += chunk["text"]
+        if chunk.get("reasoning_tokens") is not None:
+            reasoning_tokens = chunk["reasoning_tokens"]
+
+    assert text == "hello"
+    assert reasoning_tokens == 7
+
+
+def test_stream_responses_parses_text_and_usage(monkeypatch):
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+
+    def fake_stream_response(request):
+        assert request["model"] == "openai/gpt-5-nano"
+        yield 'data: {"type":"response.output_text.delta","delta":"hel"}'
+        yield 'data: {"type":"response.completed","response":{"usage":{"output_tokens_details":{"reasoning_tokens":9}}}}'
+        yield "data: [DONE]"
+
+    monkeypatch.setattr(client, "stream_response", fake_stream_response)
+
+    text = ""
+    reasoning_tokens = None
+    for chunk in client.stream_responses({"model": "openai/gpt-5-nano", "input": "hi"}):
+        text += chunk["text"]
+        if chunk.get("reasoning_tokens") is not None:
+            reasoning_tokens = chunk["reasoning_tokens"]
+
+    assert text == "hel"
+    assert reasoning_tokens == 9
+
+
+def test_stream_message_parses_text_and_usage(monkeypatch):
+    client = AIStats(api_key="sk_test_123", base_url="https://example.test")
+
+    def fake_stream_messages(request):
+        assert request["model"] == "anthropic/claude-sonnet-4.5"
+        yield 'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"hi"}}'
+        yield 'data: {"type":"message_delta","message":{"usage":{"reasoning_tokens":3}}}'
+        yield "data: [DONE]"
+
+    monkeypatch.setattr(client, "stream_messages", fake_stream_messages)
+
+    text = ""
+    reasoning_tokens = None
+    for chunk in client.stream_message(
+        {"model": "anthropic/claude-sonnet-4.5", "messages": [{"role": "user", "content": "hi"}]}
+    ):
+        text += chunk["text"]
+        if chunk.get("reasoning_tokens") is not None:
+            reasoning_tokens = chunk["reasoning_tokens"]
+
+    assert text == "hi"
+    assert reasoning_tokens == 3
+
+
 def test_chat_completions_propagates_errors(monkeypatch):
     class Boom(Exception):
         pass

@@ -17,7 +17,7 @@
   "residency_source_url": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/locations",
   "regional_pricing_mode": "offer_specific",
   "pricing_source_url": "https://cloud.google.com/vertex-ai/generative-ai/pricing",
-  "regional_pricing_notes": "Europe multi-region Vertex endpoint. For generally available Gemini 3 and later model families, non-global endpoint pricing starts on July 1, 2026. Before July 1, 2026, Google states that Global endpoint pricing applies to non-global endpoints.",
+  "regional_pricing_notes": "Europe multi-region Vertex endpoint. Anthropic partner-model rates use offer-specific regional pricing when modeled; Claude Sonnet 5 EU multi-region rates are 10% above the global Vertex rates in Google's official pricing table.",
   "country_code": "US",
   "status": "Active",
   "colour": "#4285F4",

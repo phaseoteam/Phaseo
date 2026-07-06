@@ -1,6 +1,6 @@
 {
   "alias_slug": "anthropic/claude-sonnet-latest",
-  "resolved_api_model_id": "anthropic/claude-sonnet-4.6",
+  "resolved_api_model_id": "anthropic/claude-sonnet-5",
   "channel": "stable",
   "is_enabled": true,
   "notes": null

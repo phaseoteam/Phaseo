@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
 import { handleEnterpriseSsoRedirect } from "@/app/(auth)/sign-in/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthSuspenseFallback } from "../../AuthSuspenseFallback";
 
 type EnterpriseSignInPageProps = {
 	searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -16,7 +18,17 @@ export const metadata: Metadata = {
 		"Sign in with your organization's enterprise identity provider.",
 };
 
-export default async function EnterpriseSignInPage({
+export default function EnterpriseSignInPage({
+	searchParams,
+}: EnterpriseSignInPageProps) {
+	return (
+		<Suspense fallback={<AuthSuspenseFallback />}>
+			<EnterpriseSignInPageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function EnterpriseSignInPageContent({
 	searchParams,
 }: EnterpriseSignInPageProps) {
 	const params = (await searchParams) ?? {};

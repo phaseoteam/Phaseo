@@ -1024,10 +1024,6 @@ pub struct ProvisioningKeyWithValue {
 	pub status: Option<String>,
 }
 
-pub struct RealtimeNotImplementedResponse {
-	pub error: HashMap<String, String>,
-}
-
 pub struct ReasoningConfig {
 	pub effort: Option<String>,
 	pub enabled: Option<bool>,
@@ -1152,27 +1148,6 @@ pub struct ResponsesResponse {
 	pub stop_reason: Option<String>,
 	pub r#type: Option<String>,
 	pub usage: Option<HashMap<String, String>>,
-}
-
-pub struct ResponsesWebSocketCreateEvent {
-	pub input: Option<String>,
-	pub model: String,
-	pub previous_response_id: Option<Option<String>>,
-	pub store: Option<bool>,
-	pub tool_choice: Option<String>,
-	pub tools: Option<Vec<HashMap<String, String>>>,
-	pub r#type: String,
-}
-
-pub struct ResponsesWebSocketServerEvent {
-	pub error: Option<HashMap<String, String>>,
-	pub response: Option<HashMap<String, String>>,
-	pub status: Option<i64>,
-	pub r#type: Option<String>,
-}
-
-pub struct ResponsesWebSocketUpgradeRequiredResponse {
-	pub error: Option<HashMap<String, String>>,
 }
 
 pub struct ServerToolUsage {

@@ -26,6 +26,31 @@ const response = await client.responses.create({
 console.log(response.output_text);
 ```
 
+## Streaming example
+
+```ts
+import AIStats from "@ai-stats/sdk";
+
+const client = new AIStats({
+  apiKey: process.env.AI_STATS_API_KEY,
+});
+
+let response = "";
+for await (const chunk of client.streamChat({
+  model: "google/gemma-3-27b:free",
+  messages: [{ role: "user", content: "Stream hi" }],
+})) {
+  if (chunk.text) {
+    response += chunk.text;
+    process.stdout.write(chunk.text);
+  }
+
+  if (chunk.reasoningTokens) {
+    console.log("\nReasoning tokens:", chunk.reasoningTokens);
+  }
+}
+```
+
 ## Drop-in compatibility
 
 The SDK includes compatibility layers for OpenAI and Anthropic-style clients.
@@ -44,6 +69,8 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 
 - `client.responses.create(...)`
 - `client.chat.completions.create(...)`
+- `client.messages.create(...)`
+- `client.streamChat(...)`, `client.streamResponses(...)`, and `client.streamMessages(...)` for parsed streaming chunks with `text`, `usage`, and `reasoningTokens`
 - `client.models.list(...)`
 - `client.listOrganisations(...)` for paginated `/organisations` discovery
 - `client.listPricingModels(...)` for `/pricing/models` catalogue pricing discovery
@@ -60,7 +87,6 @@ Compatibility guide: [COMPAT_GUIDE.md](./COMPAT_GUIDE.md)
 - `client.models.validate(modelId)`
 - `client.ocr.create(...)`, `client.rerank.create(...)`, and `client.music.create(...)` for OCR, rerank, and music generation
 - `client.dataModels.list(...)` for `/data/models`
-- `client.responses.websocketUrl(...)` for Responses websocket connection URLs
 
 Model discovery supports the public `/models` filters, including `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, and `offset`.
 

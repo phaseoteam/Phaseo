@@ -207,6 +207,22 @@ const providerSchema = z
             .enum(["unknown", "unsupported", "optional", "default"])
             .nullable()
             .optional(),
+        prompt_training_policy: z
+            .enum(["unknown", "no_train", "may_train", "opt_out_available", "enterprise_no_train"])
+            .nullable()
+            .optional(),
+        data_policy_tier: z
+            .enum(["unknown", "private", "logs", "trains"])
+            .nullable()
+            .optional(),
+        data_policy_confidence: z
+            .enum(["unknown", "confirmed", "maybe"])
+            .nullable()
+            .optional(),
+        data_policy_contract_mode: z
+            .enum(["none", "customer_agreement", "enterprise_agreement"])
+            .nullable()
+            .optional(),
         provider_model_slug: z.string().nullable().optional(),
         input_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
         output_modalities: z.union([z.array(z.string()), z.string()]).nullable().optional(),
@@ -233,6 +249,14 @@ const providerSchema = z
         dataRegions: provider.data_regions ?? null,
         zeroDataRetention:
             (provider.zero_data_retention ?? null) as GatewayProviderSnapshot["zeroDataRetention"],
+        promptTrainingPolicy:
+            (provider.prompt_training_policy ?? null) as GatewayProviderSnapshot["promptTrainingPolicy"],
+        dataPolicyTier:
+            (provider.data_policy_tier ?? null) as GatewayProviderSnapshot["dataPolicyTier"],
+        dataPolicyConfidence:
+            (provider.data_policy_confidence ?? null) as GatewayProviderSnapshot["dataPolicyConfidence"],
+        dataPolicyContractMode:
+            (provider.data_policy_contract_mode ?? null) as GatewayProviderSnapshot["dataPolicyContractMode"],
         providerModelSlug: provider.provider_model_slug ?? null,
         supportsEndpoint: provider.supports_endpoint ?? true,
         baseWeight: Number.isFinite(provider.base_weight) ? provider.base_weight : 1,

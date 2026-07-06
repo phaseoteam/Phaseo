@@ -51,8 +51,20 @@ function formatExpiryLabel(iso: string | null | undefined): string {
 	return parsed.toLocaleString();
 }
 
-export default function RotateKeyItem({ k }: { k: any }) {
-	const [open, setOpen] = useState(false);
+export default function RotateKeyItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
 	const [loading, setLoading] = useState(false);
 	const [newName, setNewName] = useState(String(k?.name ?? ""));
 	const [expiryMode, setExpiryMode] = useState<ExpiryMode>("24h");
@@ -115,18 +127,19 @@ export default function RotateKeyItem({ k }: { k: any }) {
 				if (!next) reset();
 			}}
 		>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2"
-					onClick={(e) => {
-						e.preventDefault();
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<RefreshCw className="mr-2 h-4 w-4" />
-					Rotate
-				</button>
-			</DropdownMenuItem>
+			{trigger ? (
+				<DropdownMenuItem asChild>
+					<div
+						className="w-full text-left flex items-center gap-2"
+						onClick={() => {
+							setTimeout(() => setOpen(true), 0);
+						}}
+					>
+						<RefreshCw className="mr-2 h-4 w-4" />
+						Rotate
+					</div>
+				</DropdownMenuItem>
+			) : null}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Rotate API key</DialogTitle>

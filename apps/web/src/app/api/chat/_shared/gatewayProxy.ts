@@ -33,6 +33,7 @@ const configuredGatewayBaseUrl = normalizeGatewayBaseUrl(
 	process.env.AI_STATS_GATEWAY_URL,
 );
 export const GATEWAY_BASE_URL = configuredGatewayBaseUrl ?? "";
+const PUBLIC_GATEWAY_BASE_URL = "https://api.phaseo.app/v1";
 const ALLOWED_APP_HEADERS = new Set([
 	"x-title",
 	"http-referer",
@@ -170,7 +171,10 @@ function buildProxyHeaders(args: {
 	};
 }
 
-function buildGatewayUnreachableResponse(error: unknown): Response {
+function buildGatewayUnreachableResponse(
+	error: unknown,
+	baseUrl: string,
+): Response {
 	const isDevelopment = process.env.NODE_ENV !== "production";
 	const cause = getUpstreamCause(error);
 	const details = [
@@ -191,6 +195,7 @@ function buildGatewayUnreachableResponse(error: unknown): Response {
 			...(isDevelopment
 				? {
 						base_url: GATEWAY_BASE_URL,
+						effective_base_url: baseUrl,
 						cause: cause ?? undefined,
 					}
 				: {}),
@@ -213,6 +218,59 @@ function buildGatewayMissingConfigResponse(): Response {
 			headers: { "Content-Type": "application/json" },
 		},
 	);
+}
+
+function isDevelopmentLocalGatewayBaseUrl(
+	baseUrl: string,
+	nodeEnv: string | undefined = process.env.NODE_ENV,
+): boolean {
+	if (nodeEnv === "production") return false;
+	try {
+		const url = new URL(baseUrl);
+		return (
+			url.protocol === "http:" &&
+			(url.hostname === "127.0.0.1" || url.hostname === "localhost") &&
+			url.port === "8787" &&
+			url.pathname.replace(/\/+$/, "") === "/v1"
+		);
+	} catch {
+		return false;
+	}
+}
+
+export function resolveGatewayBaseUrlForEnvironment(args: {
+	configuredBaseUrl?: string;
+	requestedBaseUrl?: string;
+	nodeEnv?: string;
+}): string | null {
+	const nodeEnv = args.nodeEnv ?? process.env.NODE_ENV;
+	const normalizedConfiguredBaseUrl = normalizeGatewayBaseUrl(
+		args.configuredBaseUrl,
+	);
+	if (nodeEnv === "production") {
+		return normalizedConfiguredBaseUrl ?? null;
+	}
+
+	const normalizedRequestedBaseUrl = normalizeGatewayBaseUrl(
+		args.requestedBaseUrl,
+	);
+	if (
+		normalizedRequestedBaseUrl &&
+		(normalizedRequestedBaseUrl === PUBLIC_GATEWAY_BASE_URL ||
+			normalizedRequestedBaseUrl === normalizedConfiguredBaseUrl ||
+			isDevelopmentLocalGatewayBaseUrl(normalizedRequestedBaseUrl, nodeEnv))
+	) {
+		return normalizedRequestedBaseUrl;
+	}
+	return normalizedConfiguredBaseUrl ?? PUBLIC_GATEWAY_BASE_URL;
+}
+
+function resolveGatewayBaseUrl(requestedBaseUrl?: string): string | null {
+	return resolveGatewayBaseUrlForEnvironment({
+		configuredBaseUrl: process.env.AI_STATS_GATEWAY_URL,
+		requestedBaseUrl,
+		nodeEnv: process.env.NODE_ENV,
+	});
 }
 
 export async function forwardUpstreamResponse(args: {
@@ -260,8 +318,10 @@ export async function proxyGatewayPost(args: {
 	debug?: boolean;
 	stream?: boolean;
 	contentType?: string | null;
+	baseUrl?: string;
 }): Promise<Response> {
-	if (!configuredGatewayBaseUrl) {
+	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
+	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}
 
@@ -272,7 +332,7 @@ export async function proxyGatewayPost(args: {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
+		upstream = await fetch(`${gatewayBaseUrl}${args.path}`, {
 			method: "POST",
 			headers: buildProxyHeaders({
 				appHeaders: args.appHeaders,
@@ -284,7 +344,7 @@ export async function proxyGatewayPost(args: {
 			body: JSON.stringify(args.requestBody ?? {}),
 		});
 	} catch (error) {
-		return buildGatewayUnreachableResponse(error);
+		return buildGatewayUnreachableResponse(error, gatewayBaseUrl);
 	}
 
 	return forwardUpstreamResponse({
@@ -297,8 +357,10 @@ export async function proxyGatewayGet(args: {
 	path: string;
 	appHeaders?: unknown;
 	debug?: boolean;
+	baseUrl?: string;
 }): Promise<Response> {
-	if (!configuredGatewayBaseUrl) {
+	const gatewayBaseUrl = resolveGatewayBaseUrl(args.baseUrl);
+	if (!gatewayBaseUrl) {
 		return buildGatewayMissingConfigResponse();
 	}
 
@@ -309,7 +371,7 @@ export async function proxyGatewayGet(args: {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(`${configuredGatewayBaseUrl}${args.path}`, {
+		upstream = await fetch(`${gatewayBaseUrl}${args.path}`, {
 			method: "GET",
 			headers: buildProxyHeaders({
 				appHeaders: args.appHeaders,
@@ -319,7 +381,7 @@ export async function proxyGatewayGet(args: {
 			}),
 		});
 	} catch (error) {
-		return buildGatewayUnreachableResponse(error);
+		return buildGatewayUnreachableResponse(error, gatewayBaseUrl);
 	}
 
 	return forwardUpstreamResponse({

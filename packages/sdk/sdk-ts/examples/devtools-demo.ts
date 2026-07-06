@@ -46,24 +46,15 @@ async function main() {
 
     // Example 2: Streaming chat completion
     console.log("2️⃣  Testing streaming chat completion...");
-    const stream = client.streamText({
+    const stream = client.streamChat({
       model: "openai/gpt-5-nano",
       messages: [{ role: "user", content: "Count from 1 to 5" }]
     });
 
     process.stdout.write("✓ Stream: ");
     for await (const chunk of stream) {
-      // Parse SSE chunk
-      if (chunk.startsWith("data: ")) {
-        const data = chunk.slice(6);
-        if (data === "[DONE]") break;
-        try {
-          const parsed = JSON.parse(data);
-          const content = parsed.choices[0]?.delta?.content;
-          if (content) {
-            process.stdout.write(content);
-          }
-        } catch {}
+      if (chunk.text) {
+        process.stdout.write(chunk.text);
       }
     }
     console.log("\n");

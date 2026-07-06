@@ -4,9 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
-import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboardPreview";
+import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
 export type PerformanceLeaderboardEntry = {
@@ -28,8 +28,8 @@ type PerformanceLeaderboardProps = {
 
 function formatThroughput(value: number) {
 	if (!Number.isFinite(value)) return "--";
-	if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
-	if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+	if (value >= 1e6) return `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+	if (value >= 1e3) return `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
 	return value.toFixed(1);
 }
 
@@ -46,32 +46,37 @@ export function PerformanceLeaderboard({
 
 	if (!data.length) {
 		return (
-			<RankingsEmptyState
+			<EmptyLeaderboardPreview
 				title="No performance data yet"
 				description="Performance stats appear once enough requests are aggregated."
 			/>
 		);
 	}
 
-	const visibleEntries = data.slice(0, maxCollapsed);
-	const extraEntries = data.slice(maxCollapsed, maxExpanded);
+	const visibleEntries = data.slice(0, showAll ? maxExpanded : maxCollapsed);
+	const listColumnSplit = Math.ceil(visibleEntries.length / 2);
+	const listColumns = [
+		visibleEntries.slice(0, listColumnSplit),
+		visibleEntries.slice(listColumnSplit),
+	].filter((column) => column.length > 0);
 
 	const renderRow = (entry: PerformanceLeaderboardEntry, index: number, rank: number) => {
 		const providerId = entry.provider_id ?? null;
 		const modelHref = getModelHref(entry);
+		const modelName = formatModelDisplayName(entry.model_name, entry.model_id);
 		return (
 			<div
 				key={`${entry.key}-${index}`}
-				className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3"
+				className="grid min-h-16 grid-cols-[2.25rem_2rem_minmax(0,1fr)_auto] items-center gap-3 py-2"
 			>
-				<div className="w-6 text-xs text-muted-foreground">#{rank}</div>
+				<div className="text-base tabular-nums text-muted-foreground">{rank}.</div>
 				{providerId ? (
 					<Link
 						href={`/api-providers/${encodeURIComponent(providerId)}`}
 						aria-label={entry.provider_name ?? providerId}
-						className="h-9 w-9 rounded-xl border border-border/60 flex items-center justify-center"
+						className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800"
 					>
-						<div className="relative h-5 w-5">
+						<div className="relative h-4 w-4">
 							<Logo
 								id={providerId}
 								alt={entry.provider_name ?? providerId}
@@ -80,17 +85,19 @@ export function PerformanceLeaderboard({
 							/>
 						</div>
 					</Link>
-				) : null}
-				<div className="min-w-0 flex-1">
+				) : (
+					<div className="h-7 w-7" />
+				)}
+				<div className="min-w-0">
 					{modelHref ? (
 						<Link
 							href={modelHref}
-							className="font-medium truncate block underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200"
+							className="block truncate text-base font-semibold underline decoration-transparent underline-offset-2 transition-colors duration-200 hover:decoration-current"
 						>
-							{entry.model_name}
+							{modelName}
 						</Link>
 					) : (
-						<div className="font-medium truncate">{entry.model_name}</div>
+						<div className="truncate text-base font-semibold">{modelName}</div>
 					)}
 					{entry.provider_name ? (
 						providerId ? (
@@ -108,7 +115,7 @@ export function PerformanceLeaderboard({
 					) : null}
 				</div>
 				<div className="text-right">
-					<div className="tabular-nums text-sm">
+					<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
 						{formatThroughput(entry.throughput)}{" "}
 						<span className="text-xs text-muted-foreground">tok/s</span>
 					</div>
@@ -119,49 +126,32 @@ export function PerformanceLeaderboard({
 
 	return (
 		<div className="space-y-4">
-			<div className="space-y-2">
-				<div className="grid gap-2 md:grid-cols-2">
-					{visibleEntries.map((entry, index) =>
-						renderRow(entry, index, index + 1)
-					)}
-				</div>
-				{extraEntries.length > 0 ? (
-					<div
-						className={cn(
-							"grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-out",
-							showAll
-								? "grid-rows-[1fr] opacity-100"
-								: "grid-rows-[0fr] opacity-0"
-						)}
-					>
-						<div className="overflow-hidden">
-							<div className="pt-2">
-								<div className="grid gap-2 md:grid-cols-2">
-									{extraEntries.map((entry, index) =>
-										renderRow(
-											entry,
-											index + maxCollapsed,
-											index + maxCollapsed + 1
-										)
-									)}
-								</div>
-							</div>
-						</div>
+			<div className="grid gap-x-16 gap-y-1 md:grid-cols-2">
+				{listColumns.map((column, columnIndex) => (
+					<div key={`performance-column-${columnIndex}`} className="space-y-1">
+						{column.map((entry, columnRowIndex) => {
+							const index =
+								columnIndex === 0
+									? columnRowIndex
+									: listColumnSplit + columnRowIndex;
+							return renderRow(entry, index, index + 1);
+						})}
 					</div>
-				) : null}
+				))}
 			</div>
 
 			{data.length > maxCollapsed ? (
 				<div className="flex justify-center">
 					<Button
 						type="button"
-						variant="outline"
+						variant="ghost"
 						size="sm"
 						onClick={() => setShowAll((prev) => !prev)}
 						aria-expanded={showAll}
+						className="text-muted-foreground"
 					>
 						<span className="flex items-center gap-2">
-							{showAll ? "Show top 10" : "Show top 20"}
+							{showAll ? "Show less" : "Show more"}
 							<ChevronDown
 								className={[
 									"h-4 w-4 transition-transform",

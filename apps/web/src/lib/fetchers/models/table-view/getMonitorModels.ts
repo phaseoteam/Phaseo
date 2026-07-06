@@ -80,6 +80,10 @@ type ProviderRegionRow = {
 const MONITOR_RPC_PAGE_SIZE = 1000;
 const PRICING_RULE_PAGE_SIZE = 1000;
 
+function isInternalTestingCapability(value: unknown): boolean {
+	return normalizeCapabilityStatus(value) === "internal_testing";
+}
+
 type PricingRuleSupplementRow = {
 	model_key: string | null;
 	pricing_plan: string | null;
@@ -110,6 +114,7 @@ type PricingSupplement = {
 
 async function fetchAllMonitorModelRows(
 	includeHidden: boolean,
+	includeInternal = false,
 ): Promise<MonitorModelRpcRow[]> {
 	const supabase = createAdminClient();
 	const rows: MonitorModelRpcRow[] = [];
@@ -126,10 +131,13 @@ async function fetchAllMonitorModelRows(
 			throw error;
 		}
 
-		const page = (data ?? []) as MonitorModelRpcRow[];
+		const rawPage = (data ?? []) as MonitorModelRpcRow[];
+		const page = rawPage.filter(
+			(row) => includeInternal || !isInternalTestingCapability(row.capability_status),
+		);
 		rows.push(...page);
 
-		if (page.length < MONITOR_RPC_PAGE_SIZE) {
+		if (rawPage.length < MONITOR_RPC_PAGE_SIZE) {
 			break;
 		}
 	}
@@ -663,7 +671,8 @@ async function fetchPricingSupplements(
 
 async function getMonitorModelsCached(
 	filters: MonitorModelFilters = {},
-	includeHidden: boolean
+	includeHidden: boolean,
+	includeInternal = false,
 ): Promise<{
 	models: MonitorModelData[];
 	allTiers: string[];
@@ -684,7 +693,7 @@ async function getMonitorModelsCached(
 	cacheTag("data:models");
 	cacheTag("data:api_providers");
 
-	const rpcRows = await fetchAllMonitorModelRows(includeHidden);
+	const rpcRows = await fetchAllMonitorModelRows(includeHidden, includeInternal);
 	const providerRegionMap = await fetchProviderExecutionRegions(
 		Array.from(
 			new Set(
@@ -1104,6 +1113,7 @@ async function getMonitorModelsCached(
 export async function getMonitorModels(
 	filters: MonitorModelFilters = {},
 	includeHidden: boolean,
+	includeInternal = false,
 ): Promise<{
 	models: MonitorModelData[];
 	allTiers: string[];
@@ -1112,6 +1122,6 @@ export async function getMonitorModels(
 	allFeatures: string[];
 	allStatuses: string[];
 }> {
-	return getMonitorModelsCached(filters, includeHidden);
+	return getMonitorModelsCached(filters, includeHidden, includeInternal);
 }
 

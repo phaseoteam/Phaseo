@@ -2,7 +2,7 @@
   "model_id": "mistral/mistral-moderation",
   "organisation_id": "mistral",
   "name": "Mistral Moderation",
-  "status": "Deprecated",
+  "status": "Retired",
   "previous_model_id": null,
   "description": "Mistral Moderation is a safety model from Mistral for moderation, prompt filtering, and policy enforcement. It is suited to input filtering, safety checks, and policy enforcement in LLM applications.",
   "announced_date": "2024-11-06T00:00:00",

@@ -20,6 +20,16 @@ const OUTPUT_DETAILED_METERS = new Set<string>([
     'output_audio_tokens',
     'output_video_tokens',
 ]);
+const REASONING_PARAM_NAMES = new Set<string>(['reasoning', 'reasoning_effort']);
+const KNOWN_REASONING_EFFORTS = new Set<string>([
+    'none',
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+]);
 
 const ALLOWED_BILL_MODES = new Set<string>(['all', 'over', 'between']);
 const ALLOWED_BILLING_TIMESTAMP_BASES = new Set<string>([
@@ -372,6 +382,9 @@ function validateCapabilityParams(
             if (!isJsonLike(entry)) {
                 errors.push(`${label}[${index}] contains non-JSON metadata`);
             }
+            if (paramId && REASONING_PARAM_NAMES.has(paramId)) {
+                errors.push(...validateReasoningEffortValues(entry.values, `${label}[${index}]`));
+            }
         }
         return errors;
     }
@@ -392,6 +405,31 @@ function validateCapabilityParams(
         }
         if (!isJsonLike(detail)) {
             errors.push(`${label}.${paramName} contains non-JSON metadata`);
+        }
+        if (REASONING_PARAM_NAMES.has(paramName)) {
+            const detailObject = isPlainObject(detail) ? detail : null;
+            errors.push(
+                ...validateReasoningEffortValues(
+                    detailObject?.values,
+                    `${label}.${paramName}`
+                )
+            );
+        }
+    }
+    return errors;
+}
+
+function validateReasoningEffortValues(value: unknown, label: string): string[] {
+    if (value == null) return [];
+    if (!Array.isArray(value)) {
+        return [`${label}.values must be an array when present`];
+    }
+    const errors: string[] = [];
+    for (const [index, effort] of value.entries()) {
+        if (typeof effort !== 'string' || !KNOWN_REASONING_EFFORTS.has(effort)) {
+            errors.push(
+                `${label}.values[${index}] must be one of ${Array.from(KNOWN_REASONING_EFFORTS).join(', ')}`
+            );
         }
     }
     return errors;
@@ -918,6 +956,27 @@ function checkApiProviders(state: ValidationState): string[] {
             errors.push(`API provider ${providerId} has invalid zero_data_retention '${String(data.zero_data_retention)}'`);
         }
         if (
+            data.data_policy_tier !== undefined &&
+            data.data_policy_tier !== null &&
+            !['unknown', 'private', 'logs', 'trains'].includes(String(data.data_policy_tier))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_tier '${String(data.data_policy_tier)}'`);
+        }
+        if (
+            data.data_policy_confidence !== undefined &&
+            data.data_policy_confidence !== null &&
+            !['unknown', 'confirmed', 'maybe'].includes(String(data.data_policy_confidence))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_confidence '${String(data.data_policy_confidence)}'`);
+        }
+        if (
+            data.data_policy_contract_mode !== undefined &&
+            data.data_policy_contract_mode !== null &&
+            !['none', 'customer_agreement', 'enterprise_agreement'].includes(String(data.data_policy_contract_mode))
+        ) {
+            errors.push(`API provider ${providerId} has invalid data_policy_contract_mode '${String(data.data_policy_contract_mode)}'`);
+        }
+        if (
             data.regional_pricing_mode !== undefined &&
             data.regional_pricing_mode !== null &&
             !['unknown', 'same_as_global', 'uplift', 'source_region_rates', 'offer_specific'].includes(String(data.regional_pricing_mode))
@@ -943,6 +1002,7 @@ function checkApiProviders(state: ValidationState): string[] {
         for (const key of [
             'prompt_training_notes',
             'prompt_training_source_url',
+            'data_policy_contract_notes',
             'user_identifier_notes',
             'privacy_policy_url',
             'terms_of_service_url',

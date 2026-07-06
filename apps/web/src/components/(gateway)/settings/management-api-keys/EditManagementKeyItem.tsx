@@ -34,8 +34,20 @@ function toIsoFromDateTimeLocalInput(value: string): string | null {
 	return date.toISOString();
 }
 
-export default function EditManagementKeyItem({ k }: any) {
+export default function EditManagementKeyItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
 	const [open, setOpen] = useState(false);
+	const dialogOpen = controlledOpen ?? open;
+	const setDialogOpen = onOpenChange ?? setOpen;
 	const [name, setName] = useState(k.name || "");
 	const [paused, setPaused] = useState(k.status !== "active");
 	const [expiresAtLocal, setExpiresAtLocal] = useState(() =>
@@ -63,26 +75,30 @@ export default function EditManagementKeyItem({ k }: any) {
 					return message;
 				},
 			});
-			setOpen(false);
+			setDialogOpen(false);
 		} finally {
 			setLoading(false);
 		}
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DropdownMenuItem asChild>
-				<button
-					className="w-full text-left flex items-center gap-2"
-					onClick={(e) => {
-						e.preventDefault();
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<Edit2 className="mr-2" />
-					Edit
-				</button>
-			</DropdownMenuItem>
+		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+			{trigger ? (
+				<DropdownMenuItem asChild>
+					<div
+						role="button"
+						tabIndex={0}
+						className="w-full text-left flex items-center gap-2"
+						onClick={(e) => {
+							e.preventDefault();
+							setTimeout(() => setDialogOpen(true), 0);
+						}}
+					>
+						<Edit2 className="mr-2" />
+						Edit
+					</div>
+				</DropdownMenuItem>
+			) : null}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">

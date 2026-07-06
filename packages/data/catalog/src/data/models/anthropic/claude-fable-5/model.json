@@ -14,10 +14,6 @@
   "output_types": "text",
   "api_model_id": "anthropic/claude-fable-5",
   "family_id": "anthropic/claude-fable",
-  "page_notice": {
-    "tone": "critical",
-    "markdown": "Anthropic said on June 12, 2026 that it had to disable Fable 5 and Mythos 5 for all customers to comply with a U.S. export control directive. Requests to this model are currently expected to fail. [Read Anthropic's statement](https://www.anthropic.com/news/fable-mythos-access)."
-  },
   "links": [
     {
       "platform": "announcement",

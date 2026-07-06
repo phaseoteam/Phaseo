@@ -290,10 +290,7 @@ export function normalizeProviderCacheOptions(rawRequest: any): {
 
 	return {
 		promptCacheRetention: pickFirstNonEmptyString(
-			rawRequest?.prompt_cache_retention,
-			rawRequest?.promptCacheRetention,
 			openaiOptions?.prompt_cache_retention,
-			openaiOptions?.promptCacheRetention,
 		),
 		anthropicCacheControl: normalizeCacheControl(
 			anthropicOptions?.cache_control ??
@@ -311,9 +308,5 @@ export function normalizeProviderCacheOptions(rawRequest: any): {
 		),
 	};
 }
-
-
-
-
 
 

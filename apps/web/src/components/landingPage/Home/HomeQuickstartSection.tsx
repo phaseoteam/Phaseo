@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import {
+	useEffect,
+	useState,
+	useSyncExternalStore,
+	type ComponentProps,
+	type ReactNode,
+} from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import NumberFlow from "@number-flow/react";
@@ -16,6 +22,7 @@ type Benefit = {
 };
 
 type QuickstartVariant = "default" | "beta";
+type NumberFlowFormat = ComponentProps<typeof NumberFlow>["format"];
 
 export type LandingOpenModelIntelEntry = {
 	providerId: string;
@@ -26,6 +33,30 @@ export type LandingOpenModelIntelEntry = {
 	inputPrice: number;
 	outputPrice: number;
 };
+
+function useIsHydrated() {
+	return useSyncExternalStore(
+		() => () => {},
+		() => true,
+		() => false,
+	);
+}
+
+function HydratedNumberFlow({
+	value,
+	format,
+}: {
+	value: number;
+	format?: NumberFlowFormat;
+}) {
+	const isHydrated = useIsHydrated();
+
+	if (!isHydrated) {
+		return <>{new Intl.NumberFormat("en-US", format).format(value)}</>;
+	}
+
+	return <NumberFlow value={value} format={format} />;
+}
 
 const BENEFITS_DEFAULT: Benefit[] = [
 	{
@@ -736,13 +767,16 @@ function BetaDatabaseVisual() {
 						</div>
 					}
 				/>
-				<div className="grid grid-cols-2 gap-4 xl:grid-cols-[0.9fr_1fr_1.2fr]">
+				<div
+					className="grid grid-cols-2 gap-4 xl:grid-cols-[0.9fr_1fr_1.2fr]"
+					data-nosnippet
+				>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
 							Latency
 						</span>
 						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
-							<NumberFlow value={currentModel.latencyMs} />
+							<HydratedNumberFlow value={currentModel.latencyMs} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								ms
 							</span>
@@ -753,7 +787,7 @@ function BetaDatabaseVisual() {
 							Throughput
 						</span>
 						<p className="mt-1 text-[16px] font-semibold leading-none tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
-							<NumberFlow value={currentModel.throughputTps} />
+							<HydratedNumberFlow value={currentModel.throughputTps} />
 							<span className="ml-0.5 text-[10px] font-medium tracking-normal text-zinc-500 dark:text-zinc-400">
 								tok/s
 							</span>
@@ -764,9 +798,9 @@ function BetaDatabaseVisual() {
 							Pricing
 						</span>
 						<p className="mt-1 whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
-							$<NumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							$<HydratedNumberFlow value={currentModel.inputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 							<span className="px-1 text-zinc-400 dark:text-zinc-500">/</span>$
-							<NumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
+							<HydratedNumberFlow value={currentModel.outputPrice} format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }} />
 						</p>
 					</div>
 				</div>

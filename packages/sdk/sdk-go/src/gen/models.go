@@ -47,7 +47,6 @@ type AnthropicMessage struct {
 }
 
 type AnthropicMessagesRequest struct {
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	MaxTokens int `json:"max_tokens"`
@@ -55,7 +54,6 @@ type AnthropicMessagesRequest struct {
 	Meta *bool `json:"meta,omitempty"`
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 	Model string `json:"model"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1025,7 +1023,6 @@ type ChatChoice struct {
 }
 
 type ChatCompletionsRequest struct {
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	FrequencyPenalty *float64 `json:"frequency_penalty,omitempty"`
@@ -1043,7 +1040,6 @@ type ChatCompletionsRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PresencePenalty *float64 `json:"presence_penalty,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -1397,6 +1393,7 @@ const (
 	KnownModelIdAnthropicClaudeOpus48 KnownModelId = "anthropic/claude-opus-4.8"
 	KnownModelIdAnthropicClaudeSonnet45 KnownModelId = "anthropic/claude-sonnet-4.5"
 	KnownModelIdAnthropicClaudeSonnet46 KnownModelId = "anthropic/claude-sonnet-4.6"
+	KnownModelIdAnthropicClaudeSonnet5 KnownModelId = "anthropic/claude-sonnet-5"
 	KnownModelIdArceeAiTrinityLarge KnownModelId = "arcee-ai/trinity-large"
 	KnownModelIdArceeAiTrinityLargeThinking KnownModelId = "arcee-ai/trinity-large-thinking"
 	KnownModelIdArceeAiTrinityMini KnownModelId = "arcee-ai/trinity-mini"
@@ -1421,6 +1418,7 @@ const (
 	KnownModelIdBytedanceSeedTranslation KnownModelId = "bytedance/seed-translation"
 	KnownModelIdBytedanceSeedance20 KnownModelId = "bytedance/seedance-2.0"
 	KnownModelIdBytedanceSeedance20Fast KnownModelId = "bytedance/seedance-2.0-fast"
+	KnownModelIdBytedanceSeedance20Mini260615 KnownModelId = "bytedance/seedance-2.0-mini-260615"
 	KnownModelIdCrofaiGreg1Mini KnownModelId = "crofai/greg-1-mini"
 	KnownModelIdCrofaiGreg2Super KnownModelId = "crofai/greg-2-super"
 	KnownModelIdCrofaiGreg2Ultra KnownModelId = "crofai/greg-2-ultra"
@@ -1444,6 +1442,14 @@ const (
 	KnownModelIdDeepseekDeepseekV4Flash KnownModelId = "deepseek/deepseek-v4-flash"
 	KnownModelIdDeepseekDeepseekV4Pro KnownModelId = "deepseek/deepseek-v4-pro"
 	KnownModelIdDeepseekDeepseekV4ProLightning KnownModelId = "deepseek/deepseek-v4-pro-lightning"
+	KnownModelIdElevenLabsElevenFlashV2 KnownModelId = "eleven-labs/eleven-flash-v2"
+	KnownModelIdElevenLabsElevenFlashV25 KnownModelId = "eleven-labs/eleven-flash-v2.5"
+	KnownModelIdElevenLabsElevenMonolingualV1 KnownModelId = "eleven-labs/eleven-monolingual-v1"
+	KnownModelIdElevenLabsElevenMultilingualV1 KnownModelId = "eleven-labs/eleven-multilingual-v1"
+	KnownModelIdElevenLabsElevenMultilingualV2 KnownModelId = "eleven-labs/eleven-multilingual-v2"
+	KnownModelIdElevenLabsElevenTurboV2 KnownModelId = "eleven-labs/eleven-turbo-v2"
+	KnownModelIdElevenLabsElevenTurboV25 KnownModelId = "eleven-labs/eleven-turbo-v2.5"
+	KnownModelIdElevenLabsElevenV3 KnownModelId = "eleven-labs/eleven-v3"
 	KnownModelIdEssentialAiRnj1 KnownModelId = "essential-ai/rnj-1"
 	KnownModelIdGoogleGemini25Flash KnownModelId = "google/gemini-2.5-flash"
 	KnownModelIdGoogleGemini25FlashLite KnownModelId = "google/gemini-2.5-flash-lite"
@@ -1455,11 +1461,13 @@ const (
 	KnownModelIdGoogleGemini31FlashImage KnownModelId = "google/gemini-3.1-flash-image"
 	KnownModelIdGoogleGemini31FlashImagePreview KnownModelId = "google/gemini-3.1-flash-image-preview"
 	KnownModelIdGoogleGemini31FlashLite KnownModelId = "google/gemini-3.1-flash-lite"
+	KnownModelIdGoogleGemini31FlashLiteImage KnownModelId = "google/gemini-3.1-flash-lite-image"
 	KnownModelIdGoogleGemini31FlashLitePreview KnownModelId = "google/gemini-3.1-flash-lite-preview"
 	KnownModelIdGoogleGemini31FlashTtsPreview KnownModelId = "google/gemini-3.1-flash-tts-preview"
 	KnownModelIdGoogleGemini31ProPreview KnownModelId = "google/gemini-3.1-pro-preview"
 	KnownModelIdGoogleGemini31ProPreviewCustomtools KnownModelId = "google/gemini-3.1-pro-preview-customtools"
 	KnownModelIdGoogleGemini35Flash KnownModelId = "google/gemini-3.5-flash"
+	KnownModelIdGoogleGemini35Pro KnownModelId = "google/gemini-3.5-pro"
 	KnownModelIdGoogleGeminiEmbedding001 KnownModelId = "google/gemini-embedding-001"
 	KnownModelIdGoogleGeminiEmbedding2 KnownModelId = "google/gemini-embedding-2"
 	KnownModelIdGoogleGeminiEmbedding2Preview KnownModelId = "google/gemini-embedding-2-preview"
@@ -1490,7 +1498,7 @@ const (
 	KnownModelIdKwaipilotKatCoderProV1 KnownModelId = "kwaipilot/kat-coder-pro-v1"
 	KnownModelIdKwaipilotKatCoderProV2 KnownModelId = "kwaipilot/kat-coder-pro-v2"
 	KnownModelIdLiquidAiLfm224bA2b KnownModelId = "liquid-ai/lfm-2-24b-a2b"
-	KnownModelIdMeituanLongcat20Preview KnownModelId = "meituan/longcat-2.0-preview"
+	KnownModelIdMeituanLongcat20 KnownModelId = "meituan/longcat-2.0"
 	KnownModelIdMetaLlama370b KnownModelId = "meta/llama-3-70b"
 	KnownModelIdMetaLlama38b KnownModelId = "meta/llama-3-8b"
 	KnownModelIdMetaLlama38bLite KnownModelId = "meta/llama-3-8b-lite"
@@ -1523,6 +1531,7 @@ const (
 	KnownModelIdMistralDevstral2 KnownModelId = "mistral/devstral-2"
 	KnownModelIdMistralDevstralMedium10 KnownModelId = "mistral/devstral-medium-1.0"
 	KnownModelIdMistralDevstralSmall11 KnownModelId = "mistral/devstral-small-1.1"
+	KnownModelIdMistralLeanstral15Free KnownModelId = "mistral/leanstral-1.5:free"
 	KnownModelIdMistralMagistralMedium12 KnownModelId = "mistral/magistral-medium-1.2"
 	KnownModelIdMistralMinistral314b KnownModelId = "mistral/ministral-3-14b"
 	KnownModelIdMistralMinistral33b KnownModelId = "mistral/ministral-3-3b"
@@ -1645,8 +1654,8 @@ const (
 	KnownModelIdOpenaiTextEmbeddingAda002 KnownModelId = "openai/text-embedding-ada-002"
 	KnownModelIdOpenaiWhisper1 KnownModelId = "openai/whisper-1"
 	KnownModelIdPoolsideLagunaM1Free KnownModelId = "poolside/laguna-m.1:free"
+	KnownModelIdPoolsideLagunaXs21Free KnownModelId = "poolside/laguna-xs-2.1:free"
 	KnownModelIdPoolsideLagunaXs2Free KnownModelId = "poolside/laguna-xs.2:free"
-	KnownModelIdPrimeintellectIntellect3 KnownModelId = "primeintellect/intellect-3"
 	KnownModelIdQwenQvqMax KnownModelId = "qwen/qvq-max"
 	KnownModelIdQwenQwen36Plus KnownModelId = "qwen/qwen-3.6-plus"
 	KnownModelIdQwenQwenFlash KnownModelId = "qwen/qwen-flash"
@@ -1795,9 +1804,6 @@ const (
 	KnownModelIdXAiGrokImagineVideo KnownModelId = "x-ai/grok-imagine-video"
 	KnownModelIdXAiGrokTts KnownModelId = "x-ai/grok-tts"
 	KnownModelIdXiaomiMimoV2Flash KnownModelId = "xiaomi/mimo-v2-flash"
-	KnownModelIdXiaomiMimoV2Omni KnownModelId = "xiaomi/mimo-v2-omni"
-	KnownModelIdXiaomiMimoV2Pro KnownModelId = "xiaomi/mimo-v2-pro"
-	KnownModelIdXiaomiMimoV2TtsFree KnownModelId = "xiaomi/mimo-v2-tts:free"
 	KnownModelIdXiaomiMimoV25 KnownModelId = "xiaomi/mimo-v2.5"
 	KnownModelIdXiaomiMimoV25Pro KnownModelId = "xiaomi/mimo-v2.5-pro"
 	KnownModelIdXiaomiMimoV25TtsFree KnownModelId = "xiaomi/mimo-v2.5-tts:free"
@@ -2070,6 +2076,7 @@ const (
 	OrganisationIdOpenai OrganisationId = "openai"
 	OrganisationIdPerplexity OrganisationId = "perplexity"
 	OrganisationIdPoe OrganisationId = "poe"
+	OrganisationIdPoolside OrganisationId = "poolside"
 	OrganisationIdPrimeIntellect OrganisationId = "prime-intellect"
 	OrganisationIdQwen OrganisationId = "qwen"
 	OrganisationIdRelace OrganisationId = "relace"
@@ -2155,10 +2162,6 @@ type ProvisioningKeyWithValue struct {
 	Status *string `json:"status,omitempty"`
 }
 
-type RealtimeNotImplementedResponse struct {
-	Error map[string]interface{} `json:"error"`
-}
-
 type ReasoningConfig struct {
 	Effort *string `json:"effort,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
@@ -2239,7 +2242,6 @@ type ResponsesOutputTextPart struct {
 
 type ResponsesRequest struct {
 	Background *bool `json:"background,omitempty"`
-	CacheControl *map[string]interface{} `json:"cache_control,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	ImageConfig *map[string]interface{} `json:"image_config,omitempty"`
@@ -2254,7 +2256,6 @@ type ResponsesRequest struct {
 	ParallelToolCalls *bool `json:"parallel_tool_calls,omitempty"`
 	PreviousResponseId *string `json:"previous_response_id,omitempty"`
 	PromptCacheKey *string `json:"prompt_cache_key,omitempty"`
-	PromptCacheRetention *string `json:"prompt_cache_retention,omitempty"`
 	Provider *map[string]interface{} `json:"provider,omitempty"`
 	ProviderOptions *map[string]interface{} `json:"provider_options,omitempty"`
 	Reasoning *map[string]interface{} `json:"reasoning,omitempty"`
@@ -2285,27 +2286,6 @@ type ResponsesResponse struct {
 	StopReason *string `json:"stop_reason,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Usage *map[string]interface{} `json:"usage,omitempty"`
-}
-
-type ResponsesWebSocketCreateEvent struct {
-	Input interface{} `json:"input,omitempty"`
-	Model string `json:"model"`
-	PreviousResponseId *string `json:"previous_response_id,omitempty"`
-	Store *bool `json:"store,omitempty"`
-	ToolChoice interface{} `json:"tool_choice,omitempty"`
-	Tools *[]map[string]interface{} `json:"tools,omitempty"`
-	Type string `json:"type"`
-}
-
-type ResponsesWebSocketServerEvent struct {
-	Error *map[string]interface{} `json:"error,omitempty"`
-	Response *map[string]interface{} `json:"response,omitempty"`
-	Status *int `json:"status,omitempty"`
-	Type *string `json:"type,omitempty"`
-}
-
-type ResponsesWebSocketUpgradeRequiredResponse struct {
-	Error *map[string]interface{} `json:"error,omitempty"`
 }
 
 type ServerToolUsage struct {

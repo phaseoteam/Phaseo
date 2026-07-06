@@ -266,7 +266,7 @@ def fetch_together_models() -> list[str]:
     if not api_key:
         return []
     try:
-        response = requests.get('https://api.together.ai/v1/models', headers={'Authorization': f'Bearer {api_key}'}, timeout=30)
+        response = requests.get('https://api.together.ai/v1/models', headers={'Authorization': f'Bearer {api_key}'})
         if response.status_code != 200:
             return []
         data = response.json()

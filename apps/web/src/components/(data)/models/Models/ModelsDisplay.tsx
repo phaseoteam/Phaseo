@@ -8,10 +8,12 @@ import {
 	useMemo,
 	useRef,
 	useState,
+	type ReactNode,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import {
 	Search,
@@ -31,10 +33,11 @@ import {
 	FileText,
 	Headphones,
 	Music4,
+	RotateCcw,
 	Route,
+	SearchX,
 	Sparkles,
 	Speech,
-	Text as TextIcon,
 	Type as TypeIcon,
 	ImageIcon,
 	Video,
@@ -67,7 +70,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import {
 	Sheet,
@@ -144,6 +146,16 @@ const SORT_OPTION_LABELS: Record<ModelsSortOption, string> = {
 	latency_low_to_high: "Latency: Low to High",
 };
 
+const SORT_TRIGGER_LABELS: Record<ModelsSortOption, string> = {
+	newest: "Newest",
+	popular_week: "Most Popular",
+	price_low_to_high: "Lowest Price",
+	price_high_to_low: "Highest Price",
+	context_high_to_low: "Largest Context",
+	throughput_high_to_low: "Fastest Throughput",
+	latency_low_to_high: "Lowest Latency",
+};
+
 const CONTEXT_LENGTH_STOPS = [
 	0,
 	4_000,
@@ -173,6 +185,49 @@ const OUTPUT_MODALITY_DISPLAY_ORDER = [
 	"audio_music",
 ] as const;
 const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
+const ENDPOINT_DISPLAY_ORDER = [
+	"responses",
+	"chat/completions",
+	"messages",
+	"completions",
+	"embeddings",
+	"text/rerank",
+	"rerank",
+	"moderations",
+	"image/generate",
+	"image/edit",
+	"images/generations",
+	"images/edits",
+	"audio/speech",
+	"audio/transcription",
+	"audio/transcriptions",
+	"audio/translations",
+	"video/generations",
+] as const;
+
+const ENDPOINT_LABELS: Record<string, string> = {
+	responses: "Responses",
+	"chat/completions": "Chat Completions",
+	messages: "Messages",
+	completions: "Completions",
+	embeddings: "Embeddings",
+	"text/rerank": "Rerank",
+	rerank: "Rerank",
+	moderations: "Moderations",
+	"image/generate": "Image Generation",
+	"image/edit": "Image Editing",
+	"images/generations": "Image Generation",
+	"images/edits": "Image Editing",
+	"audio/speech": "Text to Speech",
+	"audio/transcription": "Transcription",
+	"audio/transcriptions": "Transcription",
+	"audio/translations": "Translation",
+	"video/generations": "Video Generation",
+};
+
+const endpointOrder = new Map(
+	ENDPOINT_DISPLAY_ORDER.map((value, index) => [value, index] as const),
+);
 
 function normalizeSortOption(value: string | null | undefined): ModelsSortOption {
 	const normalized = String(value ?? "").trim();
@@ -412,6 +467,50 @@ function formatRegionLabel(value: string): string {
 	return normalized ? normalized.toUpperCase() : value;
 }
 
+function normalizeEndpointValue(value: string): string {
+	return String(value ?? "")
+		.trim()
+		.toLowerCase()
+		.replace(/[._-]+/g, "/")
+		.replace(/\/+/g, "/");
+}
+
+function formatEndpointLabel(value: string): string {
+	const normalized = normalizeEndpointValue(value);
+	if (ENDPOINT_LABELS[normalized]) return ENDPOINT_LABELS[normalized];
+	return normalized
+		.split(/[._/-]+/g)
+		.filter(Boolean)
+		.map((word) => {
+			if (word === "api") return "API";
+			if (word === "tts") return "TTS";
+			if (word === "stt") return "STT";
+			return word.charAt(0).toUpperCase() + word.slice(1);
+		})
+		.join(" ");
+}
+
+function getEndpointSortRank(value: string): number {
+	const normalized = normalizeEndpointValue(value);
+	const directRank = endpointOrder.get(
+		normalized as (typeof ENDPOINT_DISPLAY_ORDER)[number],
+	);
+	if (directRank !== undefined) return directRank;
+	if (normalized.includes("response")) return 0;
+	if (normalized.includes("chat")) return 1;
+	if (normalized.includes("message")) return 2;
+	if (normalized.includes("completion")) return 3;
+	if (normalized.includes("embedding")) return 4;
+	if (normalized.includes("rerank")) return 5;
+	if (normalized.includes("moderation")) return 6;
+	if (normalized.includes("image")) return 7;
+	if (normalized.includes("speech")) return 8;
+	if (normalized.includes("transcription")) return 9;
+	if (normalized.includes("translation")) return 10;
+	if (normalized.includes("video")) return 11;
+	return 99;
+}
+
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
@@ -440,8 +539,93 @@ function getModalityIcon(modality: string): LucideIcon {
 	}
 	if (normalized.includes("audio")) return Headphones;
 	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TextIcon;
+	if (normalized.includes("text")) return TypeIcon;
 	return CircleDot;
+}
+
+function getEndpointIcon(endpoint: string): LucideIcon {
+	const normalized = normalizeEndpointValue(endpoint);
+	if (normalized.includes("embedding")) return Database;
+	if (normalized.includes("rerank")) return ArrowUpDown;
+	if (normalized.includes("moderation")) return BadgeAlert;
+	if (normalized.includes("image")) return ImageIcon;
+	if (normalized.includes("video")) return Video;
+	if (normalized.includes("speech")) return Speech;
+	if (
+		normalized.includes("audio") ||
+		normalized.includes("transcription") ||
+		normalized.includes("translation")
+	) {
+		return Headphones;
+	}
+	if (
+		normalized.includes("chat") ||
+		normalized.includes("message") ||
+		normalized.includes("response") ||
+		normalized.includes("completion")
+	) {
+		return TypeIcon;
+	}
+	return Route;
+}
+
+function FilterLogo({
+	value,
+	label,
+}: {
+	value: string;
+	label: string;
+}) {
+	return (
+		<span
+			className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5"
+		>
+			<Logo
+				id={value}
+				alt={`${label} logo`}
+				width={14}
+				height={14}
+				className="h-3.5 w-3.5 object-contain"
+			/>
+		</span>
+	);
+}
+
+function ModelsEmptyState({
+	hasActiveQuery,
+	onReset,
+}: {
+	hasActiveQuery: boolean;
+	onReset: () => void;
+}) {
+	return (
+		<div className="flex min-h-[22rem] items-center justify-center rounded-lg border border-dashed border-border/80 bg-muted/15 px-6 py-12 text-center">
+			<div className="flex max-w-sm flex-col items-center">
+				<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+					<SearchX className="h-5 w-5" />
+				</span>
+				<h2 className="mt-4 text-lg font-semibold tracking-tight">
+					No matching models
+				</h2>
+				<p className="mt-1 text-sm text-muted-foreground">
+					{hasActiveQuery
+						? "Try broadening your filters or clearing the search query."
+						: "There are no models available for this view yet."}
+				</p>
+				{hasActiveQuery ? (
+					<Button
+						type="button"
+						size="sm"
+						className="mt-5 gap-2"
+						onClick={onReset}
+					>
+						<RotateCcw className="h-3.5 w-3.5" />
+						Reset filters and search
+					</Button>
+				) : null}
+			</div>
+		</div>
+	);
 }
 
 function FilterCheckboxList({
@@ -450,6 +634,7 @@ function FilterCheckboxList({
 	onToggle,
 	labelForValue,
 	iconForValue,
+	renderStart,
 	toneForValue,
 	collapsedLimit,
 }: {
@@ -458,6 +643,11 @@ function FilterCheckboxList({
 	onToggle: (value: string) => void;
 	labelForValue?: (value: string) => string;
 	iconForValue?: (value: string) => LucideIcon;
+	renderStart?: (options: {
+		value: string;
+		label: string;
+		checked: boolean;
+	}) => ReactNode;
 	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
@@ -482,6 +672,11 @@ function FilterCheckboxList({
 						? labelForValue(option.value)
 						: toTitleCase(option.value);
 					const Icon = iconForValue?.(option.value);
+					const start = renderStart?.({
+						value: option.value,
+						label,
+						checked,
+					});
 					const tone = toneForValue?.(option.value);
 
 					return (
@@ -498,7 +693,7 @@ function FilterCheckboxList({
 							aria-pressed={checked}
 						>
 							<span className="flex items-center gap-2 min-w-0">
-								{Icon ? (
+								{start ?? (Icon ? (
 									tone ? (
 										<span
 											className={cn(
@@ -517,7 +712,7 @@ function FilterCheckboxList({
 											)}
 										/>
 									)
-								) : null}
+								) : null)}
 								<span className="text-sm truncate">{label}</span>
 							</span>
 							<span
@@ -635,7 +830,11 @@ function OutputModalityButtonRow({
 				className={cn(
 					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
 					checked
-						? cn("bg-muted text-foreground hover:bg-muted", tone.badgeClassName)
+						? cn(
+							"bg-muted text-foreground hover:bg-muted",
+							tone.badgeClassName,
+							"border-transparent hover:border-transparent",
+						)
 						: "text-muted-foreground hover:text-foreground",
 				)}
 			>
@@ -1258,6 +1457,11 @@ export default function ModelsDisplay({
 		setSelectedYears([]);
 	};
 
+	const resetResultsView = () => {
+		setSearch(null);
+		resetFilters();
+	};
+
 	const buildHref = (path: string, options?: { toTable?: boolean }) => {
 		const params = new URLSearchParams(searchParams?.toString() ?? "");
 		if (options?.toTable) {
@@ -1297,7 +1501,19 @@ export default function ModelsDisplay({
 			count: dynamicSidebarCounts.statusCounts.not_active,
 		},
 	];
-	const endpointOptions = dynamicSidebarCounts.endpointOptions;
+	const endpointOptions = useMemo(
+		() =>
+			[...dynamicSidebarCounts.endpointOptions].sort((a, b) => {
+				const aRank = getEndpointSortRank(a.value);
+				const bRank = getEndpointSortRank(b.value);
+				if (aRank !== bRank) return aRank - bRank;
+				if (a.count !== b.count) return b.count - a.count;
+				return formatEndpointLabel(a.value).localeCompare(
+					formatEndpointLabel(b.value),
+				);
+			}),
+		[dynamicSidebarCounts.endpointOptions],
+	);
 	const inputModalityOptions = filterOutFileModality(
 		dynamicSidebarCounts.inputModalityOptions,
 	);
@@ -1332,67 +1548,87 @@ export default function ModelsDisplay({
 	const shownCountWithSearchLabel = search
 		? `${shownCountLabel} for "${search}"`
 		: shownCountLabel;
+	const hasActiveResultsQuery =
+		activeFilterCount > 0 || Boolean(String(search ?? "").trim());
+
+	const filterButton = (compact = false) => (
+		<Button
+			type="button"
+			size="sm"
+			className={cn(
+				"relative h-8 shrink-0 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25",
+				compact ? "w-9 px-0" : "gap-1.5",
+			)}
+			onClick={() => setMobileFiltersOpen(true)}
+		>
+			<SlidersHorizontal className="h-3.5 w-3.5" />
+			<span className={compact ? "sr-only" : undefined}>Filters</span>
+			{activeFilterCount > 0 ? (
+				<span
+					className={cn(
+						"inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums",
+						compact && "absolute -right-1 -top-1 min-w-4 px-1 py-0 text-[10px]",
+					)}
+				>
+					{activeFilterCount}
+				</span>
+			) : null}
+		</Button>
+	);
+
+	const viewSwitcherItemClass = (active: boolean, isFirst = false) =>
+		cn(
+			"inline-flex h-8 w-9 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45",
+			!isFirst && "border-l border-border/70",
+			active &&
+				"bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+		);
 
 	const viewSwitcher = (
-		<div className="inline-flex rounded-md overflow-hidden border bg-background">
+		<div className="inline-flex h-8 shrink-0 overflow-hidden rounded-md border border-border/70 bg-background shadow-xs">
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						asChild
-						variant={!isTable ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
+					<Link
+						href={buildHref("/models")}
+						prefetch={false}
+						aria-label="Card view"
+						aria-current={!isTable && !isCollections ? "page" : undefined}
+						className={viewSwitcherItemClass(!isTable && !isCollections, true)}
 					>
-						<Link
-							href={buildHref("/models")}
-							prefetch={false}
-							aria-label="Card view"
-						>
-							<GridIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<GridIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Card view</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						variant={isTable ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-						asChild
+					<Link
+						href={buildHref("/models/table", {
+							toTable: true,
+						})}
+						prefetch={false}
+						aria-label="Table view"
+						aria-current={isTable ? "page" : undefined}
+						className={viewSwitcherItemClass(isTable)}
 					>
-						<Link
-							href={buildHref("/models/table", {
-								toTable: true,
-							})}
-							prefetch={false}
-							aria-label="Table view"
-						>
-							<TableIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<TableIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Table view</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<Button
-						size="sm"
-						variant={isCollections ? "default" : "outline"}
-						className="px-3 py-1 text-xs whitespace-nowrap rounded-none"
-						asChild
+					<Link
+						href={buildHref("/models/collections")}
+						prefetch={false}
+						aria-label="Collections view"
+						aria-current={isCollections ? "page" : undefined}
+						className={viewSwitcherItemClass(isCollections)}
 					>
-						<Link
-							href={buildHref("/models/collections")}
-							prefetch={false}
-							aria-label="Collections view"
-						>
-							<LayersIcon className="h-4 w-4" />
-						</Link>
-					</Button>
+						<LayersIcon className="h-4 w-4" />
+					</Link>
 				</TooltipTrigger>
 				<TooltipContent side="top">Collections</TooltipContent>
 			</Tooltip>
@@ -1407,10 +1643,23 @@ export default function ModelsDisplay({
 				setSort(nextSort === "newest" ? null : nextSort);
 			}}
 		>
-			<SelectTrigger className={triggerClassName}>
-				<SelectValue placeholder="Sort by" />
+			<SelectTrigger
+				className={cn(
+					"border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25",
+					triggerClassName,
+				)}
+				aria-label="Sort models"
+			>
+				<span className="flex min-w-0 items-center gap-2">
+					<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+					<span className="truncate">{SORT_TRIGGER_LABELS[selectedSort]}</span>
+				</span>
 			</SelectTrigger>
-			<SelectContent align="end">
+			<SelectContent
+				align="start"
+				alignItemWithTrigger={false}
+				className="!w-max min-w-(--anchor-width) max-w-[calc(100vw-2rem)]"
+			>
 				{MODELS_SORT_OPTIONS.map((option) => (
 					<SelectItem key={option} value={option}>
 						{SORT_OPTION_LABELS[option]}
@@ -1572,6 +1821,9 @@ export default function ModelsDisplay({
 							setSelectedProviders(toggleInList(selectedProviders, value))
 						}
 						labelForValue={(value) => value}
+						renderStart={({ value, label }) => (
+							<FilterLogo value={value} label={label} />
+						)}
 						collapsedLimit={5}
 					/>
 				</AccordionContent>
@@ -1611,6 +1863,9 @@ export default function ModelsDisplay({
 							setSelectedCreators(toggleInList(selectedCreators, value))
 						}
 						labelForValue={(value) => value}
+						renderStart={({ value, label }) => (
+							<FilterLogo value={value} label={label} />
+						)}
 						collapsedLimit={5}
 					/>
 				</AccordionContent>
@@ -1649,7 +1904,9 @@ export default function ModelsDisplay({
 						onToggle={(value) =>
 							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
 						}
-						labelForValue={(value) => value}
+						labelForValue={formatEndpointLabel}
+						iconForValue={getEndpointIcon}
+						collapsedLimit={8}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1688,15 +1945,18 @@ export default function ModelsDisplay({
 			<section className="min-w-0 flex flex-1 flex-col">
 				<div className="shrink-0 border-b border-border/70 bg-background/95 px-4 py-2.5 backdrop-blur lg:px-8">
 					<div className="md:hidden space-y-2">
-						<div className="flex items-center justify-between gap-2">
+						<div className="flex items-center gap-2">
 							{showPrimaryHeader ? (
 								<h1 className="font-bold text-xl leading-8">Models</h1>
 							) : (
 								<div />
 							)}
-							<div className="flex items-center justify-end gap-2 min-w-0">
-								{showPrimaryHeader ? viewSwitcher : null}
-							</div>
+						</div>
+
+						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
+							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+							{filterButton(true)}
+							{showPrimaryHeader ? viewSwitcher : null}
 						</div>
 
 						<div className="relative w-full">
@@ -1713,91 +1973,69 @@ export default function ModelsDisplay({
 								style={{ minWidth: 0 }}
 							/>
 						</div>
-
-						<div className="flex items-center gap-2">
-							<Button
-								type="button"
-								size="sm"
-								className="h-8 flex-1 justify-center gap-1.5 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25"
-								onClick={() => setMobileFiltersOpen(true)}
-							>
-								<SlidersHorizontal className="h-3.5 w-3.5" />
-								Filters
-								{activeFilterCount > 0 ? (
-									<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
-										{activeFilterCount}
-									</span>
-								) : null}
-							</Button>
-							<div className="flex flex-1 items-center gap-1">
-								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-									<ArrowUpDown className="h-3.5 w-3.5" />
-								</span>
-								{sortSelect("h-8 w-full rounded-md bg-background text-sm")}
-							</div>
-						</div>
 					</div>
 
 					<div className="hidden md:block">
-						<div className="flex flex-wrap items-center gap-2 md:gap-3 2xl:grid 2xl:grid-cols-[1fr_minmax(24rem,32rem)_1fr] 2xl:items-center 2xl:gap-4">
-							<div className="min-w-0 shrink-0 md:flex md:h-8 md:items-center 2xl:justify-self-start">
+						<div className="hidden lg:block">
+							<div className="flex items-center justify-between gap-4">
+								<div className="min-w-0 shrink-0 flex h-8 items-center">
+									{showPrimaryHeader ? (
+										<h1 className="font-bold text-xl leading-8">Models</h1>
+									) : null}
+								</div>
+
+								<div className="relative w-full max-w-[20rem]">
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+									<Input
+										placeholder="Search"
+										value={search}
+										onChange={(e) =>
+											setSearch(e.target.value || null, {
+												limitUrlUpdates: debounce(250),
+											})
+										}
+										className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+										style={{ minWidth: 0 }}
+									/>
+								</div>
+							</div>
+
+							<div className="mt-2 flex items-center justify-between gap-4">
+								{sortSelect(
+									"h-8 w-[190px] rounded-md bg-background text-sm 2xl:w-[210px]",
+								)}
+								<div className="flex shrink-0 items-center justify-end gap-2">
+									{showPrimaryHeader ? viewSwitcher : null}
+								</div>
+							</div>
+						</div>
+
+						<div className="lg:hidden">
+							<div className="flex h-8 items-center">
 								{showPrimaryHeader ? (
 									<h1 className="font-bold text-xl leading-8">Models</h1>
 								) : null}
 							</div>
-
-							<div className="relative min-w-[16rem] flex-1 md:max-w-[32rem] 2xl:w-full 2xl:max-w-[32rem] 2xl:justify-self-center">
-								<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-								<Input
-									placeholder="Search"
-									value={search}
-									onChange={(e) =>
-										setSearch(e.target.value || null, {
-											limitUrlUpdates: debounce(250),
-										})
-									}
-									className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
-									style={{ minWidth: 0 }}
-								/>
-							</div>
-
-							<div className="ml-auto flex shrink-0 items-center gap-2 2xl:ml-0 2xl:justify-self-end">
-								<div className="hidden 2xl:flex items-center gap-2">
-									<span className="inline-flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-										<ArrowUpDown className="h-3.5 w-3.5" />
-										Sort
-									</span>
-									{sortSelect(
-										"h-8 w-[170px] rounded-md bg-background text-sm xl:w-[200px]",
-									)}
+							<div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 lg:grid-cols-[minmax(12rem,15rem)_minmax(18rem,1fr)_auto]">
+								{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
+								<div className="relative col-span-full row-start-2 min-w-0 lg:col-span-1 lg:row-start-auto">
+									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+									<Input
+										placeholder="Search"
+										value={search}
+										onChange={(e) =>
+											setSearch(e.target.value || null, {
+												limitUrlUpdates: debounce(250),
+											})
+										}
+										className="h-8 rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
+										style={{ minWidth: 0 }}
+									/>
 								</div>
-								{showPrimaryHeader ? viewSwitcher : null}
-							</div>
-						</div>
-
-						<div className="mt-1 flex flex-wrap items-center justify-between gap-2 2xl:hidden">
-							<div className="flex items-center gap-2">
-								<Button
-									type="button"
-									size="sm"
-									className="h-8 gap-1.5 border border-border/70 bg-background text-foreground shadow-xs transition-colors hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:text-foreground dark:hover:bg-muted/25 lg:hidden"
-									onClick={() => setMobileFiltersOpen(true)}
-								>
-									<SlidersHorizontal className="h-3.5 w-3.5" />
-									Filters
-									{activeFilterCount > 0 ? (
-										<span className="inline-flex min-w-5 items-center justify-center rounded-sm bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
-											{activeFilterCount}
-										</span>
-									) : null}
-								</Button>
-							</div>
-							<div className="flex items-center gap-2">
-								<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-									<ArrowUpDown className="h-3.5 w-3.5" />
-									Sort
-								</span>
-								{sortSelect("h-8 w-[170px] rounded-md bg-background text-sm sm:w-[200px]")}
+								<div className="flex shrink-0 items-center justify-end gap-2">
+									<div className="lg:hidden">{filterButton(true)}</div>
+									{showPrimaryHeader ? viewSwitcher : null}
+								</div>
 							</div>
 						</div>
 					</div>
@@ -1816,10 +2054,17 @@ export default function ModelsDisplay({
 				</div>
 
 				<div className="w-full px-4 pt-2 pb-5 lg:px-8 lg:pt-2 lg:pb-6">
-					<ModelsGrid
-						filteredModels={filteredModels}
-						showOrganisationPrefix
-					/>
+					{filteredModels.length > 0 ? (
+						<ModelsGrid
+							filteredModels={filteredModels}
+							showOrganisationPrefix
+						/>
+					) : (
+						<ModelsEmptyState
+							hasActiveQuery={hasActiveResultsQuery}
+							onReset={resetResultsView}
+						/>
+					)}
 				</div>
 			</section>
 

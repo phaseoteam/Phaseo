@@ -1028,10 +1028,6 @@ struct ProvisioningKeyWithValue {
 	std::any status;
 };
 
-struct RealtimeNotImplementedResponse {
-	std::map<std::string, std::any> error;
-};
-
 struct ReasoningConfig {
 	std::any effort;
 	std::optional<bool> enabled;
@@ -1156,27 +1152,6 @@ struct ResponsesResponse {
 	std::string stop_reason;
 	std::string type;
 	std::map<std::string, std::any> usage;
-};
-
-struct ResponsesWebSocketCreateEvent {
-	std::any input;
-	std::string model;
-	std::optional<std::string> previous_response_id;
-	std::optional<bool> store;
-	std::any tool_choice;
-	std::vector<std::map<std::string, std::any>> tools;
-	std::any type;
-};
-
-struct ResponsesWebSocketServerEvent {
-	std::map<std::string, std::any> error;
-	std::map<std::string, std::any> response;
-	std::optional<int> status;
-	std::string type;
-};
-
-struct ResponsesWebSocketUpgradeRequiredResponse {
-	std::map<std::string, std::any> error;
 };
 
 struct ServerToolUsage {

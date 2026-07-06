@@ -80,6 +80,7 @@ export interface ProviderModel {
     model_id: string;
     endpoint: string;
     capability_status?: string | null;
+    routing_status?: string | null;
     is_active_gateway: boolean;
     input_modalities: string;   // CSV in your current schema
     output_modalities: string;  // CSV in your current schema
@@ -106,6 +107,8 @@ export interface ProviderInfo {
     colour?: string | null;
     link?: string | null;
     country_code?: string | null;
+    status?: string | null;
+    routing_status?: string | null;
     residency_mode?:
         | "unknown"
         | "provider_managed"
@@ -135,6 +138,10 @@ export interface ProviderInfo {
     prompt_training_policy?: string | null;
     prompt_training_notes?: string | null;
     prompt_training_source_url?: string | null;
+    data_policy_tier?: string | null;
+    data_policy_confidence?: string | null;
+    data_policy_contract_mode?: string | null;
+    data_policy_contract_notes?: string | null;
     user_identifier_policy?: string | null;
     user_identifier_notes?: string | null;
     privacy_policy_url?: string | null;
@@ -155,6 +162,17 @@ type ProviderModelCapability = {
     status?: string | null;
 };
 
+function normalizeCapabilityStatus(value: unknown): string {
+    return String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/[\s-]+/g, "_");
+}
+
+function isInternalTestingCapability(value: unknown): boolean {
+    return normalizeCapabilityStatus(value) === "internal_testing";
+}
+
 function isMissingProviderModelColumnError(error: unknown): boolean {
     const value = error as {
         message?: unknown;
@@ -173,6 +191,10 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
         text.includes("prompt_training_policy") ||
         text.includes("prompt_training_notes") ||
         text.includes("prompt_training_source_url") ||
+        text.includes("data_policy_tier") ||
+        text.includes("data_policy_confidence") ||
+        text.includes("data_policy_contract_mode") ||
+        text.includes("data_policy_contract_notes") ||
         text.includes("residency_mode") ||
         text.includes("default_execution_regions") ||
         text.includes("default_data_regions") ||
@@ -190,8 +212,9 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
         text.includes("user_identifier_notes") ||
         text.includes("privacy_policy_url") ||
         text.includes("terms_of_service_url");
+    const mentionsRoutingStatusColumn = text.includes("routing_status");
 
-    if (!mentionsTargetColumn) return false;
+    if (!mentionsTargetColumn && !mentionsRoutingStatusColumn) return false;
     if (code === "PGRST204" || code === "42703") return true;
     if (text.includes("does not exist")) return true;
     if (text.includes("could not find") && text.includes("column")) return true;
@@ -202,7 +225,8 @@ function isMissingProviderModelColumnError(error: unknown): boolean {
 
 export default async function getModelPricing(
     modelId: string,
-    includeHidden: boolean
+    includeHidden: boolean,
+    includeInternal = false
 ): Promise<ProviderPricing[]> {
     // console.log(`[getModelPricing] Starting for modelId: ${modelId}`);
     const supabase = createAdminClient();
@@ -235,6 +259,7 @@ export default async function getModelPricing(
         model_id,
         provider_model_slug,
         is_active_gateway,
+        routing_status,
         input_modalities,
         output_modalities,
         quantization_scheme,
@@ -262,6 +287,8 @@ export default async function getModelPricing(
             colour,
             link,
             country_code,
+            status,
+            routing_status,
             residency_mode,
             default_execution_regions,
             default_data_regions,
@@ -275,6 +302,10 @@ export default async function getModelPricing(
             prompt_training_policy,
             prompt_training_notes,
             prompt_training_source_url,
+            data_policy_tier,
+            data_policy_confidence,
+            data_policy_contract_mode,
+            data_policy_contract_notes,
             user_identifier_policy,
             user_identifier_notes,
             privacy_policy_url,
@@ -289,6 +320,7 @@ export default async function getModelPricing(
         model_id,
         provider_model_slug,
         is_active_gateway,
+        routing_status,
         input_modalities,
         output_modalities,
         quantization_scheme,
@@ -307,7 +339,9 @@ export default async function getModelPricing(
             api_provider_name,
             colour,
             link,
-            country_code
+            country_code,
+            status,
+            routing_status
         )
     `;
 
@@ -448,6 +482,9 @@ export default async function getModelPricing(
                     colour: row.data_api_providers?.colour ?? null,
                     link: row.data_api_providers?.link || null,
                     country_code: row.data_api_providers?.country_code || null,
+                    status: row.data_api_providers?.status ?? null,
+                    routing_status:
+                        row.data_api_providers?.routing_status ?? null,
                     residency_mode:
                         row.data_api_providers?.residency_mode ?? null,
                     default_execution_regions: Array.isArray(
@@ -480,6 +517,14 @@ export default async function getModelPricing(
                         row.data_api_providers?.prompt_training_notes ?? null,
                     prompt_training_source_url:
                         row.data_api_providers?.prompt_training_source_url ?? null,
+                    data_policy_tier:
+                        row.data_api_providers?.data_policy_tier ?? null,
+                    data_policy_confidence:
+                        row.data_api_providers?.data_policy_confidence ?? null,
+                    data_policy_contract_mode:
+                        row.data_api_providers?.data_policy_contract_mode ?? null,
+                    data_policy_contract_notes:
+                        row.data_api_providers?.data_policy_contract_notes ?? null,
                     user_identifier_policy:
                         row.data_api_providers?.user_identifier_policy ?? null,
                     user_identifier_notes:
@@ -494,9 +539,17 @@ export default async function getModelPricing(
             });
         }
 
-        const capabilities = Array.isArray(row.data_api_provider_model_capabilities)
+        const rawCapabilities = Array.isArray(row.data_api_provider_model_capabilities)
             ? (row.data_api_provider_model_capabilities as ProviderModelCapability[])
             : [];
+        const capabilities = includeInternal
+            ? rawCapabilities
+            : rawCapabilities.filter(
+                    (capability) => !isInternalTestingCapability(capability?.status)
+                );
+        if (rawCapabilities.length > 0 && capabilities.length === 0) {
+            continue;
+        }
         const entry = providerMap.get(pid)!;
 
         if (!capabilities.length) {
@@ -507,6 +560,7 @@ export default async function getModelPricing(
                 model_id: row.api_model_id,
                 endpoint: "unmapped",
                 capability_status: null,
+                routing_status: row.routing_status ?? null,
                 is_active_gateway: row.is_active_gateway,
                 input_modalities: Array.isArray(row.input_modalities)
                     ? row.input_modalities.join(",")
@@ -547,6 +601,7 @@ export default async function getModelPricing(
                 model_id: row.api_model_id,
                 endpoint: capability.capability_id,
                 capability_status: capability.status ?? null,
+                routing_status: row.routing_status ?? null,
                 is_active_gateway: row.is_active_gateway,
                 input_modalities: Array.isArray(row.input_modalities)
                     ? row.input_modalities.join(",")
@@ -719,7 +774,9 @@ export default async function getModelPricing(
         providerMap.get(pid)!.pricing_rules.push(rule);
     }
 
-    const result = [...providerMap.values()].sort((a, b) => {
+    const result = [...providerMap.values()].filter(
+        (entry) => entry.provider_models.length > 0
+    ).sort((a, b) => {
         const an = a.provider.api_provider_name || a.provider.api_provider_id;
         const bn = b.provider.api_provider_name || b.provider.api_provider_id;
         return an.localeCompare(bn);
@@ -739,7 +796,8 @@ export default async function getModelPricing(
  */
 export async function getModelPricingCached(
     modelId: string,
-    includeHidden: boolean
+    includeHidden: boolean,
+    includeInternal = false
 ): Promise<ProviderPricing[]> {
     "use cache";
 
@@ -754,5 +812,5 @@ export async function getModelPricingCached(
     cacheTag("frontend:model-pricing-history");
 
     // console.log("[fetch] HIT DB for model pricing", modelId);
-    return getModelPricing(modelId, includeHidden);
+    return getModelPricing(modelId, includeHidden, includeInternal);
 }

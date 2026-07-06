@@ -27,7 +27,6 @@ import { togetherQuirks } from "../providers/together/quirks";
 import { inceptionQuirks } from "../providers/inception/quirks";
 import { crofAIQuirks } from "../providers/crofai/quirks";
 import { veniceQuirks } from "../providers/venice/quirks";
-import { deepinfraQuirks } from "../providers/deepinfra/quirks";
 import { defaultQuirks } from "./default";
 
 /**
@@ -63,7 +62,6 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
 	crofai: crofAIQuirks,
-	deepinfra: deepinfraQuirks,
 	together: togetherQuirks,
 	inception: inceptionQuirks,
 	venice: veniceQuirks,

@@ -83,7 +83,7 @@ function normalizeModality(value) {
 	if (!normalized) return "";
 	if (normalized.includes("embedding")) return "embeddings";
 	if (normalized.includes("moderation")) return "moderations";
-	if (normalized.includes("music")) return "audio_music";
+	if (normalized.includes("music")) return "music";
 	if (
 		normalized.includes("transcrib") ||
 		normalized.includes("speech_to_text") ||
@@ -112,7 +112,7 @@ function formatModality(value) {
 			return "audio";
 		case "audio_tts":
 			return "text";
-		case "audio_music":
+		case "music":
 			return "audio";
 		case "embeddings":
 			return "embeddings";
@@ -319,7 +319,9 @@ function buildMeta(model, organisationNames) {
 				inputSet.has("audio_stt") ||
 				has("transcribe", "transcription", "stt", "asr")),
 		isMusic:
-			(outputSet.has("audio") || outputSet.has("audio_music")) &&
+			(outputSet.has("audio") ||
+				outputSet.has("music") ||
+				outputSet.has("audio_music")) &&
 			has("music", "lyria", "suno"),
 		isImage:
 			outputSet.has("image") ||

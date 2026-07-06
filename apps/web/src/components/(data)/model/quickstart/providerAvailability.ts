@@ -69,6 +69,16 @@ export type GroupedProvider = {
 		notes?: string | null;
 		sourceUrl?: string | null;
 	}>;
+	dataPolicy: Array<{
+		tier?: string | null;
+		confidence?: string | null;
+		contractMode?: string | null;
+		contractNotes?: string | null;
+		notes?: string | null;
+		sourceUrl?: string | null;
+		promptTrainingPolicy?: string | null;
+		zeroDataRetention?: ZeroDataRetentionMode | null;
+	}>;
 	promptTraining: Array<{
 		policy?: string | null;
 		notes?: string | null;
@@ -516,7 +526,7 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 				: inferProviderFamilyIdFromSiblings({
 						providerId,
 						knownProviderIds,
-				  })) || providerFamilyId || providerId;
+					})) || providerFamilyId || providerId;
 
 		const state = resolveProviderState(item, now);
 		const residencyMetadata = {
@@ -541,6 +551,16 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 			privacyPolicyUrl: item.provider?.privacy_policy_url ?? null,
 			termsOfServiceUrl: item.provider?.terms_of_service_url ?? null,
 			isOverride: false,
+		};
+		const dataPolicyMetadata = {
+			tier: item.provider?.data_policy_tier ?? null,
+			confidence: item.provider?.data_policy_confidence ?? null,
+			contractMode: item.provider?.data_policy_contract_mode ?? null,
+			contractNotes: item.provider?.data_policy_contract_notes ?? null,
+			notes: item.provider?.prompt_training_notes ?? null,
+			sourceUrl: item.provider?.prompt_training_source_url ?? null,
+			promptTrainingPolicy: item.provider?.prompt_training_policy ?? null,
+			zeroDataRetention: item.provider?.zero_data_retention ?? null,
 		};
 		const current = grouped.get(familyId);
 		const offerLabel = formatProviderOfferVariantLabel({
@@ -607,6 +627,7 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 				notes: residencyMetadata.residencyNotes,
 				sourceUrl: residencyMetadata.residencySourceUrl,
 			});
+			current.dataPolicy.push(dataPolicyMetadata);
 			current.promptTraining.push(promptTrainingMetadata);
 			if (!current.regionalPricingMode && residencyMetadata.regionalPricingMode) {
 				current.regionalPricingMode = residencyMetadata.regionalPricingMode;
@@ -683,6 +704,7 @@ export function groupProviders(metadata: ModelGatewayMetadata): GroupedProvider[
 					sourceUrl: residencyMetadata.residencySourceUrl,
 				},
 			],
+			dataPolicy: [dataPolicyMetadata],
 			promptTraining: [promptTrainingMetadata],
 			regionalPricingMode: residencyMetadata.regionalPricingMode,
 			regionalPricingUpliftPercent:

@@ -13,6 +13,10 @@ import { shouldFallbackToChatFromError, readErrorPayload } from "@executors/_sha
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
+import {
+	supportsAnthropicThinkingDisabled,
+	usesClaudeAdaptiveThinkingControls,
+} from "@core/claudeModelCapabilities";
 import type { ProviderExecutor } from "../../types";
 import {
 	bedrockConverseToIR,
@@ -510,20 +514,6 @@ export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStr
 	return stream;
 }
 
-function normalizeModelId(model: string | null | undefined): string {
-	return typeof model === "string" ? model.trim().toLowerCase() : "";
-}
-
-function isClaudeOpus47Model(model: string | null | undefined): boolean {
-	const normalized = normalizeModelId(model);
-	if (!normalized) return false;
-	return (
-		normalized.includes("claude-opus-4-7") ||
-		normalized.includes("claude-opus-4.7") ||
-		normalized.includes("claude-opus-4-7-v1")
-	);
-}
-
 async function irToBedrockConverse(
 	ir: IRChatRequest,
 	providerMaxOutputTokens?: number | null,
@@ -532,7 +522,7 @@ async function irToBedrockConverse(
 	const messages: any[] = [];
 	const system: any[] = [];
 	const resolvedModel = modelHint || ir.model;
-	const isOpus47 = isClaudeOpus47Model(resolvedModel);
+	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
 
 	for (const msg of ir.messages) {
 		if (msg.role === "system" || msg.role === "developer") {
@@ -602,33 +592,43 @@ async function irToBedrockConverse(
 	const maxTokens = ir.maxTokens ?? providerMaxOutputTokens ?? 4096;
 	const inferenceConfig: Record<string, any> = {};
 	if (typeof maxTokens === "number") inferenceConfig.maxTokens = maxTokens;
-	if (!isOpus47 && typeof ir.temperature === "number") inferenceConfig.temperature = ir.temperature;
-	if (!isOpus47 && typeof ir.topP === "number") inferenceConfig.topP = ir.topP;
+	if (!usesAdaptiveThinkingControls && typeof ir.temperature === "number") inferenceConfig.temperature = ir.temperature;
+	if (!usesAdaptiveThinkingControls && typeof ir.topP === "number") inferenceConfig.topP = ir.topP;
 	if (ir.stop) inferenceConfig.stopSequences = Array.isArray(ir.stop) ? ir.stop : [ir.stop];
 	if (Object.keys(inferenceConfig).length > 0) {
 		request.inferenceConfig = inferenceConfig;
 	}
 
-	if (!isOpus47 && typeof ir.topK === "number") {
+	if (!usesAdaptiveThinkingControls && typeof ir.topK === "number") {
 		request.additionalModelRequestFields = {
 			...(request.additionalModelRequestFields ?? {}),
 			top_k: ir.topK,
 		};
 	}
 
-	if (isOpus47) {
-		request.additionalModelRequestFields = {
-			...(request.additionalModelRequestFields ?? {}),
-			thinking: { type: "adaptive", display: "summarized" },
-		};
-		const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
-		if (anthropicEffort) {
+	const reasoningDisabled = ir.reasoning?.enabled === false || ir.reasoning?.effort === "none";
+	if (usesAdaptiveThinkingControls) {
+		if (reasoningDisabled && supportsAnthropicThinkingDisabled(resolvedModel)) {
 			request.additionalModelRequestFields = {
 				...(request.additionalModelRequestFields ?? {}),
-				output_config: {
-					effort: anthropicEffort,
-				},
+				thinking: { type: "disabled" },
 			};
+		} else {
+			request.additionalModelRequestFields = {
+				...(request.additionalModelRequestFields ?? {}),
+				thinking: { type: "adaptive", display: "summarized" },
+			};
+			if (!reasoningDisabled) {
+				const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+				if (anthropicEffort) {
+					request.additionalModelRequestFields = {
+						...(request.additionalModelRequestFields ?? {}),
+						output_config: {
+							effort: anthropicEffort,
+						},
+					};
+				}
+			}
 		}
 	} else if (ir.reasoning) {
 		const reasoningMaxTokens = typeof ir.reasoning.maxTokens === "number" ? ir.reasoning.maxTokens : maxTokens;
@@ -862,8 +862,7 @@ function isBedrockOpenAIModel(model: string): boolean {
 		normalizedModel.startsWith("openai.") ||
 		normalizedModel.startsWith("us.openai.") ||
 		normalizedModel.startsWith("eu.openai.") ||
-		normalizedModel.startsWith("apac.openai.") ||
-		normalizedModel.startsWith("xai.")
+		normalizedModel.startsWith("apac.openai.")
 	);
 }
 

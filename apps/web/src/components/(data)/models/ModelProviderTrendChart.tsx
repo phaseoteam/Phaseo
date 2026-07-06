@@ -282,7 +282,7 @@ export default function ModelProviderTrendChart({
 						{activeIndex != null ? (
 							<ReferenceLine
 								x={activeIndex}
-								stroke="hsl(var(--muted-foreground))"
+								stroke="var(--muted-foreground)"
 								strokeDasharray="3 4"
 								strokeWidth={1}
 							/>

@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { ShieldCheck, Terminal } from "lucide-react";
 import { approveDeviceAction, denyDeviceAction, lookupDeviceRequest } from "./actions";
 import { createClient } from "@/utils/supabase/server";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthSuspenseFallback } from "../AuthSuspenseFallback";
 import { WorkspaceSelectField } from "./WorkspaceSelectField";
 
 export const metadata = {
@@ -20,7 +22,15 @@ type ActivatePageProps = {
 	}>;
 };
 
-export default async function ActivatePage({ searchParams }: ActivatePageProps) {
+export default function ActivatePage({ searchParams }: ActivatePageProps) {
+	return (
+		<Suspense fallback={<AuthSuspenseFallback />}>
+			<ActivatePageContent searchParams={searchParams} />
+		</Suspense>
+	);
+}
+
+async function ActivatePageContent({ searchParams }: ActivatePageProps) {
 	const params = await searchParams;
 	const supabase = await createClient();
 	const {

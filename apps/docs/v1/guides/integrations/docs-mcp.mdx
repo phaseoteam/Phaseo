@@ -65,6 +65,22 @@ Use the contextual menu in the docs to install the MCP server in Cursor, or add 
 }
 ```
 
+## OpenCode
+
+Add the AI Stats docs server to `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "aiStatsDocs": {
+      "type": "remote",
+      "url": "https://ai-stats.phaseo.app/mcp"
+    }
+  }
+}
+```
+
 ## VS Code
 
 Use the contextual menu in the docs to install the MCP server in VS Code, or add it manually:

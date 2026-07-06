@@ -64,16 +64,6 @@ describe("normalizeIRForProvider", () => {
 		expect(normalized.reasoning?.effort).toBe("minimal");
 	});
 
-	it("preserves Anthropic max reasoning effort", () => {
-		const ir = baseIr({
-			model: "anthropic/claude-opus-4.8",
-			reasoning: { effort: "max" },
-		});
-
-		const normalized = normalizeIRForProvider(ir, "anthropic", "anthropic.messages");
-		expect(normalized.reasoning?.effort).toBe("max");
-	});
-
 	it("defaults OpenAI anthropic.messages requests to minimal reasoning", () => {
 		const ir = baseIr({
 			model: "openai/gpt-5-nano",

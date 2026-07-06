@@ -393,12 +393,6 @@ module AiStats
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
-      def self.openResponsesWebSocket(client, path: nil, query: nil, headers: nil, body: nil)
-        path ||= {}
-        resolved_path = "/responses/ws"
-        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
-      end
-
       def self.retrieveBatch(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/batches/#{path["batch_id"]}"

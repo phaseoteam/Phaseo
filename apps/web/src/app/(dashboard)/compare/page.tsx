@@ -10,7 +10,6 @@ import {
 	fetchFrontendModelTokenTrajectory,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import CompareDashboard from "@/components/(data)/compare/CompareDashboard";
-import CompareMiniHeader from "@/components/(data)/compare/CompareMiniHeader";
 import type { CompareGatewayUsageByModel } from "@/components/(data)/compare/types";
 
 export const metadata: Metadata = buildMetadata({
@@ -151,6 +150,7 @@ export default async function Page({ searchParams }: PageProps = {}) {
 								},
 							] as const;
 						} catch (error) {
+							// eslint-disable-next-line no-console
 							console.warn("[compare] Failed to load gateway usage for model", {
 								modelId: id,
 								error,
@@ -166,7 +166,6 @@ export default async function Page({ searchParams }: PageProps = {}) {
 
 	return (
 		<main className="flex min-h-screen flex-col">
-			<CompareMiniHeader models={typedModels} />
 			<section className="container mx-auto px-4 py-8">
 				<CompareDashboard
 					models={typedModels}

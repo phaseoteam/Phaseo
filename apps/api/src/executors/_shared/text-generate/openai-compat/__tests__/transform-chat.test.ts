@@ -801,47 +801,6 @@ describe("irToOpenAIChat", () => {
 		expect(request.reasoning.summary).toBe("auto");
 	});
 
-	it("maps Z.AI GLM-5.2 reasoning effort to thinking and reasoning_effort", () => {
-		const request = irToOpenAIChat({
-			model: "z-ai/glm-5.2",
-			messages: [{
-				role: "user",
-				content: [{ type: "text", text: "hi" }],
-			}],
-			stream: false,
-			reasoning: {
-				effort: "max",
-			},
-		} as any, "glm-5.2", "z-ai");
-
-		expect(request.thinking).toEqual({
-			type: "enabled",
-			clear_thinking: false,
-		});
-		expect(request.reasoning_effort).toBe("max");
-		expect(request.reasoning).toBeUndefined();
-	});
-
-	it("maps Z.AI disabled reasoning to thinking disabled", () => {
-		const request = irToOpenAIChat({
-			model: "z-ai/glm-5.2",
-			messages: [{
-				role: "user",
-				content: [{ type: "text", text: "hi" }],
-			}],
-			stream: false,
-			reasoning: {
-				effort: "none",
-			},
-		} as any, "glm-5.2", "zai");
-
-		expect(request.thinking).toEqual({
-			type: "disabled",
-			clear_thinking: false,
-		});
-		expect(request.reasoning_effort).toBeUndefined();
-	});
-
 	it("maps Arcee reasoning configuration to reasoning_effort", () => {
 		const request = irToOpenAIChat({
 			model: "arcee-ai/coder-large",

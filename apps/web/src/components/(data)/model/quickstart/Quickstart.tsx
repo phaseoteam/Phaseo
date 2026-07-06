@@ -172,6 +172,10 @@ const STREAMING_SNIPPET_LANGUAGES = new Set([
 	"ai-sdk",
 	"typescript-sdk",
 	"python-sdk",
+	"go-sdk",
+	"csharp-sdk",
+	"php-sdk",
+	"ruby-sdk",
 ]);
 const DOCS_BASE_URL = "https://docs.ai-stats.phaseo.app/v1";
 const SERVICE_TIERS_DOCS_HREF = `${DOCS_BASE_URL}/guides/service-tiers`;
@@ -508,6 +512,7 @@ export default function Quickstart({
 
 	useEffect(() => {
 		if (!supportsStreaming && streamingEnabled) {
+			// react-doctor-disable-next-line
 			setStreamingEnabled(false);
 		}
 	}, [supportsStreaming, streamingEnabled]);
@@ -601,11 +606,13 @@ export default function Quickstart({
 		buildExamplePayload(selectedEndpoint, modelIdentifierInCode),
 		routingPreference,
 	);
+	const shouldIncludeServiceTier =
+		supportsServiceTier && selectedServiceTier !== "standard";
 	const requestPayload =
-		supportsServiceTier && !batchEnabled
+		shouldIncludeServiceTier && !batchEnabled
 			? { ...requestPayloadBase, service_tier: selectedServiceTier }
 			: requestPayloadBase;
-	const batchLinePayload = supportsServiceTier
+	const batchLinePayload = shouldIncludeServiceTier
 		? { ...requestPayloadBase, service_tier: selectedServiceTier }
 		: requestPayloadBase;
 	const batchPayload = {
@@ -709,10 +716,19 @@ const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
 });
 
-for await (const line of client.streamText({
+let response = "";
+
+for await (const chunk of client.streamChat({
 ${payloadObjectNode}
 })) {
-  process.stdout.write(line);
+  if (chunk.text) {
+    response += chunk.text;
+    process.stdout.write(chunk.text);
+  }
+
+  if (chunk.reasoningTokens) {
+    console.log("\\nReasoning tokens:", chunk.reasoningTokens);
+  }
 }`
 				: `import AIStats from '@ai-stats/sdk';
 
@@ -733,13 +749,16 @@ const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
 });
 
-const stream = await client.messages.create({
+for await (const chunk of client.streamMessages({
 ${payloadObjectNode}
-});
+})) {
+  if (chunk.text) {
+    process.stdout.write(chunk.text);
+  }
 
-for await (const line of stream as AsyncGenerator<string>) {
-  if (line === "data: [DONE]") break;
-  process.stdout.write(line);
+  if (chunk.reasoningTokens) {
+    console.log("\\nReasoning tokens:", chunk.reasoningTokens);
+  }
 }`
 					: `import AIStats from '@ai-stats/sdk';
 
@@ -764,10 +783,16 @@ const client = new AIStats({
   apiKey: process.env.AI_STATS_API_KEY,
 });
 
-for await (const line of client.streamResponse({
+for await (const chunk of client.streamResponses({
 ${payloadObjectNode}
 })) {
-  process.stdout.write(line);
+  if (chunk.text) {
+    process.stdout.write(chunk.text);
+  }
+
+  if (chunk.reasoningTokens) {
+    console.log("\\nReasoning tokens:", chunk.reasoningTokens);
+  }
 }`
 					: `import AIStats from '@ai-stats/sdk';
 
@@ -963,8 +988,13 @@ client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
 
 payload = ${payloadJsonPython}
 
-for line in client.stream_text(payload):
-    print(line)`
+response = ""
+for chunk in client.stream_chat(payload):
+    if chunk.get("text"):
+        response += chunk["text"]
+        print(chunk["text"], end="", flush=True)
+    if chunk.get("reasoning_tokens"):
+        print("\\nReasoning tokens:", chunk["reasoning_tokens"])`
 				: `import os
 from ai_stats import AIStats
 
@@ -982,12 +1012,12 @@ from ai_stats import AIStats
 client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
 
 payload = ${payloadJsonPython}
-stream = client.messages.create(payload)
 
-for line in stream:
-    if line == "data: [DONE]":
-        break
-    print(line)`
+for chunk in client.stream_message(payload):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+    if chunk.get("reasoning_tokens"):
+        print("\\nReasoning tokens:", chunk["reasoning_tokens"])`
 					: `import os
 from ai_stats import AIStats
 
@@ -1015,8 +1045,11 @@ client = AIStats(api_key=os.environ.get("AI_STATS_API_KEY"))
 
 payload = ${payloadJsonPython}
 
-for line in client.stream_response(payload):
-    print(line)`
+for chunk in client.stream_responses(payload):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+    if chunk.get("reasoning_tokens"):
+        print("\\nReasoning tokens:", chunk["reasoning_tokens"])`
 					: `import os
 from ai_stats import AIStats
 
@@ -1069,7 +1102,18 @@ func main() {
     panic(err)
   }
 
-  response, err := client.GenerateText(context.Background(), payload)
+  ${shouldStream ? `err = client.StreamChat(context.Background(), payload, func(chunk aistats.StreamChunk) error {
+    if chunk.Text != "" {
+      fmt.Print(chunk.Text)
+    }
+    if chunk.ReasoningTokens != nil {
+      fmt.Printf("\\nReasoning tokens: %d\\n", *chunk.ReasoningTokens)
+    }
+    return nil
+  })
+  if err != nil {
+    panic(err)
+  }` : `response, err := client.GenerateText(context.Background(), payload)
   if err != nil {
     panic(err)
   }
@@ -1079,7 +1123,7 @@ func main() {
     panic(err)
   }
 
-  fmt.Println(string(formatted))
+  fmt.Println(string(formatted))`}
 }`
 		: normalizedEndpoint === "responses"
 			? `package main
@@ -1104,7 +1148,18 @@ func main() {
     panic(err)
   }
 
-  response, err := client.GenerateResponse(context.Background(), payload)
+  ${shouldStream ? `err = client.StreamResponses(context.Background(), payload, func(chunk aistats.StreamChunk) error {
+    if chunk.Text != "" {
+      fmt.Print(chunk.Text)
+    }
+    if chunk.ReasoningTokens != nil {
+      fmt.Printf("\\nReasoning tokens: %d\\n", *chunk.ReasoningTokens)
+    }
+    return nil
+  })
+  if err != nil {
+    panic(err)
+  }` : `response, err := client.GenerateResponse(context.Background(), payload)
   if err != nil {
     panic(err)
   }
@@ -1114,7 +1169,7 @@ func main() {
     panic(err)
   }
 
-  fmt.Println(string(formatted))
+  fmt.Println(string(formatted))`}
 }`
 			: `package main
 
@@ -1138,7 +1193,18 @@ func main() {
     panic(err)
   }
 
-  response, err := client.CreateAnthropicMessage(context.Background(), payload)
+  ${shouldStream ? `err = client.StreamMessages(context.Background(), payload, func(chunk aistats.StreamChunk) error {
+    if chunk.Text != "" {
+      fmt.Print(chunk.Text)
+    }
+    if chunk.ReasoningTokens != nil {
+      fmt.Printf("\\nReasoning tokens: %d\\n", *chunk.ReasoningTokens)
+    }
+    return nil
+  })
+  if err != nil {
+    panic(err)
+  }` : `response, err := client.CreateAnthropicMessage(context.Background(), payload)
   if err != nil {
     panic(err)
   }
@@ -1148,7 +1214,7 @@ func main() {
     panic(err)
   }
 
-  fmt.Println(string(formatted))
+  fmt.Println(string(formatted))`}
 }`;
 
 	const csharpSdkUsage = `using System.Collections.Generic;
@@ -1160,7 +1226,23 @@ var payload = JsonSerializer.Deserialize<Dictionary<string, object>>("""
 ${rawSdkPayloadJson}
 """);
 
-var response = await client.${
+${shouldStream ? `await foreach (var chunk in client.${
+	normalizedEndpoint === "chat.completions"
+		? "StreamChat"
+		: normalizedEndpoint === "responses"
+			? "StreamResponses"
+			: "StreamMessages"
+}(payload!))
+{
+    if (!string.IsNullOrEmpty(chunk.Text))
+    {
+        Console.Write(chunk.Text);
+    }
+    if (chunk.ReasoningTokens is not null)
+    {
+        Console.WriteLine($"\\nReasoning tokens: {chunk.ReasoningTokens}");
+    }
+}` : `var response = await client.${
 	normalizedEndpoint === "chat.completions"
 		? "GenerateText"
 		: normalizedEndpoint === "responses"
@@ -1171,7 +1253,7 @@ var response = await client.${
 Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
 {
     WriteIndented = true
-}));`;
+}));`}`;
 
 	const phpSdkUsage = `<?php
 require 'vendor/autoload.php';
@@ -1183,7 +1265,20 @@ $payload = json_decode(<<<'JSON'
 ${rawSdkPayloadJson}
 JSON, true, 512, JSON_THROW_ON_ERROR);
 
-$response = $client->${
+${shouldStream ? `foreach ($client->${
+	normalizedEndpoint === "chat.completions"
+		? "streamChat"
+		: normalizedEndpoint === "responses"
+			? "streamResponses"
+			: "streamMessages"
+}($payload) as $chunk) {
+    if ($chunk['text'] !== '') {
+        echo $chunk['text'];
+    }
+    if ($chunk['reasoning_tokens'] !== null) {
+        echo "\\nReasoning tokens: " . $chunk['reasoning_tokens'] . PHP_EOL;
+    }
+}` : `$response = $client->${
 	normalizedEndpoint === "chat.completions"
 		? "generateText"
 		: normalizedEndpoint === "responses"
@@ -1191,7 +1286,7 @@ $response = $client->${
 			: "createAnthropicMessage"
 }($payload);
 
-echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`;
+echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL;`}`;
 
 	const rubySdkUsage = `require "json"
 require "ai_stats_sdk"
@@ -1201,7 +1296,16 @@ payload = JSON.parse(<<~JSON)
 ${rawSdkPayloadJson}
 JSON
 
-response = client.${
+${shouldStream ? `client.${
+	normalizedEndpoint === "chat.completions"
+		? "stream_chat"
+		: normalizedEndpoint === "responses"
+			? "stream_responses"
+			: "stream_messages"
+}(payload).each do |chunk|
+  print chunk["text"] unless chunk["text"].to_s.empty?
+  puts "\\nReasoning tokens: #{chunk["reasoning_tokens"]}" if chunk["reasoning_tokens"]
+end` : `response = client.${
 	normalizedEndpoint === "chat.completions"
 		? "generate_text"
 		: normalizedEndpoint === "responses"
@@ -1209,7 +1313,7 @@ response = client.${
 			: "create_anthropic_message"
 }(payload)
 
-puts JSON.pretty_generate(response)`;
+puts JSON.pretty_generate(response)`}`;
 
 	const nodeFetchQuickstart = `// 1) Set your key
 const apiKey = process.env.AI_STATS_API_KEY;
@@ -1274,12 +1378,43 @@ if (!res.body) {
 
 const reader = res.body.getReader();
 const decoder = new TextDecoder();
+let buffer = "";
+
+function textFromEvent(event) {
+  if (Array.isArray(event.choices)) {
+    return event.choices
+      .map((choice) => choice?.delta?.content ?? "")
+      .join("");
+  }
+  if (typeof event.delta === "string") return event.delta;
+  if (typeof event.text === "string") return event.text;
+  if (typeof event.output_text === "string") return event.output_text;
+  if (typeof event.response?.output_text === "string") {
+    return event.response.output_text;
+  }
+  if (typeof event.delta?.text === "string") return event.delta.text;
+  if (typeof event.content_block?.text === "string") {
+    return event.content_block.text;
+  }
+  return "";
+}
+
+function processLine(line) {
+  if (!line.startsWith("data:")) return;
+  const payload = line.slice("data:".length).trim();
+  if (!payload || payload === "[DONE]") return;
+  const text = textFromEvent(JSON.parse(payload));
+  if (text) process.stdout.write(text);
+}
 while (true) {
   const { value, done } = await reader.read();
   if (done) break;
-  const chunk = decoder.decode(value, { stream: true });
-  process.stdout.write(chunk);
-}`;
+  buffer += decoder.decode(value, { stream: true });
+  const lines = buffer.split(/\\r?\\n/);
+  buffer = lines.pop() ?? "";
+  for (const line of lines) processLine(line.trim());
+}
+if (buffer) processLine(buffer.trim());`;
 
 	const pythonRequestsQuickstart = `# Import os and requests libraries
 import os
@@ -1329,7 +1464,8 @@ print(message_text or data)`
 			: `print(data.get("choices", [])[0].get("message", {}).get("content") if data.get("choices") else data)`
 }`;
 
-	const pythonRequestsStreamingQuickstart = `# Import os and requests libraries
+	const pythonRequestsStreamingQuickstart = `# Import json, os and requests libraries
+import json
 import os
 import requests
 
@@ -1344,9 +1480,37 @@ with requests.post(url, json=payload, headers={
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json",
 }, stream=True) as resp:
+    resp.raise_for_status()
+
+    def text_from_event(event):
+        if isinstance(event.get("choices"), list):
+            return "".join(
+                choice.get("delta", {}).get("content", "")
+                for choice in event["choices"]
+            )
+        if isinstance(event.get("delta"), str):
+            return event["delta"]
+        if isinstance(event.get("text"), str):
+            return event["text"]
+        if isinstance(event.get("output_text"), str):
+            return event["output_text"]
+        if isinstance(event.get("response", {}).get("output_text"), str):
+            return event["response"]["output_text"]
+        if isinstance(event.get("delta"), dict) and isinstance(event["delta"].get("text"), str):
+            return event["delta"]["text"]
+        if isinstance(event.get("content_block", {}).get("text"), str):
+            return event["content_block"]["text"]
+        return ""
+
     for line in resp.iter_lines(decode_unicode=True):
-        if line:
-            print(line)`;
+        if not line or not line.startswith("data:"):
+            continue
+        payload_line = line.removeprefix("data:").strip()
+        if not payload_line or payload_line == "[DONE]":
+            continue
+        text = text_from_event(json.loads(payload_line))
+        if text:
+            print(text, end="", flush=True)`;
 
 	const openaiPythonUsage = openaiMethod
 		? `import os
@@ -1420,7 +1584,7 @@ console.log(response);`
 			[
 				LANGUAGE_DOCS_BY_VALUE[selectedLanguage] ?? null,
 				ENDPOINT_DOCS_BY_VALUE[selectedEndpoint] ?? null,
-				supportsServiceTier && selectedServiceTier !== "standard"
+				shouldIncludeServiceTier
 					? { label: "Service tiers", href: SERVICE_TIERS_DOCS_HREF }
 					: null,
 				shouldStream
@@ -1458,9 +1622,9 @@ console.log(response);`
 				<div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)]">
 					<Badge
 						variant="outline"
-						className="w-fit self-start rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-[0.08em]"
+						className="flex h-7 w-7 items-center justify-center rounded-full p-0 text-xs"
 					>
-						Step 1
+						1
 					</Badge>
 					<div className="space-y-2">
 						<h3 className="text-base font-semibold">Get an API key</h3>
@@ -1500,9 +1664,9 @@ console.log(response);`
 					<div className="grid gap-3 md:grid-cols-[auto_minmax(0,1fr)]">
 						<Badge
 							variant="outline"
-							className="w-fit self-start rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-[0.08em]"
+							className="flex h-7 w-7 items-center justify-center rounded-full p-0 text-xs"
 						>
-							Step 2
+							2
 						</Badge>
 						<div className="space-y-1">
 							<h3 className="text-base font-semibold">Send the request</h3>
@@ -1512,6 +1676,15 @@ console.log(response);`
 							</p>
 						</div>
 					</div>
+
+					<EndpointRoutesTable
+						endpointRoutes={endpointRoutes}
+						selectedEndpoint={selectedEndpoint}
+						showAllEndpointRoutes={showAllEndpointRoutes}
+						onToggleShowAllEndpointRoutes={() =>
+							setShowAllEndpointRoutes((current) => !current)
+						}
+					/>
 
 					<QuickstartUsageSection
 						modelIdentifierInCode={modelIdentifierInCode}
@@ -1572,136 +1745,6 @@ console.log(response);`
 						anthropicPythonUsage={anthropicPythonUsage}
 						anthropicNodeUsage={anthropicNodeUsage}
 					/>
-
-					{false ? <QuickstartUsageSection
-						modelIdentifierInCode={modelIdentifierInCode}
-						acceptedIdentifiers={acceptedIdentifierList}
-						onSelectModelIdentifier={setSelectedModelIdentifier}
-						supportedParameters={supportedParameters}
-						selectedEndpointLabel={selectedEndpointLabel}
-						selectedEndpointValue={selectedEndpoint}
-						endpointOptions={availableEndpoints.map((option) => ({
-							value: option.value,
-							label: option.label,
-						}))}
-						selectedLanguage={selectedLanguage}
-						selectedLanguageLabel={`${selectedLanguageFamily?.label ?? selectedLanguageLabel} · ${selectedLanguageVariantLabel}`}
-						selectedLanguageFamilyId={selectedLanguageFamily?.id ?? "typescript"}
-						availableLanguageFamilies={availableLanguageFamilies}
-						secondaryLanguageOptions={secondaryLanguageOptions}
-						supportsStreaming={supportsStreaming}
-						supportsServiceTier={supportsServiceTier}
-						streamingEnabled={streamingEnabled}
-						selectedServiceTier={selectedServiceTier}
-						docsLinks={docsLinks}
-						requestModeLabel={requestModeLabel}
-						serviceTierDocsHref={supportsServiceTier ? SERVICE_TIERS_DOCS_HREF : null}
-						streamingDocsHref={shouldStream ? STREAMING_DOCS_HREF : null}
-						onSelectEndpoint={setSelectedEndpoint}
-						onSelectLanguageFamily={(familyId) => {
-							const family = availableLanguageFamilies.find(
-								(candidate) => candidate.id === familyId,
-							);
-							if (family) {
-								setSelectedLanguage(family.options[0].value);
-							}
-						}}
-						onSelectLanguage={setSelectedLanguage}
-						onSelectServiceTier={setSelectedServiceTier}
-						onToggleStreaming={setStreamingEnabled}
-						curlQuickstart={curlQuickstart}
-						typescriptSdkUsage={typescriptSdkUsage}
-						aiSdkUsage={aiSdkUsage}
-						agentSdkTsUsage={agentSdkTsUsage}
-						agentSdkPythonUsage={agentSdkPythonUsage}
-						agentSdkGoUsage={agentSdkGoUsage}
-						agentSdkCsharpUsage={agentSdkCsharpUsage}
-						agentSdkPhpUsage={agentSdkPhpUsage}
-						agentSdkRubyUsage={agentSdkRubyUsage}
-						pythonSdkUsage={pythonSdkUsage}
-						goSdkUsage={goSdkUsage}
-						csharpSdkUsage={csharpSdkUsage}
-						phpSdkUsage={phpSdkUsage}
-						rubySdkUsage={rubySdkUsage}
-						nodeFetchQuickstart={nodeFetchQuickstart}
-						nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
-						pythonRequestsQuickstart={pythonRequestsQuickstart}
-						pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
-						openaiPythonUsage={openaiPythonUsage}
-						openaiNodeUsage={openaiNodeUsage}
-						anthropicPythonUsage={anthropicPythonUsage}
-						anthropicNodeUsage={anthropicNodeUsage}
-					/> : null}
-
-					<EndpointRoutesTable
-						endpointRoutes={endpointRoutes}
-						selectedEndpoint={selectedEndpoint}
-						showAllEndpointRoutes={showAllEndpointRoutes}
-						onToggleShowAllEndpointRoutes={() =>
-							setShowAllEndpointRoutes((current) => !current)
-						}
-						onSelectEndpoint={setSelectedEndpoint}
-					/>
-
-					{false ? <QuickstartUsageSection
-						modelIdentifierInCode={modelIdentifierInCode}
-						acceptedIdentifiers={acceptedIdentifierList}
-						onSelectModelIdentifier={setSelectedModelIdentifier}
-						supportedParameters={supportedParameters}
-						selectedEndpointLabel={selectedEndpointLabel}
-						selectedEndpointValue={selectedEndpoint}
-						endpointOptions={availableEndpoints.map((option) => ({
-							value: option.value,
-							label: option.label,
-						}))}
-						selectedLanguage={selectedLanguage}
-						selectedLanguageFamilyId={selectedLanguageFamily?.id ?? "typescript"}
-						availableLanguageFamilies={availableLanguageFamilies}
-						secondaryLanguageOptions={secondaryLanguageOptions}
-						selectedLanguageLabel={`${selectedLanguageFamily?.label ?? selectedLanguageLabel} · ${selectedLanguageVariantLabel}`}
-						supportsStreaming={supportsStreaming}
-						supportsServiceTier={supportsServiceTier}
-						streamingEnabled={streamingEnabled}
-						selectedServiceTier={selectedServiceTier}
-						docsLinks={docsLinks}
-						requestModeLabel={requestModeLabel}
-						serviceTierDocsHref={supportsServiceTier ? SERVICE_TIERS_DOCS_HREF : null}
-						streamingDocsHref={shouldStream ? STREAMING_DOCS_HREF : null}
-						onSelectEndpoint={setSelectedEndpoint}
-						onSelectLanguageFamily={(familyId) => {
-							const family = availableLanguageFamilies.find(
-								(candidate) => candidate.id === familyId,
-							);
-							if (family) {
-								setSelectedLanguage(family.options[0].value);
-							}
-						}}
-						onSelectLanguage={setSelectedLanguage}
-						onSelectServiceTier={setSelectedServiceTier}
-						onToggleStreaming={setStreamingEnabled}
-						curlQuickstart={curlQuickstart}
-						typescriptSdkUsage={typescriptSdkUsage}
-						aiSdkUsage={aiSdkUsage}
-						agentSdkTsUsage={agentSdkTsUsage}
-						agentSdkPythonUsage={agentSdkPythonUsage}
-						agentSdkGoUsage={agentSdkGoUsage}
-						agentSdkCsharpUsage={agentSdkCsharpUsage}
-						agentSdkPhpUsage={agentSdkPhpUsage}
-						agentSdkRubyUsage={agentSdkRubyUsage}
-						pythonSdkUsage={pythonSdkUsage}
-						goSdkUsage={goSdkUsage}
-						csharpSdkUsage={csharpSdkUsage}
-						phpSdkUsage={phpSdkUsage}
-						rubySdkUsage={rubySdkUsage}
-						nodeFetchQuickstart={nodeFetchQuickstart}
-						nodeFetchStreamingQuickstart={nodeFetchStreamingQuickstart}
-						pythonRequestsQuickstart={pythonRequestsQuickstart}
-						pythonRequestsStreamingQuickstart={pythonRequestsStreamingQuickstart}
-						openaiPythonUsage={openaiPythonUsage}
-						openaiNodeUsage={openaiNodeUsage}
-						anthropicPythonUsage={anthropicPythonUsage}
-						anthropicNodeUsage={anthropicNodeUsage}
-					/> : null}
 				</div>
 			</div>
 		</section>

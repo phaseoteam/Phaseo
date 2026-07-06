@@ -15,12 +15,13 @@ Server tools are in beta. Request shapes and result payloads may evolve as provi
 
 | Tool | Type | Use it for |
 | --- | --- | --- |
-| Datetime | `gateway:datetime` | Current date and time in a chosen timezone |
+| Datetime | `gateway:datetime` | Current date and time in up to 5 timezones |
 | Web Search | `ai-stats:web_search` | Model-directed web searches during a request |
 | Web Fetch | `ai-stats:web_fetch` | Fetching and extracting text from specific URLs |
 | Advisor | `ai-stats:advisor` | Consulting another model mid-generation |
+| Subagent | `ai-stats:subagent` | Delegating focused work to a worker model |
+| Fusion | Advisor workflow | Consulting several advisor models and an optional judge |
 | Image Generation | `ai-stats:image_generation` | Creating images from the model tool loop |
-| Apply Patch | `ai-stats:apply_patch` | Returning validated patch operations from Responses |
 
 ## How server tools work
 
@@ -44,7 +45,7 @@ curl https://api.phaseo.app/v1/chat/completions \
     ],
     "tools": [
       { "type": "ai-stats:web_search" },
-      { "type": "gateway:datetime", "parameters": { "timezone": "Europe/London" } }
+      { "type": "gateway:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
     ]
   }'
 ```
@@ -105,14 +106,14 @@ Server-tool usage is reported in `usage.server_tool_use`:
       "web_search_results": 8,
       "web_fetch_requests": 1,
       "advisor_requests": 1,
-      "image_generation_requests": 1,
-      "apply_patch_requests": 1
+      "subagent_requests": 1,
+      "image_generation_requests": 1
     }
   }
 }
 ```
 
-Pricing can also use server-tool meters such as `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `server_tool_apply_patch_requests`, `native_web_search_requests`, and `native_web_fetch_requests` when configured on model price cards.
+Pricing can also use server-tool meters such as `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests`, and `native_web_fetch_requests` when configured on model price cards.
 
 ## Tool pages
 
@@ -129,10 +130,13 @@ Pricing can also use server-tool meters such as `server_tool_web_search_requests
   <Card title="Advisor" icon="message-square" href="./advisor">
     Let one model consult another model for guidance mid-generation.
   </Card>
+  <Card title="Subagent" icon="cpu" href="./subagent">
+    Let the model delegate focused tasks to a worker model.
+  </Card>
+  <Card title="Fusion" icon="sparkles" href="./fusion">
+    Let the Playground configure several advisor models for one answer.
+  </Card>
   <Card title="Image Generation" icon="image" href="./image-generation">
     Let the model create images while answering.
-  </Card>
-  <Card title="Apply Patch" icon="file-code" href="./apply-patch">
-    Let the model return patch operations for a client to apply.
   </Card>
 </Columns>

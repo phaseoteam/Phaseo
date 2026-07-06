@@ -10,6 +10,8 @@ import { handlePasswordSignIn, forgotPasswordAction } from "@/app/(auth)/sign-in
 import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 import { Eye, EyeOff } from "lucide-react";
 
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
+
 function SubmitButton() {
 	const { pending } = useFormStatus();
 	return (
@@ -29,6 +31,27 @@ export default function EmailPassword({
 	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 	const [showPassword, setShowPassword] = React.useState(false);
 	const [password, setPassword] = React.useState("");
+	const [storedLastUsedProvider, setStoredLastUsedProvider] =
+		React.useState<string | null>(null);
+	const showLastUsed = isLastUsed || storedLastUsedProvider === "email";
+
+	React.useEffect(() => {
+		try {
+			setStoredLastUsedProvider(
+				window.localStorage.getItem(LAST_AUTH_PROVIDER_STORAGE_KEY)
+			);
+		} catch {
+			setStoredLastUsedProvider(null);
+		}
+	}, []);
+
+	const handleSubmit: React.FormEventHandler<HTMLFormElement> = () => {
+		try {
+			window.localStorage.setItem(LAST_AUTH_PROVIDER_STORAGE_KEY, "email");
+		} catch {
+			// Ignore storage failures; auth still proceeds.
+		}
+	};
 
 	return (
 		<div className="grid gap-4">
@@ -38,7 +61,7 @@ export default function EmailPassword({
 					<span className="text-sm text-muted-foreground">
 						Or sign in with email
 					</span>
-					{isLastUsed ? (
+					{showLastUsed ? (
 						<span className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
 							Last Used
 						</span>
@@ -47,7 +70,7 @@ export default function EmailPassword({
 				<div className="flex-1 border-t border-border" />
 			</div>
 
-			<form action={handlePasswordSignIn} className="grid gap-3">
+			<form action={handlePasswordSignIn} className="grid gap-3" onSubmit={handleSubmit}>
 				{returnUrl ? (
 					<input type="hidden" name="returnUrl" value={returnUrl} />
 				) : null}
@@ -63,12 +86,12 @@ export default function EmailPassword({
 				</div>
 
 				<div className="grid gap-3">
-					<div className="flex items-center">
+					<div className="flex h-5 items-center">
 						<Label htmlFor="password">Password</Label>
 						<button
 							type="button"
 							onClick={() => setForgotPasswordOpen(true)}
-							className="ml-auto text-sm underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200"
+							className="ml-auto text-sm leading-none underline decoration-transparent underline-offset-4 transition-colors duration-200 hover:decoration-current"
 						>
 							Forgot your password?
 						</button>

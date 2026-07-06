@@ -6,10 +6,16 @@ export const coerceResponseText = (value: unknown) => {
                 if (typeof entry === "string") return entry;
                 if (entry && typeof entry === "object") {
                     const typeValue = (entry as { type?: string }).type;
-                    if (typeValue === "output_text") {
+                    if (
+                        typeValue === "reasoning" ||
+                        typeValue === "reasoning_text" ||
+                        typeValue === "summary_text"
+                    ) {
+                        return "";
+                    }
+                    if (typeValue === "output_text" || typeValue === "text") {
                         return (entry as { text?: string }).text ?? "";
                     }
-                    return (entry as { text?: string }).text ?? "";
                 }
                 return "";
             })
@@ -21,22 +27,25 @@ export const coerceResponseText = (value: unknown) => {
 
 export const extractOutputText = (output: unknown) => {
     if (!Array.isArray(output)) return "";
+    const candidates: string[] = [];
     for (const item of output) {
         if (!item) continue;
         if (typeof item === "string") return item;
         if (typeof (item as any).text === "string") {
-            return (item as any).text;
+            candidates.push((item as any).text);
+            continue;
         }
         if (Array.isArray((item as any).content)) {
             const contentText = coerceResponseText((item as any).content);
-            if (contentText) return contentText;
+            if (contentText) candidates.push(contentText);
+            continue;
         }
         if ((item as any).content) {
             const contentText = coerceResponseText((item as any).content);
-            if (contentText) return contentText;
+            if (contentText) candidates.push(contentText);
         }
     }
-    return "";
+    return candidates.join("");
 };
 
 export const extractResponseText = (payload: any) => {
@@ -53,6 +62,256 @@ export const extractResponseText = (payload: any) => {
         if (candidate) return candidate;
     }
     return "";
+};
+
+export type ChatToolCallStatus = "running" | "completed" | "failed";
+
+export type ChatToolCall = {
+	id: string;
+	type: string;
+	name: string;
+	status: ChatToolCallStatus;
+	input?: unknown;
+	inputText?: string;
+	output?: unknown;
+	errorText?: string;
+};
+
+export type ChatTraceEvent =
+	| {
+			id: string;
+			type: "reasoning";
+			sequence: number;
+			text: string;
+		}
+	| {
+			id: string;
+			type: "tool_call";
+			sequence: number;
+			toolCallId: string;
+		}
+	| {
+			id: string;
+			type: "response";
+			sequence: number;
+			text: string;
+		};
+
+const TOOL_OUTPUT_ITEM_TYPES = new Set([
+	"function_call",
+	"tool_call",
+	"web_search_call",
+	"file_search_call",
+	"image_generation_call",
+	"code_interpreter_call",
+	"computer_call",
+	"mcp_call",
+]);
+
+const parseJsonIfPossible = (value: string): unknown => {
+	const trimmed = value.trim();
+	if (!trimmed) return undefined;
+	try {
+		return JSON.parse(trimmed);
+	} catch {
+		return undefined;
+	}
+};
+
+const stringifyToolInput = (value: unknown): string | undefined => {
+	if (typeof value === "string") return value;
+	if (value == null) return undefined;
+	try {
+		return JSON.stringify(value);
+	} catch {
+		return undefined;
+	}
+};
+
+const normalizeToolCallStatus = (
+	status: unknown,
+	fallback: ChatToolCallStatus,
+): ChatToolCallStatus => {
+	if (typeof status !== "string") return fallback;
+	const normalized = status.toLowerCase();
+	if (
+		normalized === "in_progress" ||
+		normalized === "running" ||
+		normalized === "queued"
+	) {
+		return "running";
+	}
+	if (
+		normalized === "failed" ||
+		normalized === "error" ||
+		normalized === "errored" ||
+		normalized === "cancelled"
+	) {
+		return "failed";
+	}
+	return "completed";
+};
+
+const normalizeToolCallFromOutputItem = (
+	item: any,
+	index: number,
+	fallbackStatus: ChatToolCallStatus,
+): ChatToolCall | null => {
+	if (!item || typeof item !== "object") return null;
+	const type = typeof item.type === "string" ? item.type : "tool_call";
+	if (!TOOL_OUTPUT_ITEM_TYPES.has(type)) return null;
+	const idCandidate =
+		item.call_id ??
+		item.id ??
+		item.item_id ??
+		item.tool_call_id ??
+		item.output_index ??
+		index;
+	const id =
+		typeof idCandidate === "string" && idCandidate.trim()
+			? idCandidate.trim()
+			: `tool-${index}`;
+	const name =
+		typeof item.name === "string" && item.name.trim()
+			? item.name.trim()
+			: typeof item.tool_name === "string" && item.tool_name.trim()
+				? item.tool_name.trim()
+				: type;
+	const argumentText =
+		typeof item.arguments === "string"
+			? item.arguments
+			: typeof item.input === "string"
+				? item.input
+				: stringifyToolInput(item.arguments ?? item.input ?? item.query);
+	const parsedInput =
+		typeof argumentText === "string"
+			? parseJsonIfPossible(argumentText)
+			: undefined;
+	const errorText =
+		typeof item.error === "string"
+			? item.error
+			: typeof item.error?.message === "string"
+				? item.error.message
+				: undefined;
+	return {
+		id,
+		type,
+		name,
+		status: errorText
+			? "failed"
+			: normalizeToolCallStatus(item.status, fallbackStatus),
+		...(parsedInput !== undefined ? { input: parsedInput } : {}),
+		...(argumentText ? { inputText: argumentText } : {}),
+		...(item.output !== undefined ? { output: item.output } : {}),
+		...(errorText ? { errorText } : {}),
+	};
+};
+
+const normalizeToolCallFromChatToolCall = (
+	toolCall: any,
+	index: number,
+): ChatToolCall | null => {
+	if (!toolCall || typeof toolCall !== "object") return null;
+	const id =
+		typeof toolCall.id === "string" && toolCall.id.trim()
+			? toolCall.id.trim()
+			: `tool-${index}`;
+	const type =
+		typeof toolCall.type === "string" && toolCall.type.trim()
+			? toolCall.type.trim()
+			: "function";
+	const functionCall = toolCall.function ?? {};
+	const name =
+		typeof functionCall.name === "string" && functionCall.name.trim()
+			? functionCall.name.trim()
+			: typeof toolCall.name === "string" && toolCall.name.trim()
+				? toolCall.name.trim()
+				: type;
+	const argumentText =
+		typeof functionCall.arguments === "string"
+			? functionCall.arguments
+			: typeof toolCall.arguments === "string"
+				? toolCall.arguments
+				: undefined;
+	const parsedInput =
+		typeof argumentText === "string"
+			? parseJsonIfPossible(argumentText)
+			: undefined;
+	return {
+		id,
+		type,
+		name,
+		status: "completed",
+		...(parsedInput !== undefined ? { input: parsedInput } : {}),
+		...(argumentText ? { inputText: argumentText } : {}),
+	};
+};
+
+const dedupeToolCalls = (calls: ChatToolCall[]) => {
+	const byId = new Map<string, ChatToolCall>();
+	for (const call of calls) {
+		const previous = byId.get(call.id);
+		if (!previous) {
+			byId.set(call.id, call);
+			continue;
+		}
+		byId.set(call.id, {
+			...previous,
+			...call,
+			input: call.input ?? previous.input,
+			inputText: call.inputText ?? previous.inputText,
+			output: call.output ?? previous.output,
+			errorText: call.errorText ?? previous.errorText,
+			status:
+				call.status === "completed" || previous.status !== "failed"
+					? call.status
+					: previous.status,
+		});
+	}
+	return Array.from(byId.values());
+};
+
+export const extractResponseToolCalls = (payload: any): ChatToolCall[] => {
+	const calls: ChatToolCall[] = [];
+	const collectOutput = (
+		output: unknown,
+		fallbackStatus: ChatToolCallStatus,
+	) => {
+		if (!Array.isArray(output)) return;
+		output.forEach((item, index) => {
+			const call = normalizeToolCallFromOutputItem(
+				item,
+				calls.length + index,
+				fallbackStatus,
+			);
+			if (call) calls.push(call);
+		});
+	};
+	collectOutput(payload?.output, "completed");
+	collectOutput(payload?.response?.output, "completed");
+
+	const collectChatChoices = (choices: unknown) => {
+		if (!Array.isArray(choices)) return;
+		for (const choice of choices) {
+			const messageToolCalls = (choice as any)?.message?.tool_calls;
+			const deltaToolCalls = (choice as any)?.delta?.tool_calls;
+			const toolCalls = Array.isArray(messageToolCalls)
+				? messageToolCalls
+				: Array.isArray(deltaToolCalls)
+					? deltaToolCalls
+					: [];
+			toolCalls.forEach((toolCall, index) => {
+				const call = normalizeToolCallFromChatToolCall(
+					toolCall,
+					calls.length + index,
+				);
+				if (call) calls.push(call);
+			});
+		}
+	};
+	collectChatChoices(payload?.choices);
+	collectChatChoices(payload?.response?.choices);
+	return dedupeToolCalls(calls);
 };
 
 

@@ -44,6 +44,8 @@ namespace AiStatsSdk
         public const string AnthropicClaudeSonnet45 = "anthropic/claude-sonnet-4.5";
         /// <summary>Model ID: <c>anthropic/claude-sonnet-4.6</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-4.6</summary>
         public const string AnthropicClaudeSonnet46 = "anthropic/claude-sonnet-4.6";
+        /// <summary>Model ID: <c>anthropic/claude-sonnet-5</c>. Model page: https://ai-stats.phaseo.app/models/anthropic/claude-sonnet-5</summary>
+        public const string AnthropicClaudeSonnet5 = "anthropic/claude-sonnet-5";
         /// <summary>Model ID: <c>arcee-ai/trinity-large</c>. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large</summary>
         public const string ArceeAiTrinityLarge = "arcee-ai/trinity-large";
         /// <summary>Model ID: <c>arcee-ai/trinity-large-thinking</c>. Model page: https://ai-stats.phaseo.app/models/arcee-ai/trinity-large-thinking</summary>
@@ -62,6 +64,8 @@ namespace AiStatsSdk
         public const string BaiduErnie45Vl28bA3bThinking = "baidu/ernie-4.5-vl-28b-a3b-thinking";
         /// <summary>Model ID: <c>baidu/ernie-4.5-vl-424b-a47b</c>. Model page: https://ai-stats.phaseo.app/models/baidu/ernie-4.5-vl-424b-a47b</summary>
         public const string BaiduErnie45Vl424bA47b = "baidu/ernie-4.5-vl-424b-a47b";
+        /// <summary>Model ID: <c>black-forest-labs/flux-1-schnell</c>. Model page: https://ai-stats.phaseo.app/models/black-forest-labs/flux-1-schnell</summary>
+        public const string BlackForestLabsFlux1Schnell = "black-forest-labs/flux-1-schnell";
         /// <summary>Model ID: <c>bytedance/seed-1.6</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6</summary>
         public const string BytedanceSeed16 = "bytedance/seed-1.6";
         /// <summary>Model ID: <c>bytedance/seed-1.6-250915</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seed-1.6-250915</summary>
@@ -90,6 +94,8 @@ namespace AiStatsSdk
         public const string BytedanceSeedance20 = "bytedance/seedance-2.0";
         /// <summary>Model ID: <c>bytedance/seedance-2.0-fast</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-fast</summary>
         public const string BytedanceSeedance20Fast = "bytedance/seedance-2.0-fast";
+        /// <summary>Model ID: <c>bytedance/seedance-2.0-mini-260615</c>. Model page: https://ai-stats.phaseo.app/models/bytedance/seedance-2.0-mini-260615</summary>
+        public const string BytedanceSeedance20Mini260615 = "bytedance/seedance-2.0-mini-260615";
         /// <summary>Model ID: <c>crofai/greg-1-mini</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-1-mini</summary>
         public const string CrofaiGreg1Mini = "crofai/greg-1-mini";
         /// <summary>Model ID: <c>crofai/greg-2-super</c>. Model page: https://ai-stats.phaseo.app/models/crofai/greg-2-super</summary>
@@ -136,6 +142,22 @@ namespace AiStatsSdk
         public const string DeepseekDeepseekV4Pro = "deepseek/deepseek-v4-pro";
         /// <summary>Model ID: <c>deepseek/deepseek-v4-pro-lightning</c>. Model page: https://ai-stats.phaseo.app/models/deepseek/deepseek-v4-pro-lightning</summary>
         public const string DeepseekDeepseekV4ProLightning = "deepseek/deepseek-v4-pro-lightning";
+        /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2</summary>
+        public const string ElevenLabsElevenFlashV2 = "eleven-labs/eleven-flash-v2";
+        /// <summary>Model ID: <c>eleven-labs/eleven-flash-v2.5</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-flash-v2.5</summary>
+        public const string ElevenLabsElevenFlashV25 = "eleven-labs/eleven-flash-v2.5";
+        /// <summary>Model ID: <c>eleven-labs/eleven-monolingual-v1</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-monolingual-v1</summary>
+        public const string ElevenLabsElevenMonolingualV1 = "eleven-labs/eleven-monolingual-v1";
+        /// <summary>Model ID: <c>eleven-labs/eleven-multilingual-v1</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v1</summary>
+        public const string ElevenLabsElevenMultilingualV1 = "eleven-labs/eleven-multilingual-v1";
+        /// <summary>Model ID: <c>eleven-labs/eleven-multilingual-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-multilingual-v2</summary>
+        public const string ElevenLabsElevenMultilingualV2 = "eleven-labs/eleven-multilingual-v2";
+        /// <summary>Model ID: <c>eleven-labs/eleven-turbo-v2</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2</summary>
+        public const string ElevenLabsElevenTurboV2 = "eleven-labs/eleven-turbo-v2";
+        /// <summary>Model ID: <c>eleven-labs/eleven-turbo-v2.5</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-turbo-v2.5</summary>
+        public const string ElevenLabsElevenTurboV25 = "eleven-labs/eleven-turbo-v2.5";
+        /// <summary>Model ID: <c>eleven-labs/eleven-v3</c>. Model page: https://ai-stats.phaseo.app/models/eleven-labs/eleven-v3</summary>
+        public const string ElevenLabsElevenV3 = "eleven-labs/eleven-v3";
         /// <summary>Model ID: <c>essential-ai/rnj-1</c>. Model page: https://ai-stats.phaseo.app/models/essential-ai/rnj-1</summary>
         public const string EssentialAiRnj1 = "essential-ai/rnj-1";
         /// <summary>Model ID: <c>google/gemini-2.5-flash</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-2.5-flash</summary>
@@ -152,14 +174,14 @@ namespace AiStatsSdk
         public const string GoogleGemini3FlashPreview = "google/gemini-3-flash-preview";
         /// <summary>Model ID: <c>google/gemini-3-pro-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image</summary>
         public const string GoogleGemini3ProImage = "google/gemini-3-pro-image";
-        /// <summary>Model ID: <c>google/gemini-3-pro-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3-pro-image-preview</summary>
-        public const string GoogleGemini3ProImagePreview = "google/gemini-3-pro-image-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image</summary>
         public const string GoogleGemini31FlashImage = "google/gemini-3.1-flash-image";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-image-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-image-preview</summary>
         public const string GoogleGemini31FlashImagePreview = "google/gemini-3.1-flash-image-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-lite</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite</summary>
         public const string GoogleGemini31FlashLite = "google/gemini-3.1-flash-lite";
+        /// <summary>Model ID: <c>google/gemini-3.1-flash-lite-image</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-image</summary>
+        public const string GoogleGemini31FlashLiteImage = "google/gemini-3.1-flash-lite-image";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-lite-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-lite-preview</summary>
         public const string GoogleGemini31FlashLitePreview = "google/gemini-3.1-flash-lite-preview";
         /// <summary>Model ID: <c>google/gemini-3.1-flash-tts-preview</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.1-flash-tts-preview</summary>
@@ -170,6 +192,8 @@ namespace AiStatsSdk
         public const string GoogleGemini31ProPreviewCustomtools = "google/gemini-3.1-pro-preview-customtools";
         /// <summary>Model ID: <c>google/gemini-3.5-flash</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.5-flash</summary>
         public const string GoogleGemini35Flash = "google/gemini-3.5-flash";
+        /// <summary>Model ID: <c>google/gemini-3.5-pro</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-3.5-pro</summary>
+        public const string GoogleGemini35Pro = "google/gemini-3.5-pro";
         /// <summary>Model ID: <c>google/gemini-embedding-001</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-001</summary>
         public const string GoogleGeminiEmbedding001 = "google/gemini-embedding-001";
         /// <summary>Model ID: <c>google/gemini-embedding-2</c>. Model page: https://ai-stats.phaseo.app/models/google/gemini-embedding-2</summary>
@@ -230,8 +254,8 @@ namespace AiStatsSdk
         public const string KwaipilotKatCoderProV2 = "kwaipilot/kat-coder-pro-v2";
         /// <summary>Model ID: <c>liquid-ai/lfm-2-24b-a2b</c>. Model page: https://ai-stats.phaseo.app/models/liquid-ai/lfm-2-24b-a2b</summary>
         public const string LiquidAiLfm224bA2b = "liquid-ai/lfm-2-24b-a2b";
-        /// <summary>Model ID: <c>meituan/longcat-flash-cat</c>. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-flash-cat</summary>
-        public const string MeituanLongcatFlashCat = "meituan/longcat-flash-cat";
+        /// <summary>Model ID: <c>meituan/longcat-2.0</c>. Model page: https://ai-stats.phaseo.app/models/meituan/longcat-2.0</summary>
+        public const string MeituanLongcat20 = "meituan/longcat-2.0";
         /// <summary>Model ID: <c>meta/llama-3-70b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-70b</summary>
         public const string MetaLlama370b = "meta/llama-3-70b";
         /// <summary>Model ID: <c>meta/llama-3-8b</c>. Model page: https://ai-stats.phaseo.app/models/meta/llama-3-8b</summary>
@@ -296,6 +320,8 @@ namespace AiStatsSdk
         public const string MistralDevstralMedium10 = "mistral/devstral-medium-1.0";
         /// <summary>Model ID: <c>mistral/devstral-small-1.1</c>. Model page: https://ai-stats.phaseo.app/models/mistral/devstral-small-1.1</summary>
         public const string MistralDevstralSmall11 = "mistral/devstral-small-1.1";
+        /// <summary>Model ID: <c>mistral/leanstral-1.5:free</c>. Model page: https://ai-stats.phaseo.app/models/mistral/leanstral-1.5%3Afree</summary>
+        public const string MistralLeanstral15Free = "mistral/leanstral-1.5:free";
         /// <summary>Model ID: <c>mistral/magistral-medium-1.2</c>. Model page: https://ai-stats.phaseo.app/models/mistral/magistral-medium-1.2</summary>
         public const string MistralMagistralMedium12 = "mistral/magistral-medium-1.2";
         /// <summary>Model ID: <c>mistral/ministral-3-14b</c>. Model page: https://ai-stats.phaseo.app/models/mistral/ministral-3-14b</summary>
@@ -374,8 +400,6 @@ namespace AiStatsSdk
         public const string NexAgiDeepseekV31NexN1 = "nex-agi/deepseek-v3.1-nex-n1";
         /// <summary>Model ID: <c>nex-agi/nex-n2-pro</c>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro</summary>
         public const string NexAgiNexN2Pro = "nex-agi/nex-n2-pro";
-        /// <summary>Model ID: <c>nex-agi/nex-n2-pro:free</c>. Model page: https://ai-stats.phaseo.app/models/nex-agi/nex-n2-pro%3Afree</summary>
-        public const string NexAgiNexN2ProFree = "nex-agi/nex-n2-pro:free";
         /// <summary>Model ID: <c>nous/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nous/hermes-3-llama-3.1-405b</summary>
         public const string NousHermes3Llama31405b = "nous/hermes-3-llama-3.1-405b";
         /// <summary>Model ID: <c>nousresearch/hermes-3-llama-3.1-405b</c>. Model page: https://ai-stats.phaseo.app/models/nousresearch/hermes-3-llama-3.1-405b</summary>
@@ -544,8 +568,6 @@ namespace AiStatsSdk
         public const string PoolsideLagunaM1Free = "poolside/laguna-m.1:free";
         /// <summary>Model ID: <c>poolside/laguna-xs.2:free</c>. Model page: https://ai-stats.phaseo.app/models/poolside/laguna-xs.2%3Afree</summary>
         public const string PoolsideLagunaXs2Free = "poolside/laguna-xs.2:free";
-        /// <summary>Model ID: <c>primeintellect/intellect-3</c>. Model page: https://ai-stats.phaseo.app/models/primeintellect/intellect-3</summary>
-        public const string PrimeintellectIntellect3 = "primeintellect/intellect-3";
         /// <summary>Model ID: <c>qwen/qvq-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qvq-max</summary>
         public const string QwenQvqMax = "qwen/qvq-max";
         /// <summary>Model ID: <c>qwen/qwen-3.6-plus</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen-3.6-plus</summary>
@@ -656,6 +678,8 @@ namespace AiStatsSdk
         public const string QwenQwen3CoderPlus20250722 = "qwen/qwen3-coder-plus-2025-07-22";
         /// <summary>Model ID: <c>qwen/qwen3-coder-plus-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-coder-plus-2025-09-23</summary>
         public const string QwenQwen3CoderPlus20250923 = "qwen/qwen3-coder-plus-2025-09-23";
+        /// <summary>Model ID: <c>qwen/qwen3-embedding-8b</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-embedding-8b</summary>
+        public const string QwenQwen3Embedding8b = "qwen/qwen3-embedding-8b";
         /// <summary>Model ID: <c>qwen/qwen3-max</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max</summary>
         public const string QwenQwen3Max = "qwen/qwen3-max";
         /// <summary>Model ID: <c>qwen/qwen3-max-2025-09-23</c>. Model page: https://ai-stats.phaseo.app/models/qwen/qwen3-max-2025-09-23</summary>
@@ -840,12 +864,6 @@ namespace AiStatsSdk
         public const string XAiGrokTts = "x-ai/grok-tts";
         /// <summary>Model ID: <c>xiaomi/mimo-v2-flash</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-flash</summary>
         public const string XiaomiMimoV2Flash = "xiaomi/mimo-v2-flash";
-        /// <summary>Model ID: <c>xiaomi/mimo-v2-omni</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-omni</summary>
-        public const string XiaomiMimoV2Omni = "xiaomi/mimo-v2-omni";
-        /// <summary>Model ID: <c>xiaomi/mimo-v2-pro</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-pro</summary>
-        public const string XiaomiMimoV2Pro = "xiaomi/mimo-v2-pro";
-        /// <summary>Model ID: <c>xiaomi/mimo-v2-tts:free</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2-tts%3Afree</summary>
-        public const string XiaomiMimoV2TtsFree = "xiaomi/mimo-v2-tts:free";
         /// <summary>Model ID: <c>xiaomi/mimo-v2.5</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5</summary>
         public const string XiaomiMimoV25 = "xiaomi/mimo-v2.5";
         /// <summary>Model ID: <c>xiaomi/mimo-v2.5-pro</c>. Model page: https://ai-stats.phaseo.app/models/xiaomi/mimo-v2.5-pro</summary>

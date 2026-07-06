@@ -55,7 +55,7 @@ describe("AIStats endpoints discovery helper", () => {
       if (url === "https://example.test/music/generate/music_1" && method === "GET") {
         return jsonResponse({ id: "music_1", status: "completed" });
       }
-      if (url.startsWith("https://example.test/models?") && method === "GET") {
+      if (url.startsWith("https://example.test/gateway/models?") && method === "GET") {
         const parsedUrl = new URL(url);
         const modelId = parsedUrl.searchParams.get("model_id");
         if (modelId) {
@@ -99,21 +99,11 @@ describe("AIStats endpoints discovery helper", () => {
       "GET https://example.test/models?model_id=minimax%2Fmusic-2.6&limit=1",
       "POST https://example.test/music/generate",
       "GET https://example.test/music/generate/music_1",
-      "GET https://example.test/models?limit=1",
+      "GET https://example.test/gateway/models?limit=1",
       "GET https://example.test/health/providers/openai/derank?window_hours=24",
     ]);
   });
 
-  test("builds a Responses WebSocket URL", () => {
-    const client = new AIStats({
-      apiKey: "sk_test_123",
-      baseUrl: "https://example.test",
-    });
-
-    expect(client.responses.websocketUrl({ model: "openai/gpt-5.4", sessionId: "session_1" })).toBe(
-      "wss://example.test/responses/ws?model=openai%2Fgpt-5.4&session_id=session_1",
-    );
-  });
 });
 
 function jsonResponse(body: unknown) {

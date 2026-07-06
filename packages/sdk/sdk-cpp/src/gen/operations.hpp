@@ -329,11 +329,6 @@ inline Response OpenAsyncJobWebSocket(Client& client, const std::map<std::string
 	return client.request("GET", resolved_path, body);
 }
 
-inline Response OpenResponsesWebSocket(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
-	const std::string resolved_path = "/responses/ws";
-	return client.request("GET", resolved_path, body);
-}
-
 inline Response RetrieveBatch(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/batches/" + (path.count("batch_id") ? path.at("batch_id") : std::string{});
 	return client.request("GET", resolved_path, body);

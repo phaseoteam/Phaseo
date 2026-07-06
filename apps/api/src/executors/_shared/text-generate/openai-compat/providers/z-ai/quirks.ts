@@ -7,21 +7,6 @@
 
 import type { ProviderQuirks } from "../../quirks/types";
 
-function mapReasoningEffortToZai(value?: string): "high" | "max" | undefined {
-	switch (value) {
-		case "max":
-		case "xhigh":
-			return "max";
-		case "minimal":
-		case "low":
-		case "medium":
-		case "high":
-			return "high";
-		default:
-			return undefined;
-	}
-}
-
 export const zaiQuirks: ProviderQuirks = {
 	transformRequest: ({ request, ir }) => {
 		// Z.AI chat compatibility docs do not define a "developer" role.
@@ -50,15 +35,6 @@ export const zaiQuirks: ProviderQuirks = {
 				type: "disabled",
 				clear_thinking: false,
 			};
-		}
-
-		if (request.reasoning_effort == null && reasoningEnabled !== false) {
-			const effort = mapReasoningEffortToZai(ir.reasoning?.effort);
-			if (effort) {
-				request.reasoning_effort = effort;
-			} else if (ir.reasoning?.enabled === true) {
-				request.reasoning_effort = "high";
-			}
 		}
 	},
 

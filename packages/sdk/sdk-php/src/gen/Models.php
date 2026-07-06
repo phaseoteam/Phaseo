@@ -86,8 +86,6 @@ class AnthropicMessage
 class AnthropicMessagesRequest
 {
 	/** @var array<string, mixed>|null */
-	public $cache_control;
-	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -101,8 +99,6 @@ class AnthropicMessagesRequest
 	public $metadata;
 	/** @var string */
 	public $model;
-	/** @var string|null */
-	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -710,8 +706,6 @@ class ChatChoice
 class ChatCompletionsRequest
 {
 	/** @var array<string, mixed>|null */
-	public $cache_control;
-	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -745,8 +739,6 @@ class ChatCompletionsRequest
 	public $presence_penalty;
 	/** @var string|null */
 	public $prompt_cache_key;
-	/** @var string|null */
-	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -1827,12 +1819,6 @@ class ProvisioningKeyWithValue
 	public $status;
 }
 
-class RealtimeNotImplementedResponse
-{
-	/** @var array<string, mixed> */
-	public $error;
-}
-
 class ReasoningConfig
 {
 	/** @var string|null */
@@ -1972,8 +1958,6 @@ class ResponsesRequest
 	/** @var bool|null */
 	public $background;
 	/** @var array<string, mixed>|null */
-	public $cache_control;
-	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
 	public $echo_upstream_request;
@@ -2001,8 +1985,6 @@ class ResponsesRequest
 	public $previous_response_id;
 	/** @var string|null */
 	public $prompt_cache_key;
-	/** @var string|null */
-	public $prompt_cache_retention;
 	/** @var array<string, mixed>|null */
 	public $provider;
 	/** @var array<string, mixed>|null */
@@ -2061,42 +2043,6 @@ class ResponsesResponse
 	public $type;
 	/** @var array<string, mixed>|null */
 	public $usage;
-}
-
-class ResponsesWebSocketCreateEvent
-{
-	/** @var string|array|array<string, mixed>|null */
-	public $input;
-	/** @var string */
-	public $model;
-	/** @var string|null */
-	public $previous_response_id;
-	/** @var bool|null */
-	public $store;
-	/** @var string|array<string, mixed>|null */
-	public $tool_choice;
-	/** @var array|null */
-	public $tools;
-	/** @var string */
-	public $type;
-}
-
-class ResponsesWebSocketServerEvent
-{
-	/** @var array<string, mixed>|null */
-	public $error;
-	/** @var array<string, mixed>|null */
-	public $response;
-	/** @var int|null */
-	public $status;
-	/** @var string|null */
-	public $type;
-}
-
-class ResponsesWebSocketUpgradeRequiredResponse
-{
-	/** @var array<string, mixed>|null */
-	public $error;
 }
 
 class ServerToolUsage

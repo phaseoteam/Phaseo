@@ -1,9 +1,9 @@
 ---
 title: "Codex"
-description: "Use the AI Stats Gateway as a custom provider for Codex CLI."
+description: "Use the AI Stats Gateway as a custom provider for Codex CLI, Codex App, and the Codex IDE extension."
 ---
 
-Codex CLI supports custom model providers through `~/.codex/config.toml`, so you can route requests to AI Stats without changing your local workflow.
+Codex supports custom model providers through `config.toml`, so you can route Codex requests through AI Stats while keeping the same CLI, app, or IDE workflow.
 
 If you also want Codex to read the live AI Stats documentation while it works, add the [Docs MCP](./docs-mcp.mdx) server as well.
 
@@ -30,7 +30,7 @@ npx skills add AI-Stats/skills --agent codex --skill '*'
 ## Prerequisites
 
 - An AI Stats API key.
-- Codex CLI installed locally.
+- Codex CLI, Codex App, or the Codex IDE extension.
 
 ## 1) Set your API key
 
@@ -44,10 +44,10 @@ $env:AI_STATS_API_KEY = "your_ai_stats_api_key"
 
 ## 2) Configure Codex to use AI Stats
 
-Create or update `~/.codex/config.toml`:
+Create or update your user config at `~/.codex/config.toml`. For a trusted project, you can also place the same settings in `.codex/config.toml` inside the repo.
 
 ```toml
-model = "openai/gpt-5-3-codex-2026-02-05"
+model = "openai/gpt-5.5"
 model_provider = "ai_stats"
 
 [model_providers.ai_stats]
@@ -57,17 +57,20 @@ env_key = "AI_STATS_API_KEY"
 wire_api = "responses"
 ```
 
+Codex currently uses the Responses wire protocol for custom providers. Keep `wire_api = "responses"` or omit it and use the default.
+
 ## 3) Start Codex
 
 ```bash
 codex
 ```
 
+The Codex App and IDE extension share the same config layers. In the IDE extension, open the config from `Codex Settings > Open config.toml`.
+
 ## Verification
 
 - Confirm your model id exists in [Models](../../api-reference/endpoint/models.mdx) before launching.
 - Use [Responses](../../api-reference/endpoint/responses.mdx) for the default Codex-style flow.
-- If needed for compatibility, switch `wire_api` to `chat` and use [Chat Completions](../../api-reference/endpoint/chat-completions.mdx).
 
 ## Troubleshooting
 

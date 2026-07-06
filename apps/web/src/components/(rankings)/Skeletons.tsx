@@ -56,3 +56,24 @@ export function ListSkeleton() {
         </div>
     );
 }
+
+export function LeaderboardExplorerSkeleton() {
+    return (
+        <div className="space-y-5">
+            <div className="space-y-2">
+                <Skeleton className="h-7 w-56" />
+                <Skeleton className="h-4 w-full max-w-2xl" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 6 }).map((_, index) => (
+                    <Skeleton key={index} className="h-9 w-24 rounded-md" />
+                ))}
+            </div>
+            <div className="grid gap-2 lg:grid-cols-2">
+                {Array.from({ length: 8 }).map((_, index) => (
+                    <Skeleton key={index} className="h-16 w-full rounded-lg" />
+                ))}
+            </div>
+        </div>
+    );
+}

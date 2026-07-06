@@ -1,0 +1,221 @@
+{
+  "model_id": "anthropic/claude-sonnet-5",
+  "organisation_id": "anthropic",
+  "name": "Claude Sonnet 5",
+  "status": "Available",
+  "previous_model_id": "anthropic/claude-sonnet-4.6",
+  "description": "Claude Sonnet 5 is Anthropic's latest Sonnet-class model, released on 2026-06-30 with adaptive thinking enabled by default, a 1M-token context window, and 128k maximum output tokens.",
+  "announced_date": "2026-06-30T00:00:00.000Z",
+  "release_date": "2026-06-30T00:00:00.000Z",
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": "Proprietary",
+  "input_types": "text,image",
+  "output_types": "text",
+  "api_model_id": "anthropic/claude-sonnet-5",
+  "family_id": "anthropic/claude-5",
+  "links": [
+    {
+      "platform": "announcement",
+      "url": "https://www.anthropic.com/news/claude-sonnet-5"
+    },
+    {
+      "platform": "api_reference",
+      "url": "https://platform.claude.com/docs/en/about-claude/models/overview"
+    },
+    {
+      "platform": "model_card",
+      "url": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    }
+  ],
+  "details": [
+    {
+      "name": "api_model_id",
+      "value": "anthropic/claude-sonnet-5"
+    },
+    {
+      "name": "context_window",
+      "value": "1,000,000 tokens"
+    },
+    {
+      "name": "max_output_tokens",
+      "value": "128,000 tokens"
+    },
+    {
+      "name": "knowledge_cutoff",
+      "value": "January 2026"
+    },
+    {
+      "name": "reasoning",
+      "value": "Adaptive thinking is enabled by default; extended thinking is not supported."
+    },
+    {
+      "name": "availability",
+      "value": "Available in the Anthropic API, Claude Code, Claude apps, Anthropic Console, Amazon Bedrock, and Google Cloud Vertex AI."
+    },
+    {
+      "name": "pricing",
+      "value": "Introductory pricing is $2 per 1M input tokens and $10 per 1M output tokens through 2026-08-31, then standard Sonnet pricing of $3 per 1M input tokens and $15 per 1M output tokens."
+    },
+    {
+      "name": "tokenizer",
+      "value": "Claude Sonnet 5 uses a new tokenizer; Anthropic reports text-heavy workloads may see approximately 1.0x to 1.35x token-count changes compared with prior Claude models."
+    }
+  ],
+  "benchmarks": [
+    {
+      "benchmark_id": "swe-bench",
+      "score": 85.2,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Verified; standard configuration; average over five trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "swe-bench-pro",
+      "score": 63.2,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Pro; standard configuration; average over five trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "swe-bench-multilingual",
+      "score": 78.3,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Multilingual; standard configuration; average over five trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "swe-bench-multimodal",
+      "score": 28.1,
+      "is_self_reported": true,
+      "other_info": "SWE-bench Multimodal; internal harness; average over five trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "terminal-bench-2.1",
+      "score": 80.4,
+      "is_self_reported": true,
+      "other_info": "mini-SWE-agent harness; xhigh effort; mean reward across 445 trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "frontiercode-diamond",
+      "score": 38.8,
+      "is_self_reported": true,
+      "other_info": "FrontierCode v1; adaptive thinking at max effort; summary-table score",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "cursorbench-3.1",
+      "score": 61.2,
+      "is_self_reported": false,
+      "other_info": "Cursor production agent harness; measured and reported independently by Cursor",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "usamo-2026",
+      "score": 79.5,
+      "is_self_reported": true,
+      "other_info": "High effort; 300k token limit; average over ten attempts per problem",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 43.2,
+      "is_self_reported": true,
+      "other_info": "No tools; auto thinking; 1M total-token cap",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "humanitys-last-exam",
+      "score": 57.4,
+      "is_self_reported": true,
+      "other_info": "With web search, web fetch, programmatic tool calling, and code execution; auto thinking; 1M total-token cap",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 84.7,
+      "is_self_reported": true,
+      "other_info": "Single-agent run; adaptive thinking at maximum effort; 10M-token limit with context compaction triggered at 200k",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "browsecomp",
+      "score": 86.6,
+      "is_self_reported": true,
+      "other_info": "Multi-agent run from Anthropic capability summary table",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "gdp-pdf",
+      "score": 67.5,
+      "is_self_reported": true,
+      "other_info": "No tools; mean criteria pass rate; full 100 prompts; average over five runs",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "gdp-pdf",
+      "score": 81.6,
+      "is_self_reported": true,
+      "other_info": "With Python and image-cropping tools; mean criteria pass rate; full 100 prompts; average over five runs",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "os-world",
+      "score": 81.2,
+      "is_self_reported": true,
+      "other_info": "OSWorld-Verified; pass@1 averaged over five runs; 361 tasks, 100 steps; adaptive thinking at max effort",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "officeqa",
+      "score": 73.3,
+      "is_self_reported": true,
+      "other_info": "Exact-match accuracy on Anthropic internal agentic harness; mean of five trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "officeqa-pro",
+      "score": 59.4,
+      "is_self_reported": true,
+      "other_info": "Exact-match accuracy on Anthropic internal agentic harness; mean of five trials",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "legal-agent-benchmark",
+      "score": 8.92,
+      "is_self_reported": true,
+      "other_info": "Full public set; all-pass rate; adaptive thinking at max effort; n=5",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "legal-agent-benchmark",
+      "score": 5.8,
+      "is_self_reported": true,
+      "other_info": "Harvey held-out set; all-pass rate; reported in Anthropic's system card",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "gdpval-aa",
+      "score": 1609,
+      "is_self_reported": false,
+      "other_info": "GDPval-AA v2; Elo; independent Artificial Analysis evaluation, score as of 2026-06-06",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "toolathlon",
+      "score": 54.3,
+      "is_self_reported": true,
+      "other_info": "Pass@1; internal harness; adaptive thinking at max effort; averaged over three trials across 108 tasks",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    },
+    {
+      "benchmark_id": "automationbench",
+      "score": 13.5,
+      "is_self_reported": true,
+      "other_info": "Zapier leaderboard private held-out tasks; max effort",
+      "source_link": "https://www.anthropic.com/claude-sonnet-5-system-card"
+    }
+  ]
+}

@@ -44,7 +44,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
+import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -1646,6 +1646,9 @@ function TrendSection({
 	items: ObservabilityRankedItem[];
 }) {
 	const [metric, setMetric] = React.useState<TrendMetric>("spend");
+	const selectedMetric =
+		TREND_METRICS.find((item) => item.id === metric) ?? TREND_METRICS[0];
+	const SelectedMetricIcon = selectedMetric.icon;
 	return (
 		<section className="space-y-3">
 			<div className="flex items-center justify-between gap-3">
@@ -1662,8 +1665,11 @@ function TrendSection({
 						}
 					}}
 				>
-					<SelectTrigger className="h-9 w-32 rounded-xl">
-						<SelectValue />
+					<SelectTrigger className="h-9 w-36 rounded-xl">
+						<span className="flex min-w-0 items-center gap-2">
+							<SelectedMetricIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+							<span className="truncate">{selectedMetric.label}</span>
+						</span>
 					</SelectTrigger>
 					<SelectContent align="end">
 						{TREND_METRICS.map((item) => {
@@ -1826,6 +1832,15 @@ function selectExploreOption<T extends string>(
 	return items.find((item) => item.id === value) ?? items[0];
 }
 
+const exploreToolbarGroupClass =
+	"h-9 overflow-hidden rounded-xl border border-border bg-input/50 shadow-none";
+
+const exploreToolbarButtonClass =
+	"h-9 rounded-xl border-border bg-input/50 px-3 shadow-none hover:bg-muted/50 hover:text-foreground";
+
+const exploreToolbarSegmentClass =
+	"!h-9 rounded-none border-0 bg-transparent shadow-none focus:ring-0 hover:bg-muted/50";
+
 function metricDisplayValue(value: number, kind: TimeSeriesValueKind) {
 	return kind === "currency" ? formatCurrency(value) : formatNumber(value);
 }
@@ -1908,16 +1923,24 @@ function ExploreSelect<T extends string>({
 	className?: string;
 	grouped?: boolean;
 }) {
+	const selectedOption = selectExploreOption(options, value);
+	const SelectedIcon = selectedOption.icon;
 	return (
 		<Select value={value} onValueChange={(next) => onValueChange(next as T)}>
 			<SelectTrigger
 				className={cn(
-					"h-9 rounded-xl shadow-none",
-					grouped && "rounded-none border-0 focus:ring-0",
+					"!h-9 rounded-xl shadow-none",
+					grouped &&
+						exploreToolbarSegmentClass,
 					className,
 				)}
 			>
-				<SelectValue />
+				<span className="flex min-w-0 items-center gap-2">
+					{SelectedIcon ? (
+						<SelectedIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+					) : null}
+					<span className="truncate">{selectedOption.label}</span>
+				</span>
 			</SelectTrigger>
 			<SelectContent align="start">
 				{options.map((item) => {
@@ -2116,7 +2139,7 @@ function Explore({ data }: { data: ObservabilityData }) {
 		<div className="flex h-[calc(100dvh-18rem)] min-h-0 flex-col gap-4 overflow-hidden">
 			<div className="shrink-0 space-y-3">
 				<div className="flex flex-wrap items-center gap-2">
-					<ButtonGroup className="overflow-hidden rounded-md border">
+					<ButtonGroup className={exploreToolbarGroupClass}>
 						<ExploreSelect
 							value={metric}
 							options={EXPLORE_METRICS}
@@ -2124,9 +2147,11 @@ function Explore({ data }: { data: ObservabilityData }) {
 							className="w-44"
 							grouped
 						/>
-						<span className="flex h-9 items-center border-l border-r bg-muted/30 px-2 text-xs text-muted-foreground">
+						<ButtonGroupSeparator />
+						<span className="flex h-full items-center px-2 text-xs text-muted-foreground">
 							by
 						</span>
+						<ButtonGroupSeparator />
 						<ExploreSelect
 							value={dimension}
 							options={EXPLORE_DIMENSIONS}
@@ -2135,22 +2160,23 @@ function Explore({ data }: { data: ObservabilityData }) {
 							grouped
 						/>
 					</ButtonGroup>
-					<ButtonGroup className="overflow-hidden rounded-md border">
+					<ButtonGroup className={exploreToolbarGroupClass}>
 						<Select
 							value={sort}
 							onValueChange={(value) => setSort(value as ExploreSort)}
 						>
-							<SelectTrigger className="h-9 w-24 rounded-none border-0 shadow-none focus:ring-0">
-								<SelectValue />
+							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-24")}>
+								<span>{sort === "desc" ? "Top" : "Bottom"}</span>
 							</SelectTrigger>
 							<SelectContent align="start">
 								<SelectItem value="desc">Top</SelectItem>
 								<SelectItem value="asc">Bottom</SelectItem>
 							</SelectContent>
 						</Select>
+						<ButtonGroupSeparator />
 						<Select value={limit} onValueChange={setLimit}>
-							<SelectTrigger className="h-9 w-20 rounded-none border-y-0 border-r-0 shadow-none focus:ring-0">
-								<SelectValue />
+							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-20")}>
+								<span>{limit}</span>
 							</SelectTrigger>
 							<SelectContent align="start">
 								{["5", "10", "15", "25"].map((value) => (
@@ -2160,12 +2186,15 @@ function Explore({ data }: { data: ObservabilityData }) {
 								))}
 							</SelectContent>
 						</Select>
+						<ButtonGroupSeparator />
 						<Select
 							value={rollup}
 							onValueChange={(value) => setRollup(value as ExploreRollup)}
 						>
-							<SelectTrigger className="h-9 w-36 rounded-none border-y-0 border-r-0 shadow-none focus:ring-0">
-								<SelectValue />
+							<SelectTrigger className={cn(exploreToolbarSegmentClass, "w-36")}>
+								<span>
+									Rollup: {rollup === "average" ? "Average" : "Total"}
+								</span>
 							</SelectTrigger>
 							<SelectContent align="start">
 								<SelectItem value="total">Rollup: Total</SelectItem>
@@ -2173,29 +2202,25 @@ function Explore({ data }: { data: ObservabilityData }) {
 							</SelectContent>
 						</Select>
 					</ButtonGroup>
-					<ButtonGroup className="overflow-hidden rounded-md border">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							className="h-9 gap-2 rounded-none"
-						>
-							<ListFilter className="h-4 w-4" />
-							Filters
-						</Button>
-					</ButtonGroup>
-					<ButtonGroup className="overflow-hidden rounded-md border">
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							className="h-9 gap-2 rounded-none"
-							onClick={() => setShowChart((current) => !current)}
-						>
-							<BarChart3 className="h-4 w-4" />
-							{showChart ? "Hide chart" : "Show chart"}
-						</Button>
-					</ButtonGroup>
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						className={cn(exploreToolbarButtonClass, "gap-2")}
+					>
+						<ListFilter className="h-4 w-4" />
+						Filters
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						className={cn(exploreToolbarButtonClass, "gap-2")}
+						onClick={() => setShowChart((current) => !current)}
+					>
+						<BarChart3 className="h-4 w-4" />
+						{showChart ? "Hide chart" : "Show chart"}
+					</Button>
 					<div className="ml-auto flex items-center gap-2">
 						<TrendChartOptions
 							showOther={showOther}

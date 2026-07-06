@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	Sidebar,
 	SidebarInset,
@@ -8,19 +8,25 @@ import {
 	SidebarRail,
 } from "@/components/ui/sidebar";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
-import { createClient } from "@/utils/supabase/client";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { getModelDetailsHref } from "@/lib/models/modelHref";
 import type {
 	ChatMessage,
 	ChatModelSettings,
+	ChatServerToolConfigs,
+	ChatServerToolType,
 	ChatSettings,
+	ChatTag,
 	ChatThread,
 	UnifiedChatEndpoint,
 } from "@/lib/indexeddb/chats";
-import { deleteChat, getAllChats, upsertChat } from "@/lib/indexeddb/chats";
-import { filterModelsForRoom } from "@/lib/chat/rooms";
-import { compareByReleaseDateDesc } from "@/components/(chat)/playgroundConfig";
+import {
+	deleteChat,
+	getAllChatTags,
+	getAllChats,
+	normalizeChatTags,
+	upsertChat,
+	upsertChatTags,
+} from "@/lib/indexeddb/chats";
 import {
 	ChatConversation,
 	type ChatSendPayload,
@@ -34,31 +40,30 @@ import { ChatSearchDialog } from "@/components/(chat)/ChatSearchDialog";
 import { ChatRenameDialog } from "@/components/(chat)/ChatRenameDialog";
 import { ChatDeleteDialog } from "@/components/(chat)/ChatDeleteDialog";
 import { ChatNewChatDialog } from "@/components/(chat)/ChatNewChatDialog";
+import { ChatTagsDialog } from "@/components/(chat)/ChatTagsDialog";
 import {
 	coerceResponseText,
 	appendImagesToText,
 	extractResponseImages,
 	extractReasoningText,
+	extractResponseToolCalls,
 	extractResponseText,
+	type ChatToolCall,
+	type ChatTraceEvent,
 } from "@/components/(chat)/chatPayload";
 import {
 	buildUserMessageContent,
 	prepareAttachments,
 	prepareInlineAttachmentPreviews,
-	type PreparedAttachment,
 } from "@/components/(chat)/playground/attachment-utils";
-import {
-	AUDIO_INPUT_MODEL_HINTS,
-	capabilityIdsToUnifiedEndpoints,
-	getPrimaryUnifiedCapability,
-	inferModelCapabilityEndpoint,
-	supportsAudioInputByCapabilities,
-} from "@/components/(chat)/playground/capability-utils";
 import {
 	APP_HEADERS,
 	DEFAULT_SETTINGS,
+	DEFAULT_SERVER_TOOLS,
 	STORAGE_KEYS,
 	TEMP_CHAT_ID,
+	LOCAL_CHAT_API_BASE_URL,
+	buildServerToolDefinitions,
 	buildDefaultSystemPrompt,
 	buildPersonalizationPrompt,
 	buildTitle,
@@ -71,18 +76,32 @@ import {
 	getChangedSettings,
 	getEffectiveModelSettings,
 	getOrgId,
-	isModelExpired,
+	normalizeServerTools,
 	normalizeBaseUrl,
 	nowIso,
 	shouldRequestImageModalities,
-	type ModelOption,
+	type ChatResponseLayout,
+	type ChatApiTarget,
 	type PersonalizationSettings,
 	type SettingChange,
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
+	useChatModelCatalog,
+} from "@/components/(chat)/playground/use-chat-model-catalog";
+import { useChatAuth } from "@/components/(chat)/playground/use-chat-auth";
+import { useGroupedChatThreads } from "@/components/(chat)/playground/use-grouped-chat-threads";
+import {
+	parseChatErrorResponse,
+	type ChatErrorPayload,
+} from "@/components/(chat)/playground/chat-request-errors";
+import {
+	linkChatPerformanceMessage,
+	markChatPerformance,
+} from "@/components/(chat)/playground/chat-performance";
+import {
 	ChatSidebar,
-	type GroupedThreads,
 } from "@/components/(chat)/ChatSidebar";
+import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReference";
 
 type ChatPlaygroundProps = {
 	models: GatewaySupportedModel[];
@@ -90,42 +109,189 @@ type ChatPlaygroundProps = {
 	promptParam?: string | null;
 };
 
-type ChatUser = {
-	id: string;
-	email: string | null;
-	name: string;
-	avatarUrl: string | null;
+const CHAT_SHORTCUT_OVERLAY_SELECTOR = [
+	'[data-state="open"][role="dialog"]',
+	'[data-state="open"][role="menu"]',
+	'[data-state="open"][role="listbox"]',
+	'[data-state="open"][data-radix-popper-content-wrapper]',
+].join(", ");
+
+const isChatShortcutOverlayOpen = () => {
+	if (typeof document === "undefined") return false;
+	return Boolean(document.querySelector(CHAT_SHORTCUT_OVERLAY_SELECTOR));
 };
 
-type ChatErrorPayload = Error & {
-	code?: string;
-	status?: number;
-	requestId?: string;
-	description?: string;
-	details?: Array<{
-		message: string;
-		path?: string[];
-		keyword?: string;
-	}>;
-	routingDiagnostics?: Record<string, unknown> | null;
-	rawPayload?: Record<string, unknown> | null;
-};
+const CHAT_API_TARGETS = new Set<ChatApiTarget>([
+	"default",
+	"public",
+	"local",
+	"custom",
+]);
 
-const resolveGatewayModelOrgId = (model: GatewaySupportedModel) =>
-	model.organisationId?.trim() || getOrgId(model.modelId);
+const normalizeStoredBaseUrl = (value: string | null) =>
+	(value ?? "").trim().replace(/\/+$/, "");
 
-function pickPreferredApiModelId(
-	current: string | null,
-	candidate: string,
-	selectorModelId: string,
-) {
-	if (!current) return candidate;
-	if (current === selectorModelId) return current;
-	if (candidate === selectorModelId) return candidate;
-	if (candidate.length !== current.length) {
-		return candidate.length < current.length ? candidate : current;
+const inferChatApiTarget = (
+	storedTarget: string | null,
+	storedBaseUrl: string | null,
+): ChatApiTarget => {
+	if (storedTarget && CHAT_API_TARGETS.has(storedTarget as ChatApiTarget)) {
+		return storedTarget as ChatApiTarget;
 	}
-	return candidate.localeCompare(current) < 0 ? candidate : current;
+	const normalizedBaseUrl = normalizeStoredBaseUrl(storedBaseUrl);
+	if (!normalizedBaseUrl) return "default";
+	if (normalizedBaseUrl === BASE_URL) return "public";
+	if (normalizedBaseUrl === LOCAL_CHAT_API_BASE_URL) return "local";
+	return "custom";
+};
+
+const resolveChatApiBaseUrl = (
+	apiTarget: ChatApiTarget,
+	customBaseUrl: string,
+): string | undefined => {
+	if (apiTarget === "default") return undefined;
+	if (apiTarget === "local") return LOCAL_CHAT_API_BASE_URL;
+	if (apiTarget === "custom") return customBaseUrl.trim() || BASE_URL;
+	return BASE_URL;
+};
+
+const DATETIME_TOOL_NAMES = new Set(["gateway_datetime", "gateway:datetime"]);
+
+const getBrowserTimeZone = () => {
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+	} catch {
+		return null;
+	}
+};
+
+const appendTimezone = (timezones: string[], value: unknown) => {
+	if (typeof value !== "string") return;
+	const timezone = value.trim();
+	if (timezone && !timezones.includes(timezone)) {
+		timezones.push(timezone);
+	}
+};
+
+const appendTimezoneList = (timezones: string[], value: unknown) => {
+	if (!Array.isArray(value)) return;
+	for (const item of value) {
+		appendTimezone(timezones, item);
+	}
+};
+
+const getDefaultDatetimeTimezones = () => {
+	const timezones: string[] = [];
+	appendTimezone(timezones, getBrowserTimeZone());
+	appendTimezone(timezones, "UTC");
+	return timezones.length ? timezones : ["UTC"];
+};
+
+const parseToolInput = (toolCall: ChatToolCall): Record<string, unknown> => {
+	if (toolCall.input && typeof toolCall.input === "object" && !Array.isArray(toolCall.input)) {
+		return toolCall.input as Record<string, unknown>;
+	}
+	if (toolCall.inputText) {
+		try {
+			const parsed = JSON.parse(toolCall.inputText);
+			if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+				return parsed as Record<string, unknown>;
+			}
+		} catch {
+			return {};
+		}
+	}
+	return {};
+};
+
+const isValidTimezone = (timezone: string) => {
+	try {
+		new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+const extractShortOffset = (offsetName: string) => {
+	if (offsetName === "UTC" || offsetName === "GMT") {
+		return "+00:00";
+	}
+	const match = offsetName.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/i);
+	if (!match) {
+		return "+00:00";
+	}
+	const sign = match[1];
+	const hours = String(Number(match[2])).padStart(2, "0");
+	const minutes = String(Number(match[3] ?? "0")).padStart(2, "0");
+	return `${sign}${hours}:${minutes}`;
+};
+
+const formatIsoInTimezone = (date: Date, timezone: string) => {
+	const parts = new Intl.DateTimeFormat("en-CA", {
+		timeZone: timezone,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hourCycle: "h23",
+		timeZoneName: "shortOffset",
+	}).formatToParts(date);
+	const partMap = new Map(parts.map((part) => [part.type, part.value]));
+	const offsetName = partMap.get("timeZoneName") ?? "GMT";
+	const offset = extractShortOffset(offsetName);
+	return `${partMap.get("year") ?? "0000"}-${partMap.get("month") ?? "01"}-${partMap.get("day") ?? "01"}T${partMap.get("hour") ?? "00"}:${partMap.get("minute") ?? "00"}:${partMap.get("second") ?? "00"}.${String(date.getUTCMilliseconds()).padStart(3, "0")}${offset}`;
+};
+
+const buildClientDatetimeToolResults = (
+	toolCalls: ChatToolCall[],
+	defaultTimezones: string[],
+) => {
+	const results: Array<{ toolCallId: string; content: string }> = [];
+	for (const toolCall of toolCalls) {
+		if (!DATETIME_TOOL_NAMES.has(toolCall.name)) return null;
+		const input = parseToolInput(toolCall);
+		const timezones: string[] = [];
+		appendTimezoneList(timezones, input.timezones);
+		const resolvedTimezones = timezones.length
+			? timezones
+			: defaultTimezones.length
+				? defaultTimezones
+				: ["UTC"];
+		const invalidTimezone = resolvedTimezones.find(
+			(timezone) => !isValidTimezone(timezone),
+		);
+		if (invalidTimezone) {
+			results.push({
+				toolCallId: toolCall.id,
+				content: JSON.stringify({
+					error: "invalid_timezone",
+					timezone: invalidTimezone,
+					timezones: resolvedTimezones,
+					message: "timezones must contain valid IANA timezone names",
+				}),
+			});
+			continue;
+		}
+		const now = new Date();
+		const datetimeResults = resolvedTimezones.map((timezone) => ({
+			timezone,
+			datetime: formatIsoInTimezone(now, timezone),
+		}));
+		results.push({
+			toolCallId: toolCall.id,
+			content: JSON.stringify({
+				timezones: datetimeResults,
+			}),
+		});
+	}
+	return results.length ? results : null;
+};
+
+function compareChatTags(a: ChatTag, b: ChatTag) {
+	return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
 }
 
 function ChatPlaygroundContent({
@@ -137,25 +303,38 @@ function ChatPlaygroundContent({
 	const [threads, setThreads] = useState<ChatThread[]>([]);
 	const [activeId, setActiveId] = useState<string | null>(null);
 	const [isSending, setIsSending] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const [, setError] = useState<string | null>(null);
 	const [requestError, setRequestError] =
 		useState<ChatRequestErrorDetails | null>(null);
-	const [baseUrl, setBaseUrl] = useState(BASE_URL);
-	const [authUser, setAuthUser] = useState<ChatUser | null>(null);
-	const [userRole, setUserRole] = useState<string | null>(null);
-	const [authLoading, setAuthLoading] = useState(true);
-	const [debugEnabled, setDebugEnabled] = useState(false);
+	const [apiTarget, setApiTarget] = useState<ChatApiTarget>("default");
+	const [baseUrl, setBaseUrl] = useState("");
+	const {
+		authLoading,
+		authUser,
+		handleSignOut,
+		isAdmin,
+		isAuthenticated,
+	} = useChatAuth();
+	const [debugEnabled, setDebugEnabled] = useState(() => {
+		if (typeof window === "undefined") return false;
+		return window.localStorage.getItem(STORAGE_KEYS.debugMode) === "true";
+	});
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [modelSettingsOpen, setModelSettingsOpen] = useState(false);
 	const [modelSettingsTargetModelId, setModelSettingsTargetModelId] =
 		useState<string | null>(null);
 	const [modelPickerOpen, setModelPickerOpen] = useState(false);
+	const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [renameOpen, setRenameOpen] = useState(false);
 	const [renameValue, setRenameValue] = useState("");
 	const [renameTargetId, setRenameTargetId] = useState<string | null>(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const [deleteTarget, setDeleteTarget] = useState<ChatThread | null>(null);
+	const [deleteTargets, setDeleteTargets] = useState<ChatThread[]>([]);
+	const [tagsOpen, setTagsOpen] = useState(false);
+	const [tagsTargets, setTagsTargets] = useState<ChatThread[]>([]);
+	const [chatTags, setChatTags] = useState<ChatTag[]>([]);
+	const [activeTagId, setActiveTagId] = useState<string | null>(null);
 	const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
 	const [pendingNewChat, setPendingNewChat] = useState<{
 		modelId: string;
@@ -165,95 +344,47 @@ function ChatPlaygroundContent({
 	const [temporaryMode, setTemporaryMode] = useState(false);
 	const [composerRequiresAudioInput, setComposerRequiresAudioInput] =
 		useState(false);
+	const [responseLayout, setResponseLayout] = useState<ChatResponseLayout>(() => {
+		if (typeof window === "undefined") return "sequential";
+		return window.localStorage.getItem(STORAGE_KEYS.responseLayout) ===
+			"side-by-side"
+			? "side-by-side"
+			: "sequential";
+	});
 	const [temporaryThread, setTemporaryThread] = useState<ChatThread | null>(
 		null,
 	);
 	const [previousStoredId, setPreviousStoredId] = useState<string | null>(
 		null,
 	);
-	const [groupingNowMs, setGroupingNowMs] = useState<number | null>(null);
+	const [groupingNowMs] = useState(() => Date.now());
 
-	const selectableModels = useMemo(
-		() =>
-			filterModelsForRoom(models, "text").filter(
-				(model) => !isModelExpired(model),
-			),
-		[models],
-	);
-	const selectorModelIdByRawModelId = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const model of selectableModels) {
-			const selectorModelId = model.selectorModelId;
-			map.set(model.modelId, selectorModelId);
-			map.set(selectorModelId, selectorModelId);
-		}
-		return map;
-	}, [selectableModels]);
-	const preferredRequestModelIdBySelectorModelId = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const model of selectableModels) {
-			const selectorModelId = model.selectorModelId;
-			const current = map.get(selectorModelId) ?? null;
-			map.set(
-				selectorModelId,
-				pickPreferredApiModelId(current, model.modelId, selectorModelId),
-			);
-		}
-		return map;
-	}, [selectableModels]);
-	const requestModelIdBySelectorModelIdByProviderId = useMemo(() => {
-		const map = new Map<string, Map<string, string>>();
-		for (const model of selectableModels) {
-			const selectorModelId = model.selectorModelId;
-			const providerMap =
-				map.get(selectorModelId) ?? new Map<string, string>();
-			const current = providerMap.get(model.providerId) ?? null;
-			providerMap.set(
-				model.providerId,
-				pickPreferredApiModelId(current, model.modelId, selectorModelId),
-			);
-			map.set(selectorModelId, providerMap);
-		}
-		return map;
-	}, [selectableModels]);
-	const availableProviderIdsByModelId = useMemo(() => {
-		const providerIdsByModelId = new Map<string, string[]>();
-		for (const model of selectableModels) {
-			if (!model.isAvailable) continue;
-			const selectorModelId = model.selectorModelId;
-			const existing = providerIdsByModelId.get(selectorModelId) ?? [];
-			if (!existing.includes(model.providerId)) {
-				existing.push(model.providerId);
-				providerIdsByModelId.set(selectorModelId, existing);
-			}
-		}
-		return providerIdsByModelId;
-	}, [selectableModels]);
-	const defaultModelId = selectableModels[0]?.selectorModelId ?? "";
-	const [lastModelId, setLastModelId] = useState(defaultModelId);
-	const queryModelId = (modelParam ?? "").trim();
+	const {
+		selectableModels,
+		defaultModelId,
+		resolvedQueryModelId,
+		queryModelIsValid,
+		modelOptions,
+		modelCapabilitiesById,
+		providerOptions,
+		providerNameById,
+		getSupportedProviderIdsForModel,
+		isProviderSupportedForModel,
+		resolveRequestModelIdForProvider,
+		resolveReplacementModelId,
+		orgNameById,
+		modelDisplayNameById,
+		modelOrgIdById,
+		modelLinkById,
+		getModelCapabilities,
+		modelSupportsAudioInputById,
+		supportsModelAudioInput,
+		isModelCapabilityCompatible,
+		isModelSelectableForContext,
+		getPrimaryCapabilityForModel,
+	} = useChatModelCatalog({ models, modelParam });
 	const queryPrompt = promptParam ?? "";
-	const selectableModelIdSet = useMemo(
-		() =>
-			new Set(
-				selectableModels.map(
-					(model) =>
-						selectorModelIdByRawModelId.get(model.modelId) ?? model.modelId,
-				),
-			),
-		[selectableModels, selectorModelIdByRawModelId],
-	);
-	const resolvedQueryModelId = useMemo(
-		() => selectorModelIdByRawModelId.get(queryModelId) ?? queryModelId,
-		[queryModelId, selectorModelIdByRawModelId],
-	);
-	const queryModelIsValid = useMemo(() => {
-		if (!resolvedQueryModelId) return false;
-		return selectableModelIdSet.has(resolvedQueryModelId);
-	}, [resolvedQueryModelId, selectableModelIdSet]);
-	const [pendingQueryModelId, setPendingQueryModelId] = useState<
-		string | null
-	>(null);
+	const appliedQueryModelIdRef = useRef<string | null>(null);
 	const [personalization, setPersonalization] =
 		useState<PersonalizationSettings>({
 			name: "",
@@ -262,256 +393,6 @@ function ChatPlaygroundContent({
 			accentColor: "#111111",
 		});
 
-	const modelOptions = useMemo(() => {
-		const map = new Map<string, ModelOption>();
-
-		for (const model of selectableModels) {
-			const selectorModelId = model.selectorModelId;
-			const existing = map.get(selectorModelId);
-			const orgId = resolveGatewayModelOrgId(model);
-			const orgName =
-				model.organisationName ??
-				model.providerName ??
-				formatOrgLabel(orgId);
-			const label = model.modelName ?? formatModelLabel(selectorModelId);
-			const releaseDate =
-				model.releaseDate ?? model.announcementDate ?? null;
-			const rowCapabilityEndpoints = capabilityIdsToUnifiedEndpoints(
-				model.capabilities,
-			);
-
-			if (!existing) {
-				map.set(selectorModelId, {
-					modelId: selectorModelId,
-					orgId,
-					orgName,
-					label,
-					capabilityEndpoints:
-						rowCapabilityEndpoints.length > 0
-							? rowCapabilityEndpoints
-							: [inferModelCapabilityEndpoint(selectorModelId)],
-					providerIds: [model.providerId],
-					providerNames: [
-						model.providerName ?? formatOrgLabel(model.providerId),
-					],
-					providerAvailability: {
-						[model.providerId]: model.isAvailable,
-					},
-					releaseDate,
-					gatewayStatus: model.isAvailable
-						? ("active" as const)
-						: ("inactive" as const),
-				});
-			} else {
-				if (!existing.providerIds.includes(model.providerId)) {
-					existing.providerIds.push(model.providerId);
-				}
-				const providerLabel =
-					model.providerName ?? formatOrgLabel(model.providerId);
-				if (!existing.providerNames.includes(providerLabel)) {
-					existing.providerNames.push(providerLabel);
-				}
-				existing.providerAvailability[model.providerId] =
-					existing.providerAvailability[model.providerId] ||
-					model.isAvailable;
-				if (!existing.releaseDate && releaseDate) {
-					existing.releaseDate = releaseDate;
-				}
-				if (
-					existing.label === formatModelLabel(existing.modelId) &&
-					model.modelName
-				) {
-					existing.label = model.modelName;
-				}
-				if (
-					existing.orgName === formatOrgLabel(existing.orgId) &&
-					model.organisationName
-				) {
-					existing.orgName = model.organisationName;
-				}
-				for (const endpoint of rowCapabilityEndpoints) {
-					if (!existing.capabilityEndpoints.includes(endpoint)) {
-						existing.capabilityEndpoints.push(endpoint);
-					}
-				}
-			}
-		}
-
-		const options = Array.from(map.values()).map((option) => ({
-			...option,
-			capabilityEndpoints:
-				option.capabilityEndpoints.length > 0
-					? option.capabilityEndpoints
-					: [inferModelCapabilityEndpoint(option.modelId)],
-			gatewayStatus: Object.values(option.providerAvailability).some(
-				Boolean,
-			)
-				? ("active" as const)
-				: ("inactive" as const),
-		}));
-		const active: ModelOption[] = [];
-		const comingSoon: ModelOption[] = [];
-		for (const option of options) {
-			if (option.gatewayStatus === "inactive") {
-				comingSoon.push(option);
-			} else {
-				active.push(option);
-			}
-		}
-		active.sort(compareByReleaseDateDesc);
-		comingSoon.sort(compareByReleaseDateDesc);
-
-		return {
-			active,
-			comingSoon,
-		};
-	}, [selectableModels]);
-	const modelCapabilitiesById = useMemo(() => {
-		const capabilityById: Record<string, UnifiedChatEndpoint[]> = {};
-		const setForModel = (
-			modelId: string,
-			endpoints: UnifiedChatEndpoint[],
-		) => {
-			const existing = capabilityById[modelId] ?? [];
-			const next = new Set<UnifiedChatEndpoint>(existing);
-			for (const endpoint of endpoints) {
-				next.add(endpoint);
-			}
-			capabilityById[modelId] = Array.from(next);
-		};
-		for (const option of modelOptions.active) {
-			setForModel(option.modelId, option.capabilityEndpoints);
-		}
-		for (const option of modelOptions.comingSoon) {
-			setForModel(option.modelId, option.capabilityEndpoints);
-		}
-		for (const modelId of Object.keys(capabilityById)) {
-			if (capabilityById[modelId].length === 0) {
-				capabilityById[modelId] = [
-					inferModelCapabilityEndpoint(modelId),
-				];
-			}
-		}
-		return capabilityById;
-	}, [modelOptions.active, modelOptions.comingSoon]);
-
-	const providerOptions = useMemo(() => {
-		const map = new Map<string, string>();
-		for (const model of models) {
-			if (!map.has(model.providerId)) {
-				map.set(
-					model.providerId,
-					model.providerName ?? formatOrgLabel(model.providerId),
-				);
-			}
-		}
-		return Array.from(map.entries())
-			.map(([id, name]) => ({ id, name }))
-			.sort((a, b) => a.name.localeCompare(b.name));
-	}, [models]);
-	const providerNameById = useMemo(
-		() =>
-			new Map(providerOptions.map((provider) => [provider.id, provider.name])),
-		[providerOptions],
-	);
-	const getSupportedProviderIdsForModel = useCallback(
-		(modelId: string) =>
-			availableProviderIdsByModelId.get(
-				selectorModelIdByRawModelId.get(modelId) ?? modelId,
-			) ?? [],
-		[availableProviderIdsByModelId, selectorModelIdByRawModelId],
-	);
-	const availableModelIdSet = useMemo(
-		() =>
-			new Set(selectableModels.map((model) => model.selectorModelId)),
-		[selectableModels],
-	);
-	const successorModelIdByPreviousModelId = useMemo(() => {
-		const latestByPreviousModelId = new Map<
-			string,
-			{ modelId: string; timestamp: number }
-		>();
-		for (const model of selectableModels) {
-			if (!model.isAvailable || !model.previousModelId) continue;
-			const selectorModelId = model.selectorModelId;
-			const parsed = Date.parse(
-				model.releaseDate ?? model.announcementDate ?? "",
-			);
-			const timestamp = Number.isFinite(parsed) ? parsed : 0;
-			const existing = latestByPreviousModelId.get(model.previousModelId);
-			if (!existing || timestamp >= existing.timestamp) {
-				latestByPreviousModelId.set(model.previousModelId, {
-					modelId: selectorModelId,
-					timestamp,
-				});
-			}
-		}
-		return new Map(
-			Array.from(latestByPreviousModelId.entries()).map(
-				([previousModelId, entry]) => [previousModelId, entry.modelId],
-			),
-		);
-	}, [selectableModels]);
-	const isProviderSupportedForModel = useCallback(
-		(modelId: string, providerId: string | null | undefined) => {
-			if (!providerId || providerId === "auto") return true;
-			return getSupportedProviderIdsForModel(modelId).includes(providerId);
-		},
-		[getSupportedProviderIdsForModel],
-	);
-	const resolveRequestModelIdForProvider = useCallback(
-		(modelId: string, providerId: string | null | undefined) => {
-			const selectorModelId =
-				selectorModelIdByRawModelId.get(modelId) ?? modelId;
-			if (providerId && providerId !== "auto") {
-				const providerMap =
-					requestModelIdBySelectorModelIdByProviderId.get(selectorModelId);
-				const providerSpecificModelId = providerMap?.get(providerId) ?? null;
-				if (providerSpecificModelId) {
-					return providerSpecificModelId;
-				}
-			}
-			return (
-				preferredRequestModelIdBySelectorModelId.get(selectorModelId) ??
-				selectorModelId
-			);
-		},
-		[
-			preferredRequestModelIdBySelectorModelId,
-			requestModelIdBySelectorModelIdByProviderId,
-			selectorModelIdByRawModelId,
-		],
-	);
-	const resolveReplacementModelId = useCallback(
-		(
-			modelId: string,
-			options?: { allowDefaultFallback?: boolean },
-		): { modelId: string | null; reason: "available" | "successor" | "fallback" | "missing" } => {
-			const canonicalModelId =
-				selectorModelIdByRawModelId.get(modelId) ?? modelId;
-			if (availableModelIdSet.has(canonicalModelId)) {
-				return { modelId: canonicalModelId, reason: "available" };
-			}
-			const successorModelId =
-				successorModelIdByPreviousModelId.get(canonicalModelId) ?? null;
-			if (successorModelId && availableModelIdSet.has(successorModelId)) {
-				return { modelId: successorModelId, reason: "successor" };
-			}
-			if (options?.allowDefaultFallback && defaultModelId) {
-				return { modelId: defaultModelId, reason: "fallback" };
-			}
-			return { modelId: null, reason: "missing" };
-		},
-		[
-			availableModelIdSet,
-			defaultModelId,
-			selectorModelIdByRawModelId,
-			successorModelIdByPreviousModelId,
-		],
-	);
-
-	const isAuthenticated = Boolean(authUser);
-	const isAdmin = userRole === "admin";
 	const shouldDebug = debugEnabled && isAdmin;
 
 	const handleDebugChange = useCallback((value: boolean) => {
@@ -523,6 +404,16 @@ function ChatPlaygroundContent({
 			);
 		}
 	}, []);
+
+	const handleResponseLayoutChange = useCallback(
+		(value: ChatResponseLayout) => {
+			setResponseLayout(value);
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(STORAGE_KEYS.responseLayout, value);
+			}
+		},
+		[],
+	);
 
 	const handleExportChats = useCallback(async () => {
 		const chats = await getAllChats("text");
@@ -543,179 +434,47 @@ function ChatPlaygroundContent({
 		URL.revokeObjectURL(url);
 	}, []);
 
-	const handleSignOut = useCallback(async () => {
-		const supabase = createClient();
-		await supabase.auth.signOut();
-		setAuthUser(null);
-		setUserRole(null);
-		window.location.href = "/sign-in";
-	}, []);
-
-	const orgNameById = useMemo(() => {
-		const map: Record<string, string> = {};
-		for (const model of selectableModels) {
-			const orgId = resolveGatewayModelOrgId(model);
-			if (!map[orgId]) {
-				map[orgId] =
-					model.organisationName ??
-					model.providerName ??
-					formatOrgLabel(orgId);
-			}
-		}
-		return map;
-	}, [selectableModels]);
-
-	const modelDisplayNameById = useMemo(() => {
-		const map: Record<string, string> = {};
-		for (const model of models) {
-			const modelId = model.selectorModelId.trim();
-			if (!modelId || map[modelId]) continue;
-			const fallbackLabel = formatModelLabel(modelId);
-			map[modelId] = model.modelName?.trim() || fallbackLabel;
-		}
-		return map;
-	}, [models]);
-
-	const modelOrgIdById = useMemo(() => {
-		const map: Record<string, string> = {};
-		for (const model of models) {
-			const modelId = model.selectorModelId.trim();
-			if (!modelId || map[modelId]) continue;
-			map[modelId] = resolveGatewayModelOrgId(model);
-		}
-		return map;
-	}, [models]);
-
-	const modelLinkById = useMemo(() => {
-		const map: Record<string, string> = {};
-		for (const model of models) {
-			const selectorModelId = model.selectorModelId.trim();
-			if (!selectorModelId || map[selectorModelId]) continue;
-			const orgId = resolveGatewayModelOrgId(model);
-			const routeModelId =
-				model.internalModelId?.trim() ||
-				selectorModelId.replace(/:free$/i, "");
-			const href = getModelDetailsHref(orgId, routeModelId);
-			if (!href) continue;
-			map[selectorModelId] = href;
-		}
-		return map;
-	}, [models]);
-
 	const activeThread = useMemo(() => {
 		if (temporaryMode && temporaryThread) return temporaryThread;
 		return threads.find((thread) => thread.id === activeId) ?? null;
 	}, [temporaryMode, temporaryThread, threads, activeId]);
-	const getModelCapabilities = useCallback(
-		(modelId: string): UnifiedChatEndpoint[] =>
-			modelCapabilitiesById[modelId] ?? [inferModelCapabilityEndpoint(modelId)],
-		[modelCapabilitiesById],
-	);
-	const modelSupportsAudioInputById = useMemo(() => {
-		const supportById: Record<string, boolean> = {};
-		for (const model of selectableModels) {
-			const fromCapabilities = supportsAudioInputByCapabilities(
-				model.capabilities,
-			);
-			const normalizedModelId = model.modelId.toLowerCase();
-			const fromModelId = AUDIO_INPUT_MODEL_HINTS.some((hint) =>
-				normalizedModelId.includes(hint),
-			);
-			supportById[model.selectorModelId] = fromCapabilities || fromModelId;
-		}
-		return supportById;
-	}, [selectableModels]);
-	const supportsModelAudioInput = useCallback(
-		(modelId: string) => Boolean(modelSupportsAudioInputById[modelId]),
-		[modelSupportsAudioInputById],
-	);
-	const isModelCapabilityCompatible = useCallback(
-		(modelId: string, requiredCapability: UnifiedChatEndpoint) =>
-			getModelCapabilities(modelId).includes(requiredCapability),
-		[getModelCapabilities],
-	);
-	const isModelSelectableForContext = useCallback(
-		(
-			modelId: string,
-			requiredCapability: UnifiedChatEndpoint,
-			requiresAudioInput: boolean,
-		) =>
-			isModelCapabilityCompatible(modelId, requiredCapability) &&
-			(!requiresAudioInput || supportsModelAudioInput(modelId)),
-		[isModelCapabilityCompatible, supportsModelAudioInput],
-	);
-	const getPrimaryCapabilityForModel = useCallback(
-		(modelId: string): UnifiedChatEndpoint =>
-			getPrimaryUnifiedCapability(getModelCapabilities(modelId)),
-		[getModelCapabilities],
-	);
 	const activeModelCapability = useMemo(() => {
 		if (!activeThread?.modelId) return null;
 		return "responses" as UnifiedChatEndpoint;
 	}, [activeThread?.modelId]);
-
-	const sortedThreads = useMemo(() => {
-		return [...threads].sort((a, b) =>
-			b.updatedAt.localeCompare(a.updatedAt),
+	const allTags = useMemo(() => {
+		const byId = new Map<string, ChatTag>();
+		for (const tag of chatTags) {
+			byId.set(tag.id, tag);
+		}
+		for (const thread of threads) {
+			for (const tag of normalizeChatTags(thread.tags)) {
+				if (!byId.has(tag.id)) {
+					byId.set(tag.id, tag);
+				}
+			}
+		}
+		return Array.from(byId.values()).sort(compareChatTags);
+	}, [chatTags, threads]);
+	const activeVisibleTagId = useMemo(
+		() =>
+			activeTagId && allTags.some((tag) => tag.id === activeTagId)
+				? activeTagId
+				: null,
+		[activeTagId, allTags],
+	);
+	const visibleThreads = useMemo(() => {
+		if (!activeVisibleTagId) return threads;
+		return threads.filter((thread) =>
+			normalizeChatTags(thread.tags).some(
+				(tag) => tag.id === activeVisibleTagId,
+			),
 		);
-	}, [threads]);
-
-	const groupedThreads = useMemo(() => {
-		const groups: GroupedThreads = {
-			pinned: [],
-			today: [],
-			yesterday: [],
-			week: [],
-			month: [],
-			older: [],
-		};
-
-		const fallbackAnchorMs = Date.parse(sortedThreads[0]?.updatedAt ?? "");
-		const anchorMs =
-			groupingNowMs ?? (Number.isFinite(fallbackAnchorMs) ? fallbackAnchorMs : null);
-		if (anchorMs == null) {
-			return groups;
-		}
-
-		const now = new Date(anchorMs);
-		const startOfToday = new Date(now);
-		startOfToday.setHours(0, 0, 0, 0);
-		const startOfYesterday = new Date(startOfToday);
-		startOfYesterday.setDate(startOfToday.getDate() - 1);
-		const startOfWeek = new Date(startOfToday);
-		const weekday = (startOfToday.getDay() + 6) % 7;
-		startOfWeek.setDate(startOfToday.getDate() - weekday);
-		const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-		const startOfTodayMs = startOfToday.getTime();
-		const startOfYesterdayMs = startOfYesterday.getTime();
-		const startOfWeekMs = startOfWeek.getTime();
-		const startOfMonthMs = startOfMonth.getTime();
-
-		for (const thread of sortedThreads) {
-			if (thread.pinned) {
-				groups.pinned.push(thread);
-				continue;
-			}
-			const updatedMs = Date.parse(thread.updatedAt);
-			if (!Number.isFinite(updatedMs)) {
-				groups.older.push(thread);
-				continue;
-			}
-			if (updatedMs >= startOfTodayMs) {
-				groups.today.push(thread);
-			} else if (updatedMs >= startOfYesterdayMs) {
-				groups.yesterday.push(thread);
-			} else if (updatedMs >= startOfWeekMs) {
-				groups.week.push(thread);
-			} else if (updatedMs >= startOfMonthMs) {
-				groups.month.push(thread);
-			} else {
-				groups.older.push(thread);
-			}
-		}
-
-		return groups;
-	}, [groupingNowMs, sortedThreads]);
+	}, [activeVisibleTagId, threads]);
+	const { sortedThreads, groupedThreads } = useGroupedChatThreads(
+		visibleThreads,
+		groupingNowMs,
+	);
 
 	const persistThread = useCallback(async (thread: ChatThread) => {
 		await upsertChat(thread, "text");
@@ -764,13 +523,13 @@ function ChatPlaygroundContent({
 	useEffect(() => {
 		let mounted = true;
 		(async () => {
-			const storedBase =
-				window.localStorage.getItem(STORAGE_KEYS.baseUrl) ?? BASE_URL;
+			const storedBase = window.localStorage.getItem(STORAGE_KEYS.baseUrl);
+			const storedApiTarget = inferChatApiTarget(
+				window.localStorage.getItem(STORAGE_KEYS.apiTarget),
+				storedBase,
+			);
 			const storedActive = window.localStorage.getItem(
 				STORAGE_KEYS.activeChatId,
-			);
-			const storedModel = window.localStorage.getItem(
-				STORAGE_KEYS.lastModelId,
 			);
 			const storedPersonalName =
 				window.localStorage.getItem(STORAGE_KEYS.personalizationName) ??
@@ -786,19 +545,14 @@ function ChatPlaygroundContent({
 				window.localStorage.getItem(
 					STORAGE_KEYS.personalizationAccent,
 				) ?? "#111111";
-			const resolvedStoredModelId = storedModel
-				? (selectorModelIdByRawModelId.get(storedModel) ?? storedModel)
-				: null;
-			const resolvedModel =
-				(queryModelIsValid && resolvedQueryModelId) ||
-				(resolvedStoredModelId &&
-					selectableModelIdSet.has(resolvedStoredModelId) &&
-					resolvedStoredModelId) ||
-				defaultModelId;
 			if (!mounted) return;
 			window.localStorage.removeItem(STORAGE_KEYS.apiKey);
-			setBaseUrl(storedBase);
-			setLastModelId(resolvedModel);
+			setApiTarget(storedApiTarget);
+			setBaseUrl(
+				storedApiTarget === "custom"
+					? normalizeStoredBaseUrl(storedBase)
+					: "",
+			);
 			setPersonalization({
 				name: storedPersonalName,
 				role: storedPersonalRole,
@@ -806,10 +560,14 @@ function ChatPlaygroundContent({
 				accentColor: storedAccent,
 			});
 
-			const chats = await getAllChats("text");
+			const [chats, storedTags] = await Promise.all([
+				getAllChats("text"),
+				getAllChatTags(),
+			]);
 			const normalized = await ensureInitialThread(chats);
 			if (!mounted) return;
 			setThreads(normalized);
+			setChatTags(storedTags.sort(compareChatTags));
 
 			const initialId =
 				storedActive && normalized.some((t) => t.id === storedActive)
@@ -821,17 +579,11 @@ function ChatPlaygroundContent({
 			mounted = false;
 		};
 	}, [
-		defaultModelId,
 		ensureInitialThread,
-		resolvedQueryModelId,
-		queryModelIsValid,
-		selectableModelIdSet,
-		selectorModelIdByRawModelId,
 	]);
 
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
-		setLastModelId(activeThread.modelId);
 		if (typeof window !== "undefined") {
 			window.localStorage.setItem(
 				STORAGE_KEYS.lastModelId,
@@ -839,9 +591,6 @@ function ChatPlaygroundContent({
 			);
 		}
 	}, [activeThread?.modelId]);
-	useEffect(() => {
-		setGroupingNowMs(Date.now());
-	}, []);
 
 	useEffect(() => {
 		if (typeof window === "undefined") return;
@@ -862,58 +611,6 @@ function ChatPlaygroundContent({
 			personalization.accentColor,
 		);
 	}, [personalization]);
-
-	useEffect(() => {
-		if (typeof window === "undefined") return;
-		const storedDebug = window.localStorage.getItem(STORAGE_KEYS.debugMode);
-		if (storedDebug === "true") {
-			setDebugEnabled(true);
-		}
-	}, []);
-
-	useEffect(() => {
-		let mounted = true;
-		const supabase = createClient();
-		const loadUser = async () => {
-			setAuthLoading(true);
-			const { data, error } = await supabase.auth.getUser();
-			if (!mounted) return;
-			if (error || !data.user) {
-				setAuthUser(null);
-				setUserRole(null);
-				setAuthLoading(false);
-				return;
-			}
-			const profile = await supabase
-				.from("users")
-				.select("display_name, role")
-				.eq("user_id", data.user.id)
-				.maybeSingle();
-			if (!mounted) return;
-			const displayName =
-				profile.data?.display_name ??
-				data.user.user_metadata?.full_name ??
-				data.user.user_metadata?.name ??
-				data.user.email ??
-				"Account";
-			setAuthUser({
-				id: data.user.id,
-				email: data.user.email ?? null,
-				name: displayName,
-				avatarUrl: data.user.user_metadata?.avatar_url ?? null,
-			});
-			setUserRole(profile.data?.role ?? null);
-			setAuthLoading(false);
-		};
-		loadUser();
-		const { data: listener } = supabase.auth.onAuthStateChange(() => {
-			loadUser();
-		});
-		return () => {
-			mounted = false;
-			listener.subscription.unsubscribe();
-		};
-	}, []);
 
 	const createThreadWithSettings = useCallback(
 		async (modelId: string, settings: ChatSettings) => {
@@ -957,9 +654,18 @@ function ChatPlaygroundContent({
 	const createThread = useCallback(async () => {
 		const selectedModel = "";
 		if (activeThread) {
+			const comparisonModelId = activeThread.modelId || selectedModel;
+			const comparisonModelDisplayName =
+				comparisonModelId
+					? activeThread.settings.modelOverridesById?.[
+							comparisonModelId
+						]?.displayName?.trim() ||
+						modelDisplayNameById[comparisonModelId]
+					: undefined;
 			const changes = getChangedSettings(
 				activeThread.settings,
-				selectedModel,
+				comparisonModelId,
+				comparisonModelDisplayName,
 			);
 			if (changes.length > 0) {
 				setPendingNewChat({
@@ -976,7 +682,7 @@ function ChatPlaygroundContent({
 			systemPrompt: buildDefaultSystemPrompt(selectedModel),
 		};
 		await createThreadWithSettings(selectedModel, defaults);
-	}, [activeThread, createThreadWithSettings]);
+	}, [activeThread, createThreadWithSettings, modelDisplayNameById]);
 
 	const handleNewChatDecision = useCallback(
 		(useCurrent: boolean) => {
@@ -1119,15 +825,20 @@ function ChatPlaygroundContent({
 		) => {
 			return applyMessageUpdate(thread, messageId, (message) => {
 				const variants = ensureVariants(message).map(
-					(variant, index) =>
-						index === variantIndex
-							? {
-									...variant,
-									content,
-									usage: usage ?? variant.usage ?? null,
-									meta: meta ?? variant.meta ?? null,
-								}
-							: variant,
+					(variant, index) => {
+						if (index !== variantIndex) {
+							return variant;
+						}
+						const nextMeta = meta
+							? { ...(variant.meta ?? {}), ...meta }
+							: (variant.meta ?? null);
+						return {
+							...variant,
+							content,
+							usage: usage ?? variant.usage ?? null,
+							meta: nextMeta,
+						};
+					},
 				);
 				const activeIndex = variantIndex;
 				const activeVariant = variants[activeIndex];
@@ -1159,12 +870,19 @@ function ChatPlaygroundContent({
 	);
 
 	const handleSaveSettings = useCallback(() => {
-		window.localStorage.setItem(
-			STORAGE_KEYS.baseUrl,
-			baseUrl.trim() || BASE_URL,
-		);
+		window.localStorage.setItem(STORAGE_KEYS.apiTarget, apiTarget);
+		if (apiTarget === "custom") {
+			const customBaseUrl = normalizeStoredBaseUrl(baseUrl);
+			if (customBaseUrl) {
+				window.localStorage.setItem(STORAGE_KEYS.baseUrl, customBaseUrl);
+			} else {
+				window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+			}
+		} else {
+			window.localStorage.removeItem(STORAGE_KEYS.baseUrl);
+		}
 		setSettingsOpen(false);
-	}, [baseUrl]);
+	}, [apiTarget, baseUrl]);
 
 	const executeCompletion = useCallback(
 		async (
@@ -1203,18 +921,14 @@ function ChatPlaygroundContent({
 				})),
 			);
 
-			const base = normalizeBaseUrl(baseUrl);
+			const resolvedBaseUrl = resolveChatApiBaseUrl(apiTarget, baseUrl);
+			const base = resolvedBaseUrl
+				? normalizeBaseUrl(resolvedBaseUrl)
+				: undefined;
 			const preparedAttachments =
 				sendPayload?.attachments?.length
 					? await prepareAttachments(sendPayload.attachments)
 					: [];
-			const latestUserPrompt =
-				[...contextMessages]
-					.reverse()
-					.find((msg) => msg.role === "user")
-					?.content.trim() ||
-				sendPayload?.content.trim() ||
-				"";
 			const endpoint: UnifiedChatEndpoint = "responses";
 			const effectiveModelSettings = getEffectiveModelSettings(
 				thread,
@@ -1305,6 +1019,36 @@ function ChatPlaygroundContent({
 			const requestBody: Record<string, unknown> = {
 				model: requestExecutionModelId,
 			};
+			const setOptionalRequestNumber = (
+				key: string,
+				value: number | null | undefined,
+			) => {
+				if (typeof value === "number" && Number.isFinite(value)) {
+					requestBody[key] = value;
+				}
+			};
+			setOptionalRequestNumber("temperature", effectiveModelSettings.temperature);
+			setOptionalRequestNumber(
+				"max_output_tokens",
+				effectiveModelSettings.maxOutputTokens,
+			);
+			setOptionalRequestNumber("top_p", effectiveModelSettings.topP);
+			setOptionalRequestNumber("top_k", effectiveModelSettings.topK);
+			setOptionalRequestNumber("min_p", effectiveModelSettings.minP);
+			setOptionalRequestNumber("top_a", effectiveModelSettings.topA);
+			setOptionalRequestNumber(
+				"presence_penalty",
+				effectiveModelSettings.presencePenalty,
+			);
+			setOptionalRequestNumber(
+				"frequency_penalty",
+				effectiveModelSettings.frequencyPenalty,
+			);
+			setOptionalRequestNumber(
+				"repetition_penalty",
+				effectiveModelSettings.repetitionPenalty,
+			);
+			setOptionalRequestNumber("seed", effectiveModelSettings.seed);
 			if (endpoint === "responses") {
 				requestBody.input = input;
 				requestBody.meta = true;
@@ -1312,14 +1056,21 @@ function ChatPlaygroundContent({
 				if (wantsImageModalities) {
 					requestBody.modalities = ["text", "image"];
 				}
-				const tools: Array<Record<string, unknown>> = [];
-				if (
-					isUnified &&
-					(sendPayload?.apiServerToolsEnabled ??
-						effectiveModelSettings.apiServerToolsEnabled)
-				) {
-					tools.push({ type: "gateway:datetime" });
-				}
+				const apiServerToolsEnabled =
+					sendPayload?.apiServerToolsEnabled ??
+					effectiveModelSettings.apiServerToolsEnabled ??
+					DEFAULT_SETTINGS.apiServerToolsEnabled;
+				const datetimeTimezones = getDefaultDatetimeTimezones();
+				const tools = isUnified && apiServerToolsEnabled
+					? buildServerToolDefinitions(
+							sendPayload?.serverTools ??
+								effectiveModelSettings.serverTools ??
+								DEFAULT_SERVER_TOOLS,
+							sendPayload?.serverToolConfigs ??
+								effectiveModelSettings.serverToolConfigs,
+							{ datetimeTimezones },
+						)
+					: [];
 				if (tools.length > 0) {
 					requestBody.tools = tools;
 				}
@@ -1343,6 +1094,7 @@ function ChatPlaygroundContent({
 				setIsSending(true);
 			}
 
+			const performanceRunId = sendPayload?.performanceRunId;
 			const requestStartedAt = performance.now();
 			let firstTokenAt: number | null = null;
 			let finalUsage: Record<string, unknown> | null = null;
@@ -1451,13 +1203,31 @@ function ChatPlaygroundContent({
 				}
 			}
 
+			const getUsageNumber = (...keys: string[]) => {
+				if (!finalUsage) return null;
+				for (const key of keys) {
+					const value = finalUsage[key];
+					if (typeof value === "number" && Number.isFinite(value)) {
+						return value;
+					}
+				}
+				return null;
+			};
 			const buildClientMeta = (endAt: number) => {
 				const firstToken = firstTokenAt ?? endAt;
 				const latencyMs = Math.max(0, firstToken - requestStartedAt);
-				const generationMs = Math.max(0, endAt - firstToken);
+				const generationMs = firstTokenAt
+					? Math.max(0, endAt - firstToken)
+					: Math.max(0, endAt - requestStartedAt);
 				const totalTokens =
-					(finalUsage?.total_tokens as number | undefined) ??
-					(finalUsage?.totalTokens as number | undefined) ??
+					getUsageNumber("total_tokens", "totalTokens") ??
+					getUsageNumber(
+						"output_text_tokens",
+						"output_tokens",
+						"outputTokens",
+						"completion_tokens",
+						"completionTokens",
+					) ??
 					null;
 				const throughputTokensPerSecond =
 					totalTokens && generationMs > 0
@@ -1488,6 +1258,7 @@ function ChatPlaygroundContent({
 			};
 
 			try {
+				markChatPerformance(performanceRunId, "request-dispatch");
 				const response = await fetch("/api/chat/text", {
 					method: "POST",
 					headers: {
@@ -1500,6 +1271,7 @@ function ChatPlaygroundContent({
 						debug: shouldDebug,
 					}),
 				});
+				markChatPerformance(performanceRunId, "response-headers");
 				// eslint-disable-next-line no-console
 				console.log(
 					"[chat] response",
@@ -1508,145 +1280,7 @@ function ChatPlaygroundContent({
 				);
 
 				if (!response.ok) {
-					const contentType =
-						response.headers.get("content-type") ?? "";
-					let errorMessage = `Request failed (${response.status}).`;
-					let errorCode: string | undefined;
-					let errorRequestId: string | undefined;
-					let errorDescription: string | undefined;
-					let errorDetails:
-						| Array<{
-								message: string;
-								path?: string[];
-								keyword?: string;
-						  }>
-						| undefined;
-					let routingDiagnostics:
-						| Record<string, unknown>
-						| null
-						| undefined;
-					let rawPayload: Record<string, unknown> | undefined;
-					if (contentType.includes("application/json")) {
-						try {
-							const payload = (await response.json()) as
-								| Record<string, unknown>
-								| null;
-							if (payload) {
-								rawPayload = payload;
-								if (typeof payload.message === "string") {
-									errorMessage = payload.message;
-								} else if (
-									typeof payload.description === "string"
-								) {
-									errorMessage = payload.description;
-								} else if (
-									typeof payload.error === "string"
-								) {
-									errorMessage = payload.error;
-								}
-								if (typeof payload.error === "string") {
-									errorCode = payload.error;
-								}
-								if (
-									typeof payload.request_id === "string"
-								) {
-									errorRequestId = payload.request_id;
-								}
-								if (
-									typeof payload.description === "string"
-								) {
-									errorDescription = payload.description;
-								}
-								if (Array.isArray(payload.details)) {
-									errorDetails = payload.details.flatMap((detail) => {
-											if (
-												!detail ||
-												typeof detail !== "object"
-											) {
-												return [];
-											}
-											const message =
-												typeof (
-													detail as {
-														message?: unknown;
-													}
-												).message === "string"
-													? String(
-															(detail as {
-																message: string;
-															}).message,
-														)
-													: null;
-											if (!message) return [];
-											return [{
-												message,
-												path: Array.isArray(
-													(detail as {
-														path?: unknown;
-													}).path,
-												)
-													? (
-															detail as {
-																path: unknown[];
-															}
-														).path
-															.map((entry) =>
-																typeof entry ===
-																"string"
-																	? entry
-																	: null,
-															)
-															.filter(
-																(
-																	entry,
-																): entry is string =>
-																	Boolean(entry),
-															)
-													: undefined,
-												keyword:
-													typeof (
-														detail as {
-															keyword?: unknown;
-														}
-													).keyword === "string"
-														? String(
-																(detail as {
-																	keyword: string;
-																}).keyword,
-															)
-														: undefined,
-											}];
-										});
-								}
-								if (
-									payload.routing_diagnostics &&
-									typeof payload.routing_diagnostics ===
-										"object" &&
-									!Array.isArray(payload.routing_diagnostics)
-								) {
-									routingDiagnostics =
-										payload.routing_diagnostics as Record<
-											string,
-											unknown
-										>;
-								}
-							}
-						} catch {
-							// ignore malformed JSON payloads
-						}
-					} else {
-						const text = await response.text();
-						if (text) errorMessage = text;
-					}
-					const requestError = new Error(errorMessage) as ChatErrorPayload;
-					if (errorCode) requestError.code = errorCode;
-					requestError.status = response.status;
-					requestError.requestId = errorRequestId;
-					requestError.description = errorDescription;
-					requestError.details = errorDetails;
-					requestError.routingDiagnostics = routingDiagnostics ?? null;
-					requestError.rawPayload = rawPayload;
-					throw requestError;
+					throw await parseChatErrorResponse(response);
 				}
 
 				if (!streamEnabled || !response.body) {
@@ -1662,6 +1296,7 @@ function ChatPlaygroundContent({
 						const objectUrl = URL.createObjectURL(blob);
 						assistantContent = `[Open result](${objectUrl})`;
 					}
+					markChatPerformance(performanceRunId, "stream-first-frame");
 
 					if (data) {
 						const reply = extractResponseText(data);
@@ -1683,6 +1318,27 @@ function ChatPlaygroundContent({
 						if (reasoningText) {
 							mergedMeta.reasoning_text = reasoningText;
 						}
+						const toolCalls = extractResponseToolCalls(data);
+						if (toolCalls.length) {
+							mergedMeta.tool_calls = toolCalls;
+						}
+						const traceEvents: ChatTraceEvent[] = [];
+						if (reasoningText) {
+							traceEvents.push({
+								id: "reasoning",
+								type: "reasoning",
+								sequence: traceEvents.length,
+								text: reasoningText,
+							});
+						}
+						for (const toolCall of toolCalls) {
+							traceEvents.push({
+								id: `tool:${toolCall.id}`,
+								type: "tool_call",
+								sequence: traceEvents.length,
+								toolCallId: toolCall.id,
+							});
+						}
 						const totalCostUsd = extractTotalCostUsd(finalUsage);
 						if (totalCostUsd) {
 							mergedMeta.total_cost_usd = totalCostUsd;
@@ -1691,6 +1347,18 @@ function ChatPlaygroundContent({
 						if (!assistantContent) {
 							assistantContent = "Request completed.";
 						}
+						if (assistantContent) {
+							traceEvents.push({
+								id: "response",
+								type: "response",
+								sequence: traceEvents.length,
+								text: assistantContent,
+							});
+						}
+						if (traceEvents.length) {
+							mergedMeta.trace_events = traceEvents;
+						}
+						markChatPerformance(performanceRunId, "stream-first-token");
 						if (shouldDebug) {
 							// eslint-disable-next-line no-console
 							console.log("[chat] non-stream final usage/meta", {
@@ -1710,8 +1378,10 @@ function ChatPlaygroundContent({
 								finalProviderId,
 							);
 							await updateThreadState(latestThread, !temporaryMode);
+							markChatPerformance(performanceRunId, "stream-complete");
 							return;
 						}
+						markChatPerformance(performanceRunId, "stream-complete");
 						return;
 					}
 					if (shouldDebug) {
@@ -1732,12 +1402,161 @@ function ChatPlaygroundContent({
 							finalProviderId,
 						);
 						await updateThreadState(latestThread, !temporaryMode);
+						markChatPerformance(performanceRunId, "stream-complete");
 						return;
 					}
+					markChatPerformance(performanceRunId, "stream-complete");
 					return;
 				}
 
 				let buffer = "";
+				const streamToolCalls = new Map<string, ChatToolCall>();
+				const streamToolAliases = new Map<string, string>();
+				const resolveStreamToolId = (value: unknown) => {
+					if (typeof value !== "string" || !value.trim()) return null;
+					const trimmed = value.trim();
+					return streamToolAliases.get(trimmed) ?? trimmed;
+				};
+				const aliasStreamToolId = (
+					source: unknown,
+					target: string | null,
+				) => {
+					if (
+						typeof source !== "string" ||
+						!source.trim() ||
+						!target
+					) {
+						return;
+					}
+					streamToolAliases.set(source.trim(), target);
+				};
+				const upsertStreamToolCall = (toolCall: ChatToolCall) => {
+					const existing = streamToolCalls.get(toolCall.id);
+					const next: ChatToolCall = existing
+						? {
+								...existing,
+								...toolCall,
+								input: toolCall.input ?? existing.input,
+								inputText:
+									toolCall.inputText ?? existing.inputText,
+								output: toolCall.output ?? existing.output,
+								errorText:
+									toolCall.errorText ?? existing.errorText,
+								status:
+									toolCall.status === "running" &&
+									existing.status !== "running"
+										? existing.status
+										: toolCall.status,
+							}
+						: toolCall;
+					streamToolCalls.set(next.id, next);
+				};
+				const appendStreamToolArguments = (
+					id: string,
+					deltaText: string,
+				) => {
+					const existing =
+						streamToolCalls.get(id) ??
+						({
+							id,
+							type: "function_call",
+							name: "tool",
+							status: "running",
+						} satisfies ChatToolCall);
+					const inputText = `${existing.inputText ?? ""}${deltaText}`;
+					upsertStreamToolCall({
+						...existing,
+						inputText,
+						status: "running",
+					});
+				};
+				const getStreamToolCalls = () =>
+					Array.from(streamToolCalls.values());
+				const streamTraceEvents = new Map<string, ChatTraceEvent>();
+				let nextTraceSequence = 0;
+				let activeResponseTraceId: string | null = null;
+				const ensureTraceEvent = (
+					id: string,
+					create: (sequence: number) => ChatTraceEvent,
+				) => {
+					const existing = streamTraceEvents.get(id);
+					if (existing) return existing;
+					const event = create(nextTraceSequence++);
+					streamTraceEvents.set(id, event);
+					return event;
+				};
+				const upsertReasoningTrace = (text: string) => {
+					if (!text) return;
+					ensureTraceEvent("reasoning", (sequence) => ({
+						id: "reasoning",
+						type: "reasoning",
+						sequence,
+						text,
+					}));
+					const event = streamTraceEvents.get("reasoning");
+					if (event?.type === "reasoning") {
+						streamTraceEvents.set("reasoning", {
+							...event,
+							text,
+						});
+					}
+				};
+				const upsertToolTrace = (toolCallId: string) => {
+					if (!toolCallId) return;
+					activeResponseTraceId = null;
+					const id = `tool:${toolCallId}`;
+					ensureTraceEvent(id, (sequence) => ({
+						id,
+						type: "tool_call",
+						sequence,
+						toolCallId,
+					}));
+				};
+				const upsertResponseTrace = (text: string) => {
+					if (!text) return;
+					const id =
+						activeResponseTraceId ?? `response:${nextTraceSequence}`;
+					activeResponseTraceId = id;
+					ensureTraceEvent(id, (sequence) => ({
+						id,
+						type: "response",
+						sequence,
+						text,
+					}));
+					const event = streamTraceEvents.get(id);
+					if (event?.type === "response") {
+						streamTraceEvents.set(id, {
+							...event,
+							text,
+						});
+					}
+				};
+				const getTraceEvents = () =>
+					Array.from(streamTraceEvents.values()).sort(
+						(a, b) => a.sequence - b.sequence,
+					);
+				const hasPendingToolCallTrace = () => {
+					const traceEvents = getTraceEvents();
+					let lastToolSequence = -1;
+					let lastResponseSequence = -1;
+					for (const event of traceEvents) {
+						if (event.type === "tool_call") {
+							lastToolSequence = Math.max(
+								lastToolSequence,
+								event.sequence,
+							);
+						} else if (
+							event.type === "response" &&
+							event.text.trim()
+						) {
+							lastResponseSequence = Math.max(
+								lastResponseSequence,
+								event.sequence,
+							);
+						}
+					}
+					return lastToolSequence > lastResponseSequence;
+				};
 
 				if (targetAssistantId) {
 					const initialVariant = {
@@ -1826,10 +1645,33 @@ function ChatPlaygroundContent({
 				};
 				let reasoningContent = "";
 				const reasoningSummaries: Record<number, string> = {};
+				const buildStreamingMetaPartial = () => {
+					const toolCalls = getStreamToolCalls();
+					const traceEvents = getTraceEvents();
+					if (
+						!reasoningContent &&
+						toolCalls.length === 0 &&
+						traceEvents.length === 0
+					) {
+						return undefined;
+					}
+					return {
+						...(compareMeta ?? {}),
+						...(finalMeta ?? {}),
+						...(reasoningContent
+							? { reasoning_text: reasoningContent }
+							: {}),
+						...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+						...(traceEvents.length
+							? { trace_events: traceEvents }
+							: {}),
+					};
+				};
 
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
+					markChatPerformance(performanceRunId, "stream-first-frame");
 					buffer += decoder.decode(value, { stream: true });
 					const frames = buffer.split(/\r?\n\r?\n/);
 					buffer = frames.pop() ?? "";
@@ -1882,13 +1724,13 @@ function ChatPlaygroundContent({
 								let reasoningDelta = "";
 								let reasoningUpdated = false;
 								let summaryUpdated = false;
-								const summaryIndex =
-									typeof parsed?.summary_index === "number"
-										? parsed.summary_index
-										: typeof parsed?.summaryIndex ===
-											  "number"
-											? parsed.summaryIndex
-											: null;
+								let toolCallUpdated = false;
+					const summaryIndex =
+						typeof parsed?.summary_index === "number"
+							? parsed.summary_index
+							: typeof parsed?.summaryIndex === "number"
+								? parsed.summaryIndex
+								: null;
 								const appendSummaryDelta = (
 									deltaText: string,
 								) => {
@@ -1929,6 +1771,101 @@ function ChatPlaygroundContent({
 								};
 								const frameType = parsed?.type ?? frameEventType;
 								if (
+									frameType === "response.output_item.added" ||
+									frameType === "response.output_item.done"
+								) {
+									const item =
+										parsed?.item &&
+										typeof parsed.item === "object"
+											? {
+													...parsed.item,
+													status:
+														parsed.item.status ??
+														(frameType ===
+														"response.output_item.added"
+															? "in_progress"
+															: "completed"),
+												}
+											: null;
+									const toolCalls = extractResponseToolCalls({
+										output: item ? [item] : [],
+									});
+									for (const toolCall of toolCalls) {
+										aliasStreamToolId(
+											parsed?.item?.id,
+											toolCall.id,
+										);
+										aliasStreamToolId(
+											parsed?.item?.call_id,
+											toolCall.id,
+										);
+										aliasStreamToolId(
+											parsed?.item_id,
+											toolCall.id,
+										);
+										upsertStreamToolCall(toolCall);
+										upsertToolTrace(toolCall.id);
+										toolCallUpdated = true;
+									}
+									if (
+										toolCalls.length === 0 &&
+										frameType ===
+											"response.output_item.done"
+									) {
+										responseText = extractResponseText({
+											output: item ? [item] : [],
+										});
+									}
+								} else if (
+									frameType ===
+									"response.function_call_arguments.delta"
+								) {
+									const resolvedId =
+										resolveStreamToolId(parsed?.item_id);
+									if (
+										resolvedId &&
+										typeof parsed?.delta === "string"
+									) {
+										appendStreamToolArguments(
+											resolvedId,
+											parsed.delta,
+										);
+										upsertToolTrace(resolvedId);
+										toolCallUpdated = true;
+									}
+								} else if (
+									frameType ===
+									"response.function_call_arguments.done"
+								) {
+									const resolvedId =
+										resolveStreamToolId(parsed?.item_id);
+									if (resolvedId) {
+										const existing =
+											streamToolCalls.get(resolvedId);
+										const toolCalls =
+											extractResponseToolCalls({
+												output: [
+													{
+														type: "function_call",
+														id: resolvedId,
+														call_id: resolvedId,
+														name:
+															parsed?.name ??
+															existing?.name,
+														arguments:
+															parsed?.arguments ??
+															existing?.inputText,
+														status: "completed",
+													},
+												],
+											});
+										for (const toolCall of toolCalls) {
+											upsertStreamToolCall(toolCall);
+											upsertToolTrace(toolCall.id);
+											toolCallUpdated = true;
+										}
+									}
+								} else if (
 									frameType === "response.output_text.delta"
 								) {
 									if (typeof parsed?.delta === "string") {
@@ -1995,10 +1932,28 @@ function ChatPlaygroundContent({
 									if (typeof parsed?.text === "string") {
 										responseText = parsed.text;
 									}
+								} else if (
+									frameType ===
+									"response.content_part.done"
+								) {
+									const partText =
+										parsed?.part?.text ??
+										parsed?.content?.text ??
+										parsed?.text;
+									if (typeof partText === "string") {
+										responseText = partText;
+									}
 								} else if (frameType === "response.completed") {
 									responseText = extractResponseText(
 										parsed?.response ?? parsed,
 									);
+									for (const toolCall of extractResponseToolCalls(
+										parsed?.response ?? parsed,
+									)) {
+										upsertStreamToolCall(toolCall);
+										upsertToolTrace(toolCall.id);
+										toolCallUpdated = true;
+									}
 									const images = extractResponseImages(
 										parsed?.response ?? parsed,
 									);
@@ -2013,6 +1968,11 @@ function ChatPlaygroundContent({
 										reasoningContent = extractReasoningText(
 											parsed?.response ?? parsed,
 										);
+										if (reasoningContent) {
+											upsertReasoningTrace(
+												reasoningContent,
+											);
+										}
 									}
 								} else {
 									const responseDelta =
@@ -2035,6 +1995,7 @@ function ChatPlaygroundContent({
 								}
 								if (summaryUpdated) {
 									reasoningContent = rebuildSummaryText();
+									upsertReasoningTrace(reasoningContent);
 									reasoningUpdated = true;
 								}
 								const hasSummary =
@@ -2043,7 +2004,12 @@ function ChatPlaygroundContent({
 									if (!firstTokenAt) {
 										firstTokenAt = performance.now();
 									}
+									markChatPerformance(
+										performanceRunId,
+										"stream-first-token",
+									);
 									assistantContent += delta;
+									upsertResponseTrace(assistantContent);
 									if (reasoningDelta && !hasSummary) {
 										if (
 											!reasoningContent.endsWith(
@@ -2052,20 +2018,17 @@ function ChatPlaygroundContent({
 										) {
 											reasoningContent += reasoningDelta;
 										}
+										upsertReasoningTrace(reasoningContent);
 									}
-									const metaPartial = reasoningContent
-										? {
-												...(compareMeta ?? {}),
-												...(finalMeta ?? {}),
-												reasoning_text:
-													reasoningContent,
-											}
-										: undefined;
-									scheduleUpdate(metaPartial);
+									scheduleUpdate(buildStreamingMetaPartial());
 								} else if (reasoningDelta && !hasSummary) {
 									if (!firstTokenAt) {
 										firstTokenAt = performance.now();
 									}
+									markChatPerformance(
+										performanceRunId,
+										"stream-first-token",
+									);
 									if (
 										!reasoningContent.endsWith(
 											reasoningDelta,
@@ -2073,17 +2036,10 @@ function ChatPlaygroundContent({
 									) {
 										reasoningContent += reasoningDelta;
 									}
-									scheduleUpdate({
-										...(compareMeta ?? {}),
-										...(finalMeta ?? {}),
-										reasoning_text: reasoningContent,
-									});
+									upsertReasoningTrace(reasoningContent);
+									scheduleUpdate(buildStreamingMetaPartial());
 								} else if (reasoningUpdated) {
-									scheduleUpdate({
-										...(compareMeta ?? {}),
-										...(finalMeta ?? {}),
-										reasoning_text: reasoningContent,
-									});
+									scheduleUpdate(buildStreamingMetaPartial());
 								} else if (
 									responseText &&
 									responseText !== assistantContent
@@ -2091,19 +2047,117 @@ function ChatPlaygroundContent({
 									if (!firstTokenAt) {
 										firstTokenAt = performance.now();
 									}
+									markChatPerformance(
+										performanceRunId,
+										"stream-first-token",
+									);
 									assistantContent = responseText;
-									const metaPartial = reasoningContent
-										? {
-												...(compareMeta ?? {}),
-												...(finalMeta ?? {}),
-												reasoning_text:
-													reasoningContent,
-											}
-										: undefined;
-									scheduleUpdate(metaPartial);
+									upsertResponseTrace(assistantContent);
+									scheduleUpdate(buildStreamingMetaPartial());
+								} else if (toolCallUpdated) {
+									scheduleUpdate(buildStreamingMetaPartial());
 								}
 						} catch {
 							// ignore malformed chunks
+						}
+					}
+				}
+
+				if (hasPendingToolCallTrace()) {
+					const toolCalls = getStreamToolCalls();
+					const toolResults = buildClientDatetimeToolResults(
+						toolCalls,
+						getDefaultDatetimeTimezones(),
+					);
+					if (toolResults) {
+						for (const result of toolResults) {
+							const toolCall = streamToolCalls.get(result.toolCallId);
+							if (!toolCall) continue;
+							upsertStreamToolCall({
+								...toolCall,
+								output: result.content,
+								status: "completed",
+							});
+						}
+						const continuationInput = [
+							...input,
+							...toolCalls.map((toolCall) => ({
+								type: "function_call",
+								call_id: toolCall.id,
+								name: toolCall.name,
+								arguments:
+									toolCall.inputText ??
+									JSON.stringify(toolCall.input ?? {}),
+							})),
+							...toolResults.map((result) => ({
+								type: "function_call_output",
+								call_id: result.toolCallId,
+								output: result.content,
+							})),
+						];
+						const continuationBody = {
+							...requestBody,
+							input: continuationInput,
+							stream: false,
+							tools: undefined,
+							tool_choice: undefined,
+						};
+						const continuationResponse = await fetch(
+							"/api/chat/text",
+							{
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									baseUrl: base,
+									requestBody: continuationBody,
+									appHeaders: APP_HEADERS,
+									debug: shouldDebug,
+								}),
+							},
+						);
+						if (continuationResponse.ok) {
+							const contentType =
+								continuationResponse.headers.get(
+									"content-type",
+								) ?? "";
+							const continuationData = contentType.includes(
+								"application/json",
+							)
+								? await continuationResponse.json()
+								: {
+										output_text:
+											await continuationResponse.text(),
+									};
+							const continuationText =
+								extractResponseText(continuationData);
+							const continuationImages = extractResponseImages(
+								continuationData,
+							);
+							const nextContent = appendImagesToText(
+								continuationText,
+								continuationImages,
+							);
+							if (nextContent) {
+								assistantContent = nextContent;
+								upsertResponseTrace(assistantContent);
+							}
+							finalUsage =
+								continuationData?.usage ??
+								continuationData?.response?.usage ??
+								finalUsage;
+							finalMeta =
+								continuationData?.meta ??
+								continuationData?.response?.meta ??
+								finalMeta;
+							finalProviderId =
+								resolvePayloadProviderId(continuationData) ??
+								finalProviderId;
+						} else {
+							throw await parseChatErrorResponse(
+								continuationResponse,
+							);
 						}
 					}
 				}
@@ -2112,6 +2166,14 @@ function ChatPlaygroundContent({
 				const mergedMeta = mergeMeta(clientMeta);
 				if (reasoningContent) {
 					mergedMeta.reasoning_text = reasoningContent;
+				}
+				const toolCalls = getStreamToolCalls();
+				if (toolCalls.length) {
+					mergedMeta.tool_calls = toolCalls;
+				}
+				const traceEvents = getTraceEvents();
+				if (traceEvents.length) {
+					mergedMeta.trace_events = traceEvents;
 				}
 				const totalCostUsd = extractTotalCostUsd(finalUsage);
 				if (totalCostUsd) {
@@ -2135,7 +2197,9 @@ function ChatPlaygroundContent({
 				);
 
 				await updateThreadState(latestThread, !temporaryMode);
+				markChatPerformance(performanceRunId, "stream-complete");
 			} catch (err) {
+				markChatPerformance(performanceRunId, "request-error");
 				const message =
 					err instanceof Error
 						? err.message
@@ -2176,6 +2240,7 @@ function ChatPlaygroundContent({
 				if (latestThread) {
 					const errorMeta = {
 						...(compareMeta ?? {}),
+						client: buildClientMeta(performance.now()),
 						chat_request_error: nextRequestError,
 					};
 					const existingMessage = latestThread.messages.find(
@@ -2224,15 +2289,17 @@ function ChatPlaygroundContent({
 				if (manageSendingState) {
 					setIsSending(false);
 				}
+				markChatPerformance(performanceRunId, "send-complete");
 			}
 		},
 		[
+			apiTarget,
 			baseUrl,
 			isUnified,
 			personalization,
 			shouldDebug,
 			appendAssistantVariant,
-			getPrimaryCapabilityForModel,
+			isProviderSupportedForModel,
 			resolveRequestModelIdForProvider,
 			orgNameById,
 			temporaryMode,
@@ -2447,17 +2514,19 @@ function ChatPlaygroundContent({
 
 	const handleSend = useCallback(
 		async (payload: ChatSendPayload) => {
-			if (!activeThread || isSending) return;
+			const performanceRunId = payload.performanceRunId;
+			markChatPerformance(performanceRunId, "playground-send-received");
+			if (!activeThread || isSending) return false;
 			const content = buildUserMessageContent(payload);
-			if (!content.trim() && payload.attachments.length === 0) return;
+			if (!content.trim() && payload.attachments.length === 0) return false;
 			if (!isAuthenticated) {
 				setError("Sign in to start chatting.");
-				return;
+				return false;
 			}
 			if (!activeThread.modelId) {
 				setError("Select a model to start chatting.");
 				setModelPickerOpen(true);
-				return;
+				return false;
 			}
 			let inlineAttachmentPreviews: Awaited<
 				ReturnType<typeof prepareInlineAttachmentPreviews>
@@ -2472,17 +2541,32 @@ function ChatPlaygroundContent({
 				}
 			}
 
+			const userMessageMeta: Record<string, unknown> = {
+				request_context: {
+					model_id: activeThread.modelId,
+					compare_model_ids: activeThread.settings.compareModelIds ?? [],
+					reasoning_enabled: Boolean(activeThread.settings.reasoningEnabled),
+					reasoning_effort: activeThread.settings.reasoningEffort ?? "medium",
+					web_search_enabled: payload.webSearchEnabled,
+					api_server_tools_enabled: payload.apiServerToolsEnabled,
+					server_tools: payload.serverTools,
+					server_tool_configs: payload.serverToolConfigs,
+					attachments_count: payload.attachments.length,
+				},
+			};
+			if (inlineAttachmentPreviews.length) {
+				userMessageMeta.attachment_previews = inlineAttachmentPreviews;
+			}
+
 			const userMessage: ChatMessage = {
 				id: generateId(),
 				role: "user",
 				content,
 				createdAt: nowIso(),
-				meta: inlineAttachmentPreviews.length
-					? {
-							attachment_previews: inlineAttachmentPreviews,
-						}
-					: undefined,
+				meta: userMessageMeta,
 			};
+			linkChatPerformanceMessage(performanceRunId, userMessage.id);
+			markChatPerformance(performanceRunId, "user-message-created");
 
 			const nextTitle = activeThread.titleLocked
 				? activeThread.title
@@ -2511,7 +2595,9 @@ function ChatPlaygroundContent({
 				};
 			}
 
+			markChatPerformance(performanceRunId, "thread-update-start");
 			await updateThreadState(updatedThread, !temporaryMode);
+			markChatPerformance(performanceRunId, "thread-update-complete");
 			const inferredEndpoint: UnifiedChatEndpoint = "responses";
 			if (
 				isUnified &&
@@ -2524,7 +2610,7 @@ function ChatPlaygroundContent({
 					"The selected model does not support this output modality. Pick a model that supports this endpoint.",
 				);
 				setModelPickerOpen(true);
-				return;
+				return true;
 			}
 			const hasAudioAttachment = payload.attachments.some((file) =>
 				file.type.startsWith("audio/"),
@@ -2537,7 +2623,7 @@ function ChatPlaygroundContent({
 					"The selected model does not support audio input. Choose an audio-input compatible model.",
 				);
 				setModelPickerOpen(true);
-				return;
+				return true;
 			}
 			const candidateModelIds = Array.from(
 				new Set([
@@ -2573,7 +2659,7 @@ function ChatPlaygroundContent({
 				);
 				setModelSettingsTargetModelId(updatedThread.modelId);
 				setModelSettingsOpen(true);
-				return;
+				return true;
 			}
 			if (enabledModelIds.length === 1) {
 				await executeCompletion(
@@ -2584,7 +2670,7 @@ function ChatPlaygroundContent({
 					undefined,
 					enabledModelIds[0],
 				);
-				return;
+				return true;
 			}
 			const compareGroupId = generateId();
 			setIsSending(true);
@@ -2605,12 +2691,12 @@ function ChatPlaygroundContent({
 			} finally {
 				setIsSending(false);
 			}
+			return true;
 		},
 		[
 			activeThread,
 			buildThreadForModel,
 			executeCompletion,
-			getPrimaryCapabilityForModel,
 			isModelCapabilityCompatible,
 			isUnified,
 			isSending,
@@ -2859,19 +2945,16 @@ function ChatPlaygroundContent({
 			};
 			updateThreadState(nextThread, !temporaryMode);
 		},
-		[
-			activeThread,
-			getPrimaryCapabilityForModel,
-			isModelCapabilityCompatible,
-			temporaryMode,
-			updateThreadState,
-		],
+			[
+				activeThread,
+				temporaryMode,
+				updateThreadState,
+			],
 	);
 
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
 			if (!activeThread) return;
-			setPendingQueryModelId(null);
 			const requiredCapability = getPrimaryCapabilityForModel(modelId);
 			const currentModelDisplayName =
 				activeThread.settings.modelOverridesById?.[
@@ -2940,7 +3023,6 @@ function ChatPlaygroundContent({
 					},
 				};
 			}
-			setLastModelId(modelId);
 			if (typeof window !== "undefined") {
 				window.localStorage.setItem(STORAGE_KEYS.lastModelId, modelId);
 			}
@@ -2995,7 +3077,6 @@ function ChatPlaygroundContent({
 				},
 				updatedAt: nowIso(),
 			};
-			setLastModelId(nextPrimary);
 			if (typeof window !== "undefined") {
 				window.localStorage.setItem(
 					STORAGE_KEYS.lastModelId,
@@ -3057,12 +3138,181 @@ function ChatPlaygroundContent({
 			};
 			updateThreadState(nextThread, !temporaryMode);
 		},
+			[
+				activeThread,
+				composerRequiresAudioInput,
+				getPrimaryCapabilityForModel,
+				isModelSelectableForContext,
+				temporaryMode,
+				updateThreadState,
+			],
+	);
+
+	const updateSelectedModelOrder = useCallback(
+		(ids: string[]) => {
+			if (!activeThread) return;
+			const currentSelectedIds = [
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			].filter(Boolean);
+			const knownSelectedIds = new Set(currentSelectedIds);
+			const nextSelectedIds = Array.from(
+				new Set(ids.filter((id) => knownSelectedIds.has(id))),
+			);
+			if (nextSelectedIds.length === 0) return;
+			for (const id of currentSelectedIds) {
+				if (!nextSelectedIds.includes(id)) {
+					nextSelectedIds.push(id);
+				}
+			}
+			const [nextPrimaryModelId, ...nextCompareModelIds] =
+				nextSelectedIds;
+			if (!nextPrimaryModelId) return;
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					nextPrimaryModelId
+				]?.displayName ?? "";
+			const previousDefault = buildDefaultSystemPrompt(
+				activeThread.modelId,
+				currentModelDisplayName,
+			);
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				activeThread.settings.systemPrompt === previousDefault
+					? buildDefaultSystemPrompt(
+							nextPrimaryModelId,
+							nextModelDisplayName,
+						)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[nextPrimaryModelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimaryModelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimaryModelId,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
+		[activeThread, temporaryMode, updateThreadState],
+	);
+
+	const addComposerModelSet = useCallback(
+		(modelIds: string[]) => {
+			if (!activeThread) return;
+			const currentSelectedIds = [
+				activeThread.modelId,
+				...(activeThread.settings.compareModelIds ?? []),
+			].filter(Boolean);
+			const nextSelectedIds = Array.from(
+				new Set([...currentSelectedIds, ...modelIds.filter(Boolean)]),
+			);
+			const [nextPrimaryModelId, ...candidateCompareIds] =
+				nextSelectedIds;
+			if (!nextPrimaryModelId) return;
+			const requiredCapability =
+				getPrimaryCapabilityForModel(nextPrimaryModelId);
+			const nextCompareModelIds = candidateCompareIds.filter((id) =>
+				isModelSelectableForContext(
+					id,
+					requiredCapability,
+					composerRequiresAudioInput,
+				),
+			);
+			const currentModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					activeThread.modelId
+				]?.displayName ?? "";
+			const nextModelDisplayName =
+				activeThread.settings.modelOverridesById?.[
+					nextPrimaryModelId
+				]?.displayName ?? "";
+			const previousDefault = buildDefaultSystemPrompt(
+				activeThread.modelId,
+				currentModelDisplayName,
+			);
+			const nextSystemPrompt =
+				!activeThread.settings.systemPrompt ||
+				activeThread.settings.systemPrompt === previousDefault
+					? buildDefaultSystemPrompt(
+							nextPrimaryModelId,
+							nextModelDisplayName,
+						)
+					: activeThread.settings.systemPrompt;
+			const nextModelOverrides = ensureModelOverridesForIds(
+				activeThread.settings,
+				[nextPrimaryModelId, ...nextCompareModelIds],
+			);
+			const nextThread: ChatThread = {
+				...activeThread,
+				modelId: nextPrimaryModelId,
+				settings: {
+					...activeThread.settings,
+					systemPrompt: nextSystemPrompt,
+					compareModelIds: nextCompareModelIds,
+					compareMode: nextCompareModelIds.length > 0,
+					modelOverridesById: nextModelOverrides,
+				},
+				updatedAt: nowIso(),
+			};
+			if (typeof window !== "undefined") {
+				window.localStorage.setItem(
+					STORAGE_KEYS.lastModelId,
+					nextPrimaryModelId,
+				);
+			}
+			updateThreadState(nextThread, !temporaryMode);
+		},
 		[
 			activeThread,
 			composerRequiresAudioInput,
+			getPrimaryCapabilityForModel,
 			isModelSelectableForContext,
 			temporaryMode,
 			updateThreadState,
+		],
+	);
+
+	const toggleComposerModel = useCallback(
+		(modelId: string) => {
+			if (!activeThread) return;
+			if (!activeThread.modelId) {
+				updateActiveModel(modelId);
+				return;
+			}
+			if (activeThread.modelId === modelId) {
+				removeSelectedModel(modelId);
+				return;
+			}
+			const compare = activeThread.settings.compareModelIds ?? [];
+			const nextCompare = compare.includes(modelId)
+				? compare.filter((id) => id !== modelId)
+				: [...compare, modelId];
+			updateCompareModelIds(nextCompare);
+		},
+		[
+			activeThread,
+			removeSelectedModel,
+			updateActiveModel,
+			updateCompareModelIds,
 		],
 	);
 
@@ -3077,142 +3327,159 @@ function ChatPlaygroundContent({
 	);
 
 	useEffect(() => {
-		setPendingQueryModelId(queryModelIsValid ? resolvedQueryModelId : null);
-	}, [queryModelIsValid, resolvedQueryModelId]);
-	useEffect(() => {
 		if (!queryModelIsValid || !resolvedQueryModelId || !activeThread) return;
-		if (!pendingQueryModelId) return;
-		if (activeThread.modelId !== pendingQueryModelId) {
-			updateActiveModel(pendingQueryModelId);
+		if (appliedQueryModelIdRef.current === resolvedQueryModelId) return;
+		appliedQueryModelIdRef.current = resolvedQueryModelId;
+		if (activeThread.modelId !== resolvedQueryModelId) {
+			let cancelled = false;
+			queueMicrotask(() => {
+				if (!cancelled) {
+					updateActiveModel(resolvedQueryModelId);
+				}
+			});
+			return () => {
+				cancelled = true;
+			};
 		}
-		setPendingQueryModelId(null);
 	}, [
 		activeThread,
-		pendingQueryModelId,
 		queryModelIsValid,
 		resolvedQueryModelId,
 		updateActiveModel,
 	]);
 	useEffect(() => {
 		if (!activeThread?.modelId) return;
+		let cancelled = false;
+		let nextThread: ChatThread | null = null;
 		const effectiveSettings = getEffectiveModelSettings(
 			activeThread,
 			activeThread.modelId,
 		);
 		if (
-			isProviderSupportedForModel(
+			!isProviderSupportedForModel(
 				activeThread.modelId,
 				effectiveSettings.providerId,
 			)
 		) {
-			return;
-		}
-		const currentOverrides = activeThread.settings.modelOverridesById ?? {};
-		const existingModelOverrides =
-			currentOverrides[activeThread.modelId] ?? {};
-		const nextThread: ChatThread = {
-			...activeThread,
-			settings: {
-				...activeThread.settings,
-				providerId:
-					existingModelOverrides.providerId === undefined
-						? "auto"
-						: activeThread.settings.providerId,
-				modelOverridesById: {
-					...currentOverrides,
-					[activeThread.modelId]: {
-						...existingModelOverrides,
-						providerId: "auto",
+			const currentOverrides = activeThread.settings.modelOverridesById ?? {};
+			const existingModelOverrides =
+				currentOverrides[activeThread.modelId] ?? {};
+			nextThread = {
+				...activeThread,
+				settings: {
+					...activeThread.settings,
+					providerId:
+						existingModelOverrides.providerId === undefined
+							? "auto"
+							: activeThread.settings.providerId,
+					modelOverridesById: {
+						...currentOverrides,
+						[activeThread.modelId]: {
+							...existingModelOverrides,
+							providerId: "auto",
+						},
 					},
 				},
-			},
-			updatedAt: nowIso(),
+				updatedAt: nowIso(),
+			};
+		}
+		const compatibilityThread = nextThread ?? activeThread;
+		const compareIds = compatibilityThread.settings.compareModelIds ?? [];
+		if (compareIds.length) {
+			const requiredCapability: UnifiedChatEndpoint = "responses";
+			const normalizedCompareIds = compareIds.filter(
+				(id) =>
+					id &&
+					id !== compatibilityThread.modelId &&
+					isModelSelectableForContext(
+						id,
+						requiredCapability,
+						composerRequiresAudioInput,
+					),
+			);
+			const unchanged =
+				normalizedCompareIds.length === compareIds.length &&
+				normalizedCompareIds.every((id, index) => id === compareIds[index]);
+			if (!unchanged) {
+				nextThread = {
+					...compatibilityThread,
+					settings: {
+						...compatibilityThread.settings,
+						compareModelIds: normalizedCompareIds,
+						compareMode: normalizedCompareIds.length > 0,
+					},
+					updatedAt: nowIso(),
+				};
+			}
+		}
+		if (nextThread) {
+			const threadToUpdate = nextThread;
+			queueMicrotask(() => {
+				if (!cancelled) {
+					void updateThreadState(threadToUpdate, !temporaryMode);
+				}
+			});
+		}
+		return () => {
+			cancelled = true;
 		};
-		void updateThreadState(nextThread, !temporaryMode);
-	}, [
-		activeThread,
-		isProviderSupportedForModel,
-		temporaryMode,
-		updateThreadState,
-	]);
-	useEffect(() => {
-		if (!activeThread?.modelId) return;
-		const compareIds = activeThread.settings.compareModelIds ?? [];
-		if (!compareIds.length) return;
-		const requiredCapability: UnifiedChatEndpoint = "responses";
-		const normalizedCompareIds = compareIds.filter(
-			(id) =>
-				id &&
-				id !== activeThread.modelId &&
-				isModelSelectableForContext(
-					id,
-					requiredCapability,
-					composerRequiresAudioInput,
-				),
-		);
-		const unchanged =
-			normalizedCompareIds.length === compareIds.length &&
-			normalizedCompareIds.every((id, index) => id === compareIds[index]);
-		if (unchanged) return;
-		const nextThread: ChatThread = {
-			...activeThread,
-			settings: {
-				...activeThread.settings,
-				compareModelIds: normalizedCompareIds,
-				compareMode: normalizedCompareIds.length > 0,
-			},
-			updatedAt: nowIso(),
-		};
-		void updateThreadState(nextThread, !temporaryMode);
 	}, [
 		activeThread,
 		composerRequiresAudioInput,
+		isProviderSupportedForModel,
 		isModelSelectableForContext,
 		temporaryMode,
 		updateThreadState,
 	]);
-	useEffect(() => {
-		if (!composerRequiresAudioInput || !activeThread?.modelId) {
-			return;
-		}
-		if (supportsModelAudioInput(activeThread.modelId)) {
-			return;
-		}
-		setError(
-			"Audio is attached. Select a model that supports audio input to continue.",
-		);
-		setModelPickerOpen(true);
-	}, [
-		activeThread?.modelId,
-		composerRequiresAudioInput,
-		isUnified,
-		supportsModelAudioInput,
-	]);
+	const activeModelId = activeThread?.modelId ?? null;
+	const activeCompareModelIds = activeThread?.settings.compareModelIds;
+	const activeModelOverrides = activeThread?.settings.modelOverridesById;
+
+	const handleAudioAttachmentRequirementChange = useCallback(
+		(requiresAudioInput: boolean) => {
+			setComposerRequiresAudioInput(requiresAudioInput);
+			if (!requiresAudioInput || !activeModelId) return;
+			if (supportsModelAudioInput(activeModelId)) return;
+			setError(
+				"Audio is attached. Select a model that supports audio input to continue.",
+			);
+			setModelPickerOpen(true);
+		},
+		[activeModelId, supportsModelAudioInput],
+	);
 
 	const handleDeleteThread = async () => {
-		if (!deleteTarget) return;
-		const threadId = deleteTarget.id;
-		await deleteChat(threadId, "text");
-		setThreads((prev) => prev.filter((thread) => thread.id !== threadId));
-		if (activeId === threadId) {
+		if (deleteTargets.length === 0) return;
+		const targetIds = new Set(deleteTargets.map((thread) => thread.id));
+		await Promise.all(
+			deleteTargets.map((thread) => deleteChat(thread.id, "text")),
+		);
+		setThreads((prev) => prev.filter((thread) => !targetIds.has(thread.id)));
+		if (activeId && targetIds.has(activeId)) {
 			const remaining = threads.filter(
-				(thread) => thread.id !== threadId,
+				(thread) => !targetIds.has(thread.id),
 			);
 			setActiveId(remaining[0]?.id ?? null);
 		}
 		setDeleteOpen(false);
-		setDeleteTarget(null);
+		setDeleteTargets([]);
 	};
 
 	const requestDeleteThread = (thread: ChatThread) => {
-		setDeleteTarget(thread);
+		setDeleteTargets([thread]);
+		setDeleteOpen(true);
+	};
+
+	const requestDeleteThreads = (targets: ChatThread[]) => {
+		if (targets.length === 0) return;
+		setDeleteTargets(targets);
 		setDeleteOpen(true);
 	};
 
 	const handleDeleteOpenChange = (open: boolean) => {
 		setDeleteOpen(open);
 		if (!open) {
-			setDeleteTarget(null);
+			setDeleteTargets([]);
 		}
 	};
 
@@ -3232,7 +3499,6 @@ function ChatPlaygroundContent({
 			...thread,
 			title: trimmed,
 			titleLocked: true,
-			updatedAt: nowIso(),
 		});
 		setRenameOpen(false);
 	};
@@ -3241,11 +3507,54 @@ function ChatPlaygroundContent({
 		await updateStoredThread({
 			...thread,
 			pinned: !thread.pinned,
-			updatedAt: nowIso(),
 		});
 	};
 
-	const toggleTemporaryMode = () => {
+	const handleEditTags = (thread: ChatThread) => {
+		setTagsTargets([thread]);
+		setTagsOpen(true);
+	};
+
+	const handleEditSelectedTags = (targets: ChatThread[]) => {
+		if (targets.length === 0) return;
+		setTagsTargets(targets);
+		setTagsOpen(true);
+	};
+
+	const handleTagsOpenChange = (open: boolean) => {
+		setTagsOpen(open);
+		if (!open) {
+			setTagsTargets([]);
+		}
+	};
+
+	const handleTagsSave = async (tags: ChatTag[]) => {
+		if (tagsTargets.length === 0) return;
+		const targetIds = new Set(tagsTargets.map((target) => target.id));
+		const sortedTags = [...tags].sort(compareChatTags);
+		if (sortedTags.length > 0) {
+			await upsertChatTags(sortedTags);
+			setChatTags((prev) => {
+				const byId = new Map(prev.map((tag) => [tag.id, tag]));
+				for (const tag of sortedTags) {
+					byId.set(tag.id, tag);
+				}
+				return Array.from(byId.values()).sort(compareChatTags);
+			});
+		}
+		const updatedThreads = threads
+			.filter((thread) => targetIds.has(thread.id))
+			.map((thread) => ({
+				...thread,
+				tags: sortedTags,
+			}));
+		await Promise.all(
+			updatedThreads.map((thread) => updateStoredThread(thread)),
+		);
+		handleTagsOpenChange(false);
+	};
+
+	const toggleTemporaryMode = useCallback(() => {
 		if (!temporaryMode) {
 			setPreviousStoredId(activeId);
 			setTemporaryMode(true);
@@ -3266,22 +3575,80 @@ function ChatPlaygroundContent({
 		if (previousStoredId) {
 			setActiveId(previousStoredId);
 		}
-	};
+	}, [
+		activeId,
+		activeThread?.modelId,
+		activeThread?.settings,
+		defaultModelId,
+		previousStoredId,
+		setActiveId,
+		temporaryMode,
+	]);
 
-	const selectedOrgId = activeThread?.modelId
-		? getOrgId(activeThread.modelId)
-		: "ai-stats";
+	useEffect(() => {
+		const handleShortcut = (event: KeyboardEvent) => {
+			const key = event.key.toLowerCase();
+			const isShortcutHelpKey =
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				(key === "/" || event.code === "Slash");
+			if (isShortcutHelpKey) {
+				if (!shortcutHelpOpen && isChatShortcutOverlayOpen()) return;
+				event.preventDefault();
+				setShortcutHelpOpen((open) => !open);
+				return;
+			}
+			const isSearchKey =
+				(event.ctrlKey || event.metaKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				key === "k";
+			if (isSearchKey) {
+				if (isChatShortcutOverlayOpen()) return;
+				event.preventDefault();
+				setSearchOpen(true);
+				return;
+			}
+			if (
+				event.repeat ||
+				!(event.ctrlKey || event.metaKey) ||
+				event.altKey ||
+				!event.shiftKey ||
+				isChatShortcutOverlayOpen()
+			) {
+				return;
+			}
+			if (key === "m") {
+				event.preventDefault();
+				setModelPickerOpen(true);
+				return;
+			}
+			if (key === "c") {
+				event.preventDefault();
+				void createThread();
+				return;
+			}
+			if (key === "u") {
+				event.preventDefault();
+				toggleTemporaryMode();
+			}
+		};
+		window.addEventListener("keydown", handleShortcut);
+		return () => window.removeEventListener("keydown", handleShortcut);
+	}, [createThread, shortcutHelpOpen, toggleTemporaryMode]);
+
 	const selectedModelIds = useMemo(() => {
 		const ids: string[] = [];
-		if (activeThread?.modelId) {
-			ids.push(activeThread.modelId);
+		if (activeModelId) {
+			ids.push(activeModelId);
 		}
-		for (const id of activeThread?.settings.compareModelIds ?? []) {
-			if (!id || id === activeThread?.modelId) continue;
+		for (const id of activeCompareModelIds ?? []) {
+			if (!id || id === activeModelId) continue;
 			ids.push(id);
 		}
 		return Array.from(new Set(ids));
-	}, [activeThread?.modelId, activeThread?.settings.compareModelIds]);
+	}, [activeCompareModelIds, activeModelId]);
 	const selectedModelDisplayNameById = useMemo(() => {
 		const labels: Record<string, string> = {};
 		for (const modelId of selectedModelIds) {
@@ -3291,30 +3658,39 @@ function ChatPlaygroundContent({
 			);
 			const defaultLabel = model?.modelName ?? formatModelLabel(modelId);
 			const overrideLabel =
-				activeThread?.settings.modelOverridesById?.[modelId]?.displayName?.trim();
+				activeModelOverrides?.[modelId]?.displayName?.trim();
 			labels[modelId] = overrideLabel || defaultLabel;
 		}
 		return labels;
-	}, [activeThread?.settings.modelOverridesById, models, selectedModelIds]);
+	}, [activeModelOverrides, models, selectedModelIds]);
 	const selectedModelEnabledById = useMemo(() => {
 		const enabledById: Record<string, boolean> = {};
 		for (const modelId of selectedModelIds) {
 			enabledById[modelId] =
-				activeThread?.settings.modelOverridesById?.[modelId]?.enabled !==
-				false;
+				activeModelOverrides?.[modelId]?.enabled !== false;
 		}
 		return enabledById;
-	}, [activeThread?.settings.modelOverridesById, selectedModelIds]);
+	}, [activeModelOverrides, selectedModelIds]);
 	const modelSettingsChoices = useMemo(
 		() => {
 			const requiredCapability = activeModelCapability;
 			const requiresAudioInput = composerRequiresAudioInput;
 			const byId = new Map<
 				string,
-				{ id: string; label: string; orgId: string; orgName: string }
+				{
+					id: string;
+					label: string;
+					orgId: string;
+					orgName: string;
+					releaseDate: string | null;
+				}
 			>();
-			for (const model of selectableModels) {
-				const selectorModelId = model.selectorModelId;
+			const orderedOptions = [
+				...modelOptions.active,
+				...modelOptions.comingSoon,
+			];
+			for (const model of orderedOptions) {
+				const selectorModelId = model.modelId;
 				const modelCapabilities = getModelCapabilities(selectorModelId);
 				if (
 					requiredCapability &&
@@ -3329,51 +3705,40 @@ function ChatPlaygroundContent({
 					continue;
 				}
 				if (byId.has(selectorModelId)) continue;
-				const orgId = resolveGatewayModelOrgId(model);
-				const orgName =
-					model.organisationName ??
-					model.providerName ??
-					formatOrgLabel(orgId);
 				// Keep selector labels canonical; nicknames are display-only in chat UI.
 				const baseLabel =
-					model.modelName || formatModelLabel(selectorModelId);
+					model.label || formatModelLabel(selectorModelId);
 				const isDisabled =
-					activeThread?.settings.modelOverridesById?.[
-						selectorModelId
-					]?.enabled === false;
+					activeModelOverrides?.[selectorModelId]?.enabled === false;
 				byId.set(selectorModelId, {
 					id: selectorModelId,
 					label: isDisabled ? `${baseLabel} (Off)` : baseLabel,
-					orgId,
-					orgName,
+					orgId: model.orgId,
+					orgName: model.orgName,
+					releaseDate: model.releaseDate,
 				});
 			}
-			return Array.from(byId.values()).sort(
-				(a, b) =>
-					a.orgName.localeCompare(b.orgName) ||
-					a.label.localeCompare(b.label),
-			);
+			return Array.from(byId.values());
 		},
-		[
-			activeModelCapability,
-			activeThread?.settings.modelOverridesById,
-			composerRequiresAudioInput,
-			getModelCapabilities,
-			isUnified,
-			selectableModels,
-			supportsModelAudioInput,
-		],
+			[
+				activeModelCapability,
+				activeModelOverrides,
+				composerRequiresAudioInput,
+				getModelCapabilities,
+				modelOptions.active,
+				modelOptions.comingSoon,
+				supportsModelAudioInput,
+			],
 	);
 	const selectedModelLabel = useMemo(() => {
-		if (!activeThread?.modelId) return "Select model";
+		if (!activeModelId) return "Select model";
 		return (
-			selectedModelDisplayNameById[activeThread.modelId] ??
-			formatModelLabel(activeThread.modelId)
+			selectedModelDisplayNameById[activeModelId] ??
+			formatModelLabel(activeModelId)
 		);
-	}, [activeThread?.modelId, selectedModelDisplayNameById]);
+	}, [activeModelId, selectedModelDisplayNameById]);
 	const selectedModelsHint = useMemo(() => {
 		if (selectedModelIds.length <= 1) {
-			const activeModelId = activeThread?.modelId;
 			if (!activeModelId) return "Select model";
 			const activeLabel =
 				selectedModelDisplayNameById[activeModelId] ?? activeModelId;
@@ -3393,23 +3758,22 @@ function ChatPlaygroundContent({
 		const label = preview.join(", ");
 		return overflow > 0 ? `${label} +${overflow}` : label;
 	}, [
-		activeThread?.modelId,
+		activeModelId,
 		selectedModelDisplayNameById,
 		selectedModelEnabledById,
 		selectedModelIds,
 	]);
 	const modelSettingsModelId =
-		modelSettingsTargetModelId ?? activeThread?.modelId ?? null;
+		modelSettingsTargetModelId ?? activeModelId;
 	const activeModelSettings = useMemo(() => {
 		if (!activeThread || !modelSettingsModelId) return null;
 		return getEffectiveModelSettings(activeThread, modelSettingsModelId);
 	}, [activeThread, modelSettingsModelId]);
 	const dialogModelSettings: ChatModelSettings = useMemo(() => {
 		if (activeModelSettings) return activeModelSettings;
-		const fallbackModelId = modelSettingsModelId ?? activeThread?.modelId ?? "";
+		const fallbackModelId = modelSettingsModelId ?? activeModelId ?? "";
 		const fallbackDisplayName =
-			activeThread?.settings.modelOverridesById?.[fallbackModelId]
-				?.displayName ?? "";
+			activeModelOverrides?.[fallbackModelId]?.displayName ?? "";
 		return {
 			temperature: DEFAULT_SETTINGS.temperature,
 			maxOutputTokens: DEFAULT_SETTINGS.maxOutputTokens,
@@ -3432,14 +3796,16 @@ function ChatPlaygroundContent({
 			endpoint: DEFAULT_SETTINGS.endpoint,
 			webSearchEnabled: DEFAULT_SETTINGS.webSearchEnabled,
 			apiServerToolsEnabled: DEFAULT_SETTINGS.apiServerToolsEnabled,
+			serverTools: DEFAULT_SETTINGS.serverTools,
+			serverToolConfigs: DEFAULT_SETTINGS.serverToolConfigs,
 			imageOutputEnabled: DEFAULT_SETTINGS.imageOutputEnabled,
 			enabled: true,
 			displayName: "",
 		};
 	}, [
 		activeModelSettings,
-		activeThread?.modelId,
-		activeThread?.settings.modelOverridesById,
+		activeModelId,
+		activeModelOverrides,
 		modelSettingsModelId,
 	]);
 	const temperatureValue = activeModelSettings?.temperature ?? 0.7;
@@ -3452,11 +3818,11 @@ function ChatPlaygroundContent({
 	const presenceValue = activeModelSettings?.presencePenalty ?? 0;
 	const repetitionValue = activeModelSettings?.repetitionPenalty ?? 1;
 
-	const updateModelSettings = useCallback(
-		(partial: Partial<ChatModelSettings>) => {
-			if (!activeThread || !modelSettingsModelId) return;
+	const updateModelSettingsForModel = useCallback(
+		(modelId: string, partial: Partial<ChatModelSettings>) => {
+			if (!activeThread || !modelId) return;
 			const currentOverrides = activeThread.settings.modelOverridesById ?? {};
-			const existingModelOverrides = currentOverrides[modelSettingsModelId] ?? {};
+			const existingModelOverrides = currentOverrides[modelId] ?? {};
 			const nextPartial = { ...partial };
 			if (typeof partial.displayName === "string" && partial.systemPrompt === undefined) {
 				const previousDisplayName =
@@ -3465,16 +3831,16 @@ function ChatPlaygroundContent({
 						: "";
 				const nextDisplayName = partial.displayName;
 				const previousDefaultPrompt = buildDefaultSystemPrompt(
-					modelSettingsModelId,
+					modelId,
 					previousDisplayName,
 				);
 				const nextDefaultPrompt = buildDefaultSystemPrompt(
-					modelSettingsModelId,
+					modelId,
 					nextDisplayName,
 				);
 				const currentEffectiveSystemPrompt = getEffectiveModelSettings(
 					activeThread,
-					modelSettingsModelId,
+					modelId,
 				).systemPrompt;
 				const hasExplicitModelPrompt =
 					existingModelOverrides.systemPrompt !== undefined;
@@ -3495,7 +3861,7 @@ function ChatPlaygroundContent({
 					...activeThread.settings,
 					modelOverridesById: {
 						...currentOverrides,
-						[modelSettingsModelId]: nextModelOverrides,
+						[modelId]: nextModelOverrides,
 					},
 				},
 				updatedAt: nowIso(),
@@ -3504,10 +3870,16 @@ function ChatPlaygroundContent({
 		},
 		[
 			activeThread,
-			modelSettingsModelId,
 			temporaryMode,
 			updateThreadState,
 		],
+	);
+	const updateModelSettings = useCallback(
+		(partial: Partial<ChatModelSettings>) => {
+			if (!modelSettingsModelId) return;
+			updateModelSettingsForModel(modelSettingsModelId, partial);
+		},
+		[modelSettingsModelId, updateModelSettingsForModel],
 	);
 
 	const updateModelSettingNumber = useCallback(
@@ -3582,11 +3954,6 @@ function ChatPlaygroundContent({
 		temporaryMode,
 		updateThreadState,
 	]);
-	const handleDismissRequestError = useCallback(() => {
-		setRequestError(null);
-		setError(null);
-	}, []);
-
 	return (
 		<div className="flex h-full min-h-0 w-full overflow-hidden bg-background text-foreground">
 			<Sidebar collapsible="icon" className="border-r border-border bg-background">
@@ -3600,7 +3967,13 @@ function ChatPlaygroundContent({
 					onSelectThread={setActiveThread}
 					onRenameThread={handleRename}
 					onPinToggle={handlePinToggle}
+					onEditTags={handleEditTags}
+					onEditSelectedTags={handleEditSelectedTags}
 					onRequestDelete={requestDeleteThread}
+					onRequestDeleteSelected={requestDeleteThreads}
+					tags={allTags}
+					activeTagId={activeVisibleTagId}
+					onTagFilterChange={setActiveTagId}
 					authUser={authUser}
 					authLoading={authLoading}
 					onSignOut={handleSignOut}
@@ -3621,6 +3994,8 @@ function ChatPlaygroundContent({
 					}
 					settingsOpen={settingsOpen}
 					onSettingsOpenChange={setSettingsOpen}
+					apiTarget={apiTarget}
+					onApiTargetChange={setApiTarget}
 					baseUrl={baseUrl}
 					onBaseUrlChange={setBaseUrl}
 					onSaveSettings={handleSaveSettings}
@@ -3630,14 +4005,18 @@ function ChatPlaygroundContent({
 					isAdmin={isAdmin}
 					debugEnabled={debugEnabled}
 					onDebugChange={handleDebugChange}
+					responseLayout={responseLayout}
+					onResponseLayoutChange={handleResponseLayoutChange}
 					allowModelCompare
 					compareModelIds={
 						activeThread?.settings.compareModelIds ?? []
 					}
 					onCompareModelIdsChange={updateCompareModelIds}
+					onSelectedModelOrderChange={updateSelectedModelOrder}
 					onRemoveModel={removeSelectedModel}
 					onRemoveAllModels={removeAllSelectedModels}
 					onOpenModelSettingsForModel={openModelSettingsForModel}
+					onUpdateModelSettingsForModel={updateModelSettingsForModel}
 					modelDisplayNameById={selectedModelDisplayNameById}
 					modelEnabledById={selectedModelEnabledById}
 					modelCapabilitiesById={modelCapabilitiesById}
@@ -3648,6 +4027,7 @@ function ChatPlaygroundContent({
 				<ChatConversation
 					activeThread={activeThread}
 					isSending={isSending}
+					temporaryMode={temporaryMode}
 					mode="unified"
 					webSearchEnabled={
 						activeThread?.settings.webSearchEnabled ?? false
@@ -3656,11 +4036,25 @@ function ChatPlaygroundContent({
 						updateActiveSettings({ webSearchEnabled: enabled })
 					}
 					apiServerToolsEnabled={
-						activeThread?.settings.apiServerToolsEnabled ?? false
+						activeThread?.settings.apiServerToolsEnabled ??
+						DEFAULT_SETTINGS.apiServerToolsEnabled
 					}
-					onApiServerToolsEnabledChange={(enabled) =>
-						updateActiveSettings({ apiServerToolsEnabled: enabled })
+					serverTools={
+						normalizeServerTools(activeThread?.settings.serverTools)
 					}
+					onServerToolsChange={(serverTools: ChatServerToolType[]) =>
+						updateActiveSettings({
+							serverTools: normalizeServerTools(serverTools),
+							apiServerToolsEnabled: true,
+						})
+					}
+					serverToolConfigs={
+						activeThread?.settings.serverToolConfigs ??
+						DEFAULT_SETTINGS.serverToolConfigs
+					}
+					onServerToolConfigsChange={(
+						serverToolConfigs: ChatServerToolConfigs,
+					) => updateActiveSettings({ serverToolConfigs })}
 					reasoningEnabled={
 						activeThread?.settings.reasoningEnabled ?? false
 					}
@@ -3685,17 +4079,19 @@ function ChatPlaygroundContent({
 					modelLinkById={modelLinkById}
 					isAuthenticated={isAuthenticated}
 					accentColor={personalization.accentColor}
-					selectedOrgId={selectedOrgId}
 					selectedModelId={activeThread?.modelId ?? ""}
 					selectedModelLabel={selectedModelLabel}
 					selectedModelCount={selectedModelIds.length}
 					selectedModelsHint={selectedModelsHint}
-					onOpenModelPicker={() => setModelPickerOpen(true)}
-					onAudioAttachmentRequirementChange={(requiresAudioInput) =>
-						setComposerRequiresAudioInput(requiresAudioInput)
+					selectedModelIds={selectedModelIds}
+					modelOptions={modelOptions.active}
+					onToggleModel={toggleComposerModel}
+					onAddModelSet={addComposerModelSet}
+					onAudioAttachmentRequirementChange={
+						handleAudioAttachmentRequirementChange
 					}
 					requestError={requestError}
-					onDismissRequestError={handleDismissRequestError}
+					responseLayout={responseLayout}
 				/>
 			</SidebarInset>
 			<ModelSettingsDialog
@@ -3710,13 +4106,13 @@ function ChatPlaygroundContent({
 				selectedModelId={modelSettingsModelId}
 				modelChoices={modelSettingsChoices}
 				onModelChange={handleModelSettingsModelChange}
-				modelLabel={
-					modelSettingsModelId
-						? models.find((m) => m.modelId === modelSettingsModelId)
-								?.modelName ??
-						  formatModelLabel(modelSettingsModelId)
-						: undefined
-				}
+					modelLabel={
+						modelSettingsModelId
+							? models.find((m) => m.modelId === modelSettingsModelId)
+									?.modelName ??
+								formatModelLabel(modelSettingsModelId)
+							: undefined
+					}
 				providerOptions={providerOptions}
 				supportedProvidersForModel={
 					modelSettingsModelId
@@ -3758,6 +4154,24 @@ function ChatPlaygroundContent({
 				open={deleteOpen}
 				onOpenChange={handleDeleteOpenChange}
 				onConfirm={handleDeleteThread}
+				count={deleteTargets.length}
+			/>
+			<ChatTagsDialog
+				key={
+					tagsOpen && tagsTargets.length > 0
+						? tagsTargets.map((thread) => thread.id).join(":")
+						: "chat-tags"
+				}
+				open={tagsOpen}
+				thread={tagsTargets[0] ?? null}
+				threads={tagsTargets}
+				availableTags={allTags}
+				onOpenChange={handleTagsOpenChange}
+				onSave={handleTagsSave}
+			/>
+			<ChatShortcutHelpDialog
+				open={shortcutHelpOpen}
+				onOpenChange={setShortcutHelpOpen}
 			/>
 			<ChatNewChatDialog
 				open={newChatDialogOpen}

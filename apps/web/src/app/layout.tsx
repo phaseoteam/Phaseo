@@ -1,7 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Montserrat } from "next/font/google";
@@ -93,9 +93,9 @@ export default function RootLayout({
 						</Suspense>
 						<NuqsAdapter>{children}</NuqsAdapter>
 						<TailwindIndicator />
+						<Toaster richColors />
 					</TooltipProvider>
 				</ThemeProvider>
-				<Toaster richColors />
 				<DeferredVercelAnalytics />
 			</body>
 		</html>

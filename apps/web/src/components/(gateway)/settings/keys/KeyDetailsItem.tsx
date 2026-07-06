@@ -92,9 +92,15 @@ function keyStateLabel(key: any) {
 		return "Disabled";
 	}
 
-	const dailyLimit = Number(key?.daily_limit_requests ?? 0) || 0;
-	const currentUsage = Number(key?.current_usage_daily ?? 0) || 0;
-	if (dailyLimit > 0 && currentUsage >= dailyLimit) {
+	const limits = [
+		[Number(key?.current_usage_daily ?? 0) || 0, Number(key?.daily_limit_requests ?? 0) || 0],
+		[Number(key?.current_usage_weekly ?? 0) || 0, Number(key?.weekly_limit_requests ?? 0) || 0],
+		[Number(key?.current_usage_monthly ?? 0) || 0, Number(key?.monthly_limit_requests ?? 0) || 0],
+		[Number(key?.current_usage_daily_cost_nanos ?? 0) || 0, Number(key?.daily_limit_cost_nanos ?? 0) || 0],
+		[Number(key?.current_usage_weekly_cost_nanos ?? 0) || 0, Number(key?.weekly_limit_cost_nanos ?? 0) || 0],
+		[Number(key?.current_usage_monthly_cost_nanos ?? 0) || 0, Number(key?.monthly_limit_cost_nanos ?? 0) || 0],
+	] as const;
+	if (limits.some(([used, limit]) => limit > 0 && used >= limit)) {
 		return "Limits reached";
 	}
 
@@ -118,8 +124,20 @@ function DetailRow({
 	);
 }
 
-export default function KeyDetailsItem({ k }: { k: any }) {
-	const [open, setOpen] = useState(false);
+export default function KeyDetailsItem({
+	k,
+	trigger = true,
+	open: controlledOpen,
+	onOpenChange,
+}: {
+	k: any;
+	trigger?: boolean;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}) {
+	const [internalOpen, setInternalOpen] = useState(false);
+	const open = controlledOpen ?? internalOpen;
+	const setOpen = onOpenChange ?? setInternalOpen;
 	const scopes = useMemo(() => normalizeScopes(k?.scopes), [k?.scopes]);
 	const activityHref = `/settings/usage?group=key&key=${encodeURIComponent(String(k?.id ?? ""))}`;
 	const logsHref = `/settings/usage/logs?key=${encodeURIComponent(String(k?.id ?? ""))}`;
@@ -138,18 +156,19 @@ export default function KeyDetailsItem({ k }: { k: any }) {
 
 	return (
 		<>
-			<DropdownMenuItem asChild>
-				<button
-					className="flex w-full items-center gap-2 text-left"
-					onClick={(event) => {
-						event.preventDefault();
-						setTimeout(() => setOpen(true), 0);
-					}}
-				>
-					<Info className="mr-2 h-4 w-4" />
-					Details
-				</button>
-			</DropdownMenuItem>
+			{trigger ? (
+				<DropdownMenuItem asChild>
+					<div
+						className="flex w-full items-center gap-2 text-left"
+						onClick={() => {
+							setTimeout(() => setOpen(true), 0);
+						}}
+					>
+						<Info className="mr-2 h-4 w-4" />
+						Details
+					</div>
+				</DropdownMenuItem>
+			) : null}
 
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent className="sm:max-w-2xl">

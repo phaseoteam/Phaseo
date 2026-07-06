@@ -5,7 +5,6 @@ import Performance from "./Performance";
 import Modalities from "./Modalities";
 import OtherInfo from "./OtherInfo";
 import ModelLinks, { hasModelLinks } from "./ModelLinks";
-import ModelStatusBanner from "./ModelStatusBanner";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 
 export interface ModelOverviewProps {
@@ -58,8 +57,6 @@ export default function ModelOverview({ model }: ModelOverviewProps) {
 
 	return (
 		<div className="w-full mx-auto space-y-4">
-			{/* Status banner */}
-			{model.status && <ModelStatusBanner status={model.status} />}
 			{/* Links section (hidden when there are no links) */}
 			{hasModelLinks(model) && (
 				<div>

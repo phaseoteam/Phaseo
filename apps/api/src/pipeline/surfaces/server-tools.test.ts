@@ -69,6 +69,75 @@ describe("prepareServerToolsForTextRequest", () => {
 		).toBe(true);
 	});
 
+	it("accepts multiple default gateway datetime timezones", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "openai/gpt-5-nano",
+				tools: [{
+					type: "gateway:datetime",
+					parameters: { timezones: ["Europe/London", "UTC"] },
+				}],
+			},
+			"openai.responses",
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		}
+		expect(result.config.datetimeDefaultTimezones).toEqual([
+			"Europe/London",
+			"UTC",
+		]);
+		expect(result.body.tools[0].function.parameters.properties).toHaveProperty(
+			"timezones",
+		);
+	});
+
+	it("accepts a legacy singular default gateway datetime timezone", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "openai/gpt-5-nano",
+				tools: [{
+					type: "gateway:datetime",
+					parameters: { timezone: "Europe/London" },
+				}],
+			},
+			"openai.responses",
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		}
+		expect(result.config.datetimeDefaultTimezones).toEqual(["Europe/London"]);
+	});
+
+	it("rejects gateway datetime defaults with too many timezones", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "openai/gpt-5-nano",
+				tools: [{
+					type: "gateway:datetime",
+					parameters: {
+						timezones: [
+							"UTC",
+							"Europe/London",
+							"America/New_York",
+							"Asia/Tokyo",
+							"Australia/Sydney",
+							"Pacific/Auckland",
+						],
+					},
+				}],
+			},
+			"openai.responses",
+		);
+		expect(result.ok).toBe(false);
+		if (result.ok) {
+			throw new Error("Expected prepareServerToolsForTextRequest to reject oversized timezone defaults");
+		}
+		expect(result.message).toContain("at most 5 timezones");
+	});
+
 	it("rewrites AI Stats web search into a callable function tool", () => {
 		const result = prepareServerToolsForTextRequest(
 			{
@@ -550,6 +619,105 @@ describe("buildServerToolContinuation", () => {
 		});
 	});
 
+	it("returns datetime results for multiple timezones", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-03T09:00:00.123Z"));
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_datetime",
+								name: "gateway_datetime",
+								arguments: "{}",
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["Europe/London", "UTC"],
+					webSearchEnabled: false,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toEqual({
+				timezones: [
+					{
+						timezone: "Europe/London",
+						datetime: "2026-07-03T10:00:00.123+01:00",
+					},
+					{
+						timezone: "UTC",
+						datetime: "2026-07-03T09:00:00.123+00:00",
+					},
+				],
+			});
+			expect(continuation?.usage.datetimeRequests).toBe(1);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("rejects oversized datetime tool-call timezone lists without echoing them", async () => {
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: [{
+							id: "call_datetime",
+							name: "gateway_datetime",
+							arguments: JSON.stringify({
+								timezones: [
+									"UTC",
+									"Europe/London",
+									"America/New_York",
+									"Asia/Tokyo",
+									"Australia/Sydney",
+									"Pacific/Auckland",
+								],
+							}),
+						}],
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+			},
+		);
+
+		const toolResult = continuation?.toolResults[0];
+		expect(toolResult?.isError).toBe(true);
+		const parsed = JSON.parse(String(toolResult?.content));
+		expect(parsed).toEqual({
+			error: "too_many_timezones",
+			max_timezones: 5,
+			message: "timezones must contain at most 5 entries",
+		});
+		expect(parsed).not.toHaveProperty("timezones");
+	});
+
 	it("executes AI Stats web search calls and records search usage", async () => {
 		const fetchMock = vi.fn(async () =>
 			new Response(
@@ -605,7 +773,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: true,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -695,7 +863,7 @@ describe("buildServerToolContinuation", () => {
 			} as any,
 			{
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: false,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -782,7 +950,7 @@ describe("buildServerToolContinuation", () => {
 			} as any,
 			{
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: false,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -855,7 +1023,7 @@ describe("buildServerToolContinuation", () => {
 			} as any,
 			{
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: false,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -903,7 +1071,7 @@ describe("buildServerToolContinuation", () => {
 			} as any,
 			{
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: false,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -961,7 +1129,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: true,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1006,7 +1174,7 @@ describe("buildServerToolContinuation", () => {
 			} as any,
 			{
 				enabled: true,
-				datetimeDefaultTimezone: "UTC",
+				datetimeDefaultTimezones: ["UTC"],
 				webSearchEnabled: true,
 				webSearchMaxResults: 5,
 				webSearchIncludeText: false,
@@ -1076,7 +1244,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: true,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1170,7 +1338,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: true,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1243,7 +1411,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: true,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1308,7 +1476,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: false,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1375,7 +1543,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: false,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1424,7 +1592,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: false,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1489,7 +1657,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: false,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,
@@ -1573,7 +1741,7 @@ describe("buildServerToolContinuation", () => {
 				} as any,
 				{
 					enabled: true,
-					datetimeDefaultTimezone: "UTC",
+					datetimeDefaultTimezones: ["UTC"],
 					webSearchEnabled: false,
 					webSearchMaxResults: 5,
 					webSearchIncludeText: false,

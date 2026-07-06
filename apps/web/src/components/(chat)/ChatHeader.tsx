@@ -23,16 +23,19 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
+	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Select,
 	SelectContent,
@@ -40,10 +43,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Popover,
+	PopoverContent,
+	PopoverHeader,
+	PopoverTitle,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Logo } from "@/components/Logo";
+import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
@@ -52,19 +64,42 @@ import {
 	normalizeFavoriteModelId,
 } from "@/components/(chat)/playgroundConfig";
 import { cn } from "@/lib/utils";
-import type { ChatThread, UnifiedChatEndpoint } from "@/lib/indexeddb/chats";
+import type {
+	ChatApiTarget,
+	ChatResponseLayout,
+} from "@/components/(chat)/playground/chat-playground-core";
 import {
-	ChevronLeft,
+	LOCAL_CHAT_API_BASE_URL,
+} from "@/components/(chat)/playground/chat-playground-core";
+import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import type {
+	ChatModelSettings,
+	ChatThread,
+	UnifiedChatEndpoint,
+} from "@/lib/indexeddb/chats";
+import {
+	ArrowLeft,
+	ArrowRight,
+	ChevronsLeft,
+	ChevronDown,
 	ChevronRight,
+	Check,
 	CircleCheck,
-	Cpu,
+	CircleQuestionMark,
+	Columns2,
 	Database,
+	Keyboard,
+	List,
 	MessageCircleDashed,
 	Paintbrush,
 	Plus,
+	Power,
+	PowerOff,
 	Settings,
+	Settings2,
 	Shield,
 	Star,
+	Trash2,
 	X,
 } from "lucide-react";
 import {
@@ -108,6 +143,55 @@ const ACCENT_COLORS = [
 	{ label: "Rose", value: "#be123c" },
 	{ label: "Amber", value: "#b45309" },
 ];
+
+const CUSTOM_ACCENT_SELECT_VALUE = "custom";
+const DEFAULT_CUSTOM_ACCENT_COLOR = "#2563eb";
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+const CUSTOM_API_SELECT_VALUE = "custom";
+
+function normalizeHexColor(value: string) {
+	const trimmedValue = value.trim();
+	const prefixedValue = trimmedValue.startsWith("#")
+		? trimmedValue
+		: `#${trimmedValue}`;
+
+	if (!HEX_COLOR_PATTERN.test(prefixedValue)) {
+		return null;
+	}
+
+	return prefixedValue.toLowerCase();
+}
+
+function isPresetAccentColorValue(value: string) {
+	return ACCENT_COLORS.some((color) => color.value === value);
+}
+
+function AccentColorSwatch({
+	color,
+	unknown = false,
+	className,
+}: {
+	color?: string;
+	unknown?: boolean;
+	className?: string;
+}) {
+	return (
+		<span
+			className={cn(
+				"inline-flex h-4 w-4 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border",
+				unknown && "bg-muted text-muted-foreground",
+				className,
+			)}
+			style={{
+				background: unknown ? undefined : color,
+			}}
+		>
+			{unknown ? (
+				<CircleQuestionMark className="h-3 w-3" strokeWidth={2.25} />
+			) : null}
+		</span>
+	);
+}
 
 const CAPABILITY_LABELS: Record<UnifiedChatEndpoint, string> = {
 	responses: "Text",
@@ -161,6 +245,8 @@ type ChatHeaderProps = {
 	onOpenModelSettings: () => void;
 	settingsOpen: boolean;
 	onSettingsOpenChange: (open: boolean) => void;
+	apiTarget: ChatApiTarget;
+	onApiTargetChange: (value: ChatApiTarget) => void;
 	baseUrl: string;
 	onBaseUrlChange: (value: string) => void;
 	onSaveSettings: () => void;
@@ -170,12 +256,19 @@ type ChatHeaderProps = {
 	isAdmin: boolean;
 	debugEnabled: boolean;
 	onDebugChange: (value: boolean) => void;
+	responseLayout: ChatResponseLayout;
+	onResponseLayoutChange: (value: ChatResponseLayout) => void;
 	allowModelCompare?: boolean;
 	compareModelIds?: string[];
 	onCompareModelIdsChange?: (ids: string[]) => void;
+	onSelectedModelOrderChange?: (ids: string[]) => void;
 	onRemoveModel?: (modelId: string) => void;
 	onRemoveAllModels?: () => void;
 	onOpenModelSettingsForModel?: (modelId: string) => void;
+	onUpdateModelSettingsForModel?: (
+		modelId: string,
+		partial: Partial<ChatModelSettings>,
+	) => void;
 	modelDisplayNameById?: Record<string, string>;
 	modelEnabledById?: Record<string, boolean>;
 	modelCapabilitiesById?: Record<string, UnifiedChatEndpoint[]>;
@@ -183,10 +276,6 @@ type ChatHeaderProps = {
 	requiredCapability?: UnifiedChatEndpoint | null;
 	requireAudioInput?: boolean;
 };
-
-function formatOrgLabel(orgId: string) {
-	return orgId.replace(/-/g, " ");
-}
 
 function getOrgId(modelId: string) {
 	const [org] = modelId.split("/");
@@ -204,6 +293,10 @@ export function ChatHeader({
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
+	apiTarget,
+	onApiTargetChange,
+	baseUrl,
+	onBaseUrlChange,
 	onSaveSettings,
 	personalization,
 	onPersonalizationChange,
@@ -211,12 +304,16 @@ export function ChatHeader({
 	isAdmin,
 	debugEnabled,
 	onDebugChange,
+	responseLayout,
+	onResponseLayoutChange,
 	allowModelCompare = false,
 	compareModelIds = [],
 	onCompareModelIdsChange,
+	onSelectedModelOrderChange,
 	onRemoveModel,
 	onRemoveAllModels,
 	onOpenModelSettingsForModel,
+	onUpdateModelSettingsForModel,
 	modelDisplayNameById,
 	modelEnabledById,
 	modelCapabilitiesById,
@@ -226,7 +323,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<
-		"personalization" | "data-controls" | "admin"
+		"personalization" | "data-controls" | "shortcuts" | "admin"
 	>("personalization");
 	const [modelSearchValue, setModelSearchValue] = useState("");
 	const [quickFilters, setQuickFilters] = useState({
@@ -240,6 +337,100 @@ export function ChatHeader({
 		message: string;
 		type: "success" | "error" | "info";
 	} | null>(null);
+	const [accentSelectValueOverride, setAccentSelectValueOverride] = useState<
+		string | null
+	>(null);
+	const [apiTargetValueOverride, setApiTargetValueOverride] = useState<
+		string | null
+	>(null);
+	const [customAccentDraft, setCustomAccentDraft] = useState(
+		() => {
+			const normalizedAccentColor = normalizeHexColor(
+				personalization.accentColor,
+			);
+
+			if (
+				normalizedAccentColor &&
+				!isPresetAccentColorValue(normalizedAccentColor)
+			) {
+				return normalizedAccentColor;
+			}
+
+			return "";
+		},
+	);
+	const selectedPresetAccentColor = useMemo(
+		() =>
+			ACCENT_COLORS.find(
+				(color) => color.value === personalization.accentColor,
+		),
+		[personalization.accentColor],
+	);
+	const isCustomAccentColor = !selectedPresetAccentColor;
+	const customAccentColor = normalizeHexColor(customAccentDraft);
+	const customAccentPickerValue =
+		customAccentColor ?? DEFAULT_CUSTOM_ACCENT_COLOR;
+	const selectedAccentSelectValue =
+		accentSelectValueOverride ??
+		selectedPresetAccentColor?.value ??
+		CUSTOM_ACCENT_SELECT_VALUE;
+	const isCustomAccentSelected =
+		selectedAccentSelectValue === CUSTOM_ACCENT_SELECT_VALUE;
+	const selectedAccentColor = isCustomAccentSelected
+		? {
+				label: "Custom",
+				value: customAccentColor,
+			}
+		: selectedPresetAccentColor;
+	const customBaseUrl = baseUrl.trim();
+	const effectiveBaseUrl =
+		apiTarget === "default"
+			? "Server default"
+			: apiTarget === "local"
+			? LOCAL_CHAT_API_BASE_URL
+			: apiTarget === "custom" && customBaseUrl
+				? customBaseUrl
+				: BASE_URL;
+	const apiTargetValue = apiTargetValueOverride ?? apiTarget;
+	useEffect(() => {
+		const isPresetAccentColor = ACCENT_COLORS.some(
+			(color) => color.value === personalization.accentColor,
+		);
+
+		if (!isPresetAccentColor) {
+			setCustomAccentDraft(personalization.accentColor);
+		}
+	}, [personalization.accentColor]);
+	const handleAccentColorChange = (accentColor: string) => {
+		onPersonalizationChange({
+			...personalization,
+			accentColor,
+		});
+	};
+	const handleAccentSelectValueChange = (value: string) => {
+		if (value === CUSTOM_ACCENT_SELECT_VALUE) {
+			setAccentSelectValueOverride(CUSTOM_ACCENT_SELECT_VALUE);
+			const normalizedValue = normalizeHexColor(customAccentDraft);
+
+			if (normalizedValue && !isPresetAccentColorValue(normalizedValue)) {
+				handleAccentColorChange(normalizedValue);
+			}
+			return;
+		}
+
+		setAccentSelectValueOverride(null);
+		handleAccentColorChange(value);
+	};
+	const handleCustomAccentDraftChange = (value: string) => {
+		setCustomAccentDraft(value);
+		const normalizedValue = normalizeHexColor(value);
+
+		if (!normalizedValue) {
+			return;
+		}
+
+		handleAccentColorChange(normalizedValue);
+	};
 	const toggleQuickFilter = (key: "free" | "new") => {
 		setQuickFilters((prev) => ({ ...prev, [key]: !prev[key] }));
 	};
@@ -400,15 +591,7 @@ export function ChatHeader({
 		}
 		return Array.from(new Set(ids));
 	}, [activeThread?.modelId, compareModelIds]);
-	const selectedModelPreview = selectedModelIds.slice(0, 5);
-	const hiddenSelectedCount = Math.max(
-		0,
-		selectedModelIds.length - selectedModelPreview.length,
-	);
-	const hiddenSelectedModelIds = useMemo(
-		() => selectedModelIds.slice(selectedModelPreview.length),
-		[selectedModelIds, selectedModelPreview.length],
-	);
+	const showResponseLayoutControl = selectedModelIds.length > 1;
 	const compareModelIdSet = useMemo(
 		() =>
 			new Set(
@@ -470,16 +653,19 @@ export function ChatHeader({
 		}
 		if (!activeThread?.modelId) {
 			onUpdateModel(modelId);
+			onModelPickerOpenChange(false);
 			return;
 		}
 		if (activeThread.modelId === modelId) {
 			if (selectedModelIds.length > 0) {
 				onRemoveModel?.(modelId);
 			}
+			onModelPickerOpenChange(false);
 			return;
 		}
 		if (!onCompareModelIdsChange) {
 			onUpdateModel(modelId);
+			onModelPickerOpenChange(false);
 			return;
 		}
 		const nextSet = new Set(compareModelIdSet);
@@ -489,6 +675,7 @@ export function ChatHeader({
 			nextSet.add(modelId);
 		}
 		onCompareModelIdsChange(Array.from(nextSet));
+		onModelPickerOpenChange(false);
 	};
 	const handleModelPickerDialogOpenChange = (open: boolean) => {
 		onModelPickerOpenChange(open);
@@ -506,6 +693,20 @@ export function ChatHeader({
 		}
 		onOpenModelSettings();
 	};
+	const moveSelectedModelToIndex = (modelId: string, targetIndex: number) => {
+		if (!onSelectedModelOrderChange || selectedModelIds.length < 2) return;
+		const sourceIndex = selectedModelIds.indexOf(modelId);
+		if (sourceIndex === -1) return;
+		const nextIds = [...selectedModelIds];
+		const [movedModelId] = nextIds.splice(sourceIndex, 1);
+		if (!movedModelId) return;
+		const clampedTargetIndex = Math.max(
+			0,
+			Math.min(targetIndex, nextIds.length),
+		);
+		nextIds.splice(clampedTargetIndex, 0, movedModelId);
+		onSelectedModelOrderChange(Array.from(new Set(nextIds)));
+	};
 	const renderSelectedModelChip = (modelId: string) => {
 		const orgId = selectedModelOrgIdById.get(modelId) ?? getOrgId(modelId);
 		const baseLabel = (selectedModelLabelById.get(modelId) ?? modelId).split(
@@ -514,33 +715,45 @@ export function ChatHeader({
 		const label = modelDisplayNameById?.[modelId]?.trim() || baseLabel;
 		const modelEnabled = modelEnabledById?.[modelId] !== false;
 		const canRemoveModel = Boolean(onRemoveModel);
+		const canToggleModelEnabled = Boolean(onUpdateModelSettingsForModel);
+		const canReorderModels =
+			Boolean(onSelectedModelOrderChange) && selectedModelIds.length > 1;
+		const selectedModelIndex = selectedModelIds.indexOf(modelId);
+		const canMoveLeft = canReorderModels && selectedModelIndex > 0;
+		const canMoveRight =
+			canReorderModels &&
+			selectedModelIndex >= 0 &&
+			selectedModelIndex < selectedModelIds.length - 1;
 		return (
-			<div key={modelId} className="relative shrink-0">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => handleOpenModelSettings(modelId)}
-					className={cn(
-						"h-8 max-w-[220px] gap-1.5 pl-2",
-						!modelEnabled && "opacity-55",
-						canRemoveModel ? "pr-7" : "pr-2",
-					)}
-				>
-					<Logo
-						id={orgId}
-						alt={label}
-						width={14}
-						height={14}
-						className="shrink-0 rounded-none"
-					/>
-					<span className="truncate text-xs">{label}</span>
-				</Button>
-				{canRemoveModel ? (
-					<ContextMenu>
-						<ContextMenuTrigger asChild>
+			<ContextMenu key={modelId}>
+				<ContextMenuTrigger asChild>
+					<div
+						className="relative shrink-0 rounded-2xl"
+					>
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={() => handleOpenModelSettings(modelId)}
+							aria-label={`${label}. Right click for model actions.`}
+							className={cn(
+								"h-7 max-w-[220px] gap-1.5 rounded-2xl pl-2",
+								!modelEnabled && "opacity-55",
+								canRemoveModel ? "pr-7" : "pr-2",
+							)}
+						>
+							<Logo
+								id={orgId}
+								alt={label}
+								width={14}
+								height={14}
+								className="shrink-0 rounded-none"
+							/>
+							<span className="truncate text-xs">{label}</span>
+						</Button>
+						{canRemoveModel ? (
 							<button
 								type="button"
-								className="absolute right-1 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+								className="absolute right-1 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
 								onClick={(event) => {
 									event.preventDefault();
 									event.stopPropagation();
@@ -550,29 +763,108 @@ export function ChatHeader({
 							>
 								<X className="h-3.5 w-3.5" />
 							</button>
-						</ContextMenuTrigger>
-						<ContextMenuContent>
+						) : null}
+					</div>
+				</ContextMenuTrigger>
+				<ContextMenuContent className="min-w-48">
+					<div className="max-w-44 truncate px-2 py-1 text-xs text-muted-foreground">
+						{label}
+					</div>
+					<ContextMenuItem
+						onClick={(event) => {
+							event.preventDefault();
+							handleOpenModelSettings(modelId);
+						}}
+					>
+						<Settings2 className="h-4 w-4" />
+						Model settings
+					</ContextMenuItem>
+					{canToggleModelEnabled ? (
+						<ContextMenuItem
+							onClick={(event) => {
+								event.preventDefault();
+								onUpdateModelSettingsForModel?.(modelId, {
+									enabled: !modelEnabled,
+								});
+							}}
+						>
+							{modelEnabled ? (
+								<PowerOff className="h-4 w-4" />
+							) : (
+								<Power className="h-4 w-4" />
+							)}
+							{modelEnabled ? "Disable model" : "Enable model"}
+						</ContextMenuItem>
+					) : null}
+					{canReorderModels ? (
+						<>
+							<ContextMenuSeparator />
 							<ContextMenuItem
+								disabled={!canMoveLeft}
 								onClick={(event) => {
 									event.preventDefault();
-									handleRemoveModel(modelId);
+									moveSelectedModelToIndex(modelId, 0);
 								}}
 							>
-								Remove
+								<ChevronsLeft className="h-4 w-4" />
+								Move to front
 							</ContextMenuItem>
 							<ContextMenuItem
+								disabled={!canMoveLeft}
 								onClick={(event) => {
 									event.preventDefault();
-									onRemoveAllModels?.();
+									moveSelectedModelToIndex(
+										modelId,
+										selectedModelIndex - 1,
+									);
 								}}
-								className="text-destructive focus:text-destructive"
 							>
-								Remove all
+								<ArrowLeft className="h-4 w-4" />
+								Move left
 							</ContextMenuItem>
-						</ContextMenuContent>
-					</ContextMenu>
-				) : null}
-			</div>
+							<ContextMenuItem
+								disabled={!canMoveRight}
+								onClick={(event) => {
+									event.preventDefault();
+									moveSelectedModelToIndex(
+										modelId,
+										selectedModelIndex + 1,
+									);
+								}}
+							>
+								<ArrowRight className="h-4 w-4" />
+								Move right
+							</ContextMenuItem>
+						</>
+					) : null}
+					{canRemoveModel ? (
+						<ContextMenuSeparator />
+					) : null}
+					{canRemoveModel ? (
+						<ContextMenuItem
+							onClick={(event) => {
+								event.preventDefault();
+								handleRemoveModel(modelId);
+							}}
+						>
+							<X className="h-4 w-4" />
+							Remove
+						</ContextMenuItem>
+					) : null}
+					{canRemoveModel ? (
+						<ContextMenuItem
+							onClick={(event) => {
+								event.preventDefault();
+								onRemoveAllModels?.();
+							}}
+							variant="destructive"
+						>
+							<Trash2 className="h-4 w-4" />
+							Remove all
+						</ContextMenuItem>
+					) : null}
+				</ContextMenuContent>
+			</ContextMenu>
 		);
 	};
 	const normalizeSearch = (value: string) =>
@@ -839,8 +1131,8 @@ export function ChatHeader({
 	};
 
 	return (
-		<header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
-			<div className="flex items-center gap-1">
+		<header className="flex items-center justify-between gap-2 border-b border-border px-3 py-3 md:px-5">
+			<div className="flex min-w-0 flex-1 items-center gap-1">
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
@@ -848,6 +1140,7 @@ export function ChatHeader({
 							size="icon"
 							className="group -ml-1"
 							onClick={toggleSidebar}
+							aria-label="Toggle sidebar"
 						>
 							<ChevronRight
 								className={`h-5 w-5 transition-transform duration-200 ${
@@ -867,32 +1160,15 @@ export function ChatHeader({
 					</TooltipContent>
 				</Tooltip>
 				{selectedModelIds.length > 0 ? (
-					<div className="flex max-w-[min(60vw,520px)] items-center gap-1 overflow-x-auto lg:max-w-[760px] xl:max-w-[880px]">
-						{selectedModelPreview.map(renderSelectedModelChip)}
-						{hiddenSelectedCount > 0 ? (
-							<HoverCard openDelay={100} closeDelay={120}>
-								<HoverCardTrigger asChild>
-									<Badge
-										variant="secondary"
-										className="h-5 cursor-default rounded-full px-1.5 text-[10px]"
-									>
-										+{hiddenSelectedCount}
-									</Badge>
-								</HoverCardTrigger>
-								<HoverCardContent
-									side="bottom"
-									align="start"
-									className="w-[min(86vw,540px)] p-2"
-								>
-									<div className="flex max-h-[280px] flex-wrap items-center gap-1 overflow-auto pr-1">
-										{hiddenSelectedModelIds.map(
-											renderSelectedModelChip,
-										)}
-									</div>
-								</HoverCardContent>
-							</HoverCard>
-						) : null}
-					</div>
+					<ScrollArea
+						scrollBarOrientation="horizontal"
+						className="h-8 min-w-0 max-w-[min(58vw,520px)] overflow-visible lg:max-w-[760px] xl:max-w-[880px] [&_[data-orientation=horizontal][data-slot=scroll-area-scrollbar]]:translate-y-2"
+						viewportClassName="h-8 overscroll-x-contain"
+					>
+						<div className="flex h-8 w-max items-center gap-1 pr-2">
+							{selectedModelIds.map(renderSelectedModelChip)}
+						</div>
+					</ScrollArea>
 				) : null}
 				<ModelSelector
 					open={modelPickerOpen}
@@ -902,6 +1178,8 @@ export function ChatHeader({
 						<Button
 							variant="ghost"
 							size="sm"
+							aria-label="Add model"
+							title="Add model (Ctrl/Cmd+Shift+M)"
 							className={cn(
 								"h-8 gap-1.5",
 								selectedModelIds.length === 0 ? "px-2 text-xs" : "w-8 px-0",
@@ -915,7 +1193,7 @@ export function ChatHeader({
 					</ModelSelectorTrigger>
 					<ModelSelectorContent
 						title="Select a model"
-						className="w-[min(90vw,960px)] max-w-3xl"
+						className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
 						commandProps={{ shouldFilter: false }}
 					>
 						<ModelSelectorInput
@@ -951,7 +1229,7 @@ export function ChatHeader({
 								New
 							</Button>
 						</div>
-						<ModelSelectorList className="max-h-[70vh] p-3">
+						<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
 							<ModelSelectorEmpty>
 								No models found.
 							</ModelSelectorEmpty>
@@ -1011,18 +1289,99 @@ export function ChatHeader({
 					</ModelSelectorContent>
 				</ModelSelector>
 			</div>
-			<div className="flex items-center gap-2">
+			<div className="flex shrink-0 items-center gap-2">
+				{showResponseLayoutControl ? (
+					<DropdownMenu>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<DropdownMenuTrigger asChild>
+									<Button
+										variant="outline"
+										size="sm"
+										className="h-8 gap-1.5 rounded-md bg-muted/40 px-2.5 text-xs font-medium shadow-none"
+										aria-label="Response layout"
+									>
+										{responseLayout === "side-by-side" ? (
+											<Columns2 className="h-4 w-4" />
+										) : (
+											<List className="h-4 w-4" />
+										)}
+										<span className="hidden xl:inline">
+											{responseLayout === "side-by-side"
+												? "Side by side"
+												: "Sequential"}
+										</span>
+										<ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+									</Button>
+								</DropdownMenuTrigger>
+							</TooltipTrigger>
+							<TooltipContent className="max-w-64 text-left">
+								<div className="grid gap-1">
+									<p className="text-xs font-medium">
+										{responseLayout === "side-by-side"
+											? "Side-by-side responses"
+											: "Sequential responses"}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{responseLayout === "side-by-side"
+											? "Show each model in its own column for direct comparison."
+											: "Stack every model response in the chat timeline."}
+									</p>
+								</div>
+							</TooltipContent>
+						</Tooltip>
+						<DropdownMenuContent align="end" sideOffset={8} className="w-72">
+							<DropdownMenuItem
+								onClick={() => onResponseLayoutChange("sequential")}
+								className="items-start gap-2"
+							>
+								<List className="mt-0.5 h-4 w-4 text-muted-foreground" />
+								<span className="grid min-w-0 flex-1 gap-0.5">
+									<span>Sequential</span>
+									<span className="whitespace-normal text-xs leading-4 text-muted-foreground">
+										Responses appear one after another.
+									</span>
+								</span>
+								{responseLayout === "sequential" ? (
+									<Check className="mt-0.5 h-4 w-4" />
+								) : null}
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								onClick={() => onResponseLayoutChange("side-by-side")}
+								className="items-start gap-2"
+							>
+								<Columns2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
+								<span className="grid min-w-0 flex-1 gap-0.5">
+									<span>Side by side</span>
+									<span className="whitespace-normal text-xs leading-4 text-muted-foreground">
+										Responses sit in model columns.
+									</span>
+								</span>
+								{responseLayout === "side-by-side" ? (
+									<Check className="mt-0.5 h-4 w-4" />
+								) : null}
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				) : null}
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
 							variant={temporaryMode ? "secondary" : "ghost"}
 							size="icon"
 							onClick={onToggleTemporaryMode}
+							aria-label={
+								temporaryMode
+									? "Turn off temporary chat"
+									: "Turn on temporary chat"
+							}
 						>
 							<MessageCircleDashed className="h-4 w-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Temporary chat</TooltipContent>
+					<TooltipContent>
+						Temporary chat (Ctrl/Cmd+Shift+U)
+					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger asChild>
@@ -1030,6 +1389,7 @@ export function ChatHeader({
 							variant="ghost"
 							size="icon"
 							onClick={() => onSettingsOpenChange(true)}
+							aria-label="Open chat settings"
 						>
 							<Settings className="h-5 w-5" />
 						</Button>
@@ -1072,6 +1432,18 @@ export function ChatHeader({
 								>
 									<Database className="h-4 w-4" />
 									Data Controls
+								</Button>
+								<Button
+									variant={
+										settingsTab === "shortcuts"
+											? "secondary"
+											: "ghost"
+									}
+									className="w-full justify-start gap-2"
+									onClick={() => setSettingsTab("shortcuts")}
+								>
+									<Keyboard className="h-4 w-4" />
+									Shortcuts
 								</Button>
 								{isAdmin && (
 									<Button
@@ -1116,6 +1488,17 @@ export function ChatHeader({
 										}}
 									>
 										Data Controls
+									</Button>
+									<Button
+										size="sm"
+										variant={
+											settingsTab === "shortcuts"
+												? "secondary"
+												: "ghost"
+										}
+										onClick={() => setSettingsTab("shortcuts")}
+									>
+										Shortcuts
 									</Button>
 									{isAdmin && (
 										<Button
@@ -1214,21 +1597,111 @@ export function ChatHeader({
 												</Label>
 												<Select
 													value={
-														personalization.accentColor
+														selectedAccentSelectValue
 													}
-													onValueChange={(value) =>
-														onPersonalizationChange(
-															{
-																...personalization,
-																accentColor:
-																	value,
-															}
-														)
+													onValueChange={
+														handleAccentSelectValueChange
 													}
 												>
-													<SelectTrigger id="accent-color">
-														<SelectValue placeholder="Select a color" />
-													</SelectTrigger>
+													<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+														<SelectTrigger
+															id="accent-color"
+															className="w-full sm:w-44"
+														>
+															<SelectValue placeholder="Select a color">
+																<span className="flex items-center gap-2">
+																	<AccentColorSwatch
+																		unknown={
+																			isCustomAccentSelected &&
+																			!customAccentColor
+																		}
+																		color={
+																			selectedAccentColor?.value ??
+																			customAccentPickerValue
+																		}
+																	/>
+																	{
+																		selectedAccentColor?.label
+																	}
+																</span>
+															</SelectValue>
+														</SelectTrigger>
+														{isCustomAccentSelected ? (
+															<div className="flex min-w-0 flex-1 items-center gap-2">
+																<Input
+																	value={
+																		customAccentColor ??
+																		customAccentDraft
+																	}
+																	onChange={(
+																		event
+																	) =>
+																		handleCustomAccentDraftChange(
+																			event
+																				.target
+																				.value
+																		)
+																	}
+																	onBlur={() => {
+																		const normalizedValue =
+																			normalizeHexColor(
+																				customAccentDraft
+																			);
+
+																		setCustomAccentDraft(
+																			normalizedValue ??
+																				personalization.accentColor
+																		);
+																	}}
+																	placeholder="#111111"
+																	aria-label="Custom accent hex color"
+																	className="min-w-0 flex-1 font-mono text-xs"
+																/>
+																<Popover>
+																	<PopoverTrigger
+																		asChild
+																	>
+																		<Button
+																			type="button"
+																			variant="outline"
+																			size="icon"
+																			aria-label="Choose custom accent color"
+																			className="h-8 w-10 shrink-0 rounded-md"
+																		>
+																			<AccentColorSwatch
+																				unknown={
+																					!customAccentColor
+																				}
+																				color={
+																					customAccentColor ??
+																					customAccentPickerValue
+																				}
+																				className="h-4 w-4"
+																			/>
+																		</Button>
+																	</PopoverTrigger>
+																	<PopoverContent
+																		align="end"
+																		className="w-64 gap-3 p-3"
+																	>
+																		<PopoverHeader>
+																			<PopoverTitle className="text-sm">
+																				Custom accent
+																			</PopoverTitle>
+																		</PopoverHeader>
+																		<ColorPicker
+																			value={
+																				customAccentPickerValue
+																			}
+																			onChange={
+																				handleCustomAccentDraftChange
+																			}
+																		/>
+																	</PopoverContent>
+																</Popover>
+															</div>
+														) : null}
+													</div>
 													<SelectContent>
 														{ACCENT_COLORS.map(
 															(color) => (
@@ -1241,12 +1714,10 @@ export function ChatHeader({
 																	}
 																>
 																	<span className="flex items-center gap-2">
-																		<span
-																			className="h-3 w-3 rounded-full border border-border"
-																			style={{
-																				backgroundColor:
-																					color.value,
-																			}}
+																		<AccentColorSwatch
+																			color={
+																				color.value
+																			}
 																		/>
 																		{
 																			color.label
@@ -1255,6 +1726,24 @@ export function ChatHeader({
 																</SelectItem>
 															)
 														)}
+														<SelectItem
+															value={
+																CUSTOM_ACCENT_SELECT_VALUE
+															}
+														>
+															<span className="flex items-center gap-2">
+																<AccentColorSwatch
+																	unknown={
+																		!customAccentColor
+																	}
+																	color={
+																		customAccentColor ??
+																		undefined
+																	}
+																/>
+																Custom
+															</span>
+														</SelectItem>
 													</SelectContent>
 												</Select>
 											</div>
@@ -1426,6 +1915,22 @@ export function ChatHeader({
 											)}
 										</div>
 									)}
+									{settingsTab === "shortcuts" && (
+										<div className="grid gap-4">
+											<div className="grid gap-1">
+												<p className="text-sm font-semibold text-foreground">
+													Keyboard shortcuts
+												</p>
+												<p className="text-xs text-muted-foreground">
+													Fast actions for chat,
+													models, and the composer.
+												</p>
+											</div>
+											<div className="rounded-xl border border-border bg-card p-3">
+												<ChatShortcutReference />
+											</div>
+										</div>
+									)}
 									{settingsTab === "admin" && isAdmin && (
 										<div className="grid gap-3">
 											<div className="grid gap-1">
@@ -1436,6 +1941,106 @@ export function ChatHeader({
 													Diagnostic settings for
 													debugging gateway issues.
 												</p>
+											</div>
+											<div className="grid gap-3 rounded-lg border border-border px-3 py-3">
+												<div className="grid gap-1">
+													<p className="text-sm font-medium">
+														API target
+													</p>
+													<p className="text-xs text-muted-foreground">
+														Choose the gateway base
+														URL used by chat
+														requests.
+													</p>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="api-target">
+														Environment
+													</Label>
+													<Select
+														value={apiTargetValue}
+														onValueChange={(value) => {
+															if (
+																value ===
+																CUSTOM_API_SELECT_VALUE
+															) {
+																setApiTargetValueOverride(
+																	CUSTOM_API_SELECT_VALUE,
+																);
+																onApiTargetChange("custom");
+																return;
+															}
+															setApiTargetValueOverride(
+																null,
+															);
+															onApiTargetChange(
+																value as ChatApiTarget,
+															);
+															if (value !== "custom") {
+																onBaseUrlChange("");
+															}
+														}}
+													>
+														<SelectTrigger id="api-target">
+															<SelectValue placeholder="Select API target" />
+														</SelectTrigger>
+														<SelectContent>
+															<SelectItem value="default">
+																App default
+															</SelectItem>
+															<SelectItem value="public">
+																Public API
+															</SelectItem>
+															<SelectItem
+																value="local"
+															>
+																Local API
+															</SelectItem>
+															<SelectItem
+																value={
+																	CUSTOM_API_SELECT_VALUE
+																}
+															>
+																Custom
+															</SelectItem>
+														</SelectContent>
+													</Select>
+												</div>
+												<div className="grid gap-2">
+													<Label htmlFor="api-base-url">
+														Base URL
+													</Label>
+													<Input
+														id="api-base-url"
+														value={
+															apiTarget === "custom"
+																? baseUrl
+																: effectiveBaseUrl
+														}
+														onChange={(event) => {
+															setApiTargetValueOverride(
+																null,
+															);
+															onApiTargetChange("custom");
+															onBaseUrlChange(
+																event.target.value,
+															);
+														}}
+														placeholder={
+															LOCAL_CHAT_API_BASE_URL
+														}
+														disabled={
+															apiTarget !== "custom"
+														}
+														className="font-mono text-xs"
+													/>
+													<p className="text-xs text-muted-foreground">
+														Current target:{" "}
+														<span className="font-mono">
+															{effectiveBaseUrl}
+														</span>
+													</p>
+												</div>
 											</div>
 											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
 												<div>

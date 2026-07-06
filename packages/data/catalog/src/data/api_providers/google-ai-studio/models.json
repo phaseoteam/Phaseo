@@ -1053,6 +1053,23 @@
                          ]
     },
     {
+        "api_model_id":  "google/gemini-2-5-flash-native-audio-latest",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-2-5-flash-native-audio-latest",
+        "provider_model_slug":  "gemini-2.5-flash-native-audio-latest",
+        "internal_model_id":  "google/gemini-2.5-flash-native-audio-preview-2025-12-12",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "audio",
+        "output_modalities":  "audio",
+        "context_length":  null,
+        "max_output_tokens":  null,
+        "effective_from":  "2026-06-30T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+
+                         ]
+    },
+    {
         "api_model_id":  "google/gemini-2-5-flash-preview-tts",
         "provider_api_model_id":  "google-ai-studio:google/gemini-2-5-flash-preview-tts",
         "provider_model_slug":  "gemini-2.5-flash-preview-tts",
@@ -3253,18 +3270,18 @@
         "provider_api_model_id":  "google-ai-studio:google/veo-2",
         "provider_model_slug":  "veo-2.0-generate-001",
         "internal_model_id":  "google/veo-2",
-        "is_active_gateway":  true,
+        "is_active_gateway":  false,
         "quantization_scheme":  null,
         "input_modalities":  "text,image",
         "output_modalities":  "video",
         "context_length":  null,
         "max_output_tokens":  null,
         "effective_from":  "2025-04-09T00:00:00",
-        "effective_to":  null,
+        "effective_to":  "2026-06-30T00:00:00Z",
         "capabilities":  [
                                {
                                    "capability_id":  "video.generate",
-                                   "status":  "coming_soon",
+                                   "status":  "inactive",
                                    "params":  {
                                                    "prompt":  {
                                                                   "type":  "string"
@@ -3297,6 +3314,48 @@
                            ]
       },
     {
+        "api_model_id":  "google/veo-3.1-fast-preview",
+        "provider_api_model_id":  "google-ai-studio:google/veo-3.1-fast-preview",
+        "provider_model_slug":  "veo-3.1-fast-generate-preview",
+        "internal_model_id":  "google/veo-3.1-fast-preview",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image",
+        "output_modalities":  "video",
+        "context_length":  null,
+        "max_output_tokens":  null,
+        "effective_from":  "2026-06-30T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "video.generate",
+                                 "status":  "coming_soon",
+                                 "params":  []
+                             }
+                         ]
+      },
+    {
+        "api_model_id":  "google/veo-3.1-lite-generate-preview",
+        "provider_api_model_id":  "google-ai-studio:google/veo-3.1-lite-generate-preview",
+        "provider_model_slug":  "veo-3.1-lite-generate-preview",
+        "internal_model_id":  "google/veo-3.1-lite-preview",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image",
+        "output_modalities":  "video",
+        "context_length":  null,
+        "max_output_tokens":  null,
+        "effective_from":  "2026-06-30T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "video.generate",
+                                 "status":  "coming_soon",
+                                 "params":  []
+                             }
+                         ]
+      },
+    {
         "api_model_id":  "google/gemini-3.5-live-translate-preview",
         "provider_api_model_id":  "google-ai-studio:google/gemini-3.5-live-translate-preview",
         "provider_model_slug":  "gemini-3.5-live-translate-preview",
@@ -3313,6 +3372,107 @@
                              {
                                  "capability_id":  "audio.translations",
                                  "status":  "coming_soon",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "google/gemini-3.5-pro",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-3.5-pro",
+        "provider_model_slug":  "gemini-3.5-pro",
+        "internal_model_id":  "google/gemini-3.5-pro",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video,audio",
+        "output_modalities":  "text",
+        "context_length":  1048576,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-05-19T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "coming_soon",
+                                 "params":  [
+
+                                            ]
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "google/gemini-omni-flash-preview",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-omni-flash-preview",
+        "provider_model_slug":  "gemini-omni-flash-preview",
+        "internal_model_id":  "google/gemini-omni-flash-preview",
+        "is_active_gateway":  false,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image,video",
+        "output_modalities":  "video",
+        "context_length":  1048576,
+        "max_output_tokens":  65536,
+        "effective_from":  "2026-06-30T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "video.generate",
+                                 "status":  "active",
+                                 "params":  {
+                                                "prompt":  {
+                                                               "type":  "string"
+                                                           },
+                                                "duration":  {
+                                                                 "type":  "number",
+                                                                 "min":  1,
+                                                                 "aliases":  [
+                                                                                 "seconds",
+                                                                                 "duration_seconds"
+                                                                             ]
+                                                             },
+                                                "size":  {
+                                                             "type":  "string",
+                                                             "aliases":  [
+                                                                             "resolution"
+                                                                         ]
+                                                         },
+                                                "aspect_ratio":  {
+                                                                     "type":  "string"
+                                                                 },
+                                                "input_image":  {
+                                                                    "type":  "string"
+                                                                },
+                                                "input_video":  {
+                                                                    "type":  "string"
+                                                                }
+                                            }
+                             }
+                         ]
+    },
+    {
+        "api_model_id":  "google/gemini-3.1-flash-lite-image",
+        "provider_api_model_id":  "google-ai-studio:google/gemini-3.1-flash-lite-image",
+        "provider_model_slug":  "gemini-3.1-flash-lite-image",
+        "internal_model_id":  "google/gemini-3.1-flash-lite-image",
+        "is_active_gateway":  true,
+        "quantization_scheme":  null,
+        "input_modalities":  "text,image",
+        "output_modalities":  "text,image",
+        "context_length":  65536,
+        "max_output_tokens":  4096,
+        "effective_from":  "2026-06-23T00:00:00",
+        "effective_to":  null,
+        "capabilities":  [
+                             {
+                                 "capability_id":  "text.generate",
+                                 "status":  "active",
+                                 "params":  [
+
+                                            ]
+                             },
+                             {
+                                 "capability_id":  "images.generations",
+                                 "status":  "active",
                                  "params":  [
 
                                             ]

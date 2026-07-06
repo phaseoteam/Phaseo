@@ -25,6 +25,7 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SwapTeam } from "@/app/(dashboard)/actions";
@@ -124,8 +125,8 @@ export default function TeamSwitcher({
 						variant="ghost"
 						aria-label="Open workspace switcher"
 						className={cn(
-							"inline-flex items-center gap-2 rounded-lg px-3 h-10 leading-none cursor-pointer",
-							"border border-transparent text-sm font-medium text-foreground",
+							"inline-flex h-[var(--site-header-control-h,2.25rem)] items-center gap-2 rounded-lg px-3 leading-none cursor-pointer",
+							"border border-transparent text-[13px] font-medium text-foreground",
 							"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
 							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50"
 						)}
@@ -147,10 +148,7 @@ export default function TeamSwitcher({
 
 				<DropdownMenuContent
 					align="end"
-					className={cn(
-						"w-56 rounded-xl p-1",
-						"border border-zinc-200/70 dark:border-zinc-800"
-					)}
+					className="w-56"
 				>
 					<div>
 						{teams.slice(0, 5).map((t) => {
@@ -159,10 +157,8 @@ export default function TeamSwitcher({
 								<DropdownMenuItem
 									key={t.id}
 									className={cn(
-										"rounded-md text-sm cursor-pointer",
-										"hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70",
-										"focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground",
-										"py-1.5"
+										"cursor-pointer",
+										isActive && "bg-accent text-accent-foreground"
 									)}
 									onSelect={(e) => {
 										e.preventDefault();
@@ -229,11 +225,11 @@ export default function TeamSwitcher({
 							);
 						})}
 						{teams.length > 0 ? (
-							<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
+							<DropdownMenuSeparator />
 						) : null}
 						<DropdownMenuItem
 							asChild
-							className="rounded-md py-1.5 text-sm cursor-pointer hover:bg-zinc-100/80 dark:hover:bg-zinc-900/70 focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+							className="cursor-pointer"
 						>
 							<Link
 								href="/settings/workspaces/settings"
@@ -258,31 +254,26 @@ export default function TeamSwitcher({
 				onOpenChange={setIsProfileMenuOpen}
 			>
 				<DropdownMenuTrigger asChild>
-					<button type="button"
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon"
 						aria-label="Open profile menu"
-						className={cn(
-							"inline-flex items-center justify-center rounded-lg cursor-pointer",
-							"text-foreground",
-							"transition-colors hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50"
-						)}
+						className="size-[var(--site-header-control-h,2.25rem)] rounded-lg p-0"
 					>
 						<CurrentUserAvatar user={user} />
-					</button>
+					</Button>
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent
 					align="end"
-					className={cn(
-						"w-56 rounded-xl p-1",
-						"border border-zinc-200/70 dark:border-zinc-800"
-					)}
+					className="w-56"
 				>
 					{/* Editor access for editors and admins */}
 					{(userRole === "editor" || userRole === "admin") && (
 						<>
 							<DropdownMenuItem
-								className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+								className="cursor-pointer"
 								onSelect={(e) => {
 									e.preventDefault();
 									router.push("/internal");
@@ -291,48 +282,53 @@ export default function TeamSwitcher({
 								<Lock className="h-4 w-4" />
 								<span>Internal</span>
 							</DropdownMenuItem>
-							<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
+							<DropdownMenuSeparator />
 						</>
 					)}
 
-					<div className="px-1 py-1">
-						<div
-							role="radiogroup"
-							aria-label="Theme mode"
-							className="inline-flex w-full items-center justify-center gap-1 rounded-md p-0.5"
-						>
-							{(["light", "dark", "system"] as const).map((mode) => {
-								const Icon = themeMeta[mode].icon;
-								const selected = currentTheme === mode;
-								return (
-									<button
-										key={mode}
-										type="button"
-										role="radio"
-										aria-checked={selected}
-										aria-label={`Set theme: ${themeMeta[mode].label}`}
-										onClick={() => setTheme(mode)}
-										className={cn(
-											"relative flex h-7 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
-											"hover:bg-zinc-100/70 hover:text-zinc-900 dark:hover:bg-zinc-800/70 dark:hover:text-zinc-100",
-											selected
-												? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-												: "bg-transparent dark:text-zinc-300"
-										)}
-										title={themeMeta[mode].label}
-									>
-										<Icon className="h-4 w-4" />
-									</button>
-								);
-							})}
+					<div className="px-1 py-1.5">
+						<div className="flex items-center gap-2">
+							<span className="min-w-12 px-1 text-sm text-foreground">
+								Theme
+							</span>
+							<div
+								role="radiogroup"
+								aria-label="Theme mode"
+								className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-muted/60 p-0.5"
+							>
+								{(["light", "dark", "system"] as const).map((mode) => {
+									const Icon = themeMeta[mode].icon;
+									const selected = currentTheme === mode;
+									return (
+										<button
+											key={mode}
+											type="button"
+											role="radio"
+											aria-checked={selected}
+											aria-label={`Set theme: ${themeMeta[mode].label}`}
+											onClick={() => setTheme(mode)}
+											className={cn(
+												"relative flex h-7 flex-1 items-center justify-center rounded-lg text-muted-foreground transition-colors",
+												"hover:bg-background hover:text-foreground",
+												selected
+													? "bg-background text-foreground shadow-xs"
+													: "bg-transparent"
+											)}
+											title={themeMeta[mode].label}
+										>
+											<Icon className="h-4 w-4" />
+										</button>
+									);
+								})}
+							</div>
 						</div>
 					</div>
 
-					<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
+					<DropdownMenuSeparator />
 
 					<DropdownMenuItem
 						asChild
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 					>
 						<Link
 							href="/experiments"
@@ -349,7 +345,7 @@ export default function TeamSwitcher({
 
 					<DropdownMenuItem
 						asChild
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 					>
 						<Link
 							href="/settings/workspaces/settings"
@@ -366,7 +362,7 @@ export default function TeamSwitcher({
 
 					<DropdownMenuItem
 						asChild
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 					>
 						<Link
 							href="/settings/account"
@@ -381,11 +377,11 @@ export default function TeamSwitcher({
 						</Link>
 					</DropdownMenuItem>
 
-					<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
+					<DropdownMenuSeparator />
 
 					<DropdownMenuItem
 						asChild
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 					>
 						<Link
 							href={`/settings/usage?workspace_id=${encodeURIComponent(
@@ -408,7 +404,7 @@ export default function TeamSwitcher({
 
 					<DropdownMenuItem
 						asChild
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 					>
 						<Link
 							href="/settings/credits"
@@ -425,7 +421,7 @@ export default function TeamSwitcher({
 
 					<DropdownMenuItem
 						asChild
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 					>
 						<Link
 							href="/settings/keys"
@@ -441,16 +437,16 @@ export default function TeamSwitcher({
 					</DropdownMenuItem>
 
 					<DropdownMenuItem
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
+						className="cursor-pointer"
 						onSelect={(e) => {
 							e.preventDefault();
 							setIsProfileMenuOpen(false);
 							navigateWithViewTransition("/contact");
 						}}
 					>
-						<div className="flex items-center justify-between w-full">
+						<div className="flex w-full items-center justify-between">
 							<div className="flex items-center gap-2">
-								<LifeBuoy className="h-4 w-4 text-primary" />
+								<LifeBuoy className="h-4 w-4" />
 								<span>Support</span>
 							</div>
 							<span
@@ -482,11 +478,12 @@ export default function TeamSwitcher({
 						</div>
 					</DropdownMenuItem>
 
-					<hr className="my-1 border-zinc-200/70 dark:border-zinc-800" />
+					<DropdownMenuSeparator />
 
 					<DropdownMenuItem
-						className="rounded-md py-1.5 text-sm cursor-pointer focus:bg-zinc-100/80 dark:focus:bg-zinc-900/70 focus:text-foreground"
-						onSelect={(e) => {
+						variant="destructive"
+						className="cursor-pointer"
+						onClick={(e) => {
 							e.preventDefault();
 							setIsProfileMenuOpen(false);
 							onSignOut?.();

@@ -1,0 +1,21 @@
+{
+  "key": "byteplus:bytedance/seedance-2.0-mini-260615:video.generate",
+  "api_provider_id": "byteplus",
+  "provider_slug": "byteplus",
+  "api_model_id": "bytedance/seedance-2.0-mini-260615",
+  "capability_id": "video.generate",
+  "rules": [
+    {
+      "meter": "output_video_seconds",
+      "unit": "second",
+      "unit_size": 1,
+      "price_per_unit": 0,
+      "currency": "USD",
+      "pricing_plan": "standard",
+      "note": "Pricing placeholder pending BytePlus ModelArk billing publication for Seedance 2.0 Mini.",
+      "match": [],
+      "priority": 100,
+      "effective_from": "2026-06-15T00:00:00Z"
+    }
+  ]
+}

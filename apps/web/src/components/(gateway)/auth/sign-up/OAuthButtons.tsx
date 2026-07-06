@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 type SocialProviderId = "google" | "github" | "gitlab";
 
 const SOCIAL_PROVIDER_IDS: SocialProviderId[] = ["google", "github", "gitlab"];
+const LAST_AUTH_PROVIDER_STORAGE_KEY = "ai-stats:last-auth-provider";
 
 type ProviderMeta = {
 	label: string;
@@ -43,7 +44,20 @@ export default function OAuthButtons({
 				{SOCIAL_PROVIDER_IDS.map((id) => {
 					const meta = META[id];
 					return (
-						<form action={handleOAuthRedirect} key={id}>
+						<form
+							action={handleOAuthRedirect}
+							key={id}
+							onSubmit={() => {
+								try {
+									window.localStorage.setItem(
+										LAST_AUTH_PROVIDER_STORAGE_KEY,
+										id
+									);
+								} catch {
+									// Ignore storage failures; auth still proceeds.
+								}
+							}}
+						>
 							<input type="hidden" name="authFlow" value="signup" />
 							<input type="hidden" name="provider" value={id} />
 							{returnUrl ? (

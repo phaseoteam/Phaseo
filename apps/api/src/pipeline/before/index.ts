@@ -20,15 +20,20 @@ import { isTestingModeRequested, resolveTestingMode } from "./testingMode";
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
+import {
+	collectUnsupportedRoutingFields,
+	getEffectiveRoutingHints,
+	normalizeRequestRoutingBody,
+} from "../requestRouting";
 
 function resolveRequestRoutingModeOverride(
     body: any,
     fallback: string | null,
 ): string | null {
-    const providerSort = body?.provider?.sort;
-    if (typeof providerSort !== "string") return fallback;
+    const requestedMode = getEffectiveRoutingHints(body).requestedMode;
+    if (typeof requestedMode !== "string") return fallback;
 
-    const normalized = providerSort.trim().toLowerCase();
+    const normalized = requestedMode.trim().toLowerCase();
     if (
         normalized === "price" ||
         normalized === "pricing" ||
@@ -48,12 +53,34 @@ function resolveRequestRoutingModeOverride(
     return fallback;
 }
 
+function objectOrEmpty(value: unknown): Record<string, unknown> {
+    return value && typeof value === "object" && !Array.isArray(value)
+        ? { ...(value as Record<string, unknown>) }
+        : {};
+}
+
+function applyWorkspacePrivacyRoutingDefaults(
+    body: any,
+    teamSettings: PipelineContext["teamSettings"] | null | undefined,
+): any {
+    if (!teamSettings?.privacyZdrOnly) return body;
+    return {
+        ...body,
+        routing: {
+            ...objectOrEmpty(body?.routing),
+            require_zero_data_retention: true,
+            zdr: true,
+        },
+    };
+}
+
 function hasItems(value: unknown): boolean {
     return Array.isArray(value) && value.length > 0;
 }
 
 function classifyWorkspaceProviderFilterFailure(diagnostics: {
     providerAllowlist: string[];
+    providerAllowlistConfigured?: boolean;
     providerBlocklist: string[];
     requestProviderOnly: string[];
     requestProviderIgnore: string[];
@@ -71,6 +98,7 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
         hasItems(diagnostics.requestProviderIgnore);
     const hasWorkspaceProviderFilter =
         hasItems(diagnostics.providerAllowlist) ||
+        diagnostics.providerAllowlistConfigured === true ||
         hasItems(diagnostics.providerBlocklist) ||
         hasItems(diagnostics.activeGuardrailIds) ||
         hasItems(diagnostics.allowedApiModels);
@@ -305,6 +333,29 @@ export async function beforeRequest(
             }),
         };
     }
+    mergedBody = applyWorkspacePrivacyRoutingDefaults(
+        mergedBody,
+        context.teamSettings,
+    );
+    const unsupportedRoutingFields = collectUnsupportedRoutingFields(mergedBody);
+    if (unsupportedRoutingFields.length > 0) {
+        return {
+            ok: false,
+            response: err("validation_error", {
+                details: unsupportedRoutingFields.map((field) => ({
+                    message: field.message,
+                    path: field.path,
+                    keyword: "unsupported_routing_filter",
+                    params: {
+                        field: field.field,
+                    },
+                })),
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    mergedBody = normalizeRequestRoutingBody(mergedBody);
 
     const { fetchWorkspacePolicy, applyWorkspacePolicy } = await import("./workspacePolicy");
     let workspacePolicy = null;
@@ -336,6 +387,7 @@ export async function beforeRequest(
         resolvedModel: resolvedModel || model,
         body: mergedBody,
         workspacePolicy,
+        teamSettings: context.teamSettings ?? null,
     });
     if (!workspacePolicyResult.ok) {
         const workspacePolicyFailure = workspacePolicyResult as Extract<
@@ -583,6 +635,7 @@ export async function beforeRequest(
         debugBody?.return_upstream_response ??
         debugBody?.returnUpstreamResponse
     );
+    const returnRoutingDiagnostics = getEffectiveRoutingHints(mergedBody).returnDiagnostics;
     const debugTrace = normalizeReturnFlag(debugBody?.trace);
     const traceLevel = (debugBody?.trace_level ?? debugBody?.traceLevel) as "summary" | "full" | undefined;
     const betaBody = ((body as any)?.beta ?? rawBody?.beta) as Record<string, any> | undefined;
@@ -619,6 +672,7 @@ export async function beforeRequest(
         oauthClientId: apiKeyRef?.startsWith("oauth_") ? (apiKeyKid ?? null) : null,
         oauthUserId: apiKeyRef?.startsWith("oauth_") ? (userId ?? null) : null,
         returnMeta,
+        returnRoutingDiagnostics,
         debug,
         providerCapabilitiesBeta: betaCapabilities,
         beta,
@@ -677,8 +731,3 @@ export async function beforeRequest(
 
     return { ok: true, ctx };
 }
-
-
-
-
-
