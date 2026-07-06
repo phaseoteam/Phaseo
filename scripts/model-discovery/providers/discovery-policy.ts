@@ -55,6 +55,13 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         reason: "No stable models discovery endpoint configured yet.",
     },
     {
+        platformId: "amazon-bedrock-mantle",
+        platformName: "Amazon Bedrock (Mantle)",
+        providerIds: ["amazon-bedrock-mantle"],
+        modelsEndpoint: "https://bedrock-mantle.us-east-1.api.aws/v1/models",
+        active: true,
+    },
+    {
         platformId: "anthropic",
         platformName: "Anthropic",
         providerIds: ["anthropic"],
@@ -380,9 +387,8 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformId: "siliconflow",
         platformName: "SiliconFlow",
         providerIds: ["siliconflow"],
-        modelsEndpoint: null,
-        active: false,
-        reason: "No API models endpoint mapped yet.",
+        modelsEndpoint: "https://api.siliconflow.com/v1/models",
+        active: true,
     },
     {
         platformId: "sourceful",
