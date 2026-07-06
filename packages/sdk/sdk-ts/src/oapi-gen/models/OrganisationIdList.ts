@@ -39,6 +39,7 @@ export type OrganisationIdList =
   | "qwen"
   | "relace"
   | "sourceful"
+  | "spacex-ai"
   | "stepfun"
   | "suno"
   | "tencent"
@@ -46,6 +47,5 @@ export type OrganisationIdList =
   | "vercel"
   | "voyage"
   | "windsurf"
-  | "x-ai"
   | "xiaomi"
   | "z-ai"[];
