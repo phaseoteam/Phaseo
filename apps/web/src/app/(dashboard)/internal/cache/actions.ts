@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import {
+	expirePublicModelCatalogueCache,
 	revalidateAppDataTags,
 	revalidateBenchmarkDataTags,
 	revalidateModelDataOnlyTags,
@@ -110,6 +111,10 @@ type CacheOpResult = {
 	message: string;
 };
 
+type GatewayCachePurgeResult =
+	| { ok: true; message: string }
+	| { ok: false; message: string };
+
 async function requireAdmin() {
 	const supabase = await createClient();
 	const {
@@ -134,6 +139,64 @@ function sanitizeList(input: string): string[] {
 		.split(/[,\n]/g)
 		.map((item) => item.trim())
 		.filter(Boolean);
+}
+
+function resolveGatewayInternalBaseUrl(): string {
+	const raw =
+		process.env.GATEWAY_INTERNAL_BASE_URL ??
+		process.env.GATEWAY_PUBLIC_BASE_URL ??
+		process.env.NEXT_PUBLIC_GATEWAY_BASE_URL ??
+		"https://api.phaseo.app";
+	return raw.replace(/\/v1\/?$/, "").replace(/\/+$/, "");
+}
+
+async function purgeGatewayCatalogueCache(tags: string[]): Promise<GatewayCachePurgeResult> {
+	const token =
+		process.env.GATEWAY_INTERNAL_TEST_TOKEN ??
+		process.env.INTERNAL_GATEWAY_TOKEN ??
+		process.env.INTERNAL_API_TOKEN ??
+		"";
+	const trimmedToken = token.trim();
+	if (!trimmedToken) {
+		return {
+			ok: false,
+			message: "Gateway Worker cache purge skipped: internal token is not configured.",
+		};
+	}
+
+	const response = await fetch(`${resolveGatewayInternalBaseUrl()}/internal/cache/purge`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"x-internal-token": trimmedToken,
+		},
+		body: JSON.stringify({ tags }),
+		cache: "no-store",
+	});
+
+	if (!response.ok) {
+		let detail = "";
+		try {
+			const body = await response.json();
+			detail =
+				typeof body?.message === "string"
+					? body.message
+					: typeof body?.error === "string"
+						? body.error
+						: "";
+		} catch {
+			detail = "";
+		}
+		return {
+			ok: false,
+			message: `Gateway Worker cache purge failed (${response.status})${detail ? `: ${detail}` : "."}`,
+		};
+	}
+
+	return {
+		ok: true,
+		message: `Gateway Worker cache purged (${tags.join(", ")}).`,
+	};
 }
 
 async function runAdminAction(
@@ -166,19 +229,29 @@ export async function revalidateModelsGlobalDataAction(): Promise<CacheOpResult>
 }
 
 export async function revalidatePublicModelCatalogueAction(): Promise<CacheOpResult> {
-	return runAdminAction("Public catalogue", async () => {
-		revalidateModelDataTags();
+	try {
+		await requireAdmin();
+		expirePublicModelCatalogueCache();
 		for (const tag of APP_FRONTEND_TAGS) {
 			revalidateTag(tag, EXPIRE_NOW);
 		}
 		revalidateTag("collections", EXPIRE_NOW);
-		revalidatePath("/models");
-		revalidatePath("/models/collections");
-		revalidatePath("/monitor");
-		revalidatePath("/compare");
-		revalidatePath("/api-providers");
-		revalidatePath("/apps");
-	});
+		const gatewayPurge = await purgeGatewayCatalogueCache(["models"]);
+		return {
+			ok: gatewayPurge.ok,
+			message: gatewayPurge.ok
+				? `Public catalogue cache revalidated. ${gatewayPurge.message}`
+				: `Public catalogue website cache revalidated. ${gatewayPurge.message}`,
+		};
+	} catch (error) {
+		return {
+			ok: false,
+			message:
+				error instanceof Error
+					? `Public catalogue failed: ${error.message}`
+					: "Public catalogue failed.",
+		};
+	}
 }
 
 export async function revalidateProvidersGlobalApiAction(): Promise<CacheOpResult> {

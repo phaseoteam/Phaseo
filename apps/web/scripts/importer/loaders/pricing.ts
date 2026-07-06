@@ -168,6 +168,23 @@ function resolveTouchedModelId(
     );
 }
 
+function matchesModelFilter(
+    rawModelId: string,
+    modelFilter: string | null,
+    lookups: {
+        modelIds: Set<string>;
+        apiToModelId: Map<string, string>;
+        normalizedModelIdToModelId: Map<string, string>;
+    }
+): boolean {
+    if (!modelFilter) return true;
+    const filter = modelFilter.trim();
+    if (!filter) return true;
+    const normalizedRawModelId = rawModelId.trim();
+    if (normalizedRawModelId === filter) return true;
+    return resolveTouchedModelId(normalizedRawModelId, lookups) === filter;
+}
+
 function deepSortObjectKeys(x: any): any {
     if (Array.isArray(x)) {
         // preserve array order (priority often matters)
@@ -281,7 +298,9 @@ export async function loadPricing(
                 if (!modelIdFromFile) {
                     throw new Error(`pricing.json missing model_id/api_model_id: ${fp}`);
                 }
-                if (modelId && modelIdFromFile !== modelId) continue;
+                if (!matchesModelFilter(modelIdFromFile, modelId, knownModelIds)) {
+                    continue;
+                }
                 scannedFiles += 1;
                 const capability_id = j.capability_id ?? j.endpoint ?? capabilityFallback;
                 const computedKey =

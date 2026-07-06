@@ -42,6 +42,7 @@
     "sourceful",
     "stepfun",
     "suno",
+    "tencent",
     "upstage",
     "vercel",
     "voyage",
@@ -999,6 +1000,9 @@
       "suno/suno-v4.5-all",
       "suno/suno-v5"
     ],
+    "tencent": [
+      "tencent/hy3"
+    ],
     "upstage": [
       "upstage/solar-pro",
       "upstage/solar-pro-2",
@@ -1778,6 +1782,7 @@
   ],
   "pricing": [
     "atlascloud:text.generate:meituan-longcat-2.0",
+    "atlascloud:text.generate:tencent-hy3",
     "weights-and-biases:text.generate:moonshotai-kimi-k2.7-code",
     "weights-and-biases:text.generate:moonshotai-kimi-k2.6",
     "weights-and-biases:text.generate:z-ai-glm-5.2"
@@ -2458,6 +2463,7 @@
     "novita:text.generate:qwen-qwen3.5-27b",
     "novita:text.generate:qwen-qwen3.5-35b-a3b",
     "novita:text.generate:qwen-qwen3.5-397b-a17b",
+    "novita:text.generate:tencent-hy3-free",
     "novita:text.generate:xiaomi-mimo-v2-flash",
     "novita:text.generate:xiaomi-mimo-v2.5",
     "novita:text.generate:xiaomi-mimo-v2.5-pro",
