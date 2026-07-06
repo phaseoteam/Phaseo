@@ -14,10 +14,6 @@
   "output_types": "text",
   "api_model_id": "anthropic/claude-fable-5",
   "family_id": "anthropic/claude-fable",
-  "page_notice": {
-    "tone": "info",
-    "markdown": "Claude Fable 5 has returned. Anthropic says Fable 5 access was restored globally from July 1, 2026 after the related export controls were lifted, with updated safeguards and fallback routing for flagged requests. [Read Anthropic's redeployment note](https://www.anthropic.com/news/redeploying-fable-5) or [see Claude's update on X](https://x.com/claudeai/status/2072402636813607381?s=20)."
-  },
   "links": [
     {
       "platform": "announcement",
