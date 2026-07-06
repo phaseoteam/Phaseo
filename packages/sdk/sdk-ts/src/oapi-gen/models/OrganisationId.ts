@@ -44,6 +44,7 @@ export type OrganisationId =
   | "sourceful"
   | "stepfun"
   | "suno"
+  | "tencent"
   | "upstage"
   | "vercel"
   | "voyage"
