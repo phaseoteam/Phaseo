@@ -2,7 +2,7 @@
   "model_id": "openai/gpt-realtime-2.1",
   "organisation_id": "openai",
   "name": "GPT Realtime 2.1",
-  "status": "Available",
+  "status": "Rumoured",
   "previous_model_id": "openai/gpt-realtime-2",
   "description": "GPT Realtime 2.1 is an OpenAI realtime audio model for low-latency, multimodal speech applications.",
   "announced_date": "2026-07-06T00:00:00",
