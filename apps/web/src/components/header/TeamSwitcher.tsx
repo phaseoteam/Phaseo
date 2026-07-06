@@ -259,7 +259,12 @@ export default function TeamSwitcher({
 						variant="ghost"
 						size="icon"
 						aria-label="Open profile menu"
-						className="size-[var(--site-header-control-h,2.25rem)] rounded-lg p-0"
+						className={cn(
+							"size-[var(--site-header-control-h,2.25rem)] rounded-full p-0",
+							"bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
+							"focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50",
+							isProfileMenuOpen && "bg-zinc-100/70 dark:bg-zinc-900/60",
+						)}
 					>
 						<CurrentUserAvatar user={user} />
 					</Button>

@@ -43,6 +43,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CurrentUserAvatar } from "@/components/ui/current-user-avatar";
 
 interface HeaderProps {
 	isLoggedIn: boolean;
@@ -236,34 +237,16 @@ export default function HeaderClient({
 					<Button
 						variant="ghost"
 						size="icon"
-						className="overflow-hidden rounded-lg"
-						aria-label="Toggle menu"
+						className={cn(
+							"size-[var(--site-header-control-h,2.25rem)] rounded-full p-0",
+							"bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
+							"focus-visible:ring-2 focus-visible:ring-zinc-400/50 dark:focus-visible:ring-zinc-600/50",
+							isMobileNavOpen && "bg-zinc-100/70 dark:bg-zinc-900/60",
+						)}
+						aria-label="Open profile menu"
 						aria-expanded={isMobileNavOpen}
 					>
-						<span className="relative block h-5 w-5 overflow-hidden" aria-hidden="true">
-							<span
-								className={cn(
-									"absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out",
-									isMobileNavOpen
-										? "translate-y-0 rotate-45"
-										: "-translate-y-[6px] rotate-0",
-								)}
-							/>
-							<span
-								className={cn(
-									"absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out",
-									isMobileNavOpen ? "opacity-0" : "opacity-100",
-								)}
-							/>
-							<span
-								className={cn(
-									"absolute left-0 top-1/2 h-0.5 w-5 origin-center rounded-full bg-current transition-all duration-200 ease-out",
-									isMobileNavOpen
-										? "translate-y-0 -rotate-45"
-										: "translate-y-[6px] rotate-0",
-								)}
-							/>
-						</span>
+						<CurrentUserAvatar user={user} />
 					</Button>
 				</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-56">

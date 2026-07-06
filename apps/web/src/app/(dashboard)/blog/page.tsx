@@ -196,7 +196,7 @@ export default async function AnnouncementsPage({
 			post.author,
 			formatAnnouncementDate(post.publishedAt),
 			formatAnnouncementReadingTime(post.readingTimeMinutes),
-		].filter(Boolean),
+		].filter((part): part is string => Boolean(part)),
 	}));
 
 	return (
